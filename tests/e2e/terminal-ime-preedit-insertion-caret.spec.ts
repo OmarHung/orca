@@ -42,7 +42,7 @@ async function sampleCaretAt(
     .poll(
       async () => {
         sample = await sampleMidlinePreeditOcclusion(page)
-        return caretOffsetFromPreeditStart(sample) - cellsBeforeCaret * sample.cellWidth
+        return caretLeftFromPreeditStart(sample) - cellsBeforeCaret * sample.cellWidth
       },
       { message: 'the caret never moved to the insertion point' }
     )
@@ -50,12 +50,26 @@ async function sampleCaretAt(
   return sample
 }
 
-/** Where the caret's right edge sits, measured from the start of the preedit. */
-function caretOffsetFromPreeditStart(sample: MidlinePreeditOcclusionSample): number {
+/** Where the caret's left edge sits, measured from the start of the preedit. */
+function caretLeftFromPreeditStart(sample: MidlinePreeditOcclusionSample): number {
   if (!sample.caretRect || !sample.preeditRect) {
     return Number.NaN
   }
-  return sample.caretRect.right - sample.preeditRect.left
+  return sample.caretRect.left - sample.preeditRect.left
+}
+
+/** The view clips with overflow: hidden, so a caret outside it is not drawn at all. */
+function expectCaretInsideView(sample: MidlinePreeditOcclusionSample): void {
+  const context = JSON.stringify(sample)
+  expect(sample.caretRect, context).not.toBe(null)
+  expect(
+    sample.caretRect!.left,
+    `the caret is clipped off the view's left edge — ${context}`
+  ).toBeGreaterThanOrEqual(sample.overlayRect.left - 0.5)
+  expect(
+    sample.caretRect!.right,
+    `the caret is clipped off the view's right edge — ${context}`
+  ).toBeLessThanOrEqual(sample.overlayRect.right + 0.5)
 }
 
 test.describe('Terminal IME caret at the insertion point', () => {
@@ -72,6 +86,7 @@ test.describe('Terminal IME caret at the insertion point', () => {
       const sample = await sampleCaretAt(orcaPage, 2)
       const context = JSON.stringify(sample)
       expect(sample.rowTailFromCursor, 'the row tail is not under the cursor').toBe('XY')
+      expectCaretInsideView(sample)
       expect(sample.preeditRect, context).not.toBe(null)
       expect(sample.remainderRect, context).not.toBe(null)
       // The tail still starts after the whole preedit, not at the caret.
@@ -101,6 +116,7 @@ test.describe('Terminal IME caret at the insertion point', () => {
       const sample = await sampleCaretAt(orcaPage, 0)
       const context = JSON.stringify(sample)
       expect(sample.rowTailFromCursor, 'text still sits after the cursor').toBe('')
+      expectCaretInsideView(sample)
       expect(sample.preeditRect, context).not.toBe(null)
       // The flex view must not shrink below the preedit and clip the characters after the caret.
       expect(
