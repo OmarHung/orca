@@ -78,12 +78,15 @@ function openTerminal(): Rig {
 
 /**
  * The caret keeps a zero advance (its margin cancels its own width) and is only painted back over
- * the cells after the insertion point, so the preedit and the row tail keep their layout.
+ * the cells after the insertion point, drawn from that point rightwards, so the preedit and the
+ * row tail keep their layout.
  */
 function expectCaretOverCells(caret: HTMLElement | null, cellsAfterCaret: number): void {
   expect(caret?.style.marginLeft).toBe(`${-CURSOR_WIDTH_PX}px`)
   expect(caret?.style.transform).toBe(
-    cellsAfterCaret === 0 ? '' : `translateX(${-cellsAfterCaret * CELL_WIDTH_PX}px)`
+    cellsAfterCaret === 0
+      ? ''
+      : `translateX(${CURSOR_WIDTH_PX - cellsAfterCaret * CELL_WIDTH_PX}px)`
   )
 }
 
