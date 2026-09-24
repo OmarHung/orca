@@ -96,7 +96,7 @@ index 497afcf535f3eaca00889525a77e15eb633ccd96..96d499b34605f860608382114c3fbdc0
  
  export interface IBrowser {
 diff --git a/src/browser/input/CompositionHelper.ts b/src/browser/input/CompositionHelper.ts
-index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..231bb0ed0b069e8f81e79653f2d387125b8c452b 100644
+index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..eb75d383870361c8f6d45c1dee7aeec22290ce19 100644
 --- a/src/browser/input/CompositionHelper.ts
 +++ b/src/browser/input/CompositionHelper.ts
 @@ -1,10 +1,15 @@
@@ -629,7 +629,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..231bb0ed0b069e8f81e79653f2d38712
  
        // Since composition* events happen before the changes take place in the textarea on most
        // browsers, use a setTimeout with 0ms time to allow the native compositionend event to
-@@ -172,37 +519,315 @@ export class CompositionHelper {
+@@ -172,35 +519,313 @@ export class CompositionHelper {
        // - The last compositionupdate event's data property does not always accurately describe
        //   the character, a counter example being Korean where an ending consonsant can move to
        //   the following character if the following input is a vowel.
@@ -666,12 +666,11 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..231bb0ed0b069e8f81e79653f2d38712
 +        }
 +        if (this._pendingComposition === pending) {
 +          this._sendPendingComposition(pending, true);
-         }
--      }, 0);
++        }
 +      });
-     }
-   }
- 
++    }
++  }
++
 +  private _sendPendingComposition(
 +    pending: IPendingComposition,
 +    includeFollowingInput: boolean = false
@@ -892,7 +891,8 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..231bb0ed0b069e8f81e79653f2d38712
 +      if (!this._compositionEndBelongsToCurrentTransaction(endData)) {
 +        if (endData.length === 0 && !this._hasCompositionProgress()) {
 +          this._cancelComposition();
-+        }
+         }
+-      }, 0);
 +        return;
 +      }
 +      this._finalizeComposition(true, endData);
@@ -964,14 +964,12 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..231bb0ed0b069e8f81e79653f2d38712
 +  private _cancelDeferredTimer(timer?: ReturnType<typeof setTimeout>): void {
 +    if (timer === undefined) {
 +      return;
-+    }
+     }
 +    clearTimeout(timer);
 +    this._compositionTimers.delete(timer);
-+  }
-+
+   }
+ 
    /**
-    * Apply any changes made to the textarea after the current event chain is allowed to complete.
-    * This should be called when not currently composing but a keydown event with the "composition
 @@ -222,6 +847,9 @@ export class CompositionHelper {
  
          const diff = newValue.replace(oldValue, '');
@@ -982,7 +980,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..231bb0ed0b069e8f81e79653f2d38712
          this._dataAlreadySent = diff;
  
          if (newValue.length > oldValue.length) {
-@@ -236,6 +864,131 @@ export class CompositionHelper {
+@@ -236,6 +864,138 @@ export class CompositionHelper {
      }, 0);
    }
  
@@ -1062,11 +1060,13 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..231bb0ed0b069e8f81e79653f2d38712
 +    caret.style.display = 'inline-block';
 +    caret.style.flexShrink = '0';
 +    caret.style.height = cellHeight + 'px';
-+    // Pulled back over the preedit that follows the IME's insertion point, so moving within a
++    caret.style.marginLeft = -width + 'px';
++    // Painted back over the preedit that follows the IME's insertion point, so moving within a
 +    // Bopomofo or Japanese preedit shows where the next candidate applies instead of pinning the
-+    // caret to the end.
++    // caret to the end. A transform, not a margin: the caret must keep its zero advance, or the
++    // rendered row tail slides onto the preedit and the flex view shrinks and clips it.
 +    const trailingWidth = this._preeditColumnsAfterCaret() * this._renderService.dimensions.css.cell.width;
-+    caret.style.marginLeft = -(width + trailingWidth) + 'px';
++    caret.style.transform = trailingWidth ? `translateX(${-trailingWidth}px)` : '';
 +    caret.style.verticalAlign = 'top';
 +    caret.style.width = width + 'px';
 +  }
@@ -1088,7 +1088,12 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..231bb0ed0b069e8f81e79653f2d38712
 +    ) {
 +      return 0;
 +    }
-+    const offset = Math.min(Math.max(selectionEnd - start, 0), data.length);
++    let offset = Math.min(Math.max(selectionEnd - start, 0), data.length);
++    // Never split a surrogate pair: half a code point would count as a cell of its own.
++    const next = data.charCodeAt(offset);
++    if (next >= 0xDC00 && next <= 0xDFFF) {
++      offset++;
++    }
 +    return this._unicodeService.getStringCellWidth(data.substring(offset));
 +  }
 +
@@ -1114,7 +1119,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..231bb0ed0b069e8f81e79653f2d38712
    /**
     * Positions the composition view on top of the cursor and the textarea just below it (so the
     * IME helper dialog is positioned correctly).
-@@ -243,10 +996,33 @@ export class CompositionHelper {
+@@ -243,10 +1003,33 @@ export class CompositionHelper {
     *   necessary as the IME events across browsers are not consistently triggered.
     */
    public updateCompositionElements(dontRecurse?: boolean): void {
@@ -1149,7 +1154,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..231bb0ed0b069e8f81e79653f2d38712
      if (this._bufferService.buffer.isCursorInViewport) {
        const cursorX = Math.min(this._bufferService.buffer.x, this._bufferService.cols - 1);
  
-@@ -254,31 +1030,176 @@ export class CompositionHelper {
+@@ -254,31 +1037,176 @@ export class CompositionHelper {
        const cursorTop = this._bufferService.buffer.y * this._renderService.dimensions.css.cell.height;
        const cursorLeft = cursorX * this._renderService.dimensions.css.cell.width;
  
