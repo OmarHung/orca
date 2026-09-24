@@ -28,6 +28,7 @@ type Rig = {
   composeStart: () => void
   /** Applies the preedit the way Chromium does: event first, then the textarea and its selection. */
   composeUpdate: (preedit: string, insertionPoint?: number) => Promise<void>
+  textarea: HTMLTextAreaElement
 }
 
 function openTerminal(): Rig {
@@ -72,7 +73,8 @@ function openTerminal(): Rig {
   return {
     caret: () => compositionView.querySelector<HTMLElement>('.xterm-composition-caret'),
     composeStart,
-    composeUpdate
+    composeUpdate,
+    textarea
   }
 }
 
@@ -145,6 +147,27 @@ describe('composition caret follows the IME insertion point', () => {
     await rig.composeUpdate('今天ㄊㄧㄢ', 2)
 
     expectCaretOverCells(rig.caret(), 6)
+  })
+
+  it('keeps the caret in place while Chromium selects the whole preedit to replace it', async () => {
+    const rig = openTerminal()
+    rig.composeStart()
+    await rig.composeUpdate('你好嗎', 2)
+
+    // ←: Chromium dispatches compositionupdate with the whole composition still selected, and
+    // only then applies the new insertion point.
+    rig.textarea.setSelectionRange(0, 3)
+    const update = new CompositionEvent('compositionupdate', { bubbles: true })
+    Object.defineProperty(update, 'data', { value: '你好嗎' })
+    rig.textarea.dispatchEvent(update)
+
+    expectCaretOverCells(rig.caret(), 2)
+
+    rig.textarea.setSelectionRange(1, 1)
+    await nextEventLoop()
+    await nextEventLoop()
+
+    expectCaretOverCells(rig.caret(), 4)
   })
 
   it('never splits a surrogate pair at the insertion point', async () => {
