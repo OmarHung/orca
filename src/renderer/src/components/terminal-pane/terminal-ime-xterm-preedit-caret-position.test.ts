@@ -6,8 +6,9 @@
  * candidate would replace.
  *
  * Chromium mirrors the IME's insertion point into the helper textarea's selection once it applies
- * the marked text, so the caret is pulled back by the cells of preedit that follow it. happy-dom
- * performs no layout, so the cell size is supplied and only the caret offset is asserted.
+ * the marked text, so the caret is painted back over the cells of preedit that follow it. happy-dom
+ * performs no layout, so the cell size is supplied and only the caret styles are asserted; the e2e
+ * spec checks the resulting geometry.
  */
 import { Terminal } from '@xterm/xterm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -75,9 +76,15 @@ function openTerminal(): Rig {
   }
 }
 
-/** The caret's own width plus the cells it is pulled back over. */
-function expectedMarginLeft(cellsAfterCaret: number): string {
-  return `${-(CURSOR_WIDTH_PX + cellsAfterCaret * CELL_WIDTH_PX)}px`
+/**
+ * The caret keeps a zero advance (its margin cancels its own width) and is only painted back over
+ * the cells after the insertion point, so the preedit and the row tail keep their layout.
+ */
+function expectCaretOverCells(caret: HTMLElement | null, cellsAfterCaret: number): void {
+  expect(caret?.style.marginLeft).toBe(`${-CURSOR_WIDTH_PX}px`)
+  expect(caret?.style.transform).toBe(
+    cellsAfterCaret === 0 ? '' : `translateX(${-cellsAfterCaret * CELL_WIDTH_PX}px)`
+  )
 }
 
 describe('composition caret follows the IME insertion point', () => {
@@ -105,7 +112,7 @@ describe('composition caret follows the IME insertion point', () => {
 
     await rig.composeUpdate('你好嗎')
 
-    expect(rig.caret()?.style.marginLeft).toBe(expectedMarginLeft(0))
+    expectCaretOverCells(rig.caret(), 0)
   })
 
   it('pulls the caret back over the wide characters after a mid-preedit insertion point', async () => {
@@ -116,7 +123,7 @@ describe('composition caret follows the IME insertion point', () => {
     // ← twice: the insertion point sits between 你 and 好.
     await rig.composeUpdate('你好嗎', 1)
 
-    expect(rig.caret()?.style.marginLeft).toBe(expectedMarginLeft(4))
+    expectCaretOverCells(rig.caret(), 4)
   })
 
   it('moves the caret to the start of the preedit', async () => {
@@ -125,7 +132,7 @@ describe('composition caret follows the IME insertion point', () => {
 
     await rig.composeUpdate('你好嗎', 0)
 
-    expect(rig.caret()?.style.marginLeft).toBe(expectedMarginLeft(6))
+    expectCaretOverCells(rig.caret(), 6)
   })
 
   it('counts unconverted Bopomofo as wide cells', async () => {
@@ -134,7 +141,17 @@ describe('composition caret follows the IME insertion point', () => {
 
     await rig.composeUpdate('今天ㄊㄧㄢ', 2)
 
-    expect(rig.caret()?.style.marginLeft).toBe(expectedMarginLeft(6))
+    expectCaretOverCells(rig.caret(), 6)
+  })
+
+  it('never splits a surrogate pair at the insertion point', async () => {
+    const rig = openTerminal()
+    rig.composeStart()
+
+    // Offset 2 is between the two halves of 😀; the caret stays after the whole emoji.
+    await rig.composeUpdate('你😀好', 2)
+
+    expectCaretOverCells(rig.caret(), 2)
   })
 
   it('counts narrow characters as single cells', async () => {
@@ -143,6 +160,6 @@ describe('composition caret follows the IME insertion point', () => {
 
     await rig.composeUpdate('abc中', 1)
 
-    expect(rig.caret()?.style.marginLeft).toBe(expectedMarginLeft(4))
+    expectCaretOverCells(rig.caret(), 4)
   })
 })

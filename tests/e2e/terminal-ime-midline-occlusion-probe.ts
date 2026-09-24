@@ -14,6 +14,7 @@ export type MidlinePreeditOcclusionSample = {
   remainderVisibility: string | null
   caretRect: { left: number; right: number; width: number; height: number } | null
   preeditRect: { left: number; right: number; width: number; height: number } | null
+  remainderRect: { left: number; right: number; width: number; height: number } | null
   textareaRect: { left: number; right: number; width: number; height: number }
   overlayActive: boolean
   cursorColumn: number
@@ -61,6 +62,7 @@ function readMidlinePreeditOcclusion(): MidlinePreeditOcclusionSample {
   const remainder = view.querySelector<HTMLElement>('.xterm-composition-remainder')
   const caretBounds = caret?.getBoundingClientRect()
   const preeditBounds = preedit?.getBoundingClientRect()
+  const remainderBounds = remainder?.getBoundingClientRect()
   const textareaBounds = textarea.getBoundingClientRect()
 
   // Count cells mostly covered by the overlay to tolerate proportional-text subpixel widths.
@@ -113,6 +115,14 @@ function readMidlinePreeditOcclusion(): MidlinePreeditOcclusionSample {
           right: preeditBounds.right,
           width: preeditBounds.width,
           height: preeditBounds.height
+        }
+      : null,
+    remainderRect: remainderBounds
+      ? {
+          left: remainderBounds.left,
+          right: remainderBounds.right,
+          width: remainderBounds.width,
+          height: remainderBounds.height
         }
       : null,
     textareaRect: {
