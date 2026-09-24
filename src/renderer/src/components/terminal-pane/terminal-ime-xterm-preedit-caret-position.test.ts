@@ -1,0 +1,148 @@
+// @vitest-environment happy-dom
+/**
+ * Bopomofo and Japanese IMEs let the user walk the insertion point back through an open preedit
+ * (←/→) and pick a candidate for the character there. The composition caret used to be pinned to
+ * the end of the preedit, so after moving left nothing on screen showed which character the next
+ * candidate would replace.
+ *
+ * Chromium mirrors the IME's insertion point into the helper textarea's selection once it applies
+ * the marked text, so the caret is pulled back by the cells of preedit that follow it. happy-dom
+ * performs no layout, so the cell size is supplied and only the caret offset is asserted.
+ */
+import { Terminal } from '@xterm/xterm'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const CELL_WIDTH_PX = 8
+const CELL_HEIGHT_PX = 16
+const CURSOR_WIDTH_PX = 1
+
+const openTerminals: Terminal[] = []
+
+function nextEventLoop(): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, 0))
+}
+
+type Rig = {
+  caret: () => HTMLElement | null
+  composeStart: () => void
+  /** Applies the preedit the way Chromium does: event first, then the textarea and its selection. */
+  composeUpdate: (preedit: string, insertionPoint?: number) => Promise<void>
+}
+
+function openTerminal(): Rig {
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+  const terminal = new Terminal({ cols: 80, rows: 24, cursorWidth: CURSOR_WIDTH_PX })
+  terminal.open(container)
+  const textarea = terminal.textarea
+  const compositionView = container.querySelector<HTMLElement>('.composition-view')
+  if (!textarea || !compositionView) {
+    throw new Error('xterm did not create the helper textarea and composition view')
+  }
+  openTerminals.push(terminal)
+
+  const cell = (
+    terminal as unknown as {
+      _core: {
+        _renderService: { dimensions: { css: { cell: { height: number; width: number } } } }
+      }
+    }
+  )._core._renderService.dimensions.css.cell
+  cell.width = CELL_WIDTH_PX
+  cell.height = CELL_HEIGHT_PX
+
+  const composeStart = (): void => {
+    const start = new CompositionEvent('compositionstart', { bubbles: true })
+    Object.defineProperty(start, 'data', { value: '' })
+    textarea.dispatchEvent(start)
+  }
+
+  const composeUpdate = async (preedit: string, insertionPoint?: number): Promise<void> => {
+    const update = new CompositionEvent('compositionupdate', { bubbles: true })
+    Object.defineProperty(update, 'data', { value: preedit })
+    textarea.dispatchEvent(update)
+    textarea.value = preedit
+    const caret = insertionPoint ?? preedit.length
+    textarea.setSelectionRange(caret, caret)
+    await nextEventLoop()
+    await nextEventLoop()
+  }
+
+  return {
+    caret: () => compositionView.querySelector<HTMLElement>('.xterm-composition-caret'),
+    composeStart,
+    composeUpdate
+  }
+}
+
+/** The caret's own width plus the cells it is pulled back over. */
+function expectedMarginLeft(cellsAfterCaret: number): string {
+  return `${-(CURSOR_WIDTH_PX + cellsAfterCaret * CELL_WIDTH_PX)}px`
+}
+
+describe('composition caret follows the IME insertion point', () => {
+  beforeEach(() => {
+    // happy-dom has no 2d context, which the DOM renderer's WidthCache requires.
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      measureText: () => ({ width: 10 })
+    } as unknown as CanvasRenderingContext2D)
+  })
+
+  afterEach(async () => {
+    // updateCompositionElements re-arms on a timer; let the pending one run before dispose.
+    await nextEventLoop()
+    await nextEventLoop()
+    while (openTerminals.length > 0) {
+      openTerminals.pop()?.dispose()
+    }
+    vi.restoreAllMocks()
+    document.body.replaceChildren()
+  })
+
+  it('keeps the caret at the end while the insertion point is at the end', async () => {
+    const rig = openTerminal()
+    rig.composeStart()
+
+    await rig.composeUpdate('你好嗎')
+
+    expect(rig.caret()?.style.marginLeft).toBe(expectedMarginLeft(0))
+  })
+
+  it('pulls the caret back over the wide characters after a mid-preedit insertion point', async () => {
+    const rig = openTerminal()
+    rig.composeStart()
+    await rig.composeUpdate('你好嗎')
+
+    // ← twice: the insertion point sits between 你 and 好.
+    await rig.composeUpdate('你好嗎', 1)
+
+    expect(rig.caret()?.style.marginLeft).toBe(expectedMarginLeft(4))
+  })
+
+  it('moves the caret to the start of the preedit', async () => {
+    const rig = openTerminal()
+    rig.composeStart()
+
+    await rig.composeUpdate('你好嗎', 0)
+
+    expect(rig.caret()?.style.marginLeft).toBe(expectedMarginLeft(6))
+  })
+
+  it('counts unconverted Bopomofo as wide cells', async () => {
+    const rig = openTerminal()
+    rig.composeStart()
+
+    await rig.composeUpdate('今天ㄊㄧㄢ', 2)
+
+    expect(rig.caret()?.style.marginLeft).toBe(expectedMarginLeft(6))
+  })
+
+  it('counts narrow characters as single cells', async () => {
+    const rig = openTerminal()
+    rig.composeStart()
+
+    await rig.composeUpdate('abc中', 1)
+
+    expect(rig.caret()?.style.marginLeft).toBe(expectedMarginLeft(4))
+  })
+})
