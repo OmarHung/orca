@@ -194,7 +194,7 @@ index 18c275ccbe583f48ccb5c5f66cd26d0bd8621e39..2dc0ef346d3ce07b3d0b5f03fd72c4f5
      if (diff !== 0) {
        this._latestYDisp = newRow;
 diff --git a/src/browser/input/CompositionHelper.ts b/src/browser/input/CompositionHelper.ts
-index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..83647f3bd5f2c883d88dbcc2a5043279830c8b20 100644
+index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..d4be8192736bbd1e48276c0e174c6110788bc1ee 100644
 --- a/src/browser/input/CompositionHelper.ts
 +++ b/src/browser/input/CompositionHelper.ts
 @@ -1,17 +1,64 @@
@@ -839,7 +839,8 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..83647f3bd5f2c883d88dbcc2a5043279
 +        }
 +        if (this._pendingComposition === pending) {
 +          this._sendPendingComposition(pending, true);
-+        }
+         }
+-      }, 0);
 +      });
 +    }
 +  }
@@ -963,7 +964,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..83647f3bd5f2c883d88dbcc2a5043279
 +    }
 +    if (input.startsWith(dataAlreadySent)) {
 +      return input.substring(dataAlreadySent.length);
-+    }
+     }
 +    return dataAlreadySent.includes(input) ? '' : input;
 +  }
 +
@@ -1064,8 +1065,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..83647f3bd5f2c883d88dbcc2a5043279
 +      if (!this._compositionEndBelongsToCurrentTransaction(endData)) {
 +        if (endData.length === 0 && !this._hasCompositionProgress()) {
 +          this._cancelComposition();
-         }
--      }, 0);
++        }
 +        return;
 +      }
 +      this._finalizeComposition(true, endData);
@@ -1137,7 +1137,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..83647f3bd5f2c883d88dbcc2a5043279
 +  private _cancelDeferredTimer(timer?: ReturnType<typeof setTimeout>): void {
 +    if (timer === undefined) {
 +      return;
-     }
++    }
 +    clearTimeout(timer);
 +    this._compositionTimers.delete(timer);
    }
@@ -1153,7 +1153,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..83647f3bd5f2c883d88dbcc2a5043279
          this._dataAlreadySent = diff;
  
          if (newValue.length > oldValue.length) {
-@@ -236,6 +939,347 @@ export class CompositionHelper {
+@@ -236,6 +939,372 @@ export class CompositionHelper {
      }, 0);
    }
  
@@ -1480,9 +1480,34 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..83647f3bd5f2c883d88dbcc2a5043279
 +    caret.style.display = 'inline-block';
 +    caret.style.flexShrink = '0';
 +    caret.style.height = cellHeight + 'px';
-+    caret.style.marginLeft = -width + 'px';
++    // Pulled back over the preedit that follows the IME's insertion point, so moving within a
++    // Bopomofo or Japanese preedit shows where the next candidate applies instead of pinning the
++    // caret to the end.
++    const trailingWidth = this._preeditColumnsAfterCaret() * this._renderService.dimensions.css.cell.width;
++    caret.style.marginLeft = -(width + trailingWidth) + 'px';
 +    caret.style.verticalAlign = 'top';
 +    caret.style.width = width + 'px';
++  }
++
++  /**
++   * Cells of preedit after the IME's insertion point, which Chromium mirrors into the textarea
++   * selection once it applies the marked text. Until the textarea holds the rendered preedit (the
++   * update event fires before the DOM changes) the caret stays at the end, as it did before.
++   */
++  private _preeditColumnsAfterCaret(): number {
++    const data = (this._compositionPreedit?.textContent ?? '').slice(1, -1);
++    const start = this._compositionPosition.start;
++    const selectionEnd = this._textarea.selectionEnd;
++    if (
++      !data ||
++      !this._unicodeService ||
++      selectionEnd === null ||
++      this._textarea.value.substring(start, start + data.length) !== data
++    ) {
++      return 0;
++    }
++    const offset = Math.min(Math.max(selectionEnd - start, 0), data.length);
++    return this._unicodeService.getStringCellWidth(data.substring(offset));
 +  }
 +
 +  private _resetCompositionView(): void {
@@ -1501,7 +1526,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..83647f3bd5f2c883d88dbcc2a5043279
    /**
     * Positions the composition view on top of the cursor and the textarea just below it (so the
     * IME helper dialog is positioned correctly).
-@@ -243,10 +1287,27 @@ export class CompositionHelper {
+@@ -243,10 +1312,27 @@ export class CompositionHelper {
     *   necessary as the IME events across browsers are not consistently triggered.
     */
    public updateCompositionElements(dontRecurse?: boolean): void {
@@ -1530,7 +1555,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..83647f3bd5f2c883d88dbcc2a5043279
      if (this._bufferService.buffer.isCursorInViewport) {
        const cursorX = Math.min(this._bufferService.buffer.x, this._bufferService.cols - 1);
  
-@@ -254,31 +1315,178 @@ export class CompositionHelper {
+@@ -254,31 +1340,178 @@ export class CompositionHelper {
        const cursorTop = this._bufferService.buffer.y * this._renderService.dimensions.css.cell.height;
        const cursorLeft = cursorX * this._renderService.dimensions.css.cell.width;
  
@@ -1599,7 +1624,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..83647f3bd5f2c883d88dbcc2a5043279
 +  }
 +}
 +
-+const CJK = /^[\p{Script_Extensions=Han}\p{Script_Extensions=Hiragana}\p{Script_Extensions=Katakana}\uac00-\ud7a3\u3131-\u318e\uff01-\uff60]$/u;
++const CJK = /^[\p{Script_Extensions=Han}\p{Script_Extensions=Hiragana}\p{Script_Extensions=Katakana}\uac00-\ud7a3\u3131-\u318e\u3100-\u312f\u31a0-\u31bf\uff01-\uff60]$/u;
 +const NATIVE = /[\p{Mark}\p{Extended_Pictographic}]/u;
 +const MAX_PREEDIT_LAYOUT_WORK = 128;
 +
