@@ -88,7 +88,7 @@ index 497afcf535f3eaca00889525a77e15eb633ccd96..96d499b34605f860608382114c3fbdc0
  
  export interface IBrowser {
 diff --git a/src/browser/input/CompositionHelper.ts b/src/browser/input/CompositionHelper.ts
-index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..403233584ef7f18470016d8fc7f697ebfd61ac57 100644
+index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..2c26b907ee75b3d8aee85ada0aed69be06d1fd7f 100644
 --- a/src/browser/input/CompositionHelper.ts
 +++ b/src/browser/input/CompositionHelper.ts
 @@ -1,10 +1,15 @@
@@ -953,7 +953,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..403233584ef7f18470016d8fc7f697eb
          this._dataAlreadySent = diff;
  
          if (newValue.length > oldValue.length) {
-@@ -236,6 +845,137 @@ export class CompositionHelper {
+@@ -236,6 +845,139 @@ export class CompositionHelper {
      }, 0);
    }
  
@@ -1036,9 +1036,11 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..403233584ef7f18470016d8fc7f697eb
 +    // Painted back over the preedit that follows the IME's insertion point, so moving within a
 +    // Bopomofo or Japanese preedit shows where the next candidate applies instead of pinning the
 +    // caret to the end. A transform, not a margin: the caret must keep its zero advance, or the
-+    // rendered row tail slides onto the preedit and the flex view shrinks and clips it.
++    // rendered row tail slides onto the preedit and the flex view shrinks and clips it. Before the
++    // end it is drawn from the insertion point rightwards, as a bar cursor is, so at the start of
++    // the preedit it stays inside the view instead of being clipped off its left edge.
 +    const trailingWidth = this._preeditColumnsAfterCaret() * this._renderService.dimensions.css.cell.width;
-+    caret.style.transform = trailingWidth ? `translateX(${-trailingWidth}px)` : '';
++    caret.style.transform = trailingWidth ? `translateX(${width - trailingWidth}px)` : '';
 +    caret.style.verticalAlign = 'top';
 +    caret.style.width = width + 'px';
 +  }
@@ -1091,7 +1093,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..403233584ef7f18470016d8fc7f697eb
    /**
     * Positions the composition view on top of the cursor and the textarea just below it (so the
     * IME helper dialog is positioned correctly).
-@@ -243,10 +983,23 @@ export class CompositionHelper {
+@@ -243,10 +985,23 @@ export class CompositionHelper {
     *   necessary as the IME events across browsers are not consistently triggered.
     */
    public updateCompositionElements(dontRecurse?: boolean): void {
@@ -1116,7 +1118,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..403233584ef7f18470016d8fc7f697eb
      if (this._bufferService.buffer.isCursorInViewport) {
        const cursorX = Math.min(this._bufferService.buffer.x, this._bufferService.cols - 1);
  
-@@ -254,31 +1007,156 @@ export class CompositionHelper {
+@@ -254,31 +1009,156 @@ export class CompositionHelper {
        const cursorTop = this._bufferService.buffer.y * this._renderService.dimensions.css.cell.height;
        const cursorLeft = cursorX * this._renderService.dimensions.css.cell.width;
  
