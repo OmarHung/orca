@@ -96,7 +96,7 @@ index 497afcf535f3eaca00889525a77e15eb633ccd96..96d499b34605f860608382114c3fbdc0
  
  export interface IBrowser {
 diff --git a/src/browser/input/CompositionHelper.ts b/src/browser/input/CompositionHelper.ts
-index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef55025415398 100644
+index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..566962fbf6daf447a8e509ac8a18731fbbe88b00 100644
 --- a/src/browser/input/CompositionHelper.ts
 +++ b/src/browser/input/CompositionHelper.ts
 @@ -1,10 +1,15 @@
@@ -161,7 +161,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
  
    /**
     * The position within the input textarea's value of the current composition.
-@@ -36,52 +71,146 @@ export class CompositionHelper {
+@@ -36,52 +71,155 @@ export class CompositionHelper {
     */
    private _compositionSuffix: string;
  
@@ -231,6 +231,15 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
 +
 +  /** The insertion caret painted above the renderer cursor the composition view covers. */
 +  private _compositionCaret?: HTMLElement;
++
++  /** Preedit cells after the insertion point, as last read from a settled textarea selection. */
++  private _compositionCaretColumns = 0;
++
++  /**
++   * Set from a compositionupdate until its deferred pass: Chromium selects the whole composition
++   * while it replaces the text, so reading the selection then would flash the caret to the end.
++   */
++  private _isCaretSelectionPending = false;
 +
 +  // Keep the six-argument form callable: upstream's own CompositionHelper.test.ts constructs
 +  // this class directly, and `.npmignore` strips src/**/*.test.ts from the published tarball, so
@@ -318,7 +327,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
    }
  
    /**
-@@ -89,22 +218,95 @@ export class CompositionHelper {
+@@ -89,22 +227,98 @@ export class CompositionHelper {
     * @param ev The event.
     */
    public compositionupdate(ev: Pick<CompositionEvent, 'data'>): void {
@@ -334,6 +343,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
 +    if (ev.data?.length > 0) {
 +      this._lastCompositionData = ev.data;
 +    }
++    this._isCaretSelectionPending = true;
 +    this._renderCompositionView(ev.data ?? '');
 +    // Some IMEs resume without compositionstart; keep that inferred transaction visible until
 +    // compositionend settles it. An empty update hides the overlay without ending the transaction.
@@ -346,6 +356,8 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
 +    const transactionId = this._compositionTransactionId;
 +    this._cancelDeferredTimer(this._compositionPositionTimer);
 +    this._compositionPositionTimer = this._defer(() => {
++      this._isCaretSelectionPending = false;
++      this._styleCompositionCaret();
 +      if (this._isComposing && this._compositionTransactionId === transactionId) {
 +        this._compositionHasObservedProgress ||= this._hasCompositionProgress();
 +        const end = this._textarea.selectionEnd ?? this._textarea.value.length;
@@ -423,7 +435,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
    }
  
    /**
-@@ -113,10 +315,33 @@ export class CompositionHelper {
+@@ -113,10 +327,33 @@ export class CompositionHelper {
     * @returns Whether the Terminal should continue processing the keydown event.
     */
    public keydown(ev: KeyboardEvent): boolean {
@@ -458,7 +470,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
          return false;
        }
        if (ev.keyCode === 16 || ev.keyCode === 17 || ev.keyCode === 18) {
-@@ -128,6 +353,10 @@ export class CompositionHelper {
+@@ -128,6 +365,10 @@ export class CompositionHelper {
        this._finalizeComposition(false);
      }
  
@@ -469,7 +481,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
      if (ev.keyCode === 229) {
        // If the "composition character" is used but gets to this point it means a non-composition
        // character (eg. numbers and punctuation) was pressed when the IME was active.
-@@ -138,6 +367,95 @@ export class CompositionHelper {
+@@ -138,6 +379,95 @@ export class CompositionHelper {
      return true;
    }
  
@@ -565,7 +577,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
    /**
     * Finalizes the composition, resuming regular input actions. This is called when a composition
     * is ending.
-@@ -146,23 +464,52 @@ export class CompositionHelper {
+@@ -146,23 +476,52 @@ export class CompositionHelper {
     *   compositionend event is triggered, such as enter, so that the composition is sent before
     *   the command is executed.
     */
@@ -629,7 +641,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
  
        // Since composition* events happen before the changes take place in the textarea on most
        // browsers, use a setTimeout with 0ms time to allow the native compositionend event to
-@@ -172,35 +519,313 @@ export class CompositionHelper {
+@@ -172,37 +531,315 @@ export class CompositionHelper {
        // - The last compositionupdate event's data property does not always accurately describe
        //   the character, a counter example being Korean where an ending consonsant can move to
        //   the following character if the following input is a vowel.
@@ -666,11 +678,12 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
 +        }
 +        if (this._pendingComposition === pending) {
 +          this._sendPendingComposition(pending, true);
-+        }
+         }
+-      }, 0);
 +      });
-+    }
-+  }
-+
+     }
+   }
+ 
 +  private _sendPendingComposition(
 +    pending: IPendingComposition,
 +    includeFollowingInput: boolean = false
@@ -891,8 +904,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
 +      if (!this._compositionEndBelongsToCurrentTransaction(endData)) {
 +        if (endData.length === 0 && !this._hasCompositionProgress()) {
 +          this._cancelComposition();
-         }
--      }, 0);
++        }
 +        return;
 +      }
 +      this._finalizeComposition(true, endData);
@@ -964,13 +976,15 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
 +  private _cancelDeferredTimer(timer?: ReturnType<typeof setTimeout>): void {
 +    if (timer === undefined) {
 +      return;
-     }
++    }
 +    clearTimeout(timer);
 +    this._compositionTimers.delete(timer);
-   }
- 
++  }
++
    /**
-@@ -222,6 +847,9 @@ export class CompositionHelper {
+    * Apply any changes made to the textarea after the current event chain is allowed to complete.
+    * This should be called when not currently composing but a keydown event with the "composition
+@@ -222,6 +859,9 @@ export class CompositionHelper {
  
          const diff = newValue.replace(oldValue, '');
  
@@ -980,7 +994,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
          this._dataAlreadySent = diff;
  
          if (newValue.length > oldValue.length) {
-@@ -236,6 +864,140 @@ export class CompositionHelper {
+@@ -236,6 +876,151 @@ export class CompositionHelper {
      }, 0);
    }
  
@@ -1067,7 +1081,16 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
 +    // rendered row tail slides onto the preedit and the flex view shrinks and clips it. Before the
 +    // end it is drawn from the insertion point rightwards, as a bar cursor is, so at the start of
 +    // the preedit it stays inside the view instead of being clipped off its left edge.
-+    const trailingWidth = this._preeditColumnsAfterCaret() * this._renderService.dimensions.css.cell.width;
++    if (!this._isCaretSelectionPending) {
++      this._compositionCaretColumns = this._preeditColumnsAfterCaret();
++    } else if (this._unicodeService) {
++      // A shorter preedit cannot keep an insertion point beyond its own start.
++      const data = (this._compositionPreedit?.textContent ?? '').slice(1, -1);
++      this._compositionCaretColumns = Math.min(
++        this._compositionCaretColumns, this._unicodeService.getStringCellWidth(data)
++      );
++    }
++    const trailingWidth = this._compositionCaretColumns * this._renderService.dimensions.css.cell.width;
 +    caret.style.transform = trailingWidth ? `translateX(${width - trailingWidth}px)` : '';
 +    caret.style.verticalAlign = 'top';
 +    caret.style.width = width + 'px';
@@ -1105,6 +1128,8 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
 +    this._compositionPreedit = undefined;
 +    this._compositionRemainder = undefined;
 +    this._compositionCaret = undefined;
++    this._compositionCaretColumns = 0;
++    this._isCaretSelectionPending = false;
 +    this._compositionView.style.display = '';
 +    this._compositionView.style.justifyContent = '';
 +  }
@@ -1121,7 +1146,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
    /**
     * Positions the composition view on top of the cursor and the textarea just below it (so the
     * IME helper dialog is positioned correctly).
-@@ -243,10 +1005,33 @@ export class CompositionHelper {
+@@ -243,10 +1028,33 @@ export class CompositionHelper {
     *   necessary as the IME events across browsers are not consistently triggered.
     */
    public updateCompositionElements(dontRecurse?: boolean): void {
@@ -1156,7 +1181,7 @@ index c9ec396ab66cb966d49aa63bed09cdf9cd6c4246..f7dd7647846ee6f376d33e915eaef550
      if (this._bufferService.buffer.isCursorInViewport) {
        const cursorX = Math.min(this._bufferService.buffer.x, this._bufferService.cols - 1);
  
-@@ -254,31 +1039,176 @@ export class CompositionHelper {
+@@ -254,31 +1062,176 @@ export class CompositionHelper {
        const cursorTop = this._bufferService.buffer.y * this._renderService.dimensions.css.cell.height;
        const cursorLeft = cursorX * this._renderService.dimensions.css.cell.width;
  
