@@ -21,7 +21,7 @@ export abstract class UpdaterBuildSelection extends UpdaterMenuChecks {
     listReleaseBuilds(channel)
   )
 
-  protected async checkForLocalBuildFromMenu(): Promise<void> {
+  protected async checkForLocalBuildFromMenu(knownManifestPath?: string): Promise<void> {
     if (process.platform !== 'darwin') {
       this.sendLocalBuildErrorAndRestore(
         'Local build switching is currently available only on macOS.',
@@ -41,7 +41,7 @@ export abstract class UpdaterBuildSelection extends UpdaterMenuChecks {
         import('../local-builds/local-build-switch'),
         import('../local-builds/local-build-feed-server')
       ])
-      const candidate = await chooseLocalBuild(this.mainWindowRef)
+      const candidate = await chooseLocalBuild(this.mainWindowRef, knownManifestPath)
       if (!candidate) {
         return
       }
