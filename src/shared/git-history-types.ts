@@ -57,6 +57,35 @@ export type GitHistoryItem = {
 export type GitHistoryOptions = {
   limit?: number
   baseRef?: string | null
+  /** Full ref name (`refs/heads/…` or `refs/remotes/…`) to log instead of HEAD. */
+  revision?: string | null
+  /** Log every local and remote branch plus HEAD; wins over `revision`. */
+  allBranches?: boolean
+  /** Also return the repository's branch list in `refs`. */
+  includeRefs?: boolean
+}
+
+/** Which commits the host actually logged. Absent = a host that predates revision support (HEAD only). */
+export type GitHistoryRevisionScope = 'head' | 'ref' | 'all'
+
+export type GitHistoryBranchKind = 'local' | 'remote'
+
+export type GitHistoryBranch = {
+  /** Full ref name, e.g. `refs/heads/main` or `refs/remotes/origin/main`. */
+  fullName: string
+  /** Short display name, e.g. `main` or `origin/main`. */
+  name: string
+  kind: GitHistoryBranchKind
+  revision: string
+  isHead: boolean
+  /** Short upstream name for local branches, e.g. `origin/main`. */
+  upstream?: string
+}
+
+export type GitHistoryBranchList = {
+  branches: GitHistoryBranch[]
+  /** More branches exist than were returned. */
+  truncated: boolean
 }
 
 export type GitHistoryResult = {
@@ -69,6 +98,9 @@ export type GitHistoryResult = {
   hasOutgoingChanges: boolean
   hasMore: boolean
   limit: number
+  revisionScope?: GitHistoryRevisionScope
+  /** Present only when `includeRefs` was requested and the host supports it. */
+  refs?: GitHistoryBranchList
 }
 
 export type GitHistoryExecutor = (
