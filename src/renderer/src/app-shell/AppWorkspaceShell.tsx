@@ -220,26 +220,6 @@ export function AppWorkspaceShell(props: {
                       <ActivePage layout={layout} />
                     </RecoverableRenderErrorBoundary>
                   </Suspense>
-                  {layout.workspaceChromeActive && bottomPanelOpen ? (
-                    <Suspense fallback={null}>
-                      <RecoverableRenderErrorBoundary
-                        boundaryId="bottom-panel"
-                        // Why reuse: the panel lives in the workbench column; a new surface needs a main-side allowlist entry.
-                        surface="terminal-workbench"
-                        resetKey="bottom-panel"
-                        title={translate(
-                          'bottomPanel.error.title',
-                          'The bottom panel hit an error.'
-                        )}
-                        description={translate(
-                          'bottomPanel.error.description',
-                          'Retry the panel or hide it to keep working.'
-                        )}
-                      >
-                        <BottomPanel />
-                      </RecoverableRenderErrorBoundary>
-                    </Suspense>
-                  ) : null}
                 </div>
                 {floatingWorkspace.showToggleButton ? (
                   <FloatingTerminalToggleButton
@@ -271,6 +251,24 @@ export function AppWorkspaceShell(props: {
           </RecoverableRenderErrorBoundary>
         ) : null}
       </div>
+      {/* Why here: a sibling of the sidebar row, so the panel spans the full window width like a JetBrains tool window. */}
+      {layout.workspaceChromeActive && bottomPanelOpen ? (
+        <Suspense fallback={null}>
+          <RecoverableRenderErrorBoundary
+            boundaryId="bottom-panel"
+            // Why reuse: a new surface id needs a main-side allowlist entry.
+            surface="terminal-workbench"
+            resetKey="bottom-panel"
+            title={translate('bottomPanel.error.title', 'The bottom panel hit an error.')}
+            description={translate(
+              'bottomPanel.error.description',
+              'Retry the panel or hide it to keep working.'
+            )}
+          >
+            <BottomPanel />
+          </RecoverableRenderErrorBoundary>
+        </Suspense>
+      ) : null}
     </RecoverableRenderErrorBoundary>
   )
 }
