@@ -17,6 +17,7 @@ import {
   resolveActiveWorkspaceDeleteTarget
 } from '../components/sidebar/workspace-actions/deletion/active-workspace-delete'
 import { useAppStore } from '../store/index'
+import { useBottomPanelLayout } from '../components/bottom-panel/bottom-panel-layout-store'
 import type { usePluginCommands } from '@/store/plugins/catalog/plugin-contribution-catalog'
 import { isGitRepoKind } from '../../../shared/repo-kind'
 import { openPluginsSettings } from '@/components/settings/navigation/open-plugins-settings'
@@ -297,6 +298,13 @@ export function createAppCommandHandlers(
           : revealRightSidebarTab('sidebar.sourceControl.toggle', 'source-control')
     ],
     ['sidebar.checks.toggle', () => revealRightSidebarTab('sidebar.checks.toggle', 'checks')],
-    ['sidebar.ports.toggle', () => revealRightSidebarTab('sidebar.ports.toggle', 'ports')]
+    ['sidebar.ports.toggle', () => revealRightSidebarTab('sidebar.ports.toggle', 'ports')],
+    [
+      'bottomPanel.gitLog.toggle',
+      () =>
+        workspaceChromeActive
+          ? claim('bottomPanel.gitLog.toggle', () => useBottomPanelLayout.getState().toggle())
+          : false
+    ]
   ])
 }
