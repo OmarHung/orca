@@ -1,4 +1,5 @@
 import { Loader2 } from 'lucide-react'
+import { ForkSyncCardContent } from './ForkSyncCardContent'
 import type {
   ChangelogData,
   LinuxPackageInstallRecovery,
@@ -64,6 +65,17 @@ export function UpdateCardStateContent({
       <UpdateCheckFeedback
         icon="check"
         text={translate('auto.components.UpdateCard.ea2a41adbe', "You're on the latest version.")}
+      />
+    )
+  }
+  if (status.forkSync) {
+    return (
+      <ForkSyncCardContent
+        forkSync={status.forkSync}
+        onUpdate={onUpdate}
+        onInstall={onInstallRetry}
+        onDismiss={onDismiss}
+        onCollapse={onCollapse}
       />
     )
   }

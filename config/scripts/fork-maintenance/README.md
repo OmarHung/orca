@@ -26,6 +26,20 @@ builds the local app.
 On a conflict it stops. Resolve, `git add`, `git rebase --continue`, then re-run the same command:
 an already-rebased branch is only verified, pushed, and built.
 
+## From the app
+
+A build made by `build-mac-local-arm64.mjs` stamps `orcaForkSource` (this checkout, branch, base
+tag) into its package.json. That build never offers official releases. Its update card instead
+reports a newer upstream release tag, and **Sync & update** runs
+`sync-upstream.mjs <tag> --push --build --auto-worktree --events`, then installs the result through
+Orca's local-build installer (one confirmation dialog, then restart).
+
+`--auto-worktree` runs in whichever worktree has `omar/custom` checked out, creating
+`<checkout>-omar-custom` beside this one if none does, so the checkout you develop in is untouched.
+On a conflict the rebase is aborted (branch unchanged) and the card lists the files, with
+**Resolve with AI** (opens an agent in that worktree with the exact rebase to redo) and **Retry**.
+Code: `src/main/fork-source-update/`.
+
 ## Local build only
 
 ```bash
