@@ -7,13 +7,18 @@ import {
 import {
   GIT_HISTORY_DEFAULT_LIMIT,
   GIT_HISTORY_MAX_LIMIT,
+  type GitHistoryBranchList,
   type GitHistoryExecutor,
   type GitHistoryItemRef,
   type GitHistoryOptions,
   type GitHistoryResult
 } from './git-history-types'
+import { isGitHistoryBranchRefName, loadGitHistoryBranches } from './git-history-branches'
 
 export type {
+  GitHistoryBranch,
+  GitHistoryBranchKind,
+  GitHistoryBranchList,
   GitHistoryExecutor,
   GitHistoryGraphColorId,
   GitHistoryItem,
@@ -21,8 +26,10 @@ export type {
   GitHistoryItemStatistics,
   GitHistoryOptions,
   GitHistoryRefCategory,
-  GitHistoryResult
+  GitHistoryResult,
+  GitHistoryRevisionScope
 } from './git-history-types'
+export { GIT_HISTORY_BRANCH_LIMIT, isGitHistoryBranchRefName } from './git-history-branches'
 export {
   GIT_HISTORY_BASE_REF_COLOR,
   GIT_HISTORY_DEFAULT_LIMIT,
@@ -170,17 +177,26 @@ export async function loadGitHistoryFromExecutor(
   options: GitHistoryOptions = {}
 ): Promise<GitHistoryResult> {
   const limit = clampHistoryLimit(options.limit)
-  const headOid = await resolveCommit(git, cwd, 'HEAD')
+  const [headOid, refs] = await Promise.all([
+    resolveCommit(git, cwd, 'HEAD'),
+    options.includeRefs ? loadGitHistoryBranches(git, cwd) : Promise.resolve(undefined)
+  ])
+  const logTarget = await resolveLogTarget(git, cwd, options)
   if (!headOid) {
+    if (logTarget.scope !== 'head') {
+      // Why: an unborn HEAD with an explicit branch still has a log to show, just no current-branch metadata.
+      return loadScopedLogWithoutHead(git, cwd, limit, logTarget, refs)
+    }
     return {
       items: [],
       hasIncomingChanges: false,
       hasOutgoingChanges: false,
       hasMore: false,
-      limit
+      limit,
+      revisionScope: 'head',
+      ...withRefs(refs)
     }
   }
-
   const { currentRef, branchName } = await resolveCurrentRef(git, cwd, headOid)
   const [remoteRef, rawBaseRef] = await Promise.all([
     resolveUpstreamRef(git, cwd, branchName),
@@ -194,7 +210,7 @@ export async function loadGitHistoryFromExecutor(
 
   // Why: this panel is scoped to the active workspace. Upstream and base refs
   // stay as comparison metadata so old workspaces do not list newly fetched upstream/base commits.
-  const historyRevisions = [headOid]
+  const historyRevisions = logTarget.scope === 'head' ? [headOid] : logTarget.revisions
 
   let mergeBase: string | undefined
   if (remoteRef?.revision && currentRef.revision && remoteRef.revision !== currentRef.revision) {
@@ -206,19 +222,7 @@ export async function loadGitHistoryFromExecutor(
     }
   }
 
-  const { stdout } = await git(
-    [
-      'log',
-      `--format=${GIT_HISTORY_COMMIT_FORMAT}`,
-      '-z',
-      '--topo-order',
-      '--decorate=full',
-      `-n${limit + 1}`,
-      ...historyRevisions
-    ],
-    cwd
-  )
-  const parsed = parseGitHistoryLog(stdout)
+  const parsed = await runHistoryLog(git, cwd, limit, historyRevisions)
   const items = parsed.slice(0, limit)
   const hasIncomingChanges =
     Boolean(remoteRef?.revision && mergeBase) && remoteRef?.revision !== mergeBase
@@ -235,6 +239,79 @@ export async function loadGitHistoryFromExecutor(
     hasIncomingChanges,
     hasOutgoingChanges,
     hasMore: parsed.length > limit,
-    limit
+    limit,
+    revisionScope: logTarget.scope,
+    ...withRefs(refs)
   }
+}
+
+type LogTarget = { scope: 'head' } | { scope: 'ref' | 'all'; revisions: string[] }
+
+// Why resolve to oids: `git log` then never sees user-chosen text, so ref names can't smuggle options or ranges.
+async function resolveLogTarget(
+  git: GitHistoryExecutor,
+  cwd: string,
+  options: GitHistoryOptions
+): Promise<LogTarget> {
+  if (options.allBranches) {
+    return { scope: 'all', revisions: ['--branches', '--remotes', 'HEAD'] }
+  }
+  const revision = options.revision?.trim()
+  if (!revision) {
+    return { scope: 'head' }
+  }
+  if (!isGitHistoryBranchRefName(revision)) {
+    throw new Error(`Not a branch: ${revision}`)
+  }
+  const oid = await resolveCommit(git, cwd, revision)
+  if (!oid) {
+    throw new Error(`Branch not found: ${revision}`)
+  }
+  return { scope: 'ref', revisions: [oid] }
+}
+
+async function runHistoryLog(
+  git: GitHistoryExecutor,
+  cwd: string,
+  limit: number,
+  revisions: string[]
+) {
+  const { stdout } = await git(
+    [
+      'log',
+      `--format=${GIT_HISTORY_COMMIT_FORMAT}`,
+      '-z',
+      '--topo-order',
+      '--decorate=full',
+      `-n${limit + 1}`,
+      ...revisions
+    ],
+    cwd
+  )
+  return parseGitHistoryLog(stdout)
+}
+
+async function loadScopedLogWithoutHead(
+  git: GitHistoryExecutor,
+  cwd: string,
+  limit: number,
+  logTarget: Exclude<LogTarget, { scope: 'head' }>,
+  refs: GitHistoryBranchList | undefined
+): Promise<GitHistoryResult> {
+  // Why drop HEAD: `git log HEAD` fails outright on an unborn branch.
+  const revisions = logTarget.revisions.filter((revision) => revision !== 'HEAD')
+  const parsed = await runHistoryLog(git, cwd, limit, revisions)
+  return {
+    items: parsed.slice(0, limit),
+    hasIncomingChanges: false,
+    hasOutgoingChanges: false,
+    hasMore: parsed.length > limit,
+    limit,
+    revisionScope: logTarget.scope,
+    ...withRefs(refs)
+  }
+}
+
+function withRefs(refs: GitHistoryBranchList | undefined): { refs?: GitHistoryBranchList } {
+  return refs ? { refs } : {}
 }
