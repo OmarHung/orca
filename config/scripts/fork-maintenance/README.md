@@ -40,11 +40,61 @@ On a conflict the rebase is aborted (branch unchanged) and the card lists the fi
 **Resolve with AI** (opens an agent in that worktree with the exact rebase to redo) and **Retry**.
 Code: `src/main/fork-source-update/`.
 
-## Local build only
+## Local build (Apple Silicon)
+
+### Prerequisites
+
+- An Apple Silicon Mac with Xcode Command Line Tools (`xcode-select --install`), Node, and pnpm.
+- An **Apple Development** signing identity in your keychain (Xcode → Settings → Accounts). The
+  build signs with it; the in-app installer only accepts a build with the same valid signature.
+- Dependencies installed: `pnpm install`.
+
+### Build
 
 ```bash
+git switch omar/custom        # build what you run; the app records this branch and base tag
 node config/scripts/fork-maintenance/build-mac-local-arm64.mjs
 ```
 
-Produces `dist/mac-arm64/Orca.app` (arm64, signed with the local Apple Development identity).
+It runs `pnpm run build:desktop` (typecheck + app bundles), builds the native Swift helpers,
+then packages with electron-builder. Takes about 10 minutes. Output in `dist/`:
+
+| File                                             | Use                                             |
+| ------------------------------------------------ | ----------------------------------------------- |
+| `mac-arm64/Orca.app`                             | The app.                                        |
+| `Orca-<version>-arm64-mac.zip`, `latest-mac.yml` | What Orca's in-app local-build installer reads. |
+
+The version is `<package version>-local.<timestamp>.<commit>`, and package.json carries
+`orcaForkSource` so the app updates by syncing this fork (see "From the app").
+
+### Install
+
+First time, or to replace a build by hand: quit Orca (⌘Q), drag `dist/mac-arm64/Orca.app` onto
+`/Applications`, reopen. Terminal sessions survive; the terminal daemon is a separate process.
+Afterwards, updates come from the app's update card.
+
+Alternative without quitting first: ⌥-click **Check for Updates** and choose `dist/latest-mac.yml`.
+
+Check it took: **Check for Updates** should say you are on the latest version (a non-fork build
+would instead offer the official release).
+
+### Why not `pnpm build:mac`
+
+This script differs in three ways, each for a problem hit on this machine:
+
+- **Native helpers build arm64 only** (`--single-arch`). These Command Line Tools ship arm64-only
+  Swift libraries, so the default arm64 + x86_64 universal link fails with
+  `Undefined symbols for architecture x86_64`.
+- **Packages `--mac zip --arm64` only**: no DMG, no x64 slice, so `pnpm install:release` is not
+  needed.
+- **Reuses `node_modules/electron/dist`** instead of downloading Electron from GitHub, which
+  stalled until electron-builder's 10-minute timeout (`Timeout awaiting 'request'`).
+
+### Troubleshooting
+
+- `lipo: same architectures (arm64) found`: a stale universal binary is in the Swift build cache.
+  Delete `native/computer-use-macos/.build/x86_64-apple-macosx` and rebuild.
+- `node_modules/electron/dist is X, expected Y`: run `pnpm install`.
+- Signing errors: confirm the identity with `security find-identity -v -p codesigning`.
+
 Scripts live here, not in `package.json`, so upstream `package.json` edits never conflict.
