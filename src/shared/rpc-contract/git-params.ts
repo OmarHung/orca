@@ -106,7 +106,10 @@ export const GitHistory = WorktreeSelector.extend({
     .union([z.literal('head'), z.literal('all'), z.array(GitHistoryRefName).max(1000)])
     .optional(),
   historyToken: z.string().max(100).optional(),
-  skip: z.number().int().min(0).optional()
+  skip: z.number().int().min(0).optional(),
+  revision: z.string().max(1024).nullable().optional(),
+  allBranches: z.boolean().optional(),
+  includeRefs: z.boolean().optional()
 })
 
 export const GitBranchDiff = GitFilePath.extend({

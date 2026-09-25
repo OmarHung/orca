@@ -40,7 +40,10 @@ export function registerFilesystemGitHistoryHandlers({ store }: FilesystemHandle
         branchOnly: args.branchOnly,
         refs: args.refs,
         historyToken: args.historyToken,
-        skip: args.skip
+        skip: args.skip,
+        revision: typeof args.revision === 'string' ? args.revision : null,
+        allBranches: args.allBranches === true,
+        includeRefs: args.includeRefs === true
       }
       requireReachableGitRoute(getConnectionExecutionHostId(args.connectionId))
       return readWorktreeGitUnlessWslStopped(
