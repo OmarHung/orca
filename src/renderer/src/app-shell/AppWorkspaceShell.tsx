@@ -6,6 +6,7 @@ import RightSidebar from '../components/right-sidebar'
 import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/RecoverableRenderErrorBoundary'
 import { FloatingTerminalToggleButton } from '../components/floating-terminal/FloatingTerminalToggleButton'
 import { TerminalWorkbenchContainer } from '../components/TerminalWorkbenchContainer'
+import { useBottomPanelLayout } from '../components/bottom-panel/bottom-panel-layout-store'
 import type { VirtualizedScrollAnchor } from '../hooks/useVirtualizedScrollAnchor'
 import { TitlebarLeftControls } from './TitlebarLeftControls'
 import { RightSidebarToggle, TitlebarMainStrip } from './TitlebarMainStrip'
@@ -25,6 +26,11 @@ const ArtifactsPage = lazy(() => import('../components/artifacts/ArtifactsPage')
 const WorkspaceSpacePage = lazy(() => import('../components/workspace-space/WorkspaceSpacePage'))
 const MobilePage = lazy(() => import('../components/mobile/MobilePage'))
 const Terminal = lazy(() => import('../components/Terminal'))
+const BottomPanel = lazy(() =>
+  import('../components/bottom-panel/BottomPanel').then((module) => ({
+    default: module.BottomPanel
+  }))
+)
 
 type WorktreeSidebarScrollRefs = {
   scrollOffsetRef: React.MutableRefObject<number>
@@ -98,6 +104,7 @@ export function AppWorkspaceShell(props: {
   // Why: keep virtualized scroll memory above the sidebar's workspace/landing remount so the left list doesn't restart at scrollTop 0.
   const scrollOffsetRef = useRef(0)
   const scrollAnchorRef = useRef<VirtualizedScrollAnchor>(null)
+  const bottomPanelOpen = useBottomPanelLayout((s) => s.open)
   const sidebarScrollRefs = { scrollOffsetRef, scrollAnchorRef }
 
   return (
@@ -213,6 +220,26 @@ export function AppWorkspaceShell(props: {
                       <ActivePage layout={layout} />
                     </RecoverableRenderErrorBoundary>
                   </Suspense>
+                  {layout.workspaceChromeActive && bottomPanelOpen ? (
+                    <Suspense fallback={null}>
+                      <RecoverableRenderErrorBoundary
+                        boundaryId="bottom-panel"
+                        // Why reuse: the panel lives in the workbench column; a new surface needs a main-side allowlist entry.
+                        surface="terminal-workbench"
+                        resetKey="bottom-panel"
+                        title={translate(
+                          'bottomPanel.error.title',
+                          'The bottom panel hit an error.'
+                        )}
+                        description={translate(
+                          'bottomPanel.error.description',
+                          'Retry the panel or hide it to keep working.'
+                        )}
+                      >
+                        <BottomPanel />
+                      </RecoverableRenderErrorBoundary>
+                    </Suspense>
+                  ) : null}
                 </div>
                 {floatingWorkspace.showToggleButton ? (
                   <FloatingTerminalToggleButton

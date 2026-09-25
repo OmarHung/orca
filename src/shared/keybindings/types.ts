@@ -46,6 +46,7 @@ export type KeybindingActionId =
   | 'sidebar.sourceControl.toggle'
   | 'sidebar.checks.toggle'
   | 'sidebar.ports.toggle'
+  | 'bottomPanel.gitLog.toggle'
   | 'sidebar.sleepingWorkspaces.toggle'
   | 'sidebar.focusWorktreeList'
   | 'floatingTerminal.toggle'
