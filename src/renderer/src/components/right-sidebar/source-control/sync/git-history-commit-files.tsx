@@ -1,4 +1,4 @@
-import { createElement } from 'react'
+import { createElement, useMemo, useState } from 'react'
 import type React from 'react'
 import { ArrowUpRight, RefreshCw } from 'lucide-react'
 import { STATUS_COLORS, STATUS_LABELS } from '../../status-display'
@@ -13,6 +13,16 @@ import { translate } from '@/i18n/i18n'
 import { formatGitHistoryTimestamp } from './git-history-format'
 import type { GitBranchChangeEntry } from '../../../../../../shared/git-diff-compare-types'
 import type { GitFileStatus } from '../../../../../../shared/git-status-types'
+import {
+  buildSourceControlTree,
+  compactSourceControlTree,
+  flattenSourceControlTree
+} from '../../source-control-tree'
+import { SourceControlBranchTreeDirectoryRow } from '../listing/tree-directory-rows'
+import {
+  SOURCE_CONTROL_TREE_FILE_PADDING_PX,
+  SOURCE_CONTROL_TREE_INDENT_PX
+} from '../listing/row-layout'
 
 // State for a single commit's lazily-loaded file list. Owned by GitHistoryPanel,
 // populated through the onLoadCommitFiles loader supplied by SourceControl.
@@ -21,12 +31,21 @@ export type GitHistoryCommitFilesState =
   | { status: 'error'; error: string }
   | { status: 'ready'; entries: GitBranchChangeEntry[] }
 
+export type GitHistoryCommitFilesViewMode = 'list' | 'tree'
+
+const LIST_ROW_PADDING_PX = 36
+
 function CommitFileRow({
   entry,
-  onOpen
+  onOpen,
+  paddingLeft = LIST_ROW_PADDING_PX,
+  showDirectory = true
 }: {
   entry: GitBranchChangeEntry
   onOpen: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
+  paddingLeft?: number
+  /** Tree rows already show their folder, so the path hint would repeat it. */
+  showDirectory?: boolean
 }): React.JSX.Element {
   const status = entry.status as GitFileStatus
   const FileIcon = getFileTypeIcon(entry.path)
@@ -37,7 +56,8 @@ function CommitFileRow({
   return (
     <button
       type="button"
-      className="group flex w-full min-w-0 cursor-pointer items-center gap-1 py-1 pl-9 pr-3 text-left text-xs transition-colors hover:bg-accent/40"
+      className="group flex w-full min-w-0 cursor-pointer items-center gap-1 py-1 pr-3 text-left text-xs transition-colors hover:bg-accent/40"
+      style={{ paddingLeft }}
       title={entry.path}
       data-testid="git-history-commit-file"
       onClick={(event) => onOpen(entry, toSourceControlRowOpenEvent(event))}
@@ -49,7 +69,9 @@ function CommitFileRow({
       })}
       <span className="min-w-0 flex-1 truncate">
         <span className="text-foreground">{fileName}</span>
-        {dirPath && <span className="ml-1.5 text-[11px] text-muted-foreground">{dirPath}</span>}
+        {showDirectory && dirPath && (
+          <span className="ml-1.5 text-[11px] text-muted-foreground">{dirPath}</span>
+        )}
       </span>
       <span
         className="w-4 shrink-0 text-center text-[10px] font-bold"
@@ -61,12 +83,64 @@ function CommitFileRow({
   )
 }
 
+function CommitFilesTree({
+  entries,
+  onOpenFile
+}: {
+  entries: GitBranchChangeEntry[]
+  onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
+}): React.JSX.Element {
+  const [collapsedKeys, setCollapsedKeys] = useState<ReadonlySet<string>>(() => new Set())
+  const roots = useMemo(
+    () => compactSourceControlTree(buildSourceControlTree('branch', entries)),
+    [entries]
+  )
+  const rows = useMemo(() => flattenSourceControlTree(roots, collapsedKeys), [roots, collapsedKeys])
+  const toggle = (key: string): void => {
+    setCollapsedKeys((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
+  return (
+    <>
+      {rows.map((node) =>
+        node.type === 'directory' ? (
+          <SourceControlBranchTreeDirectoryRow
+            key={node.key}
+            node={node}
+            isCollapsed={collapsedKeys.has(node.key)}
+            onToggle={() => toggle(node.key)}
+          />
+        ) : (
+          <CommitFileRow
+            key={node.key}
+            entry={node.entry}
+            onOpen={onOpenFile}
+            paddingLeft={
+              node.depth * SOURCE_CONTROL_TREE_INDENT_PX + SOURCE_CONTROL_TREE_FILE_PADDING_PX
+            }
+            showDirectory={false}
+          />
+        )
+      )}
+    </>
+  )
+}
+
 function CommitFilesBody({
   state,
+  viewMode,
   onOpenFile,
   onOpenAll
 }: {
   state: GitHistoryCommitFilesState
+  viewMode: GitHistoryCommitFilesViewMode
   onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
   onOpenAll?: () => void
 }): React.JSX.Element {
@@ -105,9 +179,13 @@ function CommitFilesBody({
 
   return (
     <>
-      {state.entries.map((entry) => (
-        <CommitFileRow key={entry.path} entry={entry} onOpen={onOpenFile} />
-      ))}
+      {viewMode === 'tree' ? (
+        <CommitFilesTree entries={state.entries} onOpenFile={onOpenFile} />
+      ) : (
+        state.entries.map((entry) => (
+          <CommitFileRow key={entry.path} entry={entry} onOpen={onOpenFile} />
+        ))
+      )}
       {onOpenAll && (
         <button
           type="button"
@@ -131,12 +209,14 @@ export function GitHistoryCommitFiles({
   state,
   author,
   timestamp,
+  viewMode = 'list',
   onOpenFile,
   onOpenAll
 }: {
   state: GitHistoryCommitFilesState
   author?: string
   timestamp?: number
+  viewMode?: GitHistoryCommitFilesViewMode
   onOpenFile: (entry: GitBranchChangeEntry, event: SourceControlRowOpenEvent) => void
   onOpenAll?: () => void
 }): React.JSX.Element {
@@ -145,7 +225,12 @@ export function GitHistoryCommitFiles({
   return (
     <div className="border-l border-border/60 bg-muted/20">
       {meta && <div className="py-1 pl-9 pr-3 text-[11px] text-muted-foreground">{meta}</div>}
-      <CommitFilesBody state={state} onOpenFile={onOpenFile} onOpenAll={onOpenAll} />
+      <CommitFilesBody
+        state={state}
+        viewMode={viewMode}
+        onOpenFile={onOpenFile}
+        onOpenAll={onOpenAll}
+      />
     </div>
   )
 }
