@@ -7,6 +7,7 @@ import {
 import {
   GIT_HISTORY_DEFAULT_LIMIT,
   GIT_HISTORY_MAX_LIMIT,
+  type GitHistoryBranchList,
   type GitHistoryExecutor,
   type GitHistoryItemRef,
   type GitHistoryOptions,
@@ -14,6 +15,7 @@ import {
 } from './git-history-types'
 import { getGitCurrentBranchName } from '../refs/git-current-branch'
 import { isBaseOfItself, resolveBranchRange } from './git-history-branch-range'
+import { isGitHistoryBranchRefName, loadGitHistoryBranches } from './git-history-branches'
 
 function clampHistoryLimit(limit: number | undefined): number {
   if (!Number.isFinite(limit)) {
@@ -148,17 +150,26 @@ export async function loadGitHistoryFromExecutor(
   options: GitHistoryOptions = {}
 ): Promise<GitHistoryResult> {
   const limit = clampHistoryLimit(options.limit)
-  const headOid = await resolveCommit(git, cwd, 'HEAD')
+  const [headOid, refs] = await Promise.all([
+    resolveCommit(git, cwd, 'HEAD'),
+    options.includeRefs ? loadGitHistoryBranches(git, cwd) : Promise.resolve(undefined)
+  ])
+  const logTarget = await resolveLogTarget(git, cwd, options)
   if (!headOid) {
+    if (logTarget.scope !== 'head') {
+      // Why: an unborn HEAD with an explicit branch still has a log to show, just no current-branch metadata.
+      return loadScopedLogWithoutHead(git, cwd, limit, logTarget, refs, options.skip)
+    }
     return {
       items: [],
       hasIncomingChanges: false,
       hasOutgoingChanges: false,
       hasMore: false,
-      limit
+      limit,
+      revisionScope: 'head',
+      ...withRefs(refs)
     }
   }
-
   const { currentRef, branchName } = await resolveCurrentRef(git, cwd, headOid)
   const [remoteRef, rawBaseRef] = await Promise.all([
     resolveUpstreamRef(git, cwd, branchName),
@@ -173,16 +184,16 @@ export async function loadGitHistoryFromExecutor(
   // The base may equal the upstream here (a branch tracking main), unlike the graph's comparison base.
   const branchBase =
     options.branchOnly &&
+    logTarget.scope === 'head' &&
     rawBaseRef?.revision &&
     !(await isBaseOfItself(git, cwd, rawBaseRef, currentRef))
       ? await resolveBranchRange(git, cwd, headOid, rawBaseRef)
       : undefined
 
   // Keep upstream/base as comparison metadata so old workspaces do not gain fetched commits outside their HEAD history.
-  const historyRevisions = branchBase
-    ? [headOid, `^${branchBase.range.baseRef.revision}`]
-    : [headOid]
   const skip = clampHistorySkip(options.skip)
+  const headRevisions = branchBase ? [headOid, `^${branchBase.range.baseRef.revision}`] : [headOid]
+  const historyRevisions = logTarget.scope === 'head' ? headRevisions : logTarget.revisions
 
   let mergeBase: string | undefined
   if (remoteRef?.revision && currentRef.revision && remoteRef.revision !== currentRef.revision) {
@@ -194,23 +205,10 @@ export async function loadGitHistoryFromExecutor(
     }
   }
 
-  const { stdout } = await git(
-    [
-      'log',
-      '--no-show-signature',
-      '--no-color',
-      `--format=${GIT_HISTORY_COMMIT_FORMAT}`,
-      '-z',
-      '--topo-order',
-      '--decorate=full',
-      ...(branchBase ? ['--shortstat'] : []),
-      ...(skip > 0 ? [`--skip=${skip}`] : []),
-      `-n${limit + 1}`,
-      ...historyRevisions
-    ],
-    cwd
-  )
-  const parsed = parseGitHistoryLog(stdout)
+  const parsed = await runHistoryLog(git, cwd, limit, historyRevisions, {
+    skip,
+    shortstat: Boolean(branchBase)
+  })
   const items = parsed.slice(0, limit)
   if (branchBase) {
     for (const item of items) {
@@ -234,10 +232,91 @@ export async function loadGitHistoryFromExecutor(
     hasMore: parsed.length > limit,
     limit,
     ...(branchBase ? { branch: branchBase.range } : {}),
-    ...(options.skip !== undefined ? { skip } : {})
+    ...(options.skip !== undefined ? { skip } : {}),
+    revisionScope: logTarget.scope,
+    ...withRefs(refs)
   }
 }
 
 function clampHistorySkip(skip: number | undefined): number {
   return Number.isFinite(skip) ? Math.max(0, Math.trunc(skip ?? 0)) : 0
+}
+
+type LogTarget = { scope: 'head' } | { scope: 'ref' | 'all'; revisions: string[] }
+
+// Why resolve to oids: `git log` then never sees user-chosen text, so ref names can't smuggle options or ranges.
+async function resolveLogTarget(
+  git: GitHistoryExecutor,
+  cwd: string,
+  options: GitHistoryOptions
+): Promise<LogTarget> {
+  if (options.allBranches) {
+    return { scope: 'all', revisions: ['--branches', '--remotes', 'HEAD'] }
+  }
+  const revision = options.revision?.trim()
+  if (!revision) {
+    return { scope: 'head' }
+  }
+  if (!isGitHistoryBranchRefName(revision)) {
+    throw new Error(`Not a branch: ${revision}`)
+  }
+  const oid = await resolveCommit(git, cwd, revision)
+  if (!oid) {
+    throw new Error(`Branch not found: ${revision}`)
+  }
+  return { scope: 'ref', revisions: [oid] }
+}
+
+async function runHistoryLog(
+  git: GitHistoryExecutor,
+  cwd: string,
+  limit: number,
+  revisions: string[],
+  { skip, shortstat = false }: { skip: number; shortstat?: boolean }
+) {
+  const { stdout } = await git(
+    [
+      'log',
+      '--no-show-signature',
+      '--no-color',
+      `--format=${GIT_HISTORY_COMMIT_FORMAT}`,
+      '-z',
+      '--topo-order',
+      '--decorate=full',
+      ...(shortstat ? ['--shortstat'] : []),
+      ...(skip > 0 ? [`--skip=${skip}`] : []),
+      `-n${limit + 1}`,
+      ...revisions
+    ],
+    cwd
+  )
+  return parseGitHistoryLog(stdout)
+}
+
+async function loadScopedLogWithoutHead(
+  git: GitHistoryExecutor,
+  cwd: string,
+  limit: number,
+  logTarget: Exclude<LogTarget, { scope: 'head' }>,
+  refs: GitHistoryBranchList | undefined,
+  requestedSkip: number | undefined
+): Promise<GitHistoryResult> {
+  // Why drop HEAD: `git log HEAD` fails outright on an unborn branch.
+  const revisions = logTarget.revisions.filter((revision) => revision !== 'HEAD')
+  const skip = clampHistorySkip(requestedSkip)
+  const parsed = await runHistoryLog(git, cwd, limit, revisions, { skip })
+  return {
+    items: parsed.slice(0, limit),
+    hasIncomingChanges: false,
+    hasOutgoingChanges: false,
+    hasMore: parsed.length > limit,
+    limit,
+    ...(requestedSkip !== undefined ? { skip } : {}),
+    revisionScope: logTarget.scope,
+    ...withRefs(refs)
+  }
+}
+
+function withRefs(refs: GitHistoryBranchList | undefined): { refs?: GitHistoryBranchList } {
+  return refs ? { refs } : {}
 }
