@@ -53,6 +53,7 @@ export abstract class UpdaterScheduling extends UpdaterCheckFailure {
     }
     // Pinned jumps own the feed until settled; background checks must not repoint their download.
     if (
+      this.releaseChecksSuppressed ||
       this.activeUpdateSource !== 'release' ||
       this.isPinnedBuildActive ||
       this.localBuildSelectionInProgress ||
