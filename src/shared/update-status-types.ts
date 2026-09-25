@@ -1,4 +1,5 @@
 import type { DedicatedRepoChannel, ReleaseBuild, ReleaseChannel } from './release-channel'
+import type { ForkSyncStatus } from './fork-sync-status'
 
 // ─── Updater ─────────────────────────────────────────────────────────
 
@@ -113,7 +114,11 @@ export type UpdateStatus = (
       /** Optional so older paired clients retain the diagnostic and install retry. */
       installBlock?: UpdateInstallBlock
     }
-) & { source?: UpdateSource }
+) & {
+  source?: UpdateSource
+  /** Fork builds only: the sync-with-upstream update driving this status. Additive; older clients ignore it. */
+  forkSync?: ForkSyncStatus
+}
 
 export type ReleaseBuildListResult =
   | { ok: true; channel: ReleaseChannel; builds: ReleaseBuild[] }

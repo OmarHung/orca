@@ -4,9 +4,19 @@ import { compareAppVersions } from '../../shared/app-version'
 import { assertLocalBuildCompatibility } from './local-build-compatibility'
 import { loadLocalBuildCandidate, type LocalBuildCandidate } from './local-build-candidate'
 
+/** `knownManifestPath` skips the file picker (fork sync already built the manifest); checks and confirmation still run. */
 export async function chooseLocalBuild(
-  window: BrowserWindow | null
+  window: BrowserWindow | null,
+  knownManifestPath?: string
 ): Promise<LocalBuildCandidate | null> {
+  const manifestPath = knownManifestPath ?? (await pickManifestPath(window))
+  if (!manifestPath) {
+    return null
+  }
+  return confirmLocalBuild(window, manifestPath)
+}
+
+async function pickManifestPath(window: BrowserWindow | null): Promise<string | null> {
   const openDialogOptions: Electron.OpenDialogOptions = {
     title: 'Choose a Local Orca Build',
     buttonLabel: 'Choose Build',
@@ -17,9 +27,13 @@ export async function chooseLocalBuild(
     ? dialog.showOpenDialog(window, openDialogOptions)
     : dialog.showOpenDialog(openDialogOptions))
   const manifestPath = selection.filePaths[0]
-  if (selection.canceled || !manifestPath) {
-    return null
-  }
+  return selection.canceled || !manifestPath ? null : manifestPath
+}
+
+async function confirmLocalBuild(
+  window: BrowserWindow | null,
+  manifestPath: string
+): Promise<LocalBuildCandidate | null> {
   const candidate = await loadLocalBuildCandidate(manifestPath, process.arch)
   try {
     if (compareAppVersions(candidate.version, app.getVersion()) === 0) {
