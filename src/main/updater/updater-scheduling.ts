@@ -47,6 +47,7 @@ export abstract class UpdaterScheduling extends UpdaterCheckFailure {
   ): boolean {
     // Why: a pinned dev jump owns the feed until it settles; a background check would repoint it mid-flight and download the wrong build.
     if (
+      this.releaseChecksSuppressed ||
       this.activeUpdateSource !== 'release' ||
       this.isPinnedBuildActive ||
       this.localBuildSelectionInProgress ||
