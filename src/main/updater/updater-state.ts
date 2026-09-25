@@ -104,6 +104,8 @@ export abstract class UpdaterState {
   protected quittingForUpdate = false
   protected autoUpdater: ElectronAutoUpdater | null = null
   protected activeUpdateSource: 'release' | UpdateSource = 'release'
+  /** Fork builds: an external driver owns update checks, so official release checks and nudges never run. */
+  protected releaseChecksSuppressed = false
   protected activeLocalBuildFeed: LocalBuildFeed | null = null
   protected localBuildSelectionInProgress = false
   // Why: a dev channel/tag jump may target an older build, so it needs allowDowngrade

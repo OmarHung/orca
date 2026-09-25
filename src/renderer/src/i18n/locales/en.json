@@ -18259,5 +18259,35 @@
       "resizeMessage": "Resize commit message",
       "resizeColumn": "Resize {{value0}} column"
     }
+  },
+  "forkSync": {
+    "stage": {
+      "fetch": "Fetching upstream",
+      "rebase": "Re-applying your changes",
+      "install": "Installing dependencies",
+      "verify": "Typechecking and testing",
+      "push": "Pushing to your fork",
+      "build": "Building the app"
+    },
+    "minimize": "Minimize",
+    "close": "Close",
+    "conflictTitle": "Your changes conflict with {{value0}}",
+    "conflictCommit": "\"{{value0}}\" no longer applies cleanly. The branch was left unchanged.",
+    "conflictNoCommit": "A fork commit no longer applies cleanly. The branch was left unchanged.",
+    "moreFiles": "+{{value0}} more",
+    "resolveWithAgent": "Resolve with AI",
+    "retry": "Retry",
+    "conflictHint": "Resolve in {{value0}} (by hand or with an agent), then press Retry to verify, push, and rebuild.",
+    "availableTitle": "Upstream released {{value0}}",
+    "availableBody": "This build is your fork on {{value0}}. Updating re-applies your changes on {{value1}}, verifies, pushes, and rebuilds. It takes about 10 minutes; you can keep working.",
+    "syncAndUpdate": "Sync & update",
+    "syncingTitle": "Updating to {{value0}}",
+    "stepOf": "Step {{value0}} of {{value1}}: {{value2}}…",
+    "builtTitle": "{{value0}} is built",
+    "installRestart": "Install and restart",
+    "failedTitle": "Updating to {{value0}} failed",
+    "failedAt": "Stopped at: {{value0}}",
+    "failedStart": "The sync could not start.",
+    "agentFallback": "Copied a conflict-resolution prompt. Paste it into an agent running in {{value0}}."
   }
 }
