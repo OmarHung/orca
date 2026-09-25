@@ -1,4 +1,5 @@
 import type { DedicatedRepoChannel, ReleaseBuild, ReleaseChannel } from './release-channel'
+import type { ForkSyncStatus } from './fork-sync-status'
 
 // Keep version only on UpdateStatus so release payloads cannot disagree.
 export type ChangelogRelease = {
@@ -144,6 +145,8 @@ export type UpdateStatus = (
   requiredByOrca?: boolean
   /** macOS desktop has staged this version for installation on a normal quit. */
   installOnQuit?: true
+  /** Fork builds only: the sync-with-upstream update driving this status. Additive; older clients ignore it. */
+  forkSync?: ForkSyncStatus
 }
 
 export type ReleaseBuildListResult =

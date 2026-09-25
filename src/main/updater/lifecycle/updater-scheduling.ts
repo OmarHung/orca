@@ -58,6 +58,7 @@ export abstract class UpdaterScheduling extends UpdaterCheckFailure {
       return false
     }
     if (
+      this.releaseChecksSuppressed ||
       this.localBuildSelectionInProgress ||
       this.pinnedBuildSelectionInProgress ||
       this.backgroundCheckLaunchPending ||
