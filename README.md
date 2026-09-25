@@ -306,6 +306,13 @@ Pair with your desktop app to monitor and steer your agents from your phone.
 
 Want to contribute or run locally? See our [CONTRIBUTING.md](.github/CONTRIBUTING.md) guide.
 
+### This fork (OmarHung/orca)
+
+Local Apple Silicon builds, and syncing this fork's changes onto each upstream release, are
+documented in [`config/scripts/fork-maintenance/README.md`](config/scripts/fork-maintenance/README.md).
+Short version: `git switch omar/custom && node config/scripts/fork-maintenance/build-mac-local-arm64.mjs`,
+then drag `dist/mac-arm64/Orca.app` into `/Applications`.
+
 <a href="https://github.com/stablyai/orca/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=stablyai/orca&max=500&columns=30" alt="Orca contributors" />
 </a>
