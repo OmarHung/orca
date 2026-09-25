@@ -18308,5 +18308,49 @@
   },
   "common": {
     "retry": "重试"
+  },
+  "bottomPanel": {
+    "error": {
+      "title": "底部面板出错了。",
+      "description": "重试面板，或将其隐藏以继续工作。"
+    },
+    "resize": "调整底部面板大小",
+    "gitTitle": "Git",
+    "logTab": "日志",
+    "hide": "隐藏底部面板",
+    "gitLog": {
+      "toggleLabel": "Git 日志",
+      "userFilter": "用户",
+      "allUsers": "所有用户",
+      "noWorkspace": "打开一个工作区以查看其 Git 日志",
+      "folderWorkspace": "此文件夹不是 Git 仓库",
+      "loading": "正在加载提交…",
+      "noMatches": "没有符合筛选条件的提交",
+      "noCommits": "尚无提交",
+      "commitList": "提交",
+      "truncated": "显示最近 {{value0}} 个提交",
+      "searchPlaceholder": "文本或哈希",
+      "clearSearch": "清除搜索",
+      "refresh": "刷新日志",
+      "columnSubject": "主题",
+      "columnAuthor": "作者",
+      "columnDate": "日期",
+      "columnHash": "哈希",
+      "filesLoadFailed": "无法加载提交文件",
+      "selectCommit": "选择一个提交以查看其变更",
+      "loadFailed": "无法加载提交",
+      "localBranches": "本地",
+      "remoteBranches": "远程",
+      "branchesLoading": "正在加载分支…",
+      "branchesUnsupported": "请更新此主机上的 Orca 以浏览分支。",
+      "noBranches": "没有匹配的分支",
+      "currentBranch": "当前分支",
+      "branchSearch": "分支",
+      "clearBranchSearch": "清除分支搜索",
+      "headScope": "HEAD（当前分支）",
+      "allScope": "所有分支",
+      "branchesTruncated": "仅列出前 {{value0}} 个分支。",
+      "scopeUnsupported": "此主机运行的是较旧版本的 Orca，只能显示当前分支。"
+    }
   }
 }

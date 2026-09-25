@@ -18317,5 +18317,49 @@
   },
   "common": {
     "retry": "Retry"
+  },
+  "bottomPanel": {
+    "error": {
+      "title": "The bottom panel hit an error.",
+      "description": "Retry the panel or hide it to keep working."
+    },
+    "resize": "Resize bottom panel",
+    "gitTitle": "Git",
+    "logTab": "Log",
+    "hide": "Hide bottom panel",
+    "gitLog": {
+      "toggleLabel": "Git Log",
+      "userFilter": "User",
+      "allUsers": "All users",
+      "noWorkspace": "Open a workspace to see its Git log",
+      "folderWorkspace": "This folder is not a Git repository",
+      "loading": "Loading commits…",
+      "noMatches": "No commits match the filter",
+      "noCommits": "No commits yet",
+      "commitList": "Commits",
+      "truncated": "Showing the latest {{value0}} commits",
+      "searchPlaceholder": "Text or hash",
+      "clearSearch": "Clear search",
+      "refresh": "Refresh log",
+      "columnSubject": "Subject",
+      "columnAuthor": "Author",
+      "columnDate": "Date",
+      "columnHash": "Hash",
+      "filesLoadFailed": "Failed to load commit files",
+      "selectCommit": "Select a commit to see its changes",
+      "loadFailed": "Failed to load commits",
+      "localBranches": "Local",
+      "remoteBranches": "Remote",
+      "branchesLoading": "Loading branches…",
+      "branchesUnsupported": "Update Orca on this host to browse branches.",
+      "noBranches": "No matching branches",
+      "currentBranch": "Current branch",
+      "branchSearch": "Branch",
+      "clearBranchSearch": "Clear branch search",
+      "headScope": "HEAD (Current Branch)",
+      "allScope": "All Branches",
+      "branchesTruncated": "Only the first {{value0}} branches are listed.",
+      "scopeUnsupported": "This host runs an older Orca that can only show the current branch."
+    }
   }
 }
