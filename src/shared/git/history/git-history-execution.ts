@@ -9,6 +9,7 @@ import {
 import {
   GIT_HISTORY_DEFAULT_LIMIT,
   GIT_HISTORY_MAX_LIMIT,
+  type GitHistoryBranchList,
   type GitHistoryExecutor,
   type GitHistoryItemRef,
   type GitHistoryOptions,
@@ -16,6 +17,7 @@ import {
 } from './git-history-types'
 import { getGitCurrentBranchName } from '../refs/git-current-branch'
 import { isBaseOfItself, resolveBranchRange } from './git-history-branch-range'
+import { isGitHistoryBranchRefName, loadGitHistoryBranches } from './git-history-branches'
 
 function clampHistoryLimit(limit: number | undefined): number {
   if (!Number.isFinite(limit)) {
@@ -150,8 +152,14 @@ export async function loadGitHistoryFromExecutor(
   options: GitHistoryOptions = {}
 ): Promise<GitHistoryResult> {
   const limit = clampHistoryLimit(options.limit)
-  const refs = options.branchOnly ? 'head' : (options.refs ?? 'head')
+  const [branchList, logTarget] = await Promise.all([
+    options.includeRefs ? loadGitHistoryBranches(git, cwd) : Promise.resolve(undefined),
+    resolveLogTarget(git, cwd, options)
+  ])
+  const scoped = logTarget.scope !== 'head'
+  const refs = options.branchOnly || scoped ? 'head' : (options.refs ?? 'head')
   validateHistoryRefs(refs)
+  const scope = { revisionScope: logTarget.scope, ...withBranchList(branchList) }
   const empty = {
     items: [],
     hasIncomingChanges: false,
@@ -159,9 +167,10 @@ export async function loadGitHistoryFromExecutor(
     hasMore: false,
     limit,
     refs,
-    ...(Array.isArray(refs) ? { resolvedRefs: [] } : {})
+    ...(Array.isArray(refs) ? { resolvedRefs: [] } : {}),
+    ...scope
   }
-  const requestedToken = options.branchOnly ? undefined : options.historyToken
+  const requestedToken = options.branchOnly || scoped ? undefined : options.historyToken
   const pinned =
     requestedToken !== undefined ? gitHistoryTokens.get(requestedToken, cwd, refs) : undefined
   if (requestedToken !== undefined && !pinned) {
@@ -186,6 +195,7 @@ export async function loadGitHistoryFromExecutor(
     headOid &&
     currentRef &&
     options.branchOnly &&
+    !scoped &&
     rawBaseRef?.revision &&
     !(await isBaseOfItself(git, cwd, rawBaseRef, currentRef))
       ? await resolveBranchRange(git, cwd, headOid, rawBaseRef)
@@ -198,7 +208,12 @@ export async function loadGitHistoryFromExecutor(
       ? [headOid]
       : []
   let resolvedRefs: string[] | undefined
-  if (pinned) {
+  if (scoped) {
+    // Why drop HEAD: `git log HEAD` fails outright on an unborn branch.
+    historyRevisions = headOid
+      ? logTarget.revisions
+      : logTarget.revisions.filter((revision) => revision !== 'HEAD')
+  } else if (pinned) {
     historyRevisions = pinned.revisions
     resolvedRefs = pinned.resolvedRefs
   } else if (refs !== 'head') {
@@ -215,10 +230,10 @@ export async function loadGitHistoryFromExecutor(
   }
   const historyToken =
     requestedToken ??
-    (options.refs !== undefined && !options.branchOnly
+    (options.refs !== undefined && !options.branchOnly && !scoped
       ? gitHistoryTokens.put(cwd, refs, historyRevisions, resolvedRefs)
       : undefined)
-  const echo = { refs, ...(resolvedRefs ? { resolvedRefs } : {}), historyToken }
+  const echo = { refs, ...(resolvedRefs ? { resolvedRefs } : {}), historyToken, ...scope }
   if (!historyRevisions.length) {
     return { ...empty, ...echo }
   }
@@ -234,33 +249,20 @@ export async function loadGitHistoryFromExecutor(
     }
   }
 
-  let stdout: string
+  let parsed: ReturnType<typeof parseGitHistoryLog>
   try {
-    const result = await git(
-      [
-        'log',
-        '--no-show-signature',
-        '--no-color',
-        `--format=${GIT_HISTORY_COMMIT_FORMAT}`,
-        '-z',
-        '--topo-order',
-        '--decorate=full',
-        ...(branchBase ? ['--shortstat'] : []),
-        ...(skip > 0 ? [`--skip=${skip}`] : []),
-        `-n${limit + 1}`,
-        ...(refs === 'head' && !pinned ? historyRevisions : ['--stdin'])
-      ],
-      cwd,
-      refs === 'head' && !pinned ? undefined : `${historyRevisions.join('\n')}\n`
-    )
-    stdout = result.stdout
+    parsed = await runHistoryLog(git, cwd, limit, historyRevisions, {
+      skip,
+      shortstat: Boolean(branchBase),
+      // Why: scoped revisions are oids or fixed pseudo-refs, but chosen ref catalogs can be long.
+      stdin: !scoped && (refs !== 'head' || Boolean(pinned))
+    })
   } catch (error) {
     if (pinned && /bad object|unknown revision|invalid object|bad revision/i.test(String(error))) {
       return { ...empty, ...echo, historyChanged: true }
     }
     throw error
   }
-  const parsed = parseGitHistoryLog(stdout)
   const items = parsed.slice(0, limit)
   if (branchBase) {
     for (const item of items) {
@@ -291,4 +293,66 @@ export async function loadGitHistoryFromExecutor(
 
 function clampHistorySkip(skip: number | undefined): number {
   return Number.isFinite(skip) ? Math.max(0, Math.trunc(skip ?? 0)) : 0
+}
+
+type LogTarget = { scope: 'head' } | { scope: 'ref' | 'all'; revisions: string[] }
+
+// Why resolve to oids: `git log` then never sees user-chosen text, so ref names can't smuggle options or ranges.
+async function resolveLogTarget(
+  git: GitHistoryExecutor,
+  cwd: string,
+  options: GitHistoryOptions
+): Promise<LogTarget> {
+  if (options.allBranches) {
+    return { scope: 'all', revisions: ['--branches', '--remotes', 'HEAD'] }
+  }
+  const revision = options.revision?.trim()
+  if (!revision) {
+    return { scope: 'head' }
+  }
+  if (!isGitHistoryBranchRefName(revision)) {
+    throw new Error(`Not a branch: ${revision}`)
+  }
+  const oid = await resolveCommit(git, cwd, revision)
+  if (!oid) {
+    throw new Error(`Branch not found: ${revision}`)
+  }
+  return { scope: 'ref', revisions: [oid] }
+}
+
+async function runHistoryLog(
+  git: GitHistoryExecutor,
+  cwd: string,
+  limit: number,
+  revisions: string[],
+  {
+    skip,
+    shortstat = false,
+    stdin = false
+  }: { skip: number; shortstat?: boolean; stdin?: boolean }
+) {
+  const { stdout } = await git(
+    [
+      'log',
+      '--no-show-signature',
+      '--no-color',
+      `--format=${GIT_HISTORY_COMMIT_FORMAT}`,
+      '-z',
+      '--topo-order',
+      '--decorate=full',
+      ...(shortstat ? ['--shortstat'] : []),
+      ...(skip > 0 ? [`--skip=${skip}`] : []),
+      `-n${limit + 1}`,
+      ...(stdin ? ['--stdin'] : revisions)
+    ],
+    cwd,
+    stdin ? `${revisions.join('\n')}\n` : undefined
+  )
+  return parseGitHistoryLog(stdout)
+}
+
+function withBranchList(branchList: GitHistoryBranchList | undefined): {
+  branchList?: GitHistoryBranchList
+} {
+  return branchList ? { branchList } : {}
 }
