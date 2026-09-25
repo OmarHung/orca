@@ -26,12 +26,15 @@ import {
   isGitLogFilterActive,
   type GitLogFilter
 } from './git-log-filter'
-import { GIT_LOG_GRID_COLUMNS, GitLogTableRow } from './git-log-table-row'
+import { GitLogTableRow } from './git-log-table-row'
+import { GitLogTableHeader, useGitLogGridTemplate } from './git-log-table-columns'
 import { useGitLogHistory } from './use-git-log-history'
 import { useGitLogWorktree } from './use-git-log-worktree'
 import { GitLogBranchTree } from './GitLogBranchTree'
 import { HEAD_GIT_LOG_SCOPE, isGitLogScopeHonored, type GitLogScope } from './git-log-scope'
 import { useGitLogScope, useResetMissingGitLogScope } from './use-git-log-scope'
+import { ResizeHandle } from '../ResizeHandle'
+import { useGitLogColumnResize } from './use-git-log-column-resize'
 
 const ALL_AUTHORS_VALUE = '__all__'
 const noSplitTarget = (): undefined => undefined
@@ -108,6 +111,8 @@ export function GitLogView(): React.JSX.Element {
   const [filter, setFilter] = useState<GitLogFilter>(EMPTY_GIT_LOG_FILTER)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement | null>(null)
+  const gridTemplateColumns = useGitLogGridTemplate()
+  const { rootRef, branchTreeResize, detailsResize } = useGitLogColumnResize()
 
   const result = state.result
   const viewModels = useMemo(() => {
@@ -220,44 +225,58 @@ export function GitLogView(): React.JSX.Element {
         ref={listRef}
         tabIndex={0}
         aria-label={translate('bottomPanel.gitLog.commitList', 'Commits')}
-        className="min-h-0 flex-1 overflow-y-auto scrollbar-sleek outline-none"
+        className="min-h-0 flex-1 overflow-auto scrollbar-sleek outline-none"
+        data-testid="git-log-table"
         onKeyDown={handleListKeyDown}
       >
-        {visibleViewModels.map((viewModel) => {
-          const item = viewModel.historyItem
-          return (
-            <ContextMenu key={item.id}>
-              <ContextMenuTrigger asChild>
-                <GitLogTableRow
-                  data-commit-id={item.id}
-                  viewModel={viewModel}
-                  selected={item.id === selectedId}
-                  showGraph={!filterActive}
-                  onSelectCommit={setSelectedId}
-                  onDoubleClick={() => void commitActions.openHistoryCommitDiff(item)}
+        {/* Why w-max: fixed-width columns may exceed the viewport; the table then scrolls sideways like Excel. */}
+        <div className="w-max min-w-full">
+          <GitLogTableHeader tableRef={listRef} gridTemplateColumns={gridTemplateColumns} />
+          {visibleViewModels.map((viewModel) => {
+            const item = viewModel.historyItem
+            return (
+              <ContextMenu key={item.id}>
+                <ContextMenuTrigger asChild>
+                  <GitLogTableRow
+                    data-commit-id={item.id}
+                    viewModel={viewModel}
+                    selected={item.id === selectedId}
+                    showGraph={!filterActive}
+                    gridTemplateColumns={gridTemplateColumns}
+                    onSelectCommit={setSelectedId}
+                    onDoubleClick={() => void commitActions.openHistoryCommitDiff(item)}
+                  />
+                </ContextMenuTrigger>
+                <GitHistoryCommitContextMenu
+                  item={item}
+                  onAction={commitActions.handleCommitAction}
                 />
-              </ContextMenuTrigger>
-              <GitHistoryCommitContextMenu
-                item={item}
-                onAction={commitActions.handleCommitAction}
-              />
-            </ContextMenu>
-          )
-        })}
-        {result.hasMore && !filterActive ? (
-          <div className="px-3 py-1.5 text-[11px] text-muted-foreground">
-            {translate('bottomPanel.gitLog.truncated', 'Showing the latest {{value0}} commits', {
-              value0: result.items.length
-            })}
-          </div>
-        ) : null}
+              </ContextMenu>
+            )
+          })}
+          {result.hasMore && !filterActive ? (
+            <div className="px-3 py-1.5 text-[11px] text-muted-foreground">
+              {translate('bottomPanel.gitLog.truncated', 'Showing the latest {{value0}} commits', {
+                value0: result.items.length
+              })}
+            </div>
+          ) : null}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex h-full min-h-0">
-      <div className="w-56 shrink-0 border-r border-border">
+    <div ref={rootRef} className="flex h-full min-h-0">
+      <div
+        className="relative shrink-0 border-r border-border"
+        style={{ width: branchTreeResize.size, maxWidth: '40%' }}
+      >
+        <ResizeHandle
+          edge="right"
+          label={translate('bottomPanel.gitLog.resizeBranches', 'Resize branch tree')}
+          handleProps={branchTreeResize.handleProps}
+        />
         <GitLogBranchTree branchList={branchList} scope={scope} onScopeChange={setScope} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
@@ -310,17 +329,6 @@ export function GitLogView(): React.JSX.Element {
         </div>
         <div className="flex min-h-0 flex-1">
           <div className="flex min-w-0 flex-1 flex-col">
-            <div
-              className={cn(
-                'grid h-6 shrink-0 items-center gap-x-3 border-b border-border px-2 text-[11px] text-muted-foreground',
-                GIT_LOG_GRID_COLUMNS
-              )}
-            >
-              <span>{translate('bottomPanel.gitLog.columnSubject', 'Subject')}</span>
-              <span>{translate('bottomPanel.gitLog.columnAuthor', 'Author')}</span>
-              <span>{translate('bottomPanel.gitLog.columnDate', 'Date')}</span>
-              <span>{translate('bottomPanel.gitLog.columnHash', 'Hash')}</span>
-            </div>
             {scopeHonored ? null : (
               <div className="shrink-0 border-b border-border px-3 py-1 text-[11px] text-muted-foreground">
                 {translate(
@@ -331,7 +339,15 @@ export function GitLogView(): React.JSX.Element {
             )}
             {renderBody()}
           </div>
-          <div className="w-[38%] min-w-[260px] max-w-[560px] shrink-0 border-l border-border">
+          <div
+            className="relative shrink-0 border-l border-border"
+            style={{ width: detailsResize.size, maxWidth: '60%' }}
+          >
+            <ResizeHandle
+              edge="left"
+              label={translate('bottomPanel.gitLog.resizeDetails', 'Resize commit details')}
+              handleProps={detailsResize.handleProps}
+            />
             <GitLogCommitDetails
               item={selectedItem}
               loadCommitFiles={commitActions.loadCommitFiles}

@@ -18350,7 +18350,15 @@
       "headScope": "HEAD（当前分支）",
       "allScope": "所有分支",
       "branchesTruncated": "仅列出前 {{value0}} 个分支。",
-      "scopeUnsupported": "此主机运行的是较旧版本的 Orca，只能显示当前分支。"
+      "scopeUnsupported": "此主机运行的是较旧版本的 Orca，只能显示当前分支。",
+      "showFilesAsList": "以列表显示文件",
+      "showFilesAsTree": "以树状显示文件",
+      "changedFiles": "{{value0}} 个已更改的文件",
+      "changedFilesPending": "已更改的文件",
+      "resizeBranches": "调整分支树宽度",
+      "resizeDetails": "调整提交详情宽度",
+      "resizeMessage": "调整提交信息高度",
+      "resizeColumn": "调整 {{value0}} 列宽度"
     }
   }
 }

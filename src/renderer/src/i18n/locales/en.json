@@ -18359,7 +18359,15 @@
       "headScope": "HEAD (Current Branch)",
       "allScope": "All Branches",
       "branchesTruncated": "Only the first {{value0}} branches are listed.",
-      "scopeUnsupported": "This host runs an older Orca that can only show the current branch."
+      "scopeUnsupported": "This host runs an older Orca that can only show the current branch.",
+      "showFilesAsList": "Show files as list",
+      "showFilesAsTree": "Show files as tree",
+      "changedFiles": "{{value0}} changed files",
+      "changedFilesPending": "Changed files",
+      "resizeBranches": "Resize branch tree",
+      "resizeDetails": "Resize commit details",
+      "resizeMessage": "Resize commit message",
+      "resizeColumn": "Resize {{value0}} column"
     }
   }
 }
