@@ -238,6 +238,14 @@ export const KEYBINDING_DEFINITION_CORE_1: readonly KeybindingDefinition[] = [
     }
   },
   {
+    id: 'bottomPanel.gitLog.toggle',
+    title: 'Toggle Git Log Panel',
+    group: 'Global',
+    scope: 'global',
+    searchKeywords: ['shortcut', 'bottom panel', 'git', 'log', 'history', 'commits'],
+    defaultBindings: platformBindings(['Mod+Alt+G'])
+  },
+  {
     id: 'sidebar.sleepingWorkspaces.toggle',
     title: 'Toggle Sleeping Workspaces',
     group: 'Global',
