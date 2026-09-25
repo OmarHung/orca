@@ -11,7 +11,7 @@ import { GitHistoryGraphSvg, graphColor } from './git-history-graph-svg'
 import { dedupeRemoteTrackingRefs } from '../../../../../../shared/git/history/git-history-ref-display'
 import { translate } from '@/i18n/i18n'
 
-function GitHistoryRefBadge({ itemRef }: { itemRef: GitHistoryItemRef }): React.JSX.Element {
+export function GitHistoryRefBadge({ itemRef }: { itemRef: GitHistoryItemRef }): React.JSX.Element {
   const refLabel = itemRef.category ? `${itemRef.name} (${itemRef.category})` : itemRef.name
 
   return (
