@@ -13,6 +13,7 @@ import RightSidebar from '../components/right-sidebar/RightSidebar'
 import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/RecoverableRenderErrorBoundary'
 import { FloatingTerminalToggleButton } from '../components/floating-terminal/trigger/FloatingTerminalToggleButton'
 import { TerminalWorkbenchContainer } from '../components/terminal/workbench/TerminalWorkbenchContainer'
+import { useBottomPanelLayout } from '../components/bottom-panel/bottom-panel-layout-store'
 import type { VirtualizedScrollAnchor } from '../lib/list-interaction/virtualized-scrolling/useVirtualizedScrollAnchor'
 import { TitlebarLeftControls } from './chrome/TitlebarLeftControls'
 import { AppShellLeftColumn } from './chrome/AppShellLeftColumn'
@@ -56,6 +57,11 @@ const GitHubInstallMount = lazy(() =>
   }))
 )
 const Terminal = lazy(() => import('../components/terminal/workbench/Terminal'))
+const BottomPanel = lazy(() =>
+  import('../components/bottom-panel/BottomPanel').then((module) => ({
+    default: module.BottomPanel
+  }))
+)
 
 type WorktreeSidebarScrollRefs = {
   scrollOffsetRef: React.MutableRefObject<number>
@@ -177,6 +183,7 @@ export function AppWorkspaceShell(props: {
   // Keep scroll memory above sidebar view remounts to preserve list position.
   const scrollOffsetRef = useRef(0)
   const scrollAnchorRef = useRef<VirtualizedScrollAnchor>(null)
+  const bottomPanelOpen = useBottomPanelLayout((s) => s.open)
   const sidebarScrollRefs = { scrollOffsetRef, scrollAnchorRef }
   const { setOpenWithFocus } = floatingWorkspace
   // `orca plugin shot` captures the right sidebar, which the parked launcher floats over.
@@ -274,6 +281,26 @@ export function AppWorkspaceShell(props: {
                       <ActivePage layout={layout} />
                     </RecoverableRenderErrorBoundary>
                   </Suspense>
+                  {layout.workspaceChromeActive && bottomPanelOpen ? (
+                    <Suspense fallback={null}>
+                      <RecoverableRenderErrorBoundary
+                        boundaryId="bottom-panel"
+                        // Why reuse: the panel lives in the workbench column; a new surface needs a main-side allowlist entry.
+                        surface="terminal-workbench"
+                        resetKey="bottom-panel"
+                        title={translate(
+                          'bottomPanel.error.title',
+                          'The bottom panel hit an error.'
+                        )}
+                        description={translate(
+                          'bottomPanel.error.description',
+                          'Retry the panel or hide it to keep working.'
+                        )}
+                      >
+                        <BottomPanel />
+                      </RecoverableRenderErrorBoundary>
+                    </Suspense>
+                  ) : null}
                 </div>
                 {floatingWorkspace.showToggleButton && !capturingPluginShot ? (
                   <MemoFloatingTerminalToggleButton

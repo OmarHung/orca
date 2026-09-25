@@ -8,6 +8,7 @@ import { shouldOpenStatusBarContextMenu } from './composition/status-bar-context
 import { UpdateStatusSegment } from './updates/UpdateStatusSegment'
 import { SkillUpdateStatusSegment } from './updates/SkillUpdateStatusSegment'
 import { AgentCliUpdateStatusSegment } from './updates/AgentCliUpdateStatusSegment'
+import { GitLogStatusSegment } from '../bottom-panel/GitLogStatusSegment'
 import { NativeChatResumeStatusSegment } from './NativeChatResumeStatusSegment'
 import { CaffeinateStatusSegment } from './CaffeinateStatusSegment'
 import { PluginsStatusSegment } from './plugins/PluginsStatusSegment'
@@ -126,6 +127,7 @@ export function StatusBarSurface({
             {showPorts ? <PortsStatusSegment /> : null}
             {showSsh ? <SshStatusSegment /> : null}
           </React.Suspense>
+          <GitLogStatusSegment />
           {showFloatingTerminalToggle && (
             <FloatingTerminalIconContextMenu currentLocation="status-bar" className="relative">
               <Tooltip>
