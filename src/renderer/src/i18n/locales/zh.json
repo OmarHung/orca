@@ -18360,5 +18360,35 @@
       "resizeMessage": "调整提交信息高度",
       "resizeColumn": "调整 {{value0}} 列宽度"
     }
+  },
+  "forkSync": {
+    "stage": {
+      "fetch": "正在获取上游",
+      "rebase": "正在重新套用你的修改",
+      "install": "正在安装依赖",
+      "verify": "正在进行类型检查和测试",
+      "push": "正在推送到你的 fork",
+      "build": "正在构建应用"
+    },
+    "minimize": "最小化",
+    "close": "关闭",
+    "conflictTitle": "你的修改与 {{value0}} 冲突",
+    "conflictCommit": "“{{value0}}”无法干净地套用。分支保持不变。",
+    "conflictNoCommit": "有一个 fork 提交无法干净地套用。分支保持不变。",
+    "moreFiles": "还有 {{value0}} 个",
+    "resolveWithAgent": "交给 AI 处理",
+    "retry": "重试",
+    "conflictHint": "在 {{value0}} 解决冲突（手动或交给 AI），然后按“重试”来验证、推送并重新构建。",
+    "availableTitle": "上游发布了 {{value0}}",
+    "availableBody": "这是基于 {{value0}} 的 fork 构建。更新会把你的修改重新套用到 {{value1}} 上，验证、推送并重新构建，大约需要 10 分钟，期间可以继续工作。",
+    "syncAndUpdate": "同步并更新",
+    "syncingTitle": "正在更新到 {{value0}}",
+    "stepOf": "第 {{value0}}/{{value1}} 步：{{value2}}…",
+    "builtTitle": "{{value0}} 已构建完成",
+    "installRestart": "安装并重启",
+    "failedTitle": "更新到 {{value0}} 失败",
+    "failedAt": "停在：{{value0}}",
+    "failedStart": "同步无法开始。",
+    "agentFallback": "已复制冲突处理提示词。请粘贴到在 {{value0}} 中运行的 AI 代理。"
   }
 }

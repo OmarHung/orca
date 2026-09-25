@@ -106,6 +106,26 @@ export class UpdaterSetup extends UpdaterDownloadInstall {
     super.dismissNudge()
   }
 
+  /** Fork builds: stop official release checks and nudges; an external driver owns checks. */
+  suppressReleaseChecks(): void {
+    this.releaseChecksSuppressed = true
+  }
+
+  /** Fork builds: publish a status produced by the external update driver. */
+  publishExternalStatus(status: UpdateStatus): void {
+    this.sendStatus(status, { force: true })
+  }
+
+  /** Fork builds: install an already-built local update through the local-build flow. */
+  async installLocalBuild(manifestPath: string): Promise<void> {
+    await this.checkForLocalBuildFromMenu(manifestPath)
+    // Why auto-download: the user already chose to update and confirmed the build; the loopback
+    // "download" is a local copy, so stopping at "available" would only add a pointless click.
+    if (this.currentStatus.state === 'available' && this.activeUpdateSource === 'local') {
+      this.downloadUpdate()
+    }
+  }
+
   dismissAvailableUpdate(): void {
     super.dismissAvailableUpdate()
   }
