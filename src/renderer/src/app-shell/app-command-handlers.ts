@@ -11,6 +11,7 @@ import {
   resolveHoveredWorkspaceDeleteTarget
 } from '../components/sidebar/hovered-workspace-delete'
 import { useAppStore } from '../store'
+import { useBottomPanelLayout } from '../components/bottom-panel/bottom-panel-layout-store'
 import type { usePluginCommands } from '@/store/plugin-panels'
 import { isGitRepoKind } from '../../../shared/repo-kind'
 import type {
@@ -282,6 +283,13 @@ export function createAppCommandHandlers(
           : revealRightSidebarTab('sidebar.sourceControl.toggle', 'source-control')
     ],
     ['sidebar.checks.toggle', () => revealRightSidebarTab('sidebar.checks.toggle', 'checks')],
-    ['sidebar.ports.toggle', () => revealRightSidebarTab('sidebar.ports.toggle', 'ports')]
+    ['sidebar.ports.toggle', () => revealRightSidebarTab('sidebar.ports.toggle', 'ports')],
+    [
+      'bottomPanel.gitLog.toggle',
+      () =>
+        workspaceChromeActive
+          ? claim('bottomPanel.gitLog.toggle', () => useBottomPanelLayout.getState().toggle())
+          : false
+    ]
   ])
 }
