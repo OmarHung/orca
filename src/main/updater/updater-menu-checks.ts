@@ -110,6 +110,6 @@ export abstract class UpdaterMenuChecks extends UpdaterScheduling {
       })
   }
 
-  protected abstract checkForLocalBuildFromMenu(): Promise<void>
+  protected abstract checkForLocalBuildFromMenu(knownManifestPath?: string): Promise<void>
   protected abstract checkForPinnedBuild(channel: ReleaseChannel, tag: string): Promise<void>
 }
