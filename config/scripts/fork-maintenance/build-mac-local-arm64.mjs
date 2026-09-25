@@ -6,7 +6,8 @@
 // Differs from `pnpm build:mac` in three ways, each for this machine's setup:
 // - native Swift helpers build --single-arch (the Command Line Tools here ship arm64-only
 //   Swift libraries, so the default arm64+x86_64 universal link fails);
-// - packages only `--mac dir --arm64` (no DMG/zip, no x64 slice, no install:release needed);
+// - packages only `--mac zip --arm64` (no DMG, no x64 slice, no install:release needed); the zip +
+//   latest-mac.yml are what Orca's in-app local-build installer consumes;
 // - reuses node_modules/electron/dist instead of re-downloading Electron from GitHub.
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -44,7 +45,17 @@ if (bundledElectron !== requiredElectron) {
 }
 
 const identity = getLocalBuildIdentity()
-console.log(`\n[build-mac-local-arm64] version ${identity.version}`)
+const git = (...gitArgs) => execFileSync('git', gitArgs, { cwd: repoRoot, encoding: 'utf8' }).trim()
+// Why stamped into package.json: the running app reads it to update by re-syncing this checkout
+// (src/main/fork-source-update) instead of offering official releases over the fork's changes.
+const forkSource = {
+  repoRoot,
+  branch: git('rev-parse', '--abbrev-ref', 'HEAD'),
+  baseTag: git('describe', '--tags', '--abbrev=0', '--match', 'v*', '--exclude', '*-*', 'HEAD'),
+  upstreamRemote: 'origin',
+  forkRemote: 'fork'
+}
+console.log(`\n[build-mac-local-arm64] version ${identity.version}, base ${forkSource.baseTag}`)
 run(
   'pnpm',
   [
@@ -53,9 +64,15 @@ run(
     '--config',
     'config/electron-builder.config.cjs',
     '--mac',
-    'dir',
+    // Why zip, not dir: Orca's local-build installer takes latest-mac.yml plus its zip.
+    'zip',
     '--arm64',
-    `-c.electronDist=${electronDist}`
+    '--publish',
+    'never',
+    `-c.electronDist=${electronDist}`,
+    ...Object.entries(forkSource).map(
+      ([key, value]) => `-c.extraMetadata.orcaForkSource.${key}=${value}`
+    )
   ],
   {
     ...process.env,
@@ -63,4 +80,6 @@ run(
     ORCA_LOCAL_BUILD_VERSION: identity.version
   }
 )
-console.log('\n[build-mac-local-arm64] Done: dist/mac-arm64/Orca.app')
+console.log(
+  '\n[build-mac-local-arm64] Done: dist/mac-arm64/Orca.app, dist/latest-mac.yml (+ zip for in-app install)'
+)
