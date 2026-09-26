@@ -62,6 +62,27 @@ function useEditorModel(
   return model
 }
 
+/** One pending timer at a time: scheduling replaces the previous one, dispose cancels it. */
+function createTimerSlot(): {
+  schedule: (run: () => void, ms: number) => void
+  dispose: () => void
+} {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  const dispose = (): void => {
+    if (timer !== null) {
+      clearTimeout(timer)
+      timer = null
+    }
+  }
+  return {
+    schedule: (run, ms) => {
+      dispose()
+      timer = setTimeout(run, ms)
+    },
+    dispose
+  }
+}
+
 export function useCodeOutline(): { target: CodeOutlineTarget | null; state: CodeOutlineState } {
   const target = useActiveOutlineTarget()
   const monaco = useSyncExternalStore(editorModelRegistry.subscribe, editorModelRegistry.get)
@@ -79,7 +100,7 @@ export function useCodeOutline(): { target: CodeOutlineTarget | null; state: Cod
       return
     }
     let generation = 0
-    let timer: ReturnType<typeof setTimeout> | null = null
+    const timer = createTimerSlot()
     const compute = (retriesLeft = MAX_OUTLINE_RETRIES): void => {
       const current = ++generation
       if (!isCodeOutlineLanguage(model.getLanguageId())) {
@@ -103,28 +124,21 @@ export function useCodeOutline(): { target: CodeOutlineTarget | null; state: Cod
           }
           if (retriesLeft > 0) {
             console.warn('[code-outline] retrying after a failed outline', error)
-            timer = setTimeout(() => compute(retriesLeft - 1), OUTLINE_RETRY_MS)
+            timer.schedule(() => compute(retriesLeft - 1), OUTLINE_RETRY_MS)
             return
           }
           console.error('[code-outline] failed to build outline', error)
           setState({ status: 'error', fileName })
         })
     }
-    const scheduleCompute = (): void => {
-      if (timer !== null) {
-        clearTimeout(timer)
-      }
-      timer = setTimeout(() => compute(), REFRESH_DEBOUNCE_MS)
-    }
+    const scheduleCompute = (): void => timer.schedule(() => compute(), REFRESH_DEBOUNCE_MS)
     setState({ status: 'loading', fileName })
     compute()
     const contentSub = model.onDidChangeContent(scheduleCompute)
     const languageSub = model.onDidChangeLanguage(() => compute())
     return () => {
       generation += 1
-      if (timer !== null) {
-        clearTimeout(timer)
-      }
+      timer.dispose()
       contentSub.dispose()
       languageSub.dispose()
     }
