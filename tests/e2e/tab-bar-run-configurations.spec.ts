@@ -32,9 +32,11 @@ async function tabCountWithLabel(page: Page, label: string): Promise<number> {
   }, label)
 }
 
+/** Picks the quick command in the Run widget, then runs it, as in JetBrains. */
 async function runFromMenu(page: Page, label: string): Promise<void> {
-  await page.getByRole('button', { name: 'More quick commands' }).first().click()
-  await page.getByRole('option', { name: new RegExp(label) }).click()
+  await page.getByTestId('run-configurations-trigger').click()
+  await page.getByRole('menuitem', { name: label }).click()
+  await page.getByRole('button', { name: `Run quick command: ${label}` }).click()
 }
 
 test('runs, reruns and stops a quick command as a single-instance run configuration', async ({
@@ -73,7 +75,7 @@ test('runs, reruns and stops a quick command as a single-instance run configurat
     },
     { quickLabel: QUICK_LABEL, longLabel: LONG_LABEL, longCommand: LONG_COMMAND }
   )
-  const controls = orcaPage.getByTestId('run-session-controls').first()
+  const controls = orcaPage.getByTestId('run-configurations-session')
 
   // A command that exits on its own finishes, and running it again reuses its tab.
   await runFromMenu(orcaPage, QUICK_LABEL)
