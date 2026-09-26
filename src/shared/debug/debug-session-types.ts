@@ -14,6 +14,12 @@ export type DebugLaunchTarget =
       /** Interpreter the user picked for this project; auto-detected when omitted. */
       pythonPath?: string
     }
+  | {
+      kind: 'python-module'
+      /** Dotted module name run as `python -m`. */
+      module: string
+      pythonPath?: string
+    }
   | { kind: 'node-file'; filePath: string }
   | { kind: 'node-script'; packageManager: NodePackageManagerName; script: string }
   | {
@@ -23,6 +29,17 @@ export type DebugLaunchTarget =
       /** launchSettings.json profile whose environment and URLs apply. */
       launchProfile?: string
     }
+  | {
+      kind: 'dotnet-program'
+      /** Absolute path of an already-built .dll; nothing is built first. */
+      program: string
+    }
+
+/** Program arguments and environment layered over what the adapter would launch with. */
+export type DebugLaunchOptions = {
+  args?: string[]
+  env?: Record<string, string>
+}
 
 export type DebugStartRequest = {
   worktreeId: string
@@ -32,6 +49,7 @@ export type DebugStartRequest = {
   target: DebugLaunchTarget
   /** Exception filters the user turned on; the adapter's defaults apply when omitted. */
   exceptionFilters?: string[]
+  launchOptions?: DebugLaunchOptions
 }
 
 export type DebugStartResult = { ok: true; sessionId: string } | { ok: false; message: string }
