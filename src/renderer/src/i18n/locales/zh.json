@@ -15126,8 +15126,6 @@
       "description": "重试面板，或将其隐藏以继续工作。"
     },
     "resize": "调整底部面板大小",
-    "gitTitle": "Git",
-    "logTab": "日志",
     "hide": "隐藏底部面板",
     "gitLog": {
       "toggleLabel": "Git 日志",
@@ -15201,5 +15199,33 @@
     "failedAt": "停在：{{value0}}",
     "failedStart": "同步无法开始。",
     "agentFallback": "已复制冲突处理提示词。请粘贴到在 {{value0}} 中运行的 AI 代理。"
+  },
+  "debug": {
+    "toolWindow": "调试",
+    "noSession": "没有正在运行的调试会话",
+    "workspaceNotFound": "找不到此文件所属的工作区",
+    "localOnly": "目前仅支持调试本地工作区（不支持 SSH、WSL 或远程运行时）",
+    "frames": "帧",
+    "framesEmpty": "程序暂停时会显示调用帧",
+    "variables": "变量",
+    "variablesEmpty": "程序暂停时会显示变量",
+    "console": "控制台",
+    "action": {
+      "debugFile": "调试 '{{value0}}'",
+      "resume": "恢复程序",
+      "pause": "暂停程序",
+      "stepOver": "单步跳过",
+      "stepInto": "单步进入",
+      "stepOut": "单步跳出",
+      "stop": "停止"
+    },
+    "status": {
+      "idle": "没有调试会话",
+      "installing": "正在下载 debugpy…",
+      "starting": "正在启动 {{value0}}…",
+      "running": "正在运行 {{value0}}",
+      "paused": "已暂停于 {{value0}}（{{value1}}）",
+      "ended": "{{value0}} 已结束"
+    }
   }
 }
