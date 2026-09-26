@@ -75,7 +75,7 @@ test('debugs a JavaScript file and an npm script with js-debug', async ({
   await orcaPage.screenshot({ path: testInfo.outputPath('node-script-debugged.png') })
 
   // Debugging from the menu makes it the tab bar's current configuration, with its own Debug button.
-  await expect(orcaPage.getByTestId('recent-run-button')).toContainText('web: dev')
-  await orcaPage.getByTestId('recent-debug-button').click()
+  await expect(orcaPage.getByTestId('run-configurations-trigger')).toContainText('web: dev')
+  await orcaPage.getByTestId('run-configurations-debug').click()
   await expectPausedOnLineTwo(orcaPage)
 })

@@ -4,7 +4,6 @@ import { useDroppable } from '@dnd-kit/core'
 import { useAppStore } from '../../store/index'
 import TabBar from '../tab-bar/TabBar'
 
-import { TabBarQuickCommandsButton } from '../tab-bar/quick-commands/TabBarQuickCommandsButton'
 import { TabGroupPaneActionsMenu } from './panel/TabGroupPaneActionsMenu'
 import { RunToolbar } from '../run/RunToolbar'
 import { useTabGroupWorkspaceModel } from './workspace-model/useTabGroupWorkspaceModel'
@@ -321,12 +320,8 @@ export default function TabGroupPanel({
                 {/* Why: drop an action whole (and from Tab order) once it can't fit beside the tab floor and "+", never leave a clipped focus target.
                     163 = 40 tab + 36 "+" + 8 padding + 47 widest collapsed quick-command trigger + 2 gap + 28 pane actions + 2 sub-pixel slack; 114 = 40 + 36 + 8 + 28 + 2. */}
                 <div ref={quickCommandsSlotRef} className="contents @max-[163px]/tab-strip:hidden">
-                  {isFocused ? <RunToolbar worktreeId={worktreeId} /> : null}
-                  <TabBarQuickCommandsButton
-                    worktreeId={worktreeId}
-                    groupId={groupId}
-                    isFocused={isFocused}
-                  />
+                  {/* Fork: the Run widget also lists quick commands, replacing TabBarQuickCommandsButton. */}
+                  {isFocused ? <RunToolbar worktreeId={worktreeId} groupId={groupId} /> : null}
                 </div>
                 {hasSplitGroups ? (
                   <div className="contents @max-[114px]/tab-strip:hidden">
