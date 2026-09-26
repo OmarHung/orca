@@ -3,13 +3,11 @@ import React from 'react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { useAppStore } from '../../store'
-import type { ProviderRateLimits } from '../../../../shared/rate-limit-types'
-import {
-  getDisplayedUsagePercentage,
-  normalizeUsagePercentageDisplay
-} from '../../../../shared/usage-percentage-display'
+import type { ProviderRateLimits, RateLimitWindow } from '../../../../shared/rate-limit-types'
+import { normalizeUsagePercentageDisplay } from '../../../../shared/usage-percentage-display'
 import { useResetCountdownClock } from '@/hooks/useResetCountdownClock'
-import { barColor, clampUsedPercent } from './tooltip'
+import { clampUsedPercent } from './tooltip'
+import { UsagePaceBar } from './UsagePaceBar'
 import { formatWindowLabel } from '../../../../shared/rate-limit-window-label'
 import { formatResetDuration } from '../../../../shared/rate-limit-reset-format'
 import { formatBareUsagePercentage, formatUsagePercentageLabel } from './usage-percentage-label'
@@ -24,7 +22,13 @@ const RESET_UNIT_FORMATS: Record<'minute' | 'hour' | 'day', Intl.NumberFormatOpt
   day: { style: 'unit', unit: 'day', unitDisplay: 'short' }
 }
 
-type InlineUsageWindow = { key: string; used: number; label: string; resetsAt: number | null }
+type InlineUsageWindow = {
+  key: string
+  window: RateLimitWindow
+  used: number
+  label: string
+  resetsAt: number | null
+}
 
 export function InlineUsageBars({
   limits,
@@ -49,6 +53,7 @@ export function InlineUsageBars({
     limits.session
       ? {
           key: 'session',
+          window: limits.session,
           used: clampUsedPercent(limits.session.usedPercent),
           label: formatWindowLabel(limits.session.windowMinutes),
           resetsAt: limits.session.resetsAt
@@ -57,6 +62,7 @@ export function InlineUsageBars({
     limits.weekly
       ? {
           key: 'weekly',
+          window: limits.weekly,
           used: clampUsedPercent(limits.weekly.usedPercent),
           label: t('auto.components.status.bar.StatusBar.5c938d39ac', 'wk'),
           resetsAt: limits.weekly.resetsAt
@@ -65,6 +71,7 @@ export function InlineUsageBars({
     limits.fableWeekly
       ? {
           key: 'fableWeekly',
+          window: limits.fableWeekly,
           used: clampUsedPercent(limits.fableWeekly.usedPercent),
           label: t('auto.components.status.bar.StatusBar.54e8d6bb2d', 'Fable'),
           resetsAt: limits.fableWeekly.resetsAt
@@ -74,6 +81,7 @@ export function InlineUsageBars({
     limits.monthly && !limits.session && !limits.weekly
       ? {
           key: 'monthly',
+          window: limits.monthly,
           used: clampUsedPercent(limits.monthly.usedPercent),
           label: formatWindowLabel(limits.monthly.windowMinutes),
           resetsAt: limits.monthly.resetsAt
@@ -119,12 +127,12 @@ export function InlineUsageBars({
             }`}
           >
             <span className="w-8 shrink-0 truncate">{window.label}</span>
-            <div className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-muted">
-              <div
-                className={`h-full rounded-full ${barColor(window.used)}`}
-                style={{ width: `${getDisplayedUsagePercentage(window.used, display)}%` }}
-              />
-            </div>
+            <UsagePaceBar
+              window={window.window}
+              display={display}
+              now={now}
+              className="h-1 min-w-0 flex-1"
+            />
             <span className="w-8 shrink-0 text-right tabular-nums">
               {formatBareUsagePercentage(window.used, display, t)}
             </span>
