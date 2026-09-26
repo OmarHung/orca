@@ -12,14 +12,27 @@ import { registerPythonHandlers } from '../python/python-ipc'
 // Why: renderer input is untrusted — it chooses what program runs and what the adapter receives.
 const SessionIdSchema = z.string().regex(/^[A-Za-z0-9-]{8,64}$/)
 
+const AbsolutePathSchema = z.string().refine((value) => isAbsolute(value))
+
+const LaunchTargetSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('python-file'),
+    filePath: AbsolutePathSchema,
+    pythonPath: AbsolutePathSchema.optional()
+  }),
+  z.object({ kind: z.literal('node-file'), filePath: AbsolutePathSchema }),
+  z.object({
+    kind: z.literal('node-script'),
+    packageManager: z.enum(['npm', 'pnpm', 'yarn', 'bun']),
+    // Why a strict pattern: the script name ends up as a process argument.
+    script: z.string().regex(/^[\w:.@/ -]{1,200}$/)
+  })
+])
+
 const StartRequestSchema = z.object({
   worktreeId: z.string().min(1),
-  filePath: z.string().min(1),
-  cwd: z.string().min(1),
-  pythonPath: z
-    .string()
-    .refine((value) => isAbsolute(value))
-    .optional(),
+  cwd: AbsolutePathSchema,
+  target: LaunchTargetSchema,
   breakpoints: z.record(
     z.string().min(1),
     z.array(

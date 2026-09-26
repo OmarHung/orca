@@ -1,4 +1,5 @@
 import React from 'react'
+import { NodeFileControls } from '../debug/NodeFileControls'
 import { PythonFileControls } from '../python/PythonFileControls'
 import { RecentRunControls } from './RecentRunControls'
 
@@ -8,6 +9,7 @@ export function RunToolbar({ worktreeId }: { worktreeId: string }): React.JSX.El
     <>
       <RecentRunControls worktreeId={worktreeId} />
       <PythonFileControls />
+      <NodeFileControls />
     </>
   )
 }
