@@ -15232,7 +15232,8 @@
   "run": {
     "action": {
       "rerun": "重新运行 '{{value0}}'",
-      "stop": "停止 '{{value0}}'"
+      "stop": "停止 '{{value0}}'",
+      "runNamed": "运行 '{{value0}}'"
     },
     "status": {
       "running": "运行中",
@@ -15241,7 +15242,19 @@
       "failed": "失败（退出码 {{value0}}）",
       "stopped": "已停止"
     },
-    "addConfiguration": "添加配置…"
+    "addConfiguration": "添加配置…",
+    "menu": {
+      "build": "构建 '{{value0}}'",
+      "test": "测试 '{{value0}}'",
+      "publish": "发布 '{{value0}}'…",
+      "run": "运行 '{{value0}}'",
+      "more": "更多运行/调试"
+    },
+    "publishConfirm": {
+      "title": "发布 '{{value0}}'？",
+      "description": "将执行：{{value0}}",
+      "confirm": "发布"
+    }
   },
   "python": {
     "interpreter": {

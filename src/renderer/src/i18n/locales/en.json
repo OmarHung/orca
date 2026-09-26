@@ -18320,7 +18320,8 @@
   "run": {
     "action": {
       "rerun": "Rerun '{{value0}}'",
-      "stop": "Stop '{{value0}}'"
+      "stop": "Stop '{{value0}}'",
+      "runNamed": "Run '{{value0}}'"
     },
     "status": {
       "running": "Running",
@@ -18329,7 +18330,19 @@
       "failed": "Failed (exit {{value0}})",
       "stopped": "Stopped"
     },
-    "addConfiguration": "Add Configuration…"
+    "addConfiguration": "Add Configuration…",
+    "menu": {
+      "build": "Build '{{value0}}'",
+      "test": "Test '{{value0}}'",
+      "publish": "Publish '{{value0}}'…",
+      "run": "Run '{{value0}}'",
+      "more": "More Run/Debug"
+    },
+    "publishConfirm": {
+      "title": "Publish '{{value0}}'?",
+      "description": "This runs: {{value0}}",
+      "confirm": "Publish"
+    }
   },
   "python": {
     "interpreter": {
