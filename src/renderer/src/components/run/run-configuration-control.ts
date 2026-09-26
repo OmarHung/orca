@@ -1,4 +1,5 @@
 import { useAppStore } from '@/store'
+import { debugLaunchTarget } from '../debug/debug-launch'
 import { sendRuntimePtyInput } from '@/runtime/runtime-terminal-inspection'
 import { runQuickCommandInNewTab } from '@/lib/run-quick-command-in-new-tab'
 import {
@@ -15,6 +16,7 @@ import type {
   TerminalQuickCommand
 } from '../../../../shared/terminal-quick-command-types'
 import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
+import type { DebugLaunchTarget } from '../../../../shared/debug/debug-session-types'
 import {
   isRunSessionActive,
   runSessionKey,
@@ -33,6 +35,8 @@ export type RunTarget = {
   command: TerminalCommandQuickCommand
   /** Directory the run's terminal starts in; the worktree root when omitted. */
   cwd?: string
+  /** How to debug the same configuration, when an adapter supports it. */
+  debug?: DebugLaunchTarget
 }
 
 /** Only shell commands are run configurations; agent prompts start agents and have no Stop/Rerun. */
@@ -241,6 +245,7 @@ export function toDetectedRunTarget(
     groupId,
     commandKey,
     cwd: configuration.projectDir,
+    ...(configuration.debug ? { debug: configuration.debug } : {}),
     command: {
       id: commandKey,
       label: detectedConfigurationLabel(configuration),
@@ -259,4 +264,24 @@ export async function runDetectedConfiguration(
   const target = toDetectedRunTarget(configuration, worktreeId, groupId)
   useRunSessionStore.getState().rememberDetectedRun(target)
   await runConfiguration(target)
+}
+
+/** Debugs a detected configuration and makes it the worktree's current one in the tab bar. */
+export async function debugDetectedConfiguration(
+  configuration: DetectedRunConfiguration,
+  worktreeId: string,
+  groupId: string | null
+): Promise<void> {
+  if (!configuration.debug) {
+    return
+  }
+  useRunSessionStore
+    .getState()
+    .rememberDetectedRun(toDetectedRunTarget(configuration, worktreeId, groupId))
+  await debugLaunchTarget({
+    worktreeId,
+    cwd: configuration.projectDir,
+    title: detectedConfigurationLabel(configuration),
+    target: configuration.debug
+  })
 }
