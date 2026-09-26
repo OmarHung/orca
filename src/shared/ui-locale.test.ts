@@ -7,12 +7,20 @@ import {
   normalizeUiLocaleTag,
   shouldShowLanguageSwitcher
 } from './ui-locale'
+import { UI_LANGUAGE_CHINESE_TRADITIONAL, UI_LANGUAGE_SYSTEM } from './ui-language'
 
 describe('ui-locale', () => {
-  it('does not map Traditional Chinese to Simplified yet', () => {
-    expect(normalizeSupportedUiLocale('zh-TW')).toBe('en')
-    expect(normalizeSupportedUiLocale('zh-HK')).toBe('en')
-    expect(normalizeSupportedUiLocale('zh-Hant')).toBe('en')
+  it('maps Traditional Chinese system locales to the Traditional catalog', () => {
+    expect(normalizeSupportedUiLocale('zh-TW')).toBe('zh-TW')
+    expect(normalizeSupportedUiLocale('zh-HK')).toBe('zh-TW')
+    expect(normalizeSupportedUiLocale('zh-MO')).toBe('zh-TW')
+    expect(normalizeSupportedUiLocale('zh-Hant')).toBe('zh-TW')
+    expect(normalizeSupportedUiLocale('zh_Hant_TW')).toBe('zh-TW')
+  })
+
+  it('resolves explicit Traditional Chinese independently of system locale', () => {
+    expect(resolveUiLocale(UI_LANGUAGE_CHINESE_TRADITIONAL, 'en-US')).toBe('zh-TW')
+    expect(resolveUiLocale(UI_LANGUAGE_SYSTEM, 'zh-TW')).toBe('zh-TW')
   })
 
   it('preserves a selected plugin language bundle id', () => {
@@ -28,10 +36,10 @@ describe('system language detection', () => {
     ['fr_CA.UTF-8', 'fr', 'supported'],
     ['pt-PT', 'pt', 'supported'],
     ['zh-Hans-TW', 'zh', 'supported'],
-    ['zh-Hant-CN', 'en', 'unsupported'],
+    ['zh-Hant-CN', 'zh-TW', 'supported'],
     ['zh-Latn-CN', 'en', 'unsupported'],
-    ['zh-MO', 'en', 'unsupported'],
-    ['zh_CN.UTF-8@hant', 'en', 'unsupported'],
+    ['zh-MO', 'zh-TW', 'supported'],
+    ['zh_CN.UTF-8@hant', 'zh-TW', 'supported'],
     ['zh_TW.UTF-8@hans', 'zh', 'supported'],
     ['de-DE', 'en', 'unsupported'],
     ['en--US', 'en', 'unknown'],

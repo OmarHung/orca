@@ -13,6 +13,7 @@ import jaCatalogUrl from './locales/ja.json?url'
 import koCatalogUrl from './locales/ko.json?url'
 import ptCatalogUrl from './locales/pt.json?url'
 import zhCatalogUrl from './locales/zh.json?url'
+import zhTwCatalogUrl from './locales/zh-TW.json?url'
 import { isPseudoLocalizationLocale, pseudoLocalizeString } from './pseudo-localization'
 import { advanceTranslationResourceVersion } from './translation-resource-version'
 import { DEFAULT_LOCALE, resolveUiLocale } from './supported-languages'
@@ -33,7 +34,8 @@ const NON_DEFAULT_LOCALE_URLS: Record<Exclude<SupportedUiLocale, 'en'>, string> 
   ja: jaCatalogUrl,
   ko: koCatalogUrl,
   pt: ptCatalogUrl,
-  zh: zhCatalogUrl
+  zh: zhCatalogUrl,
+  'zh-TW': zhTwCatalogUrl
 }
 
 function localeCatalogUrl(language: string): string | undefined {
