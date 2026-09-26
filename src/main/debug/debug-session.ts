@@ -81,6 +81,10 @@ async function handshake(
   args: Record<string, unknown>,
   breakpoints: DebugBreakpointsByFile
 ): Promise<void> {
+  // Why listen first: netcoredbg sends `initialized` in the same chunk as the `initialize`
+  // response, which is dispatched before this function resumes after the await.
+  const initialized = waitForEvent(client, 'initialized', INITIALIZED_TIMEOUT_MS)
+  initialized.catch(() => {})
   const capabilities = await client.request('initialize', {
     clientID: 'orca',
     clientName: 'Orca',
@@ -92,10 +96,8 @@ async function handshake(
     supportsRunInTerminalRequest: false,
     supportsStartDebuggingRequest: true
   })
-  const initialized = waitForEvent(client, 'initialized', INITIALIZED_TIMEOUT_MS)
   const started = client.request(request, args, { timeoutMs: null })
   // Why: either promise may reject while the other is awaited; the race below surfaces it.
-  initialized.catch(() => {})
   started.catch(() => {})
   await Promise.race([initialized, started.then(() => initialized)])
   await configure(client, isRecord(capabilities) ? capabilities : {}, breakpoints)

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   detectDotnetRunConfigurations,
   isDotnetProjectFile,
+  readLaunchProfileDetails,
   readLaunchProfiles
 } from './dotnet-run-configurations'
 
@@ -103,5 +104,39 @@ describe('detectDotnetRunConfigurations', () => {
     expect(configurations[1].command).toBe(
       'dotnet run --project Project2.csproj --launch-profile "My App"'
     )
+  })
+
+  it('attaches a debug target to each run, naming the project file and profile', () => {
+    const configurations = detect(WEB_PROJECT, { launchSettingsText: LAUNCH_SETTINGS })
+
+    expect(configurations[1].debug).toEqual({
+      kind: 'dotnet-project',
+      projectFile: '/w/Project2/Project2.csproj',
+      launchProfile: 'MvcWeb'
+    })
+    expect(configurations[0].debug).toBeUndefined()
+  })
+})
+
+describe('readLaunchProfileDetails', () => {
+  it('reads the environment, URLs and arguments dotnet run would apply', () => {
+    const text = `{
+      "profiles": {
+        "Api": {
+          "commandName": "Project",
+          "commandLineArgs": "--seed demo",
+          "applicationUrl": "https://localhost:7001;http://localhost:5001",
+          "environmentVariables": { "ASPNETCORE_ENVIRONMENT": "Development", "N": 1 }
+        }
+      }
+    }`
+
+    expect(readLaunchProfileDetails(text, 'Api')).toEqual({
+      environmentVariables: { ASPNETCORE_ENVIRONMENT: 'Development' },
+      applicationUrl: 'https://localhost:7001;http://localhost:5001',
+      commandLineArgs: '--seed demo'
+    })
+    expect(readLaunchProfileDetails(text, 'Missing')).toBeNull()
+    expect(readLaunchProfileDetails(null, 'Api')).toBeNull()
   })
 })

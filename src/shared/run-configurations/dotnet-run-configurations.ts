@@ -34,6 +34,61 @@ export function readLaunchProfiles(launchSettingsText: string | null): string[] 
   })
 }
 
+export type LaunchProfileDetails = {
+  environmentVariables: Record<string, string>
+  applicationUrl: string | null
+  commandLineArgs: string | null
+}
+
+function stringField(parsed: unknown, key: string): string | null {
+  if (typeof parsed !== 'object' || parsed === null) {
+    return null
+  }
+  const value: unknown = Object.getOwnPropertyDescriptor(parsed, key)?.value
+  return typeof value === 'string' ? value : null
+}
+
+/** What `dotnet run --launch-profile` would apply, so the debugger can apply the same. */
+export function readLaunchProfileDetails(
+  launchSettingsText: string | null,
+  profileName: string
+): LaunchProfileDetails | null {
+  if (!launchSettingsText) {
+    return null
+  }
+  const value: unknown = parseJsonc(launchSettingsText)
+  const profiles: unknown =
+    typeof value === 'object' && value !== null
+      ? Object.getOwnPropertyDescriptor(value, 'profiles')?.value
+      : undefined
+  const profile: unknown =
+    typeof profiles === 'object' && profiles !== null
+      ? Object.getOwnPropertyDescriptor(profiles, profileName)?.value
+      : undefined
+  if (typeof profile !== 'object' || profile === null) {
+    return null
+  }
+  const env: unknown = Object.getOwnPropertyDescriptor(profile, 'environmentVariables')?.value
+  const environmentVariables =
+    typeof env === 'object' && env !== null
+      ? Object.fromEntries(
+          Object.entries(env).filter(
+            (entry): entry is [string, string] => typeof entry[1] === 'string'
+          )
+        )
+      : {}
+  return {
+    environmentVariables,
+    applicationUrl: stringField(profile, 'applicationUrl'),
+    commandLineArgs: stringField(profile, 'commandLineArgs')
+  }
+}
+
+function joinProjectPath(dir: string, fileName: string): string {
+  const separator = dir.includes('\\') && !dir.includes('/') ? '\\' : '/'
+  return `${dir.replace(/[\\/]+$/, '')}${separator}${fileName}`
+}
+
 /** Build, then Run per launch profile and Publish per publish profile (or Test for test projects). */
 export function detectDotnetRunConfigurations(options: {
   projectDir: string
@@ -77,7 +132,12 @@ export function detectDotnetRunConfigurations(options: {
           id: `${idBase}:run:${profile}`,
           kind: 'run' as const,
           name: profile,
-          command: `dotnet run --project ${project} --launch-profile ${quoteShellArgument(profile)}`
+          command: `dotnet run --project ${project} --launch-profile ${quoteShellArgument(profile)}`,
+          debug: {
+            kind: 'dotnet-project' as const,
+            projectFile: joinProjectPath(projectDir, projectFileName),
+            launchProfile: profile
+          }
         }))
       : [
           {
@@ -85,7 +145,11 @@ export function detectDotnetRunConfigurations(options: {
             id: `${idBase}:run`,
             kind: 'run' as const,
             name: 'Run',
-            command: `dotnet run --project ${project}`
+            command: `dotnet run --project ${project}`,
+            debug: {
+              kind: 'dotnet-project' as const,
+              projectFile: joinProjectPath(projectDir, projectFileName)
+            }
           }
         ]
   const publishes =
