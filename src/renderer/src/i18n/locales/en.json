@@ -18324,8 +18324,6 @@
       "description": "Retry the panel or hide it to keep working."
     },
     "resize": "Resize bottom panel",
-    "gitTitle": "Git",
-    "logTab": "Log",
     "hide": "Hide bottom panel",
     "gitLog": {
       "toggleLabel": "Git Log",
@@ -18399,5 +18397,33 @@
     "failedAt": "Stopped at: {{value0}}",
     "failedStart": "The sync could not start.",
     "agentFallback": "Copied a conflict-resolution prompt. Paste it into an agent running in {{value0}}."
+  },
+  "debug": {
+    "toolWindow": "Debug",
+    "noSession": "No debug session is running",
+    "workspaceNotFound": "Could not find the workspace for this file",
+    "localOnly": "Debugging is only available for local workspaces for now (not SSH, WSL or remote runtimes)",
+    "frames": "Frames",
+    "framesEmpty": "Frames appear when the program pauses",
+    "variables": "Variables",
+    "variablesEmpty": "Variables appear when the program pauses",
+    "console": "Console",
+    "action": {
+      "debugFile": "Debug '{{value0}}'",
+      "resume": "Resume Program",
+      "pause": "Pause Program",
+      "stepOver": "Step Over",
+      "stepInto": "Step Into",
+      "stepOut": "Step Out",
+      "stop": "Stop"
+    },
+    "status": {
+      "idle": "No debug session",
+      "installing": "Downloading debugpy…",
+      "starting": "Starting {{value0}}…",
+      "running": "Running {{value0}}",
+      "paused": "Paused in {{value0}} ({{value1}})",
+      "ended": "{{value0}} finished"
+    }
   }
 }
