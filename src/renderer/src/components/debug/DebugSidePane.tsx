@@ -35,7 +35,7 @@ function TabButton({
 export function DebugSidePane(): React.JSX.Element {
   const [tab, setTab] = useState<SideTab>('console')
   return (
-    <div className="flex min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <div role="tablist" className="flex shrink-0 items-center gap-1 px-1 py-0.5">
         <TabButton
           active={tab === 'console'}
