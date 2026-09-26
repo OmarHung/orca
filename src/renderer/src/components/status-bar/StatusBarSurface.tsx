@@ -18,6 +18,7 @@ import { StatusBarUsageEmptyCta } from './StatusBarUsageEmptyCta'
 import { UsagePercentageDisplayChangeNotice } from './UsagePercentageDisplayChangeNotice'
 import { UpdateStatusSegment } from './UpdateStatusSegment'
 import { GitLogStatusSegment } from '../bottom-panel/GitLogStatusSegment'
+import { DebugStatusSegment } from '../debug/DebugStatusSegment'
 import { SkillUpdateStatusSegment } from './SkillUpdateStatusSegment'
 import { NativeChatResumeStatusSegment } from './NativeChatResumeStatusSegment'
 import { CaffeinateStatusSegment } from './CaffeinateStatusSegment'
@@ -288,6 +289,7 @@ export function StatusBarSurface({
             {showSsh ? <SshStatusSegment compact={compact} iconOnly={segmentsIconOnly} /> : null}
           </React.Suspense>
           <GitLogStatusSegment />
+          <DebugStatusSegment />
           {showFloatingTerminalToggle && (
             <FloatingTerminalIconContextMenu currentLocation="status-bar" className="relative">
               <Tooltip>

@@ -24,6 +24,7 @@ import { useMonacoEditorMount } from './use-monaco-editor-mount'
 import { useDocumentDarkTheme } from '@/hooks/use-document-dark-theme'
 import { snapshotMonacoViewState } from './monaco-view-state-persistence'
 import { MonacoMarkdownAnnotationOverlay } from './MonacoMarkdownAnnotationOverlay'
+import { useMonacoDebugDecorations } from '../debug/use-monaco-debug-decorations'
 
 type MonacoEditorProps = {
   fileId: string
@@ -170,6 +171,8 @@ export default function MonacoEditor({
       readOnly
     })
   }, [editorFontFamily, editorFontSize, editorWordWrap, readOnly])
+
+  useMonacoDebugDecorations(mountedEditor, filePath, language)
 
   const decorations = useMonacoEditorDecorations({
     editorRef,
