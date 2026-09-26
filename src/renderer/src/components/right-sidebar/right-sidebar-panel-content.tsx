@@ -51,7 +51,6 @@ export function RightSidebarPanelContent({
         {effectiveTab === 'ports' && (
           <PortsPanel isVisible={rightSidebarOpen && effectiveTab === 'ports'} />
         )}
-        {effectiveTab === 'outline' && <CodeOutlinePanel />}
         {effectiveTab === 'vault' && (
           <AiVaultSidebarPanel
             focusSearch={focusVaultSearch}

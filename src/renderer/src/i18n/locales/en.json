@@ -14829,8 +14829,7 @@
             "aiVaultSessionHistory": "Agents",
             "folderWorkspaces": "Attached worktrees",
             "parentPrChecks": "PR Checks",
-            "creatingWorkspace": "Available when the workspace is ready",
-            "codeOutline": "Structure"
+            "creatingWorkspace": "Available when the workspace is ready"
           },
           "right": {
             "panel": {
@@ -18901,7 +18900,9 @@
           "empty": "No symbols in this file.",
           "collapseAll": "Collapse All",
           "filter": "Filter symbols",
-          "clearFilter": "Clear filter"
+          "clearFilter": "Clear filter",
+          "toggle": "Toggle Structure section",
+          "resize": "Resize Structure"
         },
         "PluginDeclarativePanel": {
           "dismissLoadError": "Dismiss",

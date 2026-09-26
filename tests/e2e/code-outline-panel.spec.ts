@@ -43,6 +43,7 @@ const FILES: Record<string, string> = {
     '    public int Count { get; set; }',
     '    public void Save() { }',
     '    public void Save(string path) { }',
+    '    public void ArchiveEveryPublishedArticleOlderThanTheRetentionWindow(int retentionDays, bool dryRun) { }',
     '}'
   ].join('\n')
 }
@@ -78,7 +79,7 @@ async function openEditorFile(page: Page, worktreePath: string, relativePath: st
   )
 }
 
-test('the Structure tab outlines TypeScript, Python and C# files and jumps to symbols', async ({
+test('the Explorer Structure section outlines TypeScript, Python and C# files and jumps to symbols', async ({
   orcaPage,
   testRepoPath,
   registerPostElectronShutdownCleanup
@@ -93,8 +94,7 @@ test('the Structure tab outlines TypeScript, Python and C# files and jumps to sy
   await waitForSessionReady(orcaPage)
   await activateGoldenWorktree(orcaPage, testRepoPath, fixture.worktreePath)
   await openEditorFile(orcaPage, fixture.worktreePath, 'shapes.ts')
-  await orcaPage.evaluate(() => window.__store?.getState().setRightSidebarOpen(true))
-  await orcaPage.getByRole('button', { name: 'Structure', exact: true }).click()
+  await orcaPage.evaluate(() => window.__store?.getState().showRightSidebarFiles())
 
   const tree = orcaPage.getByRole('tree', { name: 'Structure' })
   await expect(tree.getByRole('treeitem', { name: 'Circle' })).toBeVisible({ timeout: 30_000 })
@@ -123,7 +123,27 @@ test('the Structure tab outlines TypeScript, Python and C# files and jumps to sy
 
   await openEditorFile(orcaPage, fixture.worktreePath, 'Repo.cs')
   await expect(tree.getByRole('treeitem')).toHaveText(
-    ['App', 'Repo', 'Count', 'Save()', 'Save(string path)'],
+    [
+      'App',
+      'Repo',
+      'Count',
+      'Save()',
+      'Save(string path)',
+      'ArchiveEveryPublishedArticleOlderThanTheRetentionWindow(int retentionDays, bool dryRun)'
+    ],
     { timeout: 30_000 }
   )
+  // Long names widen the tree for horizontal scrolling instead of being truncated.
+  const scroll = await tree.evaluate((node) => ({
+    client: node.clientWidth,
+    scroll: node.scrollWidth
+  }))
+  expect(scroll.scroll).toBeGreaterThan(scroll.client)
+
+  const toggle = orcaPage.getByRole('button', { name: 'Toggle Structure section' })
+  await toggle.click()
+  await expect(tree).toBeHidden()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  await toggle.click()
+  await expect(tree.getByRole('treeitem', { name: 'Repo', exact: true })).toBeVisible()
 })
