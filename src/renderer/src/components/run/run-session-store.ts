@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import type { RunTarget } from './run-configuration-control'
 
 /** `finished` is a clean exit whose code the shell did not report. */
 export type RunSessionStatus =
@@ -45,9 +44,6 @@ export function finishRunSession(session: RunSession, exitCode: number | null): 
 
 type RunSessionState = {
   sessionsByKey: Record<string, RunSession>
-  /** Worktree id → the detected configuration last run there, for the tab bar controls. */
-  lastDetectedRunByWorktree: Record<string, RunTarget>
-  rememberDetectedRun: (target: RunTarget) => void
   upsertSession: (session: RunSession) => void
   setStatus: (key: string, status: RunSessionStatus) => void
   /** Returns the session that finished, if the tab belonged to an active run. */
@@ -58,11 +54,6 @@ type RunSessionState = {
 // synced app store keeps this fork feature isolated from upstream store changes.
 export const useRunSessionStore = create<RunSessionState>((set, get) => ({
   sessionsByKey: {},
-  lastDetectedRunByWorktree: {},
-  rememberDetectedRun: (target) =>
-    set({
-      lastDetectedRunByWorktree: { ...get().lastDetectedRunByWorktree, [target.worktreeId]: target }
-    }),
   upsertSession: (session) =>
     set({ sessionsByKey: { ...get().sessionsByKey, [session.key]: session } }),
   setStatus: (key, status) => {

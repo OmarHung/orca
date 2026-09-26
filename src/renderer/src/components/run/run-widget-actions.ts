@@ -14,7 +14,7 @@ export function runWidgetSessionTarget(
   scope: RunWidgetScope
 ): RunTarget | null {
   switch (item.kind) {
-    case 'detected':
+    case 'recent':
       return item.target
     case 'quick-command':
       return toRunTarget(item.entry, scope.worktreeId, scope.groupId)
@@ -38,7 +38,7 @@ export function canRunWidgetItem(item: RunWidgetItem): boolean {
 }
 
 export function canDebugWidgetItem(item: RunWidgetItem): boolean {
-  if (item.kind === 'detected') {
+  if (item.kind === 'recent') {
     return Boolean(item.target.debug && item.target.cwd)
   }
   return item.kind === 'configuration' && item.configuration.type === 'debug'
@@ -46,7 +46,7 @@ export function canDebugWidgetItem(item: RunWidgetItem): boolean {
 
 export async function runWidgetItem(item: RunWidgetItem, scope: RunWidgetScope): Promise<void> {
   switch (item.kind) {
-    case 'detected':
+    case 'recent':
       await runConfiguration({ ...item.target, groupId: scope.groupId })
       return
     case 'configuration':
@@ -77,7 +77,7 @@ export async function debugWidgetItem(item: RunWidgetItem, scope: RunWidgetScope
     await launchRunConfiguration({ ...scope, reference: item.configuration.id })
     return
   }
-  if (item.kind === 'detected' && item.target.debug && item.target.cwd) {
+  if (item.kind === 'recent' && item.target.debug && item.target.cwd) {
     await debugLaunchTarget({
       worktreeId: scope.worktreeId,
       cwd: item.target.cwd,
