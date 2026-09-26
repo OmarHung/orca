@@ -241,6 +241,9 @@ importers:
       '@parcel/watcher':
         specifier: ^2.5.6
         version: 2.5.6
+      '@vscode/tree-sitter-wasm':
+        specifier: 0.3.1
+        version: 0.3.1
       '@xterm/addon-serialize':
         specifier: 0.15.0-beta.330
         version: 0.15.0-beta.330(patch_hash=17ca66ab9c7f52fc2fee94053b3b587c1210da468f3ddc7c4f5dba50b521c93e)(@xterm/xterm@6.1.0-beta.336(patch_hash=5d4854a928100951e33d5a56c95bab7123c153f0f3532eef1dcf47c6101ef48b))
@@ -4630,6 +4633,9 @@ packages:
 
   '@vscode/ripgrep-universal@1.18.0':
     resolution: {integrity: sha512-kgrAVy1L/v/8erAjo+I720ifTf7o4rvYUwgsuEu97XAEBtPT9sk3HhcSgFpxMydvNmwdJtXo9/AVee7JjocTrg==}
+
+  '@vscode/tree-sitter-wasm@0.3.1':
+    resolution: {integrity: sha512-RJFoomET6FajjG511fmQxeBQfU6M24a0aFZPqpid+ttIxanWf1VGytBG0UmsGjt07qmIPJS8U31D+aecuCucsQ==}
 
   '@vscode/windows-process-tree@0.8.0':
     resolution: {integrity: sha512-TI+h2GRwX+igD/YYJMQQVAFcsCNSg7Te2yYxQpKMzwto5RsJ8d2KKgOeur/p/6sAOQwZvopiTDOClyTHEn9MhQ==}
@@ -11561,6 +11567,8 @@ snapshots:
   '@vscode/debugprotocol@1.68.0': {}
 
   '@vscode/ripgrep-universal@1.18.0': {}
+
+  '@vscode/tree-sitter-wasm@0.3.1': {}
 
   '@vscode/windows-process-tree@0.8.0(patch_hash=a09f2e8b2b4e73ef20c317af91f9e06c09abf62fa2c891d99b16f53047f596fd)':
     dependencies:
