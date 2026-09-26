@@ -14,7 +14,7 @@ import { getRepoExecutionHostId } from '../../../../shared/execution-host'
 import type { TerminalQuickCommand } from '../../../../shared/terminal-quick-command-types'
 import { useTabBarQuickCommandsShortcut } from '../tab-bar/tab-bar-quick-commands-shortcut'
 import { EditRunConfigurationsDialog } from './EditRunConfigurationsDialog'
-import { importWorkspaceLaunchJson } from './launch-json-import-action'
+import { importWorkspaceLaunchJson, useWorkspaceHasLaunchJson } from './launch-json-import-action'
 import { RunSessionControls } from './RunSessionControls'
 import { RunWidgetMenu } from './RunWidgetMenu'
 import { loadSharedRunConfigurations } from './run-configuration-launcher'
@@ -110,6 +110,8 @@ export function RunWidget({
     }
   }
   useTabBarQuickCommandsShortcut({ menuOpen, onOpenChange: onMenuOpenChange })
+  // Why keyed by menuOpen: the file can appear or disappear between openings.
+  const hasLaunchJson = useWorkspaceHasLaunchJson(worktreeId, menuOpen)
   if (!data) {
     return null
   }
@@ -160,7 +162,9 @@ export function RunWidget({
           selectedKey={selected?.key ?? null}
           onSelect={(item) => select(data.repoId, item.key)}
           onEditConfigurations={() => setEditorOpen(true)}
-          onImportLaunchJson={() => void importWorkspaceLaunchJson(worktreeId, data.repoId)}
+          onImportLaunchJson={
+            hasLaunchJson ? () => void importWorkspaceLaunchJson(worktreeId, data.repoId) : null
+          }
           onAddQuickCommand={
             quickRepoId
               ? () =>
