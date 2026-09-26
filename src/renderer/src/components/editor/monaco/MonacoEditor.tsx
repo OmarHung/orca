@@ -38,6 +38,7 @@ import {
 import { useMonacoTheme } from '@/lib/editor/appearance/use-monaco-theme'
 import { useEditorModelRekeyCarry } from '../model-lifetime/identity/editor-model-rekey-carry'
 import { useNewModelLineEnding } from '../model-lifetime/buffer-text/editor-new-model-line-ending'
+import { useMonacoDebugDecorations } from '../../debug/use-monaco-debug-decorations'
 
 type MonacoEditorProps = {
   fileId: string
@@ -208,6 +209,8 @@ export default function MonacoEditor({
     passiveMirror,
     inlineEnabled: settings?.editorInlineBlame === true
   })
+
+  useMonacoDebugDecorations(mountedEditor, filePath, language)
 
   const decorations = useMonacoEditorDecorations({
     editorRef,

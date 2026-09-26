@@ -296,7 +296,9 @@ export function createAppCommandHandlers(
       'bottomPanel.gitLog.toggle',
       () =>
         workspaceChromeActive
-          ? claim('bottomPanel.gitLog.toggle', () => useBottomPanelLayout.getState().toggle())
+          ? claim('bottomPanel.gitLog.toggle', () =>
+              useBottomPanelLayout.getState().toggleTab('git-log')
+            )
           : false
     ]
   ])
