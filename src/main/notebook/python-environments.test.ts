@@ -1,10 +1,16 @@
-import { join } from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { runProcessMock } = vi.hoisted(() => ({ runProcessMock: vi.fn() }))
 vi.mock('../../shared/child-process/run-process', () => ({ runProcess: runProcessMock }))
 
-import { findWorkspaceInterpreters, installIpykernel } from './python-environments'
+import {
+  findWorkspaceInterpreters,
+  installIpykernel,
+  listPythonEnvironments
+} from './python-environments'
 
 function existing(...paths: string[]): (path: string) => boolean {
   return (path) => paths.includes(path)
@@ -41,7 +47,83 @@ describe('findWorkspaceInterpreters', () => {
   })
 })
 
+describe('listPythonEnvironments', () => {
+  let root = ''
+  const windows = process.platform === 'win32'
+  const venvPython = (): string =>
+    join(root, '.venv', ...(windows ? ['Scripts', 'python.exe'] : ['bin', 'python']))
+  const condaPython = (): string =>
+    join(root, 'nb', '.conda', ...(windows ? ['python.exe'] : ['bin', 'python']))
+  const programs = (): string[] => runProcessMock.mock.calls.map(([spec]) => spec.program)
+
+  beforeEach(() => {
+    runProcessMock.mockReset()
+    runProcessMock.mockImplementation(async ({ program }: { program: string }) => ({
+      code: 0,
+      stdout: `${program}\n3.13.0\n`,
+      stderr: ''
+    }))
+    root = mkdtempSync(join(tmpdir(), 'orca-pyenvs-'))
+    for (const interpreter of [venvPython(), condaPython()]) {
+      mkdirSync(dirname(interpreter), { recursive: true })
+      writeFileSync(interpreter, '')
+    }
+    writeFileSync(
+      join(root, '.venv', 'pyvenv.cfg'),
+      'home = /usr/bin\nversion_info = 3.12.1.final.0\n'
+    )
+    const condaMeta = join(root, 'nb', '.conda', 'conda-meta')
+    mkdirSync(condaMeta)
+    writeFileSync(join(condaMeta, 'python-dateutil-2.9.0-pyhd8ed1ab_0.json'), '{}')
+    writeFileSync(join(condaMeta, 'python-3.11.9-h8d4a6d2_0.json'), '{}')
+    return () => rmSync(root, { recursive: true, force: true })
+  })
+
+  it('lists workspace envs from disk without running them before trust', async () => {
+    const found = await listPythonEnvironments(join(root, 'nb', 'a.ipynb'), root, {
+      runWorkspaceInterpreters: false
+    })
+    expect(programs()).not.toContain(venvPython())
+    expect(programs()).not.toContain(condaPython())
+    expect(programs().length).toBeGreaterThan(0)
+    expect(found.workspace).toEqual([
+      { path: condaPython(), name: '.conda', version: '3.11.9' },
+      { path: venvPython(), name: '.venv', version: '3.12.1' }
+    ])
+  })
+
+  it('reads the stdlib venv version key and omits a version it cannot find', async () => {
+    writeFileSync(join(root, '.venv', 'pyvenv.cfg'), 'home = /usr/bin\nversion = 3.10.4\n')
+    const found = await listPythonEnvironments(join(root, 'a.ipynb'), root, {
+      runWorkspaceInterpreters: false
+    })
+    expect(found.workspace).toEqual([{ path: venvPython(), name: '.venv', version: '3.10.4' }])
+
+    writeFileSync(join(root, '.venv', 'pyvenv.cfg'), 'home = /usr/bin\n')
+    const unversioned = await listPythonEnvironments(join(root, 'a.ipynb'), root, {
+      runWorkspaceInterpreters: false
+    })
+    expect(unversioned.workspace).toEqual([{ path: venvPython(), name: '.venv' }])
+  })
+
+  it('probes workspace envs once the notebook is trusted, dropping ones that fail', async () => {
+    runProcessMock.mockImplementation(async ({ program }: { program: string }) =>
+      program === condaPython()
+        ? { code: 1, stdout: '', stderr: 'broken' }
+        : { code: 0, stdout: `${program}\n3.13.0\n`, stderr: '' }
+    )
+    const found = await listPythonEnvironments(join(root, 'nb', 'a.ipynb'), root, {
+      runWorkspaceInterpreters: true
+    })
+    expect(programs()).toContain(venvPython())
+    expect(programs()).toContain(condaPython())
+    expect(found.workspace).toEqual([{ path: venvPython(), name: '.venv', version: '3.13.0' }])
+  })
+})
+
 describe('installIpykernel', () => {
+  beforeEach(() => runProcessMock.mockReset())
+
   it('bootstraps pip with ensurepip when the env has none, then installs', async () => {
     const result = (code: number, stderr = '') => ({ code, stderr, stdout: '' })
     runProcessMock

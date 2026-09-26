@@ -48,7 +48,7 @@ import { useNotebookKernelState } from './ipynb-kernel-store'
 type KernelState = ReturnType<typeof useNotebookKernelState>
 
 function environmentLabel({ name, version }: PythonEnvironment): string {
-  return `${name} (Python ${version})`
+  return version ? `${name} (Python ${version})` : name
 }
 
 function kernelLabel({ environment, status }: KernelState): string {
@@ -117,15 +117,17 @@ export function IpynbKernelToolbar({
       return
     }
     let current = true
-    void window.api.notebook.listPythonEnvironments({ filePath, rootPath }).then((found) => {
-      if (current) {
-        setEnvironments(found)
-      }
-    })
+    void window.api.notebook
+      .listPythonEnvironments({ filePath, rootPath, runWorkspaceInterpreters: kernel.trusted })
+      .then((found) => {
+        if (current) {
+          setEnvironments(found)
+        }
+      })
     return () => {
       current = false
     }
-  }, [filePath, pickerOpen, rootPath])
+  }, [filePath, kernel.trusted, pickerOpen, rootPath])
 
   const choose = (path: string): void => {
     const environment = [...(environments?.workspace ?? []), ...(environments?.path ?? [])].find(
