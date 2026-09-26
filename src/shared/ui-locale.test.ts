@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { normalizeSupportedUiLocale, resolveUiLocale, resolveRendererUiLocale } from './ui-locale'
 import {
   UI_LANGUAGE_CHINESE,
+  UI_LANGUAGE_CHINESE_TRADITIONAL,
   UI_LANGUAGE_ENGLISH,
   UI_LANGUAGE_FRENCH,
   UI_LANGUAGE_JAPANESE,
@@ -45,10 +46,17 @@ describe('ui-locale', () => {
     expect(normalizeSupportedUiLocale('de-DE')).toBe('en')
   })
 
-  it('does not map Traditional Chinese to Simplified yet', () => {
-    expect(normalizeSupportedUiLocale('zh-TW')).toBe('en')
-    expect(normalizeSupportedUiLocale('zh-HK')).toBe('en')
-    expect(normalizeSupportedUiLocale('zh-Hant')).toBe('en')
+  it('maps Traditional Chinese system locales to the Traditional catalog', () => {
+    expect(normalizeSupportedUiLocale('zh-TW')).toBe('zh-TW')
+    expect(normalizeSupportedUiLocale('zh-HK')).toBe('zh-TW')
+    expect(normalizeSupportedUiLocale('zh-MO')).toBe('zh-TW')
+    expect(normalizeSupportedUiLocale('zh-Hant')).toBe('zh-TW')
+    expect(normalizeSupportedUiLocale('zh_Hant_TW')).toBe('zh-TW')
+  })
+
+  it('resolves explicit Traditional Chinese independently of system locale', () => {
+    expect(resolveUiLocale(UI_LANGUAGE_CHINESE_TRADITIONAL, 'en-US')).toBe('zh-TW')
+    expect(resolveUiLocale(UI_LANGUAGE_SYSTEM, 'zh-TW')).toBe('zh-TW')
   })
 
   it('resolves explicit English independently of system locale', () => {

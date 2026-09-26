@@ -23,6 +23,9 @@ new tag, runs `pnpm install --frozen-lockfile`, `pnpm tc` and focused tests, the
 force-with-lease pushes `omar/custom` and fast-forwards the fork's `main`, and with `--build`
 builds the local app.
 
+After the rebase it regenerates the Traditional Chinese catalog (see below) and commits it when
+upstream added or changed Simplified Chinese strings.
+
 On a conflict it stops. Resolve, `git add`, `git rebase --continue`, then re-run the same command:
 an already-rebased branch is only verified, pushed, and built.
 
@@ -98,3 +101,18 @@ This script differs in three ways, each for a problem hit on this machine:
 - Signing errors: confirm the identity with `security find-identity -v -p codesigning`.
 
 Scripts live here, not in `package.json`, so upstream `package.json` edits never conflict.
+
+## Traditional Chinese (zh-TW)
+
+`src/renderer/src/i18n/locales/zh-TW.json` is generated, never edited by hand:
+
+```bash
+node config/scripts/fork-maintenance/generate-zh-tw-locale.mjs          # rewrite
+node config/scripts/fork-maintenance/generate-zh-tw-locale.mjs --check  # exit 1 when stale
+```
+
+It converts `zh.json` with OpenCC (`cn → twp`: characters plus Taiwan phrasing such as 文件→檔案,
+默认→預設), then applies `zh-tw-term-overrides.json` for UI terms OpenCC leaves Mainland-style
+(智能体→代理, 终端→終端機, 通过→透過 where it means "via"). To fix a wording, add an override
+there rather than editing the JSON. OpenCC is installed into `node_modules/.cache`, not
+`package.json`, so the lockfile keeps matching upstream.

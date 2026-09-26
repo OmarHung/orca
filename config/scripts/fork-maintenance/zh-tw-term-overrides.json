@@ -1,0 +1,127 @@
+[
+  {
+    "from": "智慧體",
+    "to": "代理",
+    "why": "\"Agent\"; OpenCC turns 智能体 into 智慧體, which Taiwan UI copy does not use."
+  },
+  {
+    "from": "無法撤銷",
+    "to": "無法復原",
+    "why": "\"cannot be undone\"; 撤銷 stays where it means revoke."
+  },
+  {
+    "from": "終端(?!機)",
+    "to": "終端機",
+    "why": "\"Terminal\"."
+  },
+  {
+    "from": "標籤頁",
+    "to": "分頁",
+    "why": "\"Tab\"."
+  },
+  {
+    "from": "提交資訊",
+    "to": "提交訊息",
+    "why": "\"Commit message\"."
+  },
+  {
+    "from": "賬",
+    "to": "帳",
+    "why": "帳戶／帳號 is the Taiwan form."
+  },
+  {
+    "from": "(?<![已均須查次出])通過(?!\\s*($|[，。、；：！？或）]))",
+    "to": "透過",
+    "why": "\"via\"; 通過 stays where it means passed (檢查已通過, 14 次通過, a bare 通過)."
+  },
+  {
+    "from": "計算機",
+    "to": "電腦",
+    "why": "\"Computer\"."
+  },
+  {
+    "from": "區域網(?!路)",
+    "to": "區域網路",
+    "why": "\"LAN\"."
+  },
+  {
+    "from": "反饋",
+    "to": "回饋",
+    "why": "\"Feedback\"."
+  },
+  {
+    "from": "當前",
+    "to": "目前",
+    "why": "\"Current\"."
+  },
+  {
+    "from": "選項卡",
+    "to": "分頁",
+    "why": "\"Tab\"."
+  },
+  {
+    "from": "獲取",
+    "to": "取得",
+    "why": "\"Get/fetch\"."
+  },
+  {
+    "from": "模板",
+    "to": "範本",
+    "why": "\"Template\"."
+  },
+  {
+    "from": "超時",
+    "to": "逾時",
+    "why": "\"Timed out\"."
+  },
+  {
+    "from": "批准",
+    "to": "核准",
+    "why": "\"Approve\"."
+  },
+  {
+    "from": "響應",
+    "to": "回應",
+    "why": "\"Response\"."
+  },
+  {
+    "from": "滾動",
+    "to": "捲動",
+    "why": "\"Scroll\"."
+  },
+  {
+    "from": "評審人",
+    "to": "審查者",
+    "why": "\"Reviewer\"; before the 評審 rule."
+  },
+  {
+    "from": "評審",
+    "to": "審查",
+    "why": "\"Review\"."
+  },
+  {
+    "from": "編碼代理",
+    "to": "程式開發代理",
+    "why": "\"Coding agent\"; 編碼 means encoding in Taiwan."
+  },
+  {
+    "from": "配置檔案",
+    "to": "設定檔",
+    "why": "\"Profile\"/\"config file\"; before the 配置 rule."
+  },
+  {
+    "from": "配置",
+    "to": "設定",
+    "why": "\"Configure\"/\"configuration\" (執行/除錯設定, 已設定的主機)."
+  },
+  {
+    "from": "臺",
+    "to": "台",
+    "why": "這台／平台 is the everyday form in Taiwan UI copy."
+  },
+  {
+    "from": "倉庫",
+    "to": "儲存庫",
+    "why": "\"Repository\"."
+  }
+]
