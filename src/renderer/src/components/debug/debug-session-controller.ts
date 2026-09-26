@@ -14,6 +14,7 @@ import {
 } from './debug-protocol-readers'
 import { useDebugStore } from './debug-store'
 import { useBreakpointStore } from './breakpoint-store'
+import { useWatchStore } from './watch-store'
 import {
   adapterIdForTarget,
   applyBreakpointEvent,
@@ -21,6 +22,7 @@ import {
   syncAllBreakpoints
 } from './breakpoint-sync'
 import { currentSessionId, dapRequest, reportDebugError } from './debug-request'
+import { refreshWatches } from './debug-evaluate'
 
 const STACK_DEPTH = 64
 
@@ -59,9 +61,10 @@ export async function selectDebugFrame(frameId: number): Promise<void> {
       revealDebugLocation(session.worktreeId, executionLocation.path, executionLocation.line)
     }
     const firstCheapScope = scopes.find((scope) => !scope.expensive)
-    if (firstCheapScope) {
-      await loadDebugVariables(firstCheapScope.variablesReference)
-    }
+    await Promise.all([
+      firstCheapScope ? loadDebugVariables(firstCheapScope.variablesReference) : null,
+      refreshWatches()
+    ])
   } catch (error) {
     reportDebugError(error)
   }
@@ -114,6 +117,7 @@ function handleEvent(event: DebugSessionEvent): void {
     }
     if (event.phase === 'ended') {
       useBreakpointStore.getState().clearVerified()
+      useWatchStore.getState().setResults({})
       store.clearPausedState()
       store.updateSession({ stoppedThreadId: null, stopReason: null })
     }
@@ -124,6 +128,7 @@ function handleEvent(event: DebugSessionEvent): void {
     void handleStopped(body)
   } else if (name === 'continued') {
     store.clearPausedState()
+    useWatchStore.getState().setResults({})
     store.updateSession({ stoppedThreadId: null, stopReason: null })
   } else if (name === 'breakpoint') {
     applyBreakpointEvent(body)
@@ -189,6 +194,7 @@ function threadCommand(command: 'continue' | 'next' | 'stepIn' | 'stepOut'): voi
     return
   }
   useDebugStore.getState().clearPausedState()
+  useWatchStore.getState().setResults({})
   useDebugStore.getState().updateSession({ stoppedThreadId: null, stopReason: null })
   dapRequest(command, { threadId }).catch(reportDebugError)
 }
