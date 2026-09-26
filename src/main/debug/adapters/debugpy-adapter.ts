@@ -1,11 +1,9 @@
 import { delimiter } from 'node:path'
-import { net } from 'electron'
 import type { DebugProtocol } from '@vscode/debugprotocol'
 import { runProcess } from '../../../shared/child-process/run-process'
 import type { AdapterInstallDeps } from './adapter-installer'
+import { downloadWithElectronNet } from './adapter-download'
 
-const DOWNLOAD_TIMEOUT_MS = 120_000
-const MAX_DOWNLOAD_BYTES = 64 * 1024 * 1024
 const EXTRACT_TIMEOUT_MS = 120_000
 export function buildDebugpyAdapterSpawn(
   pythonPath: string,
@@ -36,19 +34,6 @@ export function buildDebugpyLaunchArguments(options: {
     console: 'internalConsole',
     justMyCode: true
   }
-}
-
-async function downloadWithElectronNet(url: string): Promise<Buffer> {
-  // Why electron net: it honors the system proxy, which plain Node fetch does not.
-  const response = await net.fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) })
-  if (!response.ok) {
-    throw new Error(`Download failed with HTTP ${response.status}: ${url}`)
-  }
-  const bytes = Buffer.from(await response.arrayBuffer())
-  if (bytes.length > MAX_DOWNLOAD_BYTES) {
-    throw new Error(`Download exceeded ${MAX_DOWNLOAD_BYTES} bytes: ${url}`)
-  }
-  return bytes
 }
 
 /** Wheels are zip files; the interpreter we already need can extract them (and rejects unsafe paths). */
