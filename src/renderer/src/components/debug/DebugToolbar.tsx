@@ -36,7 +36,7 @@ function describeSession(session: DebugSessionView | null): string {
   if (!session) {
     return translate('debug.status.idle', 'No debug session')
   }
-  const file = basename(session.filePath)
+  const file = session.title
   switch (session.phase) {
     case 'installing-adapter':
       return translate('debug.status.installing', 'Downloading debugpy…')
