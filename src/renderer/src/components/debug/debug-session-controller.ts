@@ -1,4 +1,5 @@
 import type {
+  DebugLaunchTarget,
   DebugRendererCommand,
   DebugSessionEvent
 } from '../../../../shared/debug/debug-session-types'
@@ -154,11 +155,11 @@ function breakpointsForRequest(): Record<string, { line: number }[]> {
   return result
 }
 
-export async function startPythonDebugSession(options: {
+export async function startDebugSession(options: {
   worktreeId: string
-  worktreePath: string
-  filePath: string
-  pythonPath?: string
+  cwd: string
+  title: string
+  target: DebugLaunchTarget
 }): Promise<void> {
   if (currentSessionId()) {
     await stopDebugSession()
@@ -168,7 +169,7 @@ export async function startPythonDebugSession(options: {
   useDebugStore.getState().setSession({
     id: sessionId,
     worktreeId: options.worktreeId,
-    filePath: options.filePath,
+    title: options.title,
     phase: 'starting',
     stoppedThreadId: null,
     stopReason: null
@@ -176,10 +177,9 @@ export async function startPythonDebugSession(options: {
   useBottomPanelLayout.getState().showTab('debug')
   const result = await window.api.debug.start(sessionId, {
     worktreeId: options.worktreeId,
-    filePath: options.filePath,
-    cwd: options.worktreePath,
+    cwd: options.cwd,
     breakpoints: breakpointsForRequest(),
-    ...(options.pythonPath ? { pythonPath: options.pythonPath } : {})
+    target: options.target
   })
   const session = useDebugStore.getState().session
   // Why: failures before the adapter starts (e.g. no Python found) emit no `ended` event.
