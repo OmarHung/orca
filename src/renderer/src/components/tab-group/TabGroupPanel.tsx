@@ -6,7 +6,7 @@ import TabBar from '../tab-bar/TabBar'
 
 import { TabBarQuickCommandsButton } from '../tab-bar/TabBarQuickCommandsButton'
 import { TabGroupPaneActionsMenu } from './TabGroupPaneActionsMenu'
-import { PythonFileControls } from '../python/PythonFileControls'
+import { RunToolbar } from '../run/RunToolbar'
 import { useTabGroupWorkspaceModel } from './useTabGroupWorkspaceModel'
 import { closeTerminalTab } from '../terminal/terminal-tab-actions'
 import { resolveGroupTabFromVisibleId } from './tab-group-visible-id'
@@ -296,7 +296,7 @@ export default function TabGroupPanel({
               className={actionChromeClassName}
               style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             >
-              {isFocused ? <PythonFileControls /> : null}
+              {isFocused ? <RunToolbar worktreeId={worktreeId} /> : null}
               <TabBarQuickCommandsButton
                 worktreeId={worktreeId}
                 groupId={groupId}

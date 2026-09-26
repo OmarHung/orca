@@ -14,6 +14,7 @@ import type {
   TerminalCommandQuickCommand,
   TerminalQuickCommand
 } from '../../../../shared/terminal-quick-command-types'
+import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
 import {
   isRunSessionActive,
   runSessionKey,
@@ -30,6 +31,8 @@ export type RunTarget = {
   groupId: string | null
   commandKey: string
   command: TerminalCommandQuickCommand
+  /** Directory the run's terminal starts in; the worktree root when omitted. */
+  cwd?: string
 }
 
 /** Only shell commands are run configurations; agent prompts start agents and have no Stop/Rerun. */
@@ -115,7 +118,8 @@ function runInNewTab(target: RunTarget): void {
     command: target.command,
     worktreeId: target.worktreeId,
     groupId: target.groupId,
-    historyId: target.commandKey
+    historyId: target.commandKey,
+    ...(target.cwd ? { startupCwd: target.cwd } : {})
   })
   if (result) {
     startSession(target, result.tabId)
@@ -220,4 +224,39 @@ export async function rerunConfiguration(target: RunTarget): Promise<void> {
   if (!runInExistingTab(target, session)) {
     runInNewTab(target)
   }
+}
+
+export function detectedConfigurationLabel(configuration: DetectedRunConfiguration): string {
+  return `${configuration.projectName}: ${configuration.name}`
+}
+
+export function toDetectedRunTarget(
+  configuration: DetectedRunConfiguration,
+  worktreeId: string,
+  groupId: string | null
+): RunTarget {
+  const commandKey = `detected:${configuration.id}`
+  return {
+    worktreeId,
+    groupId,
+    commandKey,
+    cwd: configuration.projectDir,
+    command: {
+      id: commandKey,
+      label: detectedConfigurationLabel(configuration),
+      command: configuration.command,
+      appendEnter: true
+    }
+  }
+}
+
+/** Runs a detected configuration and makes it the worktree's current one in the tab bar. */
+export async function runDetectedConfiguration(
+  configuration: DetectedRunConfiguration,
+  worktreeId: string,
+  groupId: string | null
+): Promise<void> {
+  const target = toDetectedRunTarget(configuration, worktreeId, groupId)
+  useRunSessionStore.getState().rememberDetectedRun(target)
+  await runConfiguration(target)
 }
