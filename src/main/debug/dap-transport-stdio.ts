@@ -48,7 +48,18 @@ export function startStdioDapTransport(spec: StdioDapTransportSpec): DapTranspor
       finish({ code: null, signal: null, error })
     }
   })
-  child.on('exit', (code, signal) => finish({ code, signal, error: spawnError }))
+  child.on('exit', (code, signal) => {
+    // Why: an adapter that crashes leaves the program it launched paused in its process
+    // group, waiting for a debugger that will never come. Nothing else owns that group.
+    if (process.platform !== 'win32' && child.pid !== undefined) {
+      try {
+        process.kill(-child.pid, 'SIGKILL')
+      } catch {
+        // The group is already empty.
+      }
+    }
+    finish({ code, signal, error: spawnError })
+  })
   child.stdin.on('error', () => {})
   child.stderr.on('data', (chunk: Buffer) => spec.onStderr?.(chunk.toString('utf8')))
 

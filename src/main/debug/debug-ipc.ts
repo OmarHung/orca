@@ -26,6 +26,11 @@ const LaunchTargetSchema = z.discriminatedUnion('kind', [
     packageManager: z.enum(['npm', 'pnpm', 'yarn', 'bun']),
     // Why a strict pattern: the script name ends up as a process argument.
     script: z.string().regex(/^[\w:.@/ -]{1,200}$/)
+  }),
+  z.object({
+    kind: z.literal('dotnet-project'),
+    projectFile: AbsolutePathSchema.refine((value) => /\.(cs|fs|vb)proj$/i.test(value)),
+    launchProfile: z.string().min(1).max(200).optional()
   })
 ])
 
