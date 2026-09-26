@@ -1,9 +1,15 @@
+import type { ConfirmationDialogContextValue } from '@/components/confirmation-dialog-context'
 import { useAppStore } from '@/store'
 import { runQuickCommandInNewTab } from '@/lib/run-quick-command-in-new-tab'
 import { resolveCommandLaunch } from '../../../../shared/run-configurations/run-configuration-resolve'
 import { debugLaunchTarget } from '../debug/debug-launch'
 import { runConfiguration, toRunTarget, type RunTarget } from './run-configuration-control'
 import { configurationRunTarget, launchRunConfiguration } from './run-configuration-launcher'
+import {
+  stopDebuggingBeforeRun,
+  stopRunBeforeDebug,
+  type RunDebugLaunchContext
+} from './run-debug-exclusivity'
 import type { RunWidgetItem } from './run-widget-items'
 
 export type RunWidgetScope = { worktreeId: string; groupId: string | null; worktreePath: string }
@@ -44,7 +50,22 @@ export function canDebugWidgetItem(item: RunWidgetItem): boolean {
   return item.kind === 'configuration' && item.configuration.type === 'debug'
 }
 
-export async function runWidgetItem(item: RunWidgetItem, scope: RunWidgetScope): Promise<void> {
+function launchContext(
+  item: RunWidgetItem,
+  scope: RunWidgetScope,
+  confirm: ConfirmationDialogContextValue
+): RunDebugLaunchContext {
+  return { worktreeId: scope.worktreeId, sourceKey: item.key, label: item.label, confirm }
+}
+
+export async function runWidgetItem(
+  item: RunWidgetItem,
+  scope: RunWidgetScope,
+  confirm: ConfirmationDialogContextValue
+): Promise<void> {
+  if (!(await stopDebuggingBeforeRun(launchContext(item, scope, confirm)))) {
+    return
+  }
   switch (item.kind) {
     case 'recent':
       await runConfiguration({ ...item.target, groupId: scope.groupId })
@@ -72,9 +93,21 @@ export async function runWidgetItem(item: RunWidgetItem, scope: RunWidgetScope):
   }
 }
 
-export async function debugWidgetItem(item: RunWidgetItem, scope: RunWidgetScope): Promise<void> {
+export async function debugWidgetItem(
+  item: RunWidgetItem,
+  scope: RunWidgetScope,
+  confirm: ConfirmationDialogContextValue
+): Promise<void> {
+  const context = launchContext(item, scope, confirm)
+  if (!(await stopRunBeforeDebug(context, runWidgetSessionTarget(item, scope)))) {
+    return
+  }
   if (item.kind === 'configuration') {
-    await launchRunConfiguration({ ...scope, reference: item.configuration.id })
+    await launchRunConfiguration({
+      ...scope,
+      reference: item.configuration.id,
+      sourceKey: item.key
+    })
     return
   }
   if (item.kind === 'recent' && item.target.debug && item.target.cwd) {
@@ -82,7 +115,8 @@ export async function debugWidgetItem(item: RunWidgetItem, scope: RunWidgetScope
       worktreeId: scope.worktreeId,
       cwd: item.target.cwd,
       title: item.label,
-      target: item.target.debug
+      target: item.target.debug,
+      sourceKey: item.key
     })
   }
 }

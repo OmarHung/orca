@@ -21,6 +21,8 @@ export type DebugSessionView = {
   worktreeId: string
   /** What is being debugged, e.g. a file name or "web: dev". */
   title: string
+  /** The Run widget item that started it, so Run and Debug of one item exclude each other. */
+  sourceKey?: string
   phase: DebugSessionPhase
   /** Set while paused; null while the program runs. */
   stoppedThreadId: number | null
