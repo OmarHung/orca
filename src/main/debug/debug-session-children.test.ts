@@ -170,6 +170,55 @@ describe('startDebugSession with child sessions', () => {
     expect(grandchild.received[1].arguments).toEqual({ __pendingTargetId: 'target-2' })
   })
 
+  it('catches an initialized event sent together with the initialize response (netcoredbg)', async () => {
+    let dataListener: (chunk: Buffer) => void = () => {}
+    const written: Message[] = []
+    const reader = createDapMessageReader((message) => {
+      if (!isMessage(message) || message.type !== 'request') {
+        return
+      }
+      written.push(message)
+      const response = (body: unknown = {}): Buffer =>
+        encodeDapMessage({
+          seq: written.length,
+          type: 'response',
+          request_seq: message.seq,
+          command: message.command,
+          success: true,
+          body
+        })
+      if (message.command === 'initialize') {
+        // Both messages in one chunk, as netcoredbg writes them.
+        dataListener(
+          Buffer.concat([
+            response({ supportsConfigurationDoneRequest: true }),
+            encodeDapMessage({ seq: 99, type: 'event', event: 'initialized' })
+          ])
+        )
+      } else {
+        dataListener(response())
+      }
+    })
+    const session = startDebugSession({
+      id: 's1',
+      adapterId: 'coreclr',
+      transport: {
+        write: (data) => reader.push(data),
+        onData: (listener) => {
+          dataListener = listener
+        },
+        onClose: () => {},
+        close: () => {}
+      },
+      launchArguments: {},
+      breakpoints: {},
+      emit: () => {}
+    })
+
+    await session.ready
+    expect(written.map((message) => message.command)).toContain('configurationDone')
+  })
+
   it('refuses startDebugging when the adapter has no way to open child connections', async () => {
     const root = createAdapterConnection('root')
     const session = startDebugSession({
