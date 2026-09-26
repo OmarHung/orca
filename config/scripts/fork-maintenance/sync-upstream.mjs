@@ -5,7 +5,7 @@
 //                                                          [--auto-worktree] [--events]
 //
 // Steps: fetch upstream tags → back up the branch → rebase --onto <new> <old> → install deps →
-// typecheck + focused tests. --push force-with-lease pushes the branch and fast-forwards the fork's
+// regenerate the Traditional Chinese catalog (committed when it changed) → typecheck + focused tests. --push force-with-lease pushes the branch and fast-forwards the fork's
 // main to upstream main; --build then produces the local arm64 app.
 // On a rebase conflict it stops and prints how to continue; rerere replays resolutions it has seen.
 //
@@ -57,6 +57,23 @@ function run(command, commandArgs, cwd = repoRoot) {
 
 function git(...gitArgs) {
   return execFileSync('git', gitArgs, { cwd: repoRoot, encoding: 'utf8' }).trim()
+}
+
+// Why after every rebase: zh-TW.json is generated from zh.json, so strings upstream adds there
+// only reach Traditional Chinese users once it is regenerated.
+function regenerateTraditionalChinese() {
+  const catalog = path.join('src', 'renderer', 'src', 'i18n', 'locales', 'zh-TW.json')
+  run('node', [path.join('config', 'scripts', 'fork-maintenance', 'generate-zh-tw-locale.mjs')])
+  if (git('status', '--porcelain', '--', catalog) === '') {
+    return
+  }
+  run('git', ['add', '--', catalog])
+  run('git', [
+    'commit',
+    '--quiet',
+    '--message',
+    'chore(i18n): regenerate Traditional Chinese from the upstream catalog'
+  ])
 }
 
 function fail(message) {
@@ -208,6 +225,7 @@ if (comparison === 0) {
 
 stage('install')
 run('pnpm', ['install', '--frozen-lockfile'])
+regenerateTraditionalChinese()
 stage('verify')
 run('pnpm', ['tc'])
 run('pnpm', ['test', ...FOCUSED_TESTS])
