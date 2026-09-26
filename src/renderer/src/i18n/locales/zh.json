@@ -18416,7 +18416,25 @@
       "paused": "已暂停于 {{value0}}（{{value1}}）",
       "ended": "{{value0}} 已结束"
     },
-    "localOnlyShort": "调试需要本地工作区"
+    "localOnlyShort": "调试需要本地工作区",
+    "breakpoint": {
+      "title": "{{value0}}:{{value1}}",
+      "enabled": "启用",
+      "condition": "条件",
+      "conditionHint": "条件为真时暂停，例如 i > 10",
+      "hitCount": "命中次数",
+      "hitCountHint": "在第几次命中时暂停，例如 3",
+      "logMessage": "日志消息",
+      "logMessageHint": "只记录不暂停；{表达式} 会被求值",
+      "remove": "移除",
+      "done": "完成"
+    },
+    "breakpoints": {
+      "title": "断点",
+      "logs": "记录 {{value0}}",
+      "exceptions": "在异常时暂停",
+      "empty": "点击行号左侧添加断点；右键点击可设置条件"
+    }
   },
   "run": {
     "action": {
