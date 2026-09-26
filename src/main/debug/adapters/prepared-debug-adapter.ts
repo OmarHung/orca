@@ -17,6 +17,8 @@ export type AdapterPreparation = {
   cwd: string
   /** Called before a first-use download, so the UI can say what it is waiting for. */
   onInstalling: () => void
+  /** Streams preparation output (e.g. a build) to the Debug console. */
+  onOutput: (text: string, category: 'stdout' | 'stderr' | 'console') => void
 }
 
 export class DebugPreparationError extends Error {}
