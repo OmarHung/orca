@@ -282,6 +282,7 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 
 - 下拉選單依序列出：最近執行（從右鍵執行的暫時設定）、本機設定、共享設定（orca.yaml）、快速指令（repo 和全域，包含 agent prompt），接著是 Edit Configurations、匯入 launch.json、新增快速指令、管理快速指令（開設定頁）
 - 選項只負責「選擇」，按 ▶ 或 🐞 才執行，跟 JetBrains 一樣。從檔案樹右鍵執行或除錯偵測到的設定時，會自動選中它
+- 切換到某個執行中的 terminal tab 時，Run 元件會自動選中那個程式，顯示它的狀態和 ↻ ■（同時跑多個程式時用得到）。之後從選單另外選的項目，會維持到下次切換 tab
 - ▶ 和 🐞 一直都在，不能用時是停用狀態：只能除錯的設定不能 ▶；只有 debug 設定和帶有除錯目標的偵測設定可以 🐞
 - 最近執行會保存（`recent-run-store.ts`，localStorage 的 `orca.run.recentByWorktree.v1`），依 workspace 最多 5 筆，最新的在最前面，同一個設定只留一筆，重啟後還在
 - 目前選擇存在 `selectedByRepo`，值是 `recent:<commandKey>`、`config:<id>` 或 `quick:<key>`；舊版的 `detected` 會當成最新一筆最近執行，只存 id 的值會當成 `config:<id>`
