@@ -15367,6 +15367,12 @@
         "debug": "添加调试配置",
         "compound": "添加组合配置（同时启动多个）"
       }
+    },
+    "widget": {
+      "recent": "最近执行",
+      "quickCommands": "快速命令",
+      "addQuickCommand": "添加快速命令…",
+      "manageQuickCommands": "管理快速命令…"
     }
   },
   "python": {
