@@ -306,3 +306,15 @@ export async function ensureHooksConfirmed(
     return confirmScriptContent(state, repoId, scriptKind, scriptContent, hostId, isCancelled)
   })
 }
+
+/** Asks once per content change before any orca.yaml run configuration may execute. */
+export function confirmSharedRunConfigurations(
+  state: AppState,
+  repoId: string,
+  trustContent: string,
+  hostId?: ExecutionHostId
+): Promise<'run' | 'skip'> {
+  return enqueueTrustPrompt(() =>
+    confirmScriptContent(state, repoId, 'runConfigurations', trustContent, hostId)
+  )
+}
