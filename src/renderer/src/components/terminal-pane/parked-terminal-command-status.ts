@@ -185,7 +185,7 @@ export function createParkedTerminalCommandStatusPolicy(options: {
       }
       // Why: the finished command may have moved HEAD or the index (an agent running
       // `git checkout` in a parked worktree); nudge git UI now instead of waiting for a poll.
-      dispatchTerminalCommandFinishedEvent(worktreeId, bestEffortExitCode)
+      dispatchTerminalCommandFinishedEvent(worktreeId, bestEffortExitCode, paneKey)
       void retireForegroundAgentUnlessConfirmed()
       // Why: drop the same-turn status row only for SSH PTYs — exact parity with the mounted
       // path, whose foreground tracker refuses SSH ids and drops un-probed. Local PTYs need
