@@ -17,7 +17,10 @@ function createFakeTransport(): {
   const sent: Sent[] = []
   let dataListener: (chunk: Buffer) => void = () => {}
   let closeListener: (reason: DapTransportClose) => void = () => {}
-  const reader = createDapMessageReader((message) => sent.push(message as Sent))
+  const reader = createDapMessageReader((message) =>
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: only DapClient writes here, always DAP protocol messages.
+    sent.push(message as Sent)
+  )
   return {
     sent,
     transport: {
