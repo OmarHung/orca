@@ -73,6 +73,17 @@ describe('kernel picker trust', () => {
       })
     )
   })
+
+  it('keeps Restart kernel disabled until the notebook is trusted', () => {
+    const file = '/repo/saved-env.ipynb'
+    setEnvironment(file, { path: '/repo/.venv/bin/python', name: '.venv', version: '3.12.1' })
+    renderToolbar(file)
+    const restart = screen.getByRole('button', { name: 'Restart kernel' })
+    expect(restart).toHaveProperty('disabled', true)
+
+    act(() => trustNotebook(file))
+    expect(restart).toHaveProperty('disabled', false)
+  })
 })
 
 describe('missing-ipykernel dialog', () => {
