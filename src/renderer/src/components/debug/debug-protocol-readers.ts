@@ -103,3 +103,17 @@ export function readStoppedEvent(
   }
   return { threadId: typeof body.threadId === 'number' ? body.threadId : null, reason: body.reason }
 }
+
+export type EvaluateResult = { value: string; type?: string; variablesReference: number }
+
+/** An `evaluate` response, or null when the adapter sent nothing usable. */
+export function readEvaluateResult(body: unknown): EvaluateResult | null {
+  if (!isRecord(body) || typeof body.result !== 'string') {
+    return null
+  }
+  return {
+    value: body.result,
+    type: optionalString(body.type),
+    variablesReference: typeof body.variablesReference === 'number' ? body.variablesReference : 0
+  }
+}
