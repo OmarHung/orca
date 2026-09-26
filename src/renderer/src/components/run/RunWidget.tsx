@@ -19,7 +19,8 @@ import { RunSessionControls } from './RunSessionControls'
 import { RunWidgetMenu } from './RunWidgetMenu'
 import { loadSharedRunConfigurations } from './run-configuration-launcher'
 import { useRunConfigurationStore } from './run-configuration-store'
-import { useRunSessionStore } from './run-session-store'
+import { useRecentRunStore } from './recent-run-store'
+import type { RunTarget } from './run-configuration-control'
 import {
   canDebugWidgetItem,
   canRunWidgetItem,
@@ -30,6 +31,8 @@ import {
 } from './run-widget-actions'
 import { runWidgetItems, selectedRunWidgetItem, type RunWidgetItem } from './run-widget-items'
 import { useWorktreeRunConfigurations } from './use-worktree-run-configurations'
+
+const NO_RECENT_RUNS: RunTarget[] = []
 
 function runLabel(item: RunWidgetItem): string {
   // Why the quick-command wording: it is the label upstream tests and users know that button by.
@@ -92,7 +95,7 @@ export function RunWidget({
 }): React.JSX.Element | null {
   const data = useWorktreeRunConfigurations(worktreeId)
   const quick = useWorktreeQuickCommands(worktreeId)
-  const detected = useRunSessionStore((s) => s.lastDetectedRunByWorktree[worktreeId])
+  const recent = useRecentRunStore((s) => s.recentByWorktree[worktreeId] ?? NO_RECENT_RUNS)
   const selectedKey = useRunConfigurationStore((s) =>
     data ? s.selectedByRepo[data.repoId] : undefined
   )
@@ -117,7 +120,7 @@ export function RunWidget({
   }
 
   const items = runWidgetItems({
-    detected,
+    recent,
     configurations: data.listed,
     quickCommands: [...quick.repoCommands, ...quick.globalCommands]
   })
