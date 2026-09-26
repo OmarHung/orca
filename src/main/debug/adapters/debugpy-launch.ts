@@ -5,7 +5,8 @@ import { DEBUGPY_ARTIFACT } from './adapter-manifest'
 import {
   buildDebugpyAdapterSpawn,
   buildDebugpyLaunchArguments,
-  createDebugpyInstallDeps
+  createDebugpyInstallDeps,
+  type DebugpyEntryPoint
 } from './debugpy-adapter'
 import {
   DebugPreparationError,
@@ -17,7 +18,7 @@ const MAX_STDERR_CHARS = 4_000
 
 export async function prepareDebugpy(
   context: AdapterPreparation,
-  target: { filePath: string; pythonPath?: string }
+  target: DebugpyEntryPoint & { pythonPath?: string }
 ): Promise<PreparedDebugAdapter> {
   if (target.pythonPath && !(await isExecutableFile(target.pythonPath))) {
     throw new DebugPreparationError(`Python interpreter not found: ${target.pythonPath}`)
@@ -46,7 +47,7 @@ export async function prepareDebugpy(
     adapterId: 'debugpy',
     transport,
     launchArguments: buildDebugpyLaunchArguments({
-      filePath: target.filePath,
+      ...('module' in target ? { module: target.module } : { filePath: target.filePath }),
       cwd: context.cwd,
       pythonPath
     }),
