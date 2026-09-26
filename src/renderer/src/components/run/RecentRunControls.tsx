@@ -1,7 +1,9 @@
 import React from 'react'
-import { Play } from 'lucide-react'
+import { Bug, Play } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
+import { debugLaunchTarget } from '../debug/debug-launch'
 import { RunSessionControls } from './RunSessionControls'
 import { runConfiguration } from './run-configuration-control'
 import { useRunSessionStore } from './run-session-store'
@@ -17,6 +19,9 @@ export function RecentRunControls({
     return null
   }
   const label = translate('run.action.runNamed', "Run '{{value0}}'", {
+    value0: target.command.label
+  })
+  const debugLabel = translate('debug.action.debugFile', "Debug '{{value0}}'", {
     value0: target.command.label
   })
   return (
@@ -38,6 +43,33 @@ export function RecentRunControls({
           {target.command.command}
         </TooltipContent>
       </Tooltip>
+      {target.debug && target.cwd ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              data-testid="recent-debug-button"
+              aria-label={debugLabel}
+              onClick={() =>
+                target.debug &&
+                target.cwd &&
+                void debugLaunchTarget({
+                  worktreeId,
+                  cwd: target.cwd,
+                  title: target.command.label,
+                  target: target.debug
+                })
+              }
+            >
+              <Bug />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={6}>
+            {debugLabel}
+          </TooltipContent>
+        </Tooltip>
+      ) : null}
       <RunSessionControls target={target} testId="recent-run-session-controls" />
     </div>
   )

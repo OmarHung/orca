@@ -131,6 +131,7 @@ describe('runDetectedConfiguration', () => {
     expect(useRunSessionStore.getState().lastDetectedRunByWorktree.wt?.commandKey).toBe(
       'detected:dotnet:/w/api:Api.csproj:run'
     )
+    expect(useRunSessionStore.getState().lastDetectedRunByWorktree.wt?.debug).toBeUndefined()
   })
 })
 
