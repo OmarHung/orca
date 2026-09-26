@@ -9,6 +9,7 @@ import './monaco-debug-decorations.css'
 const DEBUGGABLE_LANGUAGES = new Set(['python'])
 
 const NO_LINES: readonly number[] = []
+const GUTTER_HOVER_CLASS = 'orca-debug-gutter-hover'
 
 export function buildDebugDecorations(
   breakpointLines: readonly number[],
@@ -62,10 +63,25 @@ export function useMonacoDebugDecorations(
         toggleDebugBreakpoint(filePath, line)
       }
     })
+    // Why a hover class: the glyph column shares its per-line DOM with the line numbers, so
+    // CSS alone can't give only the breakpoint column a pointer cursor.
+    const editorDom = mountedEditor.getDomNode()
+    const mouseMove = mountedEditor.onMouseMove((event) => {
+      editorDom?.classList.toggle(
+        GUTTER_HOVER_CLASS,
+        event.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN
+      )
+    })
+    const mouseLeave = mountedEditor.onMouseLeave(() => {
+      editorDom?.classList.remove(GUTTER_HOVER_CLASS)
+    })
     const collection = mountedEditor.createDecorationsCollection()
     collectionRef.current = collection
     return () => {
       mouseDown.dispose()
+      mouseMove.dispose()
+      mouseLeave.dispose()
+      editorDom?.classList.remove(GUTTER_HOVER_CLASS)
       collection.clear()
       collectionRef.current = null
       mountedEditor.updateOptions({ glyphMargin: false })
