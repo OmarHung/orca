@@ -12886,8 +12886,7 @@
             "fc3095d2ed": "资源管理器",
             "aiVaultSessionHistory": "智能体",
             "folderWorkspaces": "已附加的工作树",
-            "parentPrChecks": "PR 检查",
-            "codeOutline": "结构"
+            "parentPrChecks": "PR 检查"
           },
           "right": {
             "panel": {
@@ -16605,7 +16604,9 @@
           "empty": "此文件中没有符号。",
           "collapseAll": "全部折叠",
           "filter": "筛选符号",
-          "clearFilter": "清除筛选"
+          "clearFilter": "清除筛选",
+          "toggle": "展开或折叠结构区块",
+          "resize": "调整结构区块高度"
         }
       },
       "link": {

@@ -13034,8 +13034,7 @@
             "fc3095d2ed": "explorer",
             "aiVaultSessionHistory": "Agents",
             "folderWorkspaces": "Attached worktrees",
-            "parentPrChecks": "PR Checks",
-            "codeOutline": "Structure"
+            "parentPrChecks": "PR Checks"
           },
           "right": {
             "panel": {
@@ -16757,7 +16756,9 @@
           "empty": "No symbols in this file.",
           "collapseAll": "Collapse All",
           "filter": "Filter symbols",
-          "clearFilter": "Clear filter"
+          "clearFilter": "Clear filter",
+          "toggle": "Toggle Structure section",
+          "resize": "Resize Structure"
         }
       },
       "link": {

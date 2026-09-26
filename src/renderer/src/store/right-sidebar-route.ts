@@ -46,8 +46,7 @@ export function normalizeRightSidebarRoute(
     tab === 'pr-checks' ||
     tab === 'source-control' ||
     tab === 'checks' ||
-    tab === 'ports' ||
-    tab === 'outline'
+    tab === 'ports'
   ) {
     return {
       rightSidebarTab: tab,
