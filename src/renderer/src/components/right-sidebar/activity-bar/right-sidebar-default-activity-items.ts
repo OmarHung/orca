@@ -4,6 +4,7 @@ import {
   GitBranch,
   House,
   ListChecks,
+  ListTree,
   MessagesSquare,
   Plug,
   Workflow
@@ -43,6 +44,12 @@ export function getDefaultRightSidebarActivityItems({
       shortcut: explorerShortcut === 'Unassigned' ? '' : explorerShortcut,
       onBotPage: true,
       labeledTab: isBot
+    },
+    {
+      id: 'outline',
+      icon: ListTree,
+      title: t('auto.components.right.sidebar.index.codeOutline', 'Structure'),
+      shortcut: ''
     },
     {
       id: 'bot-activity',
