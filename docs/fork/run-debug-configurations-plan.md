@@ -350,3 +350,8 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - OpenSumi（設計參考）：https://github.com/opensumi/core
 - `package-manager-detector`：https://github.com/antfu-collective/package-manager-detector
 - Rider Run/Debug 設定（UX 參考）：https://www.jetbrains.com/help/rider/Run_Debug_Configuration.html
+
+**依序啟動的 compound（2026-09-27）**：使用者反映 Edit Configurations 的 compound 只能選已儲存的設定，沒存過設定時成員清單是空的，等於不能用；另外想要依序啟動。現在：
+- compound 多了 `sequential` 和 `waitAfter`（以成員引用為 key，重新排序不會錯位）。每個成員啟動後可以「立即啟動下一個」、「等 N 秒」（1–600）或「等它結束且 exit 0」（失敗就不啟動後面的；debug 成員無法等結束，直接往下）。orca.yaml 也能寫
+- 成員可以直接選 workspace 偵測到的 run（根目錄往下四層，略過 node_modules、bin、obj、dist 等與隱藏資料夾，最多 200 個資料夾；原本兩層會漏掉 `backend/src/Api` 這種 .NET 結構）。挑選器是樹狀：資料夾（只有一個子資料夾的會合併成 `backend/src/Api`）→ 專案（Node／.NET 標籤與 run 數）→ run，可篩選；run 超過 12 個時專案預設收合。選了就轉成相對於 workspace 根目錄的本機 command 設定（已存在相同的就沿用），所以每個 worktree 都能用
+- 入口有兩個：Run widget 的 Add Quick Command 對話框多了第三個 Action「Compound」，存成本機 run 設定（不是 quick command，quick command 的資料結構沒變），存完自動選取；Edit Configurations 的 compound 表單用同一個 `CompoundMembersEditor`

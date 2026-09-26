@@ -23,6 +23,18 @@ import type { RunTarget } from './run-configuration-control'
 import type { RunWidgetScope } from './run-widget-actions'
 import { runWidgetItemForRun, runWidgetItems, selectedRunWidgetItem } from './run-widget-items'
 import { useWorktreeRunConfigurations } from './use-worktree-run-configurations'
+import { useCompoundQuickCommand } from './use-compound-quick-command'
+
+/** The Run widget's Add Quick Command dialog, which can also save a compound run configuration. */
+function RunWidgetQuickCommandDialog({
+  worktreeId,
+  ...props
+}: Omit<React.ComponentProps<typeof TerminalQuickCommandDialog>, 'compound' | 'open' | 'mode'> & {
+  worktreeId: string
+}): React.JSX.Element {
+  const compound = useCompoundQuickCommand(worktreeId)
+  return <TerminalQuickCommandDialog open mode="add" compound={compound} {...props} />
+}
 
 const NO_RECENT_RUNS: RunTarget[] = []
 const NO_CONFIGURATIONS: ListedRunConfiguration[] = []
@@ -89,7 +101,11 @@ export function RunWidget({
   }
 
   const selected = selectedRunWidgetItem(items, selectedKey)
-  const scope: RunWidgetScope = { worktreeId, groupId, worktreePath: data.worktreePath }
+  const scope: RunWidgetScope = {
+    worktreeId,
+    groupId,
+    worktreePath: data.worktreePath
+  }
   const quickRepoId = quick.repoId
   const addHostId = quick.hosts.some((host) => host.hostId === quick.executionHostId)
     ? quick.executionHostId
@@ -133,7 +149,10 @@ export function RunWidget({
             quickRepoId
               ? () =>
                   setQuickCommandDraft(
-                    createTerminalQuickCommandDraft({ type: 'repo', repoId: quickRepoId })
+                    createTerminalQuickCommandDraft({
+                      type: 'repo',
+                      repoId: quickRepoId
+                    })
                   )
               : null
           }
@@ -153,9 +172,8 @@ export function RunWidget({
         />
       ) : null}
       {quickCommandDraft ? (
-        <TerminalQuickCommandDialog
-          open
-          mode="add"
+        <RunWidgetQuickCommandDialog
+          worktreeId={worktreeId}
           command={quickCommandDraft}
           repos={
             addHostId.startsWith('runtime:')
