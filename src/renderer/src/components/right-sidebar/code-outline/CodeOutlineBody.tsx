@@ -57,7 +57,8 @@ function statusMessage(state: CodeOutlineState): string | null {
   }
 }
 
-export default function CodeOutlinePanel(): React.JSX.Element {
+/** Mounted only while the Structure section is expanded, so a collapsed section parses nothing. */
+export function CodeOutlineBody(): React.JSX.Element {
   const { target, state } = useCodeOutline()
   const symbols = state.status === 'ready' ? state.symbols : EMPTY_SYMBOLS
   const cursorLine = useAppStore((s) =>
@@ -126,44 +127,12 @@ export default function CodeOutlinePanel(): React.JSX.Element {
 
   const canCollapseAll = symbols.some((symbol) => symbol.children.length > 0)
   const message = statusMessage(state)
-  const title =
-    state.status === 'no-file'
-      ? translate('auto.components.rightSidebar.CodeOutlinePanel.title', 'Structure')
-      : state.fileName
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
-      <div className="flex h-8 min-h-8 items-center gap-2 border-b border-border px-2">
-        <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground" title={title}>
-          {title}
-        </span>
-        {state.status === 'loading' ? (
-          <Loader2 className="size-3 shrink-0 animate-spin text-muted-foreground" />
-        ) : null}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              disabled={!canCollapseAll}
-              aria-label={translate(
-                'auto.components.rightSidebar.CodeOutlinePanel.collapseAll',
-                'Collapse All'
-              )}
-              onClick={() => setCollapsedKeys(new Set(collectParentKeys(symbols)))}
-            >
-              <ListCollapse className="size-3" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" sideOffset={4}>
-            {translate('auto.components.rightSidebar.CodeOutlinePanel.collapseAll', 'Collapse All')}
-          </TooltipContent>
-        </Tooltip>
-      </div>
+    <div className="flex min-h-0 flex-1 flex-col">
       {symbols.length > 0 ? (
-        <div className="px-2 pt-2">
-          <div className="flex h-7 items-center gap-1 rounded-sm border border-border bg-input/50 px-1.5 focus-within:border-ring">
+        <div className="flex items-center gap-1 px-2 pb-1">
+          <div className="flex h-7 min-w-0 flex-1 items-center gap-1 rounded-sm border border-border bg-input/50 px-1.5 focus-within:border-ring">
             <ListFilter className="size-3.5 shrink-0 text-muted-foreground" />
             <input
               type="text"
@@ -195,10 +164,37 @@ export default function CodeOutlinePanel(): React.JSX.Element {
               </Button>
             ) : null}
           </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                disabled={!canCollapseAll}
+                aria-label={translate(
+                  'auto.components.rightSidebar.CodeOutlinePanel.collapseAll',
+                  'Collapse All'
+                )}
+                onClick={() => setCollapsedKeys(new Set(collectParentKeys(symbols)))}
+              >
+                <ListCollapse className="size-3" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={4}>
+              {translate(
+                'auto.components.rightSidebar.CodeOutlinePanel.collapseAll',
+                'Collapse All'
+              )}
+            </TooltipContent>
+          </Tooltip>
         </div>
       ) : null}
-      {message ? (
-        <div className="flex flex-1 items-center justify-center p-6 text-center text-xs text-muted-foreground">
+      {state.status === 'loading' ? (
+        <div className="flex flex-1 items-center justify-center">
+          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+        </div>
+      ) : message ? (
+        <div className="flex flex-1 items-center justify-center px-4 py-3 text-center text-xs text-muted-foreground">
           {message}
         </div>
       ) : (
@@ -206,17 +202,20 @@ export default function CodeOutlinePanel(): React.JSX.Element {
           ref={listRef}
           role="tree"
           aria-label={translate('auto.components.rightSidebar.CodeOutlinePanel.title', 'Structure')}
-          className="scrollbar-sleek min-h-0 flex-1 overflow-y-auto p-1"
+          className="scrollbar-sleek min-h-0 flex-1 overflow-auto px-1 pb-1"
         >
-          {rows.map((row) => (
-            <CodeOutlineRowButton
-              key={row.key}
-              row={row}
-              isCurrent={row.key === currentKey}
-              onToggle={handleToggle}
-              onReveal={handleReveal}
-            />
-          ))}
+          {/* Why: w-max lets long names widen the rows so they scroll instead of truncating. */}
+          <div className="w-max min-w-full">
+            {rows.map((row) => (
+              <CodeOutlineRowButton
+                key={row.key}
+                row={row}
+                isCurrent={row.key === currentKey}
+                onToggle={handleToggle}
+                onReveal={handleReveal}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
