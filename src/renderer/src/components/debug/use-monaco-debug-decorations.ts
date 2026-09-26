@@ -6,7 +6,7 @@ import { useDebugStore } from './debug-store'
 import './monaco-debug-decorations.css'
 
 /** Languages with a debug adapter wired up; the gutter stays untouched elsewhere. */
-const DEBUGGABLE_LANGUAGES = new Set(['python'])
+const DEBUGGABLE_LANGUAGES = new Set(['python', 'javascript', 'typescript'])
 
 const NO_LINES: readonly number[] = []
 const GUTTER_HOVER_CLASS = 'orca-debug-gutter-hover'

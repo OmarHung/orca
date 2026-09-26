@@ -4,15 +4,34 @@ import { translate } from '@/i18n/i18n'
 import { findWorktreeById } from '@/store/slices/worktree-helpers'
 import { getActiveRuntimeTarget } from '@/runtime/runtime-client-target'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
-import { startPythonDebugSession } from './debug-session-controller'
+import { basename } from '@/lib/path'
+import type { DebugLaunchTarget } from '../../../../shared/debug/debug-session-types'
+import { startDebugSession } from './debug-session-controller'
 
 const WSL_UNC_PREFIX = /^[\\/]{2}wsl(\$|\.localhost)[\\/]/i
 
-export function isDebuggableFile(filePath: string): boolean {
-  return filePath.toLowerCase().endsWith('.py')
+const NODE_EXTENSIONS = ['.js', '.mjs', '.cjs', '.ts', '.mts', '.cts']
+
+/** The launch target for debugging a single file, or null when no adapter handles it. */
+export function debugTargetForFile(
+  filePath: string,
+  pythonPath?: string
+): DebugLaunchTarget | null {
+  const lower = filePath.toLowerCase()
+  if (lower.endsWith('.py')) {
+    return { kind: 'python-file', filePath, ...(pythonPath ? { pythonPath } : {}) }
+  }
+  if (NODE_EXTENSIONS.some((extension) => lower.endsWith(extension)) && !lower.endsWith('.d.ts')) {
+    return { kind: 'node-file', filePath }
+  }
+  return null
 }
 
-/** Phase 0 runs adapters in this process's host only, so the workspace must live here too. */
+export function isDebuggableFile(filePath: string): boolean {
+  return debugTargetForFile(filePath) !== null
+}
+
+/** Adapters run in this process's host only, so the workspace must live here too. */
 export function isLocalDebugTarget(options: {
   repoHostId: string
   activeRuntimeIsLocal: boolean
@@ -25,17 +44,14 @@ export function isLocalDebugTarget(options: {
   )
 }
 
-export async function debugFile(
-  worktreeId: string,
-  filePath: string,
-  pythonPath?: string
-): Promise<void> {
+/** The worktree when it can be debugged here; otherwise explains why with a toast. */
+function localWorktreeForDebugging(worktreeId: string): { path: string } | null {
   const state = useAppStore.getState()
   const worktree = findWorktreeById(state.worktreesByRepo, worktreeId)
   const repo = worktree ? state.repos.find((candidate) => candidate.id === worktree.repoId) : null
   if (!worktree || !repo) {
     toast.error(translate('debug.workspaceNotFound', 'Could not find the workspace for this file'))
-    return
+    return null
   }
   const local = isLocalDebugTarget({
     repoHostId: getRepoExecutionHostId(repo),
@@ -49,7 +65,33 @@ export async function debugFile(
         'Debugging is only available for local workspaces for now (not SSH, WSL or remote runtimes)'
       )
     )
+    return null
+  }
+  return worktree
+}
+
+export async function debugFile(
+  worktreeId: string,
+  filePath: string,
+  pythonPath?: string
+): Promise<void> {
+  const target = debugTargetForFile(filePath, pythonPath)
+  const worktree = target ? localWorktreeForDebugging(worktreeId) : null
+  if (!target || !worktree) {
     return
   }
-  await startPythonDebugSession({ worktreeId, worktreePath: worktree.path, filePath, pythonPath })
+  await startDebugSession({ worktreeId, cwd: worktree.path, title: basename(filePath), target })
+}
+
+/** Debugs any launch target, e.g. one attached to a detected run configuration. */
+export async function debugLaunchTarget(options: {
+  worktreeId: string
+  cwd: string
+  title: string
+  target: DebugLaunchTarget
+}): Promise<void> {
+  if (!localWorktreeForDebugging(options.worktreeId)) {
+    return
+  }
+  await startDebugSession(options)
 }

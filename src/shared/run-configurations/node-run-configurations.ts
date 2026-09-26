@@ -83,13 +83,20 @@ export function detectNodeRunConfigurations(options: {
         )
       : []
   const base = { ecosystem: 'node' as const, projectName, projectDir }
-  const configurations: DetectedRunConfiguration[] = scripts.map(([name]) => ({
-    ...base,
-    id: `node:${projectDir}:script:${name}`,
-    kind: classifyScript(name),
-    name,
-    command: `${manager} run ${quoteShellArgument(name)}`
-  }))
+  const configurations: DetectedRunConfiguration[] = scripts.map(([name]) => {
+    const kind = classifyScript(name)
+    return {
+      ...base,
+      id: `node:${projectDir}:script:${name}`,
+      kind,
+      name,
+      command: `${manager} run ${quoteShellArgument(name)}`,
+      // Why run scripts only: debugging a build or publish step is rarely what anyone wants.
+      ...(kind === 'run'
+        ? { debug: { kind: 'node-script' as const, packageManager: manager, script: name } }
+        : {})
+    }
+  })
   const publishable = packageJson.private !== true && typeof packageJson.name === 'string'
   if (publishable && !scripts.some(([name]) => name === 'publish')) {
     configurations.push({
