@@ -19,7 +19,13 @@ describe('normalizeRunConfigurationDefinitions', () => {
     ])
     expect(problems).toEqual([])
     expect(configurations).toEqual([
-      { type: 'command', id: 'Build', name: 'Build', command: 'dotnet build', cwd: 'src/Api' },
+      {
+        type: 'command',
+        id: 'Build',
+        name: 'Build',
+        command: 'dotnet build',
+        cwd: 'src/Api'
+      },
       {
         type: 'debug',
         id: 'API',
@@ -29,7 +35,12 @@ describe('normalizeRunConfigurationDefinitions', () => {
         env: { ASPNETCORE_ENVIRONMENT: 'Development', PORT: '5000' },
         beforeLaunch: ['Build']
       },
-      { type: 'compound', id: 'All', name: 'All', configurations: ['API', 'Build'] }
+      {
+        type: 'compound',
+        id: 'All',
+        name: 'All',
+        configurations: ['API', 'Build']
+      }
     ])
   })
 
@@ -60,19 +71,73 @@ describe('normalizeRunConfigurationDefinitions', () => {
     const { configurations, problems } = normalizeRunConfigurationDefinitions([
       {
         name: 'a',
-        target: { kind: 'python-file', filePath: 'a.py', pythonPath: '.venv/bin/python' }
+        target: {
+          kind: 'python-file',
+          filePath: 'a.py',
+          pythonPath: '.venv/bin/python'
+        }
       },
       { name: 'b', target: { kind: 'python-module', module: 'app.main' } },
-      { name: 'c', target: { kind: 'node-file', filePath: '${workspaceFolder}/index.js' } },
-      { name: 'd', target: { kind: 'node-script', packageManager: 'pnpm', script: 'dev' } },
+      {
+        name: 'c',
+        target: { kind: 'node-file', filePath: '${workspaceFolder}/index.js' }
+      },
+      {
+        name: 'd',
+        target: { kind: 'node-script', packageManager: 'pnpm', script: 'dev' }
+      },
       {
         name: 'e',
-        target: { kind: 'dotnet-project', projectFile: 'A.csproj', launchProfile: 'http' }
+        target: {
+          kind: 'dotnet-project',
+          projectFile: 'A.csproj',
+          launchProfile: 'http'
+        }
       },
-      { name: 'f', target: { kind: 'dotnet-program', program: 'bin/Debug/net8.0/A.dll' } }
+      {
+        name: 'f',
+        target: { kind: 'dotnet-program', program: 'bin/Debug/net8.0/A.dll' }
+      }
     ])
     expect(problems).toEqual([])
     expect(configurations).toHaveLength(6)
+  })
+
+  it('keeps sequential waits only for listed members and valid delays', () => {
+    const { configurations } = normalizeRunConfigurationDefinitions([
+      {
+        name: 'All',
+        configurations: ['a', 'b', 'c'],
+        sequential: true,
+        waitAfter: {
+          a: { kind: 'exit' },
+          b: { kind: 'delay', seconds: 0 },
+          c: { kind: 'delay', seconds: 3 },
+          gone: { kind: 'exit' }
+        }
+      },
+      {
+        name: 'Together',
+        configurations: ['a'],
+        waitAfter: { a: { kind: 'exit' } }
+      }
+    ])
+    expect(configurations).toEqual([
+      {
+        type: 'compound',
+        id: 'All',
+        name: 'All',
+        configurations: ['a', 'b', 'c'],
+        sequential: true,
+        waitAfter: { a: { kind: 'exit' }, c: { kind: 'delay', seconds: 3 } }
+      },
+      {
+        type: 'compound',
+        id: 'Together',
+        name: 'Together',
+        configurations: ['a']
+      }
+    ])
   })
 
   it('returns nothing for a non-list', () => {

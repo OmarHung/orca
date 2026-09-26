@@ -1,6 +1,7 @@
 import {
   findRunConfiguration,
   type CommandRunConfiguration,
+  type CompoundMemberWait,
   type DebugRunConfiguration,
   type RunConfigurationDefinition
 } from './run-configuration-definition'
@@ -8,8 +9,11 @@ import {
 export type RunLaunchPlan = {
   /** Commands that must each exit 0, in this order, before anything launches. */
   beforeLaunch: CommandRunConfiguration[]
-  /** Started together once the steps succeed. */
+  /** Started together once the steps succeed, or one by one when `sequential`. */
   launches: (CommandRunConfiguration | DebugRunConfiguration)[]
+  sequential: boolean
+  /** Sequential only: what to wait for after starting a launch (by launch id). */
+  waitAfter: Record<string, CompoundMemberWait>
   /** Every configuration the plan touched, including compounds in between (for trust checks). */
   involvedIds: string[]
 }
@@ -101,7 +105,23 @@ export function planRunConfiguration(
     const launches: RunLaunchPlan['launches'] = []
     const top = lookup(all, reference)
     const expanded = new Set<string>()
-    collectLaunches(all, top, launches, new Set(), expanded)
+    const sequential = top.type === 'compound' && top.sequential === true
+    const waitAfter: Record<string, CompoundMemberWait> = {}
+    if (top.type === 'compound' && sequential) {
+      // Why per member: a member's wait applies after the last launch it expands into.
+      expanded.add(top.id)
+      for (const reference of top.configurations) {
+        const before = launches.length
+        collectLaunches(all, lookup(all, reference), launches, new Set([top.id]), expanded)
+        const wait = top.waitAfter?.[reference]
+        const last = launches.length > before ? launches.at(-1) : undefined
+        if (wait && last) {
+          waitAfter[last.id] = wait
+        }
+      }
+    } else {
+      collectLaunches(all, top, launches, new Set(), expanded)
+    }
     const debugLaunches = launches.filter((launch) => launch.type === 'debug')
     if (debugLaunches.length > 1) {
       // Why: Orca runs one debug session at a time; starting another stops the first.
@@ -118,6 +138,8 @@ export function planRunConfiguration(
       plan: {
         beforeLaunch,
         launches: launches.filter((launch) => !stepIds.has(launch.id)),
+        sequential,
+        waitAfter,
         involvedIds: [
           ...new Set([top.id, ...expanded, ...stepIds, ...launches.map((launch) => launch.id)])
         ]
@@ -125,7 +147,10 @@ export function planRunConfiguration(
     }
   } catch (error) {
     if (error instanceof RunPlanError) {
-      return { ok: false, error: { code: error.code, reference: error.reference } }
+      return {
+        ok: false,
+        error: { code: error.code, reference: error.reference }
+      }
     }
     throw error
   }
