@@ -18315,7 +18315,25 @@
       "paused": "Paused in {{value0}} ({{value1}})",
       "ended": "{{value0}} finished"
     },
-    "localOnlyShort": "Debugging needs a local workspace"
+    "localOnlyShort": "Debugging needs a local workspace",
+    "breakpoint": {
+      "title": "{{value0}}:{{value1}}",
+      "enabled": "Enabled",
+      "condition": "Condition",
+      "conditionHint": "Pause when true, e.g. i > 10",
+      "hitCount": "Hit count",
+      "hitCountHint": "Pause on this hit, e.g. 3",
+      "logMessage": "Log message",
+      "logMessageHint": "Log instead of pausing; {expression} is evaluated",
+      "remove": "Remove",
+      "done": "Done"
+    },
+    "breakpoints": {
+      "title": "Breakpoints",
+      "logs": "logs {{value0}}",
+      "exceptions": "Pause on exceptions",
+      "empty": "Click left of a line number to add a breakpoint; right-click it for a condition"
+    }
   },
   "run": {
     "action": {
