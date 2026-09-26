@@ -36,6 +36,7 @@ import {
 } from '@/lib/monaco-languages/plugin-syntax-editor-options'
 import { useMonacoTheme } from '@/hooks/use-monaco-theme'
 import { useEditorModelRekeyCarry } from './model-lifetime/identity/editor-model-rekey-carry'
+import { useMonacoDebugDecorations } from '../debug/use-monaco-debug-decorations'
 
 type MonacoEditorProps = {
   fileId: string
@@ -198,6 +199,8 @@ export default function MonacoEditor({
       readOnly
     })
   }, [typographyOptions, editorWordWrap, readOnly])
+
+  useMonacoDebugDecorations(mountedEditor, filePath, language)
 
   const decorations = useMonacoEditorDecorations({
     editorRef,
