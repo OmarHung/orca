@@ -49,6 +49,7 @@ import {
 import { copyFileToOsClipboard, downloadRemoteFile } from './file-explorer-row-file-transfer'
 import { fileExplorerNodeTabRelativePath } from '../tree/file-explorer-directory-listing'
 import { DebugFileContextMenuItems } from '../../../debug/DebugFileContextMenuItems'
+import { ProjectRunContextMenuItems } from '../../../run/ProjectRunContextMenuItems'
 
 const isMac = navigator.userAgent.includes('Mac')
 
@@ -150,6 +151,11 @@ export function FileExplorerRowContextMenu({
       onCloseAutoFocus={(e) => e.preventDefault()}
     >
       <DebugFileContextMenuItems path={node.path} name={node.name} isDirectory={node.isDirectory} />
+      <ProjectRunContextMenuItems
+        path={node.path}
+        name={node.name}
+        isDirectory={node.isDirectory}
+      />
       <ContextMenuItem
         disabled={writesBlocked}
         onSelect={() => onStartNew('file', targetDir, targetDepth)}
