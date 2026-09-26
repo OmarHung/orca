@@ -67,9 +67,15 @@ export function isPluginUiLanguage(value: unknown): value is PluginUiLanguage {
   return typeof value === 'string' && PLUGIN_UI_LANGUAGE_RE.test(value)
 }
 
+// Why: fork builds stored the Traditional Chinese choice as 'zh-TW' before upstream added zh-Hant.
+const LEGACY_FORK_TRADITIONAL_CHINESE = 'zh-TW'
+
 export function normalizeUiLanguage(value: unknown): UiLanguage {
   if (isPluginUiLanguage(value)) {
     return value
+  }
+  if (value === LEGACY_FORK_TRADITIONAL_CHINESE) {
+    return UI_LANGUAGE_CHINESE_TRADITIONAL
   }
   return UI_LANGUAGE_VALUES.has(value as BuiltInUiLanguage)
     ? (value as BuiltInUiLanguage)
