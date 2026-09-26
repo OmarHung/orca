@@ -321,7 +321,15 @@ export default function TabGroupPanel({
                     163 = 40 tab + 36 "+" + 8 padding + 47 widest collapsed quick-command trigger + 2 gap + 28 pane actions + 2 sub-pixel slack; 114 = 40 + 36 + 8 + 28 + 2. */}
                 <div ref={quickCommandsSlotRef} className="contents @max-[163px]/tab-strip:hidden">
                   {/* Fork: the Run widget also lists quick commands, replacing TabBarQuickCommandsButton. */}
-                  {isFocused ? <RunToolbar worktreeId={worktreeId} groupId={groupId} /> : null}
+                  {isFocused ? (
+                    <RunToolbar
+                      worktreeId={worktreeId}
+                      groupId={groupId}
+                      activeTerminalTabId={
+                        activeTab?.contentType === 'terminal' ? activeTab.entityId : null
+                      }
+                    />
+                  ) : null}
                 </div>
                 {hasSplitGroups ? (
                   <div className="contents @max-[114px]/tab-strip:hidden">
