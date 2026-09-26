@@ -18333,6 +18333,17 @@
       "logs": "logs {{value0}}",
       "exceptions": "Pause on exceptions",
       "empty": "Click left of a line number to add a breakpoint; right-click it for a condition"
+    },
+    "watch": {
+      "title": "Watch",
+      "remove": "Remove watch {{value0}}",
+      "notPaused": "not available",
+      "add": "Add watch expression"
+    },
+    "consoleInput": {
+      "input": "Evaluate expression",
+      "inputHint": "Evaluate an expression in the selected frame",
+      "inputIdle": "Start debugging to evaluate expressions"
     }
   },
   "run": {
