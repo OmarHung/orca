@@ -181,3 +181,6 @@ ci-shards/
 /.build/windows-native-benchmark/
 
 .local/static-analysis-research/
+
+# Local CodeGraph index (code-intelligence database built per checkout)
+/.codegraph/
