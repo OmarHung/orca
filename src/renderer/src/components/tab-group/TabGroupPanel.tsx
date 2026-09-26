@@ -12,7 +12,6 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import TabBar from '../tab-bar/TabBar'
 
-import { TabBarQuickCommandsButton } from '../tab-bar/TabBarQuickCommandsButton'
 import { RunToolbar } from '../run/RunToolbar'
 import { useTabGroupWorkspaceModel } from './useTabGroupWorkspaceModel'
 import { closeTerminalTab } from '../terminal/terminal-tab-actions'
@@ -271,10 +270,8 @@ export default function TabGroupPanel({
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           >
             <div className={focusedActionChromeClassName}>
-              {isFocused ? <RunToolbar worktreeId={worktreeId} /> : null}
-              {isFocused ? (
-                <TabBarQuickCommandsButton worktreeId={worktreeId} groupId={groupId} />
-              ) : null}
+              {/* Fork: the Run widget also lists quick commands, replacing TabBarQuickCommandsButton. */}
+              {isFocused ? <RunToolbar worktreeId={worktreeId} groupId={groupId} /> : null}
               {isFocused && hasSplitGroups ? (
                 <Tooltip>
                   <DropdownMenu modal={false}>

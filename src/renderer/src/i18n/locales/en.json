@@ -18676,6 +18676,12 @@
         "debug": "Add debug configuration",
         "compound": "Add compound (start several together)"
       }
+    },
+    "widget": {
+      "recent": "Recent",
+      "quickCommands": "Quick commands",
+      "addQuickCommand": "Add Quick Command…",
+      "manageQuickCommands": "Manage Quick Commands…"
     }
   },
   "python": {
