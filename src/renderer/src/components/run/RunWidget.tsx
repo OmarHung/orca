@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { Bug, ChevronDown, ListVideo, Play } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ChevronDown, ListVideo } from 'lucide-react'
 import { DropdownMenu, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   createTerminalQuickCommandDraft,
   TerminalQuickCommandDialog
@@ -15,79 +13,19 @@ import type { TerminalQuickCommand } from '../../../../shared/terminal-quick-com
 import { useTabBarQuickCommandsShortcut } from '../tab-bar/tab-bar-quick-commands-shortcut'
 import { EditRunConfigurationsDialog } from './EditRunConfigurationsDialog'
 import { importWorkspaceLaunchJson, useWorkspaceHasLaunchJson } from './launch-json-import-action'
-import { RunSessionControls } from './RunSessionControls'
+import { RunWidgetActions } from './RunWidgetActions'
 import { RunWidgetMenu } from './RunWidgetMenu'
 import { loadSharedRunConfigurations } from './run-configuration-launcher'
 import { useRunConfigurationStore, type ListedRunConfiguration } from './run-configuration-store'
 import { useRecentRunStore } from './recent-run-store'
 import { useRunSessionStore } from './run-session-store'
 import type { RunTarget } from './run-configuration-control'
-import {
-  canDebugWidgetItem,
-  canRunWidgetItem,
-  debugWidgetItem,
-  runWidgetItem,
-  runWidgetSessionTarget,
-  type RunWidgetScope
-} from './run-widget-actions'
-import {
-  runWidgetItemForRun,
-  runWidgetItems,
-  selectedRunWidgetItem,
-  type RunWidgetItem
-} from './run-widget-items'
+import type { RunWidgetScope } from './run-widget-actions'
+import { runWidgetItemForRun, runWidgetItems, selectedRunWidgetItem } from './run-widget-items'
 import { useWorktreeRunConfigurations } from './use-worktree-run-configurations'
 
 const NO_RECENT_RUNS: RunTarget[] = []
 const NO_CONFIGURATIONS: ListedRunConfiguration[] = []
-
-function runLabel(item: RunWidgetItem): string {
-  // Why the quick-command wording: it is the label upstream tests and users know that button by.
-  return item.kind === 'quick-command'
-    ? translate(
-        'auto.components.tab.bar.TabBarQuickCommandsButton.b775303755',
-        'Run quick command: {{value0}}',
-        { value0: item.label }
-      )
-    : translate('run.action.runNamed', "Run '{{value0}}'", { value0: item.label })
-}
-
-function ActionButton({
-  label,
-  testId,
-  disabled,
-  onClick,
-  children
-}: {
-  label: string
-  testId: string
-  disabled: boolean
-  onClick: () => void
-  children: React.ReactNode
-}): React.JSX.Element {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        {/* Why a span: a disabled button fires no pointer events, so its tooltip would never show. */}
-        <span className="inline-flex">
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            aria-label={label}
-            data-testid={testId}
-            disabled={disabled}
-            onClick={onClick}
-          >
-            {children}
-          </Button>
-        </span>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" sideOffset={6}>
-        {label}
-      </TooltipContent>
-    </Tooltip>
-  )
-}
 
 /**
  * The tab bar's single JetBrains-style Run widget: pick a configuration, temporary run or quick
@@ -156,9 +94,6 @@ export function RunWidget({
   const addHostId = quick.hosts.some((host) => host.hostId === quick.executionHostId)
     ? quick.executionHostId
     : (quick.hosts[0]?.hostId ?? quick.executionHostId)
-  const debugLabel = selected
-    ? translate('run.configurations.debugNamed', "Debug '{{value0}}'", { value0: selected.label })
-    : ''
 
   return (
     <div
@@ -209,36 +144,7 @@ export function RunWidget({
           }}
         />
       </DropdownMenu>
-      {selected ? (
-        <>
-          <ActionButton
-            label={runLabel(selected)}
-            testId="run-configurations-launch"
-            disabled={!canRunWidgetItem(selected)}
-            onClick={() => void runWidgetItem(selected, scope)}
-          >
-            <Play />
-          </ActionButton>
-          <ActionButton
-            label={debugLabel}
-            testId="run-configurations-debug"
-            disabled={!canDebugWidgetItem(selected)}
-            onClick={() => void debugWidgetItem(selected, scope)}
-          >
-            <Bug />
-          </ActionButton>
-          <RunSessionControls
-            target={runWidgetSessionTarget(selected, scope)}
-            testId="run-configurations-session"
-            // Why: configurations rerun through the launcher so trust and Before launch apply again.
-            onRerun={
-              selected.kind === 'configuration'
-                ? () => void runWidgetItem(selected, scope)
-                : undefined
-            }
-          />
-        </>
-      ) : null}
+      {selected ? <RunWidgetActions item={selected} scope={scope} /> : null}
       {editorOpen ? (
         <EditRunConfigurationsDialog
           worktreeId={worktreeId}

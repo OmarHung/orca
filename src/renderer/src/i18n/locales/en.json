@@ -18478,7 +18478,9 @@
     "action": {
       "rerun": "Rerun '{{value0}}'",
       "stop": "Stop '{{value0}}'",
-      "runNamed": "Run '{{value0}}'"
+      "runNamed": "Run '{{value0}}'",
+      "stopDebugAndRun": "Stop debugging and run '{{value0}}'",
+      "stopAndDebug": "Stop and debug '{{value0}}'"
     },
     "status": {
       "running": "Running",
@@ -18584,6 +18586,23 @@
       "quickCommands": "Quick commands",
       "addQuickCommand": "Add Quick Command…",
       "manageQuickCommands": "Manage Quick Commands…"
+    },
+    "exclusive": {
+      "debugging": {
+        "title": "'{{value0}}' is being debugged",
+        "description": "Only one instance can run at a time. Stop debugging and run it instead?",
+        "confirm": "Stop and Run"
+      },
+      "running": {
+        "title": "'{{value0}}' is running",
+        "description": "Only one instance can run at a time. Stop it and debug it instead?",
+        "confirm": "Stop and Debug"
+      }
+    },
+    "debug": {
+      "status": "Debugging",
+      "restart": "Restart debugging '{{value0}}'",
+      "stop": "Stop debugging '{{value0}}'"
     }
   },
   "python": {

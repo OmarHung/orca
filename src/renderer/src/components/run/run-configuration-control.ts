@@ -202,6 +202,27 @@ function interrupt(session: RunSession): void {
   useRunSessionStore.getState().setStatus(session.key, 'stopping')
 }
 
+/** Ctrl-C, then waits; false when the program ignored it and its tab was closed instead. */
+async function endRun(session: RunSession): Promise<boolean> {
+  if (session.status === 'running') {
+    interrupt(session)
+  }
+  if (
+    !isRunSessionActive(
+      useRunSessionStore.getState().sessionsByKey[session.key]?.status ?? 'stopped'
+    )
+  ) {
+    return true
+  }
+  if (await waitForFinish(session.tabId, RERUN_STOP_TIMEOUT_MS)) {
+    return true
+  }
+  // Why: a program that ignores Ctrl-C (or a shell without OSC 133) would block forever.
+  useAppStore.getState().closeTab(session.tabId)
+  useRunSessionStore.getState().finishByTab(session.tabId, null)
+  return false
+}
+
 export async function rerunConfiguration(target: RunTarget): Promise<void> {
   ensureRunFinishListener()
   const session = liveRunSession(target.worktreeId, target.commandKey)
@@ -209,24 +230,18 @@ export async function rerunConfiguration(target: RunTarget): Promise<void> {
     runInNewTab(target)
     return
   }
-  if (session.status === 'running') {
-    interrupt(session)
-  }
-  if (
-    isRunSessionActive(
-      useRunSessionStore.getState().sessionsByKey[session.key]?.status ?? 'stopped'
-    )
-  ) {
-    const stopped = await waitForFinish(session.tabId, RERUN_STOP_TIMEOUT_MS)
-    if (!stopped) {
-      // Why: a program that ignores Ctrl-C (or a shell without OSC 133) would block forever.
-      useAppStore.getState().closeTab(session.tabId)
-      runInNewTab(target)
-      return
-    }
-  }
-  if (!runInExistingTab(target, session)) {
+  const tabReusable = await endRun(session)
+  if (!tabReusable || !runInExistingTab(target, session)) {
     runInNewTab(target)
+  }
+}
+
+/** Stops an active run and resolves once it has ended, e.g. before debugging the same item. */
+export async function stopConfigurationAndWait(target: RunTarget): Promise<void> {
+  ensureRunFinishListener()
+  const session = liveRunSession(target.worktreeId, target.commandKey)
+  if (session && isRunSessionActive(session.status)) {
+    await endRun(session)
   }
 }
 

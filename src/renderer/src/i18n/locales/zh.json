@@ -18469,7 +18469,9 @@
     "action": {
       "rerun": "重新运行 '{{value0}}'",
       "stop": "停止 '{{value0}}'",
-      "runNamed": "运行 '{{value0}}'"
+      "runNamed": "运行 '{{value0}}'",
+      "stopDebugAndRun": "停止调试并运行 '{{value0}}'",
+      "stopAndDebug": "停止并调试 '{{value0}}'"
     },
     "status": {
       "running": "运行中",
@@ -18575,6 +18577,23 @@
       "quickCommands": "快速命令",
       "addQuickCommand": "添加快速命令…",
       "manageQuickCommands": "管理快速命令…"
+    },
+    "exclusive": {
+      "debugging": {
+        "title": "'{{value0}}' 正在调试",
+        "description": "同一时间只能运行一个实例。要停止调试并改为运行吗？",
+        "confirm": "停止并运行"
+      },
+      "running": {
+        "title": "'{{value0}}' 正在运行",
+        "description": "同一时间只能运行一个实例。要停止运行并改为调试吗？",
+        "confirm": "停止并调试"
+      }
+    },
+    "debug": {
+      "status": "调试中",
+      "restart": "重新调试 '{{value0}}'",
+      "stop": "停止调试 '{{value0}}'"
     }
   },
   "python": {
