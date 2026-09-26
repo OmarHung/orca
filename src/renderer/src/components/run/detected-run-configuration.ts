@@ -1,3 +1,4 @@
+import type { ConfirmationDialogContextValue } from '@/components/confirmation-dialog-context'
 import { useAppStore } from '@/store'
 import { findWorktreeById } from '@/store/slices/worktree-helpers'
 import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
@@ -5,6 +6,11 @@ import { debugLaunchTarget } from '../debug/debug-launch'
 import { runConfiguration, type RunTarget } from './run-configuration-control'
 import { useRunConfigurationStore } from './run-configuration-store'
 import { useRecentRunStore } from './recent-run-store'
+import {
+  stopDebuggingBeforeRun,
+  stopRunBeforeDebug,
+  type RunDebugLaunchContext
+} from './run-debug-exclusivity'
 import { recentItemKey } from './run-widget-items'
 
 export function detectedConfigurationLabel(configuration: DetectedRunConfiguration): string {
@@ -44,31 +50,53 @@ function rememberDetectedRun(target: RunTarget): void {
   }
 }
 
+function detectedLaunchContext(
+  target: RunTarget,
+  confirm: ConfirmationDialogContextValue
+): RunDebugLaunchContext {
+  return {
+    worktreeId: target.worktreeId,
+    sourceKey: recentItemKey(target.commandKey),
+    label: target.command.label,
+    confirm
+  }
+}
+
 /** Runs a detected configuration and makes it the worktree's current one in the tab bar. */
 export async function runDetectedConfiguration(
   configuration: DetectedRunConfiguration,
   worktreeId: string,
-  groupId: string | null
+  groupId: string | null,
+  confirm: ConfirmationDialogContextValue
 ): Promise<void> {
   const target = toDetectedRunTarget(configuration, worktreeId, groupId)
   rememberDetectedRun(target)
-  await runConfiguration(target)
+  if (await stopDebuggingBeforeRun(detectedLaunchContext(target, confirm))) {
+    await runConfiguration(target)
+  }
 }
 
 /** Debugs a detected configuration and makes it the worktree's current one in the tab bar. */
 export async function debugDetectedConfiguration(
   configuration: DetectedRunConfiguration,
   worktreeId: string,
-  groupId: string | null
+  groupId: string | null,
+  confirm: ConfirmationDialogContextValue
 ): Promise<void> {
   if (!configuration.debug) {
     return
   }
-  rememberDetectedRun(toDetectedRunTarget(configuration, worktreeId, groupId))
+  const target = toDetectedRunTarget(configuration, worktreeId, groupId)
+  rememberDetectedRun(target)
+  const context = detectedLaunchContext(target, confirm)
+  if (!(await stopRunBeforeDebug(context, target))) {
+    return
+  }
   await debugLaunchTarget({
     worktreeId,
     cwd: configuration.projectDir,
-    title: detectedConfigurationLabel(configuration),
-    target: configuration.debug
+    title: context.label,
+    target: configuration.debug,
+    sourceKey: context.sourceKey
   })
 }
