@@ -1,6 +1,6 @@
 # Run / Debug 設定與內建除錯器：實作計畫（fork 專屬）
 
-> 狀態：Phase 0（Python 除錯原型）、Phase 1（Run／Stop／Rerun）、Phase 2（專案偵測、右鍵選單、Python interpreter）已完成（2026-09-26），Phase 3 起尚未開工
+> 狀態：Phase 0～3（Python、Node／TS、.NET 除錯，Run／Stop／Rerun，專案偵測，右鍵選單，Python interpreter）已完成（2026-09-26），Phase 4 起尚未開工
 > 分支：從 `omar/custom` 開 `feat/run-debug`，完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -225,6 +225,27 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - `runInTerminal` → 開 Orca 終端機 tab
 - Debug 按鈕接上 Run 設定的 `debug` 欄位
 - 預估約 1,200 行
+
+**Phase 3 完成狀態（2026-09-26）**：Node／TS 和 .NET 除錯都完成了，由 `tests/e2e/debug-node.spec.ts` 和 `tests/e2e/debug-dotnet.spec.ts` 在真正的 app 裡驗證。另外有兩個會跑真實 adapter 的整合測試，設定環境變數才會執行：`ORCA_TEST_JSDEBUG_DIR` 和 `ORCA_TEST_NETCOREDBG_DIR`。
+
+- **js-debug**：用 Orca 自己的 Electron 當 Node（`ELECTRON_RUN_AS_NODE`）啟動 standalone server，監聽 localhost 的隨機 port。DAP client 支援 `startDebugging` 子 session，**每一條連線都能處理這個請求**，因為 `npm run dev` → `node app.js` 是孫 session，請求會從子 session 的連線送來。`resolveSourceMapLocations` 限定在專案內，避免 npm 內部的 source map 雜訊
+- **netcoredbg**：除錯前會先 `dotnet build -c Debug`，輸出串到 Debug console，再從 build 輸出的 `Name -> path.dll` 找出要執行的組件；會套用 `launchSettings.json` profile 的環境變數、`applicationUrl`（對應 `ASPNETCORE_URLS`）和 `commandLineArgs`，而且是 main 自己讀這個檔
+- **入口**：`.js`／`.ts` 檔在 tab bar 有 ▶ 🐞；`package.json` 的 run 類 script 在右鍵有「Debug」；`.csproj` 的 Run profile 在右鍵有「Debug」；C#、JS、TS 都可以在 gutter 下中斷點
+- 除錯請求改成帶 **launch target**（`python-file`、`node-file`、`node-script`、`dotnet-project`），在 main 用 zod 驗證，每個 adapter 有自己的 `*-launch.ts`
+
+**實測時抓到並修正的問題**（都有對應的測試）：
+1. **netcoredbg 會把 `initialized` 和 `initialize` 的回應放在同一個 chunk 送來**，原本的 handshake 在收到回應之後才開始等 `initialized`，所以永遠等不到。現在改成先開始等，再送 `initialize`
+2. **使用者的 `dotnet` 是 Intel（x86_64）版**，在 Apple Silicon 上所有 .NET 程式都透過 Rosetta 以 x64 執行，arm64 的 netcoredbg 附加不上去，會 SIGSEGV（crash report 顯示 `ManagedDebuggerHelpers::Startup` 拿到 null 的 debugger 介面）。現在**依 `dotnet` 執行檔 header 的架構挑 netcoredbg**（`executable-arch.ts`，支援 Mach-O、fat binary、ELF、PE），不看 Orca 自己的架構；架構不同時會在 console 說明
+3. **adapter 自己 crash 時，它啟動的程式會變成孤兒程序**，永遠停在等 debugger 的狀態。現在 adapter 結束時，會把整個 process group 一起結束（POSIX）
+4. **symlink 路徑**（例如 macOS 的 `/var` → `/private/var`）：build 記錄的是解析後的路徑，中斷點會綁不上、停住的行也對不回編輯器。現在 `DebugPathMapping` 送中斷點時轉成真實路徑，收到 stack frame 時再轉回編輯器用的路徑
+5. adapter 暫存資料夾的清理改用 `removeTree`（Windows 上會重試），不再直接用遞迴的 `rm`
+
+**已知限制**：
+- Windows on Arm 沒有 netcoredbg，不能除錯 .NET；Intel Mac 用 netcoredbg 3.1.3
+- .NET 沒有 Hot Reload 和 Edit-and-Continue
+- 右鍵選單只顯示第一個可除錯的設定，其他的要從「More Run/Debug」找（子選單目前還沒有 Debug 項目）
+- tab bar 上「最近一次從右鍵執行的設定」目前只能 Run，還不能直接 Debug
+- 上游的 `windows-lane-tree-removal-boundary.test.ts` 在這個 fork 會失敗：它讀取 CI workflow 裡的檔案清單，但清單中的 `agent-foreground-process-git-bash.win32.test.ts` 不存在。這跟 fork 的改動無關
 
 ### Phase 4：完整的 Debug UI
 - Watch、Debug Console（REPL + 自動補全）、Breakpoints 列表
