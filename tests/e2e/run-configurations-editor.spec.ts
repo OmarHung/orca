@@ -105,6 +105,7 @@ test('edits run configurations, chains Before launch steps, imports launch.json 
   await expect(orcaPage.getByText('Imported 1 new and 0 updated configurations')).toBeVisible()
   await openMenu(orcaPage)
   await expect(orcaPage.getByRole('menuitem', { name: 'Node app' })).toBeVisible()
+  await orcaPage.screenshot({ path: testInfo.outputPath('run-widget-menu.png') })
 
   // orca.yaml configurations need approval before they run.
   await orcaPage.getByRole('menuitem', { name: 'Shared hello' }).click()

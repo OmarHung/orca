@@ -20,7 +20,7 @@ import {
   debugDetectedConfiguration,
   detectedConfigurationLabel,
   runDetectedConfiguration
-} from './run-configuration-control'
+} from './detected-run-configuration'
 import {
   detectProjectRunConfigurations,
   mayContainRunConfigurations

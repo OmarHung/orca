@@ -4,7 +4,6 @@ import { useDroppable } from '@dnd-kit/core'
 import { useAppStore } from '../../store/index'
 import TabBar from '../tab-bar/TabBar'
 
-import { TabBarQuickCommandsButton } from '../tab-bar/quick-commands/TabBarQuickCommandsButton'
 import { TabGroupPaneActionsMenu } from './panel/TabGroupPaneActionsMenu'
 import { RunToolbar } from '../run/RunToolbar'
 import { useTabGroupWorkspaceModel } from './workspace-model/useTabGroupWorkspaceModel'
@@ -323,12 +322,8 @@ export default function TabGroupPanel({
                   ref={quickCommandsSlotRef}
                   className="contents @max-[163px]/tab-strip:invisible @max-[163px]/tab-strip:absolute @max-[163px]/tab-strip:end-0 @max-[163px]/tab-strip:top-0 @max-[163px]/tab-strip:block"
                 >
-                  {isFocused ? <RunToolbar worktreeId={worktreeId} /> : null}
-                  <TabBarQuickCommandsButton
-                    worktreeId={worktreeId}
-                    groupId={groupId}
-                    isFocused={isFocused}
-                  />
+                  {/* Fork: the Run widget also lists quick commands, replacing TabBarQuickCommandsButton. */}
+                  {isFocused ? <RunToolbar worktreeId={worktreeId} groupId={groupId} /> : null}
                 </div>
                 {hasSplitGroups ? (
                   <div className="contents @max-[114px]/tab-strip:hidden">
