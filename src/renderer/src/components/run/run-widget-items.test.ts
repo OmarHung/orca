@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { runWidgetItems, selectedRunWidgetItem } from './run-widget-items'
+import { runWidgetItemForRun, runWidgetItems, selectedRunWidgetItem } from './run-widget-items'
 import type { RunTarget } from './run-configuration-control'
 
 const recentRun: RunTarget = {
@@ -40,5 +40,14 @@ describe('selectedRunWidgetItem', () => {
     expect(selectedRunWidgetItem(items, 'b')?.label).toBe('Build')
     expect(selectedRunWidgetItem(items, 'gone')?.label).toBe('Api: https')
     expect(selectedRunWidgetItem([], undefined)).toBeNull()
+  })
+})
+
+describe('runWidgetItemForRun', () => {
+  it('maps the run that owns a terminal back to its item', () => {
+    expect(runWidgetItemForRun(items, 'detected:api')?.label).toBe('Api: https')
+    expect(runWidgetItemForRun(items, 'config:b')?.label).toBe('Build')
+    expect(runWidgetItemForRun(items, 'local:q1')?.label).toBe('Lint')
+    expect(runWidgetItemForRun(items, 'unknown')).toBeNull()
   })
 })

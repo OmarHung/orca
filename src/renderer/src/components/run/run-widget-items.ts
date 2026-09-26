@@ -22,6 +22,11 @@ export function recentItemKey(commandKey: string): string {
   return `recent:${commandKey}`
 }
 
+/** The terminal run key a saved command configuration uses (one tab per configuration). */
+export function configurationCommandKey(id: string): string {
+  return `config:${id}`
+}
+
 export function configurationItemKey(id: string): string {
   return `config:${id}`
 }
@@ -71,4 +76,26 @@ export function selectedRunWidgetItem(
         : (items.find((item) => item.key === selectedKey) ??
           items.find((item) => item.key === configurationItemKey(selectedKey)))
   return match ?? items[0] ?? null
+}
+
+/** The run key of the terminal an item runs in; null for items that never own a run tab. */
+function runCommandKey(item: RunWidgetItem): string | null {
+  switch (item.kind) {
+    case 'recent':
+      return item.target.commandKey
+    case 'configuration':
+      return item.configuration.type === 'command'
+        ? configurationCommandKey(item.configuration.id)
+        : null
+    case 'quick-command':
+      return item.entry.key
+  }
+}
+
+/** The item whose run owns a terminal, so switching to that terminal can select it. */
+export function runWidgetItemForRun(
+  items: readonly RunWidgetItem[],
+  commandKey: string
+): RunWidgetItem | null {
+  return items.find((item) => runCommandKey(item) === commandKey) ?? null
 }
