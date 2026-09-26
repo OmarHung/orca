@@ -60,6 +60,18 @@ describe.skipIf(process.platform === 'win32')('detectPythonInterpreters', () => 
     expect(found.map((interpreter) => interpreter.path)).toEqual([join(bin, 'python3')])
   })
 
+  it('keeps a venv separate from the PATH Python its executable links to', async () => {
+    const bin = join(root, 'bin')
+    await makeExecutable(join(bin, 'python3'))
+    await mkdir(join(root, '.venv', 'bin'), { recursive: true })
+    const { symlink } = await import('node:fs/promises')
+    await symlink(join(bin, 'python3'), join(root, '.venv', 'bin', 'python'))
+
+    const found = await detectPythonInterpreters(root, deps(bin))
+
+    expect(found.map((interpreter) => interpreter.source)).toEqual(['venv', 'path'])
+  })
+
   it('reports a null version when the probe fails', async () => {
     await makeExecutable(join(root, 'venv', 'bin', 'python'))
 
