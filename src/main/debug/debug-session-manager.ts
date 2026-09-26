@@ -56,6 +56,10 @@ export class DebugSessionManager {
     string,
     { session: DebugSessionHandle; paths: DebugPathMapping }
   >()
+  /** Sessions still preparing their adapter (which can include a download), by their event sink. */
+  private readonly preparing = new Map<string, DebugEventSink>()
+  /** Preparing sessions whose stop arrived early; already reported ended, they never launch. */
+  private readonly stoppedWhilePreparing = new Set<string>()
 
   constructor(private readonly adaptersDir: string) {}
 
@@ -68,13 +72,21 @@ export class DebugSessionManager {
       return { ok: false, message: 'A debug session with this id already exists' }
     }
     let prepared: PreparedDebugAdapter
+    this.preparing.set(sessionId, sink)
+    // Why: once stopped, the session has ended for the renderer; later progress must not revive it.
+    const sendWhileLive = (event: DebugSessionEvent): void => {
+      if (!this.stoppedWhilePreparing.has(sessionId)) {
+        sink.send(event)
+      }
+    }
     try {
       prepared = await prepareAdapter(request.target, {
         adaptersDir: this.adaptersDir,
         cwd: request.cwd,
-        onInstalling: () => sink.send({ kind: 'phase', sessionId, phase: 'installing-adapter' }),
+        onInstalling: () =>
+          sendWhileLive({ kind: 'phase', sessionId, phase: 'installing-adapter' }),
         onOutput: (output, category) =>
-          sink.send({
+          sendWhileLive({
             kind: 'dap-event',
             sessionId,
             event: { seq: 0, type: 'event', event: 'output', body: { category, output } }
@@ -85,18 +97,32 @@ export class DebugSessionManager {
         error instanceof DebugPreparationError
           ? error.message
           : `Could not start the debugger: ${errorMessage(error)}`
-      sink.send({ kind: 'phase', sessionId, phase: 'ended', message })
+      sendWhileLive({ kind: 'phase', sessionId, phase: 'ended', message })
+      this.preparing.delete(sessionId)
+      this.stoppedWhilePreparing.delete(sessionId)
       return { ok: false, message }
     }
 
     const paths = new DebugPathMapping()
+    let breakpoints: DebugStartRequest['breakpoints']
+    try {
+      breakpoints = await paths.breakpointsToAdapter(request.breakpoints)
+    } finally {
+      // Why here: from now until the session is in the map there is no await, so a stop
+      // either lands in the check below or finds the live session.
+      this.preparing.delete(sessionId)
+    }
+    if (this.stoppedWhilePreparing.delete(sessionId)) {
+      prepared.dispose()
+      return { ok: false, message: 'The debug session was stopped before it started' }
+    }
     const session = startDebugSession({
       id: sessionId,
       adapterId: prepared.adapterId,
       transport: prepared.transport,
       ...(prepared.openChildTransport ? { openChildTransport: prepared.openChildTransport } : {}),
       launchArguments: applyDebugLaunchOptions(prepared.launchArguments, request.launchOptions),
-      breakpoints: await paths.breakpointsToAdapter(request.breakpoints),
+      breakpoints,
       ...(request.exceptionFilters ? { exceptionFilters: request.exceptionFilters } : {}),
       onCapabilities: (capabilities) =>
         sink.send({
@@ -151,6 +177,17 @@ export class DebugSessionManager {
   }
 
   async stop(sessionId: string): Promise<void> {
+    // Why: the session is not in the map until its adapter is ready, so a stop pressed during
+    // that window would otherwise be dropped and the program would launch anyway.
+    const preparingSink = this.preparing.get(sessionId)
+    if (preparingSink) {
+      // Why report now: preparing can be a long download, and the stop should show at once.
+      if (!this.stoppedWhilePreparing.has(sessionId)) {
+        this.stoppedWhilePreparing.add(sessionId)
+        preparingSink.send({ kind: 'phase', sessionId, phase: 'ended' })
+      }
+      return
+    }
     await this.sessions.get(sessionId)?.session.stop()
   }
 
