@@ -9,12 +9,15 @@ const INDENT_PX = 12
 // Why: DAP variable graphs can be cyclic (a.parent.child.parent…); cap how deep a user can drill.
 const MAX_DEPTH = 32
 
-function VariableRow({
+export function VariableRow({
   variable,
-  depth
+  depth,
+  trailing
 }: {
   variable: DebugProtocol.Variable
   depth: number
+  /** Extra controls at the end of the row, e.g. a watch's remove button. */
+  trailing?: React.ReactNode
 }): React.JSX.Element {
   const [expanded, setExpanded] = useState(false)
   const children = useDebugStore((s) => s.variablesByReference[variable.variablesReference])
@@ -32,23 +35,26 @@ function VariableRow({
 
   return (
     <>
-      <button
-        type="button"
-        className="flex w-full min-w-0 items-center gap-1 py-0.5 pr-2 text-left font-mono text-xs hover:bg-accent"
-        style={{ paddingLeft: depth * INDENT_PX + 4 }}
-        onClick={toggle}
-        aria-expanded={expandable ? expanded : undefined}
-      >
-        <span className="flex size-3 shrink-0 items-center justify-center text-muted-foreground">
-          {expandable ? expanded ? <ChevronDown /> : <ChevronRight /> : null}
-        </span>
-        <span className="shrink-0 text-foreground">{variable.name}</span>
-        <span className="shrink-0 text-muted-foreground">=</span>
-        <span className="truncate text-muted-foreground" title={variable.value}>
-          {variable.type ? `{${variable.type}} ` : ''}
-          {variable.value}
-        </span>
-      </button>
+      <div className="group flex min-w-0 items-center hover:bg-accent">
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 items-center gap-1 py-0.5 pr-2 text-left font-mono text-xs"
+          style={{ paddingLeft: depth * INDENT_PX + 4 }}
+          onClick={toggle}
+          aria-expanded={expandable ? expanded : undefined}
+        >
+          <span className="flex size-3 shrink-0 items-center justify-center text-muted-foreground">
+            {expandable ? expanded ? <ChevronDown /> : <ChevronRight /> : null}
+          </span>
+          <span className="shrink-0 text-foreground">{variable.name}</span>
+          <span className="shrink-0 text-muted-foreground">=</span>
+          <span className="truncate text-muted-foreground" title={variable.value}>
+            {variable.type ? `{${variable.type}} ` : ''}
+            {variable.value}
+          </span>
+        </button>
+        {trailing}
+      </div>
       {expanded && children
         ? children.map((child) => (
             <VariableRow

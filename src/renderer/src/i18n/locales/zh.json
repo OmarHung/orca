@@ -18434,6 +18434,17 @@
       "logs": "记录 {{value0}}",
       "exceptions": "在异常时暂停",
       "empty": "点击行号左侧添加断点；右键点击可设置条件"
+    },
+    "watch": {
+      "title": "监视",
+      "remove": "移除监视 {{value0}}",
+      "notPaused": "不可用",
+      "add": "添加监视表达式"
+    },
+    "consoleInput": {
+      "input": "求值表达式",
+      "inputHint": "在所选帧中对表达式求值",
+      "inputIdle": "开始调试后即可对表达式求值"
     }
   },
   "run": {

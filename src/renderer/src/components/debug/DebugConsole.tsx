@@ -1,6 +1,7 @@
 import React, { useLayoutEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { useDebugStore } from './debug-store'
+import { DebugConsoleInput } from './DebugConsoleInput'
 
 export function DebugConsole(): React.JSX.Element {
   const output = useDebugStore((s) => s.output)
@@ -34,6 +35,7 @@ export function DebugConsole(): React.JSX.Element {
         ))}
         {lastError ? <div className="text-destructive">{lastError}</div> : null}
       </div>
+      <DebugConsoleInput />
     </div>
   )
 }
