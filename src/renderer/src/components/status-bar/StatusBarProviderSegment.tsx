@@ -1,34 +1,32 @@
 import { AlertTriangle } from 'lucide-react'
 import React from 'react'
 import type { ProviderRateLimits, RateLimitWindow } from '../../../../shared/rate-limit-types'
-import {
-  getDisplayedUsagePercentage,
-  type UsagePercentageDisplay
-} from '../../../../shared/usage-percentage-display'
+import type { UsagePercentageDisplay } from '../../../../shared/usage-percentage-display'
+import { useResetCountdownClock } from '@/hooks/useResetCountdownClock'
 import type { StatusBarUsageMode } from '../../../../shared/status-bar-usage-mode'
-import { ProviderIcon, clampUsedPercent, getProviderUsageStatusLabel } from './tooltip'
+import { ProviderIcon, getProviderUsageStatusLabel } from './tooltip'
 import { getTightestUsageSection } from './UsageRosterPanel'
+import { UsagePaceBar } from './UsagePaceBar'
 import { formatRateLimitWindowChipLabel } from '@/lib/window-label-formatter'
 import { formatUsagePercentageLabel } from './usage-percentage-label'
 import { translate } from '@/i18n/i18n'
 
 function MiniBar({
-  usedPct,
+  window,
   display
 }: {
-  usedPct: number
+  window: RateLimitWindow
   display: UsagePercentageDisplay
 }): React.JSX.Element {
+  const now = useResetCountdownClock([window.resetsAt])
   return (
-    <div
-      data-usage-bar
-      className="w-[48px] h-[6px] rounded-full bg-muted overflow-hidden flex-shrink-0"
-    >
-      <div
-        className="h-full rounded-full transition-all duration-300 bg-muted-foreground/40"
-        style={{ width: `${getDisplayedUsagePercentage(usedPct, display)}%` }}
-      />
-    </div>
+    <UsagePaceBar
+      window={window}
+      display={display}
+      now={now}
+      animated
+      className="h-[6px] w-[48px] flex-shrink-0"
+    />
   )
 }
 
@@ -234,9 +232,7 @@ export function ProviderSegment({
       <ProviderIcon provider={provider} />
       {mode === 'verbose' ? (
         <>
-          {tightest && !compact ? (
-            <MiniBar usedPct={clampUsedPercent(tightest.window.usedPercent)} display={display} />
-          ) : null}
+          {tightest && !compact ? <MiniBar window={tightest.window} display={display} /> : null}
           <VerboseProviderUsage p={p} display={display} />
         </>
       ) : tightest ? (
