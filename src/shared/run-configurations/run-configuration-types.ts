@@ -1,3 +1,5 @@
+import type { DebugLaunchTarget } from '../debug/debug-session-types'
+
 export type RunConfigurationKind = 'build' | 'run' | 'test' | 'publish' | 'other'
 
 export type RunConfigurationEcosystem = 'node' | 'dotnet'
@@ -14,6 +16,8 @@ export type DetectedRunConfiguration = {
   /** Short name within the project, e.g. "dev" or "MvcWeb". */
   name: string
   command: string
+  /** How to debug this configuration, when an adapter supports it. */
+  debug?: DebugLaunchTarget
 }
 
 const SHELL_SAFE = /^[A-Za-z0-9_.:@%+=,/\\-]+$/
