@@ -45,6 +45,7 @@ import {
   shouldShowViewFileAction
 } from './file-explorer-row-action-visibility'
 import { copyFileToOsClipboard, downloadRemoteFile } from './file-explorer-row-file-transfer'
+import { DebugFileContextMenuItems } from '../debug/DebugFileContextMenuItems'
 
 const isMac = navigator.userAgent.includes('Mac')
 
@@ -153,6 +154,7 @@ export function FileExplorerRowContextMenu({
       onPointerUpCapture={stopRightButtonMenuSelection}
       onCloseAutoFocus={(e) => e.preventDefault()}
     >
+      <DebugFileContextMenuItems path={node.path} name={node.name} isDirectory={node.isDirectory} />
       <ContextMenuItem onSelect={() => onStartNew('file', targetDir, targetDepth)}>
         <FilePlus />
         {translate('auto.components.right.sidebar.FileExplorerRow.37c875d827', 'New File')}
