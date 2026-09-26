@@ -1,0 +1,33 @@
+/* Debugger gutter and paused-line decorations (JetBrains-style red dot, highlighted line). */
+
+.monaco-editor .orca-debug-breakpoint::before,
+.monaco-editor .orca-debug-execution-arrow::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.monaco-editor .orca-debug-breakpoint {
+  cursor: pointer;
+}
+
+.monaco-editor .orca-debug-breakpoint::before {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--destructive);
+}
+
+.monaco-editor .orca-debug-execution-line {
+  background: color-mix(in srgb, var(--git-decoration-modified) 22%, transparent);
+}
+
+.monaco-editor .orca-debug-execution-arrow::after {
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 8px solid var(--git-decoration-modified);
+}
