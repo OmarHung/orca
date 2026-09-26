@@ -13,11 +13,11 @@ import {
 } from './usage-error-copy'
 import {
   clampUsedPercent,
-  getDisplayedUsagePercentage,
   type UsagePercentageDisplay
 } from '../../../../shared/usage-percentage-display'
 import { formatUsagePercentageLabel } from './usage-percentage-label'
 import { useResetCountdownClock } from '@/hooks/useResetCountdownClock'
+import { UsagePaceBar } from './UsagePaceBar'
 
 // Re-exported from its shared home so status-bar callers keep a single import.
 export { clampUsedPercent }
@@ -202,27 +202,17 @@ export function getWindowSections(
 // `text-background` for primary text and `text-background/50` for secondary
 // to stay readable inside the inverted tooltip container.
 
-// Why: urgency color tracks % used even when fill represents % remaining;
+// Why: urgency tracks % used even when fill represents % remaining;
 // low usage stays neutral so persistent chrome stays quiet.
 export const USAGE_WARNING_PERCENT = 60
 export const USAGE_URGENT_PERCENT = 80
-
-export function barColor(usedPct: number): string {
-  if (usedPct < USAGE_WARNING_PERCENT) {
-    return 'bg-muted-foreground/40'
-  }
-  if (usedPct < USAGE_URGENT_PERCENT) {
-    return 'bg-yellow-500'
-  }
-  return 'bg-red-500'
-}
 
 function ProviderRateLimitWindowSection({
   window,
   label,
   textClass,
   mutedClass,
-  emptyBarClass,
+  inverted,
   usagePercentageDisplay,
   now
 }: {
@@ -230,7 +220,7 @@ function ProviderRateLimitWindowSection({
   label: string
   textClass: string
   mutedClass: string
-  emptyBarClass: string
+  inverted: boolean
   usagePercentageDisplay: UsagePercentageDisplay
   now: number
 }): React.JSX.Element | null {
@@ -238,19 +228,19 @@ function ProviderRateLimitWindowSection({
     return null
   }
   const usedPct = clampUsedPercent(window.usedPercent)
-  const displayedPct = getDisplayedUsagePercentage(usedPct, usagePercentageDisplay)
   const resetLabel = window.resetsAt ? formatResetCountdown(window.resetsAt - now) : null
 
   return (
     <div className="space-y-1">
       <div className={`font-medium ${textClass}`}>{label}</div>
-      <div className={`h-[6px] w-full overflow-hidden rounded-full ${emptyBarClass}`}>
-        {/* Why: fill follows the selected percentage; color still signals consumption urgency. */}
-        <div
-          className={`h-full rounded-full ${barColor(usedPct)} transition-all duration-300`}
-          style={{ width: `${displayedPct}%` }}
-        />
-      </div>
+      <UsagePaceBar
+        window={window}
+        display={usagePercentageDisplay}
+        now={now}
+        inverted={inverted}
+        animated
+        className="h-[6px] w-full"
+      />
       <div className={`flex justify-between ${mutedClass}`}>
         <span>{formatUsagePercentageLabel(usedPct, usagePercentageDisplay)}</span>
         {resetLabel && <span>{resetLabel}</span>}
@@ -278,7 +268,6 @@ export function ProviderPanel({
   const mutedClass = inverted ? 'text-background/60' : 'text-muted-foreground'
   const faintClass = inverted ? 'text-background/50' : 'text-muted-foreground/80'
   const dividerClass = inverted ? 'border-background/15' : 'border-border/70'
-  const emptyBarClass = inverted ? 'bg-background/20' : 'bg-muted'
 
   if (!p) {
     return (
@@ -366,7 +355,7 @@ export function ProviderPanel({
           label={s.label}
           textClass={textClass}
           mutedClass={mutedClass}
-          emptyBarClass={emptyBarClass}
+          inverted={inverted}
           usagePercentageDisplay={usagePercentageDisplay}
           now={now}
         />

@@ -1,6 +1,7 @@
 import React from 'react'
 import { ChevronRight, RefreshCw } from 'lucide-react'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 import { SettingsSegmentedControl } from '@/components/settings/SettingsFormControls'
 import { useResetCountdownClock } from '@/hooks/useResetCountdownClock'
 import { translate } from '@/i18n/i18n'
@@ -11,9 +12,11 @@ import {
   getDisplayedUsagePercentage,
   type UsagePercentageDisplay
 } from '../../../../shared/usage-percentage-display'
-import { barColor, formatResetCountdown, getWindowSections, ProviderIcon } from './tooltip'
+import { formatResetCountdown, getWindowSections, ProviderIcon } from './tooltip'
 import { getProviderDisplayName } from './usage-error-copy'
-import { formatPlanLabel, usageTextColorClass } from './usage-roster-formatting'
+import { formatPlanLabel } from './usage-roster-formatting'
+import { getUsageWindowSeverity } from './usage-pace'
+import { UsagePaceBar } from './UsagePaceBar'
 import { getUsageRosterRowState, type UsageRosterRowState } from './usage-roster-row-state'
 import type { StatusBarUsageMode } from '../../../../shared/status-bar-usage-mode'
 
@@ -84,28 +87,34 @@ function UsageMetric({
   section,
   label,
   display,
+  now,
   showBar = true
 }: {
   section: UsageSection
   label: string
   display: UsagePercentageDisplay
+  now: number
   showBar?: boolean
 }): React.JSX.Element {
-  const used = clampUsedPercent(section.window.usedPercent)
   const shown = getDisplayedUsagePercentage(section.window.usedPercent, display)
+  const severity = getUsageWindowSeverity(section.window, now)
 
   return (
     <span data-usage-window={section.label} className="flex shrink-0 items-center gap-1.5">
       <span className="text-[10px] text-muted-foreground">{label}</span>
       {showBar ? (
-        <span data-usage-bar className="h-[5px] w-7 overflow-hidden rounded-full bg-muted">
-          <span
-            className={`block h-full rounded-full ${barColor(used)}`}
-            style={{ width: `${shown}%` }}
-          />
-        </span>
+        <UsagePaceBar window={section.window} display={display} now={now} className="h-[5px] w-7" />
       ) : null}
-      <span className={`tabular-nums text-[11px] ${usageTextColorClass(used)}`}>{shown}%</span>
+      <span
+        className={cn(
+          'tabular-nums text-[11px]',
+          severity === 'normal' && 'text-status-success',
+          severity === 'warning' && 'text-status-warning',
+          severity === 'critical' && 'text-destructive'
+        )}
+      >
+        {shown}%
+      </span>
     </span>
   )
 }
@@ -159,6 +168,7 @@ export function UsageRow({
               section={tightest}
               label={tightest.label}
               display={display}
+              now={now}
               showBar={false}
             />
           </span>
@@ -174,6 +184,7 @@ export function UsageRow({
               section={section}
               label={shortLabel(p, section)}
               display={display}
+              now={now}
             />
           ))}
         </div>
