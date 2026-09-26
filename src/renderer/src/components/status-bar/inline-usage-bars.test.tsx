@@ -119,7 +119,7 @@ describe('InlineUsageBars', () => {
       <ProviderSegment p={limits} compact={false} display="used" />
     )
 
-    expect(markup).toContain('w-[48px] h-[6px]')
+    expect(markup).toContain('h-[6px] w-[48px]')
     expect(markup).toContain('width:37%')
     expect(markup).toContain('37% used wk')
   })
