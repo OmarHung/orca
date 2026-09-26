@@ -32,10 +32,7 @@ import {
   type RunTarget
 } from './run-configuration-control'
 import { combineRunConfigurations, useRunConfigurationStore } from './run-configuration-store'
-
-export function configurationCommandKey(id: string): string {
-  return `config:${id}`
-}
+import { configurationCommandKey } from './run-widget-items'
 
 /** The run target a command configuration uses; its key keeps one terminal tab per configuration. */
 export function configurationRunTarget(
