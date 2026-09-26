@@ -50,6 +50,14 @@ declare module 'monaco-editor/esm/vs/base/common/uri.js' {
   }
 }
 
+// Monaco's bundled TS (the repo's own `typescript` is the native port, without a JS API).
+declare module 'monaco-editor/esm/vs/language/typescript/lib/typescriptServices.js' {
+  export const typescript: {
+    ScriptSnapshot: { fromString(text: string): unknown }
+    createLanguageService(host: object): { getNavigationTree(fileName: string): unknown }
+  }
+}
+
 declare module 'monaco-editor/esm/vs/base/common/async.js' {
   export class Delayer<T = unknown> {
     constructor(defaultDelay: number)
