@@ -1,9 +1,7 @@
 import type {
   DebugLaunchTarget,
-  DebugRendererCommand,
   DebugSessionEvent
 } from '../../../../shared/debug/debug-session-types'
-import { translate } from '@/i18n/i18n'
 import { useBottomPanelLayout } from '../bottom-panel/bottom-panel-layout-store'
 import { revealDebugLocation } from './debug-editor-navigation'
 import {
@@ -15,34 +13,18 @@ import {
   readVariables
 } from './debug-protocol-readers'
 import { useDebugStore } from './debug-store'
+import { useBreakpointStore } from './breakpoint-store'
+import {
+  adapterIdForTarget,
+  applyBreakpointEvent,
+  breakpointsForRequest,
+  syncAllBreakpoints
+} from './breakpoint-sync'
+import { currentSessionId, dapRequest, reportDebugError } from './debug-request'
 
 const STACK_DEPTH = 64
 
 let unsubscribeEvents: (() => void) | null = null
-
-function currentSessionId(): string | null {
-  const session = useDebugStore.getState().session
-  return session && session.phase !== 'ended' ? session.id : null
-}
-
-async function dapRequest(
-  command: DebugRendererCommand,
-  args: Record<string, unknown> = {}
-): Promise<unknown> {
-  const sessionId = currentSessionId()
-  if (!sessionId) {
-    throw new Error(translate('debug.noSession', 'No debug session is running'))
-  }
-  const result = await window.api.debug.request(sessionId, command, args)
-  if (!result.ok) {
-    throw new Error(result.message)
-  }
-  return result.body
-}
-
-function reportError(error: unknown): void {
-  useDebugStore.getState().setLastError(error instanceof Error ? error.message : String(error))
-}
 
 export async function loadDebugVariables(variablesReference: number): Promise<void> {
   if (variablesReference <= 0) {
@@ -52,7 +34,7 @@ export async function loadDebugVariables(variablesReference: number): Promise<vo
     const body = await dapRequest('variables', { variablesReference })
     useDebugStore.getState().setVariables(variablesReference, readVariables(body))
   } catch (error) {
-    reportError(error)
+    reportDebugError(error)
   }
 }
 
@@ -81,7 +63,7 @@ export async function selectDebugFrame(frameId: number): Promise<void> {
       await loadDebugVariables(firstCheapScope.variablesReference)
     }
   } catch (error) {
-    reportError(error)
+    reportDebugError(error)
   }
 }
 
@@ -109,7 +91,7 @@ async function handleStopped(body: unknown): Promise<void> {
       await selectDebugFrame(topFrame.id)
     }
   } catch (error) {
-    reportError(error)
+    reportDebugError(error)
   }
 }
 
@@ -118,12 +100,20 @@ function handleEvent(event: DebugSessionEvent): void {
   if (store.session?.id !== event.sessionId) {
     return
   }
+  if (event.kind === 'capabilities') {
+    store.setExceptionFilterOptions(event.adapterId, event.exceptionFilters)
+    return
+  }
   if (event.kind === 'phase') {
     store.updateSession({ phase: event.phase })
+    if (event.phase === 'running') {
+      void syncAllBreakpoints()
+    }
     if (event.message) {
       store.appendOutput('orca', `${event.message}\n`)
     }
     if (event.phase === 'ended') {
+      useBreakpointStore.getState().clearVerified()
       store.clearPausedState()
       store.updateSession({ stoppedThreadId: null, stopReason: null })
     }
@@ -135,6 +125,8 @@ function handleEvent(event: DebugSessionEvent): void {
   } else if (name === 'continued') {
     store.clearPausedState()
     store.updateSession({ stoppedThreadId: null, stopReason: null })
+  } else if (name === 'breakpoint') {
+    applyBreakpointEvent(body)
   } else if (name === 'output') {
     const output = readOutputEvent(body)
     if (output) {
@@ -145,14 +137,6 @@ function handleEvent(event: DebugSessionEvent): void {
 
 function ensureEventSubscription(): void {
   unsubscribeEvents ??= window.api.debug.onEvent(handleEvent)
-}
-
-function breakpointsForRequest(): Record<string, { line: number }[]> {
-  const result: Record<string, { line: number }[]> = {}
-  for (const [path, lines] of Object.entries(useDebugStore.getState().breakpointsByFile)) {
-    result[path] = lines.map((line) => ({ line }))
-  }
-  return result
 }
 
 export async function startDebugSession(options: {
@@ -175,11 +159,14 @@ export async function startDebugSession(options: {
     stopReason: null
   })
   useBottomPanelLayout.getState().showTab('debug')
+  const exceptionFilters =
+    useBreakpointStore.getState().exceptionFiltersByAdapter[adapterIdForTarget(options.target)]
   const result = await window.api.debug.start(sessionId, {
     worktreeId: options.worktreeId,
     cwd: options.cwd,
     breakpoints: breakpointsForRequest(),
-    target: options.target
+    target: options.target,
+    ...(exceptionFilters ? { exceptionFilters } : {})
   })
   const session = useDebugStore.getState().session
   // Why: failures before the adapter starts (e.g. no Python found) emit no `ended` event.
@@ -203,7 +190,7 @@ function threadCommand(command: 'continue' | 'next' | 'stepIn' | 'stepOut'): voi
   }
   useDebugStore.getState().clearPausedState()
   useDebugStore.getState().updateSession({ stoppedThreadId: null, stopReason: null })
-  dapRequest(command, { threadId }).catch(reportError)
+  dapRequest(command, { threadId }).catch(reportDebugError)
 }
 
 export const debugContinue = (): void => threadCommand('continue')
@@ -218,17 +205,6 @@ export async function debugPause(): Promise<void> {
       await dapRequest('pause', { threadId })
     }
   } catch (error) {
-    reportError(error)
+    reportDebugError(error)
   }
-}
-
-export function toggleDebugBreakpoint(path: string, line: number): void {
-  const lines = useDebugStore.getState().toggleBreakpoint(path, line)
-  if (!currentSessionId()) {
-    return
-  }
-  dapRequest('setBreakpoints', {
-    source: { path },
-    breakpoints: lines.map((breakpointLine) => ({ line: breakpointLine }))
-  }).catch(reportError)
 }
