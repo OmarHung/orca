@@ -57,6 +57,7 @@ import { registerTelemetryHandlers } from '../telemetry'
 import { registerShellHandlers } from '../shell/shell'
 import { registerPetHandlers } from '../pets/pet'
 import { registerPluginHandlers } from '../plugins/plugins'
+import { registerDebugHandlers } from '../../debug/debug-ipc'
 import { registerUIHandlers, setTrustedUIRendererWebContentsId } from '../ui'
 import { registerEmulatorFrameStreamHandlers } from '../emulator/emulator-frame-stream'
 import { registerEmulatorVideoStreamHandlers } from '../emulator/emulator-video-stream'
@@ -204,6 +205,7 @@ export async function registerCoreHandlers(
     registerBrowserHandlers(store)
     registerShellHandlers(store)
     registerPetHandlers()
+    registerDebugHandlers()
     registerSessionHandlers(store, runtime)
     registerUIHandlers(store, { isDashboardPopoutRenderer })
     registerEmulatorFrameStreamHandlers()
