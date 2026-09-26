@@ -119,7 +119,8 @@ describe('runDetectedConfiguration', () => {
         command: 'dotnet run --project Api.csproj'
       },
       'wt',
-      'group'
+      'group',
+      async () => true
     )
 
     expect(runQuickCommandInNewTab).toHaveBeenCalledWith(

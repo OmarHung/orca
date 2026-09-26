@@ -4,20 +4,20 @@ import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
-import { useAppStore } from '@/store'
 import { RunStatusDot } from './RunStatusDot'
 import { rerunConfiguration, stopConfiguration, type RunTarget } from './run-configuration-control'
 import { describeRunStatus, runStatusTone } from './run-status-presentation'
-import { isRunSessionActive, runSessionKey, useRunSessionStore } from './run-session-store'
+import { isRunSessionActive } from './run-session-store'
+import { useLiveRunSession } from './use-live-run-session'
 
-type ControlAction = {
+export type ControlAction = {
   icon: LucideIcon
   label: string
   testId: string
   onClick: () => void
 }
 
-function ControlButton({ action }: { action: ControlAction }): React.JSX.Element {
+export function ControlButton({ action }: { action: ControlAction }): React.JSX.Element {
   const Icon = action.icon
   return (
     <Tooltip>
@@ -50,15 +50,7 @@ export function RunSessionControls({
   /** Replaces the plain rerun, e.g. to repeat trust checks and Before launch steps. */
   onRerun?: () => void
 }): React.JSX.Element {
-  const storedSession = useRunSessionStore((s) =>
-    target ? s.sessionsByKey[runSessionKey(target.worktreeId, target.commandKey)] : undefined
-  )
-  const tabAlive = useAppStore((s) =>
-    storedSession && target
-      ? (s.tabsByWorktree[target.worktreeId] ?? []).some((tab) => tab.id === storedSession.tabId)
-      : false
-  )
-  const session = storedSession && tabAlive ? storedSession : null
+  const session = useLiveRunSession(target)
   const active = session !== null && isRunSessionActive(session.status)
   const label = target?.command.label ?? ''
 

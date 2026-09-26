@@ -140,6 +140,8 @@ type LaunchScope = {
   worktreeId: string
   groupId: string | null
   context: RunConfigurationVariableContext
+  /** Run widget item whose debug session this launch starts. */
+  sourceKey?: string
 }
 
 /** Each step must exit 0 before the next; a failure or stop ends the whole launch. */
@@ -203,6 +205,7 @@ async function startLaunch(
       await debugLaunchTarget({
         worktreeId: scope.worktreeId,
         title: configuration.name,
+        ...(scope.sourceKey ? { sourceKey: scope.sourceKey } : {}),
         ...launch
       })
     }
@@ -227,6 +230,7 @@ export async function launchRunConfiguration(options: {
   worktreeId: string
   groupId: string | null
   reference: string
+  sourceKey?: string
 }): Promise<void> {
   const state = useAppStore.getState()
   const worktree = findWorktreeById(state.worktreesByRepo, options.worktreeId)
@@ -264,5 +268,6 @@ export async function launchRunConfiguration(options: {
   if (!(await runBeforeLaunchSteps(result.plan.beforeLaunch, scope))) {
     return
   }
-  await Promise.all(result.plan.launches.map((launch) => startLaunch(launch, scope)))
+  const mainScope = options.sourceKey ? { ...scope, sourceKey: options.sourceKey } : scope
+  await Promise.all(result.plan.launches.map((launch) => startLaunch(launch, mainScope)))
 }

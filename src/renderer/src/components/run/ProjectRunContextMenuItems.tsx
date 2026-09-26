@@ -128,10 +128,10 @@ export function ProjectRunContextMenuItems({
         return
       }
     }
-    await runDetectedConfiguration(configuration, worktreeId, groupId)
+    await runDetectedConfiguration(configuration, worktreeId, groupId, confirm)
   }
   const debug = (configuration: DetectedRunConfiguration): void => {
-    void debugDetectedConfiguration(configuration, worktreeId, groupId)
+    void debugDetectedConfiguration(configuration, worktreeId, groupId, confirm)
   }
   const primaryDebug = configurations.find((configuration) => configuration.debug)
   const primary = PRIMARY_KINDS.flatMap((kind) => {
