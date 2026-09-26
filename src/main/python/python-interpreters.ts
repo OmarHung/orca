@@ -128,12 +128,14 @@ async function findCandidates(root: string, deps: InterpreterDetectionDeps): Pro
     ...(poetry ? [poetry] : []),
     ...(await pathCandidates(root, deps))
   ]
-  // Why dedupe by real path: `python` and `python3` on PATH are usually the same binary,
-  // and poetry's env can be the project's own .venv.
+  // Why two kinds of key: `python` and `python3` on PATH are usually one binary, so those
+  // merge by real path; a venv's executable is a symlink to its base Python yet behaves
+  // differently (own sys.prefix and packages), so envs only merge on their own path.
   const seen = new Set<string>()
   const unique: Candidate[] = []
   for (const candidate of ordered) {
-    const key = await canonical(candidate.path)
+    const key =
+      candidate.source === 'path' ? `path:${await canonical(candidate.path)}` : candidate.path
     if (!seen.has(key)) {
       seen.add(key)
       unique.push(candidate)
