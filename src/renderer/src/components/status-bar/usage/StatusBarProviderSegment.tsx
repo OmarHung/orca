@@ -18,7 +18,7 @@ import { formatCurrencyAmount } from '../../../../../shared/agent-usage/display/
 import { formatCreditCount } from '../../../../../shared/agent-usage/display/credit-count-format'
 import { ProviderIcon } from './provider-usage-panel'
 import { USAGE_WARNING_PERCENT } from './usage-health-tone'
-import { UsageBar } from './usage-meter'
+import { UsagePaceBar } from '../UsagePaceBar'
 import { getOwnerNotSetUpLabelParts } from '../../../../../shared/agent-usage/status-copy/owner-not-set-up-copy'
 import {
   getProviderUsageErrorMessage,
@@ -40,14 +40,22 @@ import { useNow } from '@/lib/window-activity/use-now'
 const CALM_STALE_USAGE_MAX_AGE_MS = 30 * 60_000
 
 function MiniBar({
-  usedPct,
+  window,
   display
 }: {
-  usedPct: number
+  window: RateLimitWindow
   display: UsagePercentageDisplay
 }): React.JSX.Element {
-  // Why plain: usage is colored only inside a provider's details card, never in the status bar.
-  return <UsageBar usedPercent={usedPct} display={display} className="h-[6px] w-[48px] shrink-0" />
+  const now = useResetCountdownClock([window.resetsAt])
+  return (
+    <UsagePaceBar
+      window={window}
+      display={display}
+      now={now}
+      animated
+      className="h-[6px] w-[48px] shrink-0"
+    />
+  )
 }
 
 function WindowLabel({
@@ -346,7 +354,7 @@ export function ProviderSegment({
     <span className="inline-flex items-center gap-1.5">
       <ProviderIcon provider={provider} />
       {!template && mode === 'verbose' && tightest && !compact ? (
-        <MiniBar usedPct={clampUsedPercent(tightest.window.usedPercent)} display={display} />
+        <MiniBar window={tightest.window} display={display} />
       ) : null}
       {template ? (
         <CustomUsageText template={template} limits={p} display={display} now={now} />
