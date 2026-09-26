@@ -7,6 +7,8 @@ import type {
   DebugRunConfiguration,
   RunConfigurationDefinition
 } from '../../../../shared/run-configurations/run-configuration-definition'
+import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
+import { CompoundMembersEditor } from './CompoundMembersEditor'
 import { ConfigurationReferenceList } from './ConfigurationReferenceList'
 import { DebugTargetFields } from './DebugTargetFields'
 import { FormField } from './RunConfigurationFormField'
@@ -149,7 +151,11 @@ function DebugFields(props: FormProps<DebugRunConfiguration>): React.JSX.Element
 
 /** The right-hand form of Edit Configurations; remount it per configuration (key by id). */
 export function RunConfigurationForm(
-  props: FormProps<RunConfigurationDefinition>
+  props: FormProps<RunConfigurationDefinition> & {
+    detected: readonly DetectedRunConfiguration[] | null
+    worktreePath: string
+    onPickDetected: (detected: DetectedRunConfiguration) => string
+  }
 ): React.JSX.Element {
   const { configuration, all, readOnly, onChange } = props
   return (
@@ -168,23 +174,20 @@ export function RunConfigurationForm(
         <DebugFields {...props} configuration={configuration} />
       ) : (
         <FormField
-          label={translate('run.configurations.form.members', 'Configurations to start together')}
+          label={translate('run.configurations.form.members', 'Configurations to start')}
           description={translate(
             'run.configurations.form.membersHint',
             'Before launch steps of all members run first. At most one may be a debug configuration.'
           )}
         >
-          <ConfigurationReferenceList
-            testId="run-configuration-members"
-            references={configuration.configurations}
-            candidates={referenceCandidates(all, configuration.id, [
-              'command',
-              'debug',
-              'compound'
-            ])}
+          <CompoundMembersEditor
+            compound={configuration}
             all={all}
-            disabled={readOnly}
-            onChange={(configurations) => onChange({ ...configuration, configurations })}
+            detected={props.detected}
+            worktreePath={props.worktreePath}
+            readOnly={readOnly}
+            onChange={onChange}
+            onPickDetected={props.onPickDetected}
           />
         </FormField>
       )}
