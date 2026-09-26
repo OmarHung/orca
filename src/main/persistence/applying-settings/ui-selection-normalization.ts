@@ -83,8 +83,7 @@ export function normalizeRightSidebarTab(tab: unknown): PersistedState['ui']['ri
     tab === 'bot-activity' ||
     tab === 'bot-automations' ||
     tab === 'bot-connectors' ||
-    tab === 'bot-chats' ||
-    tab === 'outline'
+    tab === 'bot-chats'
   ) {
     return tab
   }

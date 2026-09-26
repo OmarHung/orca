@@ -104,8 +104,7 @@ export const STATIC_RIGHT_SIDEBAR_TABS = [
   'bot-activity',
   'bot-automations',
   'bot-connectors',
-  'bot-chats',
-  'outline'
+  'bot-chats'
 ] as const
 export type StaticRightSidebarTab = (typeof STATIC_RIGHT_SIDEBAR_TABS)[number]
 export type RightSidebarTab =
