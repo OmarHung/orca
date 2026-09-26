@@ -5,6 +5,8 @@ import { toggleDebugBreakpoint } from './breakpoint-sync'
 import { useDebugStore } from './debug-store'
 import { useBreakpointStore, type BreakpointSpec } from './breakpoint-store'
 import './monaco-debug-decorations.css'
+import { buildInlineValueHints } from './debug-inline-values'
+import { ensureDebugHoverProvider } from './monaco-debug-hover'
 
 /** Languages with a debug adapter wired up; the gutter stays untouched elsewhere. */
 const DEBUGGABLE_LANGUAGES = new Set(['python', 'javascript', 'typescript', 'csharp'])
@@ -76,6 +78,11 @@ export function useMonacoDebugDecorations(
   const executionLine = useDebugStore((s) =>
     s.executionLocation?.path === filePath ? s.executionLocation.line : null
   )
+  // The paused frame's first cheap scope (its locals) feeds the inline values.
+  const locals = useDebugStore((s) => {
+    const scope = s.scopes.find((candidate) => !candidate.expensive)
+    return scope ? s.variablesByReference[scope.variablesReference] : undefined
+  })
   const collectionRef = useRef<editor.IEditorDecorationsCollection | null>(null)
 
   useEffect(() => {
@@ -83,6 +90,7 @@ export function useMonacoDebugDecorations(
       return
     }
     mountedEditor.updateOptions({ glyphMargin: true })
+    ensureDebugHoverProvider(language)
     const mouseDown = mountedEditor.onMouseDown((event) => {
       const line = event.target.position?.lineNumber
       if (event.target.type !== monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN || !line) {
@@ -123,9 +131,27 @@ export function useMonacoDebugDecorations(
       collectionRef.current = null
       mountedEditor.updateOptions({ glyphMargin: false })
     }
-  }, [enabled, filePath, mountedEditor])
+  }, [enabled, filePath, language, mountedEditor])
 
   useEffect(() => {
-    collectionRef.current?.set(buildDebugDecorations(breakpoints, verified, executionLine))
-  }, [breakpoints, verified, executionLine, enabled, filePath, mountedEditor])
+    const model = mountedEditor?.getModel()
+    const hints =
+      model && executionLine !== null && locals
+        ? buildInlineValueHints(
+            (line) => (line <= model.getLineCount() ? model.getLineContent(line) : ''),
+            executionLine,
+            locals
+          ).map((hint) => ({
+            range: new monaco.Range(hint.line, 1, hint.line, model.getLineMaxColumn(hint.line)),
+            options: {
+              // Why the whole line: Monaco only injected this text for a non-empty range here.
+              after: { content: `  ${hint.text}`, inlineClassName: 'orca-debug-inline-value' }
+            }
+          }))
+        : []
+    collectionRef.current?.set([
+      ...buildDebugDecorations(breakpoints, verified, executionLine),
+      ...hints
+    ])
+  }, [breakpoints, verified, executionLine, locals, enabled, filePath, mountedEditor])
 }

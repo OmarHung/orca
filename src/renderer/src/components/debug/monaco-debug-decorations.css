@@ -66,3 +66,9 @@
   background: transparent;
   box-shadow: inset 0 0 0 2px var(--muted-foreground);
 }
+
+/* Inline values while paused, e.g. `total = 6, i = 4` at the end of the line. */
+.monaco-editor .orca-debug-inline-value {
+  color: var(--muted-foreground);
+  font-style: italic;
+}
