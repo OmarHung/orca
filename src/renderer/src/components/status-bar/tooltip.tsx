@@ -13,12 +13,12 @@ import {
 } from './usage-error-copy'
 import {
   clampUsedPercent,
-  getDisplayedUsagePercentage,
   type UsagePercentageDisplay
 } from '../../../../shared/usage-percentage-display'
 import { formatUsagePercentageLabel } from './usage-percentage-label'
 import { useResetCountdownClock } from '@/hooks/useResetCountdownClock'
-import { barColor, ProviderExtraUsageSection } from './provider-extra-usage-section'
+import { ProviderExtraUsageSection } from './provider-extra-usage-section'
+import { UsagePaceBar } from './UsagePaceBar'
 
 export {
   barColor,
@@ -221,7 +221,7 @@ function ProviderRateLimitWindowSection({
   label,
   textClass,
   mutedClass,
-  emptyBarClass,
+  inverted,
   usagePercentageDisplay,
   now
 }: {
@@ -229,7 +229,7 @@ function ProviderRateLimitWindowSection({
   label: string
   textClass: string
   mutedClass: string
-  emptyBarClass: string
+  inverted: boolean
   usagePercentageDisplay: UsagePercentageDisplay
   now: number
 }): React.JSX.Element | null {
@@ -237,19 +237,19 @@ function ProviderRateLimitWindowSection({
     return null
   }
   const usedPct = clampUsedPercent(window.usedPercent)
-  const displayedPct = getDisplayedUsagePercentage(usedPct, usagePercentageDisplay)
   const resetLabel = window.resetsAt ? formatResetCountdown(window.resetsAt - now) : null
 
   return (
     <div className="space-y-1">
       <div className={`font-medium ${textClass}`}>{label}</div>
-      <div className={`h-[6px] w-full overflow-hidden rounded-full ${emptyBarClass}`}>
-        {/* Why: fill follows the selected percentage; color still signals consumption urgency. */}
-        <div
-          className={`h-full rounded-full ${barColor(usedPct)} transition-all duration-300`}
-          style={{ width: `${displayedPct}%` }}
-        />
-      </div>
+      <UsagePaceBar
+        window={window}
+        display={usagePercentageDisplay}
+        now={now}
+        inverted={inverted}
+        animated
+        className="h-[6px] w-full"
+      />
       <div className={`flex justify-between ${mutedClass}`}>
         <span>{formatUsagePercentageLabel(usedPct, usagePercentageDisplay)}</span>
         {resetLabel && <span>{resetLabel}</span>}
@@ -365,7 +365,7 @@ export function ProviderPanel({
           label={s.label}
           textClass={textClass}
           mutedClass={mutedClass}
-          emptyBarClass={emptyBarClass}
+          inverted={inverted}
           usagePercentageDisplay={usagePercentageDisplay}
           now={now}
         />
