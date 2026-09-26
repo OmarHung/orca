@@ -85,20 +85,20 @@ test('offers Build/Run/Publish for .NET and Node projects in the file tree and r
     'dotnet publish Project2.csproj -p:PublishProfile=FolderProfile'
   )
   await dialog.getByRole('button', { name: 'Cancel' }).click()
-  await expect(orcaPage.getByTestId('recent-run-controls')).toHaveCount(0)
+  await expect(orcaPage.getByTestId('run-configurations-trigger')).not.toContainText('Project2')
 
   // Node: the script runs with the project's package manager, inside the project folder.
   await explorerRow(orcaPage, 'web').click({ button: 'right' })
   await orcaPage.getByRole('menuitem', { name: "Build 'web'" }).click()
-  const controls = orcaPage.getByTestId('recent-run-session-controls')
+  const controls = orcaPage.getByTestId('run-configurations-session')
   await expect(controls).toHaveAttribute('data-run-status', 'succeeded', { timeout: 30_000 })
   await expect
     .poll(async () => getTerminalContent(orcaPage, 20_000), { timeout: 20_000 })
     .toContain(`built-42:${realpathSync(web)}`)
-  await expect(orcaPage.getByTestId('recent-run-button')).toContainText('web: build')
+  await expect(orcaPage.getByTestId('run-configurations-trigger')).toContainText('web: build')
 
-  // The tab bar keeps it one click away, reusing the same terminal tab.
-  await orcaPage.getByTestId('recent-run-button').click()
+  // The Run widget keeps it one click away, reusing the same terminal tab.
+  await orcaPage.getByTestId('run-configurations-launch').click()
   await expect(controls).toHaveAttribute('data-run-status', 'succeeded', { timeout: 30_000 })
   const buildTabs = await orcaPage.evaluate(() => {
     const state = window.__store?.getState()

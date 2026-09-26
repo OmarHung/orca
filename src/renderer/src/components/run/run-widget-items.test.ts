@@ -1,0 +1,43 @@
+import { describe, expect, it } from 'vitest'
+import { runWidgetItems, selectedRunWidgetItem } from './run-widget-items'
+import type { RunTarget } from './run-configuration-control'
+
+const detected: RunTarget = {
+  worktreeId: 'wt',
+  groupId: null,
+  commandKey: 'detected:api',
+  command: { id: 'detected:api', label: 'Api: https', command: 'dotnet run', appendEnter: true }
+}
+const items = runWidgetItems({
+  detected,
+  configurations: [
+    { source: 'local', configuration: { type: 'command', id: 'b', name: 'Build', command: 'make' } }
+  ],
+  quickCommands: [
+    {
+      key: 'local:q1',
+      hostId: 'local',
+      hostLabel: 'This Mac',
+      command: { id: 'q1', label: 'Lint', command: 'pnpm lint', appendEnter: true }
+    }
+  ]
+})
+
+describe('runWidgetItems', () => {
+  it('lists the temporary run, then configurations, then quick commands', () => {
+    expect(items.map((item) => [item.kind, item.key, item.label])).toEqual([
+      ['detected', 'detected', 'Api: https'],
+      ['configuration', 'config:b', 'Build'],
+      ['quick-command', 'quick:local:q1', 'Lint']
+    ])
+  })
+})
+
+describe('selectedRunWidgetItem', () => {
+  it('finds the stored key, accepts a bare configuration id, and falls back to the first', () => {
+    expect(selectedRunWidgetItem(items, 'quick:local:q1')?.label).toBe('Lint')
+    expect(selectedRunWidgetItem(items, 'b')?.label).toBe('Build')
+    expect(selectedRunWidgetItem(items, 'gone')?.label).toBe('Api: https')
+    expect(selectedRunWidgetItem([], undefined)).toBeNull()
+  })
+})
