@@ -293,7 +293,15 @@ export default function TabGroupPanel({
               style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             >
               {/* Fork: the Run widget also lists quick commands, replacing TabBarQuickCommandsButton. */}
-              {isFocused ? <RunToolbar worktreeId={worktreeId} groupId={groupId} /> : null}
+              {isFocused ? (
+                <RunToolbar
+                  worktreeId={worktreeId}
+                  groupId={groupId}
+                  activeTerminalTabId={
+                    activeTab?.contentType === 'terminal' ? activeTab.entityId : null
+                  }
+                />
+              ) : null}
               {hasSplitGroups ? (
                 <TabGroupPaneActionsMenu isFocused={isFocused} onCloseGroup={commands.closeGroup} />
               ) : null}
