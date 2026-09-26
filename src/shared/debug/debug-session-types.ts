@@ -16,6 +16,13 @@ export type DebugLaunchTarget =
     }
   | { kind: 'node-file'; filePath: string }
   | { kind: 'node-script'; packageManager: NodePackageManagerName; script: string }
+  | {
+      kind: 'dotnet-project'
+      /** Absolute path of the .csproj/.fsproj; it is built before debugging. */
+      projectFile: string
+      /** launchSettings.json profile whose environment and URLs apply. */
+      launchProfile?: string
+    }
 
 export type DebugStartRequest = {
   worktreeId: string
