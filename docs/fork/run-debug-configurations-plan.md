@@ -1,6 +1,6 @@
 # Run / Debug 設定與內建除錯器：實作計畫（fork 專屬）
 
-> 狀態：Phase 0（Python 除錯原型）已完成（2026-09-26），其餘 phase 尚未開工
+> 狀態：Phase 0（Python 除錯原型）、Phase 1（Run／Stop／Rerun）已完成（2026-09-26），Phase 2 起尚未開工
 > 分支：從 `omar/custom` 開 `feat/run-debug`，完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -170,6 +170,25 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - 右上角 `TitlebarRunWidget`
 - 沒有 shell integration（OSC 133）的 shell：狀態顯示「未知」，■ 永遠可以按
 - 預估約 800 行
+
+**完成狀態（2026-09-26）**：已完成，由 `tests/e2e/tab-bar-run-configurations.spec.ts` 在真正的 app 裡驗證。實作時有兩個跟原計畫不同的決定：
+
+1. **位置改在 tab bar，不放標題列。** Orca 的工作區畫面沒有標題列，tab group 會一路延伸到視窗頂端，所以「右上角」其實就是 tab bar 的最右邊。那裡本來就有 Orca 的 Quick Commands 分割按鈕（`▶ 名稱 ▾`），它已經是「設定選單＋執行」。所以做法是**升級這個按鈕**，而不是另外加一個：
+   - ▶ 和選單裡的項目改用單一實例執行：同一個設定重用自己的 tab，還在跑的時候再按一次就重新執行
+   - 旁邊加上 `RunSessionControls`：狀態點（綠色表示執行中或成功、紅色表示失敗）、↻ Rerun、■ Stop；目前編輯器是 `.py` 檔時多一個 🐞 Debug
+   - 原本的選單功能（新增、編輯、刪除、agent prompt、遠端主機）全部保留，也就是 Edit Configurations 的角色
+   - Agent prompt 類的指令維持原本「每次開新 tab」的行為
+2. **Quick command 的資料結構完全沒改。** Orca Mobile 和較舊的桌面 client 用 `parseNormalizedTerminalQuickCommands` 檢查 quick command，要求**欄位完全一致**，多一個欄位就會拒收整份清單。所以 Phase 1 沒有加 `kind`、`singleInstance` 等欄位。**Phase 2 之後需要的執行設定資訊，要放在另一個以 command id 為 key 的本機 map，絕對不能加在共享的 quick command 物件上。**
+
+**實作重點**：
+- `ORCA_TERMINAL_COMMAND_FINISHED_EVENT` 多帶一個 `paneKey`，這樣才知道是哪個 tab 的指令結束了。Orca 的 shell integration 只在真的執行過指令後才送出 `133;D`，所以不需要監聽「指令開始」
+- Stop：第一次按送出 Ctrl-C；狀態還是「停止中」時再按一次就關掉 tab。如果指令還在排隊、shell 還沒收到，就直接取消排隊的指令，不送 Ctrl-C（不然 Ctrl-C 只會清掉空的提示字元，永遠等不到結束訊號）
+- Rerun：送出 Ctrl-C，等指令結束（最多 3 秒）後在同一個 tab 重跑；逾時就關掉 tab 開新的
+- 執行狀態存在獨立的 zustand store（`components/run/run-session-store.ts`），不放在共享的 app store
+
+**已知限制**：
+- 沒有 OSC 133 的 shell（cmd.exe、部分 Git Bash）收不到結束訊號，狀態會停在「執行中」；Stop 按兩次仍然可以關掉 tab
+- 指令已經送進 shell、但 shell 還沒開始執行的那一瞬間按 Stop，也收不到結束訊號，一樣要按第二次
 
 ### Phase 2：專案偵測和右鍵選單
 - .NET、Python、Node 偵測器和測試（用 fixture 目錄）

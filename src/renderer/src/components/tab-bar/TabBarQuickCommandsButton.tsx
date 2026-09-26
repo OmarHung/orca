@@ -7,25 +7,16 @@ import {
   createTerminalQuickCommandDraft,
   TerminalQuickCommandDialog
 } from '@/components/terminal-quick-commands/TerminalQuickCommandDialog'
-import {
-  getTerminalQuickCommandScope,
-  isTerminalQuickCommandComplete
-} from '../../../../shared/terminal-quick-commands'
-import { getRepoIdFromWorktreeId } from '../../../../shared/worktree/id'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
 import { runQuickCommandInNewTab } from '@/lib/run-quick-command-in-new-tab'
 import type { TerminalQuickCommand } from '../../../../shared/terminal-quick-command-types'
 import { useConfirmationDialog } from '@/components/confirmation-dialog-context'
 import { translate } from '@/i18n/i18n'
 import { TabBarQuickCommandsMenu } from './TabBarQuickCommandsMenu'
-import {
-  flattenTerminalQuickCommandHosts,
-  type HostedTerminalQuickCommand,
-  useTerminalQuickCommandHosts
-} from '@/hooks/use-terminal-quick-command-hosts'
+import type { HostedTerminalQuickCommand } from '@/hooks/use-terminal-quick-command-hosts'
+import { useWorktreeQuickCommands } from '@/hooks/use-worktree-quick-commands'
+import { runConfiguration, toRunTarget } from '../run/run-configuration-control'
+import { RunSessionControls } from '../run/RunSessionControls'
 import { getRepoExecutionHostId, type ExecutionHostId } from '../../../../shared/execution-host'
-import { useProjectHostSetupProjection } from '@/store/selectors'
-import { terminalQuickCommandMatchesWorkspaceProject } from '@/lib/terminal-quick-command-project-scope'
 
 type TabBarQuickCommandsButtonProps = {
   worktreeId: string
@@ -40,44 +31,17 @@ export function TabBarQuickCommandsButton({
 }: TabBarQuickCommandsButtonProps): React.JSX.Element | null {
   const recentByGroup = useAppStore((s) => s.recentQuickCommandIdByGroup)
   const repos = useAppStore((s) => s.repos)
-  const projectHostSetupProjection = useProjectHostSetupProjection()
-  const { executionHostId, hosts, refreshRemoteHost, remoteHostLoadFailed, remoteHostPending } =
-    useTerminalQuickCommandHosts(worktreeId)
+  const {
+    executionHostId,
+    hosts,
+    refreshRemoteHost,
+    remoteHostLoadFailed,
+    remoteHostPending,
+    repoId,
+    repoCommands,
+    globalCommands
+  } = useWorktreeQuickCommands(worktreeId)
   const confirm = useConfirmationDialog()
-  // Floating terminals have a synthetic workspace ID without a repo; never treat that sentinel as a run target.
-  const repoId = useMemo(() => {
-    if (worktreeId === FLOATING_TERMINAL_WORKTREE_ID) {
-      return null
-    }
-    const candidate = getRepoIdFromWorktreeId(worktreeId)
-    return repos.some((r) => r.id === candidate) ? candidate : null
-  }, [worktreeId, repos])
-
-  const { repoCommands, globalCommands } = useMemo(() => {
-    const repoList: HostedTerminalQuickCommand[] = []
-    const globalList: HostedTerminalQuickCommand[] = []
-    for (const entry of flattenTerminalQuickCommandHosts(hosts)) {
-      const { command } = entry
-      if (!isTerminalQuickCommandComplete(command)) {
-        continue
-      }
-      const scope = getTerminalQuickCommandScope(command)
-      if (scope.type === 'global') {
-        globalList.push(entry)
-      } else if (
-        scope.type === 'repo' &&
-        terminalQuickCommandMatchesWorkspaceProject(command, {
-          commandHostId: entry.hostId,
-          projectHostSetups: projectHostSetupProjection.setups,
-          targetHostId: executionHostId,
-          targetRepoId: repoId
-        })
-      ) {
-        repoList.push(entry)
-      }
-    }
-    return { repoCommands: repoList, globalCommands: globalList }
-  }, [executionHostId, hosts, projectHostSetupProjection.setups, repoId])
 
   const recentId = recentByGroup[groupId] ?? null
   // Prefer group history across scopes, then the first repo command, then a global command.
@@ -143,16 +107,24 @@ export function TabBarQuickCommandsButton({
   }
 
   const handleRun = (entry: HostedTerminalQuickCommand): void => {
-    runQuickCommandInNewTab({
-      command: entry.command,
-      worktreeId,
-      groupId,
-      historyId: entry.key
-    })
+    const target = toRunTarget(entry, worktreeId, groupId)
+    if (!target) {
+      runQuickCommandInNewTab({
+        command: entry.command,
+        worktreeId,
+        groupId,
+        historyId: entry.key
+      })
+      return
+    }
+    // Why: JetBrains-style single instance — a shell command reuses its tab and restarts if running.
+    void runConfiguration(target)
+    useAppStore.getState().setRecentQuickCommandForGroup(groupId, entry.key)
   }
   const editorPromptMaxLength = useAppStore((state) =>
     editor ? getTerminalQuickCommandHostPromptMaxLength(state, editor.hostId) : undefined
   )
+  const runTarget = mostRecent ? toRunTarget(mostRecent, worktreeId, groupId) : null
   const editorRepos = editor?.hostId.startsWith('runtime:')
     ? repos.filter((repo) => getRepoExecutionHostId(repo) === editor.hostId)
     : repos
@@ -192,6 +164,7 @@ export function TabBarQuickCommandsButton({
             )}
           </TooltipContent>
         </Tooltip>
+        <RunSessionControls target={null} />
         <TerminalQuickCommandDialog
           open={editor !== null}
           mode={editor?.mode ?? 'add'}
@@ -223,6 +196,7 @@ export function TabBarQuickCommandsButton({
         onDeleteCommand={(entry) => void handleDeleteCommand(entry)}
         onRunCommand={handleRun}
       />
+      <RunSessionControls target={runTarget} />
       <TerminalQuickCommandDialog
         open={editor !== null}
         mode={editor?.mode ?? 'add'}
