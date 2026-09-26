@@ -31,6 +31,7 @@ import {
   rerunConfiguration,
   runConfiguration,
   runDetectedConfiguration,
+  runConfigurationAndWait,
   stopConfiguration,
   type RunTarget
 } from './run-configuration-control'
@@ -210,6 +211,40 @@ describe('rerunConfiguration', () => {
     expect(useRunSessionStore.getState().sessionsByKey[key]).toMatchObject({
       tabId: 'tab-2',
       status: 'running'
+    })
+  })
+})
+
+describe('runConfigurationAndWait', () => {
+  it('resolves with the exit code the shell reports', async () => {
+    const exit = runConfigurationAndWait(target)
+    await vi.waitFor(() => expect(runQuickCommandInNewTab).toHaveBeenCalled())
+    dispatchTerminalCommandFinishedEvent('wt', 2, `tab-1:${LEAF}`)
+    await expect(exit).resolves.toEqual({ status: 'failed', exitCode: 2 })
+  })
+
+  it('reports a stop when the run is stopped', async () => {
+    const exit = runConfigurationAndWait(target)
+    await vi.waitFor(() => expect(runQuickCommandInNewTab).toHaveBeenCalled())
+    stopConfiguration('wt', 'cmd')
+    stopConfiguration('wt', 'cmd')
+    await expect(exit).resolves.toEqual({ status: 'stopped', exitCode: null })
+  })
+
+  it('reports a stop when the run tab is closed', async () => {
+    vi.useFakeTimers()
+    const exit = runConfigurationAndWait(target)
+    await vi.advanceTimersByTimeAsync(0)
+    appState.tabsByWorktree = {}
+    await vi.advanceTimersByTimeAsync(1_000)
+    await expect(exit).resolves.toEqual({ status: 'stopped', exitCode: null })
+  })
+
+  it('fails at once when no terminal could be opened', async () => {
+    runQuickCommandInNewTab.mockImplementation(() => null)
+    await expect(runConfigurationAndWait(target)).resolves.toEqual({
+      status: 'stopped',
+      exitCode: null
     })
   })
 })
