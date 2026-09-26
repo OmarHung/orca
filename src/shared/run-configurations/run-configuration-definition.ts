@@ -25,12 +25,18 @@ export type DebugRunConfiguration = {
   beforeLaunch?: string[]
 }
 
+/** What a sequential compound waits for after starting a member, before starting the next. */
+export type CompoundMemberWait = { kind: 'exit' } | { kind: 'delay'; seconds: number }
+
 export type CompoundRunConfiguration = {
   type: 'compound'
   id: string
   name: string
-  /** Configurations started together. */
+  /** Configurations started together, or in this order when `sequential`. */
   configurations: string[]
+  sequential?: boolean
+  /** Keyed by member reference; a member without an entry lets the next start at once. */
+  waitAfter?: Record<string, CompoundMemberWait>
 }
 
 export type RunConfigurationDefinition =
@@ -49,6 +55,7 @@ const NODE_SCRIPT_PATTERN = /^[\w:.@/ -]{1,200}$/
 const PYTHON_MODULE_PATTERN = /^[A-Za-z_][\w.]{0,199}$/
 const ENV_NAME_PATTERN = /^[A-Za-z_][\w.]{0,199}$/
 const PACKAGE_MANAGERS = ['npm', 'pnpm', 'yarn', 'bun'] as const
+export const MAX_COMPOUND_DELAY_SECONDS = 600
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? { ...value } : null
@@ -99,7 +106,9 @@ function asEnv(value: unknown): Record<string, string> | undefined {
   return Object.keys(env).length > 0 ? env : undefined
 }
 
-function optionalPythonPath(record: Record<string, unknown>): { pythonPath?: string } {
+function optionalPythonPath(record: Record<string, unknown>): {
+  pythonPath?: string
+} {
   const pythonPath = asText(record.pythonPath)
   return pythonPath ? { pythonPath } : {}
 }
@@ -135,7 +144,11 @@ export function normalizeDebugLaunchTarget(value: unknown): DebugLaunchTarget | 
       const projectFile = asText(record.projectFile)
       const launchProfile = asText(record.launchProfile, MAX_NAME_LENGTH)
       return projectFile && /\.(cs|fs|vb)proj$/i.test(projectFile)
-        ? { kind: 'dotnet-project', projectFile, ...(launchProfile ? { launchProfile } : {}) }
+        ? {
+            kind: 'dotnet-project',
+            projectFile,
+            ...(launchProfile ? { launchProfile } : {})
+          }
         : null
     }
     case 'dotnet-program': {
@@ -145,6 +158,39 @@ export function normalizeDebugLaunchTarget(value: unknown): DebugLaunchTarget | 
     default:
       return null
   }
+}
+
+function asMemberWait(value: unknown): CompoundMemberWait | undefined {
+  const record = asRecord(value)
+  if (record?.kind === 'exit') {
+    return { kind: 'exit' }
+  }
+  const seconds = record?.seconds
+  return record?.kind === 'delay' &&
+    typeof seconds === 'number' &&
+    Number.isFinite(seconds) &&
+    seconds > 0 &&
+    seconds <= MAX_COMPOUND_DELAY_SECONDS
+    ? { kind: 'delay', seconds }
+    : undefined
+}
+
+function asWaitAfter(
+  value: unknown,
+  configurations: readonly string[]
+): Record<string, CompoundMemberWait> | undefined {
+  const record = asRecord(value)
+  if (!record) {
+    return undefined
+  }
+  const waits: Record<string, CompoundMemberWait> = {}
+  for (const reference of configurations) {
+    const wait = asMemberWait(record[reference])
+    if (wait) {
+      waits[reference] = wait
+    }
+  }
+  return Object.keys(waits).length > 0 ? waits : undefined
 }
 
 function inferType(record: Record<string, unknown>): RunConfigurationDefinition['type'] | null {
@@ -207,9 +253,19 @@ function normalizeOne(value: unknown): RunConfigurationDefinition | string {
     }
     case 'compound': {
       const configurations = asTextList(record.configurations)
-      return configurations
-        ? { type: 'compound', id, name, configurations }
-        : `"${name}": list the configurations to start.`
+      if (!configurations) {
+        return `"${name}": list the configurations to start.`
+      }
+      const sequential = record.sequential === true
+      const waitAfter = sequential ? asWaitAfter(record.waitAfter, configurations) : undefined
+      return {
+        type: 'compound',
+        id,
+        name,
+        configurations,
+        ...(sequential ? { sequential } : {}),
+        ...(waitAfter ? { waitAfter } : {})
+      }
     }
     case null:
       return `"${name}": needs a command, a debug target or a list of configurations.`
@@ -233,7 +289,10 @@ export function normalizeRunConfigurationDefinitions(value: unknown): {
       return
     }
     if (seenIds.has(result.id)) {
-      problems.push({ index, message: `"${result.id}" is defined more than once.` })
+      problems.push({
+        index,
+        message: `"${result.id}" is defined more than once.`
+      })
       return
     }
     seenIds.add(result.id)
