@@ -62,7 +62,7 @@ run(
     'exec',
     'electron-builder',
     '--config',
-    'config/electron-builder.config.cjs',
+    'config/scripts/fork-maintenance/electron-builder-local-arm64.config.cjs',
     '--mac',
     // Why zip, not dir: Orca's local-build installer takes latest-mac.yml plus its zip.
     'zip',
