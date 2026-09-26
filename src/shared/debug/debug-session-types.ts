@@ -3,14 +3,26 @@ import type { DebugProtocol } from '@vscode/debugprotocol'
 /** Line breakpoints for one file, keyed by absolute path on the execution host. */
 export type DebugBreakpointsByFile = Record<string, DebugProtocol.SourceBreakpoint[]>
 
+export type NodePackageManagerName = 'npm' | 'pnpm' | 'yarn' | 'bun'
+
+/** What to debug; each kind maps to one debug adapter. */
+export type DebugLaunchTarget =
+  | {
+      kind: 'python-file'
+      /** Absolute path of the Python file. */
+      filePath: string
+      /** Interpreter the user picked for this project; auto-detected when omitted. */
+      pythonPath?: string
+    }
+  | { kind: 'node-file'; filePath: string }
+  | { kind: 'node-script'; packageManager: NodePackageManagerName; script: string }
+
 export type DebugStartRequest = {
   worktreeId: string
-  /** Absolute path of the Python file to run under the debugger. */
-  filePath: string
+  /** Absolute working directory for the debugged program. */
   cwd: string
   breakpoints: DebugBreakpointsByFile
-  /** Interpreter the user picked for this project; auto-detected when omitted. */
-  pythonPath?: string
+  target: DebugLaunchTarget
 }
 
 export type DebugStartResult = { ok: true; sessionId: string } | { ok: false; message: string }

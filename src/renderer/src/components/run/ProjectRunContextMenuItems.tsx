@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { FlaskConical, Hammer, ListTree, Play, Upload } from 'lucide-react'
+import { Bug, FlaskConical, Hammer, ListTree, Play, Upload } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import {
   ContextMenuItem,
@@ -16,6 +16,7 @@ import type {
   DetectedRunConfiguration,
   RunConfigurationKind
 } from '../../../../shared/run-configurations/run-configuration-types'
+import { debugLaunchTarget } from '../debug/debug-launch'
 import { detectedConfigurationLabel, runDetectedConfiguration } from './run-configuration-control'
 import {
   detectProjectRunConfigurations,
@@ -126,6 +127,17 @@ export function ProjectRunContextMenuItems({
     }
     await runDetectedConfiguration(configuration, worktreeId, groupId)
   }
+  const debug = (configuration: DetectedRunConfiguration): void => {
+    if (configuration.debug) {
+      void debugLaunchTarget({
+        worktreeId,
+        cwd: configuration.projectDir,
+        title: detectedConfigurationLabel(configuration),
+        target: configuration.debug
+      })
+    }
+  }
+  const primaryDebug = configurations.find((configuration) => configuration.debug)
   const primary = PRIMARY_KINDS.flatMap((kind) => {
     const first = configurations.find((configuration) => configuration.kind === kind)
     return first ? [first] : []
@@ -140,6 +152,16 @@ export function ProjectRunContextMenuItems({
           onRun={(target) => void run(target)}
         />
       ))}
+      {primaryDebug ? (
+        <ContextMenuItem onSelect={() => debug(primaryDebug)}>
+          <Bug />
+          <span className="truncate">
+            {translate('debug.action.debugFile', "Debug '{{value0}}'", {
+              value0: detectedConfigurationLabel(primaryDebug)
+            })}
+          </span>
+        </ContextMenuItem>
+      ) : null}
       {configurations.length > primary.length ? (
         <ContextMenuSub>
           <ContextMenuSubTrigger>

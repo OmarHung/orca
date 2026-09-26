@@ -17,7 +17,8 @@ export type DebugExecutionLocation = { path: string; line: number }
 export type DebugSessionView = {
   id: string
   worktreeId: string
-  filePath: string
+  /** What is being debugged, e.g. a file name or "web: dev". */
+  title: string
   phase: DebugSessionPhase
   /** Set while paused; null while the program runs. */
   stoppedThreadId: number | null

@@ -58,7 +58,7 @@ describe('useDebugStore', () => {
     useDebugStore.getState().setSession({
       id: 's2',
       worktreeId: 'w',
-      filePath: '/p/app.py',
+      title: 'app.py',
       phase: 'starting',
       stoppedThreadId: null,
       stopReason: null

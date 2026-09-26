@@ -1,14 +1,27 @@
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('./debug-session-controller', () => ({ startPythonDebugSession: vi.fn() }))
+vi.mock('./debug-session-controller', () => ({ startDebugSession: vi.fn() }))
 
-import { isDebuggableFile, isLocalDebugTarget } from './debug-launch'
+import { debugTargetForFile, isDebuggableFile, isLocalDebugTarget } from './debug-launch'
 
-describe('isDebuggableFile', () => {
-  it('accepts Python files only', () => {
-    expect(isDebuggableFile('/p/app.py')).toBe(true)
-    expect(isDebuggableFile('/p/APP.PY')).toBe(true)
-    expect(isDebuggableFile('/p/app.ts')).toBe(false)
+describe('debugTargetForFile', () => {
+  it('debugs Python with debugpy and JavaScript/TypeScript with js-debug', () => {
+    expect(debugTargetForFile('/p/app.py', '/p/.venv/bin/python')).toEqual({
+      kind: 'python-file',
+      filePath: '/p/app.py',
+      pythonPath: '/p/.venv/bin/python'
+    })
+    expect(debugTargetForFile('/p/server.TS')).toEqual({
+      kind: 'node-file',
+      filePath: '/p/server.TS'
+    })
+    expect(debugTargetForFile('/p/tool.mjs')?.kind).toBe('node-file')
+  })
+
+  it('has nothing for other files, including type declarations', () => {
+    expect(debugTargetForFile('/p/types.d.ts')).toBeNull()
+    expect(debugTargetForFile('/p/README.md')).toBeNull()
+    expect(isDebuggableFile('/p/main.go')).toBe(false)
   })
 })
 
