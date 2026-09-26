@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Bug, ChevronDown, ListVideo, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -18,8 +18,9 @@ import { importWorkspaceLaunchJson, useWorkspaceHasLaunchJson } from './launch-j
 import { RunSessionControls } from './RunSessionControls'
 import { RunWidgetMenu } from './RunWidgetMenu'
 import { loadSharedRunConfigurations } from './run-configuration-launcher'
-import { useRunConfigurationStore } from './run-configuration-store'
+import { useRunConfigurationStore, type ListedRunConfiguration } from './run-configuration-store'
 import { useRecentRunStore } from './recent-run-store'
+import { useRunSessionStore } from './run-session-store'
 import type { RunTarget } from './run-configuration-control'
 import {
   canDebugWidgetItem,
@@ -29,10 +30,16 @@ import {
   runWidgetSessionTarget,
   type RunWidgetScope
 } from './run-widget-actions'
-import { runWidgetItems, selectedRunWidgetItem, type RunWidgetItem } from './run-widget-items'
+import {
+  runWidgetItemForRun,
+  runWidgetItems,
+  selectedRunWidgetItem,
+  type RunWidgetItem
+} from './run-widget-items'
 import { useWorktreeRunConfigurations } from './use-worktree-run-configurations'
 
 const NO_RECENT_RUNS: RunTarget[] = []
+const NO_CONFIGURATIONS: ListedRunConfiguration[] = []
 
 function runLabel(item: RunWidgetItem): string {
   // Why the quick-command wording: it is the label upstream tests and users know that button by.
@@ -88,10 +95,13 @@ function ActionButton({
  */
 export function RunWidget({
   worktreeId,
-  groupId
+  groupId,
+  activeTerminalTabId
 }: {
   worktreeId: string
   groupId: string | null
+  /** The group's active terminal tab; when it belongs to a run, that run is selected. */
+  activeTerminalTabId: string | null
 }): React.JSX.Element | null {
   const data = useWorktreeRunConfigurations(worktreeId)
   const quick = useWorktreeQuickCommands(worktreeId)
@@ -113,17 +123,33 @@ export function RunWidget({
     }
   }
   useTabBarQuickCommandsShortcut({ menuOpen, onOpenChange: onMenuOpenChange })
+  const activeRunKey = useRunSessionStore((s) =>
+    activeTerminalTabId
+      ? Object.values(s.sessionsByKey).find(
+          (session) => session.worktreeId === worktreeId && session.tabId === activeTerminalTabId
+        )?.commandKey
+      : undefined
+  )
   // Why keyed by menuOpen: the file can appear or disappear between openings.
   const hasLaunchJson = useWorkspaceHasLaunchJson(worktreeId, menuOpen)
+  const items = runWidgetItems({
+    recent,
+    configurations: data?.listed ?? NO_CONFIGURATIONS,
+    quickCommands: [...quick.repoCommands, ...quick.globalCommands]
+  })
+  const activeRunItemKey = activeRunKey ? runWidgetItemForRun(items, activeRunKey)?.key : undefined
+  const repoId = data?.repoId
+  // Why on tab change only: switching to a run's terminal shows that run's controls, while a
+  // later pick from the menu still wins until the next switch.
+  useEffect(() => {
+    if (repoId !== undefined && activeRunItemKey) {
+      select(repoId, activeRunItemKey)
+    }
+  }, [activeTerminalTabId, activeRunItemKey, repoId, select])
   if (!data) {
     return null
   }
 
-  const items = runWidgetItems({
-    recent,
-    configurations: data.listed,
-    quickCommands: [...quick.repoCommands, ...quick.globalCommands]
-  })
   const selected = selectedRunWidgetItem(items, selectedKey)
   const scope: RunWidgetScope = { worktreeId, groupId, worktreePath: data.worktreePath }
   const quickRepoId = quick.repoId

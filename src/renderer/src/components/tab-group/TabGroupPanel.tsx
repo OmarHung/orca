@@ -271,7 +271,15 @@ export default function TabGroupPanel({
           >
             <div className={focusedActionChromeClassName}>
               {/* Fork: the Run widget also lists quick commands, replacing TabBarQuickCommandsButton. */}
-              {isFocused ? <RunToolbar worktreeId={worktreeId} groupId={groupId} /> : null}
+              {isFocused ? (
+                <RunToolbar
+                  worktreeId={worktreeId}
+                  groupId={groupId}
+                  activeTerminalTabId={
+                    activeTab?.contentType === 'terminal' ? activeTab.entityId : null
+                  }
+                />
+              ) : null}
               {isFocused && hasSplitGroups ? (
                 <Tooltip>
                   <DropdownMenu modal={false}>
