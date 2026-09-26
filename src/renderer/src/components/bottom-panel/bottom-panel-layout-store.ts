@@ -7,6 +7,10 @@ export const BOTTOM_PANEL_MIN_WORKBENCH_HEIGHT = 160
 export const GIT_LOG_MIN_TABLE_WIDTH = 280
 /** The commit files list keeps at least this height above the message. */
 export const GIT_LOG_MIN_FILES_HEIGHT = 60
+/** The debug Variables tree keeps at least this width between Frames and the side pane. */
+export const DEBUG_MIN_VARIABLES_WIDTH = 200
+/** The debug Variables tree keeps at least this height above Watches. */
+export const DEBUG_MIN_VARIABLES_HEIGHT = 60
 
 export type BottomPanelSizeKey =
   | 'height'
@@ -17,6 +21,9 @@ export type BottomPanelSizeKey =
   | 'authorColumnWidth'
   | 'dateColumnWidth'
   | 'hashColumnWidth'
+  | 'debugFramesWidth'
+  | 'debugSidePaneWidth'
+  | 'debugWatchesHeight'
 
 /** Min, default, and a sanity max for values read back from storage. */
 export const BOTTOM_PANEL_SIZE_LIMITS: Record<
@@ -30,7 +37,10 @@ export const BOTTOM_PANEL_SIZE_LIMITS: Record<
   subjectColumnWidth: { min: 80, fallback: 420, max: 3000 },
   authorColumnWidth: { min: 48, fallback: 128, max: 800 },
   dateColumnWidth: { min: 48, fallback: 144, max: 800 },
-  hashColumnWidth: { min: 40, fallback: 88, max: 800 }
+  hashColumnWidth: { min: 40, fallback: 88, max: 800 },
+  debugFramesWidth: { min: 140, fallback: 260, max: 2000 },
+  debugSidePaneWidth: { min: 200, fallback: 420, max: 3000 },
+  debugWatchesHeight: { min: 48, fallback: 120, max: 2000 }
 }
 
 const STORAGE_KEY = 'orca.bottomPanel.layout.v1'
@@ -88,7 +98,10 @@ function readPersistedLayout(): PersistedBottomPanelLayout {
     subjectColumnWidth: clampBottomPanelSize('subjectColumnWidth', parsed.subjectColumnWidth),
     authorColumnWidth: clampBottomPanelSize('authorColumnWidth', parsed.authorColumnWidth),
     dateColumnWidth: clampBottomPanelSize('dateColumnWidth', parsed.dateColumnWidth),
-    hashColumnWidth: clampBottomPanelSize('hashColumnWidth', parsed.hashColumnWidth)
+    hashColumnWidth: clampBottomPanelSize('hashColumnWidth', parsed.hashColumnWidth),
+    debugFramesWidth: clampBottomPanelSize('debugFramesWidth', parsed.debugFramesWidth),
+    debugSidePaneWidth: clampBottomPanelSize('debugSidePaneWidth', parsed.debugSidePaneWidth),
+    debugWatchesHeight: clampBottomPanelSize('debugWatchesHeight', parsed.debugWatchesHeight)
   }
 }
 
@@ -104,7 +117,10 @@ function writePersistedLayout(state: PersistedBottomPanelLayout): void {
     subjectColumnWidth: state.subjectColumnWidth,
     authorColumnWidth: state.authorColumnWidth,
     dateColumnWidth: state.dateColumnWidth,
-    hashColumnWidth: state.hashColumnWidth
+    hashColumnWidth: state.hashColumnWidth,
+    debugFramesWidth: state.debugFramesWidth,
+    debugSidePaneWidth: state.debugSidePaneWidth,
+    debugWatchesHeight: state.debugWatchesHeight
   }
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(layout))
