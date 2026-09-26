@@ -57,6 +57,26 @@ test('stops at a Python breakpoint and shows local variables', async ({
   const lineTwoNumber = editor.locator('.line-numbers').filter({ hasText: /^2$/ })
   const box = await lineTwoNumber.boundingBox()
   expect(box).not.toBeNull()
+  // The whole clickable gutter shows a pointer, not just lines that already have a breakpoint.
+  await orcaPage.mouse.move(box!.x - 6, box!.y + box!.height / 2)
+  const gutterCursor = await orcaPage.evaluate(
+    ({ x, y }) => {
+      const target = document.elementFromPoint(x, y)
+      return target ? getComputedStyle(target).cursor : null
+    },
+    { x: box!.x - 6, y: box!.y + box!.height / 2 }
+  )
+  expect(gutterCursor).toBe('pointer')
+  // …but the line numbers beside it keep their normal cursor.
+  await orcaPage.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
+  const lineNumberCursor = await orcaPage.evaluate(
+    ({ x, y }) => {
+      const target = document.elementFromPoint(x, y)
+      return target ? getComputedStyle(target).cursor : null
+    },
+    { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 }
+  )
+  expect(lineNumberCursor).not.toBe('pointer')
   await orcaPage.mouse.click(box!.x - 6, box!.y + box!.height / 2)
   await expect(editor.locator('.orca-debug-breakpoint')).toHaveCount(1)
 
