@@ -9,7 +9,10 @@
   transform: translate(-50%, -50%);
 }
 
-.monaco-editor .orca-debug-breakpoint {
+/* Set by use-monaco-debug-decorations only while the mouse is over the breakpoint column. */
+.monaco-editor.orca-debug-gutter-hover .margin-view-overlays,
+.monaco-editor.orca-debug-gutter-hover .margin-view-overlays *,
+.monaco-editor.orca-debug-gutter-hover .glyph-margin-widgets * {
   cursor: pointer;
 }
 
