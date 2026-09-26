@@ -25,7 +25,11 @@ export function isLocalDebugTarget(options: {
   )
 }
 
-export async function debugFile(worktreeId: string, filePath: string): Promise<void> {
+export async function debugFile(
+  worktreeId: string,
+  filePath: string,
+  pythonPath?: string
+): Promise<void> {
   const state = useAppStore.getState()
   const worktree = findWorktreeById(state.worktreesByRepo, worktreeId)
   const repo = worktree ? state.repos.find((candidate) => candidate.id === worktree.repoId) : null
@@ -47,5 +51,5 @@ export async function debugFile(worktreeId: string, filePath: string): Promise<v
     )
     return
   }
-  await startPythonDebugSession({ worktreeId, worktreePath: worktree.path, filePath })
+  await startPythonDebugSession({ worktreeId, worktreePath: worktree.path, filePath, pythonPath })
 }

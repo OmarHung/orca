@@ -6,11 +6,8 @@ import { describe, expect, it, vi } from 'vitest'
 vi.mock('electron', () => ({ net: { fetch: vi.fn() } }))
 
 import type { DebugSessionEvent } from '../../shared/debug/debug-session-types'
-import {
-  buildDebugpyAdapterSpawn,
-  buildDebugpyLaunchArguments,
-  resolvePythonInterpreter
-} from './adapters/debugpy-adapter'
+import { buildDebugpyAdapterSpawn, buildDebugpyLaunchArguments } from './adapters/debugpy-adapter'
+import { resolvePythonInterpreter } from '../python/python-interpreters'
 import { startStdioDapTransport } from './dap-transport-stdio'
 import { startDebugSession } from './debug-session'
 

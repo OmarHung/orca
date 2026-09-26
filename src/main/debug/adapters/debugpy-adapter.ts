@@ -1,53 +1,12 @@
-import { access, constants as fsConstants } from 'node:fs/promises'
-import { delimiter, join } from 'node:path'
+import { delimiter } from 'node:path'
 import { net } from 'electron'
 import type { DebugProtocol } from '@vscode/debugprotocol'
 import { runProcess } from '../../../shared/child-process/run-process'
-import { resolveCommandOnLocalPath } from '../../ipc/command-path-resolver'
 import type { AdapterInstallDeps } from './adapter-installer'
 
 const DOWNLOAD_TIMEOUT_MS = 120_000
 const MAX_DOWNLOAD_BYTES = 64 * 1024 * 1024
 const EXTRACT_TIMEOUT_MS = 120_000
-const VENV_DIR_NAMES = ['.venv', 'venv']
-
-function venvInterpreterPath(root: string, venvDir: string, platform: NodeJS.Platform): string {
-  return platform === 'win32'
-    ? join(root, venvDir, 'Scripts', 'python.exe')
-    : join(root, venvDir, 'bin', 'python')
-}
-
-async function isExecutable(path: string): Promise<boolean> {
-  try {
-    await access(path, fsConstants.X_OK)
-    return true
-  } catch {
-    return false
-  }
-}
-
-/** Prefers the project's virtualenv, then a Python on PATH. */
-export async function resolvePythonInterpreter(
-  projectRoot: string,
-  platform: NodeJS.Platform = process.platform,
-  env: NodeJS.ProcessEnv = process.env
-): Promise<string | null> {
-  for (const venvDir of VENV_DIR_NAMES) {
-    const candidate = venvInterpreterPath(projectRoot, venvDir, platform)
-    if (await isExecutable(candidate)) {
-      return candidate
-    }
-  }
-  const names = platform === 'win32' ? ['python'] : ['python3', 'python']
-  for (const name of names) {
-    const resolved = await resolveCommandOnLocalPath(name, { platform, env, cwd: projectRoot })
-    if (resolved) {
-      return resolved
-    }
-  }
-  return null
-}
-
 export function buildDebugpyAdapterSpawn(
   pythonPath: string,
   debugpyDir: string,
