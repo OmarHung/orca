@@ -3,11 +3,12 @@ import type { RunConfigurationDefinition } from '../../../../shared/run-configur
 import type { RunTarget } from './run-configuration-control'
 import type { ListedRunConfiguration, RunConfigurationSource } from './run-configuration-store'
 
-export const DETECTED_RUN_KEY = 'detected'
+/** Selection saved before recent runs became a list; it now means the newest one. */
+const LEGACY_DETECTED_KEY = 'detected'
 
 /** Everything the tab-bar Run widget can select, like JetBrains' configuration list. */
 export type RunWidgetItem =
-  | { kind: 'detected'; key: string; label: string; target: RunTarget }
+  | { kind: 'recent'; key: string; label: string; target: RunTarget }
   | {
       kind: 'configuration'
       key: string
@@ -16,6 +17,10 @@ export type RunWidgetItem =
       configuration: RunConfigurationDefinition
     }
   | { kind: 'quick-command'; key: string; label: string; entry: HostedTerminalQuickCommand }
+
+export function recentItemKey(commandKey: string): string {
+  return `recent:${commandKey}`
+}
 
 export function configurationItemKey(id: string): string {
   return `config:${id}`
@@ -26,21 +31,17 @@ export function quickCommandItemKey(entryKey: string): string {
 }
 
 export function runWidgetItems(options: {
-  detected: RunTarget | undefined
+  recent: readonly RunTarget[]
   configurations: readonly ListedRunConfiguration[]
   quickCommands: readonly HostedTerminalQuickCommand[]
 }): RunWidgetItem[] {
   return [
-    ...(options.detected
-      ? [
-          {
-            kind: 'detected' as const,
-            key: DETECTED_RUN_KEY,
-            label: options.detected.command.label,
-            target: options.detected
-          }
-        ]
-      : []),
+    ...options.recent.map((target) => ({
+      kind: 'recent' as const,
+      key: recentItemKey(target.commandKey),
+      label: target.command.label,
+      target
+    })),
     ...options.configurations.map(({ configuration, source }) => ({
       kind: 'configuration' as const,
       key: configurationItemKey(configuration.id),
@@ -65,7 +66,9 @@ export function selectedRunWidgetItem(
   const match =
     selectedKey === undefined
       ? undefined
-      : (items.find((item) => item.key === selectedKey) ??
-        items.find((item) => item.key === configurationItemKey(selectedKey)))
+      : selectedKey === LEGACY_DETECTED_KEY
+        ? items.find((item) => item.kind === 'recent')
+        : (items.find((item) => item.key === selectedKey) ??
+          items.find((item) => item.key === configurationItemKey(selectedKey)))
   return match ?? items[0] ?? null
 }
