@@ -20,6 +20,11 @@ const LaunchTargetSchema = z.discriminatedUnion('kind', [
     filePath: AbsolutePathSchema,
     pythonPath: AbsolutePathSchema.optional()
   }),
+  z.object({
+    kind: z.literal('python-module'),
+    module: z.string().regex(/^[A-Za-z_][\w.]{0,199}$/),
+    pythonPath: AbsolutePathSchema.optional()
+  }),
   z.object({ kind: z.literal('node-file'), filePath: AbsolutePathSchema }),
   z.object({
     kind: z.literal('node-script'),
@@ -31,13 +36,27 @@ const LaunchTargetSchema = z.discriminatedUnion('kind', [
     kind: z.literal('dotnet-project'),
     projectFile: AbsolutePathSchema.refine((value) => /\.(cs|fs|vb)proj$/i.test(value)),
     launchProfile: z.string().min(1).max(200).optional()
+  }),
+  z.object({
+    kind: z.literal('dotnet-program'),
+    program: AbsolutePathSchema.refine((value) => /\.(dll|exe)$/i.test(value))
   })
 ])
+
+// Why bounded: these reach the debugged program's argv and environment verbatim.
+const LaunchOptionsSchema = z.object({
+  args: z.array(z.string().max(16_000)).max(200).optional(),
+  env: z
+    .record(z.string().regex(/^[A-Za-z_][\w.]{0,199}$/), z.string().max(16_000))
+    .refine((env) => Object.keys(env).length <= 200)
+    .optional()
+})
 
 const StartRequestSchema = z.object({
   worktreeId: z.string().min(1),
   cwd: AbsolutePathSchema,
   target: LaunchTargetSchema,
+  launchOptions: LaunchOptionsSchema.optional(),
   breakpoints: z.record(
     z.string().min(1),
     z.array(

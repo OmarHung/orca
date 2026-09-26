@@ -1,4 +1,5 @@
 import type {
+  DebugLaunchOptions,
   DebugLaunchTarget,
   DebugRendererCommand,
   DebugSessionEvent
@@ -160,6 +161,7 @@ export async function startDebugSession(options: {
   cwd: string
   title: string
   target: DebugLaunchTarget
+  launchOptions?: DebugLaunchOptions
 }): Promise<void> {
   if (currentSessionId()) {
     await stopDebugSession()
@@ -179,7 +181,8 @@ export async function startDebugSession(options: {
     worktreeId: options.worktreeId,
     cwd: options.cwd,
     breakpoints: breakpointsForRequest(),
-    target: options.target
+    target: options.target,
+    ...(options.launchOptions ? { launchOptions: options.launchOptions } : {})
   })
   const session = useDebugStore.getState().session
   // Why: failures before the adapter starts (e.g. no Python found) emit no `ended` event.

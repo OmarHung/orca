@@ -261,6 +261,36 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - `orca.yaml` 的 `runConfigurations:` 共享設定，**一定要沿用 `issueCommand` 的 content hash 信任核准機制**（`PersistedTrustedOrcaHookRepo`），否則 clone 一個 repo 就可能被植入指令
 - 預估約 1,500 行
 
+**Phase 5 完成狀態（2026-09-26）**：在獨立分支 `feat/run-debug-phase5` 完成（從 cfc6e9793e 開出，和 Phase 4 平行進行），由 `tests/e2e/run-configurations-editor.spec.ts` 在真正的 app 裡驗證。
+
+- **資料模型**（`src/shared/run-configurations/run-configuration-definition.ts`）：三種設定。`command`（指令、工作目錄、beforeLaunch）、`debug`（沿用 `DebugLaunchTarget`，加上 args、env、工作目錄、beforeLaunch）、`compound`（一起啟動的設定清單）。路徑可以寫相對於 workspace 根目錄，也可以用 `${workspaceFolder}`、`${file}` 等 VS Code 變數，執行時才展開（`run-configuration-variables.ts`）。`${env:…}`、`${input:…}` 這類無法解析的變數會直接報錯，不會帶著錯的路徑執行；其他 `${NAME}` 保留給 shell
+- **儲存位置**：本機設定依照 repo id 存在 localStorage（`orca.run.configurationsByRepo.v1`），**沒有改動 quick command 的資料結構**（原因見 Phase 1）。要跟團隊共用，就寫在 `orca.yaml` 的 `runConfigurations:`，格式相同，`type` 可以省略（依欄位推斷），`id` 預設等於 `name`。讀的是**目前 workspace 自己的** orca.yaml，所以每個分支可以不一樣
+- **Debug 新增兩種 target**：`python-module`（`python -m`）和 `dotnet-program`（直接除錯已編譯好的 dll，不先 build）。main 的 `DebugStartRequest` 多了選填的 `launchOptions`（args、env），在 `debug-launch-options.ts` 疊加到各 adapter 產生的 launch 參數上，zod 有限制長度和數量
+- **beforeLaunch**（`run-configuration-plan.ts` + `run-configuration-launcher.ts`）：先展開成步驟清單（深度優先、同一個步驟只跑一次、偵測循環），再一步一步用 `runConfigurationAndWait` 執行，每一步都在自己的 tab 裡，等 OSC 133;D 回報 **exit 0** 才繼續；失敗、被停止、tab 被關掉都會中止並顯示 toast。沒有用 `&&` 串接
+- **Compound**：所有成員的 beforeLaunch 先跑（合併去重），然後同時啟動所有成員。因為一次只能有一個 debug session，**compound 裡最多只能有一個 debug 設定**，超過會直接報錯
+- **匯入 `.vscode/launch.json`**（`launch-json-import.ts`）：`debugpy`／`python`（`program` 或 `module`）、`node`／`pwa-node`（`program`，或 `runtimeExecutable` 是 npm/pnpm/yarn/bun 的 `run <script>`）、`coreclr`（`program`）、`compounds`。`attach`、瀏覽器、其他 runtime 會列出「不支援」。`preLaunchTask` 不匯入（VS Code task 不在範圍內），會提示使用者改用 beforeLaunch。重複匯入時，同一個設定會更新，不會重複新增
+- **信任**：執行任何用到 orca.yaml 設定的東西（直接執行、被本機設定當作 beforeLaunch 或 compound 成員）之前，都會用新的 `runConfigurations` 種類走既有的 `confirmScriptContent`，hash 的內容是所有共享設定的完整 JSON，改任何一個欄位都會重新詢問。「Always trust orca.yaml」一樣有效
+- **UI**：tab bar 的 Run 區多了設定選單（`RunConfigurationsWidget`）：目前設定的名稱 ▾、▶（debug 設定顯示 🐞）、狀態點和 ↻ ■。選單列出「本機」和「共享（orca.yaml）」兩組，還有 `Edit Configurations…` 和 `Import .vscode/launch.json`。Edit Configurations 對話框左邊是清單（新增命令／除錯／組合、複製、刪除），右邊是表單；共享設定唯讀，可以複製成本機設定。存檔時選中的設定會成為目前設定（跟 JetBrains 一樣）
+
+**實測時抓到的問題**：
+1. 對話框裡的「+」原本是 DropdownMenu，第二次點擊時選單一打開就被 Dialog 的 focus trap 關掉（`modal={false}` 也一樣）。改成三個各自的新增按鈕
+2. 單一實例會把指令打進**同一個 shell**，所以指令裡如果有裸的 `exit N`，會把 shell 關掉而不是讓指令失敗。這時 tab 會關閉，beforeLaunch 的等待會當成「被停止」處理，不會卡住
+
+**Code review 後的修正**：
+1. 設定選單的 ↻ Rerun 原本直接重打指令，orca.yaml 改過之後會**跳過信任確認**。現在 Rerun 走跟 ▶ 一樣的流程（重新讀 orca.yaml、信任確認、beforeLaunch）
+2. 信任判斷原本漏掉「中間層」的 compound（本機 compound → 共享 compound → 本機設定）。現在 plan 會回傳所有經過的設定（`involvedIds`），只要有一個是共享的就要確認
+3. compound 互相重複引用會指數爆炸，而且發生在信任確認之前。現在每個 compound 只展開一次，引用清單也會去重
+4. 命令裡的 `${file}`、`${workspaceFolder}` 等變數會直接貼進 shell，檔名如果是 `x;curl …|sh;.py` 就會被執行。現在命令裡的變數值只允許一般路徑字元，含空白會加雙引號，含其他 shell 特殊字元就拒絕執行（debug 設定的路徑不經過 shell，不受限）
+5. 執行前一律重新讀 orca.yaml，並用序號避免較慢的舊讀取覆蓋新的結果
+6. shell 回報 `133;D` 但沒有 exit code（狀態 `finished`）時，當成正常結束
+
+**已知限制**：
+- 沒有 OSC 133 的 shell 收不到結束訊號，beforeLaunch 會一直等，要手動按 ■（按兩次會關 tab，然後中止）
+- 命令裡的變數值如果含 `(`、`&` 等字元（例如 `Program Files (x86)` 底下的路徑）會被拒絕；WSL workspace 的 `${workspaceFolder}` 可能是 `\\wsl$\…` 路徑，在 WSL 的 shell 裡不能用（尚未實測）
+- 匯入 `.vscode/launch.json` 是使用者主動操作，匯入的設定變成本機設定，**不會再詢問信任**（跟 VS Code 一樣直接執行 launch.json）。匯入前請先看過檔案內容，特別是 `env` 和 `python`
+- 本機設定只存在這台電腦；要共用請放 orca.yaml
+- 命令設定還沒有 env 欄位（各種 shell 設定環境變數的語法不同），需要的話寫在指令裡
+
 ## 7. 必須遵守的專案規則（摘自 AGENTS.md）
 
 - UI 依照 `docs/STYLEGUIDE.md`，使用 `main.css` 的 token 和 `components/ui/` 的 shadcn 元件；`pnpm run check:code-quality:changed` 必須通過

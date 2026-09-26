@@ -12,7 +12,7 @@ import {
 import { detectNodeRunConfigurations } from '../../../../shared/run-configurations/node-run-configurations'
 import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
 
-type ProjectFiles = {
+export type ProjectFiles = {
   listNames: (dir: string) => Promise<string[]>
   readText: (path: string) => Promise<string | null>
 }
@@ -41,6 +41,19 @@ function projectFilesFor(context: RuntimeFileOperationArgs, worktreeRoot: string
       }
     }
   }
+}
+
+/** File access for a workspace on whatever host owns it (local, WSL, SSH, remote runtime). */
+export function worktreeProjectFiles(
+  worktreeId: string
+): { root: string; files: ProjectFiles } | null {
+  const state = useAppStore.getState()
+  const worktree = findWorktreeById(state.worktreesByRepo, worktreeId)
+  if (!worktree) {
+    return null
+  }
+  const context = getTabEntryFileOperationContext(state, worktreeId, worktree.path)
+  return { root: worktree.path, files: projectFilesFor(context, worktree.path) }
 }
 
 async function detectDotnet(
@@ -75,17 +88,11 @@ export async function detectProjectRunConfigurations(
   isDirectory: boolean,
   files?: ProjectFiles
 ): Promise<DetectedRunConfiguration[]> {
-  const state = useAppStore.getState()
-  const worktree = findWorktreeById(state.worktreesByRepo, worktreeId)
-  if (!worktree) {
+  const workspace = worktreeProjectFiles(worktreeId)
+  const projectFiles = workspace ? (files ?? workspace.files) : null
+  if (!projectFiles) {
     return []
   }
-  const projectFiles =
-    files ??
-    projectFilesFor(
-      getTabEntryFileOperationContext(state, worktreeId, worktree.path),
-      worktree.path
-    )
   const dir = isDirectory ? path : dirname(path)
   const names = await projectFiles.listNames(dir)
   const selected = isDirectory ? names : names.filter((name) => name === basename(path))

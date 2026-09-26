@@ -23,6 +23,8 @@ import {
 } from './run-session-store'
 
 const CTRL_C = '\x03'
+/** How often a waited-on run checks that its tab still exists (closing it sends no signal). */
+const RUN_TAB_POLL_MS = 1_000
 /** How long Rerun waits for Ctrl-C to end the old run before closing its tab. */
 const RERUN_STOP_TIMEOUT_MS = 3_000
 
@@ -224,6 +226,57 @@ export async function rerunConfiguration(target: RunTarget): Promise<void> {
   if (!runInExistingTab(target, session)) {
     runInNewTab(target)
   }
+}
+
+export type RunExit = {
+  status: 'succeeded' | 'failed' | 'finished' | 'stopped'
+  exitCode: number | null
+}
+
+function runExitFor(session: RunSession): RunExit | null {
+  const { status } = session
+  return status === 'running' || status === 'stopping'
+    ? null
+    : { status, exitCode: session.exitCode }
+}
+
+/** Resolves when the run ends, is stopped, or loses its tab. */
+function waitForRunExit(target: RunTarget): Promise<RunExit> {
+  const key = runSessionKey(target.worktreeId, target.commandKey)
+  const stopped: RunExit = { status: 'stopped', exitCode: null }
+  return new Promise((resolve) => {
+    let unsubscribe = (): void => {}
+    let timer: ReturnType<typeof setInterval> | undefined
+    const settle = (exit: RunExit): void => {
+      unsubscribe()
+      clearInterval(timer)
+      resolve(exit)
+    }
+    const check = (): void => {
+      const session = useRunSessionStore.getState().sessionsByKey[key]
+      if (!session || !tabExists(target.worktreeId, session.tabId)) {
+        settle(stopped)
+        return
+      }
+      const exit = runExitFor(session)
+      if (exit) {
+        settle(exit)
+      }
+    }
+    unsubscribe = useRunSessionStore.subscribe(check)
+    timer = setInterval(check, RUN_TAB_POLL_MS)
+    check()
+  })
+}
+
+/** Runs a configuration and waits for its command to end, e.g. for a Before launch step. */
+export async function runConfigurationAndWait(target: RunTarget): Promise<RunExit> {
+  await runConfiguration(target)
+  const session = liveRunSession(target.worktreeId, target.commandKey)
+  if (!session || session.status !== 'running') {
+    return { status: 'stopped', exitCode: null }
+  }
+  return waitForRunExit(target)
 }
 
 export function detectedConfigurationLabel(configuration: DetectedRunConfiguration): string {
