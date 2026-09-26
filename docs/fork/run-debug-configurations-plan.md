@@ -278,6 +278,15 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - **信任**：執行任何用到 orca.yaml 設定的東西（直接執行、被本機設定當作 beforeLaunch 或 compound 成員）之前，都會用新的 `runConfigurations` 種類走既有的 `confirmScriptContent`，hash 的內容是所有共享設定的完整 JSON，改任何一個欄位都會重新詢問。「Always trust orca.yaml」一樣有效
 - **UI**：tab bar 的 Run 區多了設定選單（`RunConfigurationsWidget`）：目前設定的名稱 ▾、▶（debug 設定顯示 🐞）、狀態點和 ↻ ■。選單列出「本機」和「共享（orca.yaml）」兩組，還有 `Edit Configurations…` 和 `Import .vscode/launch.json`。Edit Configurations 對話框左邊是清單（新增命令／除錯／組合、複製、刪除），右邊是表單；共享設定唯讀，可以複製成本機設定。存檔時選中的設定會成為目前設定（跟 JetBrains 一樣）
 
+**合併成單一 Run 元件（2026-09-26）**：使用者要求跟 JetBrains 一樣只有一個入口。原本 tab bar 有三個東西：最近一次從右鍵執行的設定（`RecentRunControls`）、upstream 的 Quick Commands 按鈕（沒有 quick command 時顯示「Add Configuration…」）、Phase 5 的設定選單。現在只剩 `RunWidget`：`[目前的項目 ▾] ▶ 🐞 ● ↻ ■`。
+
+- 下拉選單依序列出：最近執行（從右鍵執行的暫時設定）、本機設定、共享設定（orca.yaml）、快速指令（repo 和全域，包含 agent prompt），接著是 Edit Configurations、匯入 launch.json、新增快速指令、管理快速指令（開設定頁）
+- 選項只負責「選擇」，按 ▶ 或 🐞 才執行，跟 JetBrains 一樣。從檔案樹右鍵執行或除錯偵測到的設定時，會自動選中它
+- ▶ 和 🐞 一直都在，不能用時是停用狀態：只能除錯的設定不能 ▶；只有 debug 設定和帶有除錯目標的偵測設定可以 🐞
+- 目前選擇存在 `selectedByRepo`，值是 `detected`、`config:<id>` 或 `quick:<key>`；舊版只存 id 的值會當成 `config:<id>`
+- `TabGroupPanel` 不再掛 upstream 的 `TabBarQuickCommandsButton`（元件本身沒刪），它的快捷鍵 `tab.openQuickCommandsMenu` 改由 `RunWidget` 用同一個 hook 接管。選中快速指令時，▶ 的名稱仍是「Run quick command: X」，upstream 的 e2e 不需要修改
+- 取捨：快速指令的編輯和刪除改到設定頁；新增只會加到目前 workspace 的主機，不再提供選擇遠端主機
+
 **實測時抓到的問題**：
 1. 對話框裡的「+」原本是 DropdownMenu，第二次點擊時選單一打開就被 Dialog 的 focus trap 關掉（`modal={false}` 也一樣）。改成三個各自的新增按鈕
 2. 單一實例會把指令打進**同一個 shell**，所以指令裡如果有裸的 `exit N`，會把 shell 關掉而不是讓指令失敗。這時 tab 會關閉，beforeLaunch 的等待會當成「被停止」處理，不會卡住
