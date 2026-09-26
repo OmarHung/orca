@@ -10,9 +10,9 @@ import { DEBUGPY_ARTIFACT } from './adapters/adapter-manifest'
 import {
   buildDebugpyAdapterSpawn,
   buildDebugpyLaunchArguments,
-  createDebugpyInstallDeps,
-  resolvePythonInterpreter
+  createDebugpyInstallDeps
 } from './adapters/debugpy-adapter'
+import { isExecutableFile, resolvePythonInterpreter } from '../python/python-interpreters'
 import { startStdioDapTransport } from './dap-transport-stdio'
 import { startDebugSession, type DebugSessionHandle } from './debug-session'
 
@@ -40,7 +40,10 @@ export class DebugSessionManager {
     if (this.sessions.has(sessionId)) {
       return { ok: false, message: 'A debug session with this id already exists' }
     }
-    const pythonPath = await resolvePythonInterpreter(request.cwd)
+    if (request.pythonPath && !(await isExecutableFile(request.pythonPath))) {
+      return { ok: false, message: `Python interpreter not found: ${request.pythonPath}` }
+    }
+    const pythonPath = request.pythonPath ?? (await resolvePythonInterpreter(request.cwd))
     if (!pythonPath) {
       return {
         ok: false,
