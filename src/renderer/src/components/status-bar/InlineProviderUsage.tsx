@@ -2,13 +2,11 @@ import { Loader2, RefreshCw } from 'lucide-react'
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '../../store'
-import type { ProviderRateLimits } from '../../../../shared/rate-limit-types'
-import {
-  getDisplayedUsagePercentage,
-  normalizeUsagePercentageDisplay
-} from '../../../../shared/usage-percentage-display'
+import type { ProviderRateLimits, RateLimitWindow } from '../../../../shared/rate-limit-types'
+import { normalizeUsagePercentageDisplay } from '../../../../shared/usage-percentage-display'
 import { useResetCountdownClock } from '@/hooks/useResetCountdownClock'
-import { barColor, clampUsedPercent } from './tooltip'
+import { clampUsedPercent } from './tooltip'
+import { UsagePaceBar } from './UsagePaceBar'
 import { formatRateLimitWindowChipLabel } from '@/lib/window-label-formatter'
 import { formatUsagePercentageLabel } from './usage-percentage-label'
 import { getUsageRosterRowState } from './usage-roster-row-state'
@@ -25,11 +23,17 @@ export function InlineUsageBars({
     useAppStore((state) => state.usagePercentageDisplay)
   )
   // Why: tick the session countdown live via one boundary-scheduled clock, not just the usage poll (#5399).
-  const now = useResetCountdownClock([limits.session?.resetsAt, limits.monthly?.resetsAt])
+  const now = useResetCountdownClock([
+    limits.session?.resetsAt,
+    limits.weekly?.resetsAt,
+    limits.fableWeekly?.resetsAt,
+    limits.monthly?.resetsAt
+  ])
   const usageWindows = [
     limits.session
       ? {
           key: 'session',
+          window: limits.session,
           used: clampUsedPercent(limits.session.usedPercent),
           // Why: live reset countdown (matches popover); '5h' window length only when resetsAt is unknown (#5399).
           label: formatRateLimitWindowChipLabel(limits.session, now)
@@ -38,6 +42,7 @@ export function InlineUsageBars({
     limits.weekly
       ? {
           key: 'weekly',
+          window: limits.weekly,
           used: clampUsedPercent(limits.weekly.usedPercent),
           label: translate('auto.components.status.bar.StatusBar.5c938d39ac', 'wk')
         }
@@ -45,6 +50,7 @@ export function InlineUsageBars({
     limits.fableWeekly
       ? {
           key: 'fableWeekly',
+          window: limits.fableWeekly,
           used: clampUsedPercent(limits.fableWeekly.usedPercent),
           label: translate('auto.components.status.bar.StatusBar.54e8d6bb2d', 'Fable')
         }
@@ -53,11 +59,15 @@ export function InlineUsageBars({
     limits.monthly && !limits.session && !limits.weekly
       ? {
           key: 'monthly',
+          window: limits.monthly,
           used: clampUsedPercent(limits.monthly.usedPercent),
           label: formatRateLimitWindowChipLabel(limits.monthly, now)
         }
       : null
-  ].filter((window): window is { key: string; used: number; label: string } => window !== null)
+  ].filter(
+    (window): window is { key: string; window: RateLimitWindow; used: number; label: string } =>
+      window !== null
+  )
   // Why: a lapsed token or failed refresh is not a sign-out; ask for a sign-in only when one is confirmed.
   const emptyState =
     usageWindows.length === 0 && limits.status === 'error'
@@ -73,13 +83,12 @@ export function InlineUsageBars({
     >
       {usageWindows.map((window) => (
         <div key={window.key} className="flex min-w-0 items-center gap-1">
-          <div className="h-[4px] min-w-0 flex-1 overflow-hidden rounded-full bg-muted">
-            {/* Why: fill follows the selected percentage; color still signals consumption urgency. */}
-            <div
-              className={`h-full rounded-full ${barColor(window.used)}`}
-              style={{ width: `${getDisplayedUsagePercentage(window.used, display)}%` }}
-            />
-          </div>
+          <UsagePaceBar
+            window={window.window}
+            display={display}
+            now={now}
+            className="h-[4px] min-w-0 flex-1"
+          />
           <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
             {formatUsagePercentageLabel(window.used, display)} {window.label}
           </span>

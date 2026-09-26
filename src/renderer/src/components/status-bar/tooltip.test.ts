@@ -23,7 +23,6 @@ vi.mock('@/i18n/i18n', () => ({
 }))
 
 import {
-  barColor,
   clampUsedPercent,
   formatResetCreditExpiry,
   formatResetCountdown,
@@ -869,18 +868,6 @@ describe('clampUsedPercent', () => {
     expect(clampUsedPercent(32.6)).toBe(33)
     expect(clampUsedPercent(100)).toBe(100)
     expect(clampUsedPercent(140)).toBe(100)
-  })
-})
-
-describe('barColor', () => {
-  // Keep low consumption neutral so always-visible meters stay quiet until usage approaches a limit.
-  it('maps used percent to neutral / yellow / red bands', () => {
-    expect(barColor(0)).toBe('bg-muted-foreground/40')
-    expect(barColor(59)).toBe('bg-muted-foreground/40')
-    expect(barColor(60)).toBe('bg-yellow-500')
-    expect(barColor(79)).toBe('bg-yellow-500')
-    expect(barColor(80)).toBe('bg-red-500')
-    expect(barColor(100)).toBe('bg-red-500')
   })
 })
 
