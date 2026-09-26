@@ -1,5 +1,4 @@
 import React, { useLayoutEffect, useRef } from 'react'
-import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import { useDebugStore } from './debug-store'
 
@@ -17,10 +16,7 @@ export function DebugConsole(): React.JSX.Element {
   }, [output, lastError])
 
   return (
-    <div className="flex min-h-0 flex-col" data-testid="debug-console">
-      <div className="shrink-0 px-2 py-1 text-xs font-semibold text-muted-foreground">
-        {translate('debug.console', 'Console')}
-      </div>
+    <div className="flex min-h-0 flex-1 flex-col" data-testid="debug-console">
       <div
         ref={scrollRef}
         className="scrollbar-sleek min-h-0 flex-1 overflow-auto px-2 font-mono text-xs whitespace-pre-wrap select-text"
