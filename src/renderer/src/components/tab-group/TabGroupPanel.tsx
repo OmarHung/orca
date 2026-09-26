@@ -4,7 +4,6 @@ import { useDroppable } from '@dnd-kit/core'
 import { useAppStore } from '../../store'
 import TabBar from '../tab-bar/TabBar'
 
-import { TabBarQuickCommandsButton } from '../tab-bar/TabBarQuickCommandsButton'
 import { TabGroupPaneActionsMenu } from './TabGroupPaneActionsMenu'
 import { RunToolbar } from '../run/RunToolbar'
 import { useTabGroupWorkspaceModel } from './useTabGroupWorkspaceModel'
@@ -296,12 +295,8 @@ export default function TabGroupPanel({
               className={actionChromeClassName}
               style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             >
-              {isFocused ? <RunToolbar worktreeId={worktreeId} /> : null}
-              <TabBarQuickCommandsButton
-                worktreeId={worktreeId}
-                groupId={groupId}
-                isFocused={isFocused}
-              />
+              {/* Fork: the Run widget also lists quick commands, replacing TabBarQuickCommandsButton. */}
+              {isFocused ? <RunToolbar worktreeId={worktreeId} groupId={groupId} /> : null}
               {hasSplitGroups ? (
                 <TabGroupPaneActionsMenu isFocused={isFocused} onCloseGroup={commands.closeGroup} />
               ) : null}
