@@ -1,13 +1,10 @@
 import React from 'react'
-import { Bug, RotateCcw, Square } from 'lucide-react'
+import { RotateCcw, Square } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
-import { basename } from '@/lib/path'
 import { useAppStore } from '@/store'
-import { debugFile } from '../debug/debug-launch'
-import { useDebugLaunchTarget } from '../debug/use-debug-launch-target'
 import { RunStatusDot } from './RunStatusDot'
 import { rerunConfiguration, stopConfiguration, type RunTarget } from './run-configuration-control'
 import { describeRunStatus, runStatusTone } from './run-status-presentation'
@@ -42,12 +39,14 @@ function ControlButton({ action }: { action: ControlAction }): React.JSX.Element
   )
 }
 
-/**
- * JetBrains-style run controls beside the tab bar's Run split button: status, Rerun and
- * Stop for the selected configuration's run, and Debug for the active Python file.
- */
-export function RunSessionControls({ target }: { target: RunTarget | null }): React.JSX.Element {
-  const debugTarget = useDebugLaunchTarget()
+/** JetBrains-style run controls: status, Rerun and Stop for one run configuration. */
+export function RunSessionControls({
+  target,
+  testId = 'run-session-controls'
+}: {
+  target: RunTarget | null
+  testId?: string
+}): React.JSX.Element {
   const storedSession = useRunSessionStore((s) =>
     target ? s.sessionsByKey[runSessionKey(target.worktreeId, target.commandKey)] : undefined
   )
@@ -77,21 +76,11 @@ export function RunSessionControls({ target }: { target: RunTarget | null }): Re
       }
     )
   }
-  if (debugTarget) {
-    actions.push({
-      icon: Bug,
-      label: translate('debug.action.debugFile', "Debug '{{value0}}'", {
-        value0: basename(debugTarget.filePath)
-      }),
-      testId: 'run-debug-file',
-      onClick: () => void debugFile(debugTarget.worktreeId, debugTarget.filePath)
-    })
-  }
   const status = describeRunStatus(session)
 
   return (
     <div
-      data-testid="run-session-controls"
+      data-testid={testId}
       data-run-status={session?.status ?? 'idle'}
       className="my-auto flex shrink-0 items-center gap-0.5"
     >

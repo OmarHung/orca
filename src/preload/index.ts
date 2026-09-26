@@ -56,6 +56,7 @@ import { skillsApi } from './api/skills-bridge'
 import { petApi } from './api/pet-bridge'
 import { browserPasswordsApi } from './api/browser-passwords-bridge'
 import { debugApi } from './api/debug-bridge'
+import { pythonApi } from './api/python-bridge'
 import { browserApi } from './api/browser/browser-bridge'
 import { emulatorApi } from './api/emulator-bridge'
 import { hooksApi } from './api/hooks-bridge'
@@ -161,6 +162,7 @@ const api = {
   skills: skillsApi,
   pet: petApi,
   debug: debugApi,
+  python: pythonApi,
   browser: browserApi,
   browserPasswords: browserPasswordsApi,
   emulator: emulatorApi,

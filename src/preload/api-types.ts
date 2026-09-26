@@ -50,6 +50,7 @@ import type {
 import type { PetApi } from './api/pet-api'
 import type { BrowserPasswordsApi } from './api/browser-passwords-api'
 import type { DebugApi } from './api/debug-api'
+import type { PythonApi } from './api/python-api'
 import type { PluginsApi } from './api/plugin-host-api'
 import type { PreflightApi } from './api/preflight-api'
 import type { PtyApi } from './api/pty-api'
@@ -128,6 +129,7 @@ export type PreloadApi = {
   skills: SkillsApi
   pet: PetApi
   debug: DebugApi
+  python: PythonApi
   browser: BrowserApi
   browserPasswords: BrowserPasswordsApi
   emulator: EmulatorApi

@@ -1,6 +1,6 @@
 # Run / Debug 設定與內建除錯器：實作計畫（fork 專屬）
 
-> 狀態：Phase 0（Python 除錯原型）、Phase 1（Run／Stop／Rerun）已完成（2026-09-26），Phase 2 起尚未開工
+> 狀態：Phase 0（Python 除錯原型）、Phase 1（Run／Stop／Rerun）、Phase 2 的 Python interpreter 部分已完成（2026-09-26），其餘尚未開工
 > 分支：從 `omar/custom` 開 `feat/run-debug`，完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -189,6 +189,19 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 **已知限制**：
 - 沒有 OSC 133 的 shell（cmd.exe、部分 Git Bash）收不到結束訊號，狀態會停在「執行中」；Stop 按兩次仍然可以關掉 tab
 - 指令已經送進 shell、但 shell 還沒開始執行的那一瞬間按 Stop，也收不到結束訊號，一樣要按第二次
+
+### Phase 2 提前完成的部分：Python interpreter 和「Current File」（2026-09-26）
+
+使用者要求 Run 也要能用 venv，而且可以自動偵測或事先設定，所以先做了 Python 這部分：
+
+- **偵測**（`src/main/python/python-interpreters.ts`，main process）：依序是專案的 `.venv`、`venv`、`env`，有 `poetry.lock` 時加上 `poetry env info --path`，最後是 PATH 上的 `python3`／`python`。會用 real path 去除重複，每個都跑 `--version` 取得版本。Debug 也改用這個模組
+- **事先設定**：每個專案（repo id）可以選「自動」或固定某個 interpreter，也可以用「選擇解釋器…」挑任意執行檔。**只存在本機的 localStorage**（`orca.python.interpreterByProject.v1`），不放在同步的 settings，也不動 quick command
+- **UI**：開著 `.py` 檔時，focused tab group 的 tab bar 右邊會出現 `[Python 3.14 (.venv) ▾] ▶ 🐞 ● ↻ ■`。▶ 在終端機執行目前的檔案（例如 `.venv/bin/python scripts/x.py`），一樣是單一實例，也有 Stop 和 Rerun；🐞 用同一個 interpreter 除錯。資料夾型 workspace 也會顯示
+- 沒有 quick command 時，原本的「Command」按鈕改名為「Add Configuration…」
+- **遠端（SSH／remote runtime）**：沒辦法偵測，▶ 直接用 `python3`，由遠端的 shell 自己去找；🐞 會停用
+- **驗證**：`tests/e2e/python-run-current-file.spec.ts` 會建立一個真的 venv，確認 Run 的輸出 `sys.prefix` 是那個 venv；接著固定成系統的 Python，確認 Run 和 Debug 都改用它
+
+**已知限制**：Windows 上路徑有空白時會加雙引號，cmd 可以正常執行，但 PowerShell 需要在前面加 `&` 才能執行加了引號的程式路徑，這個還沒處理。
 
 ### Phase 2：專案偵測和右鍵選單
 - .NET、Python、Node 偵測器和測試（用 fixture 目錄）
