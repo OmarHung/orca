@@ -88,6 +88,12 @@ function getTitle(
           "{{repo}}'s VM recipe changed — run the new version?",
           repo
         )
+      case 'runConfigurations':
+        return t(
+          'auto.components.sidebar.OrcaYamlTrustDialog.runConfigurationsChangedTitle',
+          "{{repo}}'s shared run configurations changed — run the new version?",
+          repo
+        )
     }
   }
   switch (kind) {
@@ -113,6 +119,12 @@ function getTitle(
       return t(
         'auto.components.sidebar.OrcaYamlTrustDialog.vmRecipeRunTitle',
         'Run VM recipe from {{repo}}?',
+        repo
+      )
+    case 'runConfigurations':
+      return t(
+        'auto.components.sidebar.OrcaYamlTrustDialog.runConfigurationsRunTitle',
+        'Run shared run configurations from {{repo}}?',
         repo
       )
   }
@@ -146,6 +158,11 @@ function getDescription(
           'auto.components.sidebar.OrcaYamlTrustDialog.vmRecipeChangedBody',
           '<code>orca.yaml</code> changed since you last approved. Re-review before it runs before provisioning a VM.'
         )
+      case 'runConfigurations':
+        return t(
+          'auto.components.sidebar.OrcaYamlTrustDialog.runConfigurationsChangedBody',
+          '<code>orca.yaml</code> changed since you last approved. Re-review before it runs when you start one of these run configurations.'
+        )
     }
   }
   switch (kind) {
@@ -168,6 +185,11 @@ function getDescription(
       return t(
         'auto.components.sidebar.OrcaYamlTrustDialog.vmRecipeRunBody',
         "This repository's <code>orca.yaml</code> runs on your machine before provisioning a VM. Only run if you trust <repo/>."
+      )
+    case 'runConfigurations':
+      return t(
+        'auto.components.sidebar.OrcaYamlTrustDialog.runConfigurationsRunBody',
+        "This repository's <code>orca.yaml</code> runs on your machine when you start one of these run configurations. Only run if you trust <repo/>."
       )
   }
 }
@@ -194,6 +216,16 @@ function getScriptHeading(
       return previouslyApproved
         ? t('auto.components.sidebar.OrcaYamlTrustDialog.newVmRecipe', 'New VM recipe')
         : t('auto.components.sidebar.OrcaYamlTrustDialog.vmRecipe', 'VM recipe')
+    case 'runConfigurations':
+      return previouslyApproved
+        ? t(
+            'auto.components.sidebar.OrcaYamlTrustDialog.newRunConfigurations',
+            'New shared run configurations'
+          )
+        : t(
+            'auto.components.sidebar.OrcaYamlTrustDialog.runConfigurations',
+            'Shared run configurations'
+          )
   }
 }
 
@@ -233,7 +265,9 @@ const OrcaYamlTrustDialog = React.memo(function OrcaYamlTrustDialog() {
         ? 'issueCommand'
         : modalData.scriptKind === 'vmRecipe'
           ? 'vmRecipe'
-          : 'setup'
+          : modalData.scriptKind === 'runConfigurations'
+            ? 'runConfigurations'
+            : 'setup'
   const scriptContent = typeof modalData.scriptContent === 'string' ? modalData.scriptContent : ''
   const contentHash = typeof modalData.contentHash === 'string' ? modalData.contentHash : ''
   const previouslyApproved = modalData.previouslyApproved === true

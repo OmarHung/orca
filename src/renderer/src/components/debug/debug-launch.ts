@@ -5,7 +5,10 @@ import { findWorktreeById } from '@/store/slices/worktree-helpers'
 import { getActiveRuntimeTarget } from '@/runtime/runtime-client-target'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 import { basename } from '@/lib/path'
-import type { DebugLaunchTarget } from '../../../../shared/debug/debug-session-types'
+import type {
+  DebugLaunchOptions,
+  DebugLaunchTarget
+} from '../../../../shared/debug/debug-session-types'
 import { startDebugSession } from './debug-session-controller'
 
 const WSL_UNC_PREFIX = /^[\\/]{2}wsl(\$|\.localhost)[\\/]/i
@@ -89,6 +92,7 @@ export async function debugLaunchTarget(options: {
   cwd: string
   title: string
   target: DebugLaunchTarget
+  launchOptions?: DebugLaunchOptions
 }): Promise<void> {
   if (!localWorktreeForDebugging(options.worktreeId)) {
     return

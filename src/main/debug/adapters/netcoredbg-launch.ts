@@ -1,6 +1,9 @@
 import { readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { readLaunchProfileDetails } from '../../../shared/run-configurations/dotnet-run-configurations'
+import {
+  readLaunchProfileDetails,
+  type LaunchProfileDetails
+} from '../../../shared/run-configurations/dotnet-run-configurations'
 import { resolveCommandOnLocalPath } from '../../ipc/command-path-resolver'
 import { isExecutableFile } from '../../python/python-interpreters'
 import { startStdioDapTransport } from '../dap-transport-stdio'
@@ -29,9 +32,36 @@ async function readOptionalText(path: string): Promise<string | null> {
   }
 }
 
+export type NetcoredbgTarget = { projectFile: string; launchProfile?: string } | { program: string }
+
+/** A project is built first and runs from its folder; a prebuilt program runs as given. */
+async function resolveNetcoredbgProgram(
+  context: AdapterPreparation,
+  dotnet: string,
+  target: NetcoredbgTarget
+): Promise<{ program: string; cwd: string; profile: LaunchProfileDetails | null }> {
+  if ('program' in target) {
+    return { program: target.program, cwd: context.cwd, profile: null }
+  }
+  const projectDir = dirname(target.projectFile)
+  context.onOutput(`dotnet build ${target.projectFile} -c Debug\n`, 'console')
+  const program = await buildDotnetProject({
+    dotnet,
+    projectFile: target.projectFile,
+    onOutput: (text) => context.onOutput(text, 'stdout')
+  })
+  const profile = target.launchProfile
+    ? readLaunchProfileDetails(
+        await readOptionalText(join(projectDir, 'Properties', 'launchSettings.json')),
+        target.launchProfile
+      )
+    : null
+  return { program, cwd: projectDir, profile }
+}
+
 export async function prepareNetcoredbg(
   context: AdapterPreparation,
-  target: { projectFile: string; launchProfile?: string }
+  target: NetcoredbgTarget
 ): Promise<PreparedDebugAdapter> {
   const dotnet = await resolveCommandOnLocalPath('dotnet')
   if (!dotnet) {
@@ -63,19 +93,7 @@ export async function prepareNetcoredbg(
     throw new DebugPreparationError(`netcoredbg is missing from ${installDir}`)
   }
 
-  const projectDir = dirname(target.projectFile)
-  context.onOutput(`dotnet build ${target.projectFile} -c Debug\n`, 'console')
-  const program = await buildDotnetProject({
-    dotnet,
-    projectFile: target.projectFile,
-    onOutput: (text) => context.onOutput(text, 'stdout')
-  })
-  const profile = target.launchProfile
-    ? readLaunchProfileDetails(
-        await readOptionalText(join(projectDir, 'Properties', 'launchSettings.json')),
-        target.launchProfile
-      )
-    : null
+  const { program, cwd, profile } = await resolveNetcoredbgProgram(context, dotnet, target)
 
   let stderr = ''
   return {
@@ -83,13 +101,13 @@ export async function prepareNetcoredbg(
     transport: startStdioDapTransport({
       program: executable,
       args: ['--interpreter=vscode'],
-      cwd: projectDir,
+      cwd,
       env: process.env,
       onStderr: (text) => {
         stderr = (stderr + text).slice(-MAX_STDERR_CHARS)
       }
     }),
-    launchArguments: buildNetcoredbgLaunchArguments({ program, cwd: projectDir, profile }),
+    launchArguments: buildNetcoredbgLaunchArguments({ program, cwd, profile }),
     diagnostics: () => stderr.trim(),
     dispose: () => {}
   }

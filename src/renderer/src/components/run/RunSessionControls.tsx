@@ -42,10 +42,13 @@ function ControlButton({ action }: { action: ControlAction }): React.JSX.Element
 /** JetBrains-style run controls: status, Rerun and Stop for one run configuration. */
 export function RunSessionControls({
   target,
-  testId = 'run-session-controls'
+  testId = 'run-session-controls',
+  onRerun
 }: {
   target: RunTarget | null
   testId?: string
+  /** Replaces the plain rerun, e.g. to repeat trust checks and Before launch steps. */
+  onRerun?: () => void
 }): React.JSX.Element {
   const storedSession = useRunSessionStore((s) =>
     target ? s.sessionsByKey[runSessionKey(target.worktreeId, target.commandKey)] : undefined
@@ -66,7 +69,7 @@ export function RunSessionControls({
         icon: RotateCcw,
         label: translate('run.action.rerun', "Rerun '{{value0}}'", { value0: label }),
         testId: 'run-rerun',
-        onClick: () => void rerunConfiguration(target)
+        onClick: () => (onRerun ? onRerun() : void rerunConfiguration(target))
       },
       {
         icon: Square,
