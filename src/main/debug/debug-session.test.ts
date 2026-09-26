@@ -34,6 +34,7 @@ function createFakeAdapter(options: { failLaunch?: boolean } = {}): {
     dataListener(encodeDapMessage({ seq: seq++, type: 'event', event, body }))
   }
   const reader = createDapMessageReader((message) => {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: only DapClient writes here, always DAP requests.
     const request = message as Request
     commands.push(request.command)
     requests.push(request)

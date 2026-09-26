@@ -37,14 +37,21 @@ const STORAGE_KEY = 'orca.bottomPanel.layout.v1'
 
 type BottomPanelSizes = Record<BottomPanelSizeKey, number>
 
+export type BottomPanelTab = 'git-log' | 'debug'
+
 type PersistedBottomPanelLayout = BottomPanelSizes & {
   open: boolean
+  activeTab: BottomPanelTab
   commitFilesViewMode: GitHistoryCommitFilesViewMode
 }
 
 type BottomPanelLayoutState = PersistedBottomPanelLayout & {
   setOpen: (open: boolean) => void
   toggle: () => void
+  /** Opens the panel on `tab`. */
+  showTab: (tab: BottomPanelTab) => void
+  /** Hides the panel if it is showing `tab`, otherwise shows `tab`. */
+  toggleTab: (tab: BottomPanelTab) => void
   setSize: (key: BottomPanelSizeKey, size: number) => void
   /** Live size during a drag; not persisted until `setSize` on release. */
   previewSize: (key: BottomPanelSizeKey, size: number) => void
@@ -72,6 +79,7 @@ function readPersistedLayout(): PersistedBottomPanelLayout {
   }
   return {
     open: parsed.open === true,
+    activeTab: parsed.activeTab === 'debug' ? 'debug' : 'git-log',
     commitFilesViewMode: parsed.commitFilesViewMode === 'tree' ? 'tree' : 'list',
     height: clampBottomPanelSize('height', parsed.height),
     branchTreeWidth: clampBottomPanelSize('branchTreeWidth', parsed.branchTreeWidth),
@@ -87,6 +95,7 @@ function readPersistedLayout(): PersistedBottomPanelLayout {
 function writePersistedLayout(state: PersistedBottomPanelLayout): void {
   const layout: PersistedBottomPanelLayout = {
     open: state.open,
+    activeTab: state.activeTab,
     commitFilesViewMode: state.commitFilesViewMode,
     height: state.height,
     branchTreeWidth: state.branchTreeWidth,
@@ -113,6 +122,18 @@ export const useBottomPanelLayout = create<BottomPanelLayoutState>((set, get) =>
     writePersistedLayout(get())
   },
   toggle: () => get().setOpen(!get().open),
+  showTab: (activeTab) => {
+    set({ open: true, activeTab })
+    writePersistedLayout(get())
+  },
+  toggleTab: (tab) => {
+    const { open, activeTab } = get()
+    if (open && activeTab === tab) {
+      get().setOpen(false)
+      return
+    }
+    get().showTab(tab)
+  },
   setSize: (key, size) => {
     set({ [key]: clampBottomPanelSize(key, size) })
     writePersistedLayout(get())

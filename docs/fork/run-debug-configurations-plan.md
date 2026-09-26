@@ -1,6 +1,6 @@
 # Run / Debug 設定與內建除錯器：實作計畫（fork 專屬）
 
-> 狀態：規劃完成，尚未開工（2026-09-26）
+> 狀態：Phase 0（Python 除錯原型）已完成（2026-09-26），其餘 phase 尚未開工
 > 分支：從 `omar/custom` 開 `feat/run-debug`，完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -149,6 +149,18 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - 暫時的入口：在 `.py` 檔的編輯器右鍵選「Debug this file」
 - **驗收標準**：在 `.py` 檔下中斷點，啟動除錯後會停在那一行，看得到區域變數也能展開，逐步執行正常，按 Stop 之後程序確實結束
 - 預估約 1,800 行（含測試）
+
+**完成狀態（2026-09-26）**：驗收標準都已達成，由 `tests/e2e/debug-python-breakpoint.spec.ts` 在真正的 app 裡驗證。另外 `src/main/debug/debug-session.debugpy.integration.test.ts` 會跑真的 debugpy，設定 `ORCA_TEST_DEBUGPY_DIR` 才會執行。
+
+- 入口：檔案樹在 `.py` 檔上按右鍵的「Debug 'x.py'」、Debug 面板工具列的同名按鈕、狀態列的「Debug」按鈕
+- Python interpreter 的尋找順序：`.venv`、`venv`，最後是 PATH 上的 `python3`
+- debugpy 下載到 `userData/debug-adapters/debugpy/<version>/`
+
+**已知限制**（Phase 3、4 處理）：
+- 被除錯的程式用 `internalConsole` 執行，**沒有 stdin**，所以 `input()` 無法使用。要改成 `runInTerminal`，在 Orca 終端機裡執行
+- 同一時間只能有一個 debug session
+- 中斷點和目前執行的行在同一行時，gutter 只看得到紅點，看不到箭頭（整行的底色還是會標示出來）
+- 重新載入 renderer（例如 Cmd+R）不會停止正在跑的 session，要等 app 關閉時才會清掉
 
 ### Phase 1：執行設定基礎和 Run widget
 - 擴充型別、settings normalize，確認舊設定讀得進來、存回去不會掉欄位
