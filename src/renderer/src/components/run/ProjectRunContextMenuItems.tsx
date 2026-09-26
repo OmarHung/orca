@@ -16,8 +16,11 @@ import type {
   DetectedRunConfiguration,
   RunConfigurationKind
 } from '../../../../shared/run-configurations/run-configuration-types'
-import { debugLaunchTarget } from '../debug/debug-launch'
-import { detectedConfigurationLabel, runDetectedConfiguration } from './run-configuration-control'
+import {
+  debugDetectedConfiguration,
+  detectedConfigurationLabel,
+  runDetectedConfiguration
+} from './run-configuration-control'
 import {
   detectProjectRunConfigurations,
   mayContainRunConfigurations
@@ -128,14 +131,7 @@ export function ProjectRunContextMenuItems({
     await runDetectedConfiguration(configuration, worktreeId, groupId)
   }
   const debug = (configuration: DetectedRunConfiguration): void => {
-    if (configuration.debug) {
-      void debugLaunchTarget({
-        worktreeId,
-        cwd: configuration.projectDir,
-        title: detectedConfigurationLabel(configuration),
-        target: configuration.debug
-      })
-    }
+    void debugDetectedConfiguration(configuration, worktreeId, groupId)
   }
   const primaryDebug = configurations.find((configuration) => configuration.debug)
   const primary = PRIMARY_KINDS.flatMap((kind) => {
@@ -162,7 +158,8 @@ export function ProjectRunContextMenuItems({
           </span>
         </ContextMenuItem>
       ) : null}
-      {configurations.length > primary.length ? (
+      {configurations.length > primary.length ||
+      configurations.filter((configuration) => configuration.debug).length > 1 ? (
         <ContextMenuSub>
           <ContextMenuSubTrigger>
             <ListTree />
@@ -176,14 +173,27 @@ export function ProjectRunContextMenuItems({
                     <ContextMenuLabel>{projectName}</ContextMenuLabel>
                     {configurations
                       .filter((configuration) => configuration.projectName === projectName)
-                      .map((configuration) => (
+                      .flatMap((configuration) => [
                         <RunConfigurationMenuItem
                           key={configuration.id}
                           configuration={configuration}
                           label={configuration.name}
                           onRun={(target) => void run(target)}
-                        />
-                      ))}
+                        />,
+                        configuration.debug ? (
+                          <ContextMenuItem
+                            key={`${configuration.id}:debug`}
+                            onSelect={() => debug(configuration)}
+                          >
+                            <Bug />
+                            <span className="truncate">
+                              {translate('run.menu.debugNamed', "Debug '{{value0}}'", {
+                                value0: configuration.name
+                              })}
+                            </span>
+                          </ContextMenuItem>
+                        ) : null
+                      ])}
                   </React.Fragment>
                 )
               )}
