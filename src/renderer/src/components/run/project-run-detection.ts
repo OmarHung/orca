@@ -11,21 +11,29 @@ import {
 } from '../../../../shared/run-configurations/dotnet-run-configurations'
 import { detectNodeRunConfigurations } from '../../../../shared/run-configurations/node-run-configurations'
 import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
+import type { DirEntry } from '../../../../shared/filesystem-entry-types'
 
 export type ProjectFiles = {
   listNames: (dir: string) => Promise<string[]>
+  /** Names of the real (non-symlink) subdirectories. */
+  listDirectories: (dir: string) => Promise<string[]>
   readText: (path: string) => Promise<string | null>
 }
 
 function projectFilesFor(context: RuntimeFileOperationArgs, worktreeRoot: string): ProjectFiles {
+  const listEntries = async (dir: string): Promise<DirEntry[]> => {
+    try {
+      return await readRuntimeDirectory(context, dir)
+    } catch {
+      return []
+    }
+  }
   return {
-    listNames: async (dir) => {
-      try {
-        return (await readRuntimeDirectory(context, dir)).map((entry) => entry.name)
-      } catch {
-        return []
-      }
-    },
+    listNames: async (dir) => (await listEntries(dir)).map((entry) => entry.name),
+    listDirectories: async (dir) =>
+      (await listEntries(dir))
+        .filter((entry) => entry.isDirectory && !entry.isSymlink)
+        .map((entry) => entry.name),
     readText: async (filePath) => {
       try {
         const file = await readRuntimeFileContent({
@@ -53,7 +61,10 @@ export function worktreeProjectFiles(
     return null
   }
   const context = getTabEntryFileOperationContext(state, worktreeId, worktree.path)
-  return { root: worktree.path, files: projectFilesFor(context, worktree.path) }
+  return {
+    root: worktree.path,
+    files: projectFilesFor(context, worktree.path)
+  }
 }
 
 async function detectDotnet(
@@ -101,7 +112,11 @@ export async function detectProjectRunConfigurations(
     const packageJsonText = await projectFiles.readText(joinPath(dir, 'package.json'))
     if (packageJsonText !== null) {
       configurations.push(
-        ...detectNodeRunConfigurations({ projectDir: dir, fileNames: names, packageJsonText })
+        ...detectNodeRunConfigurations({
+          projectDir: dir,
+          fileNames: names,
+          packageJsonText
+        })
       )
     }
   }
@@ -114,4 +129,53 @@ export async function detectProjectRunConfigurations(
 /** Cheap filename check so the context menu only probes folders and files that can be projects. */
 export function mayContainRunConfigurations(name: string, isDirectory: boolean): boolean {
   return isDirectory || name === 'package.json' || isDotnetProjectFile(name)
+}
+
+// Why skipped: dependency, build-output and tool folders never hold the projects people run.
+const SKIPPED_WORKSPACE_DIRS = new Set([
+  'node_modules',
+  'bin',
+  'obj',
+  'dist',
+  'build',
+  'out',
+  'target',
+  'vendor',
+  'coverage'
+])
+const WORKSPACE_SCAN_DEPTH = 4
+const MAX_WORKSPACE_SCAN_DIRS = 200
+
+/**
+ * Run configurations for the whole workspace: the root and folders up to four levels down,
+ * which covers `frontend/admin/` and `backend/src/Api/` layouts without walking the tree.
+ */
+export async function detectWorkspaceRunConfigurations(
+  worktreeId: string,
+  files?: ProjectFiles
+): Promise<DetectedRunConfiguration[]> {
+  const workspace = worktreeProjectFiles(worktreeId)
+  const projectFiles = workspace ? (files ?? workspace.files) : null
+  if (!workspace || !projectFiles) {
+    return []
+  }
+  const dirs: string[] = []
+  let level = [workspace.root]
+  for (let depth = 0; depth <= WORKSPACE_SCAN_DEPTH && level.length > 0; depth += 1) {
+    dirs.push(...level)
+    const children = await Promise.all(
+      level.map(async (dir) =>
+        depth === WORKSPACE_SCAN_DEPTH
+          ? []
+          : (await projectFiles.listDirectories(dir))
+              .filter((name) => !name.startsWith('.') && !SKIPPED_WORKSPACE_DIRS.has(name))
+              .map((name) => joinPath(dir, name))
+      )
+    )
+    level = children.flat().slice(0, MAX_WORKSPACE_SCAN_DIRS - dirs.length)
+  }
+  const found = await Promise.all(
+    dirs.map((dir) => detectProjectRunConfigurations(worktreeId, dir, true, projectFiles))
+  )
+  return found.flat()
 }

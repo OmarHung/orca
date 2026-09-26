@@ -16,6 +16,8 @@ import {
   readWorkspaceLaunchJson,
   useWorkspaceHasLaunchJson
 } from './launch-json-import-action'
+import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
+import { detectedCommandConfiguration, unsavedDetectedRuns } from './compound-run-draft'
 import { RunConfigurationForm } from './RunConfigurationForm'
 import { RunConfigurationListPane } from './RunConfigurationListPane'
 import {
@@ -26,6 +28,7 @@ import {
 } from './run-configuration-drafts'
 import { useRunConfigurationStore } from './run-configuration-store'
 import type { WorktreeRunConfigurations } from './use-worktree-run-configurations'
+import { useWorkspaceDetectedRuns } from './use-workspace-detected-runs'
 
 /** JetBrains-style Edit Configurations: list on the left, the selected one's form on the right. */
 export function EditRunConfigurationsDialog({
@@ -45,6 +48,7 @@ export function EditRunConfigurationsDialog({
   // Why: an import can rewrite the open form's configuration, so the form must remount.
   const [importRevision, setImportRevision] = useState(0)
   const hasLaunchJson = useWorkspaceHasLaunchJson(worktreeId, null)
+  const detected = useWorkspaceDetectedRuns(worktreeId)
   const localIds = new Set(drafts.map((draft) => draft.id))
   const shared = (data.shared?.configurations ?? []).filter((entry) => !localIds.has(entry.id))
   const all = [...drafts, ...shared]
@@ -68,9 +72,22 @@ export function EditRunConfigurationsDialog({
     setDrafts(remaining)
     setSelectedId(remaining[0]?.id ?? shared[0]?.id ?? null)
   }
+  // Why functional: picking a detected run adds its configuration and updates the compound in one event.
   const update = (next: RunConfigurationDefinition): void => {
-    setDrafts(drafts.map((draft) => (draft.id === next.id ? next : draft)))
+    setDrafts((current) => current.map((draft) => (draft.id === next.id ? next : draft)))
     setErrors([])
+  }
+  const pickDetected = (run: DetectedRunConfiguration): string => {
+    const { id, created } = detectedCommandConfiguration(
+      run,
+      all,
+      data.worktreePath,
+      createBrowserUuid
+    )
+    if (created) {
+      setDrafts((current) => [...current, created])
+    }
+    return id
   }
   const importLaunchJson = async (): Promise<void> => {
     const result = await readWorkspaceLaunchJson(worktreeId)
@@ -138,7 +155,10 @@ export function EditRunConfigurationsDialog({
                   configuration={selected}
                   all={all}
                   readOnly={selectedLocal === null}
+                  detected={unsavedDetectedRuns(detected, all, data.worktreePath)}
+                  worktreePath={data.worktreePath}
                   onChange={update}
+                  onPickDetected={pickDetected}
                 />
               </>
             ) : (

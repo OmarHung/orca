@@ -27,7 +27,11 @@ import {
   isScreenSubmitShortcut
 } from '@/lib/keyboard/screen-submit-shortcut'
 import { isSelectAllShortcut } from '@/lib/text-input/focus/editable-target'
-import { TerminalQuickCommandActionToggle } from './TerminalQuickCommandActionToggle'
+import type { CompoundQuickCommand } from '../run/use-compound-quick-command'
+import {
+  TerminalQuickCommandActionToggle,
+  type QuickCommandDialogActionChoice
+} from './TerminalQuickCommandActionToggle'
 import { TerminalQuickCommandAdvancedSection } from './TerminalQuickCommandAdvancedSection'
 import { TerminalQuickCommandContentSection } from './TerminalQuickCommandContentSection'
 import { TerminalQuickCommandDialogFooter } from './TerminalQuickCommandDialogFooter'
@@ -50,6 +54,8 @@ type TerminalQuickCommandDialogProps = {
   defaultAdvancedOpen?: boolean
   /** An older target host's agent-prompt character cap; `null` (the default) means none. */
   agentPromptMaxLength?: number | null
+  /** Offers a Compound action that saves a run configuration instead of a quick command. */
+  compound?: CompoundQuickCommand | null
   onOpenChange: (open: boolean) => void
   /** Resolves whether the save landed; the dialog closes only then, so a refusal keeps the text. */
   onSave: (command: TerminalQuickCommand) => Promise<boolean> | boolean
@@ -76,6 +82,7 @@ export function TerminalQuickCommandDialog({
   repos = EMPTY_REPOS,
   defaultAdvancedOpen = false,
   agentPromptMaxLength = null,
+  compound = null,
   onOpenChange,
   onSave
 }: TerminalQuickCommandDialogProps): React.JSX.Element {
@@ -96,7 +103,11 @@ export function TerminalQuickCommandDialog({
     initialScope.type === 'repo' ? initialScope.repoId : null
   )
   const [advancedOpen, setAdvancedOpen] = useState(defaultAdvancedOpen)
-  const selectedAction = getTerminalQuickCommandAction(draft)
+  const [compoundSelected, setCompoundSelected] = useState(false)
+  const isCompoundAction = compound !== null && compoundSelected
+  const selectedAction: QuickCommandDialogActionChoice = isCompoundAction
+    ? 'compound'
+    : getTerminalQuickCommandAction(draft)
   const selectedScope = getTerminalQuickCommandScope(draft)
   const isAgentAction = isTerminalAgentQuickCommand(draft)
   const selectedRepo =
@@ -115,20 +126,25 @@ export function TerminalQuickCommandDialog({
     const commandScope = getTerminalQuickCommandScope(command)
     lastRepoScopeIdRef.current = commandScope.type === 'repo' ? commandScope.repoId : null
     setAdvancedOpen(defaultAdvancedOpen)
+    setCompoundSelected(false)
     setDraft({ ...command })
   }
 
   const selectedAgent =
     isAgentAction && supportsTerminalAgentQuickCommand(draft.agent) ? draft.agent : fallbackAgent
   const bodySize = getTerminalQuickCommandBodySize(
-    selectedAction,
+    getTerminalQuickCommandAction(draft),
     isAgentAction ? draft.prompt : draft.command,
     agentPromptMaxLength
   )
   // Why: past the limit the host refuses the save, so block it instead of losing the text.
   const bodyTooLong = bodySize.used > bodySize.max
 
-  const setAction = (action: 'terminal-command' | 'agent-prompt'): void => {
+  const setAction = (action: QuickCommandDialogActionChoice): void => {
+    setCompoundSelected(action === 'compound')
+    if (action === 'compound') {
+      return
+    }
     setDraft((current) => {
       const next = switchTerminalQuickCommandDialogAction(current, action, draftMemoryRef.current)
       draftMemoryRef.current = next.memory
@@ -153,6 +169,14 @@ export function TerminalQuickCommandDialog({
 
   const saveDraft = async (): Promise<void> => {
     if (savingRef.current) {
+      return
+    }
+    if (isCompoundAction) {
+      const label = draft.label.trim()
+      if (label && compound.canSave) {
+        compound.save(label)
+        onOpenChange(false)
+      }
       return
     }
     const next: TerminalQuickCommand = isTerminalAgentQuickCommand(draft)
@@ -202,10 +226,12 @@ export function TerminalQuickCommandDialog({
   const canSave =
     !saving &&
     draft.label.trim().length > 0 &&
-    !bodyTooLong &&
-    (isAgentAction
-      ? draft.prompt.trimEnd().length > 0 && supportsTerminalAgentQuickCommand(draft.agent)
-      : draft.command.trimEnd().length > 0)
+    (isCompoundAction
+      ? compound.canSave
+      : !bodyTooLong &&
+        (isAgentAction
+          ? draft.prompt.trimEnd().length > 0 && supportsTerminalAgentQuickCommand(draft.agent)
+          : draft.command.trimEnd().length > 0))
   const submitShortcutLabel = getScreenSubmitShortcutLabel()
 
   return (
@@ -274,33 +300,40 @@ export function TerminalQuickCommandDialog({
               <TerminalQuickCommandActionToggle
                 selectedAction={selectedAction}
                 onActionChange={setAction}
+                showCompound={compound !== null}
               />
             </div>
           </div>
 
-          <TerminalQuickCommandContentSection
-            disabled={saving}
-            draft={draft}
-            isAgentAction={isAgentAction}
-            selectedAgent={selectedAgent}
-            bodySize={bodySize}
-            draftMemoryRef={draftMemoryRef}
-            setDraft={setDraft}
-            toggleAppendEnter={toggleAppendEnter}
-          />
+          {isCompoundAction ? (
+            compound.editor
+          ) : (
+            <>
+              <TerminalQuickCommandContentSection
+                disabled={saving}
+                draft={draft}
+                isAgentAction={isAgentAction}
+                selectedAgent={selectedAgent}
+                bodySize={bodySize}
+                draftMemoryRef={draftMemoryRef}
+                setDraft={setDraft}
+                toggleAppendEnter={toggleAppendEnter}
+              />
 
-          <TerminalQuickCommandAdvancedSection
-            disabled={saving}
-            repos={repos}
-            advancedOpen={advancedOpen}
-            selectedScope={selectedScope}
-            selectedRepo={selectedRepo}
-            selectedRepoId={selectedRepoId}
-            selectedRepoMissing={selectedRepoMissing}
-            lastRepoScopeIdRef={lastRepoScopeIdRef}
-            setAdvancedOpen={setAdvancedOpen}
-            setDraft={setDraft}
-          />
+              <TerminalQuickCommandAdvancedSection
+                disabled={saving}
+                repos={repos}
+                advancedOpen={advancedOpen}
+                selectedScope={selectedScope}
+                selectedRepo={selectedRepo}
+                selectedRepoId={selectedRepoId}
+                selectedRepoMissing={selectedRepoMissing}
+                lastRepoScopeIdRef={lastRepoScopeIdRef}
+                setAdvancedOpen={setAdvancedOpen}
+                setDraft={setDraft}
+              />
+            </>
+          )}
         </fieldset>
 
         <TerminalQuickCommandDialogFooter

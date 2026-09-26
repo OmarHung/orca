@@ -16,7 +16,7 @@ export const DEBUG_TARGET_KINDS: DebugTargetKind[] = [
   'dotnet-program'
 ]
 
-function uniqueName(base: string, drafts: readonly RunConfigurationDefinition[]): string {
+export function uniqueName(base: string, drafts: readonly RunConfigurationDefinition[]): string {
   const taken = new Set(drafts.map((draft) => draft.name))
   if (!taken.has(base)) {
     return base
@@ -66,7 +66,11 @@ export function duplicateConfiguration(
   drafts: readonly RunConfigurationDefinition[],
   createId: () => string
 ): RunConfigurationDefinition {
-  return { ...original, id: createId(), name: uniqueName(`${original.name} (copy)`, drafts) }
+  return {
+    ...original,
+    id: createId(),
+    name: uniqueName(`${original.name} (copy)`, drafts)
+  }
 }
 
 /** One argument per line, so arguments with spaces need no quoting. */
