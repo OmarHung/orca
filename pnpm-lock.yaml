@@ -141,6 +141,9 @@ importers:
       '@streamparser/json':
         specifier: 0.0.26
         version: 0.0.26
+      '@vscode/tree-sitter-wasm':
+        specifier: 0.3.1
+        version: 0.3.1
       '@xterm/addon-serialize':
         specifier: 0.15.0-beta.300
         version: 0.15.0-beta.300(patch_hash=851eac3d75e6d8c013b9f4c053e61d824b23965cb19ecc28e335e05059f3a294)(@xterm/xterm@6.1.0-beta.303(patch_hash=46d3a0bda5b06d32716dec3e7d8bfcbb2cb19062dfe7502d3f4c04da7af256f5))
@@ -3793,6 +3796,9 @@ packages:
 
   '@vscode/debugprotocol@1.68.0':
     resolution: {integrity: sha512-2J27dysaXmvnfuhFGhfeuxfHRXunqNPxtBoR3koiTOA9rdxWNDTa1zIFLCFMSHJ9MPTPKFcBeblsyaCJCIlQxg==}
+
+  '@vscode/tree-sitter-wasm@0.3.1':
+    resolution: {integrity: sha512-RJFoomET6FajjG511fmQxeBQfU6M24a0aFZPqpid+ttIxanWf1VGytBG0UmsGjt07qmIPJS8U31D+aecuCucsQ==}
 
   '@vscode/windows-process-tree@0.8.0':
     resolution: {integrity: sha512-TI+h2GRwX+igD/YYJMQQVAFcsCNSg7Te2yYxQpKMzwto5RsJ8d2KKgOeur/p/6sAOQwZvopiTDOClyTHEn9MhQ==}
@@ -10486,6 +10492,8 @@ snapshots:
       tinyrainbow: 3.1.0
 
   '@vscode/debugprotocol@1.68.0': {}
+
+  '@vscode/tree-sitter-wasm@0.3.1': {}
 
   '@vscode/windows-process-tree@0.8.0(patch_hash=e66202cc623996d02040c93449eb9ae353fddadf426cb53202a59ee710ee6fe7)':
     dependencies:

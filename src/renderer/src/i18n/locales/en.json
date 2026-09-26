@@ -13034,7 +13034,8 @@
             "fc3095d2ed": "explorer",
             "aiVaultSessionHistory": "Agents",
             "folderWorkspaces": "Attached worktrees",
-            "parentPrChecks": "PR Checks"
+            "parentPrChecks": "PR Checks",
+            "codeOutline": "Structure"
           },
           "right": {
             "panel": {
@@ -16746,6 +16747,17 @@
           "actionsUnavailable": "Plugin actions are not available in this client.",
           "messageTooLarge": "Message exceeds the size limit.",
           "tooManyRequests": "Too many requests."
+        },
+        "CodeOutlinePanel": {
+          "title": "Structure",
+          "noFile": "Open a file in the editor to see its structure.",
+          "notLoaded": "Structure appears once the file is shown in the editor.",
+          "unsupported": "Structure is available for TypeScript, JavaScript, Python and C# files.",
+          "error": "Couldn't read this file's structure.",
+          "empty": "No symbols in this file.",
+          "collapseAll": "Collapse All",
+          "filter": "Filter symbols",
+          "clearFilter": "Clear filter"
         }
       },
       "link": {

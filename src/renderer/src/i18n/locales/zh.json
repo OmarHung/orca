@@ -12886,7 +12886,8 @@
             "fc3095d2ed": "资源管理器",
             "aiVaultSessionHistory": "智能体",
             "folderWorkspaces": "已附加的工作树",
-            "parentPrChecks": "PR 检查"
+            "parentPrChecks": "PR 检查",
+            "codeOutline": "结构"
           },
           "right": {
             "panel": {
@@ -16594,6 +16595,17 @@
           "actionsUnavailable": "此客户端不支持插件操作。",
           "messageTooLarge": "消息超过大小限制。",
           "tooManyRequests": "请求过多。"
+        },
+        "CodeOutlinePanel": {
+          "title": "结构",
+          "noFile": "在编辑器中打开文件以查看其结构。",
+          "notLoaded": "文件在编辑器中显示后即可查看结构。",
+          "unsupported": "结构视图支持 TypeScript、JavaScript、Python 和 C# 文件。",
+          "error": "无法读取此文件的结构。",
+          "empty": "此文件中没有符号。",
+          "collapseAll": "全部折叠",
+          "filter": "筛选符号",
+          "clearFilter": "清除筛选"
         }
       },
       "link": {
