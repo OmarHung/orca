@@ -1,6 +1,6 @@
 # Run / Debug 設定與內建除錯器：實作計畫（fork 專屬）
 
-> 狀態：Phase 0（Python 除錯原型）、Phase 1（Run／Stop／Rerun）、Phase 2 的 Python interpreter 部分已完成（2026-09-26），其餘尚未開工
+> 狀態：Phase 0（Python 除錯原型）、Phase 1（Run／Stop／Rerun）、Phase 2（專案偵測、右鍵選單、Python interpreter）已完成（2026-09-26），Phase 3 起尚未開工
 > 分支：從 `omar/custom` 開 `feat/run-debug`，完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -208,6 +208,16 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - 檔案樹右鍵的 Build／Run／Debug／Publish 和 `More Run/Debug` 子選單
 - 快捷鍵：`run.run`、`run.debug`、`run.stop`、`run.rerun`（Mac 預設 `⌃R`／`⌃D` 要避免跟終端機裡的 shell 衝突，只在焦點不在終端機時生效）
 - 預估約 1,000 行
+
+**Phase 2 完成狀態（2026-09-26）**：`.NET` 和 Node 的偵測跟右鍵選單都完成了，由 `tests/e2e/project-run-configurations.spec.ts` 驗證。實作細節：
+
+- **偵測器**是純函式（`src/shared/run-configurations/`），只吃檔案內容，所以本機、SSH、remote runtime 都能用。讀檔走 `readRuntimeDirectory`／`readRuntimeFileContent`，檔案操作的 context 用 `getTabEntryFileOperationContext`
+  - Node：每個 script 產生一個設定；套件管理器依 `packageManager` 欄位或 lockfile 判斷；依 script 名稱分類成 build、run、test、publish；非 private 的套件額外加上 `<pm> publish`
+  - .NET：`.csproj`、`.fsproj`、`.vbproj` 都有 Build；可執行的專案（Web、Worker SDK 或 `OutputType` 是 Exe）依 `launchSettings.json` 的 `Project` profile 產生 Run，依 `.pubxml` 產生 Publish（沒有 pubxml 就用 `-c Release`）；測試專案改成 Test；類別庫只有 Build。**沒有加 XML 解析的依賴**，目前用 regex 就夠
+- **右鍵選單**：在資料夾、`package.json` 或 `.csproj` 上按右鍵，選單一打開就開始偵測。直接顯示 Build、Run、Test、Publish，其他的放在「More Run/Debug」子選單，依專案分組。Publish 一定要先確認，確認視窗會顯示完整的指令
+- 指令在**專案所在的目錄**執行：`RunTarget.cwd` 會一路傳到 `runQuickCommandInNewTab` 的 `startupCwd`，跟「Open in Terminal」用的是同一個機制
+- **tab bar**：最近一次從右鍵執行的設定會出現在 tab bar（`RecentRunControls`），可以一鍵重跑，也有 ● ↻ ■。fork 在 `TabGroupPanel` 只掛一個 `RunToolbar`
+- **目前還沒做**：Python 專案層級的偵測（Django 的 `manage.py`、`pyproject.toml` 的 scripts）、`.sln`、快捷鍵、.NET／Node 的 🐞 Debug（Phase 3）
 
 ### Phase 3：擴充到 Node 和 .NET 除錯
 - 子 session 支援（`startDebugging`）、TCP 傳輸、js-debug adapter
