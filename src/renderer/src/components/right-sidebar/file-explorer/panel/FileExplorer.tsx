@@ -23,6 +23,7 @@ import { FileExplorerBackgroundMenu } from './FileExplorerBackgroundMenu'
 import { FileExplorerFilesTreePane } from '../tree/FileExplorerFilesTreePane'
 import { FileExplorerNameFilter } from './FileExplorerNameFilter'
 import { FileExplorerQueryStrip } from './FileExplorerQueryStrip'
+import { CodeOutlineSection } from './code-outline/CodeOutlineSection'
 import { FileExplorerToolbar } from './FileExplorerToolbar'
 import { SearchFilters } from '../content-search/SearchFilters'
 import { SearchQueryRow } from '../content-search/SearchQueryRow'
@@ -348,6 +349,7 @@ function FileExplorerFiles(): React.JSX.Element {
             )}
           </div>
         </div>
+        <CodeOutlineSection />
       </div>
 
       <FileExplorerBackgroundMenu

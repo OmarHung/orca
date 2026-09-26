@@ -7,6 +7,9 @@ import type { CodeOutlineSymbol } from './code-outline-types'
 import { isCodeOutlineLanguage, loadCodeOutline } from './code-outline-source'
 
 const REFRESH_DEBOUNCE_MS = 400
+// Why: TS/JS workers can fail transiently right after a cold start; retry before showing an error.
+const MAX_OUTLINE_RETRIES = 3
+const OUTLINE_RETRY_MS = 1_500
 
 export type CodeOutlineState =
   | { status: 'no-file' }
@@ -18,7 +21,7 @@ export type CodeOutlineState =
 
 export type CodeOutlineTarget = { fileId: string; filePath: string; fileName: string }
 
-function useActiveOutlineTarget(): CodeOutlineTarget | null {
+export function useActiveOutlineTarget(): CodeOutlineTarget | null {
   const fileId = useAppStore((s) => s.activeFileId)
   const file = useAppStore((s) =>
     s.activeFileId ? s.openFiles.find((openFile) => openFile.id === s.activeFileId) : undefined
@@ -77,7 +80,7 @@ export function useCodeOutline(): { target: CodeOutlineTarget | null; state: Cod
     }
     let generation = 0
     let timer: ReturnType<typeof setTimeout> | null = null
-    const compute = (): void => {
+    const compute = (retriesLeft = MAX_OUTLINE_RETRIES): void => {
       const current = ++generation
       if (!isCodeOutlineLanguage(model.getLanguageId())) {
         setState({ status: 'unsupported', fileName })
@@ -98,6 +101,11 @@ export function useCodeOutline(): { target: CodeOutlineTarget | null; state: Cod
           if (current !== generation) {
             return
           }
+          if (retriesLeft > 0) {
+            console.warn('[code-outline] retrying after a failed outline', error)
+            timer = setTimeout(() => compute(retriesLeft - 1), OUTLINE_RETRY_MS)
+            return
+          }
           console.error('[code-outline] failed to build outline', error)
           setState({ status: 'error', fileName })
         })
@@ -106,12 +114,12 @@ export function useCodeOutline(): { target: CodeOutlineTarget | null; state: Cod
       if (timer !== null) {
         clearTimeout(timer)
       }
-      timer = setTimeout(compute, REFRESH_DEBOUNCE_MS)
+      timer = setTimeout(() => compute(), REFRESH_DEBOUNCE_MS)
     }
     setState({ status: 'loading', fileName })
     compute()
     const contentSub = model.onDidChangeContent(scheduleCompute)
-    const languageSub = model.onDidChangeLanguage(compute)
+    const languageSub = model.onDidChangeLanguage(() => compute())
     return () => {
       generation += 1
       if (timer !== null) {
