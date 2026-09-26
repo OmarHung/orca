@@ -158,6 +158,7 @@ export async function startPythonDebugSession(options: {
   worktreeId: string
   worktreePath: string
   filePath: string
+  pythonPath?: string
 }): Promise<void> {
   if (currentSessionId()) {
     await stopDebugSession()
@@ -177,7 +178,8 @@ export async function startPythonDebugSession(options: {
     worktreeId: options.worktreeId,
     filePath: options.filePath,
     cwd: options.worktreePath,
-    breakpoints: breakpointsForRequest()
+    breakpoints: breakpointsForRequest(),
+    ...(options.pythonPath ? { pythonPath: options.pythonPath } : {})
   })
   const session = useDebugStore.getState().session
   // Why: failures before the adapter starts (e.g. no Python found) emit no `ended` event.
