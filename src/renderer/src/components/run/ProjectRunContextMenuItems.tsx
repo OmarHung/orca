@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Bug, FlaskConical, Hammer, ListTree, Play, Upload } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { Bug, ListTree } from 'lucide-react'
 import {
   ContextMenuItem,
   ContextMenuLabel,
@@ -25,14 +24,7 @@ import {
   detectProjectRunConfigurations,
   mayContainRunConfigurations
 } from './project-run-detection'
-
-const KIND_ICONS: Record<RunConfigurationKind, LucideIcon> = {
-  build: Hammer,
-  run: Play,
-  test: FlaskConical,
-  publish: Upload,
-  other: Play
-}
+import { RUN_KIND_ICONS } from './run-configuration-icon'
 
 /** Build, Run, Test and Publish shown directly; everything else lives in the submenu. */
 const PRIMARY_KINDS: RunConfigurationKind[] = ['build', 'run', 'test', 'publish']
@@ -45,7 +37,9 @@ function primaryLabel(configuration: DetectedRunConfiguration): string {
         value0: configuration.projectName
       })
     case 'test':
-      return translate('run.menu.test', "Test '{{value0}}'", { value0: configuration.projectName })
+      return translate('run.menu.test', "Test '{{value0}}'", {
+        value0: configuration.projectName
+      })
     case 'publish':
       return translate('run.menu.publish', "Publish '{{value0}}'…", {
         value0: configuration.projectName
@@ -65,7 +59,7 @@ function RunConfigurationMenuItem({
   label: string
   onRun: (configuration: DetectedRunConfiguration) => void
 }): React.JSX.Element {
-  const Icon = KIND_ICONS[configuration.kind]
+  const Icon = RUN_KIND_ICONS[configuration.kind]
   return (
     <ContextMenuItem onSelect={() => onRun(configuration)}>
       <Icon />
