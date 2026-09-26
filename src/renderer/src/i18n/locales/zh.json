@@ -18466,7 +18466,8 @@
       "test": "测试 '{{value0}}'",
       "publish": "发布 '{{value0}}'…",
       "run": "运行 '{{value0}}'",
-      "more": "更多运行/调试"
+      "more": "更多运行/调试",
+      "debugNamed": "调试 '{{value0}}'"
     },
     "publishConfirm": {
       "title": "发布 '{{value0}}'？",
