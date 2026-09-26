@@ -16,6 +16,7 @@ import {
 } from './adapters/prepared-debug-adapter'
 import { startDebugSession, type DebugSessionHandle } from './debug-session'
 import { DebugPathMapping } from './debug-path-mapping'
+import { applyDebugLaunchOptions } from './debug-launch-options'
 
 export type DebugEventSink = {
   send: (event: DebugSessionEvent) => void
@@ -28,6 +29,8 @@ function prepareAdapter(
   switch (target.kind) {
     case 'python-file':
       return prepareDebugpy(context, target)
+    case 'python-module':
+      return prepareDebugpy(context, { module: target.module, pythonPath: target.pythonPath })
     case 'node-file':
       return prepareJsDebug(context, { kind: 'file', filePath: target.filePath })
     case 'node-script':
@@ -38,6 +41,8 @@ function prepareAdapter(
       })
     case 'dotnet-project':
       return prepareNetcoredbg(context, target)
+    case 'dotnet-program':
+      return prepareNetcoredbg(context, { program: target.program })
   }
 }
 
@@ -90,7 +95,7 @@ export class DebugSessionManager {
       adapterId: prepared.adapterId,
       transport: prepared.transport,
       ...(prepared.openChildTransport ? { openChildTransport: prepared.openChildTransport } : {}),
-      launchArguments: prepared.launchArguments,
+      launchArguments: applyDebugLaunchOptions(prepared.launchArguments, request.launchOptions),
       breakpoints: await paths.breakpointsToAdapter(request.breakpoints),
       ...(request.exceptionFilters ? { exceptionFilters: request.exceptionFilters } : {}),
       onCapabilities: (capabilities) =>

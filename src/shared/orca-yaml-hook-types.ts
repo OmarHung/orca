@@ -74,6 +74,7 @@ export type PersistedTrustedOrcaHookRepo = {
   archive?: PersistedTrustedOrcaHookEntry
   issueCommand?: PersistedTrustedOrcaHookEntry
   vmRecipe?: PersistedTrustedOrcaHookEntry
+  runConfigurations?: PersistedTrustedOrcaHookEntry
 }
 
 export type PersistedTrustedOrcaHooks = Record<string, PersistedTrustedOrcaHookRepo>
