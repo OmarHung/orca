@@ -52,6 +52,12 @@ describe('detectNodeRunConfigurations', () => {
       expect.objectContaining({ name: 'build app', command: 'pnpm run "build app"' })
     ])
     expect(configurations[0].id).toBe('node:/w/web:script:dev')
+    expect(configurations[0].debug).toEqual({
+      kind: 'node-script',
+      packageManager: 'pnpm',
+      script: 'dev'
+    })
+    expect(configurations[1].debug).toBeUndefined()
   })
 
   it('adds publish for a public package without a publish script', () => {

@@ -5,7 +5,7 @@ import { findWorktreeById } from '@/store/slices/worktree-helpers'
 import { getActiveRuntimeTarget } from '@/runtime/runtime-client-target'
 import { getRepoExecutionHostId } from '../../../../shared/execution-host'
 import type { PythonInterpreter } from '../../../../shared/python-interpreter-types'
-import { isLocalDebugTarget } from '../debug/debug-launch'
+import { debugTargetForFile, isLocalDebugTarget } from '../debug/debug-launch'
 import { useDebugLaunchTarget } from '../debug/use-debug-launch-target'
 import type { RunTarget } from '../run/run-configuration-control'
 import {
@@ -68,7 +68,12 @@ export function usePythonFileContext(): PythonFileContext | null {
     }
   }, [detect, local, projectRoot])
 
-  if (!launch || !worktree || !repo) {
+  if (
+    !launch ||
+    !worktree ||
+    !repo ||
+    debugTargetForFile(launch.filePath)?.kind !== 'python-file'
+  ) {
     return null
   }
   const interpreters = local ? (detected?.interpreters ?? NO_INTERPRETERS) : NO_INTERPRETERS

@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { access, mkdir, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { removeTree } from '../../../shared/windows-transient-lock-removal'
 import type { DebugAdapterArtifact } from './adapter-manifest'
 
 const INSTALLED_MARKER = '.orca-installed'
@@ -47,11 +48,11 @@ async function install(
     await writeFile(archivePath, payload)
     await deps.extract(archivePath, stagingDir)
     await writeFile(join(stagingDir, INSTALLED_MARKER), artifact.sha256)
-    await rm(installDir, { recursive: true, force: true })
+    await removeTree(installDir)
     await rename(stagingDir, installDir)
     return installDir
   } finally {
-    await rm(stagingDir, { recursive: true, force: true })
+    await removeTree(stagingDir)
     await rm(archivePath, { force: true })
   }
 }
