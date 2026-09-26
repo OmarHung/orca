@@ -1,17 +1,21 @@
 import React from 'react'
 import { NodeFileControls } from '../debug/NodeFileControls'
 import { PythonFileControls } from '../python/PythonFileControls'
-import { RecentRunControls } from './RecentRunControls'
-import { RunConfigurationsWidget } from './RunConfigurationsWidget'
+import { RunWidget } from './RunWidget'
 
-/** Fork run controls in the focused tab group's bar, left of the Quick Commands button. */
-export function RunToolbar({ worktreeId }: { worktreeId: string }): React.JSX.Element {
+/** Fork run controls in the focused tab group's bar: current-file runners, then the Run widget. */
+export function RunToolbar({
+  worktreeId,
+  groupId
+}: {
+  worktreeId: string
+  groupId: string
+}): React.JSX.Element {
   return (
     <>
-      <RunConfigurationsWidget worktreeId={worktreeId} />
-      <RecentRunControls worktreeId={worktreeId} />
       <PythonFileControls />
       <NodeFileControls />
+      <RunWidget worktreeId={worktreeId} groupId={groupId} />
     </>
   )
 }
