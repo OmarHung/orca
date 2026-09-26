@@ -18365,7 +18365,8 @@
       "test": "Test '{{value0}}'",
       "publish": "Publish '{{value0}}'…",
       "run": "Run '{{value0}}'",
-      "more": "More Run/Debug"
+      "more": "More Run/Debug",
+      "debugNamed": "Debug '{{value0}}'"
     },
     "publishConfirm": {
       "title": "Publish '{{value0}}'?",
