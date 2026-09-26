@@ -10,7 +10,7 @@ export function DebugFramesList(): React.JSX.Element {
   const selectedFrameId = useDebugStore((s) => s.selectedFrameId)
 
   return (
-    <div className="flex min-h-0 flex-col" data-testid="debug-frames">
+    <div className="flex h-full min-h-0 flex-col" data-testid="debug-frames">
       <div className="shrink-0 px-2 py-1 text-xs font-semibold text-muted-foreground">
         {translate('debug.frames', 'Frames')}
       </div>
