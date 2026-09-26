@@ -151,6 +151,7 @@ export async function startDebugSession(options: {
   title: string
   target: DebugLaunchTarget
   launchOptions?: DebugLaunchOptions
+  sourceKey?: string
 }): Promise<void> {
   if (currentSessionId()) {
     await stopDebugSession()
@@ -161,6 +162,7 @@ export async function startDebugSession(options: {
     id: sessionId,
     worktreeId: options.worktreeId,
     title: options.title,
+    ...(options.sourceKey ? { sourceKey: options.sourceKey } : {}),
     phase: 'starting',
     stoppedThreadId: null,
     stopReason: null
