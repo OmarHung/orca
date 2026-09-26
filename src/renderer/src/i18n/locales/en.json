@@ -18424,7 +18424,8 @@
       "running": "Running {{value0}}",
       "paused": "Paused in {{value0}} ({{value1}})",
       "ended": "{{value0}} finished"
-    }
+    },
+    "localOnlyShort": "Debugging needs a local workspace"
   },
   "run": {
     "action": {
@@ -18437,6 +18438,22 @@
       "succeeded": "Finished",
       "failed": "Failed (exit {{value0}})",
       "stopped": "Stopped"
+    },
+    "addConfiguration": "Add Configuration…"
+  },
+  "python": {
+    "interpreter": {
+      "remote": "python3 (host)",
+      "detecting": "Detecting Python…",
+      "none": "No Python found",
+      "menuTitle": "Python interpreter for this project",
+      "auto": "Auto",
+      "autoWith": "Auto: {{value0}}",
+      "choose": "Choose Interpreter…",
+      "refresh": "Detect Again"
+    },
+    "action": {
+      "runFile": "Run '{{value0}}'"
     }
   }
 }

@@ -18415,7 +18415,8 @@
       "running": "正在运行 {{value0}}",
       "paused": "已暂停于 {{value0}}（{{value1}}）",
       "ended": "{{value0}} 已结束"
-    }
+    },
+    "localOnlyShort": "调试需要本地工作区"
   },
   "run": {
     "action": {
@@ -18428,6 +18429,22 @@
       "succeeded": "已完成",
       "failed": "失败（退出码 {{value0}}）",
       "stopped": "已停止"
+    },
+    "addConfiguration": "添加配置…"
+  },
+  "python": {
+    "interpreter": {
+      "remote": "python3（主机）",
+      "detecting": "正在检测 Python…",
+      "none": "找不到 Python",
+      "menuTitle": "此项目的 Python 解释器",
+      "auto": "自动",
+      "autoWith": "自动：{{value0}}",
+      "choose": "选择解释器…",
+      "refresh": "重新检测"
+    },
+    "action": {
+      "runFile": "运行 '{{value0}}'"
     }
   }
 }

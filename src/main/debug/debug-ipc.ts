@@ -1,3 +1,4 @@
+import { isAbsolute } from 'node:path'
 import { app, ipcMain } from 'electron'
 import { z } from 'zod'
 import {
@@ -6,6 +7,7 @@ import {
   type DebugStartResult
 } from '../../shared/debug/debug-session-types'
 import { DebugSessionManager, defaultDebugAdaptersDir } from './debug-session-manager'
+import { registerPythonHandlers } from '../python/python-ipc'
 
 // Why: renderer input is untrusted — it chooses what program runs and what the adapter receives.
 const SessionIdSchema = z.string().regex(/^[A-Za-z0-9-]{8,64}$/)
@@ -14,6 +16,10 @@ const StartRequestSchema = z.object({
   worktreeId: z.string().min(1),
   filePath: z.string().min(1),
   cwd: z.string().min(1),
+  pythonPath: z
+    .string()
+    .refine((value) => isAbsolute(value))
+    .optional(),
   breakpoints: z.record(
     z.string().min(1),
     z.array(
@@ -31,6 +37,7 @@ const StartRequestSchema = z.object({
 const RequestArgsSchema = z.record(z.string(), z.unknown())
 
 export function registerDebugHandlers(): void {
+  registerPythonHandlers()
   const sessions = new DebugSessionManager(defaultDebugAdaptersDir(app.getPath('userData')))
 
   ipcMain.handle(

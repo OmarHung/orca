@@ -53,6 +53,7 @@ import { shellApi } from './api/shell-bridge'
 import { skillsApi } from './api/skills-bridge'
 import { petApi } from './api/pet-bridge'
 import { debugApi } from './api/debug-bridge'
+import { pythonApi } from './api/python-bridge'
 import { browserApi } from './api/browser-bridge'
 import { emulatorApi } from './api/emulator-bridge'
 import { hooksApi } from './api/hooks-bridge'
@@ -153,6 +154,7 @@ const api = {
   skills: skillsApi,
   pet: petApi,
   debug: debugApi,
+  python: pythonApi,
   browser: browserApi,
   emulator: emulatorApi,
   hooks: hooksApi,
