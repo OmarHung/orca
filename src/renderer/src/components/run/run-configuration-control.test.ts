@@ -36,6 +36,7 @@ import {
 } from './run-configuration-control'
 import { runDetectedConfiguration } from './detected-run-configuration'
 import { runSessionKey, useRunSessionStore } from './run-session-store'
+import { useRecentRunStore } from './recent-run-store'
 
 const LEAF = '11111111-1111-4111-8111-111111111111'
 const target: RunTarget = {
@@ -52,7 +53,8 @@ function openTab(tabId: string): void {
 }
 
 beforeEach(() => {
-  useRunSessionStore.setState({ sessionsByKey: {}, lastDetectedRunByWorktree: {} })
+  useRunSessionStore.setState({ sessionsByKey: {} })
+  useRecentRunStore.setState({ recentByWorktree: {} })
   appState.tabsByWorktree = {}
   appState.ptyIdsByTabId = {}
   appState.pendingStartupByTabId = {}
@@ -129,10 +131,9 @@ describe('runDetectedConfiguration', () => {
         })
       })
     )
-    expect(useRunSessionStore.getState().lastDetectedRunByWorktree.wt?.commandKey).toBe(
-      'detected:dotnet:/w/api:Api.csproj:run'
-    )
-    expect(useRunSessionStore.getState().lastDetectedRunByWorktree.wt?.debug).toBeUndefined()
+    const [recent] = useRecentRunStore.getState().recentByWorktree.wt ?? []
+    expect(recent?.commandKey).toBe('detected:dotnet:/w/api:Api.csproj:run')
+    expect(recent?.debug).toBeUndefined()
   })
 })
 

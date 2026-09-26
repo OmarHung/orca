@@ -106,5 +106,20 @@ test('offers Build/Run/Publish for .NET and Node projects in the file tree and r
     return tabs.filter((tab) => tab.quickCommandLabel === 'web: build').length
   })
   expect(buildTabs).toBe(1)
+
+  // Recent runs survive a reload (the same storage a restart reads) and still run.
+  await orcaPage.reload()
+  await waitForSessionReady(orcaPage)
+  await expect(orcaPage.getByTestId('run-configurations-trigger')).toContainText('web: build')
+  await orcaPage.getByTestId('run-configurations-trigger').click()
+  await expect(orcaPage.getByRole('menuitem', { name: 'web: build' })).toBeVisible()
+  await orcaPage.keyboard.press('Escape')
+  await expect(orcaPage.getByRole('menu')).toHaveCount(0)
+  await orcaPage.getByTestId('run-configurations-launch').click()
+  await expect(orcaPage.getByTestId('run-configurations-session')).toHaveAttribute(
+    'data-run-status',
+    'succeeded',
+    { timeout: 30_000 }
+  )
   await orcaPage.screenshot({ path: testInfo.outputPath('node-build-done.png') })
 })
