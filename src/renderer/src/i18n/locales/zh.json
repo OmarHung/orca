@@ -18416,5 +18416,18 @@
       "paused": "已暂停于 {{value0}}（{{value1}}）",
       "ended": "{{value0}} 已结束"
     }
+  },
+  "run": {
+    "action": {
+      "rerun": "重新运行 '{{value0}}'",
+      "stop": "停止 '{{value0}}'"
+    },
+    "status": {
+      "running": "运行中",
+      "stopping": "正在停止…",
+      "succeeded": "已完成",
+      "failed": "失败（退出码 {{value0}}）",
+      "stopped": "已停止"
+    }
   }
 }

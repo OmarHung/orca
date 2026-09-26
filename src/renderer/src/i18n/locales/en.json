@@ -18425,5 +18425,18 @@
       "paused": "Paused in {{value0}} ({{value1}})",
       "ended": "{{value0}} finished"
     }
+  },
+  "run": {
+    "action": {
+      "rerun": "Rerun '{{value0}}'",
+      "stop": "Stop '{{value0}}'"
+    },
+    "status": {
+      "running": "Running",
+      "stopping": "Stopping…",
+      "succeeded": "Finished",
+      "failed": "Failed (exit {{value0}})",
+      "stopped": "Stopped"
+    }
   }
 }
