@@ -77,6 +77,13 @@ test('runs, reruns and stops a quick command as a single-instance run configurat
   )
   const controls = orcaPage.getByTestId('run-configurations-session')
 
+  // No .vscode/launch.json in this workspace, so the menu offers no import.
+  await orcaPage.getByTestId('run-configurations-trigger').click()
+  await expect(orcaPage.getByTestId('run-configurations-edit')).toBeVisible()
+  await expect(orcaPage.getByTestId('run-configurations-import')).toHaveCount(0)
+  await orcaPage.keyboard.press('Escape')
+  await expect(orcaPage.getByRole('menu')).toHaveCount(0)
+
   // A command that exits on its own finishes, and running it again reuses its tab.
   await runFromMenu(orcaPage, QUICK_LABEL)
   await expect(controls).toHaveAttribute('data-run-status', 'succeeded', { timeout: 30_000 })
