@@ -6,7 +6,7 @@ import TabBar from '../tab-bar/TabBar'
 
 import { TabBarQuickCommandsButton } from '../tab-bar/quick-commands/TabBarQuickCommandsButton'
 import { TabGroupPaneActionsMenu } from './panel/TabGroupPaneActionsMenu'
-import { PythonFileControls } from '../python/PythonFileControls'
+import { RunToolbar } from '../run/RunToolbar'
 import { useTabGroupWorkspaceModel } from './workspace-model/useTabGroupWorkspaceModel'
 import { closeTerminalTab } from '../terminal/tab-lifecycle/terminal-tab-actions'
 import { resolveGroupTabFromVisibleId } from './workspace-model/tab-group-visible-id'
@@ -323,7 +323,7 @@ export default function TabGroupPanel({
                   ref={quickCommandsSlotRef}
                   className="contents @max-[163px]/tab-strip:invisible @max-[163px]/tab-strip:absolute @max-[163px]/tab-strip:end-0 @max-[163px]/tab-strip:top-0 @max-[163px]/tab-strip:block"
                 >
-                  {isFocused ? <PythonFileControls /> : null}
+                  {isFocused ? <RunToolbar worktreeId={worktreeId} /> : null}
                   <TabBarQuickCommandsButton
                     worktreeId={worktreeId}
                     groupId={groupId}

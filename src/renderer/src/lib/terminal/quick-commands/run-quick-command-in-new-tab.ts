@@ -17,6 +17,8 @@ export type RunQuickCommandInNewTabArgs = {
   /** Tab group the user clicked from. Keeps the spawned terminal in the
    *  pane the user initiated from when available. */
   groupId?: string | null
+  /** Directory the terminal starts in; the worktree root when omitted. */
+  startupCwd?: string
 }
 
 function resolveQuickCommandGroupId(
@@ -47,7 +49,8 @@ export function runQuickCommandInNewTab({
   command,
   worktreeId,
   groupId,
-  historyId = command.id
+  historyId = command.id,
+  startupCwd
 }: RunQuickCommandInNewTabArgs): { tabId: string } | null {
   const targetGroupId = groupId ?? undefined
   if (isTerminalAgentQuickCommand(command)) {
@@ -95,7 +98,8 @@ export function runQuickCommandInNewTab({
   const store = useAppStore.getState()
   const tab = store.createTab(worktreeId, targetGroupId, undefined, {
     quickCommandLabel: command.label,
-    pendingStartup: { command: flattenTerminalQuickCommand(command).command }
+    pendingStartup: { command: flattenTerminalQuickCommand(command).command },
+    ...(startupCwd ? { startupCwd } : {})
   })
 
   // Switch to terminal view like the + button; otherwise an editor keeps the new tab invisible.

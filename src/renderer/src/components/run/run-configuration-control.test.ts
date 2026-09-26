@@ -30,6 +30,7 @@ import { dispatchTerminalCommandFinishedEvent } from '@/hooks/terminal-command-f
 import {
   rerunConfiguration,
   runConfiguration,
+  runDetectedConfiguration,
   stopConfiguration,
   type RunTarget
 } from './run-configuration-control'
@@ -50,7 +51,7 @@ function openTab(tabId: string): void {
 }
 
 beforeEach(() => {
-  useRunSessionStore.setState({ sessionsByKey: {} })
+  useRunSessionStore.setState({ sessionsByKey: {}, lastDetectedRunByWorktree: {} })
   appState.tabsByWorktree = {}
   appState.ptyIdsByTabId = {}
   appState.pendingStartupByTabId = {}
@@ -99,6 +100,37 @@ describe('runConfiguration', () => {
     await runConfiguration(target)
 
     expect(runQuickCommandInNewTab).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('runDetectedConfiguration', () => {
+  it('runs in the project directory and becomes the worktree current detected run', async () => {
+    await runDetectedConfiguration(
+      {
+        id: 'dotnet:/w/api:Api.csproj:run',
+        ecosystem: 'dotnet',
+        projectName: 'Api',
+        projectDir: '/w/api',
+        kind: 'run',
+        name: 'Run',
+        command: 'dotnet run --project Api.csproj'
+      },
+      'wt',
+      'group'
+    )
+
+    expect(runQuickCommandInNewTab).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startupCwd: '/w/api',
+        command: expect.objectContaining({
+          label: 'Api: Run',
+          command: 'dotnet run --project Api.csproj'
+        })
+      })
+    )
+    expect(useRunSessionStore.getState().lastDetectedRunByWorktree.wt?.commandKey).toBe(
+      'detected:dotnet:/w/api:Api.csproj:run'
+    )
   })
 })
 
