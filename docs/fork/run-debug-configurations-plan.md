@@ -1,6 +1,6 @@
 # Run / Debug 設定與內建除錯器：實作計畫（fork 專屬）
 
-> 狀態：Phase 0～4 已完成（2026-09-26）：Python、Node／TS、.NET 除錯，Run／Stop／Rerun，專案偵測，右鍵選單，Python interpreter，以及完整的 Debug UI（條件中斷點、logpoint、例外中斷、Watch、REPL、hover、inline values）。Phase 5 尚未開工
+> 狀態：Phase 0～4 已完成（2026-09-26）：Python、Node／TS、.NET 除錯，Run／Stop／Rerun，專案偵測，右鍵選單，Python interpreter，以及完整的 Debug UI（條件中斷點、logpoint、例外中斷、Watch、REPL、hover、inline values）。Phase 5（Edit Configurations、beforeLaunch、compound、launch.json 匯入、orca.yaml 共享設定）也已完成並合併
 > 分支：從 `omar/custom` 開 `feat/run-debug`，完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -267,7 +267,7 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - `orca.yaml` 的 `runConfigurations:` 共享設定，**一定要沿用 `issueCommand` 的 content hash 信任核准機制**（`PersistedTrustedOrcaHookRepo`），否則 clone 一個 repo 就可能被植入指令
 - 預估約 1,500 行
 
-**Phase 5 完成狀態（2026-09-26）**：在獨立分支 `feat/run-debug-phase5` 完成（從 cfc6e9793e 開出，和 Phase 4 平行進行），由 `tests/e2e/run-configurations-editor.spec.ts` 在真正的 app 裡驗證。
+**Phase 5 完成狀態（2026-09-26）**：在獨立分支 `feat/run-debug-phase5` 完成（從 cfc6e9793e 開出，和 Phase 4 平行進行），之後合併回 `feat/run-debug`；合併時 Phase 4 的 `adapterIdForTarget` 補上了兩種新 target。由 `tests/e2e/run-configurations-editor.spec.ts` 在真正的 app 裡驗證。
 
 - **資料模型**（`src/shared/run-configurations/run-configuration-definition.ts`）：三種設定。`command`（指令、工作目錄、beforeLaunch）、`debug`（沿用 `DebugLaunchTarget`，加上 args、env、工作目錄、beforeLaunch）、`compound`（一起啟動的設定清單）。路徑可以寫相對於 workspace 根目錄，也可以用 `${workspaceFolder}`、`${file}` 等 VS Code 變數，執行時才展開（`run-configuration-variables.ts`）。`${env:…}`、`${input:…}` 這類無法解析的變數會直接報錯，不會帶著錯的路徑執行；其他 `${NAME}` 保留給 shell
 - **儲存位置**：本機設定依照 repo id 存在 localStorage（`orca.run.configurationsByRepo.v1`），**沒有改動 quick command 的資料結構**（原因見 Phase 1）。要跟團隊共用，就寫在 `orca.yaml` 的 `runConfigurations:`，格式相同，`type` 可以省略（依欄位推斷），`id` 預設等於 `name`。讀的是**目前 workspace 自己的** orca.yaml，所以每個分支可以不一樣

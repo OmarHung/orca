@@ -9,11 +9,13 @@ type BreakpointPatch = Partial<Omit<BreakpointSpec, 'line'>>
 export function adapterIdForTarget(target: DebugLaunchTarget): string {
   switch (target.kind) {
     case 'python-file':
+    case 'python-module':
       return 'debugpy'
     case 'node-file':
     case 'node-script':
       return 'pwa-node'
     case 'dotnet-project':
+    case 'dotnet-program':
       return 'coreclr'
   }
 }
