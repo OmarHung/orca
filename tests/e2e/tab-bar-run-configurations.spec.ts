@@ -106,6 +106,8 @@ test('runs, reruns and stops a quick command as a single-instance run configurat
   // A long-running command can be rerun in place and then stopped with Ctrl-C.
   await runFromMenu(orcaPage, LONG_LABEL)
   await expect(controls).toHaveAttribute('data-run-status', 'running')
+  // While it runs, Rerun and Stop replace Run, as in JetBrains.
+  await expect(orcaPage.getByTestId('run-configurations-launch')).toHaveCount(0)
   await waitForLongRunStarts(orcaPage, 1)
   await orcaPage.screenshot({ path: testInfo.outputPath('run-configuration-running.png') })
 
@@ -127,5 +129,6 @@ test('runs, reruns and stops a quick command as a single-instance run configurat
   await controls.getByTestId('run-stop').click()
   await expect(controls).toHaveAttribute('data-run-status', 'stopped', { timeout: 30_000 })
   await expect(controls.getByTestId('run-stop')).toHaveCount(0)
+  await expect(orcaPage.getByTestId('run-configurations-launch')).toBeVisible()
   await orcaPage.screenshot({ path: testInfo.outputPath('run-configuration-stopped.png') })
 })

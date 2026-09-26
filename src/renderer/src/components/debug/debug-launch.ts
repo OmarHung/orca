@@ -93,6 +93,7 @@ export async function debugLaunchTarget(options: {
   title: string
   target: DebugLaunchTarget
   launchOptions?: DebugLaunchOptions
+  sourceKey?: string
 }): Promise<void> {
   if (!localWorktreeForDebugging(options.worktreeId)) {
     return
