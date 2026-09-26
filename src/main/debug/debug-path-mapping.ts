@@ -1,4 +1,5 @@
 import { realpath } from 'node:fs/promises'
+import type { DebugProtocol } from '@vscode/debugprotocol'
 
 /**
  * Translates between the paths the editor uses and the resolved paths debuggers match on.
@@ -45,6 +46,28 @@ export class DebugPathMapping {
     return typeof path === 'string'
       ? { ...args, source: { ...args.source, path: await this.toAdapter(path) } }
       : args
+  }
+
+  /** Rewrites the source path of a `breakpoint` event (a breakpoint the adapter bound later). */
+  eventFromAdapter(event: DebugProtocol.Event): DebugProtocol.Event {
+    const body: unknown = event.body
+    if (event.event !== 'breakpoint' || !isRecord(body) || !isRecord(body.breakpoint)) {
+      return event
+    }
+    const source = body.breakpoint.source
+    if (!isRecord(source) || typeof source.path !== 'string') {
+      return event
+    }
+    return {
+      ...event,
+      body: {
+        ...body,
+        breakpoint: {
+          ...body.breakpoint,
+          source: { ...source, path: this.fromAdapter(source.path) }
+        }
+      }
+    }
   }
 
   /** Rewrites stack frame source paths in a stackTrace response for the editor. */
