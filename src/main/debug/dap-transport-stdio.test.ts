@@ -61,4 +61,44 @@ describe('startStdioDapTransport', () => {
 
     await vi.waitFor(() => expect(onStderr).toHaveBeenCalledWith('boom'))
   })
+
+  it.skipIf(process.platform === 'win32')(
+    'stops programs the adapter started when the adapter dies on its own',
+    async () => {
+      // The "adapter" starts a long-running child (the debuggee), reports its pid and exits.
+      const script = [
+        "const { spawn } = require('node:child_process')",
+        "const debuggee = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore' })",
+        'process.stdout.write(String(debuggee.pid))',
+        'setTimeout(() => process.exit(0), 200)'
+      ].join(';')
+      const transport = startStdioDapTransport({
+        program: process.execPath,
+        args: ['-e', script],
+        cwd: process.cwd(),
+        env: process.env
+      })
+      let debuggeePid = 0
+      transport.onData((chunk) => {
+        debuggeePid = Number(chunk.toString())
+      })
+      const onClose = vi.fn()
+      transport.onClose(onClose)
+
+      await vi.waitFor(() => expect(onClose).toHaveBeenCalled(), { timeout: 5_000 })
+      expect(debuggeePid).toBeGreaterThan(0)
+      await vi.waitFor(
+        () => {
+          let alive = true
+          try {
+            process.kill(debuggeePid, 0)
+          } catch {
+            alive = false
+          }
+          expect(alive).toBe(false)
+        },
+        { timeout: 5_000 }
+      )
+    }
+  )
 })
