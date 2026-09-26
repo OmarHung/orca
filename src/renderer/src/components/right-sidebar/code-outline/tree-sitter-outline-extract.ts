@@ -12,8 +12,6 @@ export type OutlineSyntaxNode = {
 
 export type TreeSitterOutlineLanguage = 'python' | 'csharp'
 
-const MAX_DETAIL_LENGTH = 80
-
 function namedChildren(node: OutlineSyntaxNode): OutlineSyntaxNode[] {
   return node.namedChildren.filter((child): child is OutlineSyntaxNode => child !== null)
 }
@@ -22,8 +20,7 @@ function compactDetail(node: OutlineSyntaxNode | null): string | undefined {
   if (!node) {
     return undefined
   }
-  const text = node.text.replace(/\s+/g, ' ')
-  return text.length > MAX_DETAIL_LENGTH ? `${text.slice(0, MAX_DETAIL_LENGTH - 1)}…` : text
+  return node.text.replace(/\s+/g, ' ')
 }
 
 function makeSymbol(

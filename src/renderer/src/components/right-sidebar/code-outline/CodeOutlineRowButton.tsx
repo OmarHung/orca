@@ -28,7 +28,7 @@ export const CodeOutlineRowButton = React.memo(function CodeOutlineRowButton({
       data-current={isCurrent ? 'true' : undefined}
       data-outline-key={row.key}
       className={cn(
-        'flex w-full items-center gap-1 rounded-sm py-1 pr-2 text-left text-xs transition-colors',
+        'flex w-full items-center gap-1 whitespace-nowrap rounded-sm py-1 pr-2 text-left text-xs transition-colors',
         isCurrent ? 'bg-accent text-accent-foreground' : 'hover:bg-accent hover:text-foreground'
       )}
       style={{ paddingLeft: `${row.depth * 16 + 8}px` }}
@@ -60,9 +60,9 @@ export const CodeOutlineRowButton = React.memo(function CodeOutlineRowButton({
         <span className="size-3 shrink-0" />
       )}
       <KindIcon className="size-3 shrink-0 text-muted-foreground" />
-      <span className="truncate">{row.symbol.name}</span>
+      <span>{row.symbol.name}</span>
       {row.symbol.detail ? (
-        <span className="min-w-0 truncate text-muted-foreground">{row.symbol.detail}</span>
+        <span className="text-muted-foreground">{row.symbol.detail}</span>
       ) : null}
     </button>
   )
