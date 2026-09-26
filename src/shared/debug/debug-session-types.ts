@@ -9,6 +9,8 @@ export type DebugStartRequest = {
   filePath: string
   cwd: string
   breakpoints: DebugBreakpointsByFile
+  /** Interpreter the user picked for this project; auto-detected when omitted. */
+  pythonPath?: string
 }
 
 export type DebugStartResult = { ok: true; sessionId: string } | { ok: false; message: string }

@@ -151,7 +151,7 @@ export function TabBarQuickCommandsButton({
             >
               <Play className="size-3.5" />
               <span className="text-[12px] font-medium @max-[480px]/tab-strip:hidden">
-                {t('auto.components.tab.bar.TabBarQuickCommandsButton.a2c7a33831', 'Command')}
+                {t('run.addConfiguration', 'Add Configuration…')}
               </span>
             </button>
           </TooltipTrigger>
@@ -162,7 +162,6 @@ export function TabBarQuickCommandsButton({
             )}
           </TooltipContent>
         </Tooltip>
-        <RunSessionControls target={null} />
         <TerminalQuickCommandDialog
           open={editor !== null}
           mode={editor?.mode ?? 'add'}
