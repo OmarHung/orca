@@ -323,7 +323,15 @@ export default function TabGroupPanel({
                   className="contents @max-[163px]/tab-strip:invisible @max-[163px]/tab-strip:absolute @max-[163px]/tab-strip:end-0 @max-[163px]/tab-strip:top-0 @max-[163px]/tab-strip:block"
                 >
                   {/* Fork: the Run widget also lists quick commands, replacing TabBarQuickCommandsButton. */}
-                  {isFocused ? <RunToolbar worktreeId={worktreeId} groupId={groupId} /> : null}
+                  {isFocused ? (
+                    <RunToolbar
+                      worktreeId={worktreeId}
+                      groupId={groupId}
+                      activeTerminalTabId={
+                        activeTab?.contentType === 'terminal' ? activeTab.entityId : null
+                      }
+                    />
+                  ) : null}
                 </div>
                 {hasSplitGroups ? (
                   <div className="contents @max-[114px]/tab-strip:hidden">
