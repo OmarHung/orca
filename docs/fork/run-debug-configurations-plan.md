@@ -1,6 +1,6 @@
 # Run / Debug 設定與內建除錯器：實作計畫（fork 專屬）
 
-> 狀態：Phase 0～3（Python、Node／TS、.NET 除錯，Run／Stop／Rerun，專案偵測，右鍵選單，Python interpreter）已完成（2026-09-26），Phase 4 起尚未開工
+> 狀態：Phase 0～4 已完成（2026-09-26）：Python、Node／TS、.NET 除錯，Run／Stop／Rerun，專案偵測，右鍵選單，Python interpreter，以及完整的 Debug UI（條件中斷點、logpoint、例外中斷、Watch、REPL、hover、inline values）。Phase 5 尚未開工
 > 分支：從 `omar/custom` 開 `feat/run-debug`，完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -243,8 +243,6 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 **已知限制**：
 - Windows on Arm 沒有 netcoredbg，不能除錯 .NET；Intel Mac 用 netcoredbg 3.1.3
 - .NET 沒有 Hot Reload 和 Edit-and-Continue
-- 右鍵選單只顯示第一個可除錯的設定，其他的要從「More Run/Debug」找（子選單目前還沒有 Debug 項目）
-- tab bar 上「最近一次從右鍵執行的設定」目前只能 Run，還不能直接 Debug
 - 上游的 `windows-lane-tree-removal-boundary.test.ts` 在這個 fork 會失敗：它讀取 CI workflow 裡的檔案清單，但清單中的 `agent-foreground-process-git-bash.win32.test.ts` 不存在。這跟 fork 的改動無關
 
 ### Phase 4：完整的 Debug UI
@@ -252,6 +250,14 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - 行內變數值、hover 求值
 - 條件中斷點、logpoint、例外中斷（依 adapter 回傳的 `exceptionBreakpointFilters` 顯示）
 - 預估約 1,500 行
+
+**Phase 4 完成狀態（2026-09-26）**：分成三個 commit，e2e 測試是 `debug-breakpoint-conditions.spec.ts` 和 `debug-watch-console-hover.spec.ts`，`debug-node.spec.ts` 也擴充了。
+
+- **4a 中斷點**：中斷點移到獨立的 `breakpoint-store.ts`，每個中斷點有 `{ line, enabled, condition, hitCondition, logMessage }`，舊版只存行號的資料會自動轉換。在 gutter 按右鍵會開啟編輯器（那一行沒有中斷點時會先加一個）。gutter 圖示依狀態區分：實心點、條件（點中有橫線）、logpoint（菱形）、停用（灰色空心）、沒綁上（紅色空心）。是否綁上的狀態來自 `setBreakpoints` 的回應和之後的 `breakpoint` 事件（事件的路徑也經過 `DebugPathMapping` 轉換）。Debug 面板右欄改成 Console／Breakpoints 兩個分頁；例外中斷的選項由 adapter 的 capabilities 決定，沒改過之前用 adapter 的預設值，選擇會依 adapter 分開記住，並且在程式開始執行前就送出
+- **4b 看值**：Watch 放在 Variables 下方，會跨 session 保留，每次暫停都重新求值；Console 可以輸入運算式在目前選取的 frame 求值，有 ↑／↓ 歷史紀錄；滑鼠移到變數上會顯示值（只在暫停的那個檔案，會包含 `a.b.c` 成員鏈，但不會包含函式呼叫）；暫停行之前的程式行會在行尾顯示變數值。**踩到的坑**：Monaco 的 injected text（`after`）放在行尾的空 range 上不會顯示，要用整行的 range 才會出現
+- **4c 補齊**：「More Run/Debug」子選單每個可除錯的設定都有 Debug 項目；從選單除錯的設定也會成為 tab bar 上最近執行的那一個，而且那裡多了 🐞 按鈕
+
+**仍未支援**：REPL 的自動補全（DAP `completions`）、在 Variables 裡直接修改變數值（`setVariable`）、function breakpoint、data breakpoint
 
 ### Phase 5：進階功能
 - Edit Configurations 對話框（左邊清單、右邊表單）
