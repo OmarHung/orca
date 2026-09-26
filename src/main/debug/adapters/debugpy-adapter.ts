@@ -18,16 +18,16 @@ export function buildDebugpyAdapterSpawn(
   }
 }
 
-export function buildDebugpyLaunchArguments(options: {
-  filePath: string
-  cwd: string
-  pythonPath: string
-}): DebugProtocol.LaunchRequestArguments & Record<string, unknown> {
+export type DebugpyEntryPoint = { filePath: string } | { module: string }
+
+export function buildDebugpyLaunchArguments(
+  options: DebugpyEntryPoint & { cwd: string; pythonPath: string }
+): DebugProtocol.LaunchRequestArguments & Record<string, unknown> {
   return {
     type: 'debugpy',
     request: 'launch',
-    name: 'Orca: Python file',
-    program: options.filePath,
+    name: 'Orca: Python',
+    ...('module' in options ? { module: options.module } : { program: options.filePath }),
     cwd: options.cwd,
     python: [options.pythonPath],
     // Why internalConsole: program output arrives as DAP `output` events for the Debug panel.
