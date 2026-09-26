@@ -60,6 +60,7 @@ import { registerKeybindingHandlers } from '../keybindings'
 import { registerTelemetryHandlers } from '../telemetry'
 import { registerShellHandlers } from '../shell'
 import { registerPetHandlers } from '../pets/pet'
+import { registerDebugHandlers } from '../../debug/debug-ipc'
 import { registerPluginHandlers } from '../plugins'
 import { registerUIHandlers, setTrustedUIRendererWebContentsId } from '../ui'
 import { registerEmulatorFrameStreamHandlers } from '../emulator-frame-stream'
@@ -248,6 +249,7 @@ export function registerCoreHandlers(
   registerBrowserHandlers(store)
   registerShellHandlers(store)
   registerPetHandlers()
+  registerDebugHandlers()
   registerSessionHandlers(store, runtime)
   registerUIHandlers(store, { isDashboardPopoutRenderer })
   registerEmulatorFrameStreamHandlers()
