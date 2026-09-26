@@ -70,7 +70,8 @@ export function RunWidgetMenu({
   selectedKey: string | null
   onSelect: (item: RunWidgetItem) => void
   onEditConfigurations: () => void
-  onImportLaunchJson: () => void
+  /** null when the workspace has no `.vscode/launch.json`. */
+  onImportLaunchJson: (() => void) | null
   onAddQuickCommand: (() => void) | null
   onManageQuickCommands: () => void
 }): React.JSX.Element {
@@ -104,10 +105,12 @@ export function RunWidgetMenu({
         <Settings2 />
         {translate('run.configurations.edit', 'Edit Configurations…')}
       </DropdownMenuItem>
-      <DropdownMenuItem data-testid="run-configurations-import" onSelect={onImportLaunchJson}>
-        <FileInput />
-        {translate('run.configurations.importLaunchJson', 'Import .vscode/launch.json')}
-      </DropdownMenuItem>
+      {onImportLaunchJson ? (
+        <DropdownMenuItem data-testid="run-configurations-import" onSelect={onImportLaunchJson}>
+          <FileInput />
+          {translate('run.configurations.importLaunchJson', 'Import .vscode/launch.json')}
+        </DropdownMenuItem>
+      ) : null}
       {onAddQuickCommand ? (
         <DropdownMenuItem data-testid="run-widget-add-quick-command" onSelect={onAddQuickCommand}>
           <Plus />
