@@ -22,6 +22,7 @@ const {
   registerTerminalRenderDesyncEvidenceHandlerMock,
   registerShellHandlersMock,
   registerPetHandlersMock,
+  registerDebugHandlersMock,
   registerSessionHandlersMock,
   registerUIHandlersMock,
   setTrustedUIRendererWebContentsIdMock,
@@ -89,6 +90,7 @@ const {
   registerTerminalRenderDesyncEvidenceHandlerMock: vi.fn(),
   registerShellHandlersMock: vi.fn(),
   registerPetHandlersMock: vi.fn(),
+  registerDebugHandlersMock: vi.fn(),
   registerSessionHandlersMock: vi.fn(),
   registerUIHandlersMock: vi.fn(),
   setTrustedUIRendererWebContentsIdMock: vi.fn(),
@@ -263,6 +265,10 @@ vi.mock('../shell', () => ({
   registerShellHandlers: registerShellHandlersMock
 }))
 
+vi.mock('../../debug/debug-ipc', () => ({
+  registerDebugHandlers: registerDebugHandlersMock
+}))
+
 vi.mock('../pet', () => ({
   registerPetHandlers: registerPetHandlersMock
 }))
@@ -421,6 +427,7 @@ describe('registerCoreHandlers', () => {
     registerTerminalRenderDesyncEvidenceHandlerMock.mockReset()
     registerShellHandlersMock.mockReset()
     registerPetHandlersMock.mockReset()
+    registerDebugHandlersMock.mockReset()
     registerSessionHandlersMock.mockReset()
     registerUIHandlersMock.mockReset()
     setTrustedUIRendererWebContentsIdMock.mockReset()
@@ -525,6 +532,7 @@ describe('registerCoreHandlers', () => {
       codexAccounts.runtimeHomeService
     )
     expect(registerPetHandlersMock).toHaveBeenCalled()
+    expect(registerDebugHandlersMock).toHaveBeenCalled()
     expect(registerClaudeAccountHandlersMock).toHaveBeenCalledWith(claudeAccounts)
     expect(registerMiniMaxCredentialsHandlersMock).toHaveBeenCalledWith(rateLimits)
     expect(registerGrokAccountHandlersMock).toHaveBeenCalled()
