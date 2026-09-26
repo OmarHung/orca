@@ -18565,6 +18565,11 @@
       "input": "Evaluate expression",
       "inputHint": "Evaluate an expression in the selected frame",
       "inputIdle": "Start debugging to evaluate expressions"
+    },
+    "resize": {
+      "frames": "Resize frames",
+      "watches": "Resize watches",
+      "sidePane": "Resize console and breakpoints"
     }
   },
   "run": {
