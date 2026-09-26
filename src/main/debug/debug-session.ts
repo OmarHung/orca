@@ -27,6 +27,10 @@ export type StartDebugSessionOptions = {
   launchArguments: Record<string, unknown>
   breakpoints: DebugBreakpointsByFile
   emit: (event: DebugSessionEvent) => void
+  /** Exception filters to enable; the adapter's defaults apply when omitted. */
+  exceptionFilters?: string[]
+  /** Reports the root adapter's exception filters once `initialize` answers. */
+  onCapabilities?: (capabilities: DebugProtocol.Capabilities) => void
   /**
    * Opens another connection to the same adapter for `startDebugging` child sessions
    * (js-debug runs each debugged process as a child). Omit for single-session adapters.
@@ -54,16 +58,30 @@ function waitForEvent(client: DapClient, eventName: string, timeoutMs: number): 
   })
 }
 
+/** The requested filters the adapter offers, or its own defaults when none were requested. */
+export function selectExceptionFilters(
+  offered: readonly DebugProtocol.ExceptionBreakpointsFilter[],
+  requested: readonly string[] | undefined
+): string[] {
+  if (requested) {
+    return requested.filter((filter) => offered.some((option) => option.filter === filter))
+  }
+  return offered.filter((option) => option.default).map((option) => option.filter)
+}
+
 async function configure(
   client: DapClient,
   capabilities: DebugProtocol.Capabilities,
-  breakpoints: DebugBreakpointsByFile
+  breakpoints: DebugBreakpointsByFile,
+  exceptionFilters: readonly string[] | undefined
 ): Promise<void> {
   for (const [path, fileBreakpoints] of Object.entries(breakpoints)) {
     await client.request('setBreakpoints', { source: { path }, breakpoints: fileBreakpoints })
   }
   if (capabilities.exceptionBreakpointFilters) {
-    await client.request('setExceptionBreakpoints', { filters: [] })
+    await client.request('setExceptionBreakpoints', {
+      filters: selectExceptionFilters(capabilities.exceptionBreakpointFilters, exceptionFilters)
+    })
   }
   if (capabilities.supportsConfigurationDoneRequest) {
     await client.request('configurationDone')
@@ -79,7 +97,11 @@ async function handshake(
   adapterId: string,
   request: 'launch' | 'attach',
   args: Record<string, unknown>,
-  breakpoints: DebugBreakpointsByFile
+  breakpoints: DebugBreakpointsByFile,
+  options: {
+    exceptionFilters?: readonly string[]
+    onCapabilities?: (capabilities: DebugProtocol.Capabilities) => void
+  } = {}
 ): Promise<void> {
   // Why listen first: netcoredbg sends `initialized` in the same chunk as the `initialize`
   // response, which is dispatched before this function resumes after the await.
@@ -96,11 +118,13 @@ async function handshake(
     supportsRunInTerminalRequest: false,
     supportsStartDebuggingRequest: true
   })
+  const offered = isRecord(capabilities) ? capabilities : {}
+  options.onCapabilities?.(offered)
   const started = client.request(request, args, { timeoutMs: null })
   // Why: either promise may reject while the other is awaited; the race below surfaces it.
   started.catch(() => {})
   await Promise.race([initialized, started.then(() => initialized)])
-  await configure(client, isRecord(capabilities) ? capabilities : {}, breakpoints)
+  await configure(client, offered, breakpoints, options.exceptionFilters)
   await started
 }
 
@@ -161,21 +185,21 @@ export function startDebugSession(options: StartDebugSessionOptions): DebugSessi
       }
     })
     const kind = args.request === 'attach' ? 'attach' : 'launch'
-    void handshake(child, options.adapterId, kind, configuration, breakpoints).catch(
-      (error: unknown) => {
-        const message = error instanceof Error ? error.message : String(error)
-        emit({
-          kind: 'dap-event',
-          sessionId: id,
-          event: {
-            seq: 0,
-            type: 'event',
-            event: 'output',
-            body: { category: 'stderr', output: `${message}\n` }
-          }
-        })
-      }
-    )
+    void handshake(child, options.adapterId, kind, configuration, breakpoints, {
+      exceptionFilters: options.exceptionFilters
+    }).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error)
+      emit({
+        kind: 'dap-event',
+        sessionId: id,
+        event: {
+          seq: 0,
+          type: 'event',
+          event: 'output',
+          body: { category: 'stderr', output: `${message}\n` }
+        }
+      })
+    })
     return {}
   }
   // Why every connection: js-debug asks the parent's connection to open nested targets,
@@ -201,6 +225,11 @@ export function startDebugSession(options: StartDebugSessionOptions): DebugSessi
   }
 
   const request = async (command: string, args: unknown): Promise<unknown> => {
+    if (command === 'setExceptionBreakpoints') {
+      const targets = children.length > 0 ? children : [root]
+      const results = await Promise.all(targets.map((client) => client.request(command, args)))
+      return results[0]
+    }
     if (command !== 'setBreakpoints') {
       return active.request(command, args)
     }
@@ -216,7 +245,10 @@ export function startDebugSession(options: StartDebugSessionOptions): DebugSessi
 
   const ready = (async () => {
     emit({ kind: 'phase', sessionId: id, phase: 'starting' })
-    await handshake(root, options.adapterId, 'launch', options.launchArguments, breakpoints)
+    await handshake(root, options.adapterId, 'launch', options.launchArguments, breakpoints, {
+      exceptionFilters: options.exceptionFilters,
+      onCapabilities: options.onCapabilities
+    })
     emit({ kind: 'phase', sessionId: id, phase: 'running' })
   })().catch(async (error: unknown) => {
     // Why end first: stop() closes the client, whose close handler would end without the reason.
