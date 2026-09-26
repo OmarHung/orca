@@ -30,11 +30,11 @@ import { dispatchTerminalCommandFinishedEvent } from '@/hooks/terminal-command-f
 import {
   rerunConfiguration,
   runConfiguration,
-  runDetectedConfiguration,
   runConfigurationAndWait,
   stopConfiguration,
   type RunTarget
 } from './run-configuration-control'
+import { runDetectedConfiguration } from './detected-run-configuration'
 import { runSessionKey, useRunSessionStore } from './run-session-store'
 
 const LEAF = '11111111-1111-4111-8111-111111111111'
