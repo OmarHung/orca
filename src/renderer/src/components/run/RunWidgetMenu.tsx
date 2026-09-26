@@ -13,7 +13,7 @@ import type { RunWidgetItem } from './run-widget-items'
 
 function itemIcon(item: RunWidgetItem): React.JSX.Element {
   switch (item.kind) {
-    case 'detected':
+    case 'recent':
       return <Clock />
     case 'configuration': {
       const Icon = runConfigurationIcon(item.configuration)
@@ -82,7 +82,7 @@ export function RunWidgetMenu({
         <Section
           {...sectionProps}
           heading={translate('run.widget.recent', 'Recent')}
-          items={items.filter((item) => item.kind === 'detected')}
+          items={items.filter((item) => item.kind === 'recent')}
         />
         <Section
           {...sectionProps}

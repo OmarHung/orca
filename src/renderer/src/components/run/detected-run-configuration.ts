@@ -4,8 +4,8 @@ import type { DetectedRunConfiguration } from '../../../../shared/run-configurat
 import { debugLaunchTarget } from '../debug/debug-launch'
 import { runConfiguration, type RunTarget } from './run-configuration-control'
 import { useRunConfigurationStore } from './run-configuration-store'
-import { useRunSessionStore } from './run-session-store'
-import { DETECTED_RUN_KEY } from './run-widget-items'
+import { useRecentRunStore } from './recent-run-store'
+import { recentItemKey } from './run-widget-items'
 
 export function detectedConfigurationLabel(configuration: DetectedRunConfiguration): string {
   return `${configuration.projectName}: ${configuration.name}`
@@ -34,13 +34,13 @@ export function toDetectedRunTarget(
 
 /** Keeps the run as the worktree's temporary configuration and selects it in the Run widget. */
 function rememberDetectedRun(target: RunTarget): void {
-  useRunSessionStore.getState().rememberDetectedRun(target)
+  useRecentRunStore.getState().remember(target)
   const worktreesByRepo = useAppStore.getState().worktreesByRepo
   const repoId = worktreesByRepo
     ? findWorktreeById(worktreesByRepo, target.worktreeId)?.repoId
     : undefined
   if (repoId) {
-    useRunConfigurationStore.getState().select(repoId, DETECTED_RUN_KEY)
+    useRunConfigurationStore.getState().select(repoId, recentItemKey(target.commandKey))
   }
 }
 
