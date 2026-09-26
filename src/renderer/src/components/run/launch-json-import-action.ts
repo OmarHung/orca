@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { joinPath } from '@/lib/path'
@@ -79,4 +80,31 @@ export async function importWorkspaceLaunchJson(worktreeId: string, repoId: stri
   }
   const store = useRunConfigurationStore.getState()
   store.setLocal(repoId, mergeLaunchJsonImport(store.localByRepo[repoId] ?? [], result))
+}
+
+async function workspaceHasLaunchJson(worktreeId: string): Promise<boolean> {
+  const workspace = worktreeProjectFiles(worktreeId)
+  if (!workspace) {
+    return false
+  }
+  return (await workspace.files.listNames(joinPath(workspace.root, '.vscode'))).includes(
+    'launch.json'
+  )
+}
+
+/** Whether the workspace has a `.vscode/launch.json` to import; re-checked when `checkKey` changes. */
+export function useWorkspaceHasLaunchJson(worktreeId: string, checkKey: unknown): boolean {
+  const [found, setFound] = useState<{ worktreeId: string; value: boolean } | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    void workspaceHasLaunchJson(worktreeId).then((value) => {
+      if (!cancelled) {
+        setFound({ worktreeId, value })
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [worktreeId, checkKey])
+  return found?.worktreeId === worktreeId && found.value
 }

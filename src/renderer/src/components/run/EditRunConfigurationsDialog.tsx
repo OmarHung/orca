@@ -11,7 +11,11 @@ import {
 import { translate } from '@/i18n/i18n'
 import { createBrowserUuid } from '@/lib/browser-uuid'
 import type { RunConfigurationDefinition } from '../../../../shared/run-configurations/run-configuration-definition'
-import { mergeLaunchJsonImport, readWorkspaceLaunchJson } from './launch-json-import-action'
+import {
+  mergeLaunchJsonImport,
+  readWorkspaceLaunchJson,
+  useWorkspaceHasLaunchJson
+} from './launch-json-import-action'
 import { RunConfigurationForm } from './RunConfigurationForm'
 import { RunConfigurationListPane } from './RunConfigurationListPane'
 import {
@@ -40,6 +44,7 @@ export function EditRunConfigurationsDialog({
   const [errors, setErrors] = useState<string[]>([])
   // Why: an import can rewrite the open form's configuration, so the form must remount.
   const [importRevision, setImportRevision] = useState(0)
+  const hasLaunchJson = useWorkspaceHasLaunchJson(worktreeId, null)
   const localIds = new Set(drafts.map((draft) => draft.id))
   const shared = (data.shared?.configurations ?? []).filter((entry) => !localIds.has(entry.id))
   const all = [...drafts, ...shared]
@@ -144,15 +149,19 @@ export function EditRunConfigurationsDialog({
           </div>
         </div>
         <div className="flex items-center justify-between gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            data-testid="run-configurations-dialog-import"
-            onClick={() => void importLaunchJson()}
-          >
-            <FileInput />
-            {translate('run.configurations.importLaunchJson', 'Import .vscode/launch.json')}
-          </Button>
+          {hasLaunchJson ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              data-testid="run-configurations-dialog-import"
+              onClick={() => void importLaunchJson()}
+            >
+              <FileInput />
+              {translate('run.configurations.importLaunchJson', 'Import .vscode/launch.json')}
+            </Button>
+          ) : (
+            <span />
+          )}
           <div className="flex items-center gap-2">
             {errors.length > 0 ? (
               <p
