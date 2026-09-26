@@ -1,6 +1,7 @@
 /* Debugger gutter and paused-line decorations (JetBrains-style red dot, highlighted line). */
 
 .monaco-editor .orca-debug-breakpoint::before,
+.monaco-editor .orca-debug-logpoint::before,
 .monaco-editor .orca-debug-execution-arrow::after {
   content: '';
   position: absolute;
@@ -33,4 +34,35 @@
   border-top: 5px solid transparent;
   border-bottom: 5px solid transparent;
   border-left: 8px solid var(--git-decoration-modified);
+}
+
+/* Conditional: a dot with a white bar across it. */
+.monaco-editor .orca-debug-breakpoint-conditional::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 2px;
+  transform: translate(-50%, -50%);
+  background: var(--background);
+}
+
+/* Logpoint: a diamond, since it logs instead of pausing. */
+.monaco-editor .orca-debug-logpoint::before {
+  width: 9px;
+  height: 9px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  background: var(--destructive);
+}
+
+/* Unverified: the adapter could not bind it, so only the outline shows. */
+.monaco-editor .orca-debug-breakpoint-unverified::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--destructive);
+}
+
+.monaco-editor .orca-debug-breakpoint-disabled::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--muted-foreground);
 }
