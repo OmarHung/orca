@@ -6,6 +6,7 @@ import TabBar from '../tab-bar/TabBar'
 
 import { TabBarQuickCommandsButton } from '../tab-bar/quick-commands/TabBarQuickCommandsButton'
 import { TabGroupPaneActionsMenu } from './panel/TabGroupPaneActionsMenu'
+import { PythonFileControls } from '../python/PythonFileControls'
 import { useTabGroupWorkspaceModel } from './workspace-model/useTabGroupWorkspaceModel'
 import { closeTerminalTab } from '../terminal/tab-lifecycle/terminal-tab-actions'
 import { resolveGroupTabFromVisibleId } from './workspace-model/tab-group-visible-id'
@@ -320,6 +321,7 @@ export default function TabGroupPanel({
                 {/* Why: drop an action whole (and from Tab order) once it can't fit beside the tab floor and "+", never leave a clipped focus target.
                     163 = 40 tab + 36 "+" + 8 padding + 47 widest collapsed quick-command trigger + 2 gap + 28 pane actions + 2 sub-pixel slack; 114 = 40 + 36 + 8 + 28 + 2. */}
                 <div ref={quickCommandsSlotRef} className="contents @max-[163px]/tab-strip:hidden">
+                  {isFocused ? <PythonFileControls /> : null}
                   <TabBarQuickCommandsButton
                     worktreeId={worktreeId}
                     groupId={groupId}

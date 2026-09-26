@@ -58,6 +58,7 @@ import { petApi } from './api/pets/pet-bridge'
 import { appIconApi } from './api/window-ui/app-icon-bridge'
 import { browserPasswordsApi } from './api/browser/browser-passwords-bridge'
 import { debugApi } from './api/debug-bridge'
+import { pythonApi } from './api/python-bridge'
 import { browserApi } from './api/browser/browser-bridge'
 import { emulatorApi } from './api/emulator/emulator-bridge'
 import { hooksApi } from './api/agent-hooks/hooks-bridge'
@@ -168,6 +169,7 @@ const api = {
   pet: petApi,
   appIcon: appIconApi,
   debug: debugApi,
+  python: pythonApi,
   browser: browserApi,
   browserPasswords: browserPasswordsApi,
   emulator: emulatorApi,
