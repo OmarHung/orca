@@ -29,7 +29,8 @@ import { ProviderExtraUsageSection } from './provider-extra-usage-section'
 import { formatWindowLabel } from './rate-limit-window-localized-label'
 import { formatPoolCardLabel } from './usage-pool-label'
 import { formatResetsInCaption } from './usage-reset-caption'
-import { UsageBar, UsageValue } from './usage-meter'
+import { UsageValue } from './usage-meter'
+import { UsagePaceBar } from '../UsagePaceBar'
 
 export function formatTimeAgo(ts: number, t: Translate = translate): string {
   const diff = Date.now() - ts
@@ -182,7 +183,7 @@ function ProviderRateLimitWindowSection({
   label,
   textClass,
   mutedClass,
-  emptyBarClass,
+  inverted,
   usagePercentageDisplay,
   now
 }: {
@@ -190,7 +191,7 @@ function ProviderRateLimitWindowSection({
   label: string
   textClass: string
   mutedClass: string
-  emptyBarClass: string
+  inverted: boolean
   usagePercentageDisplay: UsagePercentageDisplay
   now: number
 }): React.JSX.Element | null {
@@ -214,13 +215,14 @@ function ProviderRateLimitWindowSection({
           className={`shrink-0 font-semibold ${textClass}`}
         />
       </div>
-      {/* Why: fill follows the selected percentage; only this card colors it by consumption. */}
-      <UsageBar
-        usedPercent={window.usedPercent}
+      {/* Fork: the pace bar marks even-pace usage and colors the fill by severity. */}
+      <UsagePaceBar
+        window={window}
         display={usagePercentageDisplay}
-        tone="health"
+        now={now}
+        inverted={inverted}
+        animated
         className="h-[6px] w-full"
-        trackClassName={emptyBarClass}
       />
     </div>
   )
@@ -355,7 +357,7 @@ export function ProviderPanel({
           label={s.label}
           textClass={textClass}
           mutedClass={mutedClass}
-          emptyBarClass={emptyBarClass}
+          inverted={inverted}
           usagePercentageDisplay={usagePercentageDisplay}
           now={now}
         />

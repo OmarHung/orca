@@ -29,7 +29,18 @@ import {
 } from './usage-reset-caption'
 import { formatBareUsagePercentage, formatUsagePercentageLabel } from './usage-percentage-label'
 import { getUsageHealthTone } from './usage-health-tone'
-import { UsageBar, UsageDisplayToggle, UsageValue } from './usage-meter'
+import { UsageDisplayToggle, UsageValue } from './usage-meter'
+import { getUsageWindowSeverity, type UsageSeverity } from '../usage-pace'
+import { UsagePaceBar } from '../UsagePaceBar'
+
+/** Fork: roster percentages share the pace bar's severity color. */
+function usageSeverityTextClass(severity: UsageSeverity): string {
+  return cn(
+    severity === 'normal' && 'text-status-success',
+    severity === 'warning' && 'text-status-warning',
+    severity === 'critical' && 'text-destructive'
+  )
+}
 
 type ProviderId = ProviderRateLimits['provider']
 
@@ -37,13 +48,16 @@ function DetailMetric({
   section,
   label,
   display,
+  now,
   title
 }: {
   section: UsageSection
   label: string
   display: UsagePercentageDisplay
+  now: number
   title?: string
 }): React.JSX.Element {
+  const severity = getUsageWindowSeverity(section.window, now)
   return (
     <span
       data-usage-window={section.label}
@@ -51,15 +65,11 @@ function DetailMetric({
       className="flex shrink-0 items-center gap-1.5"
     >
       <span className="text-[10px] text-muted-foreground">{label}</span>
-      <UsageBar
-        usedPercent={section.window.usedPercent}
-        display={display}
-        className="h-[5px] w-7"
-      />
+      <UsagePaceBar window={section.window} display={display} now={now} className="h-[5px] w-7" />
       <UsageValue
         usedPercent={section.window.usedPercent}
         display={display}
-        className="text-[11px]"
+        className={cn('text-[11px]', usageSeverityTextClass(severity))}
       />
     </span>
   )
@@ -162,15 +172,19 @@ function RowUsageSummary({
           {resetLabel}
         </span>
       ) : null}
-      <UsageBar
-        usedPercent={headline.window.usedPercent}
+      <UsagePaceBar
+        window={headline.window}
         display={display}
+        now={now}
         className="h-[5px] w-[30px]"
       />
       <UsageValue
         usedPercent={headline.window.usedPercent}
         display={display}
-        className="w-9 text-right text-[12px] font-medium"
+        className={cn(
+          'w-9 text-right text-[12px] font-medium',
+          usageSeverityTextClass(getUsageWindowSeverity(headline.window, now))
+        )}
       />
     </span>
   )
@@ -251,6 +265,7 @@ export function UsageRow({
                 section={section}
                 label={label}
                 display={display}
+                now={now}
                 title={scopedUsageTitle(p, { ...section, label }, display, t)}
               />
             )
