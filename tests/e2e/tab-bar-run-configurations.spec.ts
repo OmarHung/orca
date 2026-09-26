@@ -33,6 +33,18 @@ async function tabCountWithLabel(page: Page, label: string): Promise<number> {
 }
 
 /** Picks the quick command in the Run widget, then runs it, as in JetBrains. */
+async function activateTabWithLabel(page: Page, label: string): Promise<void> {
+  await page.evaluate((expected) => {
+    const state = window.__store?.getState()
+    const tab = (state?.tabsByWorktree[state.activeWorktreeId ?? ''] ?? []).find(
+      (candidate) => candidate.quickCommandLabel === expected
+    )
+    if (tab) {
+      state?.setActiveTab(tab.id)
+    }
+  }, label)
+}
+
 async function runFromMenu(page: Page, label: string): Promise<void> {
   await page.getByTestId('run-configurations-trigger').click()
   await page.getByRole('menuitem', { name: label }).click()
@@ -102,6 +114,15 @@ test('runs, reruns and stops a quick command as a single-instance run configurat
   await waitForLongRunStarts(orcaPage, 2)
   await expect(controls).toHaveAttribute('data-run-status', 'running')
   expect(await tabCountWithLabel(orcaPage, LONG_LABEL)).toBe(1)
+
+  // With both runs open, the Run widget follows whichever run terminal is active.
+  const trigger = orcaPage.getByTestId('run-configurations-trigger')
+  await activateTabWithLabel(orcaPage, QUICK_LABEL)
+  await expect(trigger).toContainText(QUICK_LABEL)
+  await expect(controls).toHaveAttribute('data-run-status', 'succeeded')
+  await activateTabWithLabel(orcaPage, LONG_LABEL)
+  await expect(trigger).toContainText(LONG_LABEL)
+  await expect(controls).toHaveAttribute('data-run-status', 'running')
 
   await controls.getByTestId('run-stop').click()
   await expect(controls).toHaveAttribute('data-run-status', 'stopped', { timeout: 30_000 })
