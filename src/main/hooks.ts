@@ -129,7 +129,9 @@ const RECOGNIZED_ORCA_YAML_KEYS = new Set([
   'issueCommand',
   'defaultTabs',
   'environmentRecipes',
-  'worktree'
+  'worktree',
+  // Fork: read by the renderer's run configurations, not by hooks.
+  'runConfigurations'
 ])
 
 export function hasUnrecognizedOrcaYamlKeys(repoPath: string): boolean {
