@@ -18547,7 +18547,7 @@
         "env": "Environment variables",
         "envHint": "One NAME=value per line.",
         "name": "Name",
-        "members": "Configurations to start together",
+        "members": "Configurations to start",
         "membersHint": "Before launch steps of all members run first. At most one may be a debug configuration."
       },
       "dialogTitle": "Run/Debug Configurations",
@@ -18570,7 +18570,8 @@
         "multipleDebug": "Only one debug session can run at a time; remove '{{value0}}' or run it separately",
         "variable": "'{{value0}}' uses {{value1}}, which Orca cannot resolve here",
         "stepStopped": "Before launch '{{value0}}' was stopped",
-        "stepFailed": "Before launch '{{value0}}' did not exit with 0 ({{value1}})"
+        "stepFailed": "Before launch '{{value0}}' did not exit with 0 ({{value1}})",
+        "memberFailed": "'{{value0}}' did not exit with 0, so the rest of the compound was not started"
       },
       "debugNamed": "Debug '{{value0}}'",
       "menu": "Run configurations",
@@ -18578,7 +18579,7 @@
       "add": {
         "command": "Add command configuration",
         "debug": "Add debug configuration",
-        "compound": "Add compound (start several together)"
+        "compound": "Add compound (start several together or in order)"
       }
     },
     "widget": {
@@ -18603,6 +18604,29 @@
       "status": "Debugging",
       "restart": "Restart debugging '{{value0}}'",
       "stop": "Stop debugging '{{value0}}'"
+    },
+    "compound": {
+      "wait": {
+        "label": "Then",
+        "none": "Start next now",
+        "delay": "Wait seconds",
+        "exit": "Wait until it exits 0",
+        "seconds": "Seconds to wait"
+      },
+      "sequential": "Start one by one, in this order",
+      "together": "Start all together",
+      "scanning": "Looking for runs in this workspace…",
+      "nothingToAdd": "No runs found in this workspace and no saved configurations",
+      "add": "Add a run…",
+      "detected": "Detected in workspace",
+      "saved": "Saved configurations",
+      "sequentialHint": "Each run gets its own terminal. \"Wait until it exits 0\" suits build or migrate steps; if one fails, the rest do not start. Use a delay for servers that keep running.",
+      "savedToast": "Saved '{{value0}}' to Run configurations",
+      "actionLabel": "Compound: start several runs",
+      "actionShort": "Compound",
+      "addedEverything": "Every run found is already added",
+      "search": "Filter runs",
+      "noMatch": "No matching runs"
     }
   },
   "python": {

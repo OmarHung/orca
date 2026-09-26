@@ -18510,7 +18510,8 @@
         "stepFailed": "启动前步骤 '{{value0}}' 没有以 0 退出（{{value1}}）",
         "stepNotCommand": "“启动前”只能运行命令配置；'{{value0}}' 不是命令配置",
         "stepStopped": "启动前步骤 '{{value0}}' 已被停止",
-        "variable": "'{{value0}}' 使用了 {{value1}}，Orca 在这里无法解析"
+        "variable": "'{{value0}}' 使用了 {{value1}}，Orca 在这里无法解析",
+        "memberFailed": "「{{value0}}」没有以 0 退出，compound 中后面的项目没有启动"
       },
       "form": {
         "add": "添加…",
@@ -18527,7 +18528,7 @@
         "envHint": "每行一个 NAME=value。",
         "file": "文件",
         "launchProfile": "启动配置文件",
-        "members": "一起启动的配置",
+        "members": "要启动的配置",
         "membersHint": "先执行所有成员的“启动前”步骤。最多只能包含一个调试配置。",
         "missingReference": "{{value0}}（不存在）",
         "module": "模块",
@@ -18569,7 +18570,7 @@
       "add": {
         "command": "添加命令配置",
         "debug": "添加调试配置",
-        "compound": "添加组合配置（同时启动多个）"
+        "compound": "添加组合（同时或依序启动多个）"
       }
     },
     "widget": {
@@ -18594,6 +18595,29 @@
       "status": "调试中",
       "restart": "重新调试 '{{value0}}'",
       "stop": "停止调试 '{{value0}}'"
+    },
+    "compound": {
+      "wait": {
+        "label": "然後",
+        "none": "立即启动下一个",
+        "delay": "等待秒数",
+        "exit": "等它结束（exit 0）",
+        "seconds": "等待秒数"
+      },
+      "sequential": "依序逐一启动",
+      "together": "全部同时启动",
+      "scanning": "正在查找此工作区的 run…",
+      "nothingToAdd": "此工作区没有找到可执行的 run，也没有已保存的配置",
+      "add": "添加 run…",
+      "detected": "工作区中检测到的",
+      "saved": "已保存的配置",
+      "sequentialHint": "每个 run 都有自己的终端。「等它结束（exit 0）」适合 build、migrate 这类步骤，失败时后面的不会启动；一直运行的服务请改用等待秒数。",
+      "savedToast": "已将「{{value0}}」保存到 Run 配置",
+      "actionLabel": "Compound：一次启动多个 run",
+      "actionShort": "Compound",
+      "addedEverything": "找到的 run 都已加入",
+      "search": "筛选 run",
+      "noMatch": "没有符合的 run"
     }
   },
   "python": {

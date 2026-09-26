@@ -13,7 +13,11 @@ describe('planRunConfiguration', () => {
     const all = configs([
       { name: 'Restore', command: 'dotnet restore' },
       { name: 'Build', command: 'dotnet build', beforeLaunch: ['Restore'] },
-      { name: 'Migrate', command: 'dotnet ef database update', beforeLaunch: ['Build'] },
+      {
+        name: 'Migrate',
+        command: 'dotnet ef database update',
+        beforeLaunch: ['Build']
+      },
       {
         name: 'API',
         target: { kind: 'dotnet-project', projectFile: 'Api.csproj' },
@@ -42,6 +46,43 @@ describe('planRunConfiguration', () => {
       expect(names(result.plan.beforeLaunch)).toEqual(['Build'])
       expect(names(result.plan.launches)).toEqual(['Web', 'Worker'])
     }
+  })
+
+  it('keeps member order for a sequential compound and maps each wait to its last launch', () => {
+    const all = configs([
+      { name: 'Migrate', command: 'dotnet ef database update' },
+      { name: 'API', command: 'dotnet run' },
+      { name: 'Worker', command: 'pnpm worker' },
+      { name: 'Backend', configurations: ['API', 'Worker'] },
+      { name: 'Web', command: 'pnpm dev' },
+      {
+        name: 'All',
+        configurations: ['Migrate', 'Backend', 'Web'],
+        sequential: true,
+        waitAfter: {
+          Migrate: { kind: 'exit' },
+          Backend: { kind: 'delay', seconds: 5 }
+        }
+      }
+    ])
+    const result = planRunConfiguration(all, 'All')
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(names(result.plan.launches)).toEqual(['Migrate', 'API', 'Worker', 'Web'])
+      expect(result.plan.sequential).toBe(true)
+      expect(result.plan.waitAfter).toEqual({
+        Migrate: { kind: 'exit' },
+        Worker: { kind: 'delay', seconds: 5 }
+      })
+    }
+  })
+
+  it('still detects a sequential compound that lists itself', () => {
+    const all = configs([{ name: 'Loop', configurations: ['Loop'], sequential: true }])
+    expect(planRunConfiguration(all, 'Loop')).toEqual({
+      ok: false,
+      error: { code: 'cycle', reference: 'Loop' }
+    })
   })
 
   it('rejects missing references, cycles and non-command steps', () => {
@@ -101,7 +142,10 @@ describe('planRunConfiguration', () => {
     const entries: unknown[] = [{ name: 'Leaf', command: 'x' }]
     for (let level = 0; level < 30; level += 1) {
       const child = level === 0 ? 'Leaf' : `C${level - 1}`
-      entries.push({ name: `C${level}`, configurations: [child, `${child} `, child] })
+      entries.push({
+        name: `C${level}`,
+        configurations: [child, `${child} `, child]
+      })
     }
     const result = planRunConfiguration(configs(entries), 'C29')
     expect(result.ok && names(result.plan.launches)).toEqual(['Leaf'])
