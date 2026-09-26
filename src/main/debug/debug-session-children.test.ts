@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createDapMessageReader, encodeDapMessage } from './dap-framing'
 import type { DapTransport, DapTransportClose } from './dap-transport'
-import { startDebugSession } from './debug-session'
+import { selectExceptionFilters, startDebugSession } from './debug-session'
 
 type Message = {
   seq: number
@@ -236,5 +236,21 @@ describe('startDebugSession with child sessions', () => {
         expect.objectContaining({ type: 'response', command: 'startDebugging', success: false })
       )
     )
+  })
+})
+
+describe('selectExceptionFilters', () => {
+  const offered = [
+    { filter: 'raised', label: 'Raised Exceptions' },
+    { filter: 'uncaught', label: 'Uncaught Exceptions', default: true }
+  ]
+
+  it("uses the adapter's defaults until the user chooses", () => {
+    expect(selectExceptionFilters(offered, undefined)).toEqual(['uncaught'])
+  })
+
+  it('keeps only requested filters the adapter offers', () => {
+    expect(selectExceptionFilters(offered, ['raised', 'gone'])).toEqual(['raised'])
+    expect(selectExceptionFilters(offered, [])).toEqual([])
   })
 })

@@ -38,6 +38,7 @@ const StartRequestSchema = z.object({
   worktreeId: z.string().min(1),
   cwd: AbsolutePathSchema,
   target: LaunchTargetSchema,
+  exceptionFilters: z.array(z.string().min(1).max(100)).max(20).optional(),
   breakpoints: z.record(
     z.string().min(1),
     z.array(

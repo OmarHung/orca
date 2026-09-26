@@ -30,14 +30,24 @@ export type DebugStartRequest = {
   cwd: string
   breakpoints: DebugBreakpointsByFile
   target: DebugLaunchTarget
+  /** Exception filters the user turned on; the adapter's defaults apply when omitted. */
+  exceptionFilters?: string[]
 }
 
 export type DebugStartResult = { ok: true; sessionId: string } | { ok: false; message: string }
 
 export type DebugSessionPhase = 'installing-adapter' | 'starting' | 'running' | 'ended'
 
+export type DebugExceptionFilter = { filter: string; label: string; default?: boolean }
+
 export type DebugSessionEvent =
   | { kind: 'phase'; sessionId: string; phase: DebugSessionPhase; message?: string }
+  | {
+      kind: 'capabilities'
+      sessionId: string
+      adapterId: string
+      exceptionFilters: DebugExceptionFilter[]
+    }
   | { kind: 'dap-event'; sessionId: string; event: DebugProtocol.Event }
 
 /** DAP requests the renderer may send to a running session. */
@@ -52,6 +62,7 @@ export const DEBUG_RENDERER_COMMANDS = [
   'stepOut',
   'pause',
   'setBreakpoints',
+  'setExceptionBreakpoints',
   'evaluate'
 ] as const
 

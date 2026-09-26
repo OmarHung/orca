@@ -43,6 +43,26 @@ describe('DebugPathMapping', () => {
     expect(mapping.responseFromAdapter('variables', { variables: [] })).toEqual({ variables: [] })
   })
 
+  it('maps breakpoint events back to the editor path', async () => {
+    const mapping = new DebugPathMapping(resolve)
+    await mapping.toAdapter('/var/w/app.js')
+
+    expect(
+      mapping.eventFromAdapter({
+        seq: 1,
+        type: 'event',
+        event: 'breakpoint',
+        body: {
+          reason: 'changed',
+          breakpoint: { verified: true, line: 3, source: { path: '/private/var/w/app.js' } }
+        }
+      }).body
+    ).toEqual({
+      reason: 'changed',
+      breakpoint: { verified: true, line: 3, source: { path: '/var/w/app.js' } }
+    })
+  })
+
   it('keeps paths it cannot resolve', async () => {
     const mapping = new DebugPathMapping(resolve)
 

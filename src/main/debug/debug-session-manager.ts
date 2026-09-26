@@ -92,12 +92,28 @@ export class DebugSessionManager {
       ...(prepared.openChildTransport ? { openChildTransport: prepared.openChildTransport } : {}),
       launchArguments: prepared.launchArguments,
       breakpoints: await paths.breakpointsToAdapter(request.breakpoints),
+      ...(request.exceptionFilters ? { exceptionFilters: request.exceptionFilters } : {}),
+      onCapabilities: (capabilities) =>
+        sink.send({
+          kind: 'capabilities',
+          sessionId,
+          adapterId: prepared.adapterId,
+          exceptionFilters: (capabilities.exceptionBreakpointFilters ?? []).map((option) => ({
+            filter: option.filter,
+            label: option.label,
+            ...(option.default ? { default: true } : {})
+          }))
+        }),
       emit: (event) => {
         if (event.kind === 'phase' && event.phase === 'ended') {
           this.sessions.delete(sessionId)
           prepared.dispose()
         }
-        sink.send(event)
+        sink.send(
+          event.kind === 'dap-event'
+            ? { ...event, event: paths.eventFromAdapter(event.event) }
+            : event
+        )
       }
     })
     this.sessions.set(sessionId, { session, paths })
