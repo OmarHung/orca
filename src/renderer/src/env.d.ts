@@ -2,7 +2,7 @@
 
 import type { PaneManager } from '@/lib/pane-manager/pane-manager'
 import type { OnboardingFeatureSetupDeps } from '@/components/onboarding/onboarding-feature-setup'
-import type { languages } from 'monaco-editor'
+import type { json, languages } from 'monaco-editor'
 import type { MonacoE2EProbe } from './components/editor/monaco-e2e-probe'
 import type { TerminalWorktreeParkingDebugVerdict } from './components/terminal-pane/terminal-parking-e2e-overrides'
 import type { TerminalPtyPreSpawnE2EBarrier } from './components/terminal-pane/terminal-pty-pre-spawn-e2e-barrier'
@@ -55,6 +55,18 @@ declare module 'monaco-editor/esm/vs/language/typescript/lib/typescriptServices.
   export const typescript: {
     ScriptSnapshot: { fromString(text: string): unknown }
     createLanguageService(host: object): { getNavigationTree(fileName: string): unknown }
+  }
+}
+
+// The class Monaco's JSON worker runs; outline tests drive it in-process.
+declare module 'monaco-editor/esm/vs/language/json/jsonWorker.js' {
+  type MirrorModel = { uri: { toString(): string }; version: number; getValue(): string }
+  export class JSONWorker {
+    constructor(
+      ctx: { getMirrorModels(): MirrorModel[] },
+      createData: { languageId: string; languageSettings: object; enableSchemaRequest: boolean }
+    )
+    parseJSONDocument(uri: string): Promise<json.JSONDocument | null>
   }
 }
 
