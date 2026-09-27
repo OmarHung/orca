@@ -40,6 +40,8 @@ export type DatabaseExecuteResult = {
   transaction?: DatabaseTransactionState
   /** Where unqualified names now resolve, when a statement switched it (USE, SET search_path). */
   schema?: string
+  /** The console's database, when a statement switched it (SQL Server's USE). */
+  database?: string
 }
 
 export type DatabaseRowsPage = {

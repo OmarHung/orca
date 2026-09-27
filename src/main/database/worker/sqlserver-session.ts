@@ -1,3 +1,4 @@
+import type { Connection } from 'tedious'
 import type { DatabaseDdlTarget } from '../../../shared/database/database-ddl-types'
 import type {
   DatabaseIntrospectResult,
@@ -5,11 +6,15 @@ import type {
 } from '../../../shared/database/database-introspection-types'
 import type {
   DatabaseExecuteResult,
-  DatabaseRowsPage,
-  DatabaseTransactionMode
+  DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
 import { ConsolePool } from './console-pool'
-import type { DatabaseDriverCallbacks, DatabaseDriverSession } from './database-driver'
+import { quoteSqlName } from '../../../shared/database/sql-identifiers'
+import type {
+  DatabaseDriverCallbacks,
+  DatabaseDriverSession,
+  DatabaseExecuteOptions
+} from './database-driver'
 import type { DatabaseChangeTransaction } from './table-change-transaction'
 import {
   SqlServerRequestQueue,
@@ -33,25 +38,49 @@ class SqlServerSession implements DatabaseDriverSession {
     private readonly connection: SqlServerConnectionDraft,
     private readonly password: string | null,
     private readonly meta: SqlServerRequestQueue,
-    readonly serverVersion: string
-  ) {}
+    readonly serverVersion: string,
+    private readonly defaultDatabase: string
+  ) {
+    this.metaDatabase = defaultDatabase
+  }
+
+  // Where the metadata session is; catalog reads of another database USE it first.
+  private metaDatabase: string
+
+  private onMeta<T>(
+    database: string | undefined,
+    task: (client: Connection) => Promise<T>
+  ): Promise<T> {
+    return this.meta.run(async (client) => {
+      const wanted = database ?? this.defaultDatabase
+      if (wanted !== this.metaDatabase) {
+        await querySqlServerRows(client, `USE ${quoteSqlName(wanted, 'sqlserver')}`)
+        this.metaDatabase = wanted
+      }
+      return task(client)
+    })
+  }
 
   introspect(target: DatabaseIntrospectTarget): Promise<DatabaseIntrospectResult> {
-    return this.meta.run((client) => introspectSqlServer(client, target))
+    const database = target.level === 'databases' ? undefined : target.database
+    return this.onMeta(database, (client) => introspectSqlServer(client, target))
   }
 
   ddl(target: DatabaseDdlTarget): Promise<string> {
-    return this.meta.run((client) => sqlServerDdl(client, target))
+    return this.onMeta(target.database, (client) => sqlServerDdl(client, target))
   }
 
   async execute(
     consoleId: string,
     sql: string,
     pageSize: number,
-    mode: DatabaseTransactionMode
+    { mode, database }: DatabaseExecuteOptions
   ): Promise<DatabaseExecuteResult> {
     const target = await this.consoles.acquire(consoleId)
-    return target.transactions.run(mode, sql, () => target.execute(sql, pageSize))
+    await target.database.prepare(database)
+    const result = await target.transactions.run(mode, sql, () => target.execute(sql, pageSize))
+    const switched = await target.database.afterRun(sql, result)
+    return switched === undefined ? result : { ...result, database: switched }
   }
 
   async fetch(consoleId: string, resultId: string, pageSize: number): Promise<DatabaseRowsPage> {
@@ -97,13 +126,14 @@ export async function openSqlServerSession(
   try {
     const [row] = await querySqlServerRows(
       client,
-      "select cast(serverproperty('ProductVersion') as nvarchar(128)) as version"
+      "select cast(serverproperty('ProductVersion') as nvarchar(128)) as version, db_name() as db"
     )
     return new SqlServerSession(
       connection,
       password,
       new SqlServerRequestQueue(client),
-      String(row?.version ?? '')
+      String(row?.version ?? ''),
+      String(row?.db ?? '')
     )
   } catch (error) {
     await closeSqlServer(client)

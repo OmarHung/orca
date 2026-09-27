@@ -15,6 +15,8 @@ export type DatabaseConsoleTarget = {
   dialect: SqlDialect
   /** Resolves unqualified names for completion; null uses the connection's current schema. */
   schema: string | null
+  /** The console's database (PostgreSQL, SQL Server); null is the connection's. */
+  database: string | null
 }
 
 // Console models live under their own scheme so .sql files in the file editor keep Monaco's defaults.
@@ -62,7 +64,7 @@ async function provideCompletions(
     text: model.getValue(),
     offset: model.getOffsetAt(position),
     dialect: target.dialect,
-    catalog: sqlCatalogFor(target.connectionId),
+    catalog: sqlCatalogFor(target.connectionId, target.database),
     currentSchema: target.schema
   })
   const range = {
