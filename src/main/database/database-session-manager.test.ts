@@ -239,6 +239,21 @@ describe('DatabaseSessionManager', () => {
     expect(await pending).toMatchObject({ ok: false, error: { code: 'unavailable' } })
   })
 
+  it('says why a session was lost while it was still connecting', async () => {
+    let lose: (message: string) => void = () => undefined
+    const { manager, events, workers } = setup((command) => {
+      if (command.type === 'connect') {
+        lose('the SSH tunnel stopped')
+      }
+      return connectOk(command)
+    })
+    lose = (message) => workers[0]?.loseConnection(message)
+    const expected = { message: 'Connection lost: the SSH tunnel stopped' }
+    expect(await manager.connect(connection, null)).toMatchObject({ ok: false, error: expected })
+    expect(events.at(-1)).toMatchObject({ state: 'error', ...expected })
+    expect(manager.isConnected(connection.id)).toBe(false)
+  })
+
   it('does not repeat "Connection lost" when the driver already says it', async () => {
     const { manager, events, workers } = setup()
     await manager.connect(connection, null)
