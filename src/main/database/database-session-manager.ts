@@ -7,6 +7,7 @@ import {
 } from '../../shared/database/database-connection-types'
 import type { DatabaseError, DatabaseResult } from '../../shared/database/database-query-types'
 import type { DatabaseSessionEvent } from '../../shared/database/database-session-types'
+import type { DatabaseJobEvent } from '../../shared/database/database-dump-types'
 import { DatabaseWorkerClient, type DatabaseWorkerPort } from './database-worker-client'
 import type {
   DatabaseWorkerCommandOf,
@@ -57,6 +58,7 @@ export class DatabaseSessionManager {
     private readonly deps: {
       spawnWorker: (driver: DatabaseDriver) => DatabaseWorkerPort
       emit: (event: DatabaseSessionEvent) => void
+      emitJobProgress?: (event: DatabaseJobEvent) => void
       /** Absent where Orca has no SSH stack (e.g. tests): tunneled connections then fail. */
       openTunnel?: OpenDatabaseTunnel
     }
@@ -74,8 +76,11 @@ export class DatabaseSessionManager {
     this.deps.emit({ kind: 'session-state', connectionId, state: 'connecting' })
     let entry: SessionEntry
     try {
-      const client = new DatabaseWorkerClient(this.deps.spawnWorker(connection.driver), (message) =>
-        this.handleConnectionLost(connectionId, entry, message)
+      const client = new DatabaseWorkerClient(
+        this.deps.spawnWorker(connection.driver),
+        (message) => this.handleConnectionLost(connectionId, entry, message),
+        (jobId, progress) =>
+          this.deps.emitJobProgress?.({ kind: 'job-progress', connectionId, jobId, progress })
       )
       entry = { client, serverVersion: null, connecting: null, tunnel: null, lostReason: null }
     } catch (error) {

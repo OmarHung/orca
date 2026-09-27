@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron'
-import type { DatabaseSessionEvent } from '../../shared/database/database-session-types'
+import type { DatabasePageEvent } from '../../shared/database/database-session-types'
 import type { PreloadApi } from '../api-types'
 
 export const databaseApi = {
@@ -24,8 +24,11 @@ export const databaseApi = {
   writeConsole: (ref, text) => ipcRenderer.invoke('database:writeConsole', ref, text),
   pickSqliteFile: () => ipcRenderer.invoke('database:pickSqliteFile'),
   saveExport: (request) => ipcRenderer.invoke('database:saveExport', request),
+  pickDumpDestination: (request) => ipcRenderer.invoke('database:pickDumpDestination', request),
+  dump: (request) => ipcRenderer.invoke('database:dump', request),
+  cancelJob: (ref) => ipcRenderer.invoke('database:cancelJob', ref),
   onEvent: (callback) => {
-    const listener = (_event: Electron.IpcRendererEvent, event: DatabaseSessionEvent) =>
+    const listener = (_event: Electron.IpcRendererEvent, event: DatabasePageEvent) =>
       callback(event)
     ipcRenderer.on('database:event', listener)
     return () => ipcRenderer.removeListener('database:event', listener)

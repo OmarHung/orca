@@ -1,4 +1,5 @@
 import type { DatabaseConnectionDraft } from './database-connection-types'
+import type { DatabaseJobEvent } from './database-dump-types'
 
 export type DatabaseSessionState = 'disconnected' | 'connecting' | 'connected' | 'error'
 
@@ -10,6 +11,9 @@ export type DatabaseSessionEvent = {
   message?: string
   serverVersion?: string
 }
+
+/** Everything main pushes on the `database:event` channel. */
+export type DatabasePageEvent = DatabaseSessionEvent | DatabaseJobEvent
 
 export type DatabaseSaveConnectionRequest = {
   /** Absent creates a new connection. */
