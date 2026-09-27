@@ -20,6 +20,8 @@ import {
   queryMysqlRows,
   type MysqlConnectionDraft
 } from './mysql-client-factory'
+import type { DumpSource } from './dump/dump-source'
+import { MysqlDumpSource } from './dump/mysql-dump-source'
 import { MysqlConsole } from './mysql-console'
 import { mysqlDdl } from './mysql-ddl'
 import { introspectMysql } from './mysql-introspection'
@@ -44,6 +46,13 @@ class MysqlSession implements DatabaseDriverSession {
 
   ddl(target: DatabaseDdlTarget): Promise<string> {
     return mysqlDdl(this.metaClient, target)
+  }
+
+  // MySQL's databases are its schemas, so every dump object already names its own.
+  async openDumpSource(): Promise<DumpSource> {
+    return new MysqlDumpSource(
+      await connectMysqlClient(this.connection, this.password, () => undefined)
+    )
   }
 
   async execute(

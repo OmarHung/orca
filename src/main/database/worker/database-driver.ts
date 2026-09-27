@@ -8,6 +8,7 @@ import type {
   DatabaseExecuteResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
+import type { DumpSource } from './dump/dump-source'
 
 export type DatabaseExecuteOptions = {
   /** Where unqualified names should resolve; ignored by drivers with no per-session switch. */
@@ -35,6 +36,8 @@ export type DatabaseDriverSession = {
   /** Resolves true when the server accepted the cancel request. */
   cancel(consoleId: string): Promise<boolean>
   closeConsole(consoleId: string): Promise<void>
+  /** A session of its own for one dump, in `database` when given, else the connection's. */
+  openDumpSource(database: string | undefined): Promise<DumpSource>
   close(): Promise<void>
 }
 
