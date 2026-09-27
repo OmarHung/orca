@@ -7,6 +7,8 @@ import type {
   DatabaseRowsPage,
   DatabaseTransactionState
 } from '../../../shared/database/database-query-types'
+import { quoteSqlName } from '../../../shared/database/sql-identifiers'
+import { ConsoleSchema } from './console-schema'
 import { ConsoleTransactions } from './console-transactions'
 import { encodeTextCell } from './database-cell-encoding'
 import type { PostgresTypeNames } from './postgres-type-names'
@@ -64,6 +66,19 @@ export class PostgresConsole {
       await this.closeOpenResult()
       await this.client.query('BEGIN')
     }
+  })
+
+  // Why keep public: extensions (uuid-ossp, pgcrypto…) usually install their functions there.
+  readonly schema = new ConsoleSchema({
+    apply: async (name) => {
+      await this.closeOpenResult()
+      const path = name === 'public' ? 'public' : `${quoteSqlName(name, 'postgres')}, public`
+      await this.client.query(`SET search_path TO ${path}`)
+    },
+    current: async () =>
+      (await this.client.query<{ schema: string | null }>('select current_schema() as schema'))
+        .rows[0]?.schema ?? null,
+    mayChange: (sql) => /\bsearch_path\b/i.test(sql)
   })
 
   constructor(
