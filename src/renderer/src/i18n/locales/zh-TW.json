@@ -18891,6 +18891,22 @@
       "showValue": "檢視值",
       "truncated": "只顯示 {{value1}} 個字元中的前 {{value0}} 個"
     },
+    "history": {
+      "cancelClear": "取消",
+      "cancelled": "已取消",
+      "clear": "清除",
+      "clearFailed": "無法清除查詢歷史",
+      "clearHistory": "清除歷史…",
+      "confirmClear": "清除 {{value0}} 條語句？",
+      "confirmClearOne": "清除 1 條語句？",
+      "count": "{{value0}} 條語句",
+      "countOne": "1 條語句",
+      "empty": "在主控台中執行的語句會顯示在這裡。",
+      "failed": "失敗",
+      "noMatches": "沒有語句符合搜尋。",
+      "search": "搜尋查詢歷史",
+      "title": "查詢歷史"
+    },
     "output": {
       "cancelled": "已取消",
       "command": "{{value0}} 完成，耗時 {{value1}} 毫秒",
