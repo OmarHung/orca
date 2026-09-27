@@ -6,14 +6,10 @@ import type {
 } from '../../../shared/database/database-query-types'
 import { quoteSqlName } from '../../../shared/database/sql-identifiers'
 import { ConsoleSchema } from './console-schema'
-import { ConsoleTransactions } from './console-transactions'
 import { PagedBatchReader } from './database-batch-reader'
 import { endMysqlClient, queryMysqlRows } from './mysql-client-factory'
 import { encodeMysqlRow, mysqlColumns } from './mysql-values'
 import { commandRowCount, leadingKeyword } from './statement-keyword'
-
-// SERVER_STATUS_IN_TRANS in the OK packet's status flags.
-const IN_TRANSACTION_FLAG = 1
 
 function headerNumber(header: unknown, key: string): number | null {
   const value: unknown =
@@ -28,16 +24,6 @@ function affectedRows(header: unknown): number | null {
 /** One console's MySQL session; its latest statement stays open (flow paused) until fully read. */
 export class MysqlConsole {
   private reader: PagedBatchReader | null = null
-  readonly transactions = new ConsoleTransactions({
-    // Why DO 0: it changes nothing, and its OK packet carries the session's status flags.
-    state: async () =>
-      ((await this.statusFlags('DO 0')) & IN_TRANSACTION_FLAG) === 0 ? 'none' : 'open',
-    setManual: async (manual) => {
-      await this.abandonOpen()
-      await this.control(`SET autocommit = ${manual ? 0 : 1}`)
-    }
-  })
-
   // In MySQL a schema is a database, so the console switches with USE.
   readonly schema = new ConsoleSchema({
     apply: async (name) => {
@@ -111,14 +97,6 @@ export class MysqlConsole {
   private control(sql: string): Promise<void> {
     return new Promise((resolve, reject) => {
       this.client.query(sql, (error) => (error ? reject(error) : resolve()))
-    })
-  }
-
-  private statusFlags(sql: string): Promise<number> {
-    return new Promise((resolve, reject) => {
-      this.client.query(sql, (error, result) =>
-        error ? reject(error) : resolve(headerNumber(result, 'serverStatus') ?? 0)
-      )
     })
   }
 

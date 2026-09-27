@@ -2,19 +2,14 @@ import { create } from 'zustand'
 import { createBrowserUuid } from '@/lib/browser-uuid'
 import type {
   DatabaseQueryResult,
-  DatabaseRowsResult,
-  DatabaseTransactionState
+  DatabaseRowsResult
 } from '../../../../../shared/database/database-query-types'
 import { DATABASE_DEFAULT_PAGE_SIZE } from '../../../../../shared/database/database-session-types'
 import type { SqlStatementRange } from '../../../../../shared/database/sql-statement-splitter'
 import { asDatabaseResult, useDatabaseConnectionsStore } from '../database-connections-store'
 import { useDatabasePageStore } from '../database-page-store'
 import type { DatabaseRunTarget } from '../database-page-tabs'
-import {
-  executeReconnecting,
-  transactionLostMessage,
-  type DatabaseRunOptions
-} from './database-console-execute'
+import { executeReconnecting, type DatabaseRunOptions } from './database-console-execute'
 import { offsetOfStatementLine } from './database-console-statements'
 import { invalidateSqlCatalog } from './sql-completion-catalog'
 
@@ -53,8 +48,6 @@ export type DatabaseConsoleRunState = {
   log: DatabaseConsoleLogEntry[]
   /** Offset into the console text of the last error, for the editor marker. */
   errorOffset: number | null
-  /** The console session's transaction, as of its last statement. */
-  transaction: DatabaseTransactionState
 }
 
 const EMPTY_RUN_STATE: DatabaseConsoleRunState = {
@@ -62,8 +55,7 @@ const EMPTY_RUN_STATE: DatabaseConsoleRunState = {
   results: [],
   activeResultId: OUTPUT_RESULT_ID,
   log: [],
-  errorOffset: null,
-  transaction: 'none'
+  errorOffset: null
 }
 
 type DatabaseConsoleRunStore = {
@@ -76,8 +68,6 @@ type DatabaseConsoleRunStore = {
   fetchMore: (tab: DatabaseRunTarget, resultTabId: string) => Promise<void>
   cancel: (tab: DatabaseRunTarget) => Promise<void>
   selectResult: (tabId: string, resultId: string) => void
-  /** The connection closed under these tabs; any transaction they held is gone. */
-  endTransactions: (tabIds: readonly string[]) => void
   dispose: (tabId: string) => void
 }
 
@@ -166,15 +156,7 @@ export const useDatabaseConsoleRunStore = create<DatabaseConsoleRunStore>((set, 
           return
         }
         for (const statement of statements) {
-          const inTransaction = getConsoleRunState(get().consoles, tab.id).transaction !== 'none'
-          const response = await executeReconnecting(tab, statement.text, {
-            ...options,
-            inTransaction
-          })
-          const transaction = response.ok ? response.value.transaction : response.error.transaction
-          if (transaction) {
-            patch(tab.id, () => ({ transaction }))
-          }
+          const response = await executeReconnecting(tab, statement.text, options)
           // A statement like USE moved the console; the schema picker follows it.
           if (response.ok && response.value.schema) {
             useDatabasePageStore.getState().setConsoleSchema(tab.id, response.value.schema)
@@ -263,16 +245,6 @@ export const useDatabaseConsoleRunStore = create<DatabaseConsoleRunStore>((set, 
 
     selectResult: (tabId, resultId) =>
       patch(tabId, () => ({ activeResultId: resultId }), { create: true }),
-
-    endTransactions: (tabIds) => {
-      for (const tabId of tabIds) {
-        if (getConsoleRunState(get().consoles, tabId).transaction === 'none') {
-          continue
-        }
-        patch(tabId, () => ({ transaction: 'none' }))
-        appendLog(tabId, '', { kind: 'error', message: transactionLostMessage() })
-      }
-    },
 
     dispose: (tabId) =>
       set((state) => {

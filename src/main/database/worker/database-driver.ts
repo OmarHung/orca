@@ -6,12 +6,10 @@ import type {
 } from '../../../shared/database/database-introspection-types'
 import type {
   DatabaseExecuteResult,
-  DatabaseRowsPage,
-  DatabaseTransactionMode
+  DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
 
 export type DatabaseExecuteOptions = {
-  mode: DatabaseTransactionMode
   /** Where unqualified names should resolve; ignored by drivers with no per-session switch. */
   schema?: string
   /** The console's database (PostgreSQL, SQL Server); ignored where a server holds one. */

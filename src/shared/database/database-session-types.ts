@@ -1,5 +1,4 @@
 import type { DatabaseConnectionDraft } from './database-connection-types'
-import type { DatabaseTransactionMode } from './database-query-types'
 
 export type DatabaseSessionState = 'disconnected' | 'connecting' | 'connected' | 'error'
 
@@ -34,8 +33,6 @@ export type DatabaseExecuteRequest = DatabaseConsoleRef & {
   pageSize: number
   /** Console runs go to query history; table browsing's generated queries don't. */
   recordHistory?: boolean
-  /** Absent means auto-commit. */
-  transactionMode?: DatabaseTransactionMode
   /** The schema (MySQL database) the console picked; absent keeps the connection's default. */
   schema?: string
   /** The database the console picked (PostgreSQL, SQL Server); absent keeps the connection's. */

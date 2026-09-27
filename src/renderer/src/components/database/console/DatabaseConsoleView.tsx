@@ -22,7 +22,6 @@ import {
 } from './DatabaseConsoleEditor'
 import { DatabaseQueryHistoryPopover } from './DatabaseQueryHistoryPopover'
 import { DatabaseSchemaSelect } from './DatabaseSchemaSelect'
-import { DatabaseTransactionControls } from './DatabaseTransactionControls'
 import { DatabaseResultsPane } from './DatabaseResultsPane'
 import { getConsoleRunState, useDatabaseConsoleRunStore } from './database-console-run-store'
 import { useDatabaseConsoleText } from './use-database-console-text'
@@ -41,9 +40,6 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
   const editorRef = useRef<editor.ICodeEditor | null>(null)
   const running = useDatabaseConsoleRunStore(
     (state) => getConsoleRunState(state.consoles, tab.id).running
-  )
-  const inTransaction = useDatabaseConsoleRunStore(
-    (state) => getConsoleRunState(state.consoles, tab.id).transaction !== 'none'
   )
   const errorOffset = useDatabaseConsoleRunStore(
     (state) => getConsoleRunState(state.consoles, tab.id).errorOffset
@@ -72,18 +68,11 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
     (statements: SqlStatementRange[]) =>
       void run(tab, statements, {
         recordHistory: true,
-        transactionMode: tab.transactionMode,
         schema: tab.schema ?? undefined,
         database: tab.database ?? undefined
       }),
     [run, tab]
   )
-  const endTransaction = (sql: 'COMMIT' | 'ROLLBACK'): void =>
-    void run(tab, [{ start: 0, end: sql.length, terminatorEnd: sql.length, text: sql }], {
-      transactionMode: tab.transactionMode,
-      schema: tab.schema ?? undefined,
-      database: tab.database ?? undefined
-    })
   const handleEditorReady = useCallback((instance: editor.ICodeEditor | null) => {
     editorRef.current = instance
   }, [])
@@ -142,15 +131,8 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
         <div className="ml-2 flex items-center gap-1">
           <DatabaseSchemaSelect
             tab={tab}
-            // Why locked in a transaction: PostgreSQL rolls a SET back with it.
-            disabled={running || inTransaction}
+            disabled={running}
             onMenuClosed={() => editorRef.current?.focus()}
-          />
-          <DatabaseTransactionControls
-            tab={tab}
-            running={running}
-            onEnd={endTransaction}
-            onModeMenuClosed={() => editorRef.current?.focus()}
           />
         </div>
         {running ? <Loader2 className="size-3.5 animate-spin text-muted-foreground" /> : null}

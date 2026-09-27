@@ -7,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
 import { FormField } from '../../run/RunConfigurationFormField'
 
 /** Label + input, with the label also naming the input for assistive tech. */
@@ -61,22 +60,5 @@ export function SelectField<T extends string>({
         </SelectContent>
       </Select>
     </FormField>
-  )
-}
-
-export function SwitchField({
-  label,
-  checked,
-  onChange
-}: {
-  label: string
-  checked: boolean
-  onChange: (checked: boolean) => void
-}): React.JSX.Element {
-  return (
-    <label className="flex h-9 items-center gap-2 text-sm">
-      <Switch checked={checked} onCheckedChange={onChange} />
-      {label}
-    </label>
   )
 }
