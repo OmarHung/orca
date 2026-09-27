@@ -12,7 +12,7 @@ type FakeConsole = {
 
 function fakePool(options: { openTransaction: boolean }) {
   let opened = 0
-  const pool = new ConsolePool<FakeConsole>(async (onLost) => {
+  const pool = new ConsolePool<FakeConsole>(async (_consoleId, onLost) => {
     opened += 1
     const transactions = new ConsoleTransactions({
       state: async () => (options.openTransaction ? 'open' : 'none'),
