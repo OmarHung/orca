@@ -3,7 +3,11 @@ import { serverConnectionFromUrl } from '../../../src/main/database/worker/datab
 
 // Orca's database tools are read-only, so e2e fixtures are written straight through the drivers.
 
-const DRIVERS = { 'postgres:': 'postgres', 'mysql:': 'mysql', 'sqlserver:': 'sqlserver' } as const
+const DRIVERS = new Map([
+  ['postgres:', 'postgres'],
+  ['mysql:', 'mysql'],
+  ['sqlserver:', 'sqlserver']
+] as const)
 
 /** Runs `statements` on a writable connection to the server behind a test URL. */
 export async function adminSql(
@@ -12,7 +16,7 @@ export async function adminSql(
   options: { database?: string; ignoreErrors?: boolean } = {}
 ): Promise<void> {
   const parsed = new URL(url)
-  const driver = DRIVERS[parsed.protocol as keyof typeof DRIVERS]
+  const driver = DRIVERS.get(parsed.protocol)
   if (!driver) {
     throw new Error(`no test driver for ${parsed.protocol}`)
   }
