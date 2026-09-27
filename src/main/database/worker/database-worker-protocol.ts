@@ -7,8 +7,7 @@ import type {
 import type {
   DatabaseExecuteResult,
   DatabaseResult,
-  DatabaseRowsPage,
-  DatabaseTransactionMode
+  DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
 
 // Must stay electron-free: imported by the worker thread entry.
@@ -28,7 +27,6 @@ export type DatabaseWorkerCommand =
       consoleId: string
       sql: string
       pageSize: number
-      transactionMode?: DatabaseTransactionMode
       schema?: string
       database?: string
     }

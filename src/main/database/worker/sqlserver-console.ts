@@ -5,9 +5,7 @@ import type {
 } from '../../../shared/database/database-query-types'
 import { quoteSqlName } from '../../../shared/database/sql-identifiers'
 import { ConsoleSchema } from './console-schema'
-import { ConsoleTransactions } from './console-transactions'
 import { PagedBatchReader } from './database-batch-reader'
-import { assertReadOnlySql } from './read-only-sql-guard'
 import { closeSqlServer, querySqlServerRows } from './sqlserver-client-factory'
 import {
   encodeSqlServerValue,
@@ -24,21 +22,14 @@ function columnList(
   return Array.isArray(columns) ? columns : Object.values(columns)
 }
 
-/** One console's TDS session; a batch stays open (paused) until its rows are read or dropped. */
+/**
+ * One console's TDS session; a batch stays open (paused) until its rows are read or dropped.
+ * SQL Server has no read-only session, so every batch runs in an implicit transaction that is
+ * rolled back once the batch is over: whatever slips past the read-only check never commits.
+ */
 export class SqlServerConsole {
   private reader: PagedBatchReader | null = null
-  readonly transactions = new ConsoleTransactions({
-    // XACT_STATE is -1 for a transaction an error left uncommittable.
-    state: async () => {
-      const [row] = await querySqlServerRows(this.client, 'select xact_state() as state')
-      const state = Number(row?.state)
-      return state === 1 ? 'open' : state === -1 ? 'failed' : 'none'
-    },
-    setManual: async (manual) => {
-      await this.abandonOpen()
-      await this.batch(`SET IMPLICIT_TRANSACTIONS ${manual ? 'ON' : 'OFF'}`)
-    }
-  })
+  private implicitTransactions = false
 
   // SQL Server consoles switch database, not schema: the user's default schema applies in each.
   readonly database = new ConsoleSchema({
@@ -53,15 +44,13 @@ export class SqlServerConsole {
     mayChange: (sql) => leadingKeyword(sql) === 'USE'
   })
 
-  constructor(
-    readonly client: Connection,
-    private readonly readOnly: boolean
-  ) {}
+  constructor(readonly client: Connection) {}
 
   async execute(sql: string, pageSize: number): Promise<DatabaseExecuteResult> {
     await this.abandonOpen()
-    if (this.readOnly) {
-      assertReadOnlySql(sql, 'sqlserver')
+    if (!this.implicitTransactions) {
+      await this.batch('SET IMPLICIT_TRANSACTIONS ON')
+      this.implicitTransactions = true
     }
     let reader: PagedBatchReader | null = null
     // Why a sum: DECLARE/SET report "1 row" exactly like DML does, so per-statement counts
@@ -110,7 +99,7 @@ export class SqlServerConsole {
     try {
       return await batch.firstPage()
     } finally {
-      this.releaseIfDone(batch)
+      await this.settle(batch)
     }
   }
 
@@ -122,7 +111,7 @@ export class SqlServerConsole {
     try {
       return await reader.nextPage(pageSize)
     } finally {
-      this.releaseIfDone(reader)
+      await this.settle(reader)
     }
   }
 
@@ -141,9 +130,11 @@ export class SqlServerConsole {
     await closeSqlServer(this.client)
   }
 
-  private releaseIfDone(reader: PagedBatchReader): void {
+  /** Once a batch is fully read, drops it and rolls back whatever it began. */
+  private async settle(reader: PagedBatchReader): Promise<void> {
     if (!reader.isOpen && this.reader === reader) {
       this.reader = null
+      await this.discardWrites()
     }
   }
 
@@ -153,6 +144,14 @@ export class SqlServerConsole {
     if (reader?.isOpen) {
       this.client.cancel()
       await reader.abandon()
+      await this.discardWrites()
+    }
+  }
+
+  // Why right away: an uncommitted change would hold its locks until the next statement.
+  private async discardWrites(): Promise<void> {
+    if (this.implicitTransactions) {
+      await this.batch('IF @@TRANCOUNT > 0 ROLLBACK').catch(() => undefined)
     }
   }
 }

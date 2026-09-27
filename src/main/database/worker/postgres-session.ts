@@ -9,7 +9,6 @@ import type {
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
 import { ConsolePool } from './console-pool'
-import { DatabaseWireError } from './database-error-mapping'
 import type {
   DatabaseDriverCallbacks,
   DatabaseDriverSession,
@@ -71,14 +70,12 @@ class PostgresSession implements DatabaseDriverSession {
     consoleId: string,
     sql: string,
     pageSize: number,
-    { mode, schema, database }: DatabaseExecuteOptions
+    { schema, database }: DatabaseExecuteOptions
   ): Promise<DatabaseExecuteResult> {
     await this.moveConsole(consoleId, database ?? this.defaultDatabase)
     const target = await this.consoles.acquire(consoleId)
     await target.schema.prepare(schema)
-    const result = await target.transactions.run(mode, sql, async () => ({
-      results: [await target.execute(sql, pageSize)]
-    }))
+    const result = { results: [await target.execute(sql, pageSize)] }
     const switched = await target.schema.afterRun(sql, result)
     return switched === undefined ? result : { ...result, schema: switched }
   }
@@ -105,19 +102,12 @@ class PostgresSession implements DatabaseDriverSession {
     return result.rows[0]?.cancelled === true
   }
 
-  /** A console picking another database gets a session there, unless it holds a transaction. */
+  /** A console picking another database gets a session there. */
   private async moveConsole(consoleId: string, database: string): Promise<void> {
     this.consoleDatabases.set(consoleId, database)
     const current = await this.consoles.current(consoleId)?.catch(() => null)
     if (!current || current.database === database) {
       return
-    }
-    if (current.transactions.isOpen) {
-      this.consoleDatabases.set(consoleId, current.database)
-      throw new DatabaseWireError({
-        message: 'Commit or roll back the open transaction before switching database.',
-        transaction: 'open'
-      })
     }
     await this.consoles.close(consoleId)
     this.consoleDatabases.set(consoleId, database)

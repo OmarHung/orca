@@ -13,7 +13,6 @@ const draft: DatabaseConnectionDraft = {
   database: 'app',
   user: 'dev',
   sslMode: 'prefer',
-  readOnly: false,
   passwordStorage: 'forever'
 }
 

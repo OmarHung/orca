@@ -38,24 +38,8 @@ const COMMON_KEYWORDS = [
   'THEN',
   'ELSE',
   'END',
-  'INSERT INTO',
   'VALUES',
-  'UPDATE',
   'SET',
-  'DELETE FROM',
-  'CREATE TABLE',
-  'CREATE VIEW',
-  'CREATE INDEX',
-  'ALTER TABLE',
-  'DROP TABLE',
-  'DROP VIEW',
-  'PRIMARY KEY',
-  'FOREIGN KEY',
-  'REFERENCES',
-  'DEFAULT',
-  'BEGIN',
-  'COMMIT',
-  'ROLLBACK',
   'COUNT',
   'SUM',
   'AVG',
@@ -65,11 +49,12 @@ const COMMON_KEYWORDS = [
   'CAST'
 ]
 
+// Reads only: Orca's database tools don't run statements that change anything.
 const DIALECT_KEYWORDS: Record<SqlDialect, readonly string[]> = {
-  postgres: ['LIMIT', 'OFFSET', 'RETURNING', 'ILIKE', 'ON CONFLICT', 'EXPLAIN ANALYZE'],
-  mysql: ['LIMIT', 'OFFSET', 'SHOW TABLES', 'DESCRIBE', 'ON DUPLICATE KEY UPDATE', 'EXPLAIN'],
-  sqlserver: ['TOP', 'OFFSET', 'FETCH NEXT', 'ROWS ONLY', 'OUTPUT', 'MERGE', 'EXEC'],
-  sqlite: ['LIMIT', 'OFFSET', 'RETURNING', 'PRAGMA', 'EXPLAIN QUERY PLAN']
+  postgres: ['LIMIT', 'OFFSET', 'ILIKE', 'EXPLAIN ANALYZE'],
+  mysql: ['LIMIT', 'OFFSET', 'SHOW TABLES', 'DESCRIBE', 'EXPLAIN'],
+  sqlserver: ['TOP', 'OFFSET', 'FETCH NEXT', 'ROWS ONLY', 'EXEC'],
+  sqlite: ['LIMIT', 'OFFSET', 'PRAGMA', 'EXPLAIN QUERY PLAN']
 }
 
 export function sqlKeywords(dialect: SqlDialect): readonly string[] {
