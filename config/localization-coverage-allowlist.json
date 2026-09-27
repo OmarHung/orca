@@ -404,5 +404,19 @@
     "text": "rcfile",
     "dynamic": false,
     "count": 1
+  },
+  {
+    "filePath": "src/renderer/src/components/database/table/DatabaseTableView.tsx",
+    "kind": "jsx-attribute:label",
+    "text": "WHERE",
+    "dynamic": false,
+    "count": 1
+  },
+  {
+    "filePath": "src/renderer/src/components/database/table/DatabaseTableView.tsx",
+    "kind": "jsx-attribute:label",
+    "text": "ORDER BY",
+    "dynamic": false,
+    "count": 1
   }
 ]

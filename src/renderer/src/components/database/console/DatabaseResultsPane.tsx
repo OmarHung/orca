@@ -1,16 +1,17 @@
 import React, { useCallback } from 'react'
-import { Loader2 } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
-import type { DatabaseConsoleTab } from '../database-page-store'
+import { findDatabaseConnection } from '../database-connections-store'
+import type { DatabaseRunTarget } from '../database-page-tabs'
 import { DatabaseResultGrid } from '../grid/DatabaseResultGrid'
+import { RESULT_INSERT_TABLE } from '../grid/database-grid-transfer'
 import { DatabaseConsoleOutput } from './DatabaseConsoleOutput'
+import { DatabaseResultFooter } from './DatabaseResultFooter'
 import {
   DATABASE_MAX_BUFFERED_ROWS,
   OUTPUT_RESULT_ID,
   getConsoleRunState,
-  useDatabaseConsoleRunStore,
-  type DatabaseResultTab
+  useDatabaseConsoleRunStore
 } from './database-console-run-store'
 
 function ResultTabButton({
@@ -41,44 +42,7 @@ function ResultTabButton({
   )
 }
 
-function ResultFooter({ result }: { result: DatabaseResultTab }): React.JSX.Element {
-  const rowCount = result.result.rows.length
-  const capped = rowCount >= DATABASE_MAX_BUFFERED_ROWS && result.result.hasMore
-  return (
-    <div className="flex h-7 shrink-0 items-center gap-3 border-t border-border px-3 text-xs text-muted-foreground">
-      <span>
-        {rowCount === 1 && !result.result.hasMore
-          ? translate('database.results.oneRow', '1 row')
-          : translate('database.results.rowCount', '{{value0}} rows', {
-              value0: `${rowCount.toLocaleString()}${result.result.hasMore ? '+' : ''}`
-            })}
-      </span>
-      {result.loadingMore ? (
-        <span className="flex items-center gap-1">
-          <Loader2 className="size-3 animate-spin" />
-          {translate('database.results.loadingMore', 'Loading more…')}
-        </span>
-      ) : null}
-      {capped ? (
-        <span>
-          {translate(
-            'database.results.capped',
-            'Showing the first {{value0}} rows. Add a LIMIT or filter to see the rest.',
-            { value0: DATABASE_MAX_BUFFERED_ROWS.toLocaleString() }
-          )}
-        </span>
-      ) : null}
-      {result.loadError ? <span className="text-destructive">{result.loadError}</span> : null}
-      <span className="ml-auto">
-        {translate('database.results.duration', '{{value0}} ms', {
-          value0: result.result.durationMs.toLocaleString()
-        })}
-      </span>
-    </div>
-  )
-}
-
-export function DatabaseResultsPane({ tab }: { tab: DatabaseConsoleTab }): React.JSX.Element {
+export function DatabaseResultsPane({ tab }: { tab: DatabaseRunTarget }): React.JSX.Element {
   const runState = useDatabaseConsoleRunStore((state) => getConsoleRunState(state.consoles, tab.id))
   const selectResult = useDatabaseConsoleRunStore((state) => state.selectResult)
   const fetchMore = useDatabaseConsoleRunStore((state) => state.fetchMore)
@@ -119,12 +83,17 @@ export function DatabaseResultsPane({ tab }: { tab: DatabaseConsoleTab }): React
               active.result.rows.length < DATABASE_MAX_BUFFERED_ROWS
             }
             onLoadMore={loadMore}
+            exportTarget={{
+              table: RESULT_INSERT_TABLE,
+              driver: findDatabaseConnection(tab.connectionId)?.driver ?? 'postgres',
+              fileName: 'result'
+            }}
           />
         ) : (
           <DatabaseConsoleOutput log={runState.log} />
         )}
       </div>
-      {active ? <ResultFooter result={active} /> : null}
+      {active ? <DatabaseResultFooter result={active} /> : null}
     </div>
   )
 }
