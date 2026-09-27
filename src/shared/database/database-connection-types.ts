@@ -27,7 +27,13 @@ const serverFields = {
   database: z.string().trim().max(128),
   user: z.string().max(128),
   readOnly: z.boolean(),
-  passwordStorage: z.enum(DATABASE_PASSWORD_STORAGE_MODES)
+  passwordStorage: z.enum(DATABASE_PASSWORD_STORAGE_MODES),
+  /** Reach the server through a saved SSH host; host and port are then as seen from it. */
+  sshTunnel: z
+    .object({ targetId: z.string().min(1).max(200) })
+    .strict()
+    .nullable()
+    .optional()
 }
 
 export const databaseConnectionDraftSchema = z.discriminatedUnion('driver', [
