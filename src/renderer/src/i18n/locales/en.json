@@ -18831,8 +18831,7 @@
       "noConnections": "No connections yet.",
       "notNull": "not null",
       "openData": "Open Data",
-      "refresh": "Refresh",
-      "toggle": "Expand or collapse"
+      "refresh": "Refresh"
     },
     "grid": {
       "copy": "Copy",

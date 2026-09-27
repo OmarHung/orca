@@ -24,9 +24,12 @@ export function DatabaseSessionDot({
   state: DatabaseSessionState
   className?: string
 }): React.JSX.Element {
+  const label = describeSessionState(state)
   return (
     <span
-      aria-hidden="true"
+      role="img"
+      aria-label={label}
+      title={label}
       className={cn(
         'inline-block size-1.5 shrink-0 rounded-full bg-muted-foreground/40',
         state === 'connected' && 'bg-status-success',
