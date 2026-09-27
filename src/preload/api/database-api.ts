@@ -12,7 +12,6 @@ import type {
   DatabaseRowsPage
 } from '../../shared/database/database-query-types'
 import type {
-  DatabaseApplyChangesRequest,
   DatabaseConsoleRef,
   DatabaseEncryptionStatus,
   DatabaseExecuteRequest,
@@ -48,10 +47,6 @@ export type DatabaseApi = {
   /** Console statements for a connection, newest first. */
   listHistory: (connectionId: string) => Promise<DatabaseHistoryEntry[]>
   clearHistory: (connectionId: string) => Promise<void>
-  /** Applies table edits in one transaction; see `table-change-sql`. */
-  applyChanges: (
-    request: DatabaseApplyChangesRequest
-  ) => Promise<DatabaseResult<{ applied: number }>>
   cancel: (ref: DatabaseConsoleRef) => Promise<boolean>
   closeConsole: (ref: DatabaseConsoleRef) => Promise<void>
   readConsole: (ref: DatabaseConsoleRef) => Promise<string>

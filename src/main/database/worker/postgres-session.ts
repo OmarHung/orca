@@ -15,7 +15,6 @@ import type {
   DatabaseDriverSession,
   DatabaseExecuteOptions
 } from './database-driver'
-import type { DatabaseChangeTransaction } from './table-change-transaction'
 import { connectPostgresClient, type PostgresConnectionDraft } from './postgres-client-factory'
 import { PostgresConsole } from './postgres-console'
 import { postgresDdl } from './postgres-ddl'
@@ -90,10 +89,6 @@ class PostgresSession implements DatabaseDriverSession {
       throw new Error('This result is no longer open. Run the statement again to load more rows.')
     }
     return (await pending).fetch(resultId, pageSize)
-  }
-
-  async beginChanges(consoleId: string): Promise<DatabaseChangeTransaction> {
-    return (await this.consoles.acquire(consoleId)).beginChanges()
   }
 
   async cancel(consoleId: string): Promise<boolean> {

@@ -1,6 +1,4 @@
-import type { DatabaseDriver } from '../../../shared/database/database-connection-types'
 import type { DatabaseResult } from '../../../shared/database/database-query-types'
-import { tableChangeStatements } from '../../../shared/database/table-change-sql'
 import type { DatabaseDriverSession, OpenDatabaseDriverSession } from './database-driver'
 import { routeThroughTunnel } from './database-connection-route'
 import { toDatabaseError } from './database-error-mapping'
@@ -13,7 +11,6 @@ import { openMysqlSession } from './mysql-session'
 import { openPostgresSession } from './postgres-session'
 import { openSqliteSession } from './sqlite-session'
 import { openSqlServerSession } from './sqlserver-session'
-import { applyTableChanges } from './table-change-transaction'
 
 const openDriverSession: OpenDatabaseDriverSession = (connection, password, callbacks) => {
   switch (connection.driver) {
@@ -34,7 +31,6 @@ export function createDatabaseWorkerDispatcher(
   openSession: OpenDatabaseDriverSession = openDriverSession
 ): (request: DatabaseWorkerRequest) => Promise<void> {
   let session: DatabaseDriverSession | null = null
-  let driver: DatabaseDriver = 'postgres'
 
   const requireSession = (): DatabaseDriverSession => {
     if (!session) {
@@ -47,7 +43,6 @@ export function createDatabaseWorkerDispatcher(
     switch (command.type) {
       case 'connect': {
         await session?.close()
-        driver = command.connection.driver
         const connection = routeThroughTunnel(command.connection, command.tunnelPort)
         session = await openSession(connection, command.password, {
           onConnectionLost: (message) => post({ kind: 'connection-lost', message })
@@ -66,11 +61,6 @@ export function createDatabaseWorkerDispatcher(
         })
       case 'fetch':
         return requireSession().fetch(command.consoleId, command.resultId, command.pageSize)
-      case 'applyChanges': {
-        const statements = tableChangeStatements(driver, command.changeSet)
-        const transaction = await requireSession().beginChanges(command.consoleId)
-        return applyTableChanges(transaction, statements)
-      }
       case 'cancel':
         return { cancelled: session ? await session.cancel(command.consoleId) : false }
       case 'closeConsole':

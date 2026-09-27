@@ -1,9 +1,4 @@
-import {
-  addServerConnection,
-  editGridCell,
-  openDatabasePage,
-  runInConsole
-} from './helpers/database-page'
+import { addServerConnection, openDatabasePage, runInConsole } from './helpers/database-page'
 import { test, expect } from './helpers/orca-app'
 
 // Opt-in: a disposable PostgreSQL with trust auth, e.g. postgres://orca_test@127.0.0.1:55439/postgres
@@ -109,19 +104,6 @@ test.describe('Database page', () => {
     await orcaPage.getByLabel('WHERE').press('Enter')
     await expect(orcaPage.getByText(/^2 rows$/)).toBeVisible({ timeout: 20_000 })
     await orcaPage.screenshot({ path: testInfo.outputPath('database-table-data.png') })
-
-    // Editing quotes the reserved key and mixed-case column in the UPDATE it submits.
-    await editGridCell(
-      orcaPage,
-      grid.getByRole('gridcell', { name: 'a', exact: true }),
-      'Mixed Case',
-      'alpha'
-    )
-    await orcaPage.getByRole('button', { name: 'Submit 1' }).click()
-    await expect(orcaPage.getByText('Saved 1 change')).toBeVisible({ timeout: 20_000 })
-    await expect(grid.getByRole('gridcell', { name: 'alpha', exact: true })).toBeVisible({
-      timeout: 20_000
-    })
 
     await orcaPage.getByRole('tab', { name: connectionName }).click()
     await runInConsole(orcaPage, `drop schema ${schema} cascade;`)

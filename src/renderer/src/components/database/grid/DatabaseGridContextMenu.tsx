@@ -1,5 +1,5 @@
-import React, { useRef } from 'react'
-import { Ban, Copy, Download, PanelRight, Pencil, Trash2, Undo2 } from 'lucide-react'
+import React from 'react'
+import { Copy, Download, PanelRight } from 'lucide-react'
 import {
   ContextMenuContent,
   ContextMenuItem,
@@ -28,74 +28,18 @@ function shortcutLabel(binding: string): string {
   return formatKeybindingList([binding], getShortcutPlatform())
 }
 
-export type GridEditActions = {
-  edit: () => void
-  setNull: () => void
-  deleteRows: () => void
-  revert: () => void
-}
-
-function EditItems({
-  actions,
-  onEdit
-}: {
-  actions: GridEditActions
-  onEdit: () => void
-}): React.JSX.Element {
-  return (
-    <>
-      <ContextMenuItem onSelect={onEdit}>
-        <Pencil />
-        {translate('database.grid.editValue', 'Edit Value')}
-        <ContextMenuShortcut>{shortcutLabel('Enter')}</ContextMenuShortcut>
-      </ContextMenuItem>
-      <ContextMenuItem onSelect={actions.setNull}>
-        <Ban />
-        {translate('database.grid.setNull', 'Set to NULL')}
-      </ContextMenuItem>
-      <ContextMenuItem onSelect={actions.revert}>
-        <Undo2 />
-        {translate('database.grid.revertSelected', 'Revert Selected')}
-      </ContextMenuItem>
-      <ContextMenuItem variant="destructive" onSelect={actions.deleteRows}>
-        <Trash2 />
-        {translate('database.grid.deleteRows', 'Delete Rows')}
-        <ContextMenuShortcut>{shortcutLabel('Mod+Backspace')}</ContextMenuShortcut>
-      </ContextMenuItem>
-      <ContextMenuSeparator />
-    </>
-  )
-}
-
 export function DatabaseGridContextMenu({
-  editActions,
   onCopy,
   onExport,
   onShowValue
 }: {
-  /** Present for editable table data. */
-  editActions?: GridEditActions
   onCopy: (format: GridCopyFormat) => void
   /** Exports every loaded row, not only the selection. */
   onExport: (format: DatabaseExportFormat) => void
   onShowValue: () => void
 }): React.JSX.Element {
-  // Why defer the edit: the menu hands focus back to the grid as it closes, which would
-  // blur (and so immediately commit) an editor opened from the menu item itself.
-  const editOnClose = useRef(false)
   return (
-    <ContextMenuContent
-      onCloseAutoFocus={(event) => {
-        if (editOnClose.current) {
-          editOnClose.current = false
-          event.preventDefault()
-          editActions?.edit()
-        }
-      }}
-    >
-      {editActions ? (
-        <EditItems actions={editActions} onEdit={() => (editOnClose.current = true)} />
-      ) : null}
+    <ContextMenuContent>
       <ContextMenuItem onSelect={() => onCopy('tsv')}>
         <Copy />
         {translate('database.grid.copy', 'Copy')}
