@@ -271,6 +271,22 @@ export const AGENT_LAUNCH_CALLER_PROFILES: readonly AgentLaunchCallerProfile[] =
     passesLaunchPlan: false,
     passesOnPromptDelivered: false,
     readsBack: ['surface-tab-id']
+  },
+  // Fork: "Resolve with AI" on the fork-sync update card.
+  {
+    id: 'fork-sync-conflict',
+    caller: 'src/renderer/src/lib/fork-sync-conflict-agent.ts',
+    sourceMarkers: ['worktreeId: location.worktreeId', "promptDelivery: 'submit-after-ready'"],
+    args: {
+      agent: 'codex',
+      worktreeId: 'wt-1',
+      prompt: PROMPT,
+      promptDelivery: 'submit-after-ready'
+    },
+    passesBeforeSurfaceOpen: false,
+    passesLaunchPlan: false,
+    passesOnPromptDelivered: false,
+    readsBack: ['discarded']
   }
 ]
 
