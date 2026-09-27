@@ -151,6 +151,10 @@ export function DatabaseResultGrid({
   }
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
+    // Why: arrows on a focused column edge or header button belong to that control.
+    if (event.target !== event.currentTarget) {
+      return
+    }
     if (isModShortcut(event, 'a') && rows.length > 0) {
       event.preventDefault()
       setSelection(selectAll(rows.length, columns.length))
