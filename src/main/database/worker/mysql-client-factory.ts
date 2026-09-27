@@ -95,9 +95,8 @@ export async function connectMysqlClient(
     client.on('error', duringConnect)
     try {
       await connect(client)
-      if (connection.readOnly) {
-        await queryMysqlRows(client, 'SET SESSION TRANSACTION READ ONLY')
-      }
+      // Why every session, the catalog's too: Orca's database tools are read-only.
+      await queryMysqlRows(client, 'SET SESSION TRANSACTION READ ONLY')
       client.off('error', duringConnect)
       client.on('error', onError)
       return client

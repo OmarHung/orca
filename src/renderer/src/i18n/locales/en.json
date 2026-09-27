@@ -19362,8 +19362,7 @@
   },
   "database": {
     "connection": {
-      "missing": "Deleted connection",
-      "readOnly": "Read-only"
+      "missing": "Deleted connection"
     },
     "connectionDialog": {
       "cancel": "Cancel",
@@ -19393,9 +19392,7 @@
       "password": "Password",
       "passwordSaved": "Saved — type to replace",
       "port": "Port",
-      "readOnly": "Read-only",
       "savePassword": "Save password",
-      "sqlServerReadOnly": "SQL Server has no read-only session, so Orca refuses statements that look like writes. It is a safety net, not a guarantee.",
       "sshEmpty": "No saved SSH hosts yet. Add one in Settings to connect through it.",
       "sshHint": "Host and port are as seen from the SSH host, e.g. localhost or a private address.",
       "sshNone": "None — connect directly",
@@ -19518,6 +19515,8 @@
       "emptyWithConnections": "Open a console to run SQL. Right-click a connection for more actions.",
       "newConnection": "New Connection",
       "openConsole": "Open Console for {{value0}}",
+      "readOnly": "Read-only",
+      "readOnlyHint": "Orca only reads your databases: statements that would change them are not run.",
       "resizeExplorer": "Resize database explorer",
       "title": "Database"
     },
@@ -19555,23 +19554,6 @@
     },
     "tabs": {
       "close": "Close tab"
-    },
-    "transaction": {
-      "auto": "Auto-commit",
-      "commit": "Commit",
-      "failed": "Transaction failed — roll back",
-      "lost": "The connection closed, so the open transaction was rolled back. Nothing from it was saved.",
-      "manual": "Manual commit",
-      "mode": "Transaction mode",
-      "open": "Transaction open",
-      "rollBack": "Roll Back"
-    },
-    "transactionDialog": {
-      "cancel": "Cancel",
-      "commit": "Commit and Close",
-      "description": "{{value0}} has an open transaction. Closing it rolls back anything not committed.",
-      "rollBack": "Roll Back and Close",
-      "title": "Close with an open transaction?"
     },
     "viewer": {
       "copy": "Copy value",
