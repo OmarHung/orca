@@ -18967,6 +18967,23 @@
     "tabs": {
       "close": "關閉主控台"
     },
+    "transaction": {
+      "auto": "自動提交",
+      "commit": "提交",
+      "failed": "交易失敗，請回滾",
+      "lost": "連線已關閉，未提交的交易已回滾，其中的更改都沒有儲存。",
+      "manual": "手動提交",
+      "mode": "交易模式",
+      "open": "交易進行中",
+      "rollBack": "回滾"
+    },
+    "transactionDialog": {
+      "cancel": "取消",
+      "commit": "提交並關閉",
+      "description": "{{value0}} 有進行中的交易，關閉會回滾所有未提交的內容。",
+      "rollBack": "回滾並關閉",
+      "title": "關閉有未提交交易的主控台？"
+    },
     "viewer": {
       "copy": "複製值",
       "empty": "選取一個儲存格以檢視它的值。",

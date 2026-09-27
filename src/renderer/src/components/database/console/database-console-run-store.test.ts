@@ -37,6 +37,7 @@ type ExecuteMock = ReturnType<
     (request: {
       sql: string
       recordHistory?: boolean
+      transactionMode?: string
     }) => Promise<DatabaseResult<DatabaseExecuteResult>>
   >
 >
@@ -103,6 +104,46 @@ describe('database console run store', () => {
     await useDatabaseConsoleRunStore.getState().run(tab, statements, { recordHistory: true })
     await useDatabaseConsoleRunStore.getState().run(tab, statements)
     expect(execute.mock.calls.map(([request]) => request.recordHistory)).toEqual([true, undefined])
+  })
+
+  it('tracks the console’s transaction from results and failures, and ends it when the session goes', async () => {
+    const execute: ExecuteMock = vi.fn(async ({ sql }) =>
+      sql === 'select 1/0'
+        ? { ok: false, error: { message: 'division by zero', transaction: 'failed' } }
+        : { ok: true, value: { results: [], transaction: sql === 'rollback' ? 'none' : 'open' } }
+    )
+    installApi(execute)
+    const runSql = (sql: string) =>
+      useDatabaseConsoleRunStore
+        .getState()
+        .run(tab, splitSqlStatements(sql, 'postgres'), { transactionMode: 'manual' })
+    await runSql('insert into t values (1)')
+    expect(execute.mock.calls[0]?.[0].transactionMode).toBe('manual')
+    expect(state().transaction).toBe('open')
+    await runSql('select 1/0')
+    expect(state().transaction).toBe('failed')
+    await runSql('rollback')
+    expect(state().transaction).toBe('none')
+
+    await runSql('insert into t values (1)')
+    useDatabaseConsoleRunStore.getState().endTransactions([tab.id])
+    expect(state().transaction).toBe('none')
+    expect(state().log.at(-1)?.outcome).toMatchObject({ kind: 'error', message: /rolled back/ })
+  })
+
+  it('does not rerun a statement in a fresh session when the dropped one held a transaction', async () => {
+    const execute: ExecuteMock = vi.fn(async ({ sql }) =>
+      sql.startsWith('insert')
+        ? { ok: true, value: { results: [], transaction: 'open' } }
+        : { ok: false, error: { message: 'Not connected', code: 'not-connected' } }
+    )
+    installApi(execute)
+    const statements = (sql: string) => splitSqlStatements(sql, 'postgres')
+    await useDatabaseConsoleRunStore.getState().run(tab, statements('insert into t values (1)'))
+    await useDatabaseConsoleRunStore.getState().run(tab, statements('update t set a = 2'))
+    expect(execute).toHaveBeenCalledTimes(2)
+    expect(state().transaction).toBe('none')
+    expect(state().log.at(-1)?.outcome).toMatchObject({ kind: 'error', message: /rolled back/ })
   })
 
   it('opens a tab for every result set of a batch, and for sets that follow a paged one', async () => {
