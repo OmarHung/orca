@@ -35,8 +35,18 @@ function serverCode(error: object): string | undefined {
   return number === undefined ? undefined : String(number)
 }
 
+/** An error already in wire shape, for failures that carry more than the driver's error. */
+export class DatabaseWireError extends Error {
+  constructor(readonly wire: DatabaseError) {
+    super(wire.message)
+  }
+}
+
 /** Normalizes driver errors (pg, mysql2, tedious, node:sqlite, sockets) into the wire shape. */
 export function toDatabaseError(error: unknown): DatabaseError {
+  if (error instanceof DatabaseWireError) {
+    return error.wire
+  }
   if (typeof error !== 'object' || error === null) {
     return { message: String(error) }
   }

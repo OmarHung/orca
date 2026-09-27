@@ -9,8 +9,10 @@ import type {
 import type {
   DatabaseCell,
   DatabaseExecuteResult,
-  DatabaseRowsPage
+  DatabaseRowsPage,
+  DatabaseTransactionMode
 } from '../../../shared/database/database-query-types'
+import { ConsoleTransactions } from './console-transactions'
 import { encodeTextCell } from './database-cell-encoding'
 import type { DatabaseDriverSession } from './database-driver'
 import { commandRowCount, leadingKeyword } from './statement-keyword'
@@ -60,6 +62,13 @@ function openDatabase(connection: SqliteConnectionDraft): DatabaseSync {
 /** One console's connection; SQLite is synchronous, so a running statement blocks this worker. */
 class SqliteConsole {
   private open: OpenResult | null = null
+  readonly transactions = new ConsoleTransactions({
+    state: async () => (this.database.isTransaction ? 'open' : 'none'),
+    begin: async () => {
+      this.closeOpen()
+      this.database.exec('BEGIN')
+    }
+  })
 
   constructor(private readonly database: DatabaseSync) {}
 
@@ -198,8 +207,14 @@ class SqliteSession implements DatabaseDriverSession {
     return introspectSqlite(this.metaDatabase, target)
   }
 
-  async execute(consoleId: string, sql: string, pageSize: number): Promise<DatabaseExecuteResult> {
-    return this.console(consoleId).execute(sql, pageSize)
+  async execute(
+    consoleId: string,
+    sql: string,
+    pageSize: number,
+    mode: DatabaseTransactionMode
+  ): Promise<DatabaseExecuteResult> {
+    const target = this.console(consoleId)
+    return target.transactions.run(mode, sql, async () => target.execute(sql, pageSize))
   }
 
   async beginChanges(consoleId: string): Promise<DatabaseChangeTransaction> {
