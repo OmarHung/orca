@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useDatabaseConnectionsStore } from './database-connections-store'
 import { useDatabaseExplorerStore } from './explorer/database-explorer-store'
+import { invalidateSqlCatalog } from './console/sql-completion-catalog'
 
 let subscribed = false
 
@@ -16,6 +17,7 @@ function subscribeToSessionEvents(): void {
     if (event.state === 'disconnected' || event.state === 'error') {
       // A dead session's tree is stale; expanding again reconnects and reloads it.
       useDatabaseExplorerStore.getState().resetConnection(event.connectionId)
+      invalidateSqlCatalog(event.connectionId)
     }
   })
 }
