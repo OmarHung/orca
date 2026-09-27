@@ -178,5 +178,40 @@
     "from": "^選擇一個單元格以檢視它的值。$",
     "to": "選取一個儲存格以檢視它的值。",
     "why": "Database grid cell (儲存格); notebook cells keep their existing wording."
+  },
+  {
+    "from": "^刪除所選(的)?行$",
+    "to": "刪除所選$1列",
+    "why": "Database grid \"Delete Rows\": table rows are 列 in Taiwan. Anchored so the Markdown table editor (which uses 行 for rows and 列 for columns) is untouched."
+  },
+  {
+    "from": "^新增一行$",
+    "to": "新增一列",
+    "why": "Database grid \"Add Row\"."
+  },
+  {
+    "from": "^(這一|這個資料表沒有主鍵，所以不能編輯它的)行(將被刪除。還原後才能編輯。|。)$",
+    "to": "$1列$2",
+    "why": "Database grid row messages; rows are 列 in Taiwan."
+  },
+  {
+    "from": "^二進位制值不能在這裡編輯。$",
+    "to": "二進位值不能在這裡編輯。",
+    "why": "Database grid: Taiwan says 二進位; other features’ strings keep their wording."
+  },
+  {
+    "from": "^這個值只加載了開頭部分，所以不能在這裡編輯。$",
+    "to": "這個值只載入了開頭部分，所以不能在這裡編輯。",
+    "why": "Database grid: \"loaded\" is 載入 in Taiwan."
+  },
+  {
+    "from": "^提交時會在同一個事務中執行這些語句，值以引數形式傳送。$",
+    "to": "提交時會在同一個交易中執行這些語句，值以參數形式傳送。",
+    "why": "Database edits preview: a transaction is 交易 and a SQL parameter is 參數 in Taiwan (引數 is a function argument)."
+  },
+  {
+    "from": "^這一行的主鍵沒有完整(?:加載|載入)，所以不能修改它。$",
+    "to": "這一列的主鍵沒有完整載入，所以不能修改它。",
+    "why": "Database grid: rows are 列 and \"loaded\" is 載入 in Taiwan."
   }
 ]

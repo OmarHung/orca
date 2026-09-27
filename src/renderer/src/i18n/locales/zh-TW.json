@@ -18816,6 +18816,33 @@
       "description": "這會從 Orca 移除這個連線、它儲存的密碼和主控台。資料庫本身不受影響。",
       "title": "刪除 {{value0}}？"
     },
+    "discardDialog": {
+      "description": "你對 {{value0}} 的修改還沒有提交到資料庫。",
+      "discard": "放棄",
+      "keep": "繼續編輯",
+      "title": "放棄 {{value0}} 項未儲存的修改？",
+      "titleOne": "放棄 1 項未儲存的修改？"
+    },
+    "edit": {
+      "addRow": "新增一列",
+      "binary": "二進位值不能在這裡編輯。",
+      "deleteRows": "刪除所選的列",
+      "keyMissing": "查詢結果沒有包含主鍵。",
+      "keyTruncated": "這一列的主鍵沒有完整載入，所以不能修改它。",
+      "loadingKey": "正在讀取資料表的主鍵…",
+      "locked": "唯讀",
+      "noKey": "這個資料表沒有主鍵，所以不能編輯它的列。",
+      "preview": "預覽 SQL",
+      "readOnly": "這個連線是唯讀的。",
+      "revertAll": "還原所有修改",
+      "rowDeleted": "這一列將被刪除。還原後才能編輯。",
+      "submit": "提交",
+      "submitCount": "提交 {{value0}} 項",
+      "submitFailed": "沒有儲存任何修改",
+      "submitted": "已儲存 {{value0}} 項修改",
+      "submittedOne": "已儲存 1 項修改",
+      "truncated": "這個值只載入了開頭部分，所以不能在這裡編輯。"
+    },
     "explorer": {
       "connect": "連線",
       "copyName": "複製名稱",
@@ -18836,6 +18863,10 @@
       "copy": "複製",
       "copyAs": "複製為",
       "copyWithHeaders": "連同表頭複製",
+      "default": "DEFAULT",
+      "deleteRows": "刪除所選列",
+      "editCell": "編輯 {{value0}}",
+      "editValue": "編輯值",
       "exportAs": "{{value0}}…",
       "exportFailed": "匯出失敗",
       "exportLoaded": "匯出已載入的列",
@@ -18846,7 +18877,9 @@
       "formatTsv": "TSV",
       "null": "NULL",
       "resizeColumn": "調整 {{value0}} 欄寬",
+      "revertSelected": "還原所選的修改",
       "selectAll": "全選",
+      "setNull": "設為 NULL",
       "showValue": "檢視值",
       "truncated": "只顯示 {{value1}} 個字元中的前 {{value0}} 個"
     },
@@ -18874,6 +18907,11 @@
       "cancel": "取消",
       "connect": "連線",
       "title": "{{value0}} 的密碼"
+    },
+    "preview": {
+      "close": "關閉",
+      "description": "提交時會在同一個交易中執行這些語句，值以參數形式傳送。",
+      "title": "待提交的修改"
     },
     "results": {
       "capped": "只顯示前 {{value0}} 列。加上 LIMIT 或篩選條件才能看到其餘資料。",
