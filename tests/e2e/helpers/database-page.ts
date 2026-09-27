@@ -50,6 +50,8 @@ export type ServerConnectionForm = {
   passwordStorage?: 'Save securely' | 'Until Orca quits' | 'Never'
   sslMode?: 'disable' | 'prefer' | 'require' | 'verify-full'
   readOnly?: boolean
+  /** Label of a saved SSH host to tunnel through. */
+  sshHost?: string
 }
 
 /** Fills the New Connection dialog for a server database, tests it and saves it. */
@@ -62,6 +64,10 @@ export async function addServerConnection(page: Page, form: ServerConnectionForm
   }
   if (form.name) {
     await dialog.getByLabel('Name').fill(form.name)
+  }
+  if (form.sshHost) {
+    await dialog.getByLabel('SSH tunnel').click()
+    await page.getByRole('option', { name: form.sshHost, exact: true }).click()
   }
   await dialog.getByLabel('Host').fill(form.url.hostname)
   await dialog.getByLabel('Port').fill(form.url.port)
@@ -80,7 +86,10 @@ export async function addServerConnection(page: Page, form: ServerConnectionForm
     await dialog.getByLabel('Read-only').click()
   }
   await dialog.getByRole('button', { name: 'Test Connection' }).click()
-  await expect(dialog.getByText(/^Connected to /)).toBeVisible({ timeout: 30_000 })
+  // Why longer through SSH: the first connect deploys Orca's relay on the SSH host.
+  await expect(dialog.getByText(/^Connected to /)).toBeVisible({
+    timeout: form.sshHost ? 90_000 : 30_000
+  })
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(dialog).toBeHidden()
 }
