@@ -15,6 +15,7 @@ describe('database connection form', () => {
         driver: 'postgres',
         name: 'postgres@localhost',
         port: 5432,
+        database: '',
         passwordStorage: 'forever'
       }
     })
@@ -29,7 +30,9 @@ describe('database connection form', () => {
     const mysql = changeConnectionDriver(typed, 'mysql')
     expect(mysql).toMatchObject({ port: '3306', database: '', user: 'app', host: 'db.local' })
     const sqlServer = changeConnectionDriver(mysql, 'sqlserver')
-    expect(sqlServer).toMatchObject({ port: '1433', database: 'master', sslMode: 'require' })
+    expect(sqlServer).toMatchObject({ port: '1433', database: '', sslMode: 'require' })
+    const typedDatabase = changeConnectionDriver({ ...typed, database: 'sales' }, 'sqlserver')
+    expect(typedDatabase.database).toBe('sales')
   })
 
   it('builds SQLite drafts from an absolute file path and names them after the file', () => {

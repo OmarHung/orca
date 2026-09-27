@@ -2,6 +2,7 @@ import React from 'react'
 import {
   ChevronRight,
   Columns3,
+  Cylinder,
   Database,
   Eye,
   Folder,
@@ -25,11 +26,8 @@ import { useDatabaseConnectionColor } from '../database-connection-color'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
 import { DatabaseExplorerContextMenu } from './DatabaseExplorerContextMenu'
 import { constraintLabel, folderLabel } from './database-explorer-labels'
-import {
-  isExpandableNode,
-  type DatabaseExplorerNode,
-  type DatabaseExplorerRow as ExplorerRow
-} from './database-explorer-tree'
+import type { DatabaseExplorerRow as ExplorerRow } from './database-explorer-rows'
+import { isExpandableNode, type DatabaseExplorerNode } from './database-explorer-tree'
 
 export const EXPLORER_ROW_HEIGHT = 24
 const INDENT_PX = 12
@@ -45,6 +43,8 @@ function NodeIcon({ node }: { node: DatabaseExplorerNode }): React.JSX.Element {
   switch (node.kind) {
     case 'connection':
       return <ConnectionIcon connectionId={node.connectionId} />
+    case 'database':
+      return <Cylinder className={ICON_CLASS} />
     case 'schema':
       return <Layers className={ICON_CLASS} />
     case 'relation':
@@ -117,6 +117,8 @@ function NodeLabel({ node }: { node: DatabaseExplorerNode }): React.JSX.Element 
   switch (node.kind) {
     case 'connection':
       return <ConnectionLabel connectionId={node.connectionId} />
+    case 'database':
+      return <span className="truncate">{node.database}</span>
     case 'schema':
       return <span className="truncate">{node.schema}</span>
     case 'relation':

@@ -6,11 +6,13 @@ import { openDatabaseTable } from '../database-page-actions'
 import { DatabaseExplorerRow, EXPLORER_ROW_HEIGHT } from './DatabaseExplorerRow'
 import { useDatabaseExplorerStore } from './database-explorer-store'
 import {
-  connectionNode,
   flattenDatabaseExplorer,
-  isExpandableNode,
-  type DatabaseExplorerNode,
   type DatabaseExplorerRow as ExplorerRow
+} from './database-explorer-rows'
+import {
+  connectionNode,
+  isExpandableNode,
+  type DatabaseExplorerNode
 } from './database-explorer-tree'
 
 type NodeRow = Extract<ExplorerRow, { type: 'node' }>
