@@ -20,6 +20,7 @@ import {
   runDatabaseConsoleFromToolbar
 } from './DatabaseConsoleEditor'
 import { DatabaseQueryHistoryPopover } from './DatabaseQueryHistoryPopover'
+import { DatabaseTransactionControls } from './DatabaseTransactionControls'
 import { DatabaseResultsPane } from './DatabaseResultsPane'
 import { getConsoleRunState, useDatabaseConsoleRunStore } from './database-console-run-store'
 import { useDatabaseConsoleText } from './use-database-console-text'
@@ -62,9 +63,14 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
   })
 
   const handleRun = useCallback(
-    (statements: SqlStatementRange[]) => void run(tab, statements, { recordHistory: true }),
+    (statements: SqlStatementRange[]) =>
+      void run(tab, statements, { recordHistory: true, transactionMode: tab.transactionMode }),
     [run, tab]
   )
+  const endTransaction = (sql: 'COMMIT' | 'ROLLBACK'): void =>
+    void run(tab, [{ start: 0, end: sql.length, terminatorEnd: sql.length, text: sql }], {
+      transactionMode: tab.transactionMode
+    })
   const handleEditorReady = useCallback((instance: editor.ICodeEditor | null) => {
     editorRef.current = instance
   }, [])
@@ -117,6 +123,9 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
           onPick={(sql) => insertDatabaseConsoleText(editorRef.current, sql)}
           onClosed={() => editorRef.current?.focus()}
         />
+        <div className="ml-2 flex items-center gap-1">
+          <DatabaseTransactionControls tab={tab} running={running} onEnd={endTransaction} />
+        </div>
         {running ? <Loader2 className="size-3.5 animate-spin text-muted-foreground" /> : null}
         <div className="ml-auto">
           <DatabaseConnectionBadge connectionId={tab.connectionId} />

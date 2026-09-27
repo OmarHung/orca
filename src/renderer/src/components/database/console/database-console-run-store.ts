@@ -1,15 +1,19 @@
 import { create } from 'zustand'
 import { createBrowserUuid } from '@/lib/browser-uuid'
 import type {
-  DatabaseExecuteResult,
   DatabaseQueryResult,
-  DatabaseResult,
-  DatabaseRowsResult
+  DatabaseRowsResult,
+  DatabaseTransactionState
 } from '../../../../../shared/database/database-query-types'
 import { DATABASE_DEFAULT_PAGE_SIZE } from '../../../../../shared/database/database-session-types'
 import type { SqlStatementRange } from '../../../../../shared/database/sql-statement-splitter'
 import { asDatabaseResult, useDatabaseConnectionsStore } from '../database-connections-store'
 import type { DatabaseRunTarget } from '../database-page-tabs'
+import {
+  executeReconnecting,
+  transactionLostMessage,
+  type DatabaseRunOptions
+} from './database-console-execute'
 import { offsetOfStatementLine } from './database-console-statements'
 import { invalidateSqlCatalog } from './sql-completion-catalog'
 
@@ -48,6 +52,8 @@ export type DatabaseConsoleRunState = {
   log: DatabaseConsoleLogEntry[]
   /** Offset into the console text of the last error, for the editor marker. */
   errorOffset: number | null
+  /** The console session's transaction, as of its last statement. */
+  transaction: DatabaseTransactionState
 }
 
 const EMPTY_RUN_STATE: DatabaseConsoleRunState = {
@@ -55,12 +61,8 @@ const EMPTY_RUN_STATE: DatabaseConsoleRunState = {
   results: [],
   activeResultId: OUTPUT_RESULT_ID,
   log: [],
-  errorOffset: null
-}
-
-export type DatabaseRunOptions = {
-  /** Console runs go to query history; the table view's generated queries don't. */
-  recordHistory?: boolean
+  errorOffset: null,
+  transaction: 'none'
 }
 
 type DatabaseConsoleRunStore = {
@@ -73,42 +75,9 @@ type DatabaseConsoleRunStore = {
   fetchMore: (tab: DatabaseRunTarget, resultTabId: string) => Promise<void>
   cancel: (tab: DatabaseRunTarget) => Promise<void>
   selectResult: (tabId: string, resultId: string) => void
+  /** The connection closed under these tabs; any transaction they held is gone. */
+  endTransactions: (tabIds: readonly string[]) => void
   dispose: (tabId: string) => void
-}
-
-async function execute(
-  tab: DatabaseRunTarget,
-  sql: string,
-  options: DatabaseRunOptions
-): Promise<DatabaseResult<DatabaseExecuteResult>> {
-  return asDatabaseResult(
-    await window.api.database.execute({
-      connectionId: tab.connectionId,
-      consoleId: tab.consoleId,
-      sql,
-      pageSize: DATABASE_DEFAULT_PAGE_SIZE,
-      recordHistory: options.recordHistory
-    })
-  )
-}
-
-/** Retries once after reconnecting when main dropped the session (e.g. a restarted SQLite worker). */
-async function executeReconnecting(
-  tab: DatabaseRunTarget,
-  sql: string,
-  options: DatabaseRunOptions
-): Promise<DatabaseResult<DatabaseExecuteResult>> {
-  const response = await execute(tab, sql, options)
-  if (response.ok || response.error.code !== 'not-connected') {
-    return response
-  }
-  const connections = useDatabaseConnectionsStore.getState()
-  connections.applySessionEvent({
-    kind: 'session-state',
-    connectionId: tab.connectionId,
-    state: 'disconnected'
-  })
-  return (await connections.connect(tab.connectionId)) ? execute(tab, sql, options) : response
 }
 
 export function getConsoleRunState(
@@ -196,7 +165,15 @@ export const useDatabaseConsoleRunStore = create<DatabaseConsoleRunStore>((set, 
           return
         }
         for (const statement of statements) {
-          const response = await executeReconnecting(tab, statement.text, options)
+          const inTransaction = getConsoleRunState(get().consoles, tab.id).transaction !== 'none'
+          const response = await executeReconnecting(tab, statement.text, {
+            ...options,
+            inTransaction
+          })
+          const transaction = response.ok ? response.value.transaction : response.error.transaction
+          if (transaction) {
+            patch(tab.id, () => ({ transaction }))
+          }
           if (!response.ok) {
             const { error } = response
             appendLog(
@@ -278,6 +255,16 @@ export const useDatabaseConsoleRunStore = create<DatabaseConsoleRunStore>((set, 
 
     selectResult: (tabId, resultId) =>
       patch(tabId, () => ({ activeResultId: resultId }), { create: true }),
+
+    endTransactions: (tabIds) => {
+      for (const tabId of tabIds) {
+        if (getConsoleRunState(get().consoles, tabId).transaction === 'none') {
+          continue
+        }
+        patch(tabId, () => ({ transaction: 'none' }))
+        appendLog(tabId, '', { kind: 'error', message: transactionLostMessage() })
+      }
+    },
 
     dispose: (tabId) =>
       set((state) => {

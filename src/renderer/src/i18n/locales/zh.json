@@ -19497,6 +19497,23 @@
     "tabs": {
       "close": "关闭控制台"
     },
+    "transaction": {
+      "auto": "自动提交",
+      "commit": "提交",
+      "failed": "事务失败，请回滚",
+      "lost": "连接已关闭，未提交的事务已回滚，其中的更改都没有保存。",
+      "manual": "手动提交",
+      "mode": "事务模式",
+      "open": "事务进行中",
+      "rollBack": "回滚"
+    },
+    "transactionDialog": {
+      "cancel": "取消",
+      "commit": "提交并关闭",
+      "description": "{{value0}} 有进行中的事务，关闭会回滚所有未提交的内容。",
+      "rollBack": "回滚并关闭",
+      "title": "关闭有未提交事务的控制台？"
+    },
     "viewer": {
       "copy": "复制值",
       "empty": "选择一个单元格以查看它的值。",

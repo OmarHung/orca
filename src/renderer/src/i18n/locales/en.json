@@ -19565,6 +19565,23 @@
     "tabs": {
       "close": "Close tab"
     },
+    "transaction": {
+      "auto": "Auto-commit",
+      "commit": "Commit",
+      "failed": "Transaction failed — roll back",
+      "lost": "The connection closed, so the open transaction was rolled back. Nothing from it was saved.",
+      "manual": "Manual commit",
+      "mode": "Transaction mode",
+      "open": "Transaction open",
+      "rollBack": "Roll Back"
+    },
+    "transactionDialog": {
+      "cancel": "Cancel",
+      "commit": "Commit and Close",
+      "description": "{{value0}} has an open transaction. Closing it rolls back anything not committed.",
+      "rollBack": "Roll Back and Close",
+      "title": "Close with an open transaction?"
+    },
     "viewer": {
       "copy": "Copy value",
       "empty": "Select a cell to see its value.",
