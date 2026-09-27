@@ -1,5 +1,9 @@
 import { create } from 'zustand'
-import { asDatabaseResult, useDatabaseConnectionsStore } from '../database-connections-store'
+import {
+  asDatabaseResult,
+  findDatabaseConnection,
+  useDatabaseConnectionsStore
+} from '../database-connections-store'
 import { invalidateSqlCatalog } from '../console/sql-completion-catalog'
 import {
   childNodesFor,
@@ -40,8 +44,12 @@ export const useDatabaseExplorerStore = create<DatabaseExplorerState>((set, get)
     }
     set((state) => ({ children: { ...state.children, [node.key]: { status: 'loading' } } }))
     const result = asDatabaseResult(await window.api.database.introspect(node.connectionId, target))
+    const driver = findDatabaseConnection(node.connectionId)?.driver
     const next: DatabaseExplorerChildren = result.ok
-      ? { status: 'loaded', nodes: childNodesFor(node, result.value) }
+      ? {
+          status: 'loaded',
+          nodes: childNodesFor(node, result.value, { routines: driver !== 'sqlite' })
+        }
       : { status: 'error', message: result.error.message }
     set((state) => ({ children: { ...state.children, [node.key]: next } }))
   }
