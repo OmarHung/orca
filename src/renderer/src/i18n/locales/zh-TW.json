@@ -18779,6 +18779,7 @@
       "testing": "正在連線…"
     },
     "connectionForm": {
+      "allDatabases": "全部資料庫",
       "browse": "瀏覽…",
       "color": "顏色",
       "colorHint": "為這個連線的分頁和工具欄著色，例如用紅色標示生產環境。",

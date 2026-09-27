@@ -34,11 +34,11 @@ export const NO_SSH_TUNNEL = 'none'
 
 type ServerDriver = Exclude<DatabaseDriver, 'sqlite'>
 
-// What a fresh local install of each server usually answers to.
+// What a fresh local install of each server usually answers to; no database lists them all.
 const SERVER_DEFAULTS: Record<ServerDriver, { database: string; user: string }> = {
-  postgres: { database: 'postgres', user: 'postgres' },
+  postgres: { database: '', user: 'postgres' },
   mysql: { database: '', user: 'root' },
-  sqlserver: { database: 'master', user: 'sa' }
+  sqlserver: { database: '', user: 'sa' }
 }
 
 function serverDefaults(driver: DatabaseDriver): { port: string; database: string; user: string } {
