@@ -49,8 +49,8 @@ for (const fixture of DRIVER_FIXTURES) {
       await expectOk(execute(`update ${fixture.table} set name = name`))
       const created = onlyResult(await expectOk(execute(`create table ${probe} (id int)`)))
       const dropped = onlyResult(await expectOk(execute(`drop table ${probe}`)))
-      expect(created).toMatchObject({ kind: 'command', rowCount: null })
-      expect(dropped).toMatchObject({ kind: 'command', rowCount: null })
+      expect(created).toMatchObject({ kind: 'command', command: 'CREATE', rowCount: null })
+      expect(dropped).toMatchObject({ kind: 'command', command: 'DROP', rowCount: null })
     })
 
     it('pages a large result through the open statement', async () => {
