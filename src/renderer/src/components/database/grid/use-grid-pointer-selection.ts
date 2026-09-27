@@ -11,7 +11,8 @@ import {
 /** Column index the row-number header carries in `data-grid-column`. */
 export const ROW_HEADER_COLUMN = -1
 
-function cellFromTarget(target: EventTarget | null): GridCell | null {
+/** The cell (or row-number header) an event happened in. */
+export function gridCellFromTarget(target: EventTarget | null): GridCell | null {
   const element = target instanceof Element ? target.closest<HTMLElement>('[data-grid-row]') : null
   if (!element) {
     return null
@@ -56,7 +57,7 @@ export function useGridPointerSelection(
 
   return {
     onMouseDown: (event) => {
-      const cell = cellFromTarget(event.target)
+      const cell = gridCellFromTarget(event.target)
       if (!cell) {
         return
       }
@@ -75,7 +76,7 @@ export function useGridPointerSelection(
     },
     onMouseOver: (event) => {
       const drag = dragRef.current
-      const cell = drag ? cellFromTarget(event.target) : null
+      const cell = drag ? gridCellFromTarget(event.target) : null
       if (!drag || !cell) {
         return
       }
