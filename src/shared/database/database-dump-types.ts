@@ -86,4 +86,16 @@ export type DatabaseJobEvent = {
 /** Where a dump goes, chosen in main's save dialog; the path itself stays in main. */
 export type DatabaseDumpDestination = { token: string; label: string }
 
+export type DatabasePickDumpDestinationRequest = {
+  layout: DatabaseDumpOptions['layout']
+  /** File (or folder) name the dialog starts with, without an extension. */
+  suggestedName: string
+}
+
+export type DatabaseDumpJobRequest = DatabaseJobRef & {
+  /** From `pickDumpDestination`; each is good for one dump. */
+  token: string
+  dump: DatabaseDumpRequest
+}
+
 export const DATABASE_JOB_ID_PATTERN = /^[A-Za-z0-9-]{8,64}$/

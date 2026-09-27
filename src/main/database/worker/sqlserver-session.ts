@@ -22,6 +22,8 @@ import {
   querySqlServerRows,
   type SqlServerConnectionDraft
 } from './sqlserver-client-factory'
+import type { DumpSource } from './dump/dump-source'
+import { SqlServerDumpSource } from './dump/sqlserver-dump-source'
 import { SqlServerConsole } from './sqlserver-console'
 import { sqlServerDdl } from './sqlserver-ddl'
 import { introspectSqlServer } from './sqlserver-introspection'
@@ -97,6 +99,15 @@ class SqlServerSession implements DatabaseDriverSession {
 
   closeConsole(consoleId: string): Promise<void> {
     return this.consoles.close(consoleId)
+  }
+
+  async openDumpSource(database: string | undefined): Promise<DumpSource> {
+    const client = await connectSqlServer(
+      { ...this.connection, database: database ?? this.defaultDatabase },
+      this.password,
+      () => undefined
+    )
+    return new SqlServerDumpSource(client)
   }
 
   async close(): Promise<void> {
