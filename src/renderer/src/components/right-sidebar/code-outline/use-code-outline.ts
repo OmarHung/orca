@@ -11,6 +11,8 @@ const REFRESH_DEBOUNCE_MS = 400
 const MAX_OUTLINE_RETRIES = 3
 const OUTLINE_RETRY_MS = 1_500
 
+type EditorModels = NonNullable<ReturnType<typeof editorModelRegistry.get>>
+
 export type CodeOutlineState =
   | { status: 'no-file' }
   | { status: 'not-loaded'; fileName: string }
@@ -34,13 +36,13 @@ export function useActiveOutlineTarget(): CodeOutlineTarget | null {
   return { fileId, filePath: file.filePath, fileName }
 }
 
-function findModel(monaco: typeof Monaco, filePath: string): Monaco.editor.ITextModel | null {
+function findModel(monaco: EditorModels, filePath: string): Monaco.editor.ITextModel | null {
   return monaco.editor.getModel(monaco.Uri.parse(toEditorModelUri(filePath)))
 }
 
 /** Tracks the model of `filePath`, including one created or disposed after the tab opened. */
 function useEditorModel(
-  monaco: typeof Monaco | null,
+  monaco: EditorModels | null,
   filePath: string | null
 ): Monaco.editor.ITextModel | null {
   const [model, setModel] = useState<Monaco.editor.ITextModel | null>(null)
@@ -107,7 +109,9 @@ export function useCodeOutline(): { target: CodeOutlineTarget | null; state: Cod
         setState({ status: 'unsupported', fileName })
         return
       }
-      loadCodeOutline(monaco, model)
+      // Why: the registry only exposes editor/Uri; the TS worker needs the full namespace, already loaded here.
+      import('monaco-editor')
+        .then((fullMonaco) => loadCodeOutline(fullMonaco, model))
         .then((symbols) => {
           if (current !== generation) {
             return
