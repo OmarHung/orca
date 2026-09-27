@@ -4,7 +4,6 @@ import type {
   DatabaseResult,
   DatabaseRowsResult
 } from '../../../shared/database/database-query-types'
-import type { DatabaseJobProgress } from '../../../shared/database/database-script-types'
 import { createDatabaseWorkerDispatcher } from './database-worker-dispatch'
 import type {
   DatabaseWorkerCommand,
@@ -20,12 +19,10 @@ export type WorkerHarness = {
     command: Extract<DatabaseWorkerCommand, { type: T }>
   ) => Promise<DatabaseResult<DatabaseWorkerValues[T]>>
   lost: string[]
-  progress: DatabaseJobProgress[]
 }
 
 export function createWorkerHarness(): WorkerHarness {
   const lost: string[] = []
-  const progress: DatabaseJobProgress[] = []
   const pending = new Map<number, (result: DatabaseResult<unknown>) => void>()
   let nextId = 1
   const dispatch = createDatabaseWorkerDispatcher((message: DatabaseWorkerMessage) => {
@@ -33,15 +30,10 @@ export function createWorkerHarness(): WorkerHarness {
       lost.push(message.message)
       return
     }
-    if (message.kind === 'job-progress') {
-      progress.push(message.progress)
-      return
-    }
     pending.get(message.id)?.(message.result)
   })
   return {
     lost,
-    progress,
     send: (command) => {
       const id = nextId++
       return new Promise((resolve) => {

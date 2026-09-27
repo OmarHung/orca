@@ -22,17 +22,6 @@ export type SqlStatementRange = {
 
 type Terminators = { semicolons: boolean }
 
-/** Where a piece of a script starts: the DELIMITER in force, and whether it begins a line. */
-export type SqlScriptCursor = { delimiter: string; atLineStart: boolean }
-
-export const SQL_SCRIPT_START: SqlScriptCursor = { delimiter: ';', atLineStart: true }
-
-type Scan = {
-  statements: SqlStatementRange[]
-  /** The DELIMITER in force when each statement ended. */
-  delimiters: string[]
-}
-
 const GO_LINE = /go(?:[ \t]+\d+)?[ \t]*(?=\r?\n|$)/iy
 const DELIMITER_LINE = /delimiter[ \t]+(\S+)[ \t]*(?=\r?\n|$)/iy
 const WORD = /[A-Za-z_]\w*/y
@@ -42,12 +31,12 @@ function lineEnd(sql: string, from: number): number {
   return newline === -1 ? sql.length : newline
 }
 
-function atBlankLineStart(sql: string, index: number, startsLine: boolean): boolean {
+function atBlankLineStart(sql: string, index: number): boolean {
   let cursor = index - 1
   while (cursor >= 0 && (sql[cursor] === ' ' || sql[cursor] === '\t')) {
     cursor -= 1
   }
-  return cursor < 0 ? startsLine : sql[cursor] === '\n'
+  return cursor < 0 || sql[cursor] === '\n'
 }
 
 function matchAt(pattern: RegExp, sql: string, index: number): RegExpExecArray | null {
@@ -94,16 +83,10 @@ class TriggerBodyTracker {
   }
 }
 
-function scan(
-  sql: string,
-  rules: SqlDialectRules,
-  terminators: Terminators,
-  start: SqlScriptCursor = SQL_SCRIPT_START
-): Scan {
+function scan(sql: string, rules: SqlDialectRules, terminators: Terminators): SqlStatementRange[] {
   const statements: SqlStatementRange[] = []
-  const delimiters: string[] = []
   const trigger = new TriggerBodyTracker()
-  let delimiter = start.delimiter
+  let delimiter = ';'
   let tokenStart: number | null = null
   let lastTokenEnd = 0
 
@@ -115,7 +98,6 @@ function scan(
         terminatorEnd,
         text: sql.slice(tokenStart, lastTokenEnd)
       })
-      delimiters.push(delimiter)
     }
     tokenStart = null
     trigger.reset()
@@ -123,7 +105,7 @@ function scan(
 
   let index = 0
   while (index < sql.length) {
-    const lineStart = atBlankLineStart(sql, index, start.atLineStart)
+    const lineStart = atBlankLineStart(sql, index)
     const delimiterLine =
       rules.delimiterCommand && tokenStart === null && lineStart
         ? matchAt(DELIMITER_LINE, sql, index)
@@ -173,12 +155,12 @@ function scan(
   if (tokenStart !== null) {
     flush(lastTokenEnd)
   }
-  return { statements, delimiters }
+  return statements
 }
 
 /** Splits a script into statements the way the server will see them, ignoring `;` inside literals. */
 export function splitSqlStatements(sql: string, dialect: SqlDialect): SqlStatementRange[] {
-  return scan(sql, SQL_DIALECT_RULES[dialect], { semicolons: true }).statements
+  return scan(sql, SQL_DIALECT_RULES[dialect], { semicolons: true })
 }
 
 /**
@@ -187,46 +169,7 @@ export function splitSqlStatements(sql: string, dialect: SqlDialect): SqlStateme
  */
 export function splitSqlBatches(sql: string, dialect: SqlDialect): SqlStatementRange[] {
   const rules = SQL_DIALECT_RULES[dialect]
-  return scan(sql, rules, { semicolons: !rules.goBatches }).statements
-}
-
-export type SqlScriptTake = {
-  statements: SqlStatementRange[]
-  /** Offset just past the last complete batch; the rest waits for more of the script. */
-  consumed: number
-  cursor: SqlScriptCursor
-}
-
-/**
- * The complete batches (as `splitSqlBatches` cuts them) at the head of a script read piece by
- * piece. Only text up to the last newline is cut, since a `GO` or `DELIMITER` line needs its
- * end; an unclosed literal or comment runs to that point, so nothing inside it is cut early.
- * `final` takes the rest as well.
- */
-export function takeSqlScriptBatches(
-  text: string,
-  dialect: SqlDialect,
-  cursor: SqlScriptCursor,
-  final: boolean
-): SqlScriptTake {
-  const rules = SQL_DIALECT_RULES[dialect]
-  const limit = final ? text.length : text.lastIndexOf('\n') + 1
-  const scanned = scan(text.slice(0, limit), rules, { semicolons: !rules.goBatches }, cursor)
-  const complete = final
-    ? scanned.statements.length
-    : scanned.statements.filter((statement) => statement.terminatorEnd > statement.end).length
-  const last = scanned.statements[complete - 1]
-  if (!last) {
-    return { statements: [], consumed: 0, cursor }
-  }
-  return {
-    statements: scanned.statements.slice(0, complete),
-    consumed: last.terminatorEnd,
-    cursor: {
-      delimiter: scanned.delimiters[complete - 1]!,
-      atLineStart: text[last.terminatorEnd - 1] === '\n'
-    }
-  }
+  return scan(sql, rules, { semicolons: !rules.goBatches })
 }
 
 /**
