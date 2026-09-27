@@ -233,5 +233,10 @@
     "from": "外部索引鍵",
     "to": "外鍵",
     "why": "\"Foreign key\"; OpenCC uses Microsoft's 外部索引鍵 but leaves 主鍵, so the pair would not match."
+  },
+  {
+    "from": "檔案型別",
+    "to": "檔案類型",
+    "why": "\"File type\"; OpenCC writes 型別 (a programming type), but a kind of file is 類型."
   }
 ]
