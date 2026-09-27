@@ -1,4 +1,5 @@
 import type { DatabaseConnectionSummary } from '../../shared/database/database-connection-types'
+import type { DatabaseSaveExportRequest } from '../../shared/database/database-export-types'
 import type {
   DatabaseIntrospectResult,
   DatabaseIntrospectTarget
@@ -45,5 +46,9 @@ export type DatabaseApi = {
   writeConsole: (ref: DatabaseConsoleRef, text: string) => Promise<void>
   /** Absolute path of the chosen SQLite file, or null when the dialog was cancelled. */
   pickSqliteFile: () => Promise<string | null>
+  /** Resolves to `null` when the save dialog was cancelled. */
+  saveExport: (
+    request: DatabaseSaveExportRequest
+  ) => Promise<DatabaseResult<{ filePath: string } | null>>
   onEvent: (callback: (event: DatabaseSessionEvent) => void) => () => void
 }

@@ -2,12 +2,14 @@ import React, { useMemo, useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { translate } from '@/i18n/i18n'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
+import { openDatabaseTable } from '../database-page-actions'
 import { DatabaseExplorerRow, EXPLORER_ROW_HEIGHT } from './DatabaseExplorerRow'
 import { useDatabaseExplorerStore } from './database-explorer-store'
 import {
   connectionNode,
   flattenDatabaseExplorer,
   isExpandableNode,
+  type DatabaseExplorerNode,
   type DatabaseExplorerRow as ExplorerRow
 } from './database-explorer-tree'
 
@@ -43,6 +45,14 @@ export function DatabaseExplorer(): React.JSX.Element {
     overscan: 12
   })
 
+  const activate = (node: DatabaseExplorerNode): void => {
+    if (node.kind === 'relation') {
+      openDatabaseTable(node.connectionId, node.schema, node.relation.name)
+    } else {
+      void toggle(node)
+    }
+  }
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
     const nodeRows = rows.filter(isNodeRow)
     const index = nodeRows.findIndex((row) => row.key === selectedKey)
@@ -67,7 +77,7 @@ export function DatabaseExplorer(): React.JSX.Element {
         break
       case 'Enter':
         if (current) {
-          void toggle(current.node)
+          activate(current.node)
         }
         break
       default:
@@ -111,6 +121,7 @@ export function DatabaseExplorer(): React.JSX.Element {
                 selected={row.key === selectedKey}
                 onSelect={select}
                 onToggle={(node) => void toggle(node)}
+                onActivate={activate}
               />
             </div>
           )

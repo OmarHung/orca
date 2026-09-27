@@ -15,6 +15,7 @@ import { closeDatabasePage } from './database-page-navigation'
 import { openDatabaseConsole, useDatabaseDialogsStore } from './database-page-actions'
 import { DATABASE_EXPLORER_WIDTH, useDatabasePageStore } from './database-page-store'
 import { DatabaseExplorer } from './explorer/DatabaseExplorer'
+import { DatabaseTableView } from './table/DatabaseTableView'
 import { useDatabaseSessionEvents } from './use-database-session-events'
 
 const MIN_MAIN_WIDTH = 320
@@ -136,7 +137,11 @@ function DatabaseWorkbench(): React.JSX.Element {
           <>
             <DatabaseTabStrip />
             <div className="min-h-0 flex-1">
-              <DatabaseConsoleView key={activeTab.id} tab={activeTab} />
+              {activeTab.kind === 'table' ? (
+                <DatabaseTableView key={activeTab.id} tab={activeTab} />
+              ) : (
+                <DatabaseConsoleView key={activeTab.id} tab={activeTab} />
+              )}
             </div>
           </>
         ) : (
