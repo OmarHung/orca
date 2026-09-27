@@ -17,6 +17,7 @@ import { DATABASE_EXPLORER_WIDTH, useDatabasePageStore } from './database-page-s
 import { DatabaseExplorer } from './explorer/DatabaseExplorer'
 import { DatabaseDiscardEditsDialog } from './table/DatabaseDiscardEditsDialog'
 import { DatabaseOpenTransactionDialog } from './console/DatabaseOpenTransactionDialog'
+import { DatabaseDdlDialog } from './explorer/DatabaseDdlDialog'
 import { DatabaseTableView } from './table/DatabaseTableView'
 import { useDatabaseSessionEvents } from './use-database-session-events'
 
@@ -175,6 +176,7 @@ export default function DatabasePage(): React.JSX.Element {
       <DatabaseDeleteConnectionDialog />
       <DatabaseDiscardEditsDialog />
       <DatabaseOpenTransactionDialog />
+      <DatabaseDdlDialog />
     </div>
   )
 }

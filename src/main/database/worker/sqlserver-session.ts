@@ -1,3 +1,4 @@
+import type { DatabaseDdlTarget } from '../../../shared/database/database-ddl-types'
 import type {
   DatabaseIntrospectResult,
   DatabaseIntrospectTarget
@@ -18,6 +19,7 @@ import {
   type SqlServerConnectionDraft
 } from './sqlserver-client-factory'
 import { SqlServerConsole } from './sqlserver-console'
+import { sqlServerDdl } from './sqlserver-ddl'
 import { introspectSqlServer } from './sqlserver-introspection'
 
 class SqlServerSession implements DatabaseDriverSession {
@@ -36,6 +38,10 @@ class SqlServerSession implements DatabaseDriverSession {
 
   introspect(target: DatabaseIntrospectTarget): Promise<DatabaseIntrospectResult> {
     return this.meta.run((client) => introspectSqlServer(client, target))
+  }
+
+  ddl(target: DatabaseDdlTarget): Promise<string> {
+    return this.meta.run((client) => sqlServerDdl(client, target))
   }
 
   async execute(

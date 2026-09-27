@@ -56,6 +56,8 @@ export function createDatabaseWorkerDispatcher(
       }
       case 'introspect':
         return requireSession().introspect(command.target)
+      case 'ddl':
+        return { ddl: await requireSession().ddl(command.target) }
       case 'execute':
         return requireSession().execute(
           command.consoleId,

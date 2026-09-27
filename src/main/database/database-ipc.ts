@@ -9,6 +9,7 @@ import {
   DATABASE_EXPORT_FORMATS,
   DATABASE_EXPORT_MAX_CHARS
 } from '../../shared/database/database-export-types'
+import { databaseDdlTargetSchema } from '../../shared/database/database-ddl-types'
 import { databaseIntrospectTargetSchema } from '../../shared/database/database-introspection-types'
 import { tableChangeSetSchema } from '../../shared/database/table-change-sql'
 import type { DatabaseResult } from '../../shared/database/database-query-types'
@@ -146,6 +147,12 @@ export function registerDatabaseHandlers(): void {
     const id = databaseConnectionIdSchema.safeParse(rawId)
     const target = databaseIntrospectTargetSchema.safeParse(rawTarget)
     return id.success && target.success ? service.introspect(id.data, target.data) : INVALID_REQUEST
+  })
+
+  ipcMain.handle('database:ddl', (_event, rawId: unknown, rawTarget: unknown) => {
+    const id = databaseConnectionIdSchema.safeParse(rawId)
+    const target = databaseDdlTargetSchema.safeParse(rawTarget)
+    return id.success && target.success ? service.ddl(id.data, target.data) : INVALID_REQUEST
   })
 
   ipcMain.handle('database:execute', (_event, raw: unknown) => {
