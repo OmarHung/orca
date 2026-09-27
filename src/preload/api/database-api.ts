@@ -16,10 +16,17 @@ import type {
   DatabaseEncryptionStatus,
   DatabaseExecuteRequest,
   DatabaseFetchMoreRequest,
+  DatabasePageEvent,
   DatabaseSaveConnectionRequest,
-  DatabaseSessionEvent,
   DatabaseTestConnectionRequest
 } from '../../shared/database/database-session-types'
+import type {
+  DatabaseDumpDestination,
+  DatabaseDumpJobRequest,
+  DatabaseDumpSummary,
+  DatabaseJobRef,
+  DatabasePickDumpDestinationRequest
+} from '../../shared/database/database-dump-types'
 
 export type DatabaseApi = {
   listConnections: () => Promise<DatabaseConnectionSummary[]>
@@ -57,5 +64,12 @@ export type DatabaseApi = {
   saveExport: (
     request: DatabaseSaveExportRequest
   ) => Promise<DatabaseResult<{ filePath: string } | null>>
-  onEvent: (callback: (event: DatabaseSessionEvent) => void) => () => void
+  /** Asks where a dump goes; null when the dialog was cancelled. */
+  pickDumpDestination: (
+    request: DatabasePickDumpDestinationRequest
+  ) => Promise<DatabaseDumpDestination | null>
+  /** Resolves when the whole dump ends; progress arrives as `job-progress` events. */
+  dump: (request: DatabaseDumpJobRequest) => Promise<DatabaseResult<DatabaseDumpSummary>>
+  cancelJob: (ref: DatabaseJobRef) => Promise<boolean>
+  onEvent: (callback: (event: DatabasePageEvent) => void) => () => void
 }
