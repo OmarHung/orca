@@ -35,7 +35,7 @@ const UNICODE_TYPES = new Set(['nvarchar', 'nchar'])
 const SIZED_TYPES = new Set(['varchar', 'char', 'varbinary', 'binary', ...UNICODE_TYPES])
 const SCALED_TYPES = new Set(['time', 'datetime2', 'datetimeoffset'])
 
-function formatColumnType(row: Record<string, unknown>): string {
+export function formatSqlServerColumnType(row: Record<string, unknown>): string {
   const name = String(row.type_name)
   const maxLength = Number(row.max_length)
   if (SIZED_TYPES.has(name)) {
@@ -82,7 +82,7 @@ export async function introspectSqlServer(
         level: 'columns',
         columns: rows.map((row) => ({
           name: String(row.name),
-          dataType: formatColumnType(row),
+          dataType: formatSqlServerColumnType(row),
           nullable: row.is_nullable === true,
           defaultValue: typeof row.default_value === 'string' ? row.default_value : null,
           isPrimaryKey: row.is_primary_key === 1

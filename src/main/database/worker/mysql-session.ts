@@ -1,4 +1,5 @@
 import type mysql from 'mysql2'
+import type { DatabaseDdlTarget } from '../../../shared/database/database-ddl-types'
 import type {
   DatabaseIntrospectResult,
   DatabaseIntrospectTarget
@@ -18,6 +19,7 @@ import {
   type MysqlConnectionDraft
 } from './mysql-client-factory'
 import { MysqlConsole } from './mysql-console'
+import { mysqlDdl } from './mysql-ddl'
 import { introspectMysql } from './mysql-introspection'
 
 class MysqlSession implements DatabaseDriverSession {
@@ -36,6 +38,10 @@ class MysqlSession implements DatabaseDriverSession {
 
   introspect(target: DatabaseIntrospectTarget): Promise<DatabaseIntrospectResult> {
     return introspectMysql(this.metaClient, target)
+  }
+
+  ddl(target: DatabaseDdlTarget): Promise<string> {
+    return mysqlDdl(this.metaClient, target)
   }
 
   async execute(

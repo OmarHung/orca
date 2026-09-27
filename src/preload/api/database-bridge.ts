@@ -13,6 +13,7 @@ export const databaseApi = {
   disconnect: (connectionId) => ipcRenderer.invoke('database:disconnect', connectionId),
   introspect: (connectionId, target) =>
     ipcRenderer.invoke('database:introspect', connectionId, target),
+  ddl: (connectionId, target) => ipcRenderer.invoke('database:ddl', connectionId, target),
   execute: (request) => ipcRenderer.invoke('database:execute', request),
   fetchMore: (request) => ipcRenderer.invoke('database:fetchMore', request),
   listHistory: (connectionId) => ipcRenderer.invoke('database:listHistory', connectionId),
