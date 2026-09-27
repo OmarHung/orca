@@ -101,6 +101,11 @@ export class PostgresDumpSource implements DumpSource {
     ])
     const insertable = columns.rows.filter((column) => column.generated === '')
     const sqlName = qualifiedRelationName(table.schema, table.name, 'postgres')
+    if (relation.relkind === 'p') {
+      this.notes.push(
+        `${sqlName} is partitioned and its partitions are not in the dump, so its rows load only into a copy that already has them.`
+      )
+    }
     this.columnNames.set(
       sqlName,
       insertable.map((column) => column.name)
