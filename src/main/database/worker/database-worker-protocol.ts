@@ -13,7 +13,13 @@ import type { TableChangeSet } from '../../../shared/database/table-change-sql'
 // Must stay electron-free: imported by the worker thread entry.
 
 export type DatabaseWorkerCommand =
-  | { type: 'connect'; connection: DatabaseConnectionDraft; password: string | null }
+  | {
+      type: 'connect'
+      connection: DatabaseConnectionDraft
+      password: string | null
+      /** Local end of the connection's SSH tunnel, when it has one. */
+      tunnelPort?: number
+    }
   | { type: 'introspect'; target: DatabaseIntrospectTarget }
   | { type: 'execute'; consoleId: string; sql: string; pageSize: number }
   | { type: 'fetch'; consoleId: string; resultId: string; pageSize: number }
