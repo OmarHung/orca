@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
+  DatabaseExecuteResult,
   DatabaseQueryResult,
-  DatabaseResult
+  DatabaseResult,
+  DatabaseRowsPage
 } from '../../../../../shared/database/database-query-types'
 import { splitSqlStatements } from '../../../../../shared/database/sql-statement-splitter'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
@@ -22,11 +24,20 @@ const tab: DatabaseConsoleTab = {
 const rows = (count: number, start = 0): string[][] =>
   Array.from({ length: count }, (_, index) => [String(start + index + 1)])
 
+const rowsResult = (resultId: string, count: number, hasMore: boolean): DatabaseQueryResult => ({
+  kind: 'rows',
+  resultId,
+  columns: [{ name: 'n', typeName: 'integer' }],
+  rows: rows(count),
+  hasMore,
+  durationMs: 5
+})
+
 type ExecuteMock = ReturnType<
-  typeof vi.fn<(request: { sql: string }) => Promise<DatabaseResult<DatabaseQueryResult>>>
+  typeof vi.fn<(request: { sql: string }) => Promise<DatabaseResult<DatabaseExecuteResult>>>
 >
 
-function installApi(execute: ExecuteMock): void {
+function installApi(execute: ExecuteMock, fetched?: DatabaseRowsPage): void {
   vi.stubGlobal('window', {
     api: {
       database: {
@@ -34,7 +45,7 @@ function installApi(execute: ExecuteMock): void {
         execute,
         fetchMore: vi.fn(async () => ({
           ok: true,
-          value: { rows: rows(200, 500), hasMore: false }
+          value: fetched ?? { rows: rows(200, 500), hasMore: false }
         })),
         cancel: vi.fn(async () => true)
       }
@@ -55,21 +66,14 @@ describe('database console run store', () => {
   afterEach(() => vi.unstubAllGlobals())
 
   it('runs statements in order, opening a result tab per row set', async () => {
-    const execute: ExecuteMock = vi.fn(async ({ sql }) =>
-      sql.startsWith('update')
-        ? { ok: true, value: { kind: 'command', command: 'UPDATE', rowCount: 2, durationMs: 3 } }
-        : {
-            ok: true,
-            value: {
-              kind: 'rows',
-              resultId: 'r1',
-              columns: [{ name: 'n', typeName: 'integer' }],
-              rows: rows(500),
-              hasMore: true,
-              durationMs: 5
-            }
-          }
-    )
+    const execute: ExecuteMock = vi.fn(async ({ sql }) => ({
+      ok: true,
+      value: {
+        results: sql.startsWith('update')
+          ? [{ kind: 'command', command: 'UPDATE', rowCount: 2, durationMs: 3 }]
+          : [rowsResult('r1', 500, true)]
+      }
+    }))
     installApi(execute)
     const sql = 'update t set a = 1;\nselect n from t;'
     await useDatabaseConsoleRunStore.getState().run(tab, splitSqlStatements(sql, 'postgres'))
@@ -88,6 +92,29 @@ describe('database console run store', () => {
     expect(state().results[0]?.result.hasMore).toBe(false)
   })
 
+  it('opens a tab for every result set of a batch, and for sets that follow a paged one', async () => {
+    const execute: ExecuteMock = vi.fn(async () => ({
+      ok: true,
+      value: { results: [rowsResult('r1', 1, false), rowsResult('r2', 500, true)] }
+    }))
+    installApi(execute, {
+      rows: rows(3),
+      hasMore: false,
+      followingResults: [rowsResult('r3', 1, false)]
+    })
+    await useDatabaseConsoleRunStore
+      .getState()
+      .run(tab, splitSqlStatements('select 1', 'sqlserver'))
+    expect(state().results).toHaveLength(2)
+    const paged = state().results[1]!
+    expect(state().activeResultId).toBe(paged.id)
+
+    await useDatabaseConsoleRunStore.getState().fetchMore(tab, paged.id)
+    expect(state().results.map((result) => result.result.resultId)).toEqual(['r1', 'r2', 'r3'])
+    // A set that arrives while paging doesn't steal focus from the grid being read.
+    expect(state().activeResultId).toBe(paged.id)
+  })
+
   it('stops at the first error and points the marker at the server position', async () => {
     const execute: ExecuteMock = vi.fn(async () => ({
       ok: false,
@@ -103,8 +130,19 @@ describe('database console run store', () => {
     expect(sql.slice(state().errorOffset!)).toMatch(/^x;/)
   })
 
+  it('points the marker at the reported line when the server gives lines', async () => {
+    const execute: ExecuteMock = vi.fn(async () => ({
+      ok: false,
+      error: { message: "Invalid object name 'x'.", line: 2 }
+    }))
+    installApi(execute)
+    const sql = 'select 1\n  select * from x'
+    await useDatabaseConsoleRunStore.getState().run(tab, splitSqlStatements(sql, 'sqlserver'))
+    expect(sql.slice(state().errorOffset!)).toBe('select * from x')
+  })
+
   it('does not resurrect a console disposed while its statement ran', async () => {
-    let finish: (value: DatabaseResult<DatabaseQueryResult>) => void = () => undefined
+    let finish: (value: DatabaseResult<DatabaseExecuteResult>) => void = () => undefined
     const execute: ExecuteMock = vi.fn(() => new Promise((resolve) => (finish = resolve)))
     installApi(execute)
     const running = useDatabaseConsoleRunStore
@@ -112,7 +150,10 @@ describe('database console run store', () => {
       .run(tab, splitSqlStatements('select 1', 'postgres'))
     await vi.waitFor(() => expect(execute).toHaveBeenCalled())
     useDatabaseConsoleRunStore.getState().dispose(tab.id)
-    finish({ ok: true, value: { kind: 'command', command: 'SELECT', rowCount: 1, durationMs: 1 } })
+    finish({
+      ok: true,
+      value: { results: [{ kind: 'command', command: 'SELECT', rowCount: 1, durationMs: 1 }] }
+    })
     await running
     expect(useDatabaseConsoleRunStore.getState().consoles[tab.id]).toBeUndefined()
   })

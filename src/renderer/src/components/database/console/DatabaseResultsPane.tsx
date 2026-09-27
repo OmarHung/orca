@@ -47,9 +47,11 @@ function ResultFooter({ result }: { result: DatabaseResultTab }): React.JSX.Elem
   return (
     <div className="flex h-7 shrink-0 items-center gap-3 border-t border-border px-3 text-xs text-muted-foreground">
       <span>
-        {translate('database.results.rowCount', '{{value0}} rows', {
-          value0: `${rowCount.toLocaleString()}${result.result.hasMore ? '+' : ''}`
-        })}
+        {rowCount === 1 && !result.result.hasMore
+          ? translate('database.results.oneRow', '1 row')
+          : translate('database.results.rowCount', '{{value0}} rows', {
+              value0: `${rowCount.toLocaleString()}${result.result.hasMore ? '+' : ''}`
+            })}
       </span>
       {result.loadingMore ? (
         <span className="flex items-center gap-1">
