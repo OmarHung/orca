@@ -1,4 +1,5 @@
-import type { DatabaseDriver } from '../../../../shared/database/database-connection-types'
+import type { DatabaseDriver } from './database-connection-types'
+import { isSqlReservedWord } from './sql-reserved-words'
 
 // Names that need no quoting: PostgreSQL folds unquoted names to lower case, so only those.
 const PLAIN_NAME: Record<DatabaseDriver, RegExp> = {
@@ -10,7 +11,7 @@ const PLAIN_NAME: Record<DatabaseDriver, RegExp> = {
 
 /** Quotes an identifier in the dialect's own style, and only when it needs it. */
 export function quoteSqlName(name: string, driver: DatabaseDriver): string {
-  if (PLAIN_NAME[driver].test(name)) {
+  if (PLAIN_NAME[driver].test(name) && !isSqlReservedWord(name, driver)) {
     return name
   }
   switch (driver) {

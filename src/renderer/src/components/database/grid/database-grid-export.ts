@@ -4,7 +4,7 @@ import {
   type DatabaseCell,
   type DatabaseColumn
 } from '../../../../../shared/database/database-query-types'
-import { quoteSqlName } from '../database-sql-names'
+import { quoteSqlName } from '../../../../../shared/database/sql-identifiers'
 import { isNumericColumnType } from './database-grid-columns'
 import type { GridBounds } from './database-grid-selection'
 
