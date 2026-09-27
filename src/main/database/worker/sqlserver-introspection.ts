@@ -3,6 +3,7 @@ import type {
   DatabaseIntrospectResult,
   DatabaseIntrospectTarget
 } from '../../../shared/database/database-introspection-types'
+import { sqlServerIndexes, sqlServerKeys, sqlServerRoutines } from './sqlserver-catalog-objects'
 import { querySqlServerRows } from './sqlserver-client-factory'
 
 const SCHEMAS_SQL = `
@@ -88,5 +89,14 @@ export async function introspectSqlServer(
         }))
       }
     }
+    case 'routines':
+      return { level: 'routines', routines: await sqlServerRoutines(client, target.schema) }
+    case 'keys':
+      return { level: 'keys', keys: await sqlServerKeys(client, target.schema, target.relation) }
+    case 'indexes':
+      return {
+        level: 'indexes',
+        indexes: await sqlServerIndexes(client, target.schema, target.relation)
+      }
   }
 }
