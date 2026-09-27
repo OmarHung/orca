@@ -33,7 +33,6 @@ const serverFields = {
   port: z.number().int().min(1).max(65_535),
   database: z.string().trim().max(128),
   user: z.string().max(128),
-  readOnly: z.boolean(),
   passwordStorage: z.enum(DATABASE_PASSWORD_STORAGE_MODES),
   /** Reach the server through a saved SSH host; host and port are then as seen from it. */
   sshTunnel: z
@@ -62,8 +61,7 @@ export const databaseConnectionDraftSchema = z.discriminatedUnion('driver', [
       driver: z.literal('sqlite'),
       name: nameSchema,
       color: colorSchema,
-      filePath: z.string().min(1).max(4096).refine(isAbsoluteDatabaseFilePath, 'absolute path'),
-      readOnly: z.boolean()
+      filePath: z.string().min(1).max(4096).refine(isAbsoluteDatabaseFilePath, 'absolute path')
     })
     .strict()
 ])

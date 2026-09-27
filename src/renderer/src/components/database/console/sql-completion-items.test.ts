@@ -105,7 +105,8 @@ describe('SQL completions', () => {
     ])
     expect(labels).toContain('table:users')
     expect(labels).toContain('keyword:SELECT')
-    expect(labels).toContain('keyword:RETURNING')
+    expect(labels).toContain('keyword:ILIKE')
+    expect(labels).not.toContain('keyword:INSERT INTO')
   })
 
   it('writes keywords in the case being typed', async () => {

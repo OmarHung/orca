@@ -1,5 +1,5 @@
 import React, { useRef } from 'react'
-import { ArrowLeft, Database, Plus, SquareTerminal } from 'lucide-react'
+import { ArrowLeft, Database, Lock, Plus, SquareTerminal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import { isWebClientLocation } from '@/lib/web-client-location'
@@ -15,7 +15,6 @@ import { closeDatabasePage } from './database-page-navigation'
 import { openDatabaseConsole, useDatabaseDialogsStore } from './database-page-actions'
 import { DATABASE_EXPLORER_WIDTH, useDatabasePageStore } from './database-page-store'
 import { DatabaseExplorerPanel } from './explorer/DatabaseExplorerPanel'
-import { DatabaseOpenTransactionDialog } from './console/DatabaseOpenTransactionDialog'
 import { DatabaseDdlDialog } from './explorer/DatabaseDdlDialog'
 import { DatabaseTableView } from './table/DatabaseTableView'
 import { useDatabaseSessionEvents } from './use-database-session-events'
@@ -36,6 +35,16 @@ function PageHeader(): React.JSX.Element {
       <h1 className="truncate text-base font-semibold text-foreground">
         {translate('database.page.title', 'Database')}
       </h1>
+      <span
+        className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground"
+        title={translate(
+          'database.page.readOnlyHint',
+          'Orca only reads your databases: statements that would change them are not run.'
+        )}
+      >
+        <Lock className="size-3" />
+        {translate('database.page.readOnly', 'Read-only')}
+      </span>
       <Button
         variant="outline"
         size="sm"
@@ -173,7 +182,6 @@ export default function DatabasePage(): React.JSX.Element {
       <ConnectionEditorHost />
       <DatabasePasswordDialog />
       <DatabaseDeleteConnectionDialog />
-      <DatabaseOpenTransactionDialog />
       <DatabaseDdlDialog />
     </div>
   )

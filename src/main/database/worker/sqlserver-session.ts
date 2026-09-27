@@ -29,7 +29,7 @@ import { introspectSqlServer } from './sqlserver-introspection'
 class SqlServerSession implements DatabaseDriverSession {
   private readonly consoles = new ConsolePool((_consoleId, onLost) =>
     connectSqlServer(this.connection, this.password, onLost).then(
-      (client) => new SqlServerConsole(client, this.connection.readOnly)
+      (client) => new SqlServerConsole(client)
     )
   )
 
@@ -73,11 +73,11 @@ class SqlServerSession implements DatabaseDriverSession {
     consoleId: string,
     sql: string,
     pageSize: number,
-    { mode, database }: DatabaseExecuteOptions
+    { database }: DatabaseExecuteOptions
   ): Promise<DatabaseExecuteResult> {
     const target = await this.consoles.acquire(consoleId)
     await target.database.prepare(database)
-    const result = await target.transactions.run(mode, sql, () => target.execute(sql, pageSize))
+    const result = await target.execute(sql, pageSize)
     const switched = await target.database.afterRun(sql, result)
     return switched === undefined ? result : { ...result, database: switched }
   }

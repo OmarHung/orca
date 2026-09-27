@@ -1,5 +1,4 @@
 import React from 'react'
-import { Lock } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import type { DatabaseSessionState } from '../../../../shared/database/database-session-types'
@@ -42,15 +41,6 @@ export function DatabaseSessionDot({
   )
 }
 
-export function ReadOnlyIcon(): React.JSX.Element {
-  const label = translate('database.connection.readOnly', 'Read-only')
-  return (
-    <Lock className="size-3 shrink-0 text-muted-foreground" role="img" aria-label={label}>
-      <title>{label}</title>
-    </Lock>
-  )
-}
-
 /** Connection name plus session state, for the console toolbar. */
 export function DatabaseConnectionBadge({
   connectionId
@@ -71,7 +61,6 @@ export function DatabaseConnectionBadge({
       <span className="max-w-60 truncate">
         {connection?.name ?? translate('database.connection.missing', 'Deleted connection')}
       </span>
-      {connection?.readOnly ? <ReadOnlyIcon /> : null}
     </span>
   )
 }
