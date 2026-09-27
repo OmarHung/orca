@@ -16,6 +16,11 @@ function readPositiveInteger(source: object, key: string): number | undefined {
   return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : undefined
 }
 
+function readIndex(source: object, key: string): number | undefined {
+  const value: unknown = Reflect.get(source, key)
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : undefined
+}
+
 /** pg `code`, mysql2 `sqlState`, or the SQL Server error number (e.g. 208). */
 function serverCode(error: object): string | undefined {
   const code = readString(error, 'code')
@@ -44,6 +49,7 @@ export function toDatabaseError(error: unknown): DatabaseError {
   const line = readPositiveInteger(error, 'lineNumber') ?? Number(MYSQL_LINE.exec(message)?.[1])
   const detail = readString(error, 'detail')
   const hint = readString(error, 'hint')
+  const changeIndex = readIndex(error, 'changeIndex')
   return {
     message,
     ...(sqlState ? { sqlState } : {}),
@@ -51,6 +57,7 @@ export function toDatabaseError(error: unknown): DatabaseError {
     ...(position ? { position } : {}),
     ...(Number.isInteger(line) && line > 0 ? { line } : {}),
     ...(detail ? { detail } : {}),
-    ...(hint ? { hint } : {})
+    ...(hint ? { hint } : {}),
+    ...(changeIndex === undefined ? {} : { changeIndex })
   }
 }

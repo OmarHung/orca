@@ -39,17 +39,20 @@ function secretStore(available: boolean): SecretStore {
 describe('DatabaseService', () => {
   let dir: string
   let connectPasswords: (string | null)[]
+  let workerCommands: string[]
   let acceptedPassword: string
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'orca-db-service-'))
     connectPasswords = []
+    workerCommands = []
     acceptedPassword = 'right'
   })
 
   afterEach(() => rmSync(dir, { recursive: true, force: true }))
 
   function answer(command: DatabaseWorkerCommand): DatabaseResult<unknown> {
+    workerCommands.push(command.type)
     if (command.type !== 'connect') {
       return { ok: true, value: null }
     }
@@ -139,6 +142,32 @@ describe('DatabaseService', () => {
     await service.saveConnection({ id, draft: { ...draft, name: 'Renamed', readOnly: true } })
     expect((await service.connect(id)).ok).toBe(true)
     expect(connectPasswords).toHaveLength(2)
+  })
+
+  it('refuses table edits on a read-only connection before they reach the database', async () => {
+    const service = createService()
+    const saved = await service.saveConnection({
+      draft: { ...draft, readOnly: true },
+      password: 'right'
+    })
+    if (!saved.ok) {
+      throw new Error(saved.error.message)
+    }
+    const result = await service.applyChanges({
+      connectionId: saved.value.id,
+      consoleId: 'console-01',
+      changeSet: {
+        schema: 'public',
+        relation: 'people',
+        keyColumns: ['id'],
+        changes: [{ kind: 'delete', key: ['1'] }]
+      }
+    })
+    expect(result).toMatchObject({
+      ok: false,
+      error: { message: expect.stringContaining('read-only') }
+    })
+    expect(workerCommands).not.toContain('applyChanges')
   })
 
   it('round-trips console text', async () => {

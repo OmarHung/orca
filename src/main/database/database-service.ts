@@ -15,6 +15,7 @@ import type {
   DatabaseRowsPage
 } from '../../shared/database/database-query-types'
 import type {
+  DatabaseApplyChangesRequest,
   DatabaseConsoleRef,
   DatabaseEncryptionStatus,
   DatabaseExecuteRequest,
@@ -51,6 +52,8 @@ function changesSessionSettings(
       JSON.stringify(value) !== JSON.stringify(Reflect.get(previous, key))
   )
 }
+
+const READ_ONLY_EDITS_MESSAGE = 'This connection is read-only, so its tables can’t be edited.'
 
 function unknownConnection(): DatabaseResult<never> {
   return { ok: false, error: { message: 'This connection no longer exists.', code: 'unavailable' } }
@@ -181,6 +184,24 @@ export class DatabaseService {
       consoleId: request.consoleId,
       resultId: request.resultId,
       pageSize: request.pageSize
+    })
+  }
+
+  async applyChanges(
+    request: DatabaseApplyChangesRequest
+  ): Promise<DatabaseResult<{ applied: number }>> {
+    const connection = this.deps.connections.get(request.connectionId)
+    if (!connection) {
+      return unknownConnection()
+    }
+    // Why here too: SQL Server has no session read-only mode to refuse the write.
+    if (connection.readOnly) {
+      return { ok: false, error: { message: READ_ONLY_EDITS_MESSAGE } }
+    }
+    return this.deps.sessions.request(request.connectionId, {
+      type: 'applyChanges',
+      consoleId: request.consoleId,
+      changeSet: request.changeSet
     })
   }
 
