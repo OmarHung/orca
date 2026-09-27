@@ -417,9 +417,15 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 
 - **選交易模式後焦點被搶走**：選單關閉時把焦點還給選單按鈕，選完立刻打字會打到一半被打斷（完整 e2e 抓到的，console 裡只剩「select」）。改成焦點回到 console
 
+試用回饋後的調整：
+
+- **console 選擇資料庫／schema**：MySQL/MariaDB 和 PostgreSQL 的工具列有下拉選單（MySQL 用 `USE`，PG 設 `search_path` 並保留 public）。從結構樹的資料庫節點開 console 會預設選中它；沒設預設資料庫的連線顯示「選擇資料庫」。console 裡自己執行 `USE`／`SET search_path` 時選單會跟著更新；補全也以選中的為準。交易進行中鎖住（PG 的 SET 會隨回滾撤銷）。SQL Server、SQLite 不顯示
+- **唯讀連線有鎖頭圖示**：結構樹和工具列
+- **FROM 後只列目前資料庫的表**：有目前資料庫時不再列其他資料庫名稱（Monaco 先依模糊比對排序，庫名會排到表名前面）；沒有時才列庫名讓人先選
+
 已知限制與觀察：
 
-- 補全不看 console session 自己的 `SET search_path`／`USE`，目前 schema 以結構查詢用的那條連線為準
+- SQL Server 的 console 還不能切換資料庫（它能切的是資料庫，不是 schema）
 - 手動模式下連讀取也會開交易（和 DataGrip 相同），所以會一直顯示「交易進行中」直到提交或回滾
 - DDL 重建不含註解（COMMENT）、權限、擁有者、觸發器（SQLite 例外）；SQL Server 的叢集／非叢集只區分索引，不區分主鍵
 - 一次完整 e2e 在機器負載很高時（比平常慢一倍），MariaDB 的 `call` 沒有產生結果、30 秒逾時；之後單獨跑 3 次、完整跑 2 次都無法重現，原因不明
