@@ -34,6 +34,8 @@ type SessionEntry = {
   serverVersion: string | null
   connecting: Promise<ConnectResult> | null
   tunnel: DatabaseTunnel | null
+  /** Why the session ended on its own, so a connect it cut short can say so. */
+  lostReason: string | null
 }
 
 type SessionCommand = Exclude<DatabaseWorkerCommandType, 'connect' | 'close'>
@@ -75,7 +77,7 @@ export class DatabaseSessionManager {
       const client = new DatabaseWorkerClient(this.deps.spawnWorker(connection.driver), (message) =>
         this.handleConnectionLost(connectionId, entry, message)
       )
-      entry = { client, serverVersion: null, connecting: null, tunnel: null }
+      entry = { client, serverVersion: null, connecting: null, tunnel: null, lostReason: null }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       this.deps.emit({ kind: 'session-state', connectionId, state: 'error', message })
@@ -215,7 +217,10 @@ export class DatabaseSessionManager {
     entry.connecting = null
     if (this.sessions.get(connectionId) !== entry) {
       void entry.tunnel?.close()
-      return { ok: false, error: { message: 'Connection was closed', code: 'unavailable' } }
+      return {
+        ok: false,
+        error: { message: entry.lostReason ?? 'Connection was closed', code: 'unavailable' }
+      }
     }
     if (result.ok) {
       entry.serverVersion = result.value.serverVersion
@@ -246,12 +251,13 @@ export class DatabaseSessionManager {
     this.sessions.delete(connectionId)
     void entry.client.terminate()
     void entry.tunnel?.close()
+    // Why the check: mysql2's own message already starts with "Connection lost:".
+    entry.lostReason = /^connection lost/i.test(message) ? message : `Connection lost: ${message}`
     this.deps.emit({
       kind: 'session-state',
       connectionId,
       state: 'error',
-      // Why the check: mysql2's own message already starts with "Connection lost:".
-      message: /^connection lost/i.test(message) ? message : `Connection lost: ${message}`
+      message: entry.lostReason
     })
   }
 }
