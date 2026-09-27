@@ -7,6 +7,7 @@ import type {
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
 import type { DatabaseDriverCallbacks, DatabaseDriverSession } from './database-driver'
+import type { DatabaseChangeTransaction } from './table-change-transaction'
 import {
   SqlServerRequestQueue,
   closeSqlServer,
@@ -44,6 +45,10 @@ class SqlServerSession implements DatabaseDriverSession {
   }
 
   // TDS cancels in-band (an attention packet), so no second session is needed.
+  async beginChanges(consoleId: string): Promise<DatabaseChangeTransaction> {
+    return (await this.console(consoleId)).beginChanges()
+  }
+
   async cancel(consoleId: string): Promise<boolean> {
     const pending = this.consoles.get(consoleId)
     return pending ? (await pending).cancel() : false

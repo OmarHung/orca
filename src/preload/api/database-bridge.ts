@@ -15,6 +15,7 @@ export const databaseApi = {
     ipcRenderer.invoke('database:introspect', connectionId, target),
   execute: (request) => ipcRenderer.invoke('database:execute', request),
   fetchMore: (request) => ipcRenderer.invoke('database:fetchMore', request),
+  applyChanges: (request) => ipcRenderer.invoke('database:applyChanges', request),
   cancel: (ref) => ipcRenderer.invoke('database:cancel', ref),
   closeConsole: (ref) => ipcRenderer.invoke('database:closeConsole', ref),
   readConsole: (ref) => ipcRenderer.invoke('database:readConsole', ref),
