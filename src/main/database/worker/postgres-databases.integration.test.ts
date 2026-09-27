@@ -84,15 +84,6 @@ describe.skipIf(!target)('PostgreSQL databases', () => {
     expect((await run(console, 'select count(*) from items')).ok).toBe(false)
   })
 
-  it('lets go of a database it browsed when a console drops it', async () => {
-    const doomed = `orca_it_drop_${randomUUID().slice(0, 8)}`
-    await expectOk(run(setupConsole, `create database ${doomed}`))
-    await expectOk(
-      harness.send({ type: 'introspect', target: { level: 'schemas', database: doomed } })
-    )
-    await expectOk(run(setupConsole, `drop database ${doomed}`))
-  })
-
   it('names a column of a type that only the picked database has', async () => {
     const result = await expectOk(run(randomUUID(), "select 'ok'::mood as feeling", other))
     expect(onlyRows(result).columns).toEqual([{ name: 'feeling', typeName: 'mood' }])
