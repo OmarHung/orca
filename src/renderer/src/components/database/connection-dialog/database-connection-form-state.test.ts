@@ -73,6 +73,24 @@ describe('database connection form', () => {
     }
   })
 
+  it('round-trips a connection color for servers and SQLite, and rejects anything but a hex color', () => {
+    const server = { ...initialConnectionForm(null, true), color: '#ef4444' }
+    const parsed = parseConnectionForm(server)
+    expect(parsed.ok && parsed.draft).toMatchObject({ color: '#ef4444' })
+    if (parsed.ok) {
+      const saved = { ...parsed.draft, id: 'conn-0001', createdAt: 0, updatedAt: 0 }
+      expect(initialConnectionForm({ ...saved, hasSavedPassword: false }, true).color).toBe(
+        '#ef4444'
+      )
+    }
+    const sqlite = { ...changeConnectionDriver(server, 'sqlite'), filePath: '/tmp/a.db' }
+    expect(parseConnectionForm(sqlite)).toMatchObject({ ok: true, draft: { color: '#ef4444' } })
+    expect(parseConnectionForm({ ...server, color: 'red; background: url(x)' })).toMatchObject({
+      ok: false,
+      invalidFields: new Set(['color'])
+    })
+  })
+
   it('keeps the saved password unless the field was edited', () => {
     const form = initialConnectionForm(null, true)
     expect(passwordToSave(form)).toBeUndefined()

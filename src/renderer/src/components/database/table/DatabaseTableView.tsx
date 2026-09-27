@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { translate } from '@/i18n/i18n'
 import type { DatabaseDriver } from '../../../../../shared/database/database-connection-types'
 import { DatabaseConnectionBadge } from '../DatabaseConnectionBadge'
+import { connectionTintStyle } from '../database-connection-color'
 import { DatabaseResultFooter } from '../console/DatabaseResultFooter'
 import {
   DATABASE_MAX_BUFFERED_ROWS,
@@ -209,7 +210,10 @@ export function DatabaseTableView({ tab }: { tab: DatabaseTableTab }): React.JSX
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-2">
+      <div
+        className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-2"
+        style={connectionTintStyle(connection?.color ?? null)}
+      >
         <Button
           variant="ghost"
           size="icon-sm"
