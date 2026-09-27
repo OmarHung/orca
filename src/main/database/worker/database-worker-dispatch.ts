@@ -1,0 +1,70 @@
+import type { DatabaseResult } from '../../../shared/database/database-query-types'
+import type { DatabaseDriverSession, OpenDatabaseDriverSession } from './database-driver'
+import { toDatabaseError } from './database-error-mapping'
+import type {
+  DatabaseWorkerCommand,
+  DatabaseWorkerMessage,
+  DatabaseWorkerRequest
+} from './database-worker-protocol'
+import { openPostgresSession } from './postgres-session'
+
+const openDriverSession: OpenDatabaseDriverSession = (connection, password, callbacks) => {
+  switch (connection.driver) {
+    case 'postgres':
+      return openPostgresSession(connection, password, callbacks)
+  }
+}
+
+/** Runs worker commands against the one data source this worker owns. */
+export function createDatabaseWorkerDispatcher(
+  post: (message: DatabaseWorkerMessage) => void,
+  openSession: OpenDatabaseDriverSession = openDriverSession
+): (request: DatabaseWorkerRequest) => Promise<void> {
+  let session: DatabaseDriverSession | null = null
+
+  const requireSession = (): DatabaseDriverSession => {
+    if (!session) {
+      throw new Error('Not connected')
+    }
+    return session
+  }
+
+  const run = async (command: DatabaseWorkerCommand): Promise<unknown> => {
+    switch (command.type) {
+      case 'connect': {
+        await session?.close()
+        session = await openSession(command.connection, command.password, {
+          onConnectionLost: (message) => post({ kind: 'connection-lost', message })
+        })
+        return { serverVersion: session.serverVersion }
+      }
+      case 'introspect':
+        return requireSession().introspect(command.target)
+      case 'execute':
+        return requireSession().execute(command.consoleId, command.sql, command.pageSize)
+      case 'fetch':
+        return requireSession().fetch(command.consoleId, command.resultId, command.pageSize)
+      case 'cancel':
+        return { cancelled: session ? await session.cancel(command.consoleId) : false }
+      case 'closeConsole':
+        await session?.closeConsole(command.consoleId)
+        return null
+      case 'close': {
+        const closing = session
+        session = null
+        await closing?.close()
+        return null
+      }
+    }
+  }
+
+  return async (request) => {
+    let result: DatabaseResult<unknown>
+    try {
+      result = { ok: true, value: await run(request.command) }
+    } catch (error) {
+      result = { ok: false, error: toDatabaseError(error) }
+    }
+    post({ kind: 'response', id: request.id, result })
+  }
+}
