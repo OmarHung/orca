@@ -10,7 +10,7 @@ import { translate } from '@/i18n/i18n'
 import type { DatabaseSchemaInfo } from '../../../../../shared/database/database-introspection-types'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
 import { useDatabasePageStore, type DatabaseConsoleTab } from '../database-page-store'
-import { sqlCatalogFor } from './sql-completion-catalog'
+import { listDatabases, sqlCatalogFor } from './sql-completion-catalog'
 
 type DatabaseSchemaSelectProps = {
   tab: DatabaseConsoleTab
@@ -19,21 +19,31 @@ type DatabaseSchemaSelectProps = {
   onMenuClosed: () => void
 }
 
-function useSchemas(connectionId: string, connected: boolean): DatabaseSchemaInfo[] {
-  const [schemas, setSchemas] = useState<DatabaseSchemaInfo[]>([])
+// SQL Server switches database (the user's default schema applies inside it); MySQL's
+// databases are its schemas, and PostgreSQL switches search_path.
+type PickerKind = 'database' | 'schema'
+
+function useChoices(
+  connectionId: string,
+  connected: boolean,
+  kind: PickerKind | null
+): { choices: DatabaseSchemaInfo[]; reload: () => void } {
+  const [choices, setChoices] = useState<DatabaseSchemaInfo[]>([])
+  // Why reload on open: a database or schema created since the last look should be listed.
+  const [generation, setGeneration] = useState(0)
   useEffect(() => {
-    if (!connected) {
+    if (!connected || kind === null) {
       return
     }
     let current = true
-    void sqlCatalogFor(connectionId)
-      .schemas()
-      .then((list) => current && setSchemas(list))
+    const load =
+      kind === 'database' ? listDatabases(connectionId) : sqlCatalogFor(connectionId).schemas()
+    void load.then((list) => current && setChoices(list))
     return () => {
       current = false
     }
-  }, [connectionId, connected])
-  return schemas
+  }, [connectionId, connected, kind, generation])
+  return { choices, reload: () => setGeneration((value) => value + 1) }
 }
 
 /**
@@ -52,26 +62,41 @@ export function DatabaseSchemaSelect({
     (state) => state.sessions[tab.connectionId]?.state === 'connected'
   )
   const setSchema = useDatabasePageStore((state) => state.setConsoleSchema)
-  const schemas = useSchemas(tab.connectionId, connected)
-  if (driver !== 'postgres' && driver !== 'mysql') {
+  const setDatabase = useDatabasePageStore((state) => state.setConsoleDatabase)
+  const kind: PickerKind | null =
+    driver === 'sqlserver'
+      ? 'database'
+      : driver === 'postgres' || driver === 'mysql'
+        ? 'schema'
+        : null
+  const { choices: schemas, reload } = useChoices(tab.connectionId, connected, kind)
+  if (kind === null) {
     return null
   }
-  const shown = tab.schema ?? schemas.find((schema) => schema.isCurrent)?.name ?? ''
+  const picked = kind === 'database' ? tab.database : tab.schema
+  const shown = picked ?? schemas.find((schema) => schema.isCurrent)?.name ?? ''
   // Before the list loads, the picked schema still needs an item to show.
   const names =
     schemas.some((schema) => schema.name === shown) || !shown
       ? schemas.map((schema) => schema.name)
       : [shown, ...schemas.map((schema) => schema.name)]
   const label =
-    driver === 'mysql'
+    driver !== 'postgres'
       ? translate('database.console.database', 'Database')
       : translate('database.console.schema', 'Schema')
   return (
-    <Select value={shown} disabled={disabled} onValueChange={(name) => setSchema(tab.id, name)}>
+    <Select
+      value={shown}
+      disabled={disabled}
+      onOpenChange={(open) => open && reload()}
+      onValueChange={(name) =>
+        kind === 'database' ? setDatabase(tab.id, name) : setSchema(tab.id, name)
+      }
+    >
       <SelectTrigger size="sm" aria-label={label}>
         <SelectValue
           placeholder={
-            driver === 'mysql'
+            driver !== 'postgres'
               ? translate('database.console.chooseDatabase', 'Choose database')
               : translate('database.console.chooseSchema', 'Choose schema')
           }

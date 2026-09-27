@@ -3,6 +3,8 @@ import type {
   DatabaseExecuteResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
+import { quoteSqlName } from '../../../shared/database/sql-identifiers'
+import { ConsoleSchema } from './console-schema'
 import { ConsoleTransactions } from './console-transactions'
 import { PagedBatchReader } from './database-batch-reader'
 import { assertReadOnlySql } from './read-only-sql-guard'
@@ -37,6 +39,19 @@ export class SqlServerConsole {
       await this.abandonOpen()
       await this.batch(`SET IMPLICIT_TRANSACTIONS ${manual ? 'ON' : 'OFF'}`)
     }
+  })
+
+  // SQL Server consoles switch database, not schema: the user's default schema applies in each.
+  readonly database = new ConsoleSchema({
+    apply: async (name) => {
+      await this.abandonOpen()
+      await this.batch(`USE ${quoteSqlName(name, 'sqlserver')}`)
+    },
+    current: async () => {
+      const [row] = await querySqlServerRows(this.client, 'select db_name() as name')
+      return typeof row?.name === 'string' ? row.name : null
+    },
+    mayChange: (sql) => leadingKeyword(sql) === 'USE'
   })
 
   constructor(

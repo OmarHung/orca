@@ -39,6 +39,8 @@ export type DatabaseExecuteRequest = DatabaseConsoleRef & {
   transactionMode?: DatabaseTransactionMode
   /** The schema (MySQL database) the console picked; absent keeps the connection's default. */
   schema?: string
+  /** The database the console picked (PostgreSQL, SQL Server); absent keeps the connection's. */
+  database?: string
 }
 
 export type DatabaseFetchMoreRequest = DatabaseConsoleRef & { resultId: string; pageSize: number }

@@ -10,14 +10,13 @@ import type {
 import type {
   DatabaseCell,
   DatabaseExecuteResult,
-  DatabaseRowsPage,
-  DatabaseTransactionMode
+  DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
 import { ConsoleTransactions } from './console-transactions'
 import { sqliteDdl } from './sqlite-ddl'
 import { introspectSqlite } from './sqlite-introspection'
 import { encodeTextCell } from './database-cell-encoding'
-import type { DatabaseDriverSession } from './database-driver'
+import type { DatabaseDriverSession, DatabaseExecuteOptions } from './database-driver'
 import { commandRowCount, leadingKeyword } from './statement-keyword'
 import type { DatabaseChangeTransaction } from './table-change-transaction'
 
@@ -167,7 +166,7 @@ class SqliteSession implements DatabaseDriverSession {
     consoleId: string,
     sql: string,
     pageSize: number,
-    mode: DatabaseTransactionMode
+    { mode }: DatabaseExecuteOptions
   ): Promise<DatabaseExecuteResult> {
     const target = this.console(consoleId)
     return target.transactions.run(mode, sql, async () => target.execute(sql, pageSize))

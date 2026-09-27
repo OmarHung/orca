@@ -73,14 +73,16 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
       void run(tab, statements, {
         recordHistory: true,
         transactionMode: tab.transactionMode,
-        schema: tab.schema ?? undefined
+        schema: tab.schema ?? undefined,
+        database: tab.database ?? undefined
       }),
     [run, tab]
   )
   const endTransaction = (sql: 'COMMIT' | 'ROLLBACK'): void =>
     void run(tab, [{ start: 0, end: sql.length, terminatorEnd: sql.length, text: sql }], {
       transactionMode: tab.transactionMode,
-      schema: tab.schema ?? undefined
+      schema: tab.schema ?? undefined,
+      database: tab.database ?? undefined
     })
   const handleEditorReady = useCallback((instance: editor.ICodeEditor | null) => {
     editorRef.current = instance
@@ -162,6 +164,7 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
             tabId={tab.id}
             connectionId={tab.connectionId}
             schema={tab.schema}
+            database={tab.database}
             initialText={text}
             dialect={dialect}
             errorOffset={errorOffset}

@@ -11,6 +11,14 @@ import type {
 } from '../../../shared/database/database-query-types'
 import type { DatabaseChangeTransaction } from './table-change-transaction'
 
+export type DatabaseExecuteOptions = {
+  mode: DatabaseTransactionMode
+  /** Where unqualified names should resolve; ignored by drivers with no per-session switch. */
+  schema?: string
+  /** The console's database (PostgreSQL, SQL Server); ignored where a server holds one. */
+  database?: string
+}
+
 /**
  * One open data source. Each console gets its own server session so a half-read result
  * in one console never blocks another, and metadata queries run on a separate session.
@@ -24,9 +32,7 @@ export type DatabaseDriverSession = {
     consoleId: string,
     sql: string,
     pageSize: number,
-    mode: DatabaseTransactionMode,
-    /** Where unqualified names should resolve; ignored by drivers with no per-session switch. */
-    schema?: string
+    options: DatabaseExecuteOptions
   ): Promise<DatabaseExecuteResult>
   fetch(consoleId: string, resultId: string, pageSize: number): Promise<DatabaseRowsPage>
   /** Starts a transaction on the console's session for applying table edits. */

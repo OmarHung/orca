@@ -6,11 +6,14 @@ import type {
 } from '../../../shared/database/database-introspection-types'
 import type {
   DatabaseExecuteResult,
-  DatabaseRowsPage,
-  DatabaseTransactionMode
+  DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
 import { ConsolePool } from './console-pool'
-import type { DatabaseDriverCallbacks, DatabaseDriverSession } from './database-driver'
+import type {
+  DatabaseDriverCallbacks,
+  DatabaseDriverSession,
+  DatabaseExecuteOptions
+} from './database-driver'
 import type { DatabaseChangeTransaction } from './table-change-transaction'
 import {
   connectMysqlClient,
@@ -48,8 +51,7 @@ class MysqlSession implements DatabaseDriverSession {
     consoleId: string,
     sql: string,
     pageSize: number,
-    mode: DatabaseTransactionMode,
-    schema?: string
+    { mode, schema }: DatabaseExecuteOptions
   ): Promise<DatabaseExecuteResult> {
     const target = await this.consoles.acquire(consoleId)
     await target.schema.prepare(schema)
