@@ -31,6 +31,7 @@ export type DatabaseWorkerCommand =
       pageSize: number
       transactionMode?: DatabaseTransactionMode
       schema?: string
+      database?: string
     }
   | { type: 'fetch'; consoleId: string; resultId: string; pageSize: number }
   | { type: 'applyChanges'; consoleId: string; changeSet: TableChangeSet }

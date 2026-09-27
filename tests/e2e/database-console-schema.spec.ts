@@ -104,3 +104,49 @@ test('opens a console in the database it was opened from, and follows USE', asyn
     await expect(orcaPage.getByText(/^DROP completed/)).toBeVisible({ timeout: 20_000 })
   }
 })
+
+const SQLSERVER_URL = process.env.ORCA_TEST_SQLSERVER_URL
+
+test('switches a SQL Server console between databases, and follows USE', async ({
+  orcaPage
+}, testInfo) => {
+  test.skip(!SQLSERVER_URL, 'set ORCA_TEST_SQLSERVER_URL to a disposable SQL Server')
+  const url = new URL(SQLSERVER_URL!)
+  const database = `orca_e2e_db_${Date.now().toString(36)}`
+  await openDatabasePage(orcaPage)
+  await addServerConnection(orcaPage, { url, type: 'SQL Server', name: 'mssql-dbs' })
+  const row = orcaPage
+    .getByRole('tree', { name: 'Database objects' })
+    .getByRole('treeitem', { name: /^mssql-dbs/ })
+  await explorerMenu(orcaPage, row, 'New Console')
+  await runInConsole(orcaPage, `create database ${database};`)
+  await expect(orcaPage.getByText(/^CREATE completed/)).toBeVisible({ timeout: 30_000 })
+  await runInConsole(orcaPage, `create table ${database}.dbo.items (id int primary key);`)
+  await runInConsole(orcaPage, `insert into ${database}.dbo.items values (1), (2);`)
+  await expect(orcaPage.getByText(/^INSERT: 2 rows affected/)).toBeVisible({ timeout: 30_000 })
+
+  const picker = orcaPage.getByRole('combobox', { name: 'Database' })
+  try {
+    await expect(picker).toHaveText('master')
+    await picker.click()
+    await orcaPage.getByRole('option', { name: database, exact: true }).click()
+    await expect(picker).toHaveText(database)
+    const grid = orcaPage.getByRole('grid')
+    await runInConsole(orcaPage, 'select count(*) as total from items;')
+    await expect(grid.getByRole('gridcell', { name: '2', exact: true })).toBeVisible({
+      timeout: 30_000
+    })
+    await orcaPage.screenshot({ path: testInfo.outputPath('sqlserver-database-picker.png') })
+
+    await runInConsole(orcaPage, 'use master;')
+    await expect(picker).toHaveText('master', { timeout: 30_000 })
+  } finally {
+    await runInConsole(
+      orcaPage,
+      `alter database ${database} set single_user with rollback immediate; drop database ${database};`
+    )
+    await expect(orcaPage.getByText(/^DROP completed|^ALTER completed/).first()).toBeVisible({
+      timeout: 30_000
+    })
+  }
+})

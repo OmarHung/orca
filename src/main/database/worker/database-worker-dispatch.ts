@@ -59,13 +59,11 @@ export function createDatabaseWorkerDispatcher(
       case 'ddl':
         return { ddl: await requireSession().ddl(command.target) }
       case 'execute':
-        return requireSession().execute(
-          command.consoleId,
-          command.sql,
-          command.pageSize,
-          command.transactionMode ?? 'auto',
-          command.schema
-        )
+        return requireSession().execute(command.consoleId, command.sql, command.pageSize, {
+          mode: command.transactionMode ?? 'auto',
+          schema: command.schema,
+          database: command.database
+        })
       case 'fetch':
         return requireSession().fetch(command.consoleId, command.resultId, command.pageSize)
       case 'applyChanges': {
