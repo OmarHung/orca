@@ -58,6 +58,7 @@ export function DatabasePasswordDialog(): React.JSX.Element | null {
         >
           <Input
             type="password"
+            aria-label={translate('database.connectionForm.password', 'Password')}
             autoFocus
             autoComplete="off"
             value={password}

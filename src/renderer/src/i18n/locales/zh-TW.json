@@ -18830,8 +18830,7 @@
       "noConnections": "還沒有連線。",
       "notNull": "not null",
       "openData": "開啟資料",
-      "refresh": "重新整理",
-      "toggle": "展開或摺疊"
+      "refresh": "重新整理"
     },
     "grid": {
       "copy": "複製",
