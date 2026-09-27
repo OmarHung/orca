@@ -387,6 +387,8 @@ module.exports = {
     'out/main/computer-sidecar.js',
     'out/main/parcel-watcher-process-entry.js',
     'out/main/orcad/orcad-local-serve-selection-entry.js',
+    // SQLite sessions fork this entry as a child process so a stuck statement can be killed.
+    'out/main/database-worker-entry.js',
     'out/main/chunks/**',
     'out/renderer/**',
     'out/mobile-web/**',

@@ -4,7 +4,7 @@ import type {
   DatabaseIntrospectTarget
 } from '../../../shared/database/database-introspection-types'
 import type {
-  DatabaseQueryResult,
+  DatabaseExecuteResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
 
@@ -15,7 +15,7 @@ import type {
 export type DatabaseDriverSession = {
   readonly serverVersion: string
   introspect(target: DatabaseIntrospectTarget): Promise<DatabaseIntrospectResult>
-  execute(consoleId: string, sql: string, pageSize: number): Promise<DatabaseQueryResult>
+  execute(consoleId: string, sql: string, pageSize: number): Promise<DatabaseExecuteResult>
   fetch(consoleId: string, resultId: string, pageSize: number): Promise<DatabaseRowsPage>
   /** Resolves true when the server accepted the cancel request. */
   cancel(consoleId: string): Promise<boolean>
