@@ -87,11 +87,12 @@ async function tableDdl(
   name: string,
   serverVersionNum: number
 ): Promise<string> {
-  const [columns, constraints, indexes] = await Promise.all([
-    client.query<ColumnRow>(columnsSql(serverVersionNum), [oid]),
-    client.query<{ name: string; definition: string }>(CONSTRAINTS_SQL, [oid]),
-    client.query<{ definition: string }>(INDEXES_SQL, [oid])
+  // One after another: a pg client runs one query at a time anyway, and pg@9 refuses overlap.
+  const columns = await client.query<ColumnRow>(columnsSql(serverVersionNum), [oid])
+  const constraints = await client.query<{ name: string; definition: string }>(CONSTRAINTS_SQL, [
+    oid
   ])
+  const indexes = await client.query<{ definition: string }>(INDEXES_SQL, [oid])
   const lines = [
     ...columns.rows.map(columnLine),
     ...constraints.rows.map(

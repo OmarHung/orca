@@ -84,7 +84,9 @@ export class PostgresConsole {
   constructor(
     readonly client: pg.Client,
     readonly backendPid: number,
-    private readonly typeNames: PostgresTypeNames
+    private readonly typeNames: PostgresTypeNames,
+    /** A PostgreSQL session is bound to one database; switching means a new session. */
+    readonly database: string
   ) {}
 
   async execute(sql: string, pageSize: number): Promise<DatabaseQueryResult> {
