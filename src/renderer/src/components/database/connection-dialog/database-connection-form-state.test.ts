@@ -55,6 +55,24 @@ describe('database connection form', () => {
     }
   })
 
+  it('round-trips the SSH host a server connection tunnels through', () => {
+    const form = { ...initialConnectionForm(null, true), sshTargetId: 'ssh-1' }
+    const parsed = parseConnectionForm(form)
+    expect(parsed.ok && parsed.draft).toMatchObject({ sshTunnel: { targetId: 'ssh-1' } })
+    const direct = parseConnectionForm(initialConnectionForm(null, true))
+    expect(direct.ok && direct.draft).toMatchObject({ sshTunnel: null })
+    if (parsed.ok) {
+      const saved = {
+        ...parsed.draft,
+        id: 'conn-0001',
+        createdAt: 0,
+        updatedAt: 0,
+        hasSavedPassword: false
+      }
+      expect(initialConnectionForm(saved, true).sshTargetId).toBe('ssh-1')
+    }
+  })
+
   it('keeps the saved password unless the field was edited', () => {
     const form = initialConnectionForm(null, true)
     expect(passwordToSave(form)).toBeUndefined()
