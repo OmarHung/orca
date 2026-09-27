@@ -238,5 +238,10 @@
     "from": "檔案型別",
     "to": "檔案類型",
     "why": "\"File type\"; OpenCC writes 型別 (a programming type), but a kind of file is 類型."
+  },
+  {
+    "from": "後台任務",
+    "to": "背景任務",
+    "why": "\"Background job/task\"; Taiwan UI says 背景, and 後台 alone can mean an admin backend, so only this phrase is pinned."
   }
 ]
