@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { z } from 'zod'
 import {
   databaseConnectionDraftSchema,
@@ -18,6 +18,7 @@ import { DATABASE_CONSOLE_MAX_BYTES, DatabaseConsoleFiles } from './database-con
 import { DatabasePasswordVault } from './database-password-vault'
 import { DatabaseService } from './database-service'
 import { DatabaseSessionManager } from './database-session-manager'
+import { spawnDatabaseProcess } from './database-process-spawn'
 import { spawnDatabaseWorker } from './database-worker-client'
 
 // Why bounded: renderer input is untrusted and these values reach files and the server.
@@ -69,7 +70,12 @@ function createDatabaseService(): DatabaseService {
   return new DatabaseService({
     connections: new DatabaseConnectionStore(join(rootDir, 'connections.json')),
     passwords: new DatabasePasswordVault(join(rootDir, 'passwords.json'), getSecretStore),
-    sessions: new DatabaseSessionManager({ spawnWorker: spawnDatabaseWorker, emit: broadcast }),
+    sessions: new DatabaseSessionManager({
+      // Why a process for SQLite: its statements run in native code a thread can't interrupt.
+      spawnWorker: (driver) =>
+        driver === 'sqlite' ? spawnDatabaseProcess() : spawnDatabaseWorker(),
+      emit: broadcast
+    }),
     consoles: new DatabaseConsoleFiles(join(rootDir, 'consoles'))
   })
 }
@@ -151,6 +157,21 @@ export function registerDatabaseHandlers(): void {
     if (ref.success && text.success) {
       service.writeConsole(ref.data, text.data)
     }
+  })
+
+  ipcMain.handle('database:pickSqliteFile', async (event) => {
+    const window = BrowserWindow.fromWebContents(event.sender)
+    const options: Electron.OpenDialogOptions = {
+      properties: ['openFile'],
+      filters: [
+        { name: 'SQLite', extensions: ['sqlite', 'sqlite3', 'db', 'db3', 's3db', 'sl3'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    }
+    const result = window
+      ? await dialog.showOpenDialog(window, options)
+      : await dialog.showOpenDialog(options)
+    return result.canceled ? null : (result.filePaths[0] ?? null)
   })
 
   // Why: database server sessions must not outlive Orca.

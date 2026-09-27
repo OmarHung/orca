@@ -4,7 +4,7 @@ import type {
   DatabaseIntrospectTarget
 } from '../../../shared/database/database-introspection-types'
 import type {
-  DatabaseQueryResult,
+  DatabaseExecuteResult,
   DatabaseResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
@@ -23,7 +23,7 @@ export type DatabaseWorkerCommand =
 export type DatabaseWorkerValues = {
   connect: { serverVersion: string }
   introspect: DatabaseIntrospectResult
-  execute: DatabaseQueryResult
+  execute: DatabaseExecuteResult
   fetch: DatabaseRowsPage
   cancel: { cancelled: boolean }
   closeConsole: null
