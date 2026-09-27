@@ -18939,6 +18939,33 @@
       "description": "这会从 Orca 移除这个连接、它保存的密码和控制台。数据库本身不受影响。",
       "title": "删除 {{value0}}？"
     },
+    "discardDialog": {
+      "description": "你对 {{value0}} 的修改还没有提交到数据库。",
+      "discard": "放弃",
+      "keep": "继续编辑",
+      "title": "放弃 {{value0}} 项未保存的修改？",
+      "titleOne": "放弃 1 项未保存的修改？"
+    },
+    "edit": {
+      "addRow": "新增一行",
+      "binary": "二进制值不能在这里编辑。",
+      "deleteRows": "删除所选的行",
+      "keyMissing": "查询结果没有包含主键。",
+      "keyTruncated": "这一行的主键没有完整加载，所以不能修改它。",
+      "loadingKey": "正在读取数据表的主键…",
+      "locked": "只读",
+      "noKey": "这个数据表没有主键，所以不能编辑它的行。",
+      "preview": "预览 SQL",
+      "readOnly": "这个连接是只读的。",
+      "revertAll": "还原所有修改",
+      "rowDeleted": "这一行将被删除。还原后才能编辑。",
+      "submit": "提交",
+      "submitCount": "提交 {{value0}} 项",
+      "submitFailed": "没有保存任何修改",
+      "submitted": "已保存 {{value0}} 项修改",
+      "submittedOne": "已保存 1 项修改",
+      "truncated": "这个值只加载了开头部分，所以不能在这里编辑。"
+    },
     "explorer": {
       "connect": "连接",
       "copyName": "复制名称",
@@ -18959,6 +18986,10 @@
       "copy": "复制",
       "copyAs": "复制为",
       "copyWithHeaders": "连同表头复制",
+      "default": "DEFAULT",
+      "deleteRows": "删除所选行",
+      "editCell": "编辑 {{value0}}",
+      "editValue": "编辑值",
       "exportAs": "{{value0}}…",
       "exportFailed": "导出失败",
       "exportLoaded": "导出已加载的行",
@@ -18969,7 +19000,9 @@
       "formatTsv": "TSV",
       "null": "NULL",
       "resizeColumn": "调整 {{value0}} 列宽",
+      "revertSelected": "还原所选的修改",
       "selectAll": "全选",
+      "setNull": "设为 NULL",
       "showValue": "查看值",
       "truncated": "只显示 {{value1}} 个字符中的前 {{value0}} 个"
     },
@@ -18997,6 +19030,11 @@
       "cancel": "取消",
       "connect": "连接",
       "title": "{{value0}} 的密码"
+    },
+    "preview": {
+      "close": "关闭",
+      "description": "提交时会在同一个事务中执行这些语句，值以参数形式传送。",
+      "title": "待提交的修改"
     },
     "results": {
       "capped": "只显示前 {{value0}} 行。加上 LIMIT 或筛选条件才能看到其余数据。",

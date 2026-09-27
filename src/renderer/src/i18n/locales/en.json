@@ -19021,6 +19021,33 @@
       "description": "This removes the connection, its saved password and its consoles from Orca. The database itself is not touched.",
       "title": "Delete {{value0}}?"
     },
+    "discardDialog": {
+      "description": "Your edits to {{value0}} haven’t been submitted to the database.",
+      "discard": "Discard",
+      "keep": "Keep Editing",
+      "title": "Discard {{value0}} unsaved changes?",
+      "titleOne": "Discard 1 unsaved change?"
+    },
+    "edit": {
+      "addRow": "Add Row",
+      "binary": "Binary values can’t be edited here.",
+      "deleteRows": "Delete Selected Rows",
+      "keyMissing": "The result doesn’t include the primary key.",
+      "keyTruncated": "This row’s key was not loaded in full, so it can’t be changed.",
+      "loadingKey": "Loading the table’s primary key…",
+      "locked": "Read-only",
+      "noKey": "This table has no primary key, so its rows can’t be edited.",
+      "preview": "Preview SQL",
+      "readOnly": "This connection is read-only.",
+      "revertAll": "Revert All Changes",
+      "rowDeleted": "This row will be deleted. Revert it to edit.",
+      "submit": "Submit",
+      "submitCount": "Submit {{value0}}",
+      "submitFailed": "Nothing was saved",
+      "submitted": "Saved {{value0}} changes",
+      "submittedOne": "Saved 1 change",
+      "truncated": "Only the start of this value was loaded, so it can’t be edited here."
+    },
     "explorer": {
       "connect": "Connect",
       "copyName": "Copy Name",
@@ -19041,6 +19068,10 @@
       "copy": "Copy",
       "copyAs": "Copy As",
       "copyWithHeaders": "Copy with Headers",
+      "default": "DEFAULT",
+      "deleteRows": "Delete Rows",
+      "editCell": "Edit {{value0}}",
+      "editValue": "Edit Value",
       "exportAs": "{{value0}}…",
       "exportFailed": "Export failed",
       "exportLoaded": "Export Loaded Rows",
@@ -19051,7 +19082,9 @@
       "formatTsv": "TSV",
       "null": "NULL",
       "resizeColumn": "Resize column {{value0}}",
+      "revertSelected": "Revert Selected",
       "selectAll": "Select all",
+      "setNull": "Set to NULL",
       "showValue": "Show Value",
       "truncated": "Showing the first {{value0}} of {{value1}} characters"
     },
@@ -19079,6 +19112,11 @@
       "cancel": "Cancel",
       "connect": "Connect",
       "title": "Password for {{value0}}"
+    },
+    "preview": {
+      "close": "Close",
+      "description": "Submitting runs these statements in one transaction, with the values sent as parameters.",
+      "title": "Pending Changes"
     },
     "results": {
       "capped": "Showing the first {{value0}} rows. Add a LIMIT or filter to see the rest.",
