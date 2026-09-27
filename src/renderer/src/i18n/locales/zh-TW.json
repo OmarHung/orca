@@ -16681,7 +16681,7 @@
           "title": "結構",
           "noFile": "在編輯器中開啟檔案以檢視其結構。",
           "notLoaded": "檔案在編輯器中顯示後即可檢視結構。",
-          "unsupported": "結構檢視支援 TypeScript、JavaScript、Python 和 C# 檔案。",
+          "unsupported": "此檔案類型不支援結構檢視。",
           "error": "無法讀取此檔案的結構。",
           "empty": "此檔案中沒有符號。",
           "collapseAll": "全部摺疊",

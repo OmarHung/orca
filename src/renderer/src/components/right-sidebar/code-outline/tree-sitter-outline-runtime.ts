@@ -3,6 +3,15 @@ import type { Language, Parser } from '@vscode/tree-sitter-wasm'
 import runtimeWasmUrl from '@vscode/tree-sitter-wasm/wasm/tree-sitter.wasm?url'
 import pythonWasmUrl from '@vscode/tree-sitter-wasm/wasm/tree-sitter-python.wasm?url'
 import csharpWasmUrl from '@vscode/tree-sitter-wasm/wasm/tree-sitter-c-sharp.wasm?url'
+import goWasmUrl from '@vscode/tree-sitter-wasm/wasm/tree-sitter-go.wasm?url'
+import javaWasmUrl from '@vscode/tree-sitter-wasm/wasm/tree-sitter-java.wasm?url'
+import rustWasmUrl from '@vscode/tree-sitter-wasm/wasm/tree-sitter-rust.wasm?url'
+import cppWasmUrl from '@vscode/tree-sitter-wasm/wasm/tree-sitter-cpp.wasm?url'
+import phpWasmUrl from '@vscode/tree-sitter-wasm/wasm/tree-sitter-php.wasm?url'
+import rubyWasmUrl from '@vscode/tree-sitter-wasm/wasm/tree-sitter-ruby.wasm?url'
+import bashWasmUrl from '@vscode/tree-sitter-wasm/wasm/tree-sitter-bash.wasm?url'
+import powershellWasmUrl from '@vscode/tree-sitter-wasm/wasm/tree-sitter-powershell.wasm?url'
+import cssWasmUrl from '@vscode/tree-sitter-wasm/wasm/tree-sitter-css.wasm?url'
 import type { CodeOutlineSymbol } from './code-outline-types'
 import {
   extractTreeSitterOutline,
@@ -11,7 +20,16 @@ import {
 
 const GRAMMAR_URL: Record<TreeSitterOutlineLanguage, string> = {
   python: pythonWasmUrl,
-  csharp: csharpWasmUrl
+  csharp: csharpWasmUrl,
+  go: goWasmUrl,
+  java: javaWasmUrl,
+  rust: rustWasmUrl,
+  cpp: cppWasmUrl,
+  php: phpWasmUrl,
+  ruby: rubyWasmUrl,
+  bash: bashWasmUrl,
+  powershell: powershellWasmUrl,
+  css: cssWasmUrl
 }
 
 let parserModulePromise: Promise<typeof TreeSitter> | undefined
