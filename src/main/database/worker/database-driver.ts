@@ -9,7 +9,6 @@ import type {
   DatabaseRowsPage,
   DatabaseTransactionMode
 } from '../../../shared/database/database-query-types'
-import type { DatabaseChangeTransaction } from './table-change-transaction'
 
 export type DatabaseExecuteOptions = {
   mode: DatabaseTransactionMode
@@ -35,8 +34,6 @@ export type DatabaseDriverSession = {
     options: DatabaseExecuteOptions
   ): Promise<DatabaseExecuteResult>
   fetch(consoleId: string, resultId: string, pageSize: number): Promise<DatabaseRowsPage>
-  /** Starts a transaction on the console's session for applying table edits. */
-  beginChanges(consoleId: string): Promise<DatabaseChangeTransaction>
   /** Resolves true when the server accepted the cancel request. */
   cancel(consoleId: string): Promise<boolean>
   closeConsole(consoleId: string): Promise<void>

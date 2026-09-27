@@ -1,7 +1,6 @@
 import type { Page } from '@stablyai/playwright-test'
 import {
   addServerConnection,
-  editGridCell,
   explorerMenu,
   openDatabasePage,
   runInConsole,
@@ -144,19 +143,6 @@ for (const driver of CASES) {
       await orcaPage.getByLabel('WHERE').press('Enter')
       await expect(orcaPage.getByText(/^2 rows$/)).toBeVisible({ timeout: 30_000 })
       await orcaPage.screenshot({ path: testInfo.outputPath(`${driver.label}-table-data.png`) })
-
-      // Edit through the grid: the key goes back as a text parameter the server converts.
-      await editGridCell(
-        orcaPage,
-        grid.getByRole('gridcell', { name: 'b', exact: true }),
-        'label',
-        'bee'
-      )
-      await orcaPage.getByRole('button', { name: 'Submit 1' }).click()
-      await expect(orcaPage.getByText('Saved 1 change')).toBeVisible({ timeout: 30_000 })
-      await expect(grid.getByRole('gridcell', { name: 'bee', exact: true })).toBeVisible({
-        timeout: 30_000
-      })
 
       await addServerConnection(orcaPage, {
         url,

@@ -1,4 +1,4 @@
-import { Request, TYPES, type Connection } from 'tedious'
+import { Request, type Connection } from 'tedious'
 import type {
   DatabaseExecuteResult,
   DatabaseRowsPage
@@ -15,7 +15,6 @@ import {
   type SqlServerColumnMeta
 } from './sqlserver-values'
 import { leadingKeyword } from './statement-keyword'
-import type { DatabaseChangeTransaction } from './table-change-transaction'
 
 type RowValue = { value: unknown; metadata: SqlServerColumnMeta }
 
@@ -124,26 +123,6 @@ export class SqlServerConsole {
       return await reader.nextPage(pageSize)
     } finally {
       this.releaseIfDone(reader)
-    }
-  }
-
-  async beginChanges(): Promise<DatabaseChangeTransaction> {
-    await this.abandonOpen()
-    await this.batch('BEGIN TRANSACTION')
-    return {
-      // Why NVarChar: the server converts it to each column's type, as it would a literal.
-      run: ({ sql, params }) =>
-        new Promise((resolve, reject) => {
-          const request = new Request(sql, (error, rowCount) =>
-            error ? reject(error) : resolve(rowCount ?? 0)
-          )
-          params.forEach((value, index) =>
-            request.addParameter(`p${index + 1}`, TYPES.NVarChar, value)
-          )
-          this.client.execSql(request)
-        }),
-      commit: () => this.batch('COMMIT TRANSACTION'),
-      rollback: () => this.batch('IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION')
     }
   }
 
