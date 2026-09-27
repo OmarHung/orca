@@ -6,7 +6,8 @@ import type {
 import { querySqlServerRows } from './sqlserver-client-factory'
 
 const SCHEMAS_SQL = `
-  select s.name from sys.schemas s
+  select s.name, case when s.name = schema_name() then 1 else 0 end as is_current
+  from sys.schemas s
   where s.name not in ('sys', 'INFORMATION_SCHEMA', 'guest') and s.name not like 'db[_]%'
   order by s.name`
 
@@ -53,7 +54,13 @@ export async function introspectSqlServer(
   switch (target.level) {
     case 'schemas': {
       const rows = await querySqlServerRows(client, SCHEMAS_SQL)
-      return { level: 'schemas', schemas: rows.map((row) => ({ name: String(row.name) })) }
+      return {
+        level: 'schemas',
+        schemas: rows.map((row) => ({
+          name: String(row.name),
+          isCurrent: Number(row.is_current) === 1
+        }))
+      }
     }
     case 'relations': {
       const rows = await querySqlServerRows(client, RELATIONS_SQL, { schema: target.schema })
