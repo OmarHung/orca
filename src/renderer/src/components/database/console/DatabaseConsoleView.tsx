@@ -111,6 +111,8 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
       <div className="min-h-0 flex-1">
         {text === null ? null : (
           <DatabaseConsoleEditor
+            tabId={tab.id}
+            connectionId={tab.connectionId}
             initialText={text}
             dialect={dialect}
             errorOffset={errorOffset}
