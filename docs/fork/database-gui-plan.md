@@ -366,7 +366,7 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 
 已知限制：
 
-- 走 Orca 標準的 SSH 連線，所以跟 SSH workspace 一樣會在 SSH 主機上部署 Orca 的 relay；不允許執行 relay 的跳板機目前不能用
+- ~~走 Orca 標準的 SSH 連線，會在 SSH 主機上部署 relay（需要 Node.js）~~ 已改：隧道用自己的 SSH 連線，只做轉發，不部署 relay，所以沒有 Node.js 的主機也能用（2026-09-27 試用回饋）
 - 系統 OpenSSH 模式（ProxyJump、ProxyCommand、硬體金鑰等會用到）不能詢問密碼，要用金鑰或 ssh-agent，這是 Orca 既有的限制
 - 經由隧道的 `verify-full` 已經設定成比對真正的主機名稱，但沒有用真實憑證驗證過
 - SSH 重連後隧道不會自動重建，資料庫連線顯示中斷，要手動再連
