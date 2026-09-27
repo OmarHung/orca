@@ -3,8 +3,10 @@ import {
   addSqliteConnection,
   explorerMenu,
   openDatabasePage,
-  runInConsole
+  runInConsole,
+  typeInConsole
 } from './helpers/database-page'
+import { consoleSuggestions, triggerSuggest } from './helpers/database-console-assist'
 import { seedShopDatabase } from './helpers/database-sqlite-shop'
 import { test, expect } from './helpers/orca-app'
 
@@ -55,6 +57,12 @@ test('opens a console in the database it was opened from, and follows USE', asyn
   await runInConsole(orcaPage, `create table ${database}.items (id int primary key);`)
   await runInConsole(orcaPage, `insert into ${database}.items values (1), (2);`)
   await expect(orcaPage.getByText(/^INSERT: 2 rows affected/)).toBeVisible({ timeout: 20_000 })
+  // With no database current, FROM offers databases to pick from.
+  const suggestions = consoleSuggestions(orcaPage)
+  await typeInConsole(orcaPage, 'select * from ')
+  await triggerSuggest(orcaPage)
+  await expect(suggestions.filter({ hasText: database })).toHaveCount(1)
+  await orcaPage.keyboard.press('Escape')
 
   try {
     await row.dblclick()
@@ -65,6 +73,12 @@ test('opens a console in the database it was opened from, and follows USE', asyn
     )
     await expect(orcaPage.getByRole('tab', { name: 'my-schema (2)' })).toBeVisible()
     await expect(picker).toHaveText(database)
+    // With one picked, FROM needs no database name: only its tables are offered.
+    await typeInConsole(orcaPage, 'select * from it')
+    await triggerSuggest(orcaPage)
+    await expect(suggestions).toHaveCount(1)
+    await expect(suggestions.first()).toContainText('items')
+    await orcaPage.keyboard.press('Escape')
     const grid = orcaPage.getByRole('grid')
     await runInConsole(orcaPage, 'select count(*) as total from items;')
     await expect(grid.getByRole('gridcell', { name: '2', exact: true })).toBeVisible({
