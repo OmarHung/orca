@@ -1,9 +1,14 @@
 import type {
   DatabaseColumnInfo,
+  DatabaseIndexInfo,
   DatabaseIntrospectResult,
   DatabaseIntrospectTarget,
-  DatabaseRelationInfo
+  DatabaseKeyInfo,
+  DatabaseRelationInfo,
+  DatabaseRoutineInfo
 } from '../../../../../shared/database/database-introspection-types'
+
+export type DatabaseExplorerFolder = 'routines' | 'keys' | 'indexes'
 
 export type DatabaseExplorerNode =
   | { kind: 'connection'; key: string; connectionId: string }
@@ -23,6 +28,41 @@ export type DatabaseExplorerNode =
       relationName: string
       column: DatabaseColumnInfo
     }
+  | {
+      kind: 'folder'
+      key: string
+      connectionId: string
+      schema: string
+      folder: DatabaseExplorerFolder
+      /** The table a Keys or Indexes folder belongs to; null for a schema's Routines. */
+      relationName: string | null
+    }
+  | {
+      kind: 'routine'
+      key: string
+      connectionId: string
+      schema: string
+      routine: DatabaseRoutineInfo
+    }
+  | {
+      kind: 'constraint'
+      key: string
+      connectionId: string
+      schema: string
+      relationName: string
+      constraint: DatabaseKeyInfo
+    }
+  | {
+      kind: 'index'
+      key: string
+      connectionId: string
+      schema: string
+      relationName: string
+      index: DatabaseIndexInfo
+    }
+
+/** What the explorer knows beyond the answer itself, e.g. SQLite has no routines. */
+export type DatabaseExplorerChildOptions = { routines: boolean }
 
 export type DatabaseExplorerChildren =
   | { status: 'loading' }
@@ -45,8 +85,39 @@ export function connectionNode(connectionId: string): DatabaseExplorerNode {
   return { kind: 'connection', key: connectionNodeKey(connectionId), connectionId }
 }
 
+const LEAF_KINDS = new Set<DatabaseExplorerNode['kind']>([
+  'column',
+  'routine',
+  'constraint',
+  'index'
+])
+
 export function isExpandableNode(node: DatabaseExplorerNode): boolean {
-  return node.kind !== 'column'
+  return !LEAF_KINDS.has(node.kind)
+}
+
+// Keys and indexes belong to tables; a materialized view can be indexed but has no keys.
+const RELATION_FOLDERS: Record<DatabaseRelationInfo['kind'], DatabaseExplorerFolder[]> = {
+  table: ['keys', 'indexes'],
+  'partitioned-table': ['keys', 'indexes'],
+  'materialized-view': ['indexes'],
+  view: [],
+  'foreign-table': []
+}
+
+function folderNode(
+  parent: DatabaseExplorerNode & { schema: string },
+  folder: DatabaseExplorerFolder,
+  relationName: string | null
+): DatabaseExplorerNode {
+  return {
+    kind: 'folder',
+    key: `${parent.key}/${segment('f', folder)}`,
+    connectionId: parent.connectionId,
+    schema: parent.schema,
+    folder,
+    relationName
+  }
 }
 
 export function introspectTargetFor(node: DatabaseExplorerNode): DatabaseIntrospectTarget | null {
@@ -57,7 +128,14 @@ export function introspectTargetFor(node: DatabaseExplorerNode): DatabaseIntrosp
       return { level: 'relations', schema: node.schema }
     case 'relation':
       return { level: 'columns', schema: node.schema, relation: node.relation.name }
+    case 'folder':
+      return node.folder === 'routines' || node.relationName === null
+        ? { level: 'routines', schema: node.schema }
+        : { level: node.folder, schema: node.schema, relation: node.relationName }
     case 'column':
+    case 'routine':
+    case 'constraint':
+    case 'index':
       return null
   }
 }
@@ -65,7 +143,8 @@ export function introspectTargetFor(node: DatabaseExplorerNode): DatabaseIntrosp
 /** Turns one introspection answer into the child nodes of `parent`. */
 export function childNodesFor(
   parent: DatabaseExplorerNode,
-  result: DatabaseIntrospectResult
+  result: DatabaseIntrospectResult,
+  options: DatabaseExplorerChildOptions = { routines: true }
 ): DatabaseExplorerNode[] {
   const { connectionId } = parent
   switch (result.level) {
@@ -77,24 +156,67 @@ export function childNodesFor(
         schema: schema.name
       }))
     case 'relations':
-      return parent.kind === 'schema'
-        ? result.relations.map((relation) => ({
-            kind: 'relation',
-            key: `${parent.key}/${segment('r', relation.name)}`,
+      if (parent.kind !== 'schema') {
+        return []
+      }
+      return [
+        ...result.relations.map((relation): DatabaseExplorerNode => ({
+          kind: 'relation',
+          key: `${parent.key}/${segment('r', relation.name)}`,
+          connectionId,
+          schema: parent.schema,
+          relation
+        })),
+        ...(options.routines ? [folderNode(parent, 'routines', null)] : [])
+      ]
+    case 'columns':
+      if (parent.kind !== 'relation') {
+        return []
+      }
+      return [
+        ...result.columns.map((column): DatabaseExplorerNode => ({
+          kind: 'column',
+          key: `${parent.key}/${segment('col', column.name)}`,
+          connectionId,
+          schema: parent.schema,
+          relationName: parent.relation.name,
+          column
+        })),
+        ...RELATION_FOLDERS[parent.relation.kind].map((folder) =>
+          folderNode(parent, folder, parent.relation.name)
+        )
+      ]
+    case 'routines':
+      return parent.kind === 'folder'
+        ? result.routines.map((routine) => ({
+            kind: 'routine',
+            key: `${parent.key}/${segment('fn', routine.identity)}`,
             connectionId,
             schema: parent.schema,
-            relation
+            routine
           }))
         : []
-    case 'columns':
-      return parent.kind === 'relation'
-        ? result.columns.map((column) => ({
-            kind: 'column',
-            key: `${parent.key}/${segment('col', column.name)}`,
+    // Why the position in keys: SQLite's keys are unnamed.
+    case 'keys':
+      return parent.kind === 'folder' && parent.relationName !== null
+        ? result.keys.map((constraint, position) => ({
+            kind: 'constraint',
+            key: `${parent.key}/${segment('k', `${position}:${constraint.name}`)}`,
             connectionId,
             schema: parent.schema,
-            relationName: parent.relation.name,
-            column
+            relationName: parent.relationName ?? '',
+            constraint
+          }))
+        : []
+    case 'indexes':
+      return parent.kind === 'folder' && parent.relationName !== null
+        ? result.indexes.map((index) => ({
+            kind: 'index',
+            key: `${parent.key}/${segment('i', index.name)}`,
+            connectionId,
+            schema: parent.schema,
+            relationName: parent.relationName ?? '',
+            index
           }))
         : []
   }

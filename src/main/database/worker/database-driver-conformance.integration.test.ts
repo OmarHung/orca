@@ -95,6 +95,7 @@ for (const fixture of DRIVER_FIXTURES) {
       expect(relations).toEqual({
         level: 'relations',
         relations: [
+          { name: 'orders', kind: 'table' },
           { name: 'people', kind: 'table' },
           { name: 'people_view', kind: 'view' },
           { name: 'user', kind: 'table' }

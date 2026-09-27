@@ -16,7 +16,7 @@ import {
 } from '../database-page-actions'
 import { useDatabaseExplorerStore } from './database-explorer-store'
 import { qualifiedRelationName } from '../../../../../shared/database/sql-identifiers'
-import type { DatabaseExplorerNode } from './database-explorer-tree'
+import { isExpandableNode, type DatabaseExplorerNode } from './database-explorer-tree'
 
 function copy(text: string): void {
   void window.api.ui.writeClipboardText(text)
@@ -76,6 +76,14 @@ function copyText(node: DatabaseExplorerNode): string | null {
       )
     case 'column':
       return node.column.name
+    case 'routine':
+      return node.routine.name
+    case 'constraint':
+      return node.constraint.name || null
+    case 'index':
+      return node.index.name
+    case 'folder':
+      return null
   }
 }
 
@@ -85,7 +93,7 @@ export function DatabaseExplorerContextMenu({
   node: DatabaseExplorerNode
 }): React.JSX.Element {
   const text = copyText(node)
-  const canRefresh = node.kind !== 'column' && node.kind !== 'connection'
+  const canRefresh = isExpandableNode(node) && node.kind !== 'connection'
   return (
     <ContextMenuContent>
       {node.kind === 'connection' ? <ConnectionItems connectionId={node.connectionId} /> : null}

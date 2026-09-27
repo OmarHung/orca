@@ -4,10 +4,16 @@ import {
   Columns3,
   Database,
   Eye,
+  Folder,
+  Key,
   KeyRound,
   Layers,
+  Link2,
+  ListOrdered,
   Loader2,
-  Table2
+  SquareFunction,
+  Table2,
+  Workflow
 } from 'lucide-react'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
@@ -18,6 +24,7 @@ import { DatabaseSessionDot } from '../DatabaseConnectionBadge'
 import { useDatabaseConnectionColor } from '../database-connection-color'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
 import { DatabaseExplorerContextMenu } from './DatabaseExplorerContextMenu'
+import { constraintLabel, folderLabel } from './database-explorer-labels'
 import {
   isExpandableNode,
   type DatabaseExplorerNode,
@@ -52,6 +59,25 @@ function NodeIcon({ node }: { node: DatabaseExplorerNode }): React.JSX.Element {
       ) : (
         <Columns3 className={ICON_CLASS} />
       )
+    case 'folder':
+      return <Folder className={ICON_CLASS} />
+    case 'routine':
+      return node.routine.kind === 'procedure' ? (
+        <Workflow className={ICON_CLASS} />
+      ) : (
+        <SquareFunction className={ICON_CLASS} />
+      )
+    case 'constraint':
+      if (node.constraint.kind === 'foreign') {
+        return <Link2 className={ICON_CLASS} />
+      }
+      return node.constraint.kind === 'primary' ? (
+        <KeyRound className={ICON_CLASS} />
+      ) : (
+        <Key className={ICON_CLASS} />
+      )
+    case 'index':
+      return <ListOrdered className={ICON_CLASS} />
   }
 }
 
@@ -85,6 +111,7 @@ function ConnectionLabel({ connectionId }: { connectionId: string }): React.JSX.
   )
 }
 
+// Names keep their room; the muted detail after them truncates first.
 function NodeLabel({ node }: { node: DatabaseExplorerNode }): React.JSX.Element {
   switch (node.kind) {
     case 'connection':
@@ -100,6 +127,36 @@ function NodeLabel({ node }: { node: DatabaseExplorerNode }): React.JSX.Element 
           <span className="truncate text-muted-foreground">
             {node.column.dataType}
             {node.column.nullable ? '' : ` ${translate('database.explorer.notNull', 'not null')}`}
+          </span>
+        </>
+      )
+    case 'folder':
+      return <span className="truncate">{folderLabel(node.folder)}</span>
+    case 'routine':
+      return (
+        <>
+          <span className="max-w-[70%] shrink-0 truncate">{node.routine.name}</span>
+          <span className="truncate text-muted-foreground">({node.routine.arguments})</span>
+        </>
+      )
+    case 'constraint': {
+      const label = constraintLabel(node.constraint)
+      return (
+        <>
+          <span className="max-w-[70%] shrink-0 truncate">{label.name}</span>
+          <span className="truncate text-muted-foreground">{label.detail}</span>
+        </>
+      )
+    }
+    case 'index':
+      return (
+        <>
+          <span className="max-w-[70%] shrink-0 truncate">{node.index.name}</span>
+          <span className="truncate text-muted-foreground">
+            ({node.index.columns.join(', ')})
+            {node.index.unique && !node.index.primary
+              ? ` ${translate('database.explorer.unique', 'unique')}`
+              : ''}
           </span>
         </>
       )
