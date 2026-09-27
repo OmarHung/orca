@@ -2,6 +2,8 @@ import React from 'react'
 import { SquareTerminal, Table2, X } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
+import { connectionTabStyle } from './database-connection-color'
+import { useDatabaseConnectionsStore } from './database-connections-store'
 import { closeDatabaseTab } from './database-page-actions'
 import { useDatabasePageStore } from './database-page-store'
 
@@ -9,6 +11,9 @@ export function DatabaseTabStrip(): React.JSX.Element {
   const tabs = useDatabasePageStore((state) => state.tabs)
   const activeTabId = useDatabasePageStore((state) => state.activeTabId)
   const activateTab = useDatabasePageStore((state) => state.activateTab)
+  const connections = useDatabaseConnectionsStore((state) => state.connections)
+  const colorOf = (connectionId: string): string | null =>
+    connections.find((entry) => entry.id === connectionId)?.color ?? null
 
   return (
     <div
@@ -39,6 +44,7 @@ export function DatabaseTabStrip(): React.JSX.Element {
               'group flex max-w-56 shrink-0 cursor-default items-center gap-1.5 border-r border-border px-3 text-xs text-muted-foreground hover:bg-accent/50',
               active && 'bg-background text-foreground'
             )}
+            style={connectionTabStyle(colorOf(tab.connectionId))}
           >
             {tab.kind === 'table' ? (
               <Table2 className="size-3.5 shrink-0" />
