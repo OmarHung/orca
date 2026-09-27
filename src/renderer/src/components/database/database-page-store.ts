@@ -35,7 +35,12 @@ type DatabasePageState = PersistedDatabasePage & {
     database?: string | null
   ) => DatabaseConsoleTab
   /** Focuses the table's data tab, opening one if needed. */
-  openTable: (connectionId: string, schema: string, relation: string) => DatabaseTableTab
+  openTable: (
+    connectionId: string,
+    schema: string,
+    relation: string,
+    database?: string | null
+  ) => DatabaseTableTab
   updateTableQuery: (tabId: string, query: { where: string; orderBy: string }) => void
   setTransactionMode: (tabId: string, mode: DatabaseTransactionMode) => void
   setConsoleSchema: (tabId: string, schema: string | null) => void
@@ -131,11 +136,12 @@ export const useDatabasePageStore = create<DatabasePageState>((set, get) => {
       update({ tabs: [...get().tabs, tab], activeTabId: tab.id })
       return tab
     },
-    openTable: (connectionId, schema, relation) => {
+    openTable: (connectionId, schema, relation, database = null) => {
       const existing = get().tabs.find(
         (tab): tab is DatabaseTableTab =>
           tab.kind === 'table' &&
           tab.connectionId === connectionId &&
+          tab.database === database &&
           tab.schema === schema &&
           tab.relation === relation
       )
@@ -143,7 +149,7 @@ export const useDatabasePageStore = create<DatabasePageState>((set, get) => {
         update({ activeTabId: existing.id })
         return existing
       }
-      const tab = newTableTab(connectionId, schema, relation)
+      const tab = newTableTab(connectionId, schema, relation, database)
       update({ tabs: [...get().tabs, tab], activeTabId: tab.id })
       return tab
     },
