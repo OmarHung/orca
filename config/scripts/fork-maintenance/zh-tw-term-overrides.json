@@ -238,5 +238,30 @@
     "from": "檔案型別",
     "to": "檔案類型",
     "why": "\"File type\"; OpenCC writes 型別 (a programming type), but a kind of file is 類型."
+  },
+  {
+    "from": "轉儲",
+    "to": "傾印",
+    "why": "\"Dump\"; Taiwan database tools (Navicat, SQL Server docs) say 傾印."
+  },
+  {
+    "from": "· 行：",
+    "to": "· 列：",
+    "why": "Dump progress row counts (\"Rows: N\"); rows are 列 in Taiwan."
+  },
+  {
+    "from": "^每個 INSERT 的行數$",
+    "to": "每個 INSERT 的列數",
+    "why": "Dump option \"Rows per INSERT\"."
+  },
+  {
+    "from": "把其中的行寫成",
+    "to": "把其中的資料列寫成",
+    "why": "Export dialog: a table's rows are 資料列 in Taiwan."
+  },
+  {
+    "from": "^後台任務$",
+    "to": "背景任務",
+    "why": "\"Background jobs\"; Taiwan says 背景. Anchored so upstream strings stay as they are."
   }
 ]
