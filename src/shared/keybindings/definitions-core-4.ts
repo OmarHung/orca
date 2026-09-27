@@ -201,5 +201,13 @@ export const KEYBINDING_DEFINITION_CORE_4: readonly KeybindingDefinition[] = [
     conflictGroups: ['global', 'tabs', 'botItem'],
     searchKeywords: ['shortcut', 'bot', 'item', 'items', 'next', 'down'],
     defaultBindings: platformBindings(['Mod+Alt+ArrowDown'])
+  },
+  {
+    id: 'databasePage.toggle',
+    title: 'Toggle Database Page',
+    group: 'Global',
+    scope: 'global',
+    searchKeywords: ['shortcut', 'database', 'sql', 'postgres', 'datagrip', 'query'],
+    defaultBindings: platformBindings(['Mod+Alt+D'])
   }
 ]

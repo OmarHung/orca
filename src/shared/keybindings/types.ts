@@ -51,6 +51,7 @@ export type KeybindingActionId =
   | 'sidebar.checks.toggle'
   | 'sidebar.ports.toggle'
   | 'bottomPanel.gitLog.toggle'
+  | 'databasePage.toggle'
   | 'sidebar.sleepingWorkspaces.toggle'
   | 'sidebar.childWorkspaces.toggle'
   | 'sidebar.projects.toggleCollapse'
