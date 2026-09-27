@@ -19121,7 +19121,10 @@
       "stop": "停止 '{{value0}}'",
       "runNamed": "运行 '{{value0}}'",
       "stopDebugAndRun": "停止调试并运行 '{{value0}}'",
-      "stopAndDebug": "停止并调试 '{{value0}}'"
+      "stopAndDebug": "停止并调试 '{{value0}}'",
+      "forceStop": "强制停止 '{{value0}}'",
+      "closeTerminal": "关闭终端 '{{value0}}'",
+      "closeTerminals": "关闭 '{{value0}}' 的终端"
     },
     "status": {
       "running": "运行中",
@@ -19227,7 +19230,11 @@
       "recent": "最近执行",
       "quickCommands": "快速命令",
       "addQuickCommand": "添加快速命令…",
-      "manageQuickCommands": "管理快速命令…"
+      "manageQuickCommands": "管理快速命令…",
+      "stopAll": "全部停止",
+      "stopRunning": "停止（{{value0}} 个正在运行）",
+      "forceStopAll": "全部强制停止",
+      "closeAllTerminals": "关闭全部终端"
     },
     "exclusive": {
       "debugging": {
