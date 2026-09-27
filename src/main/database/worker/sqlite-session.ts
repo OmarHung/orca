@@ -12,7 +12,6 @@ import type {
   DatabaseExecuteResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
-import { ConsoleTransactions } from './console-transactions'
 import { sqliteDdl } from './sqlite-ddl'
 import { introspectSqlite } from './sqlite-introspection'
 import { encodeTextCell } from './database-cell-encoding'
@@ -51,7 +50,8 @@ function openDatabase(connection: SqliteConnectionDraft): DatabaseSync {
   if (!existsSync(connection.filePath)) {
     throw new Error(`SQLite file not found: ${connection.filePath}`)
   }
-  const database = new DatabaseSync(connection.filePath, { readOnly: connection.readOnly })
+  // Why every connection: Orca's database tools are read-only.
+  const database = new DatabaseSync(connection.filePath, { readOnly: true })
   database.exec(`PRAGMA busy_timeout = ${BUSY_TIMEOUT_MS}`)
   return database
 }
@@ -59,14 +59,6 @@ function openDatabase(connection: SqliteConnectionDraft): DatabaseSync {
 /** One console's connection; SQLite is synchronous, so a running statement blocks this worker. */
 class SqliteConsole {
   private open: OpenResult | null = null
-  readonly transactions = new ConsoleTransactions({
-    state: async () => (this.database.isTransaction ? 'open' : 'none'),
-    begin: async () => {
-      this.closeOpen()
-      this.database.exec('BEGIN')
-    }
-  })
-
   constructor(private readonly database: DatabaseSync) {}
 
   execute(sql: string, pageSize: number): DatabaseExecuteResult {
@@ -155,10 +147,9 @@ class SqliteSession implements DatabaseDriverSession {
     consoleId: string,
     sql: string,
     pageSize: number,
-    { mode }: DatabaseExecuteOptions
+    _options: DatabaseExecuteOptions
   ): Promise<DatabaseExecuteResult> {
-    const target = this.console(consoleId)
-    return target.transactions.run(mode, sql, async () => target.execute(sql, pageSize))
+    return this.console(consoleId).execute(sql, pageSize)
   }
 
   async fetch(consoleId: string, resultId: string, pageSize: number): Promise<DatabaseRowsPage> {

@@ -65,9 +65,8 @@ export async function connectPostgresClient(
     client.on('error', onError)
     try {
       await client.connect()
-      if (connection.readOnly) {
-        await client.query('SET default_transaction_read_only = on')
-      }
+      // Why every session, the catalog's too: Orca's database tools are read-only.
+      await client.query('SET default_transaction_read_only = on')
       return client
     } catch (error) {
       lastError = error

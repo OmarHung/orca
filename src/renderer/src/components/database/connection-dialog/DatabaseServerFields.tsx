@@ -7,7 +7,7 @@ import {
 } from '../../../../../shared/database/database-connection-types'
 import type { DatabaseEncryptionStatus } from '../../../../../shared/database/database-session-types'
 import type { DatabaseConnectionFormState } from './database-connection-form-state'
-import { SelectField, SwitchField, TextField } from './database-form-controls'
+import { SelectField, TextField } from './database-form-controls'
 import { DatabaseSshTunnelField } from './DatabaseSshTunnelField'
 
 type ServerFieldsProps = {
@@ -122,20 +122,7 @@ export function DatabaseServerFields(props: ServerFieldsProps): React.JSX.Elemen
           options={sslModes.map((mode) => ({ value: mode, label: mode }))}
           onChange={(sslMode) => onChange({ sslMode })}
         />
-        <SwitchField
-          label={translate('database.connectionForm.readOnly', 'Read-only')}
-          checked={form.readOnly}
-          onChange={(readOnly) => onChange({ readOnly })}
-        />
       </div>
-      {form.driver === 'sqlserver' && form.readOnly ? (
-        <p className="text-[11px] text-muted-foreground">
-          {translate(
-            'database.connectionForm.sqlServerReadOnly',
-            'SQL Server has no read-only session, so Orca refuses statements that look like writes. It is a safety net, not a guarantee.'
-          )}
-        </p>
-      ) : null}
     </>
   )
 }

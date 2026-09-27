@@ -1,7 +1,7 @@
-import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { DatabaseIntrospectTarget } from '../../../shared/database/database-introspection-types'
 import { DRIVER_FIXTURES } from './database-driver-test-fixtures'
+import { runAdminSql } from './database-test-admin'
 import { createWorkerHarness, expectOk } from './database-worker-test-harness'
 
 // Server drivers are opt-in through ORCA_TEST_{POSTGRES,MYSQL,MARIADB,SQLSERVER}_URL.
@@ -10,23 +10,18 @@ for (const fixture of DRIVER_FIXTURES) {
   const target = fixture.open()
   describe.skipIf(!target)(`${fixture.label} catalog objects`, () => {
     const harness = createWorkerHarness()
-    const consoleId = randomUUID()
     const introspect = (introspectTarget: DatabaseIntrospectTarget) =>
       expectOk(harness.send({ type: 'introspect', target: introspectTarget }))
     const orders = { schema: fixture.schema, relation: 'orders' }
 
     beforeAll(async () => {
+      await runAdminSql(target!, fixture.setup)
       await expectOk(harness.send({ type: 'connect', ...target! }))
-      for (const sql of fixture.setup) {
-        await expectOk(harness.send({ type: 'execute', consoleId, sql, pageSize: 100 }))
-      }
     })
 
     afterAll(async () => {
-      for (const sql of fixture.teardown) {
-        await harness.send({ type: 'execute', consoleId, sql, pageSize: 100 })
-      }
       await harness.send({ type: 'close' })
+      await runAdminSql(target!, fixture.teardown, { ignoreErrors: true })
       fixture.dispose?.()
     })
 

@@ -50,11 +50,11 @@ class MysqlSession implements DatabaseDriverSession {
     consoleId: string,
     sql: string,
     pageSize: number,
-    { mode, schema }: DatabaseExecuteOptions
+    { schema }: DatabaseExecuteOptions
   ): Promise<DatabaseExecuteResult> {
     const target = await this.consoles.acquire(consoleId)
     await target.schema.prepare(schema)
-    const result = await target.transactions.run(mode, sql, () => target.execute(sql, pageSize))
+    const result = await target.execute(sql, pageSize)
     const switched = await target.schema.afterRun(sql, result)
     return switched === undefined ? result : { ...result, schema: switched }
   }

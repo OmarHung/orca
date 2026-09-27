@@ -6,6 +6,7 @@ import {
   onlyRows,
   serverConnectionFromUrl
 } from './database-worker-test-harness'
+import { runAdminSql } from './database-test-admin'
 
 // Driver specifics the shared conformance suite can't express in portable SQL.
 const MYSQL_URL = process.env.ORCA_TEST_MYSQL_URL
@@ -52,11 +53,19 @@ describe.skipIf(!MYSQL_URL)('mysql driver specifics (integration)', () => {
   })
 
   it('shows BIT columns as numbers', async () => {
-    await expectOk(execute('create temporary table orca_bits (b bit(3))'))
-    await expectOk(execute("insert into orca_bits values (b'101')"))
-    const result = onlyRows(await expectOk(execute('select b from orca_bits')))
-    expect(result.rows).toEqual([['5']])
-    expect(result.columns[0]?.typeName).toBe('bit')
+    const admin = serverConnectionFromUrl('mysql', MYSQL_URL!)
+    const table = `orca_bits_${randomUUID().slice(0, 8)}`
+    await runAdminSql(admin, [
+      `create table ${table} (b bit(3))`,
+      `insert into ${table} values (b'101')`
+    ])
+    try {
+      const result = onlyRows(await expectOk(execute(`select b from ${table}`)))
+      expect(result.rows).toEqual([['5']])
+      expect(result.columns[0]?.typeName).toBe('bit')
+    } finally {
+      await runAdminSql(admin, [`drop table ${table}`])
+    }
   })
 
   it('reports the line of a syntax error', async () => {

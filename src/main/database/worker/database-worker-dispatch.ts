@@ -1,4 +1,6 @@
+import type { DatabaseDriver } from '../../../shared/database/database-connection-types'
 import type { DatabaseResult } from '../../../shared/database/database-query-types'
+import { readOnlyViolation } from '../../../shared/database/sql-read-only-guard'
 import type { DatabaseDriverSession, OpenDatabaseDriverSession } from './database-driver'
 import { routeThroughTunnel } from './database-connection-route'
 import { toDatabaseError } from './database-error-mapping'
@@ -12,7 +14,7 @@ import { openPostgresSession } from './postgres-session'
 import { openSqliteSession } from './sqlite-session'
 import { openSqlServerSession } from './sqlserver-session'
 
-const openDriverSession: OpenDatabaseDriverSession = (connection, password, callbacks) => {
+export const openDriverSession: OpenDatabaseDriverSession = (connection, password, callbacks) => {
   switch (connection.driver) {
     case 'postgres':
       return openPostgresSession(connection, password, callbacks)
@@ -31,6 +33,7 @@ export function createDatabaseWorkerDispatcher(
   openSession: OpenDatabaseDriverSession = openDriverSession
 ): (request: DatabaseWorkerRequest) => Promise<void> {
   let session: DatabaseDriverSession | null = null
+  let driver: DatabaseDriver = 'postgres'
 
   const requireSession = (): DatabaseDriverSession => {
     if (!session) {
@@ -43,6 +46,7 @@ export function createDatabaseWorkerDispatcher(
     switch (command.type) {
       case 'connect': {
         await session?.close()
+        driver = command.connection.driver
         const connection = routeThroughTunnel(command.connection, command.tunnelPort)
         session = await openSession(connection, command.password, {
           onConnectionLost: (message) => post({ kind: 'connection-lost', message })
@@ -53,12 +57,19 @@ export function createDatabaseWorkerDispatcher(
         return requireSession().introspect(command.target)
       case 'ddl':
         return { ddl: await requireSession().ddl(command.target) }
-      case 'execute':
+      case 'execute': {
+        // Why here: every statement from the page passes this one door before any session.
+        const violation = readOnlyViolation(command.sql, driver)
+        if (violation) {
+          throw new Error(
+            `Orca's database tools are read-only, so ${violation} statements are not run.`
+          )
+        }
         return requireSession().execute(command.consoleId, command.sql, command.pageSize, {
-          mode: command.transactionMode ?? 'auto',
           schema: command.schema,
           database: command.database
         })
+      }
       case 'fetch':
         return requireSession().fetch(command.consoleId, command.resultId, command.pageSize)
       case 'cancel':

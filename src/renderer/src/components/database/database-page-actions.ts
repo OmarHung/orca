@@ -2,10 +2,7 @@ import { create } from 'zustand'
 import { translate } from '@/i18n/i18n'
 import { createBrowserUuid } from '@/lib/browser-uuid'
 import type { DatabaseDdlTarget } from '../../../../shared/database/database-ddl-types'
-import {
-  getConsoleRunState,
-  useDatabaseConsoleRunStore
-} from './console/database-console-run-store'
+import { useDatabaseConsoleRunStore } from './console/database-console-run-store'
 import { findDatabaseConnection, useDatabaseConnectionsStore } from './database-connections-store'
 import {
   useDatabasePageStore,
@@ -21,15 +18,11 @@ type ConnectionEditorTarget = { mode: 'new' } | { mode: 'edit'; connectionId: st
 type DatabaseDialogsState = {
   connectionEditor: ConnectionEditorTarget | null
   deletingConnectionId: string | null
-  /** A console whose close waits for the user to commit or roll back its transaction. */
-  closingWithTransaction: string | null
   ddlRequest: { id: string; connectionId: string; target: DatabaseDdlTarget; title: string } | null
   openConnectionEditor: (target: ConnectionEditorTarget) => void
   closeConnectionEditor: () => void
   askToDeleteConnection: (connectionId: string) => void
   cancelDeleteConnection: () => void
-  askToEndTransaction: (tabId: string) => void
-  cancelEndTransaction: () => void
   showDdl: (connectionId: string, target: DatabaseDdlTarget, name: string) => void
   closeDdl: () => void
 }
@@ -37,14 +30,11 @@ type DatabaseDialogsState = {
 export const useDatabaseDialogsStore = create<DatabaseDialogsState>((set) => ({
   connectionEditor: null,
   deletingConnectionId: null,
-  closingWithTransaction: null,
   ddlRequest: null,
   openConnectionEditor: (target) => set({ connectionEditor: target }),
   closeConnectionEditor: () => set({ connectionEditor: null }),
   askToDeleteConnection: (connectionId) => set({ deletingConnectionId: connectionId }),
   cancelDeleteConnection: () => set({ deletingConnectionId: null }),
-  askToEndTransaction: (tabId) => set({ closingWithTransaction: tabId }),
-  cancelEndTransaction: () => set({ closingWithTransaction: null }),
   showDdl: (connectionId, target, name) =>
     set({
       ddlRequest: {
@@ -87,15 +77,9 @@ function releaseTabs(tabs: readonly DatabaseTab[]): void {
   }
 }
 
-/** Closes a tab. Unless `discard` is set, a console with an open transaction asks first. */
-export function closeDatabaseTab(tabId: string, options: { discard?: boolean } = {}): void {
+export function closeDatabaseTab(tabId: string): void {
   const tab = useDatabasePageStore.getState().tabs.find((entry) => entry.id === tabId)
   if (!tab) {
-    return
-  }
-  const { transaction } = getConsoleRunState(useDatabaseConsoleRunStore.getState().consoles, tabId)
-  if (!options.discard && tab.kind === 'console' && transaction !== 'none') {
-    useDatabaseDialogsStore.getState().askToEndTransaction(tabId)
     return
   }
   useDatabasePageStore.getState().closeTab(tabId)

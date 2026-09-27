@@ -71,8 +71,7 @@ export function onlyRows(value: { results: DatabaseQueryResult[] }): DatabaseRow
 /** Builds a server connection from `scheme://user:password@host:port/database`. */
 export function serverConnectionFromUrl(
   driver: 'postgres' | 'mysql' | 'sqlserver',
-  url: string,
-  readOnly = false
+  url: string
 ): { connection: DatabaseConnectionDraft; password: string | null } {
   const parsed = new URL(url)
   const sslMode = 'disable' as const
@@ -84,7 +83,6 @@ export function serverConnectionFromUrl(
     database: decodeURIComponent(parsed.pathname.slice(1)),
     user: decodeURIComponent(parsed.username),
     sslMode,
-    readOnly,
     passwordStorage: 'never'
   }
   return { connection, password: parsed.password ? decodeURIComponent(parsed.password) : null }
