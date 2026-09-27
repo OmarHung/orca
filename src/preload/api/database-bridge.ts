@@ -18,7 +18,6 @@ export const databaseApi = {
   fetchMore: (request) => ipcRenderer.invoke('database:fetchMore', request),
   listHistory: (connectionId) => ipcRenderer.invoke('database:listHistory', connectionId),
   clearHistory: (connectionId) => ipcRenderer.invoke('database:clearHistory', connectionId),
-  applyChanges: (request) => ipcRenderer.invoke('database:applyChanges', request),
   cancel: (ref) => ipcRenderer.invoke('database:cancel', ref),
   closeConsole: (ref) => ipcRenderer.invoke('database:closeConsole', ref),
   readConsole: (ref) => ipcRenderer.invoke('database:readConsole', ref),

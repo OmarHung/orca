@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import type {
   DatabaseCell,
@@ -7,7 +7,6 @@ import type {
 } from '../../../../../shared/database/database-query-types'
 import type { DatabaseExportFormat } from '../../../../../shared/database/database-export-types'
 import { useDatabasePageStore } from '../database-page-store'
-import { DatabaseGridCellEditor } from './DatabaseGridCellEditor'
 import { DatabaseGridContextMenu } from './DatabaseGridContextMenu'
 import { DatabaseGridHeader, type GridColumn } from './DatabaseGridHeader'
 import { DatabaseGridRow, GRID_ROW_HEIGHT } from './DatabaseGridRow'
@@ -32,10 +31,8 @@ import {
   type GridCopyFormat,
   type GridExportTarget
 } from './database-grid-transfer'
-import type { GridEditing } from './grid-editing-types'
-import { useGridCellEditing } from './use-grid-cell-editing'
 import { useGridColumnWidths } from './use-grid-column-widths'
-import { gridCellFromTarget, useGridPointerSelection } from './use-grid-pointer-selection'
+import { useGridPointerSelection } from './use-grid-pointer-selection'
 
 const HEADER_HEIGHT = 40
 const OVERSCAN = 16
@@ -50,8 +47,6 @@ type DatabaseResultGridProps = {
   /** Table data sorts on the server; query results sort the rows already loaded. */
   serverSort?: { sort: GridSort; onChange: (sort: GridSort) => void }
   exportTarget: GridExportTarget
-  /** Editable table data; rows are then shown in the given order. */
-  editing?: GridEditing
 }
 
 function isModShortcut(event: React.KeyboardEvent, key: string): boolean {
@@ -66,8 +61,7 @@ export function DatabaseResultGrid({
   canLoadMore,
   onLoadMore,
   serverSort,
-  exportTarget,
-  editing
+  exportTarget
 }: DatabaseResultGridProps): React.JSX.Element {
   const scrollRef = useRef<HTMLDivElement>(null)
   const { widths, setWidth, autoFit } = useGridColumnWidths(columns, rows)
@@ -108,17 +102,8 @@ export function DatabaseResultGrid({
   const sort = serverSort ? serverSort.sort : localSort
   const gridTemplate = `${GRID_ROW_NUMBER_PX}px ${widths.map((width) => `${width}px`).join(' ')}`
 
-  const editingRowRef = useRef<number | null>(null)
   const virtualizer = useVirtualizer({
     count: rows.length,
-    // Why: an editor scrolled out of the rendered range would unmount and lose its edit.
-    rangeExtractor: (range) => {
-      const indexes = defaultRangeExtractor(range)
-      const editingRow = editingRowRef.current
-      return editingRow === null || indexes.includes(editingRow)
-        ? indexes
-        : [...indexes, editingRow].sort((left, right) => left - right)
-    },
     getScrollElement: () => scrollRef.current,
     estimateSize: () => GRID_ROW_HEIGHT,
     overscan: OVERSCAN,
@@ -136,10 +121,6 @@ export function DatabaseResultGrid({
   }, [canLoadMore, lastVisibleIndex, rows.length, onLoadMore])
 
   const bounds = selection ? selectionBounds(selection) : null
-  const onSelectionChange = editing?.onSelectionChange
-  useEffect(() => {
-    onSelectionChange?.(selection ? selectionBounds(selection) : null)
-  }, [selection, onSelectionChange])
   const copySelection = (format: GridCopyFormat): void => {
     if (bounds) {
       copyGridText(gridExportSlice(columns, rows, displayOrder, bounds), format, exportTarget)
@@ -169,17 +150,6 @@ export function DatabaseResultGrid({
     }
   }
 
-  const cellEditing = useGridCellEditing(
-    editing,
-    rows,
-    (cell) => {
-      setSelection({ anchor: cell, focus: cell })
-      reveal(cell)
-    },
-    () => scrollRef.current?.focus()
-  )
-  editingRowRef.current = cellEditing.active?.row ?? null
-
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
     // Why: arrows on a focused column edge or header button belong to that control.
     if (event.target !== event.currentTarget) {
@@ -201,16 +171,6 @@ export function DatabaseResultGrid({
     if (event.key === 'Enter' && event.shiftKey) {
       event.preventDefault()
       toggleViewer()
-      return
-    }
-    if (editing && bounds && (event.key === 'Enter' || event.key === 'F2')) {
-      event.preventDefault()
-      cellEditing.start(selection.focus)
-      return
-    }
-    if (editing && bounds && isModShortcut(event, 'backspace')) {
-      event.preventDefault()
-      editing.deleteRows(bounds)
       return
     }
     const next = moveSelection(selection, event.key, event.shiftKey, rows.length, columns.length)
@@ -237,12 +197,6 @@ export function DatabaseResultGrid({
             onKeyDown={handleKeyDown}
             onMouseDown={pointer.onMouseDown}
             onMouseOver={pointer.onMouseOver}
-            onDoubleClick={(event) => {
-              const cell = gridCellFromTarget(event.target)
-              if (cell && cell.column >= 0) {
-                cellEditing.start(cell)
-              }
-            }}
             className="relative h-full min-h-0 min-w-0 flex-1 select-none overflow-auto scrollbar-editor font-mono text-xs outline-none"
           >
             <div
@@ -274,23 +228,6 @@ export function DatabaseResultGrid({
                     start={virtualRow.start}
                     selectedSpan={inSelection ? bounds : null}
                     focusColumn={focus?.row === virtualRow.index ? focus.column : null}
-                    editState={editing?.rowState(virtualRow.index) ?? null}
-                    failed={editing?.failedRow === virtualRow.index}
-                    editor={
-                      cellEditing.active?.row === virtualRow.index
-                        ? {
-                            column: cellEditing.active.column,
-                            node: (
-                              <DatabaseGridCellEditor
-                                column={columns[cellEditing.active.column]?.name ?? ''}
-                                initial={cellEditing.active.initial}
-                                onCommit={cellEditing.commit}
-                                onCancel={cellEditing.cancel}
-                              />
-                            )
-                          }
-                        : null
-                    }
                   />
                 )
               })}
@@ -298,16 +235,6 @@ export function DatabaseResultGrid({
           </div>
         </ContextMenuTrigger>
         <DatabaseGridContextMenu
-          editActions={
-            editing && bounds && selection
-              ? {
-                  edit: () => cellEditing.start(selection.focus),
-                  setNull: () => editing.setNull(bounds),
-                  deleteRows: () => editing.deleteRows(bounds),
-                  revert: () => editing.revert(bounds)
-                }
-              : undefined
-          }
           onCopy={copySelection}
           onExport={exportLoaded}
           onShowValue={() => {
