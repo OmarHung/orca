@@ -19026,6 +19026,15 @@
       "runStatementHint": "Run statement at caret",
       "title": "Console"
     },
+    "ddl": {
+      "close": "Close",
+      "copied": "DDL copied",
+      "copy": "Copy",
+      "description": "The statements that create this object.",
+      "editorLabel": "DDL",
+      "loading": "Reading the definition…",
+      "title": "DDL of {{value0}}"
+    },
     "deleteDialog": {
       "cancel": "Cancel",
       "confirm": "Delete",
@@ -19079,6 +19088,7 @@
       "primaryKey": "Primary key",
       "refresh": "Refresh",
       "routines": "Routines",
+      "showDdl": "Show DDL",
       "unique": "unique",
       "uniqueKey": "Unique key",
       "viaSsh": "via {{value0}}"
