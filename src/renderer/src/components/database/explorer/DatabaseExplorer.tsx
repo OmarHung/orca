@@ -105,7 +105,7 @@ export function DatabaseExplorer(): React.JSX.Element {
       tabIndex={0}
       aria-label={translate('database.explorer.label', 'Database objects')}
       onKeyDown={handleKeyDown}
-      className="h-full min-h-0 overflow-auto scrollbar-sleek outline-none"
+      className="h-full min-h-0 select-none overflow-auto scrollbar-sleek outline-none"
     >
       <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
         {virtualizer.getVirtualItems().map((item) => {

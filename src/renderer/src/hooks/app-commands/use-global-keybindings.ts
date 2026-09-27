@@ -238,6 +238,10 @@ export function useGlobalKeybindings(args: {
       ) {
         return
       }
+      // Why here: not a plugin alias, so the alias loop below never reaches its handler.
+      if (matchShortcut('databasePage.toggle') && handlers.get('databasePage.toggle')?.()) {
+        return
+      }
       for (const actionId of PLUGIN_COMMAND_ALIAS_ACTION_IDS) {
         if (matchAppShortcut(actionId) && handlers.get(actionId)?.()) {
           return
