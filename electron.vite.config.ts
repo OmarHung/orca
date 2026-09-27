@@ -19,6 +19,9 @@ const BUNDLED_MAIN_DEPENDENCIES = new Set([
   '@xterm/addon-serialize',
   'tldts',
   'smol-toml',
+  // Why: tedious loads @azure/identity eagerly; bundling it into the database worker
+  // costs a few MB instead of copying ~45 MB of Azure SDK node_modules.
+  'tedious',
   // Why: Windows NSIS deploys app.asar before external resources; bootstrap must
   // not race the later resources/node_modules copy.
   'zod'

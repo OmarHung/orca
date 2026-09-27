@@ -316,6 +316,8 @@ module.exports = {
     'out/main/plugin-host-entry.js',
     'out/main/computer-sidecar.js',
     'out/main/parcel-watcher-process-entry.js',
+    // SQLite sessions fork this entry as a child process so a stuck statement can be killed.
+    'out/main/database-worker-entry.js',
     'out/main/chunks/**',
     'resources/**',
     'node_modules/ws/**',
