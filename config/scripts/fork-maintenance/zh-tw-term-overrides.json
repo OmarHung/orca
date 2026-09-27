@@ -228,5 +228,10 @@
     "from": "(?<=提交)併(?=關閉)",
     "to": "並",
     "why": "\"Commit and close\"; OpenCC reads 提交并 as 提交併."
+  },
+  {
+    "from": "外部索引鍵",
+    "to": "外鍵",
+    "why": "\"Foreign key\"; OpenCC uses Microsoft's 外部索引鍵 but leaves 主鍵, so the pair would not match."
   }
 ]
