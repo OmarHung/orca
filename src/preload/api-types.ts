@@ -48,6 +48,7 @@ import type {
 } from './api/os-permission-api'
 import type { PetApi } from './api/pet-api'
 import type { DebugApi } from './api/debug-api'
+import type { DatabaseApi } from './api/database-api'
 import type { PythonApi } from './api/python-api'
 import type { PluginsApi } from './api/plugin-host-api'
 import type { PreflightApi } from './api/preflight-api'
@@ -121,6 +122,7 @@ export type PreloadApi = {
   skills: SkillsApi
   pet: PetApi
   debug: DebugApi
+  database: DatabaseApi
   python: PythonApi
   browser: BrowserApi
   emulator: EmulatorApi

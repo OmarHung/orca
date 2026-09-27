@@ -23,6 +23,7 @@ const {
   registerShellHandlersMock,
   registerPetHandlersMock,
   registerDebugHandlersMock,
+  registerDatabaseHandlersMock,
   registerSessionHandlersMock,
   registerUIHandlersMock,
   setTrustedUIRendererWebContentsIdMock,
@@ -92,6 +93,7 @@ const {
   registerShellHandlersMock: vi.fn(),
   registerPetHandlersMock: vi.fn(),
   registerDebugHandlersMock: vi.fn(),
+  registerDatabaseHandlersMock: vi.fn(),
   registerSessionHandlersMock: vi.fn(),
   registerUIHandlersMock: vi.fn(),
   setTrustedUIRendererWebContentsIdMock: vi.fn(),
@@ -271,6 +273,10 @@ vi.mock('../../debug/debug-ipc', () => ({
   registerDebugHandlers: registerDebugHandlersMock
 }))
 
+vi.mock('../../database/database-ipc', () => ({
+  registerDatabaseHandlers: registerDatabaseHandlersMock
+}))
+
 vi.mock('../pet', () => ({
   registerPetHandlers: registerPetHandlersMock
 }))
@@ -434,6 +440,7 @@ describe('registerCoreHandlers', () => {
     registerShellHandlersMock.mockReset()
     registerPetHandlersMock.mockReset()
     registerDebugHandlersMock.mockReset()
+    registerDatabaseHandlersMock.mockReset()
     registerSessionHandlersMock.mockReset()
     registerUIHandlersMock.mockReset()
     setTrustedUIRendererWebContentsIdMock.mockReset()
@@ -539,6 +546,7 @@ describe('registerCoreHandlers', () => {
     )
     expect(registerPetHandlersMock).toHaveBeenCalled()
     expect(registerDebugHandlersMock).toHaveBeenCalled()
+    expect(registerDatabaseHandlersMock).toHaveBeenCalled()
     expect(registerClaudeAccountHandlersMock).toHaveBeenCalledWith(claudeAccounts)
     expect(registerMiniMaxCredentialsHandlersMock).toHaveBeenCalledWith(rateLimits)
     expect(registerGrokAccountHandlersMock).toHaveBeenCalled()

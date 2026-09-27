@@ -249,6 +249,9 @@ export const electronViteConfig: UserConfig = {
           // corpora and read SQLite synchronously; a worker thread keeps that
           // off the main-process event loop.
           'usage-scan-worker-entry': resolve('src/main/usage/usage-scan-worker-entry.ts'),
+          // Why: node:sqlite is synchronous and big result pages parse on the CPU; each
+          // connected data source gets its own worker so neither blocks the UI thread.
+          'database-worker-entry': resolve('src/main/database/worker/database-worker-entry.ts'),
           'profile-state-backup-worker-entry': resolve(
             'src/main/persistence/profile-state/profile-state-backup-worker-entry.ts'
           ),
