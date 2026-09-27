@@ -350,7 +350,7 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 
 實作時的決定：
 
-- **重用 Orca 的 SSH**：連線用 `connectRegisteredSshTarget`（已連線就沿用、正在連線就一起等，密碼和金鑰密碼走 Orca 既有的 SSH 詢問視窗），轉發用既有的 ssh2／系統 OpenSSH provider
+- **重用 Orca 的 SSH**：連線用 `connectRegisteredSshTarget`（已連線就沿用、正在連線就一起等，密碼和金鑰密碼走 Orca 既有的 SSH 詢問視窗），轉發用既有的 ssh2／系統 OpenSSH provider。（2026-09-27 改為隧道自己的 SSH 連線，見下方已知限制）
 - **獨立的轉發管理器**：共用的 Ports 面板轉發會被存進 SSH 主機設定、列在 Ports 面板、而且每次 relay 重連都被清掉。資料庫隧道用自己的 `SshPortForwardManager`，只跟著資料庫 session 開關
 - **連不到時說清楚**：ssh2 的轉發在對方拒絕時只會默默關掉 socket，驅動只會看到「連線被關閉」。所以開隧道前先用同一條 SSH 連線試開一次通道，失敗就顯示 SSH 主機的原因
 - **斷線偵測**：SSH 連線被重置或中斷時（`registerSshProviderRequestAbort`），隧道關閉並把資料庫連線標示為中斷；訊息寫「隧道已無法使用」，不說遠端程序結束（依 `ssh-execution-boundary.md`）。系統 OpenSSH 的 `ssh -L` 程序結束時也一樣。之後重新連線會重建 SSH 和隧道
@@ -362,7 +362,7 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - **MySQL 的 `verify-full` 沒有驗證主機名稱**（Phase 1 起）：mysql2 要另外設 `verifyIdentity` 才會比對主機名稱，原本只驗證憑證鏈
 - **連線中斷訊息重複**：mysql2 自己的訊息已經以「Connection lost:」開頭，畫面上變成「Connection lost: Connection lost: …」
 
-測試方式：`ORCA_E2E_SSH_DOCKER=1` 加上 §6.2 的資料庫環境變數，執行 `tests/e2e/database-ssh-tunnel.spec.ts`。第一次會建 relay bundle 和 SSH 測試用的 Docker 映像檔。
+測試方式：`ORCA_E2E_SSH_DOCKER=1` 加上 §6.2 的資料庫環境變數，執行 `tests/e2e/database-ssh-tunnel.spec.ts`。第一次會建 SSH 測試用的 Docker 映像檔；測試會把 SSH 主機上的 node 藏起來，確認不需要 Node.js。
 
 已知限制：
 
@@ -425,10 +425,23 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 
 已知限制與觀察：
 
-- SQL Server 的 console 還不能切換資料庫（它能切的是資料庫，不是 schema）
 - 手動模式下連讀取也會開交易（和 DataGrip 相同），所以會一直顯示「交易進行中」直到提交或回滾
 - DDL 重建不含註解（COMMENT）、權限、擁有者、觸發器（SQLite 例外）；SQL Server 的叢集／非叢集只區分索引，不區分主鍵
 - 一次完整 e2e 在機器負載很高時（比平常慢一倍），MariaDB 的 `call` 沒有產生結果、30 秒逾時；之後單獨跑 3 次、完整跑 2 次都無法重現，原因不明
+
+第二輪試用回饋（2026-09-28）：
+
+- **沒有 Node.js 的 SSH 主機也能開隧道**：見 §6.6 已知限制
+- **SQL Server console 可切換資料庫**：工具列的「Database」選單用 `USE` 切換，console 裡自己打的 `USE` 也會反映到選單；結構資料和 DDL 在元資料連線上先 `USE` 到目標資料庫再讀
+- **新增連線的入口**：結構樹上方的「Connections」標題列有 + 按鈕，空白處按右鍵也能新增
+- **zh-TW 用語**：新增覆寫規則，file type 固定譯為「檔案類型」
+- **資料庫欄位可以留空，留空時列出伺服器上所有資料庫**
+  - MySQL 本來就是這樣（資料庫就是 schema）。PG 和 SQL Server 的結構樹在連線下多一層資料庫，底下的 schema、表、routine 都從該資料庫讀；表格分頁記得資料庫；資料庫節點的 New Console 直接開在該資料庫
+  - 新的伺服器連線預設不填資料庫，欄位顯示「All databases」
+  - PG 的一條連線只能在一個資料庫，所以：讀其他資料庫的結構時第一次用到才另開元資料連線；console 換資料庫時重新連線，交易進行中會先要求提交或回滾；沒填資料庫時從 `postgres` 維護資料庫進入
+  - PG 的 console 在這種連線上同時有 Database 和 Schema 兩個選單，換資料庫時 schema 回到該資料庫的預設
+  - 結果欄位的型別名稱在結果所在的資料庫查（enum、domain 的 OID 各資料庫不同）
+- **DROP／ALTER DATABASE 前放開 Orca 自己的閒置連線**：瀏覽過的資料庫會被 Orca 的元資料連線佔住，DROP 會回「正在使用中」；SQL Server 的 `SET SINGLE_USER WITH ROLLBACK IMMEDIATE` 還會把元資料連線踢掉、讓整條連線斷掉。執行這兩種語句前先放開（PG 關掉該資料庫的元資料連線，SQL Server 把元資料連線 `USE` 回預設資料庫）。其他 console 的連線屬於使用者，不動
 
 ## 7. 測試策略
 
