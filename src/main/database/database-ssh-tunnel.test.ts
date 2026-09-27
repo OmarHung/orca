@@ -28,6 +28,7 @@ function setup(options: { label?: string | null; forwardOut?: ForwardOut | null 
   const started: PortForwardStartOptions[] = []
   const closed: string[] = []
   const resets: AbortController[] = []
+  const released: string[] = []
   const provider: SshPortForwardProvider = {
     canHandle: () => true,
     start: async (_conn, forward) => {
@@ -42,8 +43,10 @@ function setup(options: { label?: string | null; forwardOut?: ForwardOut | null 
   }
   const deps: DatabaseTunnelDeps = {
     targetLabel: () => (options.label === undefined ? 'bastion' : options.label),
-    connectTarget: async () => undefined,
-    connection: () => fakeConnection(options.forwardOut ?? null),
+    acquireConnection: async () => ({
+      connection: fakeConnection(options.forwardOut ?? null),
+      release: () => void released.push('ssh-1')
+    }),
     watchConnection: (_targetId, controller) => {
       resets.push(controller)
       return () => undefined
@@ -51,14 +54,14 @@ function setup(options: { label?: string | null; forwardOut?: ForwardOut | null 
     freeLoopbackPort: async () => 41000,
     createForwards: (callbacks) => new SshPortForwardManager(callbacks, [provider])
   }
-  return { open: createDatabaseTunnelOpener(deps), started, closed, resets }
+  return { open: createDatabaseTunnelOpener(deps), started, closed, resets, released }
 }
 
 const request = { key: 'conn-1', targetId: 'ssh-1', remoteHost: 'db.internal', remotePort: 5432 }
 
 describe('database SSH tunnels', () => {
   it('forwards a free local port to the database as the SSH host sees it, until closed', async () => {
-    const { open, started, closed } = setup()
+    const { open, started, closed, released } = setup()
     const tunnel = await open(request, () => undefined)
     expect(tunnel.localPort).toBe(41000)
     expect(started[0]).toMatchObject({
@@ -68,6 +71,7 @@ describe('database SSH tunnels', () => {
     })
     await tunnel.close()
     expect(closed).toHaveLength(1)
+    expect(released).toEqual(['ssh-1'])
   })
 
   it('gives the SSH host’s reason when it cannot reach the database', async () => {

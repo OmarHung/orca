@@ -5,20 +5,18 @@ import {
   getSshProviderAuthority,
   registerSshProviderRequestAbort
 } from '../ssh/ssh-provider-authority'
-import {
-  connectRegisteredSshTarget,
-  getSshConnectionManager,
-  getSshTargetRegistryStore
-} from '../ssh/ssh-target-registry'
+import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
+import { DatabaseSshConnections } from './database-ssh-connections'
 import type { DatabaseTunnel, OpenDatabaseTunnel } from './database-session-manager'
 
 const LISTEN_ATTEMPTS = 3
 
 export type DatabaseTunnelDeps = {
   targetLabel: (targetId: string) => string | null
-  /** Connects (or joins the connect of) a saved SSH host, prompting for credentials if needed. */
-  connectTarget: (targetId: string) => Promise<unknown>
-  connection: (targetId: string) => SshConnection | undefined
+  /** An SSH link to a saved host (prompting for credentials if needed), handed back on close. */
+  acquireConnection: (
+    targetId: string
+  ) => Promise<{ connection: SshConnection; release: () => void }>
   /** Aborts `controller` when the SSH connection is reset or disconnected. */
   watchConnection: (targetId: string, controller: AbortController) => () => void
   freeLoopbackPort: () => Promise<number>
@@ -42,12 +40,23 @@ function freeLoopbackPort(): Promise<number> {
   })
 }
 
+const links = new DatabaseSshConnections()
+
 const DEFAULT_DEPS: DatabaseTunnelDeps = {
   targetLabel: (targetId) => getSshTargetRegistryStore()?.getTarget(targetId)?.label ?? null,
-  connectTarget: connectRegisteredSshTarget,
-  connection: (targetId) => getSshConnectionManager()?.getConnection(targetId),
-  watchConnection: (targetId, controller) =>
-    registerSshProviderRequestAbort(getSshProviderAuthority(targetId), controller),
+  acquireConnection: (targetId) => links.acquire(targetId),
+  // Why both: the link can drop on its own, and disconnecting the host in Orca should end it too.
+  watchConnection: (targetId, controller) => {
+    const unwatchHost = registerSshProviderRequestAbort(
+      getSshProviderAuthority(targetId),
+      controller
+    )
+    const unwatchLink = links.watch(targetId, controller)
+    return () => {
+      unwatchHost()
+      unwatchLink()
+    }
+  },
   freeLoopbackPort,
   createForwards: (callbacks) => new SshPortForwardManager(callbacks)
 }
@@ -107,13 +116,15 @@ export function createDatabaseTunnelOpener(
     if (label === null) {
       throw new Error('its SSH host was removed from Orca.')
     }
-    await deps.connectTarget(targetId)
-    const connection = deps.connection(targetId)
-    if (connection?.getState().status !== 'connected') {
-      throw new Error(`${label} is not connected.`)
+    const { connection, release } = await deps.acquireConnection(targetId)
+    let entry: Awaited<ReturnType<typeof addForward>>
+    try {
+      await probeRemote(connection, remoteHost, remotePort)
+      entry = await addForward(key, connection, remoteHost, remotePort)
+    } catch (error) {
+      release()
+      throw error
     }
-    await probeRemote(connection, remoteHost, remotePort)
-    const entry = await addForward(key, connection, remoteHost, remotePort)
 
     const reset = new AbortController()
     const unwatch = deps.watchConnection(targetId, reset)
@@ -126,6 +137,7 @@ export function createDatabaseTunnelOpener(
       stopped.delete(entry.id)
       unwatch()
       await forwards.removeForwardAndWait(entry.id)
+      release()
     }
     // Why "no longer available": a dropped SSH link says nothing about the server itself.
     const lose = (message: string): void => {
