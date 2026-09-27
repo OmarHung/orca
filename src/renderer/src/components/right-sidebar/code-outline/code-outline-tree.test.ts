@@ -28,6 +28,12 @@ describe('findActiveSymbolPath', () => {
   it('is empty outside every symbol', () => {
     expect(findActiveSymbolPath(symbols, 11)).toEqual([])
   })
+
+  it('finds a child declared outside its parent extent', () => {
+    const goType = [symbol('Point', 1, 3, [symbol('X', 2, 2), symbol('Move', 10, 12)])]
+    expect(findActiveSymbolPath(goType, 11)).toEqual(['0', '0.1'])
+    expect(findActiveSymbolPath(goType, 6)).toEqual([])
+  })
 })
 
 describe('flattenCodeOutline', () => {

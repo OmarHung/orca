@@ -38,7 +38,7 @@ function statusMessage(state: CodeOutlineState): string | null {
     case 'unsupported':
       return translate(
         'auto.components.rightSidebar.CodeOutlinePanel.unsupported',
-        'Structure is available for TypeScript, JavaScript, Python and C# files.'
+        "Structure isn't available for this file type."
       )
     case 'error':
       return translate(

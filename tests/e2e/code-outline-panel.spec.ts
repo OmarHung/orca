@@ -45,13 +45,43 @@ const FILES: Record<string, string> = {
     '    public void Save(string path) { }',
     '    public void ArchiveEveryPublishedArticleOlderThanTheRetentionWindow(int retentionDays, bool dryRun) { }',
     '}'
+  ].join('\n'),
+  'point.go': [
+    'package geo',
+    '',
+    'type Point struct {',
+    '\tX int',
+    '}',
+    '',
+    'func (p *Point) Move(dx int) {',
+    '\tp.X += dx',
+    '}',
+    '',
+    'func Origin() Point { return Point{} }'
+  ].join('\n'),
+  'config.json': [
+    '{',
+    '  // comments are allowed',
+    '  "name": "demo",',
+    '  "scripts": { "dev": "vite" }',
+    '}'
+  ].join('\n'),
+  'ci.yml': [
+    'jobs:',
+    '  build:',
+    '    steps:',
+    '      - name: Install',
+    '        run: pnpm i'
   ].join('\n')
 }
 
 const LANGUAGE_BY_EXTENSION: Record<string, string> = {
   ts: 'typescript',
   py: 'python',
-  cs: 'csharp'
+  cs: 'csharp',
+  go: 'go',
+  json: 'json',
+  yml: 'yaml'
 }
 
 async function openEditorFile(page: Page, worktreePath: string, relativePath: string) {
@@ -79,7 +109,7 @@ async function openEditorFile(page: Page, worktreePath: string, relativePath: st
   )
 }
 
-test('the Explorer Structure section outlines TypeScript, Python and C# files and jumps to symbols', async ({
+test('the Explorer Structure section outlines code and data files and jumps to symbols', async ({
   orcaPage,
   testRepoPath,
   registerPostElectronShutdownCleanup
@@ -146,4 +176,27 @@ test('the Explorer Structure section outlines TypeScript, Python and C# files an
   await expect(toggle).toHaveAttribute('aria-expanded', 'false')
   await toggle.click()
   await expect(tree.getByRole('treeitem', { name: 'Repo', exact: true })).toBeVisible()
+
+  // Go methods are declared outside their type yet listed and highlighted under it.
+  await openEditorFile(orcaPage, fixture.worktreePath, 'point.go')
+  await expect(tree.getByRole('treeitem')).toHaveText(['Point', 'X', 'Move(dx int)', 'Origin()'], {
+    timeout: 30_000
+  })
+  const move = tree.getByRole('treeitem', { name: 'Move' })
+  await move.click()
+  await expect(move).toHaveAttribute('aria-selected', 'true')
+
+  // Data files list keys, with scalar values (and a sequence item's `name`) as the muted detail.
+  await openEditorFile(orcaPage, fixture.worktreePath, 'config.json')
+  await expect(tree.getByRole('treeitem')).toHaveText([/^name/, /^scripts/, /^dev/], {
+    timeout: 30_000
+  })
+  await expect(tree.getByRole('treeitem', { name: 'name demo' })).toBeVisible()
+
+  await openEditorFile(orcaPage, fixture.worktreePath, 'ci.yml')
+  await expect(tree.getByRole('treeitem')).toHaveText(
+    [/^jobs/, /^build/, /^steps/, /^0/, /^name/, /^run/],
+    { timeout: 30_000 }
+  )
+  await expect(tree.getByRole('treeitem', { name: '0 Install' })).toBeVisible()
 })

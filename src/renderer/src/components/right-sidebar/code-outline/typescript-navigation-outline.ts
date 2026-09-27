@@ -1,4 +1,8 @@
-import type { CodeOutlineSymbol, CodeOutlineSymbolKind } from './code-outline-types'
+import type {
+  CodeOutlineSymbol,
+  CodeOutlineSymbolKind,
+  OffsetToPosition
+} from './code-outline-types'
 
 type TextSpan = { start: number; length: number }
 
@@ -9,8 +13,6 @@ type NavigationTreeItem = {
   nameSpan?: TextSpan
   childItems: NavigationTreeItem[]
 }
-
-export type OffsetToPosition = (offset: number) => { lineNumber: number; column: number }
 
 const KIND_BY_TS_KIND = new Map<string, CodeOutlineSymbolKind>([
   ['module', 'namespace'],

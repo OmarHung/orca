@@ -15,18 +15,23 @@ export function symbolKey(parentKey: string, index: number): string {
 
 /** Keys of the innermost chain of symbols whose extent contains `line`, outermost first. */
 export function findActiveSymbolPath(symbols: CodeOutlineSymbol[], line: number): string[] {
-  const path: string[] = []
-  let level = symbols
-  let parentKey = ''
-  for (;;) {
+  const visit = (level: CodeOutlineSymbol[], parentKey: string): string[] => {
     const index = level.findIndex((symbol) => symbol.startLine <= line && line <= symbol.endLine)
-    if (index === -1) {
-      return path
+    if (index !== -1) {
+      const key = symbolKey(parentKey, index)
+      return [key, ...visit(level[index].children, key)]
     }
-    parentKey = symbolKey(parentKey, index)
-    path.push(parentKey)
-    level = level[index].children
+    // Why: Go methods nest under their receiver type but are declared outside its extent.
+    for (const [childIndex, symbol] of level.entries()) {
+      const key = symbolKey(parentKey, childIndex)
+      const inner = visit(symbol.children, key)
+      if (inner.length > 0) {
+        return [key, ...inner]
+      }
+    }
+    return []
   }
+  return visit(symbols, '')
 }
 
 function matchesFilter(symbol: CodeOutlineSymbol, needle: string): boolean {
