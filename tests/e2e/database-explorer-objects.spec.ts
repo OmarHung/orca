@@ -6,9 +6,9 @@ import {
   addServerConnection,
   addSqliteConnection,
   explorerMenu,
-  openDatabasePage,
-  runInConsole
+  openDatabasePage
 } from './helpers/database-page'
+import { adminSql } from './helpers/database-admin'
 import { captureDatabaseTransfers, lastClipboardWrite } from './helpers/database-grid-transfers'
 import { test, expect } from './helpers/orca-app'
 
@@ -87,22 +87,16 @@ test('lists a PostgreSQL schema’s functions and procedures under Routines, wit
   test.skip(!POSTGRES_URL, 'set ORCA_TEST_POSTGRES_URL to a disposable PostgreSQL server')
   const url = new URL(POSTGRES_URL!)
   const schema = `orca_e2e_routines_${Date.now().toString(36)}`
-  await openDatabasePage(orcaPage)
-  await addServerConnection(orcaPage, { url, name: 'pg-routines' })
-  const tree = orcaPage.getByRole('tree', { name: 'Database objects' })
-  const row = tree.getByRole('treeitem', { name: /^pg-routines/ })
-  await explorerMenu(orcaPage, row, 'New Console')
-  await runInConsole(orcaPage, `create schema ${schema};`)
-  await expect(orcaPage.getByText(/^CREATE completed/).first()).toBeVisible({ timeout: 20_000 })
-  await runInConsole(
-    orcaPage,
-    `create function ${schema}.add_one(i integer) returns integer language sql as 'select i + 1';`
-  )
-  await runInConsole(orcaPage, `create procedure ${schema}.noop() language sql as '';`)
-  await expect(orcaPage.getByText(/^CREATE completed/)).toHaveCount(3, { timeout: 20_000 })
-
+  await adminSql(url, [
+    `create schema ${schema}`,
+    `create function ${schema}.add_one(i integer) returns integer language sql as 'select i + 1'`,
+    `create procedure ${schema}.noop() language sql as ''`
+  ])
   try {
-    // The console connected without expanding the tree, so this is its first load.
+    await openDatabasePage(orcaPage)
+    await addServerConnection(orcaPage, { url, name: 'pg-routines' })
+    const tree = orcaPage.getByRole('tree', { name: 'Database objects' })
+    const row = tree.getByRole('treeitem', { name: /^pg-routines/ })
     await row.dblclick()
     await tree.getByRole('treeitem', { name: schema, exact: true }).dblclick()
     await tree.getByRole('treeitem', { name: 'Routines', exact: true }).dblclick()
@@ -121,8 +115,6 @@ test('lists a PostgreSQL schema’s functions and procedures under Routines, wit
       .poll(() => lastClipboardWrite(electronApp))
       .toMatch(new RegExp(`^CREATE OR REPLACE FUNCTION ${schema}\\.add_one\\(i integer\\)`))
   } finally {
-    await orcaPage.keyboard.press('Escape')
-    await runInConsole(orcaPage, `drop schema ${schema} cascade;`)
-    await expect(orcaPage.getByText(/^DROP completed/)).toBeVisible({ timeout: 20_000 })
+    await adminSql(url, [`drop schema if exists ${schema} cascade`])
   }
 })
