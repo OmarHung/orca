@@ -19421,7 +19421,6 @@
       "primaryKey": "主键",
       "refresh": "刷新",
       "routines": "例程",
-      "runScript": "运行 SQL 脚本…",
       "showDdl": "查看 DDL",
       "unique": "唯一",
       "uniqueKey": "唯一键",
@@ -19467,26 +19466,6 @@
       "search": "搜索查询历史",
       "title": "查询历史"
     },
-    "jobs": {
-      "button": "任务",
-      "cancel": "取消",
-      "cancelling": "正在取消…",
-      "committed": "已提交",
-      "dismiss": "移除",
-      "finishedDetail": "{{value0}} 条语句 · {{value1}} 个错误 · {{value2}} 秒",
-      "list": "后台任务",
-      "moreErrors": "还有 {{value0}} 个",
-      "progress": "进度",
-      "rolledBack": "已回滚",
-      "runningCount": "任务（{{value0}} 个运行中）",
-      "runningDetail": "第 {{value0}}/{{value1}} 个文件 · {{value2}} 条语句 · {{value3}} 个错误",
-      "scriptCancelled": "脚本已取消，已运行 {{value0}} 条语句",
-      "scriptDone": "脚本运行完毕：{{value0}} 条语句",
-      "scriptFailed": "脚本无法运行",
-      "scriptHadErrors": "脚本运行完毕，有 {{value0}} 个错误",
-      "starting": "正在开始…",
-      "titleMany": "{{value0}} 及另外 {{value1}} 个"
-    },
     "output": {
       "cancelled": "已取消",
       "command": "{{value0}} 完成，耗时 {{value1}} 毫秒",
@@ -19525,20 +19504,6 @@
       "output": "输出",
       "rowCount": "{{value0}} 行",
       "tab": "结果 {{value0}}"
-    },
-    "runScript": {
-      "cancel": "取消",
-      "choose": "选择文件…",
-      "chooseAgain": "选择其他文件…",
-      "continue": "继续运行并列出错误",
-      "description": "在 {{value0}} 上运行。",
-      "files": "脚本文件",
-      "onError": "语句失败时",
-      "order": "共 {{value0}} 个文件，{{value1}}。按此顺序在同一个连接上运行。",
-      "run": "运行",
-      "stop": "停止",
-      "title": "运行 SQL 脚本",
-      "transaction": "在一个事务中运行（任何语句失败都会回滚）"
     },
     "session": {
       "connected": "已连接",
