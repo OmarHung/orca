@@ -98,6 +98,14 @@ export function isServerConnection(
   return draft.driver !== 'sqlite'
 }
 
+/** A PostgreSQL or SQL Server connection with no database lists all of the server's. */
+export function listsAllDatabases(connection: DatabaseConnectionDraft): boolean {
+  return (
+    (connection.driver === 'postgres' || connection.driver === 'sqlserver') &&
+    connection.database.trim() === ''
+  )
+}
+
 /** SQLite files have no password, which behaves like "never store one". */
 export function databasePasswordStorage(draft: DatabaseConnectionDraft): DatabasePasswordStorage {
   return isServerConnection(draft) ? draft.passwordStorage : 'never'

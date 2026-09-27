@@ -18780,6 +18780,7 @@
       "testing": "Connecting…"
     },
     "connectionForm": {
+      "allDatabases": "All databases",
       "browse": "Browse…",
       "color": "Color",
       "colorHint": "Tints this connection’s tabs and toolbars, e.g. red for production.",
