@@ -31,13 +31,15 @@ type DatabasePageState = PersistedDatabasePage & {
   openConsole: (
     connectionId: string,
     connectionName: string,
-    schema?: string | null
+    schema?: string | null,
+    database?: string | null
   ) => DatabaseConsoleTab
   /** Focuses the table's data tab, opening one if needed. */
   openTable: (connectionId: string, schema: string, relation: string) => DatabaseTableTab
   updateTableQuery: (tabId: string, query: { where: string; orderBy: string }) => void
   setTransactionMode: (tabId: string, mode: DatabaseTransactionMode) => void
   setConsoleSchema: (tabId: string, schema: string | null) => void
+  setConsoleDatabase: (tabId: string, database: string | null) => void
   activateTab: (tabId: string) => void
   closeTab: (tabId: string) => void
   closeTabsForConnection: (connectionId: string) => DatabaseTab[]
@@ -123,8 +125,9 @@ export const useDatabasePageStore = create<DatabasePageState>((set, get) => {
   }
   return {
     ...readPersisted(),
-    openConsole: (connectionId, connectionName, schema = null) => {
-      const tab = newConsoleTab(connectionId, nextConsoleTitle(get().tabs, connectionName), schema)
+    openConsole: (connectionId, connectionName, schema = null, database = null) => {
+      const title = nextConsoleTitle(get().tabs, connectionName)
+      const tab = newConsoleTab(connectionId, title, schema, database)
       update({ tabs: [...get().tabs, tab], activeTabId: tab.id })
       return tab
     },
@@ -161,6 +164,14 @@ export const useDatabasePageStore = create<DatabasePageState>((set, get) => {
         tabs: get().tabs.map((tab) =>
           tab.id === tabId && tab.kind === 'console' && tab.schema !== schema
             ? { ...tab, schema }
+            : tab
+        )
+      }),
+    setConsoleDatabase: (tabId, database) =>
+      update({
+        tabs: get().tabs.map((tab) =>
+          tab.id === tabId && tab.kind === 'console' && tab.database !== database
+            ? { ...tab, database }
             : tab
         )
       }),

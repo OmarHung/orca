@@ -6,6 +6,12 @@ import type {
 import { sqlServerIndexes, sqlServerKeys, sqlServerRoutines } from './sqlserver-catalog-objects'
 import { querySqlServerRows } from './sqlserver-client-factory'
 
+const DATABASES_SQL = `
+  select name, case when name = db_name() then 1 else 0 end as is_current
+  from sys.databases
+  where state_desc = 'ONLINE' and has_dbaccess(name) = 1
+  order by name`
+
 const SCHEMAS_SQL = `
   select s.name, case when s.name = schema_name() then 1 else 0 end as is_current
   from sys.schemas s
@@ -53,6 +59,16 @@ export async function introspectSqlServer(
   target: DatabaseIntrospectTarget
 ): Promise<DatabaseIntrospectResult> {
   switch (target.level) {
+    case 'databases': {
+      const rows = await querySqlServerRows(client, DATABASES_SQL)
+      return {
+        level: 'databases',
+        databases: rows.map((row) => ({
+          name: String(row.name),
+          isCurrent: Number(row.is_current) === 1
+        }))
+      }
+    }
     case 'schemas': {
       const rows = await querySqlServerRows(client, SCHEMAS_SQL)
       return {
