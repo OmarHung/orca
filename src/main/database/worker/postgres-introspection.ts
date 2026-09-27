@@ -4,6 +4,7 @@ import type {
   DatabaseIntrospectTarget,
   DatabaseRelationKind
 } from '../../../shared/database/database-introspection-types'
+import { postgresIndexes, postgresKeys, postgresRoutines } from './postgres-catalog-objects'
 
 const POSTGRES_10 = 100_000
 
@@ -95,5 +96,17 @@ export async function introspectPostgres(
         }))
       }
     }
+    case 'routines':
+      return {
+        level: 'routines',
+        routines: await postgresRoutines(client, target.schema, serverVersionNum)
+      }
+    case 'keys':
+      return { level: 'keys', keys: await postgresKeys(client, target.schema, target.relation) }
+    case 'indexes':
+      return {
+        level: 'indexes',
+        indexes: await postgresIndexes(client, target.schema, target.relation, serverVersionNum)
+      }
   }
 }
