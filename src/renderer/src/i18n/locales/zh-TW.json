@@ -35,7 +35,8 @@
         "resourceUsageToggleDescription": "顯示資源管理器。點選可檢視 CPU、記憶體、會話、守護程序控制和工作區磁碟掃描。",
         "portsToggleDescription": "顯示即時工作區埠。點選可檢視工作區範圍的埠和外部監聽器。",
         "antigravityToggleDescription": "顯示目前工作區的 Antigravity 訂閱使用情況。",
-        "grokToggleDescription": "透過 Grok CLI 登入後顯示 Grok 訂閱額度使用情況。"
+        "grokToggleDescription": "透過 Grok CLI 登入後顯示 Grok 訂閱額度使用情況。",
+        "cursorToggleDescription": "透過 cursor-agent 或 Cursor IDE 登入後顯示 Cursor 套餐用量。"
       },
       "menuBarIcon": {
         "title": "顯示選單欄圖示",
@@ -495,7 +496,8 @@
           "d443a47995": "Prime Agent",
           "mimo_code_label": "MiMo Code",
           "muse_label": "Muse",
-          "opencode2_label": "OpenCode 2"
+          "opencode2_label": "OpenCode 2",
+          "zcode_label": "ZCode"
         },
         "skill": {
           "cli": {
@@ -869,7 +871,8 @@
             "tooMany": "最多可附加 {{maxCount}} 張圖片。",
             "dimensionsTooLarge": "{{fileName}} 的尺寸過大，無法安全預覽。",
             "invalidImage": "{{fileName}} 不是有效的受支援圖片。",
-            "additionalErrors": "還有 {{count}} 張圖片無法附加。"
+            "additionalErrors": "還有 {{count}} 張圖片無法附加。",
+            "totalTooLarge": "{{fileName}} 將使附件總大小超過 {{maxSize}}。"
           }
         }
       },
@@ -1827,8 +1830,7 @@
         "4725b0e931": "快速開啟掃描太大（",
         "b227d88520": "找到 {{value0}} 檔案",
         "995be8ea22": "複製",
-        "cf144856dc": "已複製",
-        "344f8a48dd": "在執行 Quick Open 掃描的主機上啟用快速、遵循 gitignore 的檔案列表："
+        "cf144856dc": "已複製"
       },
       "SelectedTextCopyMenu": {
         "9b40d7b018": "複製"
@@ -3090,6 +3092,14 @@
             "e2fcf07c0d": "Orca 無法儲存此終端機會話，因為本地儲存已滿或不可寫。開啟磁碟空間分析器以查詢可以清理的工作區儲存。",
             "678c780a2c": "磁碟空間不可用"
           },
+          "zcode": {
+            "missing": {
+              "tui": {
+                "title": "This ZCode build has no terminal UI",
+                "description": "Orca's hooks installed correctly — the zcode on your PATH just cannot open a session. The ZCode desktop app bundles the agent runtime without its terminal UI. Install a zcode that ships the TUI, then run zcode outside Orca to confirm."
+              }
+            }
+          },
           "osc52": {
             "clipboard": {
               "blocked": {
@@ -3659,7 +3669,8 @@
             "grokUsageMenu": "Grok 使用情況",
             "floatingTerminalNewActivity": "{{label}}，有新活動",
             "codexSignInSuccess": "已登入 Codex",
-            "codexSignInError": "Codex 登入失敗，請重試。"
+            "codexSignInError": "Codex 登入失敗，請重試。",
+            "cursorUsageMenu": "Cursor 用量"
           },
           "StatusBarUsageEmptyCta": {
             "828c764a79": "連線帳戶",
@@ -3832,8 +3843,15 @@
             },
             "usage": {
               "noSubscription": {
-                "label": "沒有訂閱"
+                "label": "無訂閱"
               }
+            },
+            "cursor": {
+              "expired": {
+                "label": "登入已過期",
+                "message": "請在執行 Orca 的電腦上的終端機中執行 cursor-agent login，然後重新重新整理用量。"
+              },
+              "plan": "套餐"
             }
           },
           "SshTargetStatusRow": {
@@ -3933,16 +3951,16 @@
             "ariaLabelOne": "1 個聊天可恢復",
             "ariaLabel": "{{value0}} 聊天可恢復",
             "tooltip": "開啟可恢復的中斷聊天",
-            "failedLabelOne": "1 條聊天無法恢復",
-            "failedLabel": "{{value0}} 聊天未能恢復",
-            "failedAriaOne": "1 條聊天無法恢復。點選檢視詳情。",
-            "failedAria": "{{value0}} 聊天無法恢復。點選檢視詳情。",
-            "failedTooltip": "重啟後 Orca 聊天無法恢復。點選檢視詳情。",
-            "checkLabelOne": "1 條聊天記錄",
-            "checkLabel": "{{value0}} 聊天記錄檢視",
-            "checkAriaOne": "1 聊天恢復後檢查。點選檢視詳情。",
-            "checkAria": "{{value0}} 聊天恢復後檢查。點選檢視詳情。",
-            "checkTooltip": "重啟後，Orca 聊天無法恢復，或無法確認其恢復。點選檢視詳情。"
+            "failedLabelOne": "1 個聊天恢復失敗",
+            "failedLabel": "{{value0}} 個聊天恢復失敗",
+            "failedAriaOne": "1 個聊天恢復失敗。點選檢視詳情。",
+            "failedAria": "{{value0}} 個聊天恢復失敗。點選檢視詳情。",
+            "failedTooltip": "重啟後 Orca 未能恢復的聊天。點選檢視詳情。",
+            "checkLabelOne": "1 個待檢查的聊天",
+            "checkLabel": "{{value0}} 個待檢查的聊天",
+            "checkAriaOne": "恢復後有 1 個待檢查的聊天。點選檢視詳情。",
+            "checkAria": "恢復後有 {{value0}} 個待檢查的聊天。點選檢視詳情。",
+            "checkTooltip": "重啟後 Orca 未能恢復或未能確認已恢復的聊天。點選檢視詳情。"
           }
         }
       },
@@ -5197,7 +5215,9 @@
           "69969ba364": "正在傳送...",
           "imageReadFailed": "無法讀取附加的圖片。請重新附加。",
           "attachWhileSending": "請等待目前回饋傳送完成，再附加更多圖片。",
-          "imagesNotDelivered": "回饋已傳送，但無法確認圖片已送達。"
+          "imagesNotDelivered": "回饋已傳送，但無法確認圖片已送達。",
+          "imagesNotIncluded": "回饋已傳送。您的截圖無法上傳，未包含在內。",
+          "imagesRejected": "回饋已傳送。您的截圖過大，無法上傳，未包含在內。"
         },
         "SidebarFilter": {
           "e3b3898218": "新增專案",
@@ -6156,9 +6176,9 @@
           "parkTerminal": "Park terminal"
         },
         "SidebarFeedbackImageAttachments": {
-          "screenshotsHint": "最多附加 {count} 張截圖",
           "attachImages": "Attach",
-          "removeImage": "Remove {{fileName}}"
+          "removeImage": "Remove {{fileName}}",
+          "screenshotsHint": "最多附加 {{count}} 張截圖，總計 {{maxSize}}"
         },
         "WorkspaceKanbanSearchField": {
           "bdb753c78d": "沒有匹配的工作區",
@@ -6253,16 +6273,16 @@
           "copyDiagnostics": "複製診斷"
         },
         "LocalGitToolchainScanBanner": {
-          "xcodeLicenseTitle": "接受 Xcode 許可證以使用 Git",
-          "xcodeLicenseBody": "macOS 會阻止 Git，直到您接受為止。在終端機中執行此命令，然後切換回 Orca。它會自動再次檢查。",
-          "developerToolsTitle": "安裝Apple的命令列工具",
-          "developerToolsBody": "Git 需要 Apple 的開發者工具。在終端機中執行此命令，然後切換回 Orca。它會自動再次檢查。",
-          "affectedOne": "工作樹掃描已暫停 {{value0}}",
-          "affectedMany": "{{value0}} 專案的工作樹掃描已暫停",
+          "xcodeLicenseTitle": "接受 Xcode 許可協議以使用 Git",
+          "xcodeLicenseBody": "在您接受之前，macOS 會阻止 Git 執行。請在終端機中執行此命令，然後切回 Orca。它會自動重新檢查。",
+          "developerToolsTitle": "安裝 Apple 命令列工具",
+          "developerToolsBody": "Git 需要 Apple 開發者工具。請在終端機中執行此命令，然後切回 Orca。它會自動重新檢查。",
+          "affectedOne": "已暫停 {{value0}} 的工作樹掃描",
+          "affectedMany": "已暫停 {{value0}} 個專案的工作樹掃描",
           "copyCommand": "複製命令",
           "copied": "命令已複製",
           "retry": "立即重試",
-          "restored": "Git 又開始工作了。工作樹已重新整理。"
+          "restored": "Git 已恢復正常。工作樹已重新整理。"
         }
       },
       "shared": {
@@ -6498,10 +6518,10 @@
           "opencodeGo": {
             "apiKey": {
               "title": "OpenCode Go API 金鑰",
-              "description": "可選覆蓋。否則，Orca 將使用執行 /connect 時儲存的 OpenCode 金鑰，然後使用 OPENCODE_API_KEY。",
+              "description": "可選的覆蓋設定。如果留空，Orca 將使用您執行 /connect 時 OpenCode 儲存的金鑰，其次使用 OPENCODE_API_KEY。",
               "label": "OpenCode Go API 金鑰",
               "placeholder": "留空以使用 /connect 或 OPENCODE_API_KEY 儲存的金鑰",
-              "help": "用於狀態列中的 OpenCode Go 使用。下面的會話 cookie 僅適用於舊版控制台 (OpenCode Black) 帳戶。"
+              "help": "用於在狀態列中顯示 OpenCode Go 使用情況。下面的會話 Cookie 僅舊版控制台 (OpenCode Black) 帳號需要。"
             }
           }
         },
@@ -7059,7 +7079,7 @@
             "structuredScope": "目前僅限本地會話。 WSL 和遠端執行主機（包括 SSH）繼續使用終端機聊天，Windows 會回退到它，除非 Orca 可以讀取程序啟動時間。",
             "structuredToggleLabel": "切換更新的結構化本機聊天",
             "resumeTitle": "重啟後自動恢復工作聊天",
-            "resumeCopy": "當 Orca 退出或安裝更新時，重新開啟 Orca 時，中途聊天會自動恢復。",
+            "resumeCopy": "當 Orca 退出或安裝更新時，重新開啟 Orca 後，正在工作的聊天會自動恢復。",
             "resumeToggleLabel": "重啟後切換自動恢復"
           },
           "agentDashboard": {
@@ -8857,7 +8877,18 @@
             "7e2a4b8c1d": "海外",
             "37020a02c2": "安慰",
             "25591bf95b": "貼上完整的 opencode.ai Cookie 標頭，包括 __Host-console_session，以進行速率限制提取。",
-            "d16378a88f": "極小極大"
+            "d16378a88f": "極小極大",
+            "cursor": {
+              "description": "從此電腦上已有的 Cursor 登入（cursor-agent login）讀取每月套餐用量。",
+              "kw": {
+                "cursor": "cursor",
+                "rateLimit": "速率限制",
+                "spend": "支出",
+                "statusBar": "狀態列",
+                "usage": "用量"
+              },
+              "title": "Cursor 用量"
+            }
           }
         },
         "advanced": {
@@ -9113,6 +9144,13 @@
               "close": "關閉",
               "notification": "通知區",
               "background": "背景"
+            },
+            "cursor": {
+              "description": "顯示來自此電腦上 Cursor 登入的每月 Cursor 套餐用量。",
+              "kw": {
+                "cursor": "cursor"
+              },
+              "title": "Cursor 用量"
             }
           }
         },
@@ -11986,6 +12024,31 @@
         "TerminalRenderingSection": {
           "6d4c55bacc": "內嵌影像",
           "fffab5890b": "使用 SIXEL、iTerm2 (IIP) 和 Kitty 圖形協議直接在終端機中顯示影像。"
+        },
+        "CursorAccountsSection": {
+          "dashboardLink": "Cursor 儀表盤",
+          "expired": "登入已過期 — 請在執行 Orca 的電腦上執行 cursor-agent login，然後點選“重新整理用量”。",
+          "loading": "載入中…",
+          "noAllowance": "Cursor 報告此帳號沒有可用額度。",
+          "planTotal": "套餐",
+          "refreshUsage": "重新整理用量",
+          "resets": "{{when}}重置",
+          "signedIn": "已登入",
+          "signedInFrom": "已登入。Orca 讀取儲存在{{source}}中的會話。",
+          "signedInGeneric": "已登入。Orca 讀取儲存在此電腦上的 Cursor 會話。",
+          "signedOut": "在此電腦上未找到 Cursor 登入",
+          "signedOutHelp": "請使用 Cursor IDE 登入，或在終端機中執行 cursor-agent login，然後在此點選“重新整理用量”。",
+          "source": {
+            "cli": "Cursor CLI 認證檔案",
+            "desktop": "Cursor IDE",
+            "keychain": "macOS 鑰匙串（cursor-agent）"
+          },
+          "staleUsage": "上次已知用量 — 最近一次重新整理失敗：{{reason}}",
+          "subtitle": "顯示來自此電腦上已有登入的每月 Cursor 套餐用量。Orca 僅讀取，不會更改您的 Cursor 登入。",
+          "title": "Cursor",
+          "usageDescription": "Cursor 按兩個隨帳單週期重置的額度池計費，用完後按需計費。",
+          "usageLabel": "用量",
+          "usageTitle": "每月套餐用量"
         }
       },
       "right": {
@@ -14790,6 +14853,7 @@
           "f1aa04b5cf": "這個檔案",
           "8b87612461": "所有未傳送的筆記"
         },
+        "diffCommentSaveFailed": "儲存評論失敗",
         "DiffSectionBody": {
           "35d6afb5be": "二進位制檔案已更改",
           "cef4cf0ff5": "重試",
@@ -14902,33 +14966,47 @@
           "3e4cbf15ea": "生的",
           "1833dbbc43": "Markdown",
           "7005960d73": "程式碼",
-          "8dbe39a152": "更多細胞作用",
-          "fa8fd99cf1": "細胞型別",
-          "kernelStarting": "開始…",
-          "kernelInstalling": "正在安裝 ipykernel...",
-          "kernelDead": "核心死亡",
+          "8dbe39a152": "更多單元格操作",
+          "fa8fd99cf1": "單元格型別",
+          "kernelStarting": "正在啟動…",
+          "kernelInstalling": "正在安裝 ipykernel…",
+          "kernelDead": "核心已停止",
           "selectKernel": "選擇核心",
           "notPython": "該檔案不是 Python 直譯器。",
-          "interrupt": "打斷",
+          "interrupt": "中斷",
           "restart": "重啟核心",
-          "runAll": "執行全部",
+          "trustFirst": "請先執行一個單元格以信任此筆記本",
+          "runAll": "全部執行",
           "clearAll": "清除所有輸出",
-          "notResponding": "沒有回應。重啟核心",
-          "findingPython": "尋找Python環境...",
-          "recommended": "受到推崇的",
-          "pythonOnPath": "路徑上的Python",
-          "browsePython": "瀏覽 Python...",
-          "missingIpykernelTitle": "安裝ipykernel？",
-          "missingIpykernel": "使用“{{env}}”執行單元需要 ipykernel 包。",
+          "notResponding": "無回應。請重啟核心",
+          "findingPython": "正在查詢 Python 環境…",
+          "recommended": "推薦",
+          "pythonOnPath": "PATH 中的 Python",
+          "browsePython": "瀏覽 Python…",
+          "missingIpykernelTitle": "安裝 ipykernel？",
+          "missingIpykernel": "使用“{{env}}”執行單元格需要 ipykernel 軟體包。",
           "copyCommand": "複製命令",
-          "chooseAnother": "選擇另一個",
           "install": "安裝",
-          "kernelStartFailed": "核心無法啟動。",
-          "noPython": "在此電腦上未找到 Python。從 [python.org](https://www.python.org/downloads/) 安裝它，然後再次執行單元。",
-          "installFailed": "安裝 ipykernel 失敗。自己執行`{{command}}`，或者使用`{{venvCommand}}`為此專案建立一個虛擬環境並選擇它作為核心。",
-          "kernelDied": "核心死了。",
-          "localOnly": "筆記本單元只能針對該電腦上的檔案執行。",
-          "pythonOnly": "只有 Python 筆記本可以在 Orca 中執行。"
+          "kernelStartFailed": "核心啟動失敗。",
+          "noPython": "在此電腦上未找到 Python。請從 [python.org](https://www.python.org/downloads/) 安裝，然後重新執行單元格。",
+          "kernelDied": "核心已停止。",
+          "localOnly": "筆記本單元格只能針對此電腦上的檔案執行。",
+          "pythonOnly": "Orca 中只能執行 Python 筆記本。",
+          "commandCopied": "命令已複製",
+          "createVenv": "建立 .venv",
+          "createVenvItem": "建立虛擬環境…",
+          "createVenvTitle": "建立虛擬環境？",
+          "creatingButton": "正在建立…",
+          "creatingVenvDescription": "正在 {{folder}} 中建立 .venv 並安裝 ipykernel。這可能需要一分鐘。",
+          "creatingVenvTitle": "正在建立虛擬環境…",
+          "installingButton": "正在安裝…",
+          "installingDescription": "正在使用 pip 將 ipykernel 安裝到“{{env}}”。這可能需要一分鐘。",
+          "installingTitle": "正在安裝 ipykernel…",
+          "kernelCreatingVenv": "正在建立 .venv…",
+          "setupFailed": "操作失敗。Python 輸出：",
+          "tryAgain": "重試",
+          "useAnotherPython": "使用其他 Python…",
+          "venvDescription": "Orca 將基於“{{env}}”在 {{folder}} 中建立 .venv，安裝 ipykernel，並在其中執行此筆記本。"
         },
         "MarkdownPreview": {
           "e4683f70c4": "取消",
@@ -15419,7 +15497,10 @@
             "2b3ce6d394": "取消",
             "e05063cfc1": "行 {{value0}}",
             "c845170b3b": "行 {{value0}}-{{value1}}",
-            "commentTooLarge": "評論過長，無法安全提交。"
+            "commentTooLarge": "評論過長，無法安全提交。",
+            "f6c449191e": "為AI添加註釋",
+            "5fa4bfebaa": "新增備註",
+            "5e9b3d0c2e": "新增..."
           },
           "useDiffCommentDecorator": {
             "995fa28b50": "此注"
@@ -17035,8 +17116,8 @@
       },
       "NativeChatResumeOnRestartModal": {
         "title": "恢復中斷的聊天？",
-        "body": "當 Orca 關閉時，這些聊天正在進行中。恢復會恢復每個停止的位置及其完整上下文，並要求代理在繼續之前檢查其最後一個操作。您自己的提示不會重新發送。",
-        "updateBody": "這些聊天是在 Orca 安裝更新時進行的。恢復會恢復每個停止的位置及其完整上下文，並要求代理在繼續之前檢查其最後一個操作。您自己的提示不會重新發送。",
+        "body": "當 Orca 關閉時，這些聊天正在工作。恢復會將每個聊天還原到停止的位置及其完整上下文，並要求代理在繼續之前檢查它正在做的事情。您自己的提示不會重新發送。",
+        "updateBody": "當 Orca 安裝更新時，這些聊天正在工作。恢復會將每個聊天還原到停止的位置及其完整上下文，並要求代理在繼續之前檢查它正在做的事情。您自己的提示不會重新發送。",
         "resuming": "正在恢復…",
         "untitled": "無標題聊天",
         "listLabel": "將恢復的聊天",
@@ -17052,14 +17133,22 @@
         "continueUnconfirmed_other": "對於 {{value0}} 聊天，未確認繼續傳送。在傳送另一條訊息之前開啟它們進行檢查。",
         "dismissAll": "全部關閉",
         "dismissUnconfirmed": "拒絕簡歷邀請尚未得到確認——它可能仍在狀態列中。",
-        "notContinuedOne": "1 條聊天無法恢復",
-        "notContinuedMany": "{{value0}} 聊天無法恢復",
-        "notConfirmedOne": "無法確認 1 條聊天已恢復",
-        "notConfirmedMany": "無法確認 {{value0}} 聊天已恢復",
-        "notConfirmedOtherOne": "無法確認另外 1 條聊天已恢復",
-        "notConfirmedOtherMany": "無法確認 {{value0}} 其他聊天已恢復",
+        "notContinuedOne": "1 個聊天無法恢復",
+        "notContinuedMany": "{{value0}} 個聊天無法恢復",
+        "notConfirmedOne": "無法確認 1 個聊天已恢復",
+        "notConfirmedMany": "無法確認 {{value0}} 個聊天已恢復",
+        "notConfirmedOtherOne": "無法確認另外 1 個聊天已恢復",
+        "notConfirmedOtherMany": "無法確認另外 {{value0}} 個聊天已恢復",
         "show": "顯示",
-        "dismiss": "關閉"
+        "dismiss": "關閉",
+        "activityUnnamed": "未命名",
+        "activityApproval": "等待您的核准：{{value0}}",
+        "activityQuestion": "等待您的回答：{{value0}}",
+        "activityMidReply": "回覆進行中",
+        "activitySubagentOne": "子代理執行中：{{value0}}",
+        "activitySubagentMany": "{{value0}} 個子代理執行中",
+        "activityMonitorOne": "正在監控：{{value0}}",
+        "activityMonitorMany": "正在監控 {{value0}} 個後台任務"
       },
       "linear-issue-attribute-filter-coverage-notice": {
         "statusPartialTeamCoverage": "過濾 {{value1}} 團隊狀態中的 {{value0}} — 不包括其餘團隊的問題。",
@@ -17106,6 +17195,9 @@
             "failed": "無法開始聊天。",
             "unknown": "無法確認聊天連線。",
             "retry": "重試"
+          },
+          "NativeChatStructuredSessionStatus": {
+            "starting": "{{value0}} 仍在啟動中。訊息會等它就緒後再發送；關閉此聊天即可放棄。"
           }
         }
       },
@@ -17141,18 +17233,25 @@
         "unconfirmed": "無法確認聊天已恢復",
         "failed": "無法恢復",
         "statusFor": "{{value0}}：{{value1}}",
-        "dismissChat": "消除 {{value1}} 中的“{{value0}}”",
-        "toResume": "恢復："
+        "dismissChat": "關閉 {{value1}} 中的“{{value0}}”",
+        "toResume": "待恢復："
       },
       "NativeChatResumeFailureGuidance": {
-        "unconfirmed": "Orca 無法確認“繼續”訊息已傳送。開啟聊天並檢查後再發送另一個。",
-        "superseded": "開啟聊天並回復。重新啟動後，新的工作立即到達，因此 Orca 沒有傳送“繼續”訊息。",
-        "conflict": "另一個 Orca 視窗或終端機仍然擁有此會話。關閉它，然後重試。",
-        "ownershipUnknown": "Orca 仍在確定哪個程序擁有此會話。稍等片刻，然後重試。",
-        "notAttached": "聊天沒有重新連線。重試，或開啟它以開始新的轉動。",
-        "dispatchRejected": "代理拒絕了“繼續”訊息。開啟聊天並自己傳送一個。",
-        "unsupported": "Orca 無法恢復此聊天。開啟它看看它停在哪裡。",
-        "fallback": "Orca 無法恢復此聊天。開啟它以手動繼續。"
+        "unconfirmed": "Orca 無法確認“continue”訊息已送達。請開啟聊天進行檢查，確認後再發送其他訊息。",
+        "superseded": "請開啟聊天並回復。重啟後緊接著有新的工作到達，因此 Orca 未傳送其“continue”訊息。",
+        "conflict": "另一個 Orca 視窗或終端機仍持有此會話。請將其關閉，然後重試。",
+        "ownershipUnknown": "Orca 仍在確認哪個程序持有此會話。請稍候，然後重試。",
+        "notAttached": "聊天未能重新連線。請重試，或將其開啟以開始新的輪次。",
+        "dispatchRejected": "代理拒絕了“continue”訊息。請開啟聊天並自行傳送一條。",
+        "unsupported": "此聊天無法由 Orca 恢復。請將其開啟以檢視停止位置。",
+        "fallback": "Orca 無法恢復此聊天。請將其開啟以手動繼續。"
+      },
+      "web": {
+        "preloadApi": {
+          "cursorAccounts": {
+            "hostOnly": "Cursor 登入詳情僅可在執行 Orca 的電腦上讀取。"
+          }
+        }
       }
     },
     "i18n": {
@@ -17361,9 +17460,9 @@
         "responding": "代理正在回覆",
         "working": "處理中…",
         "thinking": "思維",
-        "workingFor": "為 {{value0}} 工作",
-        "workedFor": "為 {{value0}} 工作",
-        "toggleDetails": "切換轉彎詳情"
+        "workingFor": "已工作 {{value0}}",
+        "workedFor": "工作了 {{value0}}",
+        "toggleDetails": "切換回合詳情"
       },
       "jumpToLatest": "跳到最新訊息",
       "toggle": {
@@ -17397,6 +17496,7 @@
       "scrollMessageToTop": "將此訊息捲動到頂部",
       "loadingEarlier": "正在載入…",
       "loadEarlier": "載入更早的訊息",
+      "loadingEarlierMessages": "正在載入更早的訊息…",
       "question": {
         "step": "步驟 {{value0}}",
         "other": "其他…",
@@ -17506,38 +17606,6 @@
         "questionCount": "{{value0}} 問題"
       },
       "structuredSessionLaunchFailed": "無法開啟 {{value0}} 聊天",
-      "handoff": {
-        "stage": {
-          "finishingChat": "正在完成聊天會話...",
-          "finishingTerminal": "整理代理終端機...",
-          "openingTerminal": "開啟代理終端機...",
-          "resumingChat": "正在恢復聊天會話...",
-          "verifyingTerminal": "正在驗證代理終端機...",
-          "verifyingChat": "正在驗證聊天會話...",
-          "recovering": "正在恢復代理會話...",
-          "manualRecovery": "代理會話需要恢復"
-        },
-        "switchingOwner": "切換會話所有者...",
-        "mode": {
-          "switching": "交換",
-          "terminal": "終端機",
-          "chat": "聊天"
-        },
-        "switchingAfterTurn": "本回合後切換",
-        "returningAfterTurn": "本回合後返回",
-        "cancel": "取消",
-        "switchAfterTurn": "本回合後切換",
-        "stopTurnAndSwitch": "停止轉彎並切換",
-        "openAgentTui": "開啟代理 TUI",
-        "returnAfterTurn": "本回合後返回",
-        "returnToChat": "返回聊天",
-        "agentOpenOnHost": "代理已在 {{value0}} 的終端機中開啟。",
-        "agentOpen": "代理在終端機中開啟。",
-        "exitTerminal": "退出代理終端機以繼續聊天。",
-        "retryProof": "重試證明",
-        "retry": "重試",
-        "details": "細節"
-      },
       "structuredSessionLaunchFailedDescription": "Orca 無法開啟結構化 {{value0}} 聊天。有關詳細資訊，請參閱日誌。",
       "subagents": {
         "state": {
@@ -17587,7 +17655,12 @@
       "fileLinks": {
         "notFound": "未找到檔案：{{value0}}",
         "unverifiable": "無法檢查 {{value0}}：{{value1}}",
-        "unresolved": "無法解析此工作區中的 {{value0}}"
+        "unresolved": "無法在此工作區中解析 {{value0}}"
+      },
+      "contextUsage": {
+        "label": "上下文 {{used}}/{{window}} token，已用 {{percent}}%",
+        "title": "上下文",
+        "estimated": "根據上一次回應的估算值。"
       }
     },
     "tab": {
@@ -17869,7 +17942,7 @@
       "sent": "已將會話上下文傳送到新的 {{agent}} 會話。",
       "deliveryFailed": "新的 {{agent}} 會話已啟動，但無法傳送上下文。",
       "launchFailed": "無法啟動新的 {{agent}} 會話。",
-      "deliveryUnconfirmed": "Orca 無法確認 {{agent}} 收到了會話上下文。檢查新會話，如果其輸入為空，請自行貼上。",
+      "deliveryUnconfirmed": "Orca 無法確認 {{agent}} 已收到會話上下文。請檢查新會話，如果其輸入為空，請自行貼上。",
       "copyPrompt": "複製提示"
     },
     "terminalPane": {
@@ -17928,10 +18001,10 @@
     },
     "cmd-j": {
       "paletteSessionAge": {
-        "minutes": "{{value0}}米",
-        "hours": "{{value0}}h",
-        "days": "{{value0}}d",
-        "underOneMinute": "<1m"
+        "minutes": "{{value0}}分",
+        "hours": "{{value0}}小時",
+        "days": "{{value0}}天",
+        "underOneMinute": "<1分鐘"
       }
     },
     "settings": {
@@ -18209,6 +18282,52 @@
       "unassignedInstruction": "在焦點窗格中開始語音聽寫之前指定聽寫快捷方式。",
       "settingsInstruction": "隨時更改模型、聽寫模式或快捷方式",
       "settingsLink": "設定 → 語音"
+    },
+    "sessionSearch": {
+      "ageHours": "2小時",
+      "ageMinutes": "12分鐘",
+      "ageYesterday": "1天",
+      "agentsInstruction": "您的代理也可以搜尋。讓它“找到我們修復登入逾時的那次會話”。",
+      "consentInstruction": "隨時可在以下位置更改或關閉",
+      "continueInBackground": "在後台繼續",
+      "demoHit1Age": "3天",
+      "demoHit1Snippet": "將 [[登入逾時]] 延長至 30 秒，並在令牌重新整理時添加了重試。",
+      "demoHit1Title": "修復不穩定的身份驗證重定向",
+      "demoHit2Age": "1周",
+      "demoHit2Snippet": "為什麼喚醒後 [[登入]] 頁面在 [[逾時]] 後卡住？",
+      "demoHit2Title": "睡眠後會話重新整理",
+      "demoHit3Age": "2周",
+      "demoHit3Snippet": "添加了覆蓋 [[登入逾時]] 路徑的端到端測試。",
+      "demoHit3Title": "身份驗證端到端加固",
+      "demoHit4Age": "5天",
+      "demoHit4Snippet": "[[回滾]] 會先刪除新索引，再恢復舊列。",
+      "demoHit4Title": "訂單表遷移",
+      "demoHit5Age": "3周",
+      "demoHit5Snippet": "在重試之前，你能寫一份 [[遷移]] [[回滾]] 計劃嗎？",
+      "demoHit5Title": "預釋出部署失敗",
+      "demoHit6Age": "1個月",
+      "demoHit6Snippet": "這裡的每個 [[遷移]] 都是可逆的，除了列舉重新命名。",
+      "demoHit6Title": "表結構審查記錄",
+      "demoQuery": "登入逾時",
+      "demoQuery2": "遷移回滾",
+      "demoRoleAssistant": "助手",
+      "demoRoleUser": "使用者",
+      "enableFailed": "無法開啟會話搜尋。請重試。",
+      "indexingDescription": "Orca 正在讀取您過去的代理會話記錄，以便您可以搜尋它們。這可能需要幾分鐘。",
+      "indexingTitle": "正在索引您的代理會話",
+      "progressStarting": "正在查詢您的會話…",
+      "readyDescription": "現在可以透過會話內容找到此電腦上的每個代理會話。",
+      "readyTitle": "會話搜尋已就緒",
+      "readyToast": "會話搜尋已就緒",
+      "readyToastOpen": "開啟",
+      "recent1Text": "將搜尋入口移至“工作流程”下，並更新了測試。",
+      "recent1Title": "整理設定側邊欄",
+      "recent2Text": "更新依賴項並確保構建仍然通過。",
+      "recent2Title": "更新 lockfile",
+      "recent3Text": "這是按領域分組的記錄初稿。",
+      "recent3Title": "釋出說明草稿",
+      "settingsLink": "設定 → 代理會話搜尋",
+      "startSearching": "開始搜尋"
     }
   },
   "quickOpen": {
