@@ -12,6 +12,8 @@ import {
 } from '../components/sidebar/hovered-workspace-delete'
 import { useAppStore } from '../store'
 import { useBottomPanelLayout } from '../components/bottom-panel/bottom-panel-layout-store'
+import { toggleDatabasePage } from '../components/database/database-page-navigation'
+import { isWebClientLocation } from '@/lib/web-client-location'
 import type { usePluginCommands } from '@/store/plugin-panels'
 import { isGitRepoKind } from '../../../shared/repo-kind'
 import type {
@@ -284,6 +286,10 @@ export function createAppCommandHandlers(
     ],
     ['sidebar.checks.toggle', () => revealRightSidebarTab('sidebar.checks.toggle', 'checks')],
     ['sidebar.ports.toggle', () => revealRightSidebarTab('sidebar.ports.toggle', 'ports')],
+    [
+      'databasePage.toggle',
+      () => (isWebClientLocation() ? false : claim('databasePage.toggle', toggleDatabasePage))
+    ],
     [
       'bottomPanel.gitLog.toggle',
       () =>

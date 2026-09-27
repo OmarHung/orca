@@ -66,5 +66,13 @@ export const KEYBINDING_DEFINITION_CORE_4: readonly KeybindingDefinition[] = [
     },
     // Why: macOS uses Shift+Space as an input-source shortcut; Orca otherwise rejects Shift-only bindings to avoid stealing typed text.
     allowShiftOnlyKeybindings: true
+  },
+  {
+    id: 'databasePage.toggle',
+    title: 'Toggle Database Page',
+    group: 'Global',
+    scope: 'global',
+    searchKeywords: ['shortcut', 'database', 'sql', 'postgres', 'datagrip', 'query'],
+    defaultBindings: platformBindings(['Mod+Alt+D'])
   }
 ]

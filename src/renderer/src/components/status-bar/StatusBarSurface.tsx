@@ -19,6 +19,7 @@ import { UsagePercentageDisplayChangeNotice } from './UsagePercentageDisplayChan
 import { UpdateStatusSegment } from './UpdateStatusSegment'
 import { GitLogStatusSegment } from '../bottom-panel/GitLogStatusSegment'
 import { DebugStatusSegment } from '../debug/DebugStatusSegment'
+import { DatabaseStatusSegment } from '../database/DatabaseStatusSegment'
 import { SkillUpdateStatusSegment } from './SkillUpdateStatusSegment'
 import { NativeChatResumeStatusSegment } from './NativeChatResumeStatusSegment'
 import { CaffeinateStatusSegment } from './CaffeinateStatusSegment'
@@ -290,6 +291,7 @@ export function StatusBarSurface({
           </React.Suspense>
           <GitLogStatusSegment />
           <DebugStatusSegment />
+          <DatabaseStatusSegment />
           {showFloatingTerminalToggle && (
             <FloatingTerminalIconContextMenu currentLocation="status-bar" className="relative">
               <Tooltip>
