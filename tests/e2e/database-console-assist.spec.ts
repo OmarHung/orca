@@ -1,9 +1,10 @@
 import {
   addSqliteConnection,
+  explorerMenu,
   openDatabasePage,
-  runInConsole,
   typeInConsole
 } from './helpers/database-page'
+import { adminSqlite } from './helpers/database-admin'
 import {
   consoleSuggestions,
   consoleText,
@@ -42,9 +43,15 @@ test('completes tables, alias columns and new tables, and reformats SQL', async 
   await orcaPage.screenshot({ path: testInfo.outputPath('alias-columns.png') })
   await orcaPage.keyboard.press('Escape')
 
-  // DDL run in the console refreshes what completion knows.
-  await runInConsole(orcaPage, 'create table orders (id integer primary key, person_id integer);')
-  await expect(orcaPage.getByText(/^CREATE completed/)).toBeVisible({ timeout: 20_000 })
+  // A refresh in the explorer picks up a table made elsewhere, for completion too.
+  await adminSqlite(filePath, ['create table orders (id integer primary key, person_id integer)'])
+  await explorerMenu(
+    orcaPage,
+    orcaPage
+      .getByRole('tree', { name: 'Database objects' })
+      .getByRole('treeitem', { name: 'main' }),
+    'Refresh'
+  )
   await typeInConsole(orcaPage, 'select * from ord')
   await triggerSuggest(orcaPage)
   await expect(suggestions.first()).toContainText('orders')
