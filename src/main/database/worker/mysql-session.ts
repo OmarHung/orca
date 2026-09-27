@@ -48,10 +48,14 @@ class MysqlSession implements DatabaseDriverSession {
     consoleId: string,
     sql: string,
     pageSize: number,
-    mode: DatabaseTransactionMode
+    mode: DatabaseTransactionMode,
+    schema?: string
   ): Promise<DatabaseExecuteResult> {
     const target = await this.consoles.acquire(consoleId)
-    return target.transactions.run(mode, sql, () => target.execute(sql, pageSize))
+    await target.schema.prepare(schema)
+    const result = await target.transactions.run(mode, sql, () => target.execute(sql, pageSize))
+    const switched = await target.schema.afterRun(sql, result)
+    return switched === undefined ? result : { ...result, schema: switched }
   }
 
   async fetch(consoleId: string, resultId: string, pageSize: number): Promise<DatabaseRowsPage> {

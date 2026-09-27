@@ -20,7 +20,7 @@ import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { isServerConnection } from '../../../../../shared/database/database-connection-types'
 import { cn } from '@/lib/utils'
-import { DatabaseSessionDot } from '../DatabaseConnectionBadge'
+import { DatabaseSessionDot, ReadOnlyIcon } from '../DatabaseConnectionBadge'
 import { useDatabaseConnectionColor } from '../database-connection-color'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
 import { DatabaseExplorerContextMenu } from './DatabaseExplorerContextMenu'
@@ -94,6 +94,7 @@ function ConnectionLabel({ connectionId }: { connectionId: string }): React.JSX.
   return (
     <>
       <span className="truncate">{connection?.name ?? ''}</span>
+      {connection?.readOnly ? <ReadOnlyIcon /> : null}
       {sshLabel !== undefined ? (
         <span className="truncate text-muted-foreground">
           {translate('database.explorer.viaSsh', 'via {{value0}}', {
