@@ -9,6 +9,12 @@ import type {
   DatabaseResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
+import type {
+  DatabaseDumpRequest,
+  DatabaseDumpSummary,
+  DatabaseJobProgress
+} from '../../../shared/database/database-dump-types'
+import type { DumpDestination } from './dump/dump-output'
 
 // Must stay electron-free: imported by the worker thread entry.
 
@@ -33,6 +39,14 @@ export type DatabaseWorkerCommand =
   | { type: 'fetch'; consoleId: string; resultId: string; pageSize: number }
   | { type: 'cancel'; consoleId: string }
   | { type: 'closeConsole'; consoleId: string }
+  /** Dumps on a session of the job's own, reporting `job-progress` as it goes. */
+  | {
+      type: 'dump'
+      jobId: string
+      request: DatabaseDumpRequest
+      destination: DumpDestination
+    }
+  | { type: 'cancelJob'; jobId: string }
   | { type: 'close' }
 
 export type DatabaseWorkerValues = {
@@ -43,6 +57,8 @@ export type DatabaseWorkerValues = {
   fetch: DatabaseRowsPage
   cancel: { cancelled: boolean }
   closeConsole: null
+  dump: DatabaseDumpSummary
+  cancelJob: { cancelled: boolean }
   close: null
 }
 
@@ -59,3 +75,4 @@ export type DatabaseWorkerMessage =
   | { kind: 'response'; id: number; result: DatabaseResult<unknown> }
   /** The server connection dropped outside any request (restart, network loss). */
   | { kind: 'connection-lost'; message: string }
+  | { kind: 'job-progress'; jobId: string; progress: DatabaseJobProgress }

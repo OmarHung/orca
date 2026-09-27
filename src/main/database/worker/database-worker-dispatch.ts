@@ -4,6 +4,7 @@ import { readOnlyViolation } from '../../../shared/database/sql-read-only-guard'
 import type { DatabaseDriverSession, OpenDatabaseDriverSession } from './database-driver'
 import { routeThroughTunnel } from './database-connection-route'
 import { toDatabaseError } from './database-error-mapping'
+import { DatabaseWorkerJobs } from './database-worker-jobs'
 import type {
   DatabaseWorkerCommand,
   DatabaseWorkerMessage,
@@ -34,6 +35,7 @@ export function createDatabaseWorkerDispatcher(
 ): (request: DatabaseWorkerRequest) => Promise<void> {
   let session: DatabaseDriverSession | null = null
   let driver: DatabaseDriver = 'postgres'
+  const jobs = new DatabaseWorkerJobs(post)
 
   const requireSession = (): DatabaseDriverSession => {
     if (!session) {
@@ -77,7 +79,12 @@ export function createDatabaseWorkerDispatcher(
       case 'closeConsole':
         await session?.closeConsole(command.consoleId)
         return null
+      case 'dump':
+        return jobs.dump(requireSession(), command)
+      case 'cancelJob':
+        return { cancelled: jobs.cancel(command.jobId) }
       case 'close': {
+        await jobs.stopAll()
         const closing = session
         session = null
         await closing?.close()
