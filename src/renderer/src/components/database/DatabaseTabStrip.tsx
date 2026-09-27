@@ -1,8 +1,8 @@
 import React from 'react'
-import { SquareTerminal, X } from 'lucide-react'
+import { SquareTerminal, Table2, X } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
-import { closeDatabaseConsoleTab } from './database-page-actions'
+import { closeDatabaseTab } from './database-page-actions'
 import { useDatabasePageStore } from './database-page-store'
 
 export function DatabaseTabStrip(): React.JSX.Element {
@@ -26,7 +26,7 @@ export function DatabaseTabStrip(): React.JSX.Element {
             onClick={() => activateTab(tab.id)}
             onAuxClick={(event) => {
               if (event.button === 1) {
-                closeDatabaseConsoleTab(tab.id)
+                closeDatabaseTab(tab.id)
               }
             }}
             onKeyDown={(event) => {
@@ -40,14 +40,18 @@ export function DatabaseTabStrip(): React.JSX.Element {
               active && 'bg-background text-foreground'
             )}
           >
-            <SquareTerminal className="size-3.5 shrink-0" />
+            {tab.kind === 'table' ? (
+              <Table2 className="size-3.5 shrink-0" />
+            ) : (
+              <SquareTerminal className="size-3.5 shrink-0" />
+            )}
             <span className="truncate">{tab.title}</span>
             <button
               type="button"
-              aria-label={translate('database.tabs.close', 'Close console')}
+              aria-label={translate('database.tabs.close', 'Close tab')}
               onClick={(event) => {
                 event.stopPropagation()
-                closeDatabaseConsoleTab(tab.id)
+                closeDatabaseTab(tab.id)
               }}
               className={cn(
                 'flex size-4 shrink-0 items-center justify-center rounded-sm opacity-0 hover:bg-accent group-hover:opacity-100',

@@ -112,12 +112,15 @@ export function DatabaseExplorerRow({
   row,
   selected,
   onSelect,
-  onToggle
+  onToggle,
+  onActivate
 }: {
   row: ExplorerRow
   selected: boolean
   onSelect: (key: string) => void
   onToggle: (node: DatabaseExplorerNode) => void
+  /** Double-click: opens a table's data, expands anything else. */
+  onActivate: (node: DatabaseExplorerNode) => void
 }): React.JSX.Element {
   if (row.type === 'status') {
     return <StatusRow row={row} />
@@ -134,7 +137,7 @@ export function DatabaseExplorerRow({
           aria-selected={selected}
           data-current={selected ? 'true' : undefined}
           onMouseDown={() => onSelect(row.key)}
-          onDoubleClick={() => onToggle(node)}
+          onDoubleClick={() => onActivate(node)}
           className={cn(
             'flex h-full cursor-default items-center gap-1 pr-2 text-xs hover:bg-accent',
             selected && 'bg-accent'

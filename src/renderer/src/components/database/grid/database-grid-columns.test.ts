@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  GRID_FIT_MAX_COLUMN_PX,
   GRID_MAX_COLUMN_PX,
   GRID_MIN_COLUMN_PX,
+  fitGridColumn,
   gridCellDisplayText,
   isNumericColumnType,
-  measureGridColumns
+  measureGridColumns,
+  scrollLeftToReveal
 } from './database-grid-columns'
 
 describe('database grid columns', () => {
@@ -36,5 +39,21 @@ describe('database grid columns', () => {
     expect(gridCellDisplayText('a\nb')).toBe('a↵b')
     expect(gridCellDisplayText(null)).toBeNull()
     expect(gridCellDisplayText('')).toBe('')
+  })
+
+  it('fits a column past the first-guess cap, up to the fit maximum', () => {
+    const column = { name: 'body', typeName: 'text' }
+    expect(fitGridColumn(column, [['x'.repeat(60)]], 0)).toBeGreaterThan(GRID_MAX_COLUMN_PX)
+    expect(fitGridColumn(column, [['x'.repeat(5000)]], 0)).toBe(GRID_FIT_MAX_COLUMN_PX)
+    expect(fitGridColumn(column, [[null]], 0)).toBe(GRID_MIN_COLUMN_PX)
+  })
+
+  it('scrolls just enough to reveal a column beside the sticky row numbers', () => {
+    const widths = [100, 100, 100, 100]
+    // Row numbers take 56px, so column 3 spans 356..456 in content coordinates.
+    expect(scrollLeftToReveal(widths, 2, 0, 400)).toBe(0)
+    expect(scrollLeftToReveal(widths, 3, 0, 400)).toBe(456 - 400)
+    expect(scrollLeftToReveal(widths, 0, 150, 400)).toBe(0)
+    expect(scrollLeftToReveal([100, 900], 1, 0, 400)).toBe(100)
   })
 })
