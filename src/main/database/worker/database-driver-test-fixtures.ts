@@ -20,6 +20,8 @@ export type DriverFixture = {
   ) => { connection: DatabaseConnectionDraft; password: string | null } | null
   /** Namespace holding `people`, `people_view` and `user` (reserved and mixed-case names). */
   schema: string
+  /** Where unqualified names resolve for the test URL's user and database. */
+  currentSchema: string
   setup: string[]
   teardown: string[]
   /** `people` qualified for use in SQL. */
@@ -58,6 +60,7 @@ const mysqlSchema = `orca_it_${suffix}`
 function mysqlFixture(label: string, env: string): DriverFixture {
   return serverFixture(label, 'mysql', env, {
     schema: mysqlSchema,
+    currentSchema: 'orca_it',
     setup: [
       `create database ${mysqlSchema}`,
       `create table ${mysqlSchema}.people (id int primary key, name varchar(40) not null)`,
@@ -93,6 +96,7 @@ function sqliteFixture(): DriverFixture {
       password: null
     }),
     schema: 'main',
+    currentSchema: 'main',
     setup: [
       'create table people (id integer primary key, name text not null)',
       'create view people_view as select * from people',
@@ -117,6 +121,7 @@ function sqliteFixture(): DriverFixture {
 export const DRIVER_FIXTURES: DriverFixture[] = [
   serverFixture('PostgreSQL', 'postgres', 'ORCA_TEST_POSTGRES_URL', {
     schema: postgresSchema,
+    currentSchema: 'public',
     setup: [
       `create schema ${postgresSchema}`,
       `create table ${postgresSchema}.people (id int primary key, name text not null)`,
@@ -135,6 +140,7 @@ export const DRIVER_FIXTURES: DriverFixture[] = [
   mysqlFixture('MariaDB', 'ORCA_TEST_MARIADB_URL'),
   serverFixture('SQL Server', 'sqlserver', 'ORCA_TEST_SQLSERVER_URL', {
     schema: postgresSchema,
+    currentSchema: 'dbo',
     setup: [
       `create schema ${postgresSchema}`,
       `create table ${postgresSchema}.people (id int primary key, name nvarchar(40) not null)`,
