@@ -1,6 +1,6 @@
 # Database 工具（DataGrip 風格）：實作計畫（fork 專屬）
 
-> 狀態：Phase 0（基礎架構 + PostgreSQL）、Phase 1（MySQL／MariaDB、SQL Server、SQLite）、Phase 2（資料表分頁、表格完整化）和 Phase 3（資料表編輯）已完成（2026-09-27），紀錄見 §6.1～§6.5。Phase 4 以後尚未開工
+> 狀態：Phase 0（基礎架構 + PostgreSQL）、Phase 1（MySQL／MariaDB、SQL Server、SQLite）、Phase 2（資料表分頁、表格完整化）、Phase 3（資料表編輯）和 Phase 4（SSH Tunnel）已完成（2026-09-27），紀錄見 §6.1～§6.6。Phase 5 尚未開工
 > 分支：從 `omar/custom` 開 `feat/database`，每個 Phase 完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -343,6 +343,33 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - 連線設定可以選一個已存的 SSH 主機
 - ssh2 走 `forwardOut`，系統 OpenSSH 走 `ssh -L`
 - Tunnel 狀態和錯誤訊息顯示在連線樹上
+
+### 6.6 Phase 4 完成紀錄（2026-09-27）
+
+用 Docker 開一台 SSH 伺服器當跳板，e2e 透過它連到只有 Docker 內網才連得到的 MySQL（查 `@@hostname` 回傳容器自己的名字，證明真的走隧道），以及本機的 PostgreSQL（容器透過 `host.docker.internal` 連到）。ssh2 和系統 OpenSSH 兩種 SSH 連線方式都驗證過。另外也驗證了：SSH 連線被重置時資料庫連線標示為中斷、重新連線會重建隧道、SSH 主機連不到資料庫時顯示 SSH 主機自己的原因、系統 OpenSSH 的轉發程序中止時也會標示。
+
+實作時的決定：
+
+- **重用 Orca 的 SSH**：連線用 `connectRegisteredSshTarget`（已連線就沿用、正在連線就一起等，密碼和金鑰密碼走 Orca 既有的 SSH 詢問視窗），轉發用既有的 ssh2／系統 OpenSSH provider
+- **獨立的轉發管理器**：共用的 Ports 面板轉發會被存進 SSH 主機設定、列在 Ports 面板、而且每次 relay 重連都被清掉。資料庫隧道用自己的 `SshPortForwardManager`，只跟著資料庫 session 開關
+- **連不到時說清楚**：ssh2 的轉發在對方拒絕時只會默默關掉 socket，驅動只會看到「連線被關閉」。所以開隧道前先用同一條 SSH 連線試開一次通道，失敗就顯示 SSH 主機的原因
+- **斷線偵測**：SSH 連線被重置或中斷時（`registerSshProviderRequestAbort`），隧道關閉並把資料庫連線標示為中斷；訊息寫「隧道已無法使用」，不說遠端程序結束（依 `ssh-execution-boundary.md`）。系統 OpenSSH 的 `ssh -L` 程序結束時也一樣。之後重新連線會重建 SSH 和隧道
+- **TLS 仍驗證真正的主機**：驅動連到 127.0.0.1 的本機埠，但憑證要對原本的資料庫主機名稱驗證。pg 用 `ssl.servername`、tedious 用 `serverName`；mysql2 只會拿 `host` 當 TLS 名稱，所以 host 保留真正的名稱，socket 改由 `stream` 連到本機埠
+- **畫面**：連線表單多一個「SSH tunnel」選單（已儲存的 SSH 主機；主機被刪掉時仍顯示「Removed SSH host」，不會悄悄改成直連）；結構樹的連線後面顯示「via 主機名稱」
+
+這一輪順便修正的問題：
+
+- **MySQL 的 `verify-full` 沒有驗證主機名稱**（Phase 1 起）：mysql2 要另外設 `verifyIdentity` 才會比對主機名稱，原本只驗證憑證鏈
+- **連線中斷訊息重複**：mysql2 自己的訊息已經以「Connection lost:」開頭，畫面上變成「Connection lost: Connection lost: …」
+
+測試方式：`ORCA_E2E_SSH_DOCKER=1` 加上 §6.2 的資料庫環境變數，執行 `tests/e2e/database-ssh-tunnel.spec.ts`。第一次會建 relay bundle 和 SSH 測試用的 Docker 映像檔。
+
+已知限制：
+
+- 走 Orca 標準的 SSH 連線，所以跟 SSH workspace 一樣會在 SSH 主機上部署 Orca 的 relay；不允許執行 relay 的跳板機目前不能用
+- 系統 OpenSSH 模式（ProxyJump、ProxyCommand、硬體金鑰等會用到）不能詢問密碼，要用金鑰或 ssh-agent，這是 Orca 既有的限制
+- 經由隧道的 `verify-full` 已經設定成比對真正的主機名稱，但沒有用真實憑證驗證過
+- SSH 重連後隧道不會自動重建，資料庫連線顯示中斷，要手動再連
 
 ### Phase 5：打磨
 
