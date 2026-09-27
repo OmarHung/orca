@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { DRIVER_FIXTURES } from './database-driver-test-fixtures'
+import { runAdminSql } from './database-test-admin'
 import { createWorkerHarness, expectOk, onlyRows } from './database-worker-test-harness'
 
 // Only PostgreSQL (search_path) and MySQL/MariaDB (USE) switch schema per session.
@@ -11,22 +12,17 @@ for (const fixture of DRIVER_FIXTURES.filter(
   const target = fixture.open()
   describe.skipIf(!target)(`${fixture.label} console schema`, () => {
     const harness = createWorkerHarness()
-    const setupConsole = randomUUID()
     const run = (consoleId: string, sql: string, schema?: string) =>
       harness.send({ type: 'execute', consoleId, sql, pageSize: 100, schema })
 
     beforeAll(async () => {
+      await runAdminSql(target!, fixture.setup)
       await expectOk(harness.send({ type: 'connect', ...target! }))
-      for (const sql of fixture.setup) {
-        await expectOk(run(setupConsole, sql))
-      }
     })
 
     afterAll(async () => {
-      for (const sql of fixture.teardown) {
-        await run(setupConsole, sql)
-      }
       await harness.send({ type: 'close' })
+      await runAdminSql(target!, fixture.teardown, { ignoreErrors: true })
       fixture.dispose?.()
     })
 

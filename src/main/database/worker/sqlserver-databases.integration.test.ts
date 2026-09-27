@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { DRIVER_FIXTURES } from './database-driver-test-fixtures'
+import { runAdminSql } from './database-test-admin'
 import { createWorkerHarness, expectOk, onlyRows } from './database-worker-test-harness'
 
 // Opt-in through ORCA_TEST_SQLSERVER_URL; the login must be allowed to create a database.
@@ -10,23 +11,25 @@ const target = fixture.open()
 
 describe.skipIf(!target)('SQL Server databases', () => {
   const harness = createWorkerHarness()
-  const setupConsole = randomUUID()
   const other = `orca_it_other_${randomUUID().slice(0, 8).replaceAll('-', '')}`
   const run = (consoleId: string, sql: string, database?: string) =>
     harness.send({ type: 'execute', consoleId, sql, pageSize: 100, database })
 
   beforeAll(async () => {
+    await runAdminSql(target!, [
+      `create database ${other}`,
+      `create table ${other}.dbo.items (id int primary key)`,
+      `insert into ${other}.dbo.items values (1), (2)`
+    ])
     await expectOk(harness.send({ type: 'connect', ...target! }))
-    await expectOk(run(setupConsole, `create database ${other}`))
-    await expectOk(run(setupConsole, `create table ${other}.dbo.items (id int primary key)`))
-    await expectOk(run(setupConsole, `insert into ${other}.dbo.items values (1), (2)`))
   })
 
   afterAll(async () => {
     await harness.send({ type: 'close' })
-    await expectOk(harness.send({ type: 'connect', ...target! }))
-    await run(setupConsole, `drop database ${other}`)
-    await harness.send({ type: 'close' })
+    await runAdminSql(target!, [
+      `alter database ${other} set single_user with rollback immediate`,
+      `drop database ${other}`
+    ])
   })
 
   it('lists the server’s databases, marking the connection’s own', async () => {

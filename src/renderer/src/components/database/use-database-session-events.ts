@@ -1,7 +1,5 @@
 import { useEffect } from 'react'
-import { useDatabaseConsoleRunStore } from './console/database-console-run-store'
 import { useDatabaseConnectionsStore } from './database-connections-store'
-import { useDatabasePageStore } from './database-page-store'
 import { useDatabaseExplorerStore } from './explorer/database-explorer-store'
 import { invalidateSqlCatalog } from './console/sql-completion-catalog'
 
@@ -20,12 +18,6 @@ function subscribeToSessionEvents(): void {
       // A dead session's tree is stale; expanding again reconnects and reloads it.
       useDatabaseExplorerStore.getState().resetConnection(event.connectionId)
       invalidateSqlCatalog(event.connectionId)
-      // The server rolls back what a closed session left uncommitted.
-      const tabIds = useDatabasePageStore
-        .getState()
-        .tabs.filter((tab) => tab.connectionId === event.connectionId)
-        .map((tab) => tab.id)
-      useDatabaseConsoleRunStore.getState().endTransactions(tabIds)
     }
   })
 }

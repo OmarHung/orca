@@ -7,7 +7,9 @@ import {
   orderByForSort
 } from '../../../shared/database/table-data-sql'
 import { DRIVER_FIXTURES } from './database-driver-test-fixtures'
-import { createWorkerHarness, expectOk, onlyResult, onlyRows } from './database-worker-test-harness'
+import { runAdminSql } from './database-test-admin'
+import { openDriverSession } from './database-worker-dispatch'
+import { createWorkerHarness, expectOk, onlyRows } from './database-worker-test-harness'
 
 // Server drivers are opt-in through ORCA_TEST_{POSTGRES,MYSQL,MARIADB,SQLSERVER}_URL;
 // SQLite always runs against a temporary file.
@@ -20,37 +22,44 @@ for (const fixture of DRIVER_FIXTURES) {
     const execute = (sql: string, pageSize = 500, id = consoleId) =>
       harness.send({ type: 'execute', consoleId: id, sql, pageSize })
 
+    const peopleCount = async (): Promise<string> =>
+      String(
+        onlyRows(await expectOk(execute(`select count(*) from ${fixture.table}`))).rows[0]?.[0]
+      )
+
     beforeAll(async () => {
+      await runAdminSql(target!, [
+        ...fixture.setup,
+        `insert into ${fixture.table} (id, name) values (1, 'Ada'), (2, 'Bob')`
+      ])
       await expectOk(harness.send({ type: 'connect', ...target! }))
-      for (const sql of fixture.setup) {
-        await expectOk(execute(sql))
-      }
     })
 
     afterAll(async () => {
-      for (const sql of fixture.teardown) {
-        await execute(sql)
-      }
       await harness.send({ type: 'close' })
+      await runAdminSql(target!, fixture.teardown, { ignoreErrors: true })
       fixture.dispose?.()
     })
 
-    it('reports how many rows a command changed', async () => {
-      const result = onlyResult(
-        await expectOk(
-          execute(`insert into ${fixture.table} (id, name) values (1, 'Ada'), (2, 'Bob')`)
-        )
-      )
-      expect(result).toMatchObject({ kind: 'command', rowCount: 2 })
+    it('refuses writes before they reach the server', async () => {
+      const result = await execute(`insert into ${fixture.table} (id, name) values (9, 'No')`)
+      expect(result).toMatchObject({
+        ok: false,
+        error: { message: expect.stringMatching(/read-only, so INSERT statements are not run/) }
+      })
+      expect(await peopleCount()).toBe('2')
     })
 
-    it('reports no row count for statements that change no rows, even after ones that did', async () => {
-      const probe = `${fixture.table}_ddl`
-      await expectOk(execute(`update ${fixture.table} set name = name`))
-      const created = onlyResult(await expectOk(execute(`create table ${probe} (id int)`)))
-      const dropped = onlyResult(await expectOk(execute(`drop table ${probe}`)))
-      expect(created).toMatchObject({ kind: 'command', command: 'CREATE', rowCount: null })
-      expect(dropped).toMatchObject({ kind: 'command', command: 'DROP', rowCount: null })
+    it('never keeps a write that gets past that check', async () => {
+      // Straight to the driver session, as a write the keyword check can't see would arrive.
+      const session = await openDriverSession(target!.connection, target!.password, {
+        onConnectionLost: () => undefined
+      })
+      await session
+        .execute(randomUUID(), `insert into ${fixture.table} (id, name) values (9, 'No')`, 10, {})
+        .catch(() => undefined)
+      await session.close()
+      expect(await peopleCount()).toBe('2')
     })
 
     it('pages a large result through the open statement', async () => {
@@ -142,29 +151,6 @@ for (const fixture of DRIVER_FIXTURES) {
       if (!result.ok) {
         expect(result.error.code).toBe('cancelled')
       }
-    })
-
-    it('keeps each console in its own session', async () => {
-      const other = randomUUID()
-      await expectOk(execute(fixture.begin))
-      await expectOk(execute(`insert into ${fixture.table} (id, name) values (3, 'Cy')`))
-      const seen = onlyRows(await expectOk(execute(fixture.isolatedCount, 500, other)))
-      expect(seen.rows).toEqual([['2']])
-      await expectOk(execute('rollback'))
-      await harness.send({ type: 'closeConsole', consoleId: other })
-    })
-
-    it('refuses writes on a read-only connection', async () => {
-      const readOnly = createWorkerHarness()
-      await expectOk(readOnly.send({ type: 'connect', ...fixture.open(true)! }))
-      const result = await readOnly.send({
-        type: 'execute',
-        consoleId: randomUUID(),
-        sql: `insert into ${fixture.table} (id, name) values (9, 'No')`,
-        pageSize: 10
-      })
-      expect(result.ok).toBe(false)
-      await readOnly.send({ type: 'close' })
     })
   })
 }

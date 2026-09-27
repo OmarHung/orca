@@ -38,7 +38,6 @@ type ExecuteMock = ReturnType<
     (request: {
       sql: string
       recordHistory?: boolean
-      transactionMode?: string
       schema?: string
     }) => Promise<DatabaseResult<DatabaseExecuteResult>>
   >
@@ -108,31 +107,6 @@ describe('database console run store', () => {
     expect(execute.mock.calls.map(([request]) => request.recordHistory)).toEqual([true, undefined])
   })
 
-  it('tracks the console’s transaction from results and failures, and ends it when the session goes', async () => {
-    const execute: ExecuteMock = vi.fn(async ({ sql }) =>
-      sql === 'select 1/0'
-        ? { ok: false, error: { message: 'division by zero', transaction: 'failed' } }
-        : { ok: true, value: { results: [], transaction: sql === 'rollback' ? 'none' : 'open' } }
-    )
-    installApi(execute)
-    const runSql = (sql: string) =>
-      useDatabaseConsoleRunStore
-        .getState()
-        .run(tab, splitSqlStatements(sql, 'postgres'), { transactionMode: 'manual' })
-    await runSql('insert into t values (1)')
-    expect(execute.mock.calls[0]?.[0].transactionMode).toBe('manual')
-    expect(state().transaction).toBe('open')
-    await runSql('select 1/0')
-    expect(state().transaction).toBe('failed')
-    await runSql('rollback')
-    expect(state().transaction).toBe('none')
-
-    await runSql('insert into t values (1)')
-    useDatabaseConsoleRunStore.getState().endTransactions([tab.id])
-    expect(state().transaction).toBe('none')
-    expect(state().log.at(-1)?.outcome).toMatchObject({ kind: 'error', message: /rolled back/ })
-  })
-
   it('sends the console’s schema and follows a statement that switches it', async () => {
     const execute: ExecuteMock = vi.fn(async ({ sql }) => ({
       ok: true,
@@ -149,19 +123,17 @@ describe('database console run store', () => {
     expect(saved).toMatchObject({ kind: 'console', schema: 'audit' })
   })
 
-  it('does not rerun a statement in a fresh session when the dropped one held a transaction', async () => {
-    const execute: ExecuteMock = vi.fn(async ({ sql }) =>
-      sql.startsWith('insert')
-        ? { ok: true, value: { results: [], transaction: 'open' } }
-        : { ok: false, error: { message: 'Not connected', code: 'not-connected' } }
+  it('reconnects once and runs the statement again when main dropped the session', async () => {
+    let calls = 0
+    const execute: ExecuteMock = vi.fn(async () =>
+      ++calls === 1
+        ? { ok: false, error: { message: 'Not connected', code: 'not-connected' } }
+        : { ok: true, value: { results: [rowsResult('r1', 1, false)] } }
     )
     installApi(execute)
-    const statements = (sql: string) => splitSqlStatements(sql, 'postgres')
-    await useDatabaseConsoleRunStore.getState().run(tab, statements('insert into t values (1)'))
-    await useDatabaseConsoleRunStore.getState().run(tab, statements('update t set a = 2'))
+    await useDatabaseConsoleRunStore.getState().run(tab, splitSqlStatements('select 1', 'postgres'))
     expect(execute).toHaveBeenCalledTimes(2)
-    expect(state().transaction).toBe('none')
-    expect(state().log.at(-1)?.outcome).toMatchObject({ kind: 'error', message: /rolled back/ })
+    expect(state().results).toHaveLength(1)
   })
 
   it('opens a tab for every result set of a batch, and for sets that follow a paged one', async () => {

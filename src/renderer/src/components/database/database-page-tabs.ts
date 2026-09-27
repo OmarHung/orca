@@ -1,6 +1,5 @@
 import { createBrowserUuid } from '@/lib/browser-uuid'
 import { DATABASE_CONNECTION_ID_PATTERN } from '../../../../shared/database/database-connection-types'
-import type { DatabaseTransactionMode } from '../../../../shared/database/database-query-types'
 import { DATABASE_CONSOLE_ID_PATTERN } from '../../../../shared/database/database-session-types'
 
 /** What the run store needs: a tab and the server session its statements run on. */
@@ -10,7 +9,6 @@ type TabBase = DatabaseRunTarget & { title: string }
 
 export type DatabaseConsoleTab = TabBase & {
   kind: 'console'
-  transactionMode: DatabaseTransactionMode
   /** The schema (MySQL database) picked for the console; null keeps the connection's default. */
   schema: string | null
   /** The database picked (PostgreSQL, SQL Server); null keeps the connection's. */
@@ -43,7 +41,6 @@ export function newConsoleTab(
     connectionId,
     consoleId: createBrowserUuid(),
     title,
-    transactionMode: 'auto',
     schema,
     database
   }
@@ -102,7 +99,6 @@ export function readPersistedTab(value: unknown): DatabaseTab | null {
     return null
   }
   if (field(value, 'kind') !== 'table') {
-    const transactionMode = field(value, 'transactionMode') === 'manual' ? 'manual' : 'auto'
     const schema = field(value, 'schema')
     const database = field(value, 'database')
     return {
@@ -111,7 +107,6 @@ export function readPersistedTab(value: unknown): DatabaseTab | null {
       connectionId,
       consoleId,
       title,
-      transactionMode,
       schema: typeof schema === 'string' && schema.length > 0 ? schema : null,
       database: typeof database === 'string' && database.length > 0 ? database : null
     }

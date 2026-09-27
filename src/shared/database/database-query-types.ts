@@ -27,17 +27,9 @@ export type DatabaseCommandResult = {
 
 export type DatabaseQueryResult = DatabaseRowsResult | DatabaseCommandResult
 
-/** `auto` commits each statement; `manual` keeps a transaction open until Commit or Roll Back. */
-export type DatabaseTransactionMode = 'auto' | 'manual'
-
-/** `failed` is PostgreSQL's aborted transaction: only a rollback can end it. */
-export type DatabaseTransactionState = 'none' | 'open' | 'failed'
-
 /** One executed batch; SQL Server batches and MySQL procedures can return several result sets. */
 export type DatabaseExecuteResult = {
   results: DatabaseQueryResult[]
-  /** The console session's transaction afterwards; absent when it wasn't checked. */
-  transaction?: DatabaseTransactionState
   /** Where unqualified names now resolve, when a statement switched it (USE, SET search_path). */
   schema?: string
   /** The console's database, when a statement switched it (SQL Server's USE). */
@@ -65,8 +57,6 @@ export type DatabaseError = {
   line?: number
   detail?: string
   hint?: string
-  /** The console session's transaction after the failure, when it was checked. */
-  transaction?: DatabaseTransactionState
 }
 
 export type DatabaseResult<T> = { ok: true; value: T } | { ok: false; error: DatabaseError }
