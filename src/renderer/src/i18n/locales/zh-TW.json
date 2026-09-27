@@ -920,7 +920,7 @@
         "attachSkipMissing": "不再走原來的路。",
         "attachSkipSymlink": "無法附加符號連結。",
         "attachSkipPermissionDenied": "沒有許可權。",
-        "attachSkipUnsupported": "不支援的檔案型別。"
+        "attachSkipUnsupported": "不支援的檔案類型。"
       },
       "useGlobalFileDrop": {
         "38c9f034ff": "無法上傳刪除的檔案。",
