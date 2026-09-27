@@ -33,7 +33,12 @@ const rowsResult = (resultId: string, count: number, hasMore: boolean): Database
 })
 
 type ExecuteMock = ReturnType<
-  typeof vi.fn<(request: { sql: string }) => Promise<DatabaseResult<DatabaseExecuteResult>>>
+  typeof vi.fn<
+    (request: {
+      sql: string
+      recordHistory?: boolean
+    }) => Promise<DatabaseResult<DatabaseExecuteResult>>
+  >
 >
 
 function installApi(execute: ExecuteMock, fetched?: DatabaseRowsPage): void {
@@ -89,6 +94,15 @@ describe('database console run store', () => {
     await useDatabaseConsoleRunStore.getState().fetchMore(tab, state().results[0]!.id)
     expect(state().results[0]?.result.rows).toHaveLength(700)
     expect(state().results[0]?.result.hasMore).toBe(false)
+  })
+
+  it('asks main to record history only for runs that opt in', async () => {
+    const execute: ExecuteMock = vi.fn(async () => ({ ok: true, value: { results: [] } }))
+    installApi(execute)
+    const statements = splitSqlStatements('select 1', 'postgres')
+    await useDatabaseConsoleRunStore.getState().run(tab, statements, { recordHistory: true })
+    await useDatabaseConsoleRunStore.getState().run(tab, statements)
+    expect(execute.mock.calls.map(([request]) => request.recordHistory)).toEqual([true, undefined])
   })
 
   it('opens a tab for every result set of a batch, and for sets that follow a paged one', async () => {

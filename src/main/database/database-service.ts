@@ -14,6 +14,7 @@ import type {
   DatabaseResult,
   DatabaseRowsPage
 } from '../../shared/database/database-query-types'
+import type { DatabaseHistoryEntry } from '../../shared/database/database-query-history-types'
 import type {
   DatabaseApplyChangesRequest,
   DatabaseConsoleRef,
@@ -25,6 +26,7 @@ import type {
 } from '../../shared/database/database-session-types'
 import type { DatabaseConnectionStore } from './database-connection-store'
 import type { DatabaseConsoleFiles } from './database-console-files'
+import type { DatabaseQueryHistory } from './database-query-history'
 import { NO_SECURE_PASSWORD_STORAGE, type DatabasePasswordVault } from './database-password-vault'
 import type { DatabaseSessionManager } from './database-session-manager'
 
@@ -64,6 +66,7 @@ export type DatabaseServiceDeps = {
   passwords: DatabasePasswordVault
   sessions: DatabaseSessionManager
   consoles: DatabaseConsoleFiles
+  history: DatabaseQueryHistory
 }
 
 /** Main-side entry point for the Database page; the IPC layer only validates and forwards. */
@@ -121,6 +124,7 @@ export class DatabaseService {
     this.deps.passwords.forget(connectionId)
     this.deps.connections.delete(connectionId)
     await this.deps.consoles.deleteConnection(connectionId)
+    await this.deps.history.clear(connectionId)
   }
 
   testConnection(
@@ -169,13 +173,36 @@ export class DatabaseService {
     return this.deps.sessions.request(connectionId, { type: 'introspect', target })
   }
 
-  execute(request: DatabaseExecuteRequest): Promise<DatabaseResult<DatabaseExecuteResult>> {
-    return this.deps.sessions.request(request.connectionId, {
+  async execute(request: DatabaseExecuteRequest): Promise<DatabaseResult<DatabaseExecuteResult>> {
+    const startedAt = Date.now()
+    const result = await this.deps.sessions.request(request.connectionId, {
       type: 'execute',
       consoleId: request.consoleId,
       sql: request.sql,
       pageSize: request.pageSize
     })
+    if (request.recordHistory && this.deps.connections.get(request.connectionId)) {
+      const finishedAt = Date.now()
+      const outcome = result.ok ? 'ok' : result.error.code === 'cancelled' ? 'cancelled' : 'error'
+      // Why not awaited: a history write must never delay or fail the statement's result.
+      this.deps.history
+        .record(request.connectionId, {
+          sql: request.sql,
+          at: finishedAt,
+          outcome,
+          durationMs: finishedAt - startedAt
+        })
+        .catch((error: unknown) => console.warn('[database] query history write failed', error))
+    }
+    return result
+  }
+
+  listHistory(connectionId: string): Promise<DatabaseHistoryEntry[]> {
+    return this.deps.history.list(connectionId)
+  }
+
+  clearHistory(connectionId: string): Promise<void> {
+    return this.deps.history.clear(connectionId)
   }
 
   fetchMore(request: DatabaseFetchMoreRequest): Promise<DatabaseResult<DatabaseRowsPage>> {

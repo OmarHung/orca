@@ -8,6 +8,7 @@ import type { SecretStore } from '../../shared/secret-store'
 import { DatabaseConnectionStore } from './database-connection-store'
 import { DatabaseConsoleFiles } from './database-console-files'
 import { DatabasePasswordVault } from './database-password-vault'
+import { DatabaseQueryHistory } from './database-query-history'
 import { DatabaseService } from './database-service'
 import { DatabaseSessionManager } from './database-session-manager'
 import type {
@@ -69,6 +70,7 @@ describe('DatabaseService', () => {
         secretStore(encryption)
       ),
       consoles: new DatabaseConsoleFiles(join(dir, 'consoles')),
+      history: new DatabaseQueryHistory(join(dir, 'history')),
       sessions: new DatabaseSessionManager({
         emit: () => undefined,
         spawnWorker: () => {
@@ -176,5 +178,22 @@ describe('DatabaseService', () => {
     expect(await service.readConsole(ref)).toBe('')
     service.writeConsole(ref, 'select 1;')
     expect(await service.readConsole(ref)).toBe('select 1;')
+  })
+
+  it('records console runs in history but not table queries, and forgets them with the connection', async () => {
+    const service = createService()
+    const saved = await service.saveConnection({ draft, password: 'right' })
+    if (!saved.ok) {
+      throw new Error(saved.error.message)
+    }
+    const id = saved.value.id
+    expect((await service.connect(id)).ok).toBe(true)
+    const ref = { connectionId: id, consoleId: 'console-01', pageSize: 10 }
+    await service.execute({ ...ref, sql: 'select 1', recordHistory: true })
+    await service.execute({ ...ref, sql: 'select * from t limit 10' })
+    expect(await service.listHistory(id)).toMatchObject([{ sql: 'select 1', outcome: 'ok' }])
+
+    await service.deleteConnection(id)
+    expect(await service.listHistory(id)).toEqual([])
   })
 })
