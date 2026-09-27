@@ -1,6 +1,6 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import {
   addServerConnection,
@@ -9,10 +9,12 @@ import {
   openDatabasePage,
   runInConsole
 } from './helpers/database-page'
+import { captureDatabaseTransfers, lastClipboardWrite } from './helpers/database-grid-transfers'
 import { test, expect } from './helpers/orca-app'
 
-test('shows a table’s keys and indexes, and no Routines folder for SQLite', async ({
+test('shows a table’s keys, indexes and DDL, and no Routines folder for SQLite', async ({
   orcaPage,
+  electronApp,
   registerPostElectronShutdownCleanup
 }, testInfo) => {
   const dir = mkdtempSync(join(tmpdir(), 'orca-e2e-sqlite-'))
@@ -55,12 +57,32 @@ test('shows a table’s keys and indexes, and no Routines folder for SQLite', as
     tree.getByRole('treeitem', { name: /^sqlite_autoindex_orders_1\s*\(code\) unique$/ })
   ).toBeVisible()
   await orcaPage.screenshot({ path: testInfo.outputPath('keys-and-indexes.png') })
+
+  await captureDatabaseTransfers(electronApp, dir, sep)
+  await explorerMenu(
+    orcaPage,
+    tree.getByRole('treeitem', { name: 'orders', exact: true }),
+    'Show DDL'
+  )
+  const ddl = orcaPage.getByRole('dialog', { name: 'DDL of orders' })
+  const copy = ddl.getByRole('button', { name: 'Copy' })
+  await expect(copy).toBeEnabled({ timeout: 20_000 })
+  await orcaPage.waitForTimeout(300)
+  await orcaPage.screenshot({ path: testInfo.outputPath('ddl.png') })
+  await copy.click()
+  // SQLite keeps each statement as written (it only upper-cases the leading CREATE TABLE).
+  await expect
+    .poll(() => lastClipboardWrite(electronApp))
+    .toMatch(
+      /^create table orders \(.*;\n\ncreate index orders_person_idx on orders \(person_id\);$/is
+    )
 })
 
 const POSTGRES_URL = process.env.ORCA_TEST_POSTGRES_URL
 
-test('lists a PostgreSQL schema’s functions and procedures under Routines', async ({
-  orcaPage
+test('lists a PostgreSQL schema’s functions and procedures under Routines, with their DDL', async ({
+  orcaPage,
+  electronApp
 }, testInfo) => {
   test.skip(!POSTGRES_URL, 'set ORCA_TEST_POSTGRES_URL to a disposable PostgreSQL server')
   const url = new URL(POSTGRES_URL!)
@@ -89,7 +111,17 @@ test('lists a PostgreSQL schema’s functions and procedures under Routines', as
     })
     await expect(tree.getByRole('treeitem', { name: /^noop\s*\(\)$/ })).toBeVisible()
     await orcaPage.screenshot({ path: testInfo.outputPath('routines.png') })
+
+    await captureDatabaseTransfers(electronApp, tmpdir(), sep)
+    await explorerMenu(orcaPage, tree.getByRole('treeitem', { name: /^add_one/ }), 'Show DDL')
+    const ddl = orcaPage.getByRole('dialog', { name: 'DDL of add_one' })
+    await expect(ddl.getByRole('button', { name: 'Copy' })).toBeEnabled({ timeout: 20_000 })
+    await ddl.getByRole('button', { name: 'Copy' }).click()
+    await expect
+      .poll(() => lastClipboardWrite(electronApp))
+      .toMatch(new RegExp(`^CREATE OR REPLACE FUNCTION ${schema}\\.add_one\\(i integer\\)`))
   } finally {
+    await orcaPage.keyboard.press('Escape')
     await runInConsole(orcaPage, `drop schema ${schema} cascade;`)
     await expect(orcaPage.getByText(/^DROP completed/)).toBeVisible({ timeout: 20_000 })
   }
