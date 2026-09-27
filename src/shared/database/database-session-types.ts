@@ -1,0 +1,44 @@
+import type { DatabaseConnectionDraft } from './database-connection-types'
+
+export type DatabaseSessionState = 'disconnected' | 'connecting' | 'connected' | 'error'
+
+export type DatabaseSessionEvent = {
+  kind: 'session-state'
+  connectionId: string
+  state: DatabaseSessionState
+  /** Why the session left `connected`, shown on the connection row. */
+  message?: string
+  serverVersion?: string
+}
+
+export type DatabaseSaveConnectionRequest = {
+  /** Absent creates a new connection. */
+  id?: string
+  draft: DatabaseConnectionDraft
+  /** `undefined` keeps the saved password, `null` forgets it. */
+  password?: string | null
+}
+
+export type DatabaseTestConnectionRequest = {
+  draft: DatabaseConnectionDraft
+  /** Absent falls back to the password saved for `connectionId`. */
+  password?: string
+  connectionId?: string
+}
+
+export type DatabaseConsoleRef = { connectionId: string; consoleId: string }
+
+export type DatabaseExecuteRequest = DatabaseConsoleRef & { sql: string; pageSize: number }
+
+export type DatabaseFetchMoreRequest = DatabaseConsoleRef & { resultId: string; pageSize: number }
+
+export type DatabaseEncryptionStatus = {
+  /** False means passwords can only be kept until Orca quits. */
+  canStorePasswords: boolean
+  /** Set when storage works but is weaker than a user would assume (e.g. Linux basic_text). */
+  protectionGap: string | null
+}
+
+export const DATABASE_CONSOLE_ID_PATTERN = /^[A-Za-z0-9-]{8,64}$/
+export const DATABASE_DEFAULT_PAGE_SIZE = 500
+export const DATABASE_MAX_PAGE_SIZE = 10_000
