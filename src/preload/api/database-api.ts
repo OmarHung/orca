@@ -10,6 +10,7 @@ import type {
   DatabaseRowsPage
 } from '../../shared/database/database-query-types'
 import type {
+  DatabaseApplyChangesRequest,
   DatabaseConsoleRef,
   DatabaseEncryptionStatus,
   DatabaseExecuteRequest,
@@ -40,6 +41,10 @@ export type DatabaseApi = {
   ) => Promise<DatabaseResult<DatabaseIntrospectResult>>
   execute: (request: DatabaseExecuteRequest) => Promise<DatabaseResult<DatabaseExecuteResult>>
   fetchMore: (request: DatabaseFetchMoreRequest) => Promise<DatabaseResult<DatabaseRowsPage>>
+  /** Applies table edits in one transaction; see `table-change-sql`. */
+  applyChanges: (
+    request: DatabaseApplyChangesRequest
+  ) => Promise<DatabaseResult<{ applied: number }>>
   cancel: (ref: DatabaseConsoleRef) => Promise<boolean>
   closeConsole: (ref: DatabaseConsoleRef) => Promise<void>
   readConsole: (ref: DatabaseConsoleRef) => Promise<string>

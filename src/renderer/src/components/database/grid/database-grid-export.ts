@@ -5,12 +5,11 @@ import {
   type DatabaseColumn
 } from '../../../../../shared/database/database-query-types'
 import { quoteSqlName } from '../../../../../shared/database/sql-identifiers'
+import { sqlLiteral } from '../../../../../shared/database/sql-literals'
 import { isNumericColumnType } from './database-grid-columns'
 import type { GridBounds } from './database-grid-selection'
 
 export type GridExportInput = { columns: DatabaseColumn[]; rows: DatabaseCell[][] }
-
-const NUMERIC_TEXT = /^-?(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?$/i
 
 /** The selected rectangle (or everything) in display order, as plain columns and rows. */
 export function gridExportSlice(
@@ -71,19 +70,6 @@ export function toJson(input: GridExportInput): string {
   return JSON.stringify(objects, null, 2)
 }
 
-function sqlLiteral(cell: DatabaseCell, column: DatabaseColumn, driver: DatabaseDriver): string {
-  const text = databaseCellText(cell)
-  if (text === null) {
-    return 'NULL'
-  }
-  if (isNumericColumnType(column.typeName) && NUMERIC_TEXT.test(text)) {
-    return text
-  }
-  // Why only MySQL: its default sql_mode treats backslash as an escape inside strings.
-  const escaped = driver === 'mysql' ? text.replaceAll('\\', '\\\\') : text
-  return `'${escaped.replaceAll("'", "''")}'`
-}
-
 /** One INSERT per row; numbers stay unquoted, everything else becomes a string literal. */
 export function toInsertSql(
   input: GridExportInput,
@@ -95,7 +81,13 @@ export function toInsertSql(
   return input.rows
     .map((row) => {
       const values = input.columns
-        .map((column, index) => sqlLiteral(row[index] ?? null, column, options.driver))
+        .map((column, index) =>
+          sqlLiteral(
+            databaseCellText(row[index] ?? null),
+            isNumericColumnType(column.typeName),
+            options.driver
+          )
+        )
         .join(', ')
       return `INSERT INTO ${options.table} (${columnList}) VALUES (${values});`
     })
