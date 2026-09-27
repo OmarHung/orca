@@ -37,7 +37,8 @@ function buildClientConfig(
   return {
     host: connection.host,
     port: connection.port,
-    database: connection.database || undefined,
+    // An empty database lists them all; the maintenance database is the way in.
+    database: connection.database || 'postgres',
     user: connection.user || undefined,
     // Why undefined, not '': lets pg fall back to ~/.pgpass like psql does.
     password: password ?? undefined,
