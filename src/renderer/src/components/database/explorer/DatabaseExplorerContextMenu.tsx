@@ -2,7 +2,6 @@ import React from 'react'
 import {
   Copy,
   FileCode2,
-  FileInput,
   Pencil,
   Plug,
   RefreshCw,
@@ -26,56 +25,8 @@ import {
   useDatabaseDialogsStore
 } from '../database-page-actions'
 import { useDatabaseExplorerStore } from './database-explorer-store'
-import { useDatabaseJobsStore, type DatabaseScriptTarget } from '../jobs/database-jobs-store'
 import { qualifiedRelationName } from '../../../../../shared/database/sql-identifiers'
-import {
-  connectionNode,
-  isExpandableNode,
-  type DatabaseExplorerNode
-} from './database-explorer-tree'
-
-/** Where a script opened from `node` runs: its database, and its schema (MySQL database). */
-function scriptTargetFor(node: DatabaseExplorerNode): DatabaseScriptTarget | null {
-  const connection = findDatabaseConnection(node.connectionId)
-  if (!connection) {
-    return null
-  }
-  const base = { connectionId: node.connectionId, database: null, schema: null }
-  switch (node.kind) {
-    case 'connection':
-      return { ...base, label: connection.name }
-    case 'database':
-      return { ...base, database: node.database, label: `${connection.name} › ${node.database}` }
-    case 'schema':
-      return {
-        ...base,
-        database: node.database,
-        // SQLite's `main` is not something a session can switch to.
-        schema: connection.driver === 'sqlite' ? null : node.schema,
-        label: [connection.name, node.database, node.schema].filter(Boolean).join(' › ')
-      }
-    case 'relation':
-    case 'column':
-    case 'folder':
-    case 'routine':
-    case 'constraint':
-    case 'index':
-      return null
-  }
-}
-
-function RunScriptItem({ node }: { node: DatabaseExplorerNode }): React.JSX.Element | null {
-  const target = scriptTargetFor(node)
-  if (!target) {
-    return null
-  }
-  return (
-    <ContextMenuItem onSelect={() => useDatabaseJobsStore.getState().openRunScript(target)}>
-      <FileInput />
-      {translate('database.explorer.runScript', 'Run SQL Script…')}
-    </ContextMenuItem>
-  )
-}
+import { isExpandableNode, type DatabaseExplorerNode } from './database-explorer-tree'
 
 function copy(text: string): void {
   void window.api.ui.writeClipboardText(text)
@@ -92,7 +43,6 @@ function ConnectionItems({ connectionId }: { connectionId: string }): React.JSX.
         <SquareTerminal />
         {translate('database.explorer.newConsole', 'New Console')}
       </ContextMenuItem>
-      <RunScriptItem node={connectionNode(connectionId)} />
       {connected ? (
         <ContextMenuItem onSelect={() => void disconnectDatabase(connectionId)}>
           <Unplug />
@@ -195,7 +145,6 @@ export function DatabaseExplorerContextMenu({
           {translate('database.explorer.newConsole', 'New Console')}
         </ContextMenuItem>
       ) : null}
-      {node.kind === 'database' ? <RunScriptItem node={node} /> : null}
       {node.kind === 'schema' ? (
         <ContextMenuItem
           onSelect={() => openDatabaseConsole(node.connectionId, node.schema, node.database)}
@@ -204,7 +153,6 @@ export function DatabaseExplorerContextMenu({
           {translate('database.explorer.newConsole', 'New Console')}
         </ContextMenuItem>
       ) : null}
-      {node.kind === 'schema' ? <RunScriptItem node={node} /> : null}
       {node.kind === 'relation' ? (
         <ContextMenuItem
           onSelect={() =>
