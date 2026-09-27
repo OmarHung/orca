@@ -7,7 +7,8 @@ import { sqlServerKeys } from './sqlserver-catalog-objects'
 import { querySqlServerRows } from './sqlserver-client-factory'
 import { formatSqlServerColumnType } from './sqlserver-introspection'
 
-const OBJECT_ID = "object_id(quotename(@schema) + N'.' + quotename(@name))"
+export const SQL_SERVER_OBJECT_ID = "object_id(quotename(@schema) + N'.' + quotename(@name))"
+const OBJECT_ID = SQL_SERVER_OBJECT_ID
 
 const NO_DEFINITION_MESSAGE =
   'The server didn’t return this definition; it may be encrypted, or the user may lack VIEW DEFINITION.'
@@ -16,8 +17,12 @@ const COLUMNS_SQL = `
   select c.name, type_name(c.user_type_id) as type_name, c.max_length, c.precision, c.scale,
          c.is_nullable, c.is_identity, ic.seed_value, ic.increment_value,
          cc.definition as computed, cc.is_persisted,
-         dc.name as default_name, dc.definition as default_definition
+         dc.name as default_name, dc.definition as default_definition,
+         t.is_user_defined, schema_name(t.schema_id) as type_schema,
+         case when c.collation_name <> convert(sysname, databasepropertyex(db_name(), 'Collation'))
+              then c.collation_name end as collation
   from sys.columns c
+  join sys.types t on t.user_type_id = c.user_type_id
   left join sys.identity_columns ic on ic.object_id = c.object_id and ic.column_id = c.column_id
   left join sys.computed_columns cc on cc.object_id = c.object_id and cc.column_id = c.column_id
   left join sys.default_constraints dc
@@ -29,15 +34,27 @@ const CHECKS_SQL = `
   select name, definition from sys.check_constraints
   where parent_object_id = ${OBJECT_ID} order by name`
 
-// Indexes behind PRIMARY KEY and UNIQUE constraints come with the constraint.
+// What sqlServerKeys leaves out: a key's index kind, a foreign key's referential actions.
+const KEY_DETAILS_SQL = `
+  select k.name, i.type_desc as index_type, null as on_delete, null as on_update
+  from sys.key_constraints k
+  join sys.indexes i on i.object_id = k.parent_object_id and i.index_id = k.unique_index_id
+  where k.parent_object_id = ${OBJECT_ID}
+  union all
+  select name, null, delete_referential_action_desc, update_referential_action_desc
+  from sys.foreign_keys where parent_object_id = ${OBJECT_ID}`
+
+// Indexes behind PRIMARY KEY and UNIQUE constraints come with the constraint. Only row-store
+// indexes: XML, spatial and columnstore ones have their own CREATE syntax.
 const INDEXES_SQL = `
-  select i.name, i.is_unique, i.type_desc, c.name as column_name
+  select i.name, i.is_unique, i.type_desc, i.filter_definition, c.name as column_name,
+         ic.is_descending_key, ic.is_included_column
   from sys.indexes i
   join sys.index_columns ic on ic.object_id = i.object_id and ic.index_id = i.index_id
   join sys.columns c on c.object_id = ic.object_id and c.column_id = ic.column_id
-  where i.object_id = ${OBJECT_ID} and i.type > 0 and ic.is_included_column = 0
+  where i.object_id = ${OBJECT_ID} and i.type in (1, 2)
     and i.is_primary_key = 0 and i.is_unique_constraint = 0
-  order by i.name, ic.key_ordinal`
+  order by i.name, ic.is_included_column, ic.key_ordinal, ic.index_column_id`
 
 const quote = (name: string): string => quoteSqlName(name, 'sqlserver')
 const columnList = (columns: readonly string[]): string => columns.map(quote).join(', ')
@@ -47,7 +64,15 @@ function columnLine(row: CatalogRow): string {
   if (row.computed !== null && row.computed !== undefined) {
     return `${name} AS ${catalogText(row.computed)}${row.is_persisted === true ? ' PERSISTED' : ''}`
   }
-  const parts = [name, formatSqlServerColumnType(row)]
+  // Why qualify user types: an unqualified name resolves in the loading user's default schema.
+  const type =
+    row.is_user_defined === true
+      ? `${quote(catalogText(row.type_schema))}.${quote(catalogText(row.type_name))}`
+      : formatSqlServerColumnType(row)
+  const parts = [name, type]
+  if (typeof row.collation === 'string') {
+    parts.push(`COLLATE ${row.collation}`)
+  }
   if (row.is_identity === true) {
     parts.push(`IDENTITY(${catalogText(row.seed_value)}, ${catalogText(row.increment_value)})`)
   }
@@ -60,40 +85,93 @@ function columnLine(row: CatalogRow): string {
   return parts.join(' ')
 }
 
-function keyLine(key: DatabaseKeyInfo): string {
-  const name = `CONSTRAINT ${quote(key.name)}`
-  if (key.kind !== 'foreign' || !key.references) {
-    return `${name} ${key.kind === 'primary' ? 'PRIMARY KEY' : 'UNIQUE'} (${columnList(key.columns)})`
-  }
-  const target = `${quote(key.references.schema)}.${quote(key.references.relation)}`
-  return `${name} FOREIGN KEY (${columnList(key.columns)}) REFERENCES ${target} (${columnList(key.references.columns)})`
+function referentialAction(event: 'DELETE' | 'UPDATE', action: unknown): string {
+  const text = catalogText(action)
+  return text === '' || text === 'NO_ACTION' ? '' : ` ON ${event} ${text.replaceAll('_', ' ')}`
 }
 
-async function tableDdl(client: Connection, schema: string, relation: string): Promise<string> {
+function keyLine(key: DatabaseKeyInfo, details: CatalogRow | undefined): string {
+  const name = `CONSTRAINT ${quote(key.name)}`
+  if (key.kind !== 'foreign' || !key.references) {
+    const kind = key.kind === 'primary' ? 'PRIMARY KEY' : 'UNIQUE'
+    // Why say which: a NONCLUSTERED primary key must stay one, or the table's own
+    // clustered index can't be created next to it.
+    const index = details ? ` ${catalogText(details.index_type)}` : ''
+    return `${name} ${kind}${index} (${columnList(key.columns)})`
+  }
+  const target = `${quote(key.references.schema)}.${quote(key.references.relation)}`
+  const actions =
+    referentialAction('DELETE', details?.on_delete) +
+    referentialAction('UPDATE', details?.on_update)
+  return `${name} FOREIGN KEY (${columnList(key.columns)}) REFERENCES ${target} (${columnList(key.references.columns)})${actions}`
+}
+
+function indexStatement(table: string, rows: readonly CatalogRow[]): string {
+  const [first] = rows
+  const keys = rows.filter((row) => row.is_included_column !== true)
+  const included = rows.filter((row) => row.is_included_column === true)
+  const keyList = keys
+    .map(
+      (row) =>
+        `${quote(catalogText(row.column_name))}${row.is_descending_key === true ? ' DESC' : ''}`
+    )
+    .join(', ')
+  const unique = first?.is_unique === true ? 'UNIQUE ' : ''
+  const clustered = catalogText(first?.type_desc) === 'CLUSTERED' ? 'CLUSTERED ' : ''
+  const include =
+    included.length > 0
+      ? ` INCLUDE (${columnList(included.map((row) => catalogText(row.column_name)))})`
+      : ''
+  const filter =
+    typeof first?.filter_definition === 'string' ? ` WHERE ${first.filter_definition}` : ''
+  return `CREATE ${unique}${clustered}INDEX ${quote(catalogText(first?.name))} ON ${table} (${keyList})${include}${filter};`
+}
+
+export type SqlServerTableDdl = {
+  create: string
+  indexes: string[]
+  /** ALTER TABLE … ADD CONSTRAINT statements, when asked to keep foreign keys apart. */
+  foreignKeys: string[]
+}
+
+export async function sqlServerTableDdl(
+  client: Connection,
+  schema: string,
+  relation: string,
+  options: { separateForeignKeys?: boolean } = {}
+): Promise<SqlServerTableDdl> {
   const parameters = { schema, name: relation }
   const columns = await querySqlServerRows(client, COLUMNS_SQL, parameters)
   const keys = await sqlServerKeys(client, schema, relation)
   const checks = await querySqlServerRows(client, CHECKS_SQL, parameters)
   const indexRows = await querySqlServerRows(client, INDEXES_SQL, parameters)
+  const keyDetails = new Map(
+    (await querySqlServerRows(client, KEY_DETAILS_SQL, parameters)).map((row) => [
+      catalogText(row.name),
+      row
+    ])
+  )
+  const line = (key: DatabaseKeyInfo): string => keyLine(key, keyDetails.get(key.name))
   const table = `${quote(schema)}.${quote(relation)}`
+  const apart = (key: DatabaseKeyInfo): boolean =>
+    options.separateForeignKeys === true && key.kind === 'foreign'
   const lines = [
     ...columns.map(columnLine),
-    ...keys.map(keyLine),
+    ...keys.filter((key) => !apart(key)).map(line),
     ...checks.map(
       (row) => `CONSTRAINT ${quote(catalogText(row.name))} CHECK ${catalogText(row.definition)}`
     )
   ]
-  const indexes = groupByName<{ row: CatalogRow; columns: string[] }>(
+  const indexes = groupByName<CatalogRow[]>(
     indexRows,
-    (row) => ({ row, columns: [] }),
-    (entry, row) => ({ ...entry, columns: [...entry.columns, catalogText(row.column_name)] })
-  ).map(({ row, columns: indexColumns }) => {
-    const unique = row.is_unique === true ? 'UNIQUE ' : ''
-    const clustered = catalogText(row.type_desc) === 'CLUSTERED' ? 'CLUSTERED ' : ''
-    return `CREATE ${unique}${clustered}INDEX ${quote(catalogText(row.name))} ON ${table} (${columnList(indexColumns)});`
-  })
-  const create = `CREATE TABLE ${table} (\n${lines.map((line) => `    ${line}`).join(',\n')}\n);`
-  return [create, ...indexes].join('\n\n')
+    () => [],
+    (entry, row) => [...entry, row]
+  ).map((rows) => indexStatement(table, rows))
+  return {
+    create: `CREATE TABLE ${table} (\n${lines.map((line) => `    ${line}`).join(',\n')}\n);`,
+    indexes,
+    foreignKeys: keys.filter(apart).map((key) => `ALTER TABLE ${table} ADD ${line(key)};`)
+  }
 }
 
 export async function sqlServerDdl(client: Connection, target: DatabaseDdlTarget): Promise<string> {
@@ -107,7 +185,8 @@ export async function sqlServerDdl(client: Connection, target: DatabaseDdlTarget
     throw new Error(`${target.schema}.${name} no longer exists.`)
   }
   if (catalogText(kind.type).trim() === 'U') {
-    return tableDdl(client, target.schema, name)
+    const table = await sqlServerTableDdl(client, target.schema, name)
+    return [table.create, ...table.indexes].join('\n\n')
   }
   if (typeof kind.definition !== 'string') {
     throw new Error(NO_DEFINITION_MESSAGE)
