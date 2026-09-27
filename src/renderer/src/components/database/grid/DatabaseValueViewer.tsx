@@ -3,7 +3,7 @@ import { Copy, PanelRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
-import { translate } from '@/i18n/i18n'
+import { getIntlLocale, translate } from '@/i18n/i18n'
 import { getShortcutPlatform } from '@/lib/shortcut-platform'
 import type {
   DatabaseCell,
@@ -68,8 +68,8 @@ function ViewerBody({ value }: { value: ViewerValue | null }): React.JSX.Element
             'database.grid.truncated',
             'Showing the first {{value0}} of {{value1}} characters',
             {
-              value0: value.text.length.toLocaleString(),
-              value1: value.truncatedFrom.toLocaleString()
+              value0: value.text.length.toLocaleString(getIntlLocale()),
+              value1: value.truncatedFrom.toLocaleString(getIntlLocale())
             }
           )}
         </p>
