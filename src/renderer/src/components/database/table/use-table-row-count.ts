@@ -45,7 +45,8 @@ export function useTableRowCount(
           relation: tab.relation,
           where: tab.where
         }),
-        pageSize: 1
+        pageSize: 1,
+        database: tab.database ?? undefined
       })
     )
     if (request !== requestRef.current) {

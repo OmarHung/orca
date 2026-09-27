@@ -102,6 +102,7 @@ export function DatabaseServerFields(props: ServerFieldsProps): React.JSX.Elemen
       <div className="grid grid-cols-2 gap-3">
         <TextField
           label={translate('database.connectionForm.database', 'Database')}
+          placeholder={translate('database.connectionForm.allDatabases', 'All databases')}
           value={form.database}
           aria-invalid={invalid.has('database')}
           onChange={(event) => onChange({ database: event.target.value })}

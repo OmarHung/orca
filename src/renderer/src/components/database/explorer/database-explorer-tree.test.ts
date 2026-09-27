@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  childNodesFor,
-  connectionNode,
-  flattenDatabaseExplorer,
-  introspectTargetFor
-} from './database-explorer-tree'
+import { flattenDatabaseExplorer } from './database-explorer-rows'
+import { childNodesFor, connectionNode, introspectTargetFor } from './database-explorer-tree'
 
 const root = connectionNode('conn-0001')
 
@@ -83,6 +79,51 @@ describe('database explorer tree', () => {
     expect(folders('view')).toEqual([])
     const [keys] = childNodesFor(relationOf('table'), columns)
     expect(introspectTargetFor(keys!)).toEqual({ level: 'keys', schema: 'public', relation: 't' })
+  })
+
+  it('lists databases first when the connection names none, and reads each from its own', () => {
+    expect(introspectTargetFor(root, { allDatabases: true })).toEqual({ level: 'databases' })
+    const databases = childNodesFor(root, {
+      level: 'databases',
+      databases: [
+        { name: 'app', isCurrent: true },
+        { name: 'sales', isCurrent: false }
+      ]
+    })
+    expect(databases.map((node) => node.kind)).toEqual(['database', 'database'])
+    const [app, sales] = databases
+    expect(introspectTargetFor(sales!)).toEqual({ level: 'schemas', database: 'sales' })
+
+    const schemaIn = (database: typeof app) =>
+      childNodesFor(database!, {
+        level: 'schemas',
+        schemas: [{ name: 'public', isCurrent: true }]
+      })[0]!
+    // The same schema in two databases is two nodes.
+    expect(schemaIn(app).key).not.toBe(schemaIn(sales).key)
+    const salesPublic = schemaIn(sales)
+    expect(introspectTargetFor(salesPublic)).toEqual({
+      level: 'relations',
+      database: 'sales',
+      schema: 'public'
+    })
+    const [table, routines] = childNodesFor(salesPublic, {
+      level: 'relations',
+      relations: [{ name: 't', kind: 'table' }]
+    })
+    expect(introspectTargetFor(table!)).toEqual({
+      level: 'columns',
+      database: 'sales',
+      schema: 'public',
+      relation: 't'
+    })
+    expect(introspectTargetFor(routines!)).toEqual({
+      level: 'routines',
+      database: 'sales',
+      schema: 'public'
+    })
+    const [keys] = childNodesFor(table!, { level: 'columns', columns: [] })
+    expect(introspectTargetFor(keys!)).toMatchObject({ level: 'keys', database: 'sales' })
   })
 
   it('keys unnamed constraints apart by position', () => {
