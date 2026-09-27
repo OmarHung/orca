@@ -39,7 +39,8 @@ export function DatabaseOpenTransactionDialog(): React.JSX.Element | null {
     const runs = useDatabaseConsoleRunStore.getState()
     await runs.run(tab, [COMMIT], {
       transactionMode: tab.transactionMode,
-      schema: tab.schema ?? undefined
+      schema: tab.schema ?? undefined,
+      database: tab.database ?? undefined
     })
     setCommitting(false)
     cancel()
