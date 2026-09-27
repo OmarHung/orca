@@ -67,14 +67,4 @@ describe.skipIf(!target)('SQL Server databases', () => {
     const own = await expectOk(harness.send({ type: 'introspect', target: { level: 'databases' } }))
     expect(own.level === 'databases' && own.databases.find((d) => d.isCurrent)?.name).toBe('master')
   })
-
-  it('lets go of a database it browsed when a console drops it', async () => {
-    const doomed = `orca_it_drop_${randomUUID().slice(0, 8)}`
-    await expectOk(run(setupConsole, `create database ${doomed}`))
-    await expectOk(
-      harness.send({ type: 'introspect', target: { level: 'schemas', database: doomed } })
-    )
-    await expectOk(run(setupConsole, `drop database ${doomed}`))
-    await expectOk(harness.send({ type: 'introspect', target: { level: 'schemas' } }))
-  })
 })

@@ -21,7 +21,6 @@ import { PostgresConsole } from './postgres-console'
 import { postgresDdl } from './postgres-ddl'
 import { introspectPostgres } from './postgres-introspection'
 import { PostgresTypeNames } from './postgres-type-names'
-import { databaseAlteredBy } from './statement-keyword'
 
 class PostgresSession implements DatabaseDriverSession {
   private readonly consoles = new ConsolePool((consoleId, onLost) =>
@@ -75,7 +74,6 @@ class PostgresSession implements DatabaseDriverSession {
     pageSize: number,
     { mode, schema, database }: DatabaseExecuteOptions
   ): Promise<DatabaseExecuteResult> {
-    await this.releaseMeta(databaseAlteredBy(sql, true))
     await this.moveConsole(consoleId, database ?? this.defaultDatabase)
     const target = await this.consoles.acquire(consoleId)
     await target.schema.prepare(schema)
@@ -110,16 +108,6 @@ class PostgresSession implements DatabaseDriverSession {
       [target.backendPid]
     )
     return result.rows[0]?.cancelled === true
-  }
-
-  /** Orca's own idle catalog session must not be why DROP DATABASE finds the database in use. */
-  private async releaseMeta(database: string | null): Promise<void> {
-    const pending = database === null ? undefined : this.metaClients.get(database)
-    if (!pending) {
-      return
-    }
-    this.metaClients.delete(database!)
-    await pending.then((client) => client.end()).catch(() => undefined)
   }
 
   /** A console picking another database gets a session there, unless it holds a transaction. */
