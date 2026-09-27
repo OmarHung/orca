@@ -5,7 +5,8 @@ import type {
 } from '../../../shared/database/database-introspection-types'
 import type {
   DatabaseExecuteResult,
-  DatabaseRowsPage
+  DatabaseRowsPage,
+  DatabaseTransactionMode
 } from '../../../shared/database/database-query-types'
 import type { DatabaseChangeTransaction } from './table-change-transaction'
 
@@ -16,7 +17,12 @@ import type { DatabaseChangeTransaction } from './table-change-transaction'
 export type DatabaseDriverSession = {
   readonly serverVersion: string
   introspect(target: DatabaseIntrospectTarget): Promise<DatabaseIntrospectResult>
-  execute(consoleId: string, sql: string, pageSize: number): Promise<DatabaseExecuteResult>
+  execute(
+    consoleId: string,
+    sql: string,
+    pageSize: number,
+    mode: DatabaseTransactionMode
+  ): Promise<DatabaseExecuteResult>
   fetch(consoleId: string, resultId: string, pageSize: number): Promise<DatabaseRowsPage>
   /** Starts a transaction on the console's session for applying table edits. */
   beginChanges(consoleId: string): Promise<DatabaseChangeTransaction>

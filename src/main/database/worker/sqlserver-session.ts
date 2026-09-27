@@ -4,8 +4,10 @@ import type {
 } from '../../../shared/database/database-introspection-types'
 import type {
   DatabaseExecuteResult,
-  DatabaseRowsPage
+  DatabaseRowsPage,
+  DatabaseTransactionMode
 } from '../../../shared/database/database-query-types'
+import { ConsolePool } from './console-pool'
 import type { DatabaseDriverCallbacks, DatabaseDriverSession } from './database-driver'
 import type { DatabaseChangeTransaction } from './table-change-transaction'
 import {
@@ -19,7 +21,11 @@ import { SqlServerConsole } from './sqlserver-console'
 import { introspectSqlServer } from './sqlserver-introspection'
 
 class SqlServerSession implements DatabaseDriverSession {
-  private readonly consoles = new Map<string, Promise<SqlServerConsole>>()
+  private readonly consoles = new ConsolePool((onLost) =>
+    connectSqlServer(this.connection, this.password, onLost).then(
+      (client) => new SqlServerConsole(client, this.connection.readOnly)
+    )
+  )
 
   constructor(
     private readonly connection: SqlServerConnectionDraft,
@@ -32,12 +38,18 @@ class SqlServerSession implements DatabaseDriverSession {
     return this.meta.run((client) => introspectSqlServer(client, target))
   }
 
-  async execute(consoleId: string, sql: string, pageSize: number): Promise<DatabaseExecuteResult> {
-    return (await this.console(consoleId)).execute(sql, pageSize)
+  async execute(
+    consoleId: string,
+    sql: string,
+    pageSize: number,
+    mode: DatabaseTransactionMode
+  ): Promise<DatabaseExecuteResult> {
+    const target = await this.consoles.acquire(consoleId)
+    return target.transactions.run(mode, sql, () => target.execute(sql, pageSize))
   }
 
   async fetch(consoleId: string, resultId: string, pageSize: number): Promise<DatabaseRowsPage> {
-    const pending = this.consoles.get(consoleId)
+    const pending = this.consoles.current(consoleId)
     if (!pending) {
       throw new Error('This result is no longer open. Run the statement again to load more rows.')
     }
@@ -46,42 +58,21 @@ class SqlServerSession implements DatabaseDriverSession {
 
   // TDS cancels in-band (an attention packet), so no second session is needed.
   async beginChanges(consoleId: string): Promise<DatabaseChangeTransaction> {
-    return (await this.console(consoleId)).beginChanges()
+    return (await this.consoles.acquire(consoleId)).beginChanges()
   }
 
   async cancel(consoleId: string): Promise<boolean> {
-    const pending = this.consoles.get(consoleId)
+    const pending = this.consoles.current(consoleId)
     return pending ? (await pending).cancel() : false
   }
 
-  async closeConsole(consoleId: string): Promise<void> {
-    const pending = this.consoles.get(consoleId)
-    this.consoles.delete(consoleId)
-    await pending?.then((target) => target.close()).catch(() => undefined)
+  closeConsole(consoleId: string): Promise<void> {
+    return this.consoles.close(consoleId)
   }
 
   async close(): Promise<void> {
-    await Promise.all([...this.consoles.keys()].map((consoleId) => this.closeConsole(consoleId)))
+    await this.consoles.closeAll()
     await closeSqlServer(this.meta.client)
-  }
-
-  private console(consoleId: string): Promise<SqlServerConsole> {
-    const existing = this.consoles.get(consoleId)
-    if (existing) {
-      return existing
-    }
-    // A dropped or failed console session reconnects on its next statement.
-    const forget = (): void => {
-      if (this.consoles.get(consoleId) === created) {
-        this.consoles.delete(consoleId)
-      }
-    }
-    const created = connectSqlServer(this.connection, this.password, forget).then(
-      (client) => new SqlServerConsole(client, this.connection.readOnly)
-    )
-    this.consoles.set(consoleId, created)
-    created.catch(forget)
-    return created
   }
 }
 

@@ -4,21 +4,38 @@ import type {
   DatabaseExecuteResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
+import { ConsoleTransactions } from './console-transactions'
 import { PagedBatchReader } from './database-batch-reader'
 import { endMysqlClient } from './mysql-client-factory'
 import { encodeMysqlRow, mysqlColumns } from './mysql-values'
 import { commandRowCount, leadingKeyword } from './statement-keyword'
 import type { DatabaseChangeTransaction } from './table-change-transaction'
 
-function affectedRows(header: unknown): number | null {
+// SERVER_STATUS_IN_TRANS in the OK packet's status flags.
+const IN_TRANSACTION_FLAG = 1
+
+function headerNumber(header: unknown, key: string): number | null {
   const value: unknown =
-    typeof header === 'object' && header !== null ? Reflect.get(header, 'affectedRows') : null
+    typeof header === 'object' && header !== null ? Reflect.get(header, key) : null
   return typeof value === 'number' ? value : null
+}
+
+function affectedRows(header: unknown): number | null {
+  return headerNumber(header, 'affectedRows')
 }
 
 /** One console's MySQL session; its latest statement stays open (flow paused) until fully read. */
 export class MysqlConsole {
   private reader: PagedBatchReader | null = null
+  readonly transactions = new ConsoleTransactions({
+    // Why DO 0: it changes nothing, and its OK packet carries the session's status flags.
+    state: async () =>
+      ((await this.statusFlags('DO 0')) & IN_TRANSACTION_FLAG) === 0 ? 'none' : 'open',
+    setManual: async (manual) => {
+      await this.abandonOpen()
+      await this.control(`SET autocommit = ${manual ? 0 : 1}`)
+    }
+  })
 
   constructor(
     readonly client: mysql.Connection,
@@ -96,6 +113,14 @@ export class MysqlConsole {
   private control(sql: string): Promise<void> {
     return new Promise((resolve, reject) => {
       this.client.query(sql, (error) => (error ? reject(error) : resolve()))
+    })
+  }
+
+  private statusFlags(sql: string): Promise<number> {
+    return new Promise((resolve, reject) => {
+      this.client.query(sql, (error, result) =>
+        error ? reject(error) : resolve(headerNumber(result, 'serverStatus') ?? 0)
+      )
     })
   }
 

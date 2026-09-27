@@ -57,7 +57,8 @@ const TestRequestSchema = z
 const ExecuteRequestSchema = ConsoleRefSchema.extend({
   sql: SqlSchema,
   pageSize: PageSizeSchema,
-  recordHistory: z.boolean().optional()
+  recordHistory: z.boolean().optional(),
+  transactionMode: z.enum(['auto', 'manual']).optional()
 })
 const FetchRequestSchema = ConsoleRefSchema.extend({
   resultId: z.string().min(1).max(64),
