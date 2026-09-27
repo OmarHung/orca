@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import type { editor } from 'monaco-editor'
 import { Loader2, Play, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,12 @@ import {
   useDatabasePageStore,
   type DatabaseConsoleTab
 } from '../database-page-store'
-import { DatabaseConsoleEditor, runDatabaseConsoleFromToolbar } from './DatabaseConsoleEditor'
+import {
+  DatabaseConsoleEditor,
+  insertDatabaseConsoleText,
+  runDatabaseConsoleFromToolbar
+} from './DatabaseConsoleEditor'
+import { DatabaseQueryHistoryPopover } from './DatabaseQueryHistoryPopover'
 import { DatabaseResultsPane } from './DatabaseResultsPane'
 import { getConsoleRunState, useDatabaseConsoleRunStore } from './database-console-run-store'
 import { useDatabaseConsoleText } from './use-database-console-text'
@@ -43,6 +48,7 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
     (state) => state.connections.find((entry) => entry.id === tab.connectionId)?.driver
   )
   const dialect = sqlDialectForDriver(driver ?? 'postgres')
+  const [historyOpen, setHistoryOpen] = useState(false)
   const resultsHeight = useDatabasePageStore((state) => state.resultsHeight)
   const setResultsHeight = useDatabasePageStore((state) => state.setResultsHeight)
 
@@ -56,12 +62,13 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
   })
 
   const handleRun = useCallback(
-    (statements: SqlStatementRange[]) => void run(tab, statements),
+    (statements: SqlStatementRange[]) => void run(tab, statements, { recordHistory: true }),
     [run, tab]
   )
   const handleEditorReady = useCallback((instance: editor.ICodeEditor | null) => {
     editorRef.current = instance
   }, [])
+  const showHistory = useCallback(() => setHistoryOpen(true), [])
 
   return (
     <div ref={containerRef} className="flex h-full min-h-0 flex-col">
@@ -103,6 +110,13 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
             {translate('database.console.cancel', 'Cancel running statement')}
           </TooltipContent>
         </Tooltip>
+        <DatabaseQueryHistoryPopover
+          connectionId={tab.connectionId}
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          onPick={(sql) => insertDatabaseConsoleText(editorRef.current, sql)}
+          onClosed={() => editorRef.current?.focus()}
+        />
         {running ? <Loader2 className="size-3.5 animate-spin text-muted-foreground" /> : null}
         <div className="ml-auto">
           <DatabaseConnectionBadge connectionId={tab.connectionId} />
@@ -118,6 +132,7 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
             errorOffset={errorOffset}
             onChange={update}
             onRun={handleRun}
+            onShowHistory={showHistory}
             onEditorReady={handleEditorReady}
           />
         )}
