@@ -14,7 +14,6 @@ import { openPostgresSession } from './postgres-session'
 import { openSqliteSession } from './sqlite-session'
 import { openSqlServerSession } from './sqlserver-session'
 import { applyTableChanges } from './table-change-transaction'
-import { DatabaseWorkerJobs } from './database-worker-jobs'
 
 const openDriverSession: OpenDatabaseDriverSession = (connection, password, callbacks) => {
   switch (connection.driver) {
@@ -36,7 +35,6 @@ export function createDatabaseWorkerDispatcher(
 ): (request: DatabaseWorkerRequest) => Promise<void> {
   let session: DatabaseDriverSession | null = null
   let driver: DatabaseDriver = 'postgres'
-  const jobs = new DatabaseWorkerJobs(post)
 
   const requireSession = (): DatabaseDriverSession => {
     if (!session) {
@@ -78,10 +76,6 @@ export function createDatabaseWorkerDispatcher(
       case 'closeConsole':
         await session?.closeConsole(command.consoleId)
         return null
-      case 'runScript':
-        return jobs.runScript(requireSession(), driver, command)
-      case 'cancelJob':
-        return { cancelled: await jobs.cancel(session, command.jobId) }
       case 'close': {
         const closing = session
         session = null

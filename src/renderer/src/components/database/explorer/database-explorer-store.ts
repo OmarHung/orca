@@ -24,8 +24,6 @@ type DatabaseExplorerState = {
   toggle: (node: DatabaseExplorerNode) => Promise<void>
   /** Reloads a node's children, e.g. after DDL. */
   refresh: (node: DatabaseExplorerNode) => Promise<void>
-  /** Reloads every loaded node of a connection, e.g. after a script ran. */
-  refreshConnection: (connectionId: string) => Promise<void>
   /** Expands a connection that just connected (after a password prompt, or Connect). */
   showConnected: (connectionId: string) => Promise<void>
   /** Drops a connection's cached tree when its session ends. */
@@ -93,21 +91,6 @@ export const useDatabaseExplorerStore = create<DatabaseExplorerState>((set, get)
       // A manual refresh is how users pick up changes made elsewhere; completion should too.
       invalidateSqlCatalog(node.connectionId)
       return load(node)
-    },
-
-    refreshConnection: async (connectionId) => {
-      invalidateSqlCatalog(connectionId)
-      const reload = async (node: DatabaseExplorerNode): Promise<void> => {
-        if (get().children[node.key]?.status !== 'loaded') {
-          return
-        }
-        await load(node)
-        const loaded = get().children[node.key]
-        if (loaded?.status === 'loaded') {
-          await Promise.all(loaded.nodes.map(reload))
-        }
-      }
-      await reload(connectionNode(connectionId))
     },
 
     showConnected: async (connectionId) => {
