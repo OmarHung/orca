@@ -9,6 +9,7 @@ import type {
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
 import { ConsolePool } from './console-pool'
+import { DatabaseWireError } from './database-error-mapping'
 import type {
   DatabaseDriverCallbacks,
   DatabaseDriverSession,
@@ -20,35 +21,62 @@ import { PostgresConsole } from './postgres-console'
 import { postgresDdl } from './postgres-ddl'
 import { introspectPostgres } from './postgres-introspection'
 import { PostgresTypeNames } from './postgres-type-names'
+import { databaseAlteredBy } from './statement-keyword'
 
 class PostgresSession implements DatabaseDriverSession {
-  private readonly consoles = new ConsolePool((onLost) => this.openConsole(onLost))
-  private readonly typeNames: PostgresTypeNames
+  private readonly consoles = new ConsolePool((consoleId, onLost) =>
+    this.openConsole(consoleId, onLost)
+  )
+  // Other databases' catalogs are read on sessions of their own, opened on first use.
+  private readonly metaClients = new Map<string, Promise<pg.Client>>()
+  private readonly typeNames = new Map<string, PostgresTypeNames>()
+  private readonly consoleDatabases = new Map<string, string>()
 
   constructor(
     private readonly connection: PostgresConnectionDraft,
     private readonly password: string | null,
     private readonly metaClient: pg.Client,
     readonly serverVersion: string,
-    private readonly serverVersionNum: number
-  ) {
-    this.typeNames = new PostgresTypeNames(metaClient)
+    private readonly serverVersionNum: number,
+    private readonly defaultDatabase: string
+  ) {}
+
+  async introspect(target: DatabaseIntrospectTarget): Promise<DatabaseIntrospectResult> {
+    const database = target.level === 'databases' ? undefined : target.database
+    return introspectPostgres(await this.metaFor(database), target, this.serverVersionNum)
   }
 
-  introspect(target: DatabaseIntrospectTarget): Promise<DatabaseIntrospectResult> {
-    return introspectPostgres(this.metaClient, target, this.serverVersionNum)
+  async ddl(target: DatabaseDdlTarget): Promise<string> {
+    return postgresDdl(await this.metaFor(target.database), target, this.serverVersionNum)
   }
 
-  ddl(target: DatabaseDdlTarget): Promise<string> {
-    return postgresDdl(this.metaClient, target, this.serverVersionNum)
+  private metaFor(database: string | undefined): Promise<pg.Client> {
+    if (!database || database === this.defaultDatabase) {
+      return Promise.resolve(this.metaClient)
+    }
+    const existing = this.metaClients.get(database)
+    if (existing) {
+      return existing
+    }
+    const forget = (): void => {
+      if (this.metaClients.get(database) === created) {
+        this.metaClients.delete(database)
+      }
+    }
+    const created = connectPostgresClient({ ...this.connection, database }, this.password, forget)
+    this.metaClients.set(database, created)
+    created.catch(forget)
+    return created
   }
 
   async execute(
     consoleId: string,
     sql: string,
     pageSize: number,
-    { mode, schema }: DatabaseExecuteOptions
+    { mode, schema, database }: DatabaseExecuteOptions
   ): Promise<DatabaseExecuteResult> {
+    await this.releaseMeta(databaseAlteredBy(sql, true))
+    await this.moveConsole(consoleId, database ?? this.defaultDatabase)
     const target = await this.consoles.acquire(consoleId)
     await target.schema.prepare(schema)
     const result = await target.transactions.run(mode, sql, async () => ({
@@ -84,19 +112,68 @@ class PostgresSession implements DatabaseDriverSession {
     return result.rows[0]?.cancelled === true
   }
 
+  /** Orca's own idle catalog session must not be why DROP DATABASE finds the database in use. */
+  private async releaseMeta(database: string | null): Promise<void> {
+    const pending = database === null ? undefined : this.metaClients.get(database)
+    if (!pending) {
+      return
+    }
+    this.metaClients.delete(database!)
+    await pending.then((client) => client.end()).catch(() => undefined)
+  }
+
+  /** A console picking another database gets a session there, unless it holds a transaction. */
+  private async moveConsole(consoleId: string, database: string): Promise<void> {
+    this.consoleDatabases.set(consoleId, database)
+    const current = await this.consoles.current(consoleId)?.catch(() => null)
+    if (!current || current.database === database) {
+      return
+    }
+    if (current.transactions.isOpen) {
+      this.consoleDatabases.set(consoleId, current.database)
+      throw new DatabaseWireError({
+        message: 'Commit or roll back the open transaction before switching database.',
+        transaction: 'open'
+      })
+    }
+    await this.consoles.close(consoleId)
+    this.consoleDatabases.set(consoleId, database)
+  }
+
   closeConsole(consoleId: string): Promise<void> {
+    this.consoleDatabases.delete(consoleId)
     return this.consoles.close(consoleId)
   }
 
   async close(): Promise<void> {
     await this.consoles.closeAll()
+    const metas = [...this.metaClients.values()]
+    this.metaClients.clear()
+    await Promise.all(
+      metas.map((pending) => pending.then((client) => client.end()).catch(() => undefined))
+    )
     await this.metaClient.end().catch(() => undefined)
   }
 
-  private async openConsole(onLost: () => void): Promise<PostgresConsole> {
-    const client = await connectPostgresClient(this.connection, this.password, onLost)
+  private async openConsole(consoleId: string, onLost: () => void): Promise<PostgresConsole> {
+    const database = this.consoleDatabases.get(consoleId) ?? this.defaultDatabase
+    const client = await connectPostgresClient(
+      { ...this.connection, database },
+      this.password,
+      onLost
+    )
     const pid = await client.query<{ pid: number }>('select pg_catalog.pg_backend_pid() as pid')
-    return new PostgresConsole(client, pid.rows[0]!.pid, this.typeNames)
+    return new PostgresConsole(client, pid.rows[0]!.pid, this.typeNamesIn(database), database)
+  }
+
+  private typeNamesIn(database: string): PostgresTypeNames {
+    const existing = this.typeNames.get(database)
+    if (existing) {
+      return existing
+    }
+    const created = new PostgresTypeNames(() => this.metaFor(database))
+    this.typeNames.set(database, created)
+    return created
   }
 }
 
@@ -113,8 +190,12 @@ export async function openPostgresSession(
     }
   })
   try {
-    const version = await metaClient.query<{ server_version: string; version_num: string }>(
-      "select current_setting('server_version') as server_version, current_setting('server_version_num') as version_num"
+    const version = await metaClient.query<{
+      server_version: string
+      version_num: string
+      database: string
+    }>(
+      "select current_setting('server_version') as server_version, current_setting('server_version_num') as version_num, current_database() as database"
     )
     const row = version.rows[0]!
     return new PostgresSession(
@@ -122,7 +203,8 @@ export async function openPostgresSession(
       password,
       metaClient,
       row.server_version,
-      Number(row.version_num)
+      Number(row.version_num),
+      row.database
     )
   } catch (error) {
     await metaClient.end().catch(() => undefined)

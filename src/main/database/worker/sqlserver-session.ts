@@ -26,9 +26,10 @@ import {
 import { SqlServerConsole } from './sqlserver-console'
 import { sqlServerDdl } from './sqlserver-ddl'
 import { introspectSqlServer } from './sqlserver-introspection'
+import { databaseAlteredBy } from './statement-keyword'
 
 class SqlServerSession implements DatabaseDriverSession {
-  private readonly consoles = new ConsolePool((onLost) =>
+  private readonly consoles = new ConsolePool((_consoleId, onLost) =>
     connectSqlServer(this.connection, this.password, onLost).then(
       (client) => new SqlServerConsole(client, this.connection.readOnly)
     )
@@ -76,6 +77,11 @@ class SqlServerSession implements DatabaseDriverSession {
     pageSize: number,
     { mode, database }: DatabaseExecuteOptions
   ): Promise<DatabaseExecuteResult> {
+    // Why: the idle catalog session must not keep a database in use, nor be killed with it.
+    const altered = databaseAlteredBy(sql, false)?.toLowerCase()
+    if (altered !== undefined && altered === this.metaDatabase.toLowerCase()) {
+      await this.onMeta(undefined, async () => undefined)
+    }
     const target = await this.consoles.acquire(consoleId)
     await target.database.prepare(database)
     const result = await target.transactions.run(mode, sql, () => target.execute(sql, pageSize))

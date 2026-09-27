@@ -11,11 +11,14 @@ function cacheKey(field: FieldType): string {
   return `${field.dataTypeID}:${field.dataTypeModifier}`
 }
 
-/** Resolves result-column types to SQL names (`varchar(255)`, enums, domains) via the server. */
+/**
+ * Resolves result-column types to SQL names (`varchar(255)`, enums, domains) via the server,
+ * in the database the results came from (user types' OIDs are per database).
+ */
 export class PostgresTypeNames {
   private readonly names = new Map<string, string>()
 
-  constructor(private readonly metaClient: pg.Client) {}
+  constructor(private readonly metaClient: () => Promise<pg.Client>) {}
 
   async resolve(fields: readonly FieldType[]): Promise<string[]> {
     const missing = [...new Map(fields.map((field) => [cacheKey(field), field])).values()].filter(
@@ -23,7 +26,8 @@ export class PostgresTypeNames {
     )
     if (missing.length > 0) {
       try {
-        const result = await this.metaClient.query<{ name: string | null }>(TYPE_NAMES_SQL, [
+        const client = await this.metaClient()
+        const result = await client.query<{ name: string | null }>(TYPE_NAMES_SQL, [
           missing.map((field) => field.dataTypeID),
           missing.map((field) => field.dataTypeModifier)
         ])
