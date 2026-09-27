@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { translate } from '@/i18n/i18n'
+import { isServerConnection } from '../../../../shared/database/database-connection-types'
 import { useDatabaseConnectionsStore } from './database-connections-store'
 import { connectDatabase } from './database-page-actions'
 
@@ -23,7 +24,8 @@ export function DatabasePasswordDialog(): React.JSX.Element | null {
   const [password, setPassword] = useState('')
   const [connecting, setConnecting] = useState(false)
 
-  if (!prompt || !connection) {
+  // SQLite files have no password, so they never reach this prompt.
+  if (!prompt || !connection || !isServerConnection(connection)) {
     return null
   }
 

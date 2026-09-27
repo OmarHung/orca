@@ -1,6 +1,6 @@
 # Database 工具（DataGrip 風格）：實作計畫（fork 專屬）
 
-> 狀態：Phase 0（基礎架構 + PostgreSQL）已完成（2026-09-27），紀錄見 §6.1。Phase 1 以後尚未開工
+> 狀態：Phase 0（基礎架構 + PostgreSQL）和 Phase 1（MySQL／MariaDB、SQL Server、SQLite）已完成（2026-09-27），紀錄見 §6.1、§6.2。Phase 2 以後尚未開工
 > 分支：從 `omar/custom` 開 `feat/database`，每個 Phase 完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -199,6 +199,46 @@ worker thread（每個開啟的 session 一個）  驅動、cursor、取消、�
 - MySQL／MariaDB、SQL Server、SQLite 的驅動、結構查詢、語句切分、取消
 - 量 `tedious` 的打包大小，決定 bundle 還是 external
 - 用 Docker 跑整合測試（見 §7）
+
+### 6.2 Phase 1 完成紀錄（2026-09-27）
+
+同一套一致性測試（`database-driver-conformance.integration.test.ts`）對 PostgreSQL 17、MySQL 8.4、MariaDB 11、SQL Server 2022、SQLite 都跑過：指令結果、1,200 列分頁、錯誤、結構查詢、取消、console 互不干擾、唯讀。兩個 e2e（PostgreSQL、SQLite）也都通過。
+
+實作時的決定：
+
+- **分頁**：MySQL 和 SQL Server 的驅動是一列一列推送資料，`PagedBatchReader` 在滿一頁時暫停資料流。同一批次裡的後續結果集，會跟著分頁結果最後一頁的 `followingResults` 一起送來，畫面上開成新的結果分頁
+- **執行結果**：`execute` 改成回傳多個結果集（`{ results: [...] }`），因為 SQL Server 的批次和 MySQL 的 procedure 都可能回傳好幾個
+- **SQL Server 的語句切分**：游標所在的語句依 `;` 和 `GO` 切；選取範圍和「全部執行」則以 `GO` 批次為單位送出，這樣 `DECLARE` 的變數才能在批次裡使用（跟 SSMS 的習慣一樣）
+- **SQL Server 的列數**：`DECLARE`／`SET` 在協定上也會回報「1 列」，跟 DML 分不出來。所以批次有結果集時只顯示結果集；全部都是指令時，才把影響列數加總成一筆
+- **唯讀**：PostgreSQL、MySQL 由伺服器擋（session 設成唯讀）；SQLite 用唯讀模式開檔；SQL Server 沒有 session 唯讀，改由 Orca 擋下含寫入關鍵字的語句（盡力而為，表單上有說明）
+- **SQLite 跑在獨立程序**：SQLite 的查詢在原生程式碼裡執行，worker thread 在查詢中途結束不了。所以 SQLite 的連線用 `forkProcess` 開子程序，取消時直接結束它，下次執行自動重連。其他資料庫仍用 worker thread，取消走協定本身（`pg_cancel_backend`、`KILL QUERY`、TDS attention）。打包時 `database-worker-entry.js` 要解壓到 asar 外（已加進 `asarUnpack`）
+- **打包**：`tedious` 一載入就會引用整串 Azure SDK，所以打包進 worker（worker 檔案約 1.3MB），不把約 45MB 的 `node_modules` 複製進去。`mysql2` 維持 external，加進 runtime 套件清單。已用平鋪的 `node_modules` 模擬打包後的目錄，四種資料庫都實際跑過
+- **SQLite 選檔**：新增 `database:pickSqliteFile` IPC（Electron 開檔對話框）。只能開既有的檔案，打錯路徑不會悄悄建立空資料庫
+- **連線對話框**：最上面選資料庫種類，切換時只替換還是預設值的 port、資料庫、使用者，不會蓋掉使用者已經填的內容
+
+已知限制：
+
+- SQL Server：只支援 SQL 帳號登入（沒有 Windows／Azure AD）；`tedious` 把 DECIMAL 轉成 JS 數字，超過約 15 位有效數字會失去精度；`datetime2(7)` 只顯示到毫秒；混合批次（DML 加 SELECT）不顯示 DML 的影響列數
+- MySQL：FLOAT／DOUBLE 以 JS 數字的格式顯示
+- SQLite：不能建立新檔案；SSH workspace 裡遠端主機上的 SQLite 檔案還不支援
+
+整合測試方式（伺服器用 Docker 跑，SQLite 不需要設定，每次都會跑）：
+
+```
+docker run -d --rm --name orca-db-it-mysql -p 127.0.0.1:53306:3306 -e MYSQL_ROOT_PASSWORD=orca-test-pw -e MYSQL_DATABASE=orca_it mysql:8.4
+docker run -d --rm --name orca-db-it-mariadb -p 127.0.0.1:53307:3306 -e MARIADB_ROOT_PASSWORD=orca-test-pw -e MARIADB_DATABASE=orca_it mariadb:11
+docker run -d --rm --name orca-db-it-mssql -p 127.0.0.1:51433:1433 -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD=Orca-test-Pw1 mcr.microsoft.com/mssql/server:2022-latest
+
+ORCA_TEST_POSTGRES_URL=postgres://orca_test@127.0.0.1:55439/postgres \
+ORCA_TEST_MYSQL_URL=mysql://root:orca-test-pw@127.0.0.1:53306/orca_it \
+ORCA_TEST_MARIADB_URL=mysql://root:orca-test-pw@127.0.0.1:53307/orca_it \
+ORCA_TEST_SQLSERVER_URL=sqlserver://sa:Orca-test-Pw1@127.0.0.1:51433/master \
+pnpm exec vitest run --config config/vitest.config.ts src/main/database
+```
+
+SQL Server 的映像檔只有 amd64，在 Apple Silicon 上透過 Rosetta 可以正常跑。
+
+繁體中文：`zh-tw-term-overrides.json` 補了「隻讀→唯讀」（OpenCC 有時會轉錯），資料列數的規則也涵蓋直接寫數字的情況（「1 列」）
 
 ### Phase 2：表格完整化和資料表分頁
 
