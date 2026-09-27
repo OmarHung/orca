@@ -66,7 +66,11 @@ function mysqlFixture(label: string, env: string): DriverFixture {
       `create table ${mysqlSchema}.people (id int primary key, name varchar(40) not null)`,
       `create view ${mysqlSchema}.people_view as select * from ${mysqlSchema}.people`,
       `create table ${mysqlSchema}.\`user\` (\`order\` int primary key, \`Mixed Case\` varchar(10))`,
-      `insert into ${mysqlSchema}.\`user\` values (1, 'a'), (2, null), (3, 'c')`
+      `insert into ${mysqlSchema}.\`user\` values (1, 'a'), (2, null), (3, 'c')`,
+      // The index comes first so the foreign key uses it instead of adding its own.
+      `create table ${mysqlSchema}.orders (id int primary key, person_id int not null, code varchar(20), unique key orders_code_key (code), index orders_person_idx (person_id), constraint orders_person_fk foreign key (person_id) references ${mysqlSchema}.people (id))`,
+      `create function ${mysqlSchema}.add_one(i int) returns int deterministic return i + 1`,
+      `create procedure ${mysqlSchema}.noop() begin end`
     ],
     teardown: [`drop database ${mysqlSchema}`],
     table: `${mysqlSchema}.people`,
@@ -101,7 +105,9 @@ function sqliteFixture(): DriverFixture {
       'create table people (id integer primary key, name text not null)',
       'create view people_view as select * from people',
       'create table "user" ("order" integer primary key, "Mixed Case" text)',
-      `insert into "user" values (1, 'a'), (2, null), (3, 'c')`
+      `insert into "user" values (1, 'a'), (2, null), (3, 'c')`,
+      'create table orders (id integer primary key, person_id integer not null references people (id), code text unique)',
+      'create index orders_person_idx on orders (person_id)'
     ],
     teardown: [],
     table: 'people',
@@ -127,7 +133,11 @@ export const DRIVER_FIXTURES: DriverFixture[] = [
       `create table ${postgresSchema}.people (id int primary key, name text not null)`,
       `create view ${postgresSchema}.people_view as select * from ${postgresSchema}.people`,
       `create table ${postgresSchema}."user" ("order" int primary key, "Mixed Case" text)`,
-      `insert into ${postgresSchema}."user" values (1, 'a'), (2, null), (3, 'c')`
+      `insert into ${postgresSchema}."user" values (1, 'a'), (2, null), (3, 'c')`,
+      `create table ${postgresSchema}.orders (id int primary key, person_id int not null constraint orders_person_fk references ${postgresSchema}.people (id), code text constraint orders_code_key unique)`,
+      `create index orders_person_idx on ${postgresSchema}.orders (person_id)`,
+      `create function ${postgresSchema}.add_one(i int) returns int language sql immutable as 'select i + 1'`,
+      `create procedure ${postgresSchema}.noop() language sql as ''`
     ],
     teardown: [`drop schema ${postgresSchema} cascade`],
     table: `${postgresSchema}.people`,
@@ -146,9 +156,16 @@ export const DRIVER_FIXTURES: DriverFixture[] = [
       `create table ${postgresSchema}.people (id int primary key, name nvarchar(40) not null)`,
       `create view ${postgresSchema}.people_view as select * from ${postgresSchema}.people`,
       `create table ${postgresSchema}.[user] ([order] int primary key, [Mixed Case] nvarchar(10))`,
-      `insert into ${postgresSchema}.[user] values (1, 'a'), (2, null), (3, 'c')`
+      `insert into ${postgresSchema}.[user] values (1, 'a'), (2, null), (3, 'c')`,
+      `create table ${postgresSchema}.orders (id int primary key, person_id int not null constraint orders_person_fk references ${postgresSchema}.people (id), code nvarchar(20) constraint orders_code_key unique)`,
+      `create index orders_person_idx on ${postgresSchema}.orders (person_id)`,
+      `create function ${postgresSchema}.add_one(@i int) returns int as begin return @i + 1 end`,
+      `create procedure ${postgresSchema}.noop as return 0`
     ],
     teardown: [
+      `drop procedure ${postgresSchema}.noop`,
+      `drop function ${postgresSchema}.add_one`,
+      `drop table ${postgresSchema}.orders`,
       `drop table ${postgresSchema}.[user]`,
       `drop view ${postgresSchema}.people_view`,
       `drop table ${postgresSchema}.people`,
