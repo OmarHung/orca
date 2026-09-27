@@ -5,6 +5,10 @@ import {
   databaseConnectionDraftSchema,
   databaseConnectionIdSchema
 } from '../../shared/database/database-connection-types'
+import {
+  DATABASE_EXPORT_FORMATS,
+  DATABASE_EXPORT_MAX_CHARS
+} from '../../shared/database/database-export-types'
 import { databaseIntrospectTargetSchema } from '../../shared/database/database-introspection-types'
 import type { DatabaseResult } from '../../shared/database/database-query-types'
 import {
@@ -14,6 +18,7 @@ import {
 } from '../../shared/database/database-session-types'
 import { getSecretStore } from '../../shared/secret-store'
 import { DatabaseConnectionStore } from './database-connection-store'
+import { saveDatabaseExport } from './database-export-file'
 import { DATABASE_CONSOLE_MAX_BYTES, DatabaseConsoleFiles } from './database-console-files'
 import { DatabasePasswordVault } from './database-password-vault'
 import { DatabaseService } from './database-service'
@@ -51,6 +56,14 @@ const FetchRequestSchema = ConsoleRefSchema.extend({
   resultId: z.string().min(1).max(64),
   pageSize: PageSizeSchema
 })
+
+const SaveExportSchema = z
+  .object({
+    suggestedName: z.string().max(200),
+    format: z.enum(DATABASE_EXPORT_FORMATS),
+    content: z.string().max(DATABASE_EXPORT_MAX_CHARS)
+  })
+  .strict()
 
 const INVALID_REQUEST: DatabaseResult<never> = {
   ok: false,
@@ -172,6 +185,13 @@ export function registerDatabaseHandlers(): void {
       ? await dialog.showOpenDialog(window, options)
       : await dialog.showOpenDialog(options)
     return result.canceled ? null : (result.filePaths[0] ?? null)
+  })
+
+  ipcMain.handle('database:saveExport', (event, raw: unknown) => {
+    const request = SaveExportSchema.safeParse(raw)
+    return request.success
+      ? saveDatabaseExport(BrowserWindow.fromWebContents(event.sender), request.data)
+      : INVALID_REQUEST
   })
 
   // Why: database server sessions must not outlive Orca.

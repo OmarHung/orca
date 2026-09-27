@@ -1,6 +1,6 @@
 # Database 工具（DataGrip 風格）：實作計畫（fork 專屬）
 
-> 狀態：Phase 0（基礎架構 + PostgreSQL）和 Phase 1（MySQL／MariaDB、SQL Server、SQLite）已完成（2026-09-27），紀錄見 §6.1、§6.2。Phase 2 以後尚未開工
+> 狀態：Phase 0（基礎架構 + PostgreSQL）、Phase 1（MySQL／MariaDB、SQL Server、SQLite）和 Phase 2（資料表分頁、表格完整化）已完成（2026-09-27），紀錄見 §6.1～§6.3。Phase 3 以後尚未開工
 > 分支：從 `omar/custom` 開 `feat/database`，每個 Phase 完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -244,6 +244,31 @@ SQL Server 的映像檔只有 amd64，在 Apple Silicon 上透過 Rosetta 可以
 
 - 資料表分頁：分頁載入、`WHERE`／`ORDER BY` 篩選、點表頭排序（資料表由資料庫排序，console 結果在本機排序）
 - 範圍選取、複製和匯出格式、值檢視器、欄寬調整
+
+### 6.3 Phase 2 完成紀錄（2026-09-27）
+
+兩個 SQLite e2e（console；資料表分頁的篩選、表頭排序、計算總列數、值檢視器）和 PostgreSQL e2e 都通過；新增的純邏輯（選取、排序、匯出格式、資料表 SQL、值格式化、欄寬捲動、匯出檔名）都有單元測試。
+
+實作時的決定：
+
+- **分頁種類**：分頁改成 `console | table` 兩種（`database-page-tabs.ts`），localStorage 裡沒有 `kind` 的舊分頁視為 console。資料表分頁佔兩個伺服器 session：一個讀資料，一個跑 `count(*)`，計數再慢也不會卡住捲動載入；關分頁時兩個都釋放
+- **開啟資料表**：結構樹上雙擊或按 Enter 開資料表（其他節點照舊展開），右鍵選單多了「Open Data」。同一張表只開一個分頁
+- **資料表查詢**：`select * from <表> where … order by …`，每段各佔一行，所以使用者在 WHERE 最後寫 `-- 註解` 不會把 ORDER BY 註解掉。WHERE／ORDER BY 是原樣送出的 SQL 片段（跟 DataGrip 一樣），唯讀連線照樣由伺服器擋寫入
+- **排序**：資料表點表頭會改寫 ORDER BY 再查一次（升冪 → 降冪 → 取消）；console 結果只排已載入的列（NULL 升冪排最後，跟 PostgreSQL 一樣），選取和複製依畫面上的順序
+- **重新查詢不閃爍**：資料表重新查詢時先保留上一份結果；欄寬以欄位名稱加型別當 key，所以篩選、排序後手動調過的欄寬都還在
+- **選取和複製**：拖曳、Shift＋點擊、點列號選整列、Shift＋方向鍵、`Mod+A`；`Mod+C` 複製成 TSV（貼到試算表會落在同樣的格子）。右鍵選單另有連同表頭複製、複製為 CSV／JSON／SQL INSERT。console 結果不知道來源表，INSERT 用 `my_table` 當表名
+- **匯出**：「匯出已載入的列」用新的 `database:saveExport` IPC（存檔對話框加寫檔，內容上限 256M 字元，檔名依各平台規則清理），完成後跳 toast
+- **值檢視器**：`Shift+Enter`、右鍵「Show Value」或結果下方的按鈕開關，寬度可拖拉，開關和寬度都記在 localStorage。JSON 物件／陣列會排版；被截斷的值只顯示預覽和原本長度（預覽截在中間，不嘗試排版）
+- **快捷鍵顯示**：右鍵選單和提示用共用的 `formatKeybinding`，Mac 顯示符號，其他平台顯示 `Ctrl`／`Shift`
+
+已知限制：
+
+- 被截斷的超長值，值檢視器和複製都只拿得到預覽（要看完整值得等之後補「讀取完整值」）
+- 匯出和複製只含已載入的列（最多 100,000 列），不會重新查詢整張表
+- 計算總列數無法取消；在超大表上可能跑很久（不影響資料捲動）
+- 表頭排序的箭頭只反映點表頭產生的排序；手動輸入的 ORDER BY 不會顯示箭頭
+
+繁體中文：`zh-tw-term-overrides.json` 新增只比對整句的規則，把這幾句的「行」改成「列」、欄寬改成「欄寬」、「單元格」改成「儲存格」，不會影響 notebook 等其他地方的用詞。WHERE、ORDER BY 是 SQL 關鍵字，不翻譯，加進 `localization-coverage-allowlist.json`。
 
 ### Phase 3：資料表編輯
 
