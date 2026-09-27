@@ -249,7 +249,7 @@
       },
       "webPreloadApi": {
         "aiVaultUnavailableForHost": "此執行主機不支援 Agent 會話歷史記錄。",
-        "runtimeEnvironmentManuallyDisconnected": "執行時環境已手動斷開連線。",
+        "runtimeEnvironmentManuallyDisconnected": "執行時環境已手動中斷連線。",
         "loopbackPairingBlocked": "此訪問連結會指回此裝置。",
         "remotePairingUnreachable": "無法連線 {{endpoint}} 上的 Orca。",
         "remotePairingInvalidDetails": "此訪問連結包含無效的連線資訊。",
@@ -1877,7 +1877,7 @@
         "93c57f15e5": "沒有找到專案。",
         "cfb56a7868": "搜尋專案...",
         "00022ec0ba": "專案",
-        "0c11ca0b6d": "新建 Jira 議題",
+        "0c11ca0b6d": "新增 Jira 議題",
         "d0ca4aa1d0": "標籤",
         "1742eafc14": "沒有專案",
         "69591944e7": "低的",
@@ -1909,7 +1909,7 @@
         "a98cbe7664": "團隊",
         "02f67c0d09": "新專案",
         "bdebffcbfe": "為所選團隊建立 Linear 專案。",
-        "1361275ec3": "新建 Linear 專案",
+        "1361275ec3": "新增 Linear 專案",
         "7f3f7b4c18": "描述（可選，markdown）",
         "9f2b4c03a6": "提交",
         "d3d0998b7d": "新的 GitHub 議題",
@@ -1985,7 +1985,7 @@
         "0b65d3fb2c": "搜尋 Linear 專案...",
         "eec0c5c079": "搜尋 Linear 議題...",
         "8964184a8b": "重新整理 Linear",
-        "3feb524d42": "新建 Linear 議題",
+        "3feb524d42": "新增 Linear 議題",
         "0cbf7e5cf3": "Linear 任務模式",
         "ff53631e6f": "重新整理 GitHub 工作",
         "6ffa6be99f": "重新整理 GitHub 工作",
@@ -2288,7 +2288,7 @@
         "20af998bff": "{{value0}} 可用項{{value1}}",
         "bb72c08e63": "找到 {{value0}} 結果{{value1}}",
         "34c8fbb46e": "SSH遠端",
-        "63c2be1914": "SSH 已斷開連線",
+        "63c2be1914": "SSH 已中斷連線",
         "95be6587d3": "建立工作樹“{{value0}}”",
         "worktreesHeader": "工作樹",
         "recentWorktreesHeader": "最近的工作樹",
@@ -3072,8 +3072,8 @@
             "sourceRestoring": "重新連線該終端機 — 正在重新建立其輸出。會話仍在進行。"
           },
           "TerminalProcessExitOverlay": {
-            "capacityTitle": "已達到 Git Bash 控制台上限",
-            "capacityDetail": "Git Bash 已達到 128 個控制台的上限。關閉未使用的 Git Bash 終端機，然後重新啟動此終端機。",
+            "capacityTitle": "已達到 Git Bash 主控台上限",
+            "capacityDetail": "Git Bash 已達到 128 個主控台的上限。關閉未使用的 Git Bash 終端機，然後重新啟動此終端機。",
             "failedTitle": "終端機已退出",
             "failedDetail": "Shell 程序以退出程式碼 {{code}} 結束。輸出已保留。",
             "close": "關閉",
@@ -3215,7 +3215,7 @@
           },
           "TerminalRemoteRuntimeReconnectBanner": {
             "retryingTitle": "正在重新連線到遠端執行時",
-            "disconnectedTitle": "遠端執行時已斷開連線",
+            "disconnectedTitle": "遠端執行時已中斷連線",
             "retryingBody": "Orca 正在自動重試。如果連線恢復，此終端機將恢復。",
             "disconnectedBody": "自動重試已停止。重新連線以恢復此終端機會話。",
             "reconnectButton": "重新連線"
@@ -3272,7 +3272,7 @@
             "sessionHostMismatchUnsupported": "此會話屬於其他主機。請將其拖放到同一主機上的工作區。"
           },
           "TabGroupDropOverlay": {
-            "paneColumnLabel": "新建拆分"
+            "paneColumnLabel": "新增拆分"
           }
         },
         "bar": {
@@ -3431,15 +3431,15 @@
                 "options": {
                   "5501c2fb7a": "終端機",
                   "9630dd5494": "shell",
-                  "a094576900": "新建終端機",
-                  "4f23f4d01d": "新建 shell",
+                  "a094576900": "新增終端機",
+                  "4f23f4d01d": "新增 shell",
                   "4f2a91e15b": "瀏覽器",
-                  "6d0e6a4b7a": "新建瀏覽器",
+                  "6d0e6a4b7a": "新增瀏覽器",
                   "c87ad57785": "瀏覽器分頁",
                   "cce7ef1d2c": "Web",
                   "5f17fb9d0c": "Markdown",
                   "44caaf7b36": "md",
-                  "fb50e3d874": "新建 markdown",
+                  "fb50e3d874": "新增 markdown",
                   "6d8b6b4117": "新檔案",
                   "b330f72434": "markdown",
                   "37ff3ddca1": "開啟 markdown",
@@ -3573,9 +3573,9 @@
             "6e8a9a4242": "遠端主機",
             "d09ec41831": "遠端主機",
             "fdc57e9970": "遠端主機連線狀態",
-            "59b553e2aa": "斷開連線",
+            "59b553e2aa": "中斷連線",
             "63f36455cc": "連線",
-            "bf07aee59e": "斷開連線失敗",
+            "bf07aee59e": "中斷連線失敗",
             "2c29e2de68": "連線失敗",
             "bc5a3fd41a": "部分",
             "3d0128b105": "已連線",
@@ -3588,7 +3588,7 @@
             "runtime_online": "已連線",
             "runtime_unavailable": "已斷開",
             "runtime_connect_unavailable": "遠端主機不可達",
-            "runtime_disconnect_failed": "斷開連線失敗",
+            "runtime_disconnect_failed": "中斷連線失敗",
             "runtime_reconnecting": "重新連線中",
             "runtime_last_close_reason": "已關閉：{{value0}}",
             "runtime_reconnect_attempt": "第 {{value0}} 次嘗試",
@@ -4464,7 +4464,7 @@
           "chipDuplicate": "重複",
           "chipExternalLink": "外部連結",
           "chipBrokenLink": "失效連結",
-          "chipReadOnly": "只讀",
+          "chipReadOnly": "唯讀",
           "chipInRepo": "在儲存庫中",
           "chipPluginCache": "外掛快取",
           "tipCurrent": "這裡的技能已是最新，更新不會更改它。",
@@ -4473,11 +4473,11 @@
           "tipDuplicate": "此技能除主副本外還安裝在這裡，因此 npx skills update 命令無法訪問它。請移除它以允許更新。",
           "tipExternalLink": "這是一個指向 Orca 技能資料夾之外的快捷方式；更新不會跟隨它。",
           "tipBrokenLink": "這是一個指向已不存在內容的快捷方式，可以安全刪除。",
-          "tipReadOnly": "這裡的技能位於只讀位置，需更改其許可權後才能更新。",
+          "tipReadOnly": "這裡的技能位於唯讀位置，需更改其許可權後才能更新。",
           "tipInRepo": "這裡的技能位於某個專案內，而非全域性技能；Orca 只更新全域性技能。",
           "tipPluginCache": "這裡的技能由外掛管理；請改為更新外掛。",
           "skippedReasonUnrecognized": "此處的副本與官方版本不一致 — 它可能被修改過，或是同名但內容不同的技能。Orca 將其排除在更新之外，以免覆蓋它。如果您希望 Orca 更新此技能，請刪除它。",
-          "skippedReasonReadOnly": "此副本位於只讀位置，因此 Orca 未將其納入更新。請更改其許可權，讓 Orca 更新它。",
+          "skippedReasonReadOnly": "此副本位於唯讀位置，因此 Orca 未將其納入更新。請更改其許可權，讓 Orca 更新它。",
           "skippedReasonInaccessible": "Orca 無法讀取此副本，因此未將該技能納入更新。",
           "skippedReasonInRepo": "這是專案技能而非全域性技能 — Orca 只更新您的全域性技能，因此將其排除在更新之外。",
           "skippedReasonPluginCache": "此技能由外掛管理，因此 Orca 未將其納入更新 — 請改為更新外掛。",
@@ -4650,7 +4650,7 @@
           "86ed219b55": "選擇版本",
           "9c04bd0120": "安裝版本",
           "64c71cf7b9": "在此電腦上未找到 Orca 管理的技能安裝。",
-          "0900db719a": "— 已斷開連線",
+          "0900db719a": "— 已中斷連線",
           "176fef9516": "· SSH",
           "6cb1fbe039": "這台電腦",
           "3677ae58e7": "更新、回滾或安全刪除 Orca 安裝的版本。",
@@ -4698,7 +4698,7 @@
           "c779621aa0": "全球技能",
           "63cc9e31fe": "目的地",
           "85d85880df": "· SSH",
-          "71eefd7660": "— 已斷開連線",
+          "71eefd7660": "— 已中斷連線",
           "0785d0a503": "— 需要更新",
           "8562dd1e6e": "這台電腦",
           "b8a0b706ad": "機器"
@@ -4852,7 +4852,7 @@
           "rowNeedsDecision": "需要一個決定",
           "rowInstalled": "已安裝",
           "rowUpdate": "更新",
-          "rowNew": "新建",
+          "rowNew": "新增",
           "chooseSkills": "從此連結選擇要安裝的內容。",
           "singleRunnableWarning": "該技能包括指令碼或二進位制檔案。",
           "runnableWarning": "{{selectedCount}} 所選技能中的 {{affectedCount}} 包括指令碼或二進位制檔案：{{affected}}。",
@@ -4983,7 +4983,7 @@
           "36d427bb66": "新增遠端專案",
           "35831a7312": "新增...",
           "lockedDescription": "輸入 {{value0}} 上 Git 儲存庫的路徑。",
-          "lockedDisconnected": "{{value0}} 已斷開連線。",
+          "lockedDisconnected": "{{value0}} 已中斷連線。",
           "93e0221434": "連線"
         },
         "AddRepoServerStartStep": {
@@ -5433,9 +5433,9 @@
           "93aebe4529": "資料夾",
           "0d224eff10": "主工作樹",
           "ca74db7550": "SSH 主機上的專案",
-          "021538e1d1": "SSH 已斷開連線",
-          "runtimeHostDisconnected": "伺服器已斷開連線",
-          "runtimeHostDisconnectedNamed": "{{hostName}} 已斷開連線",
+          "021538e1d1": "SSH 已中斷連線",
+          "runtimeHostDisconnected": "伺服器已中斷連線",
+          "runtimeHostDisconnectedNamed": "{{hostName}} 已中斷連線",
           "runtimeHostProject": "Orca 伺服器上的專案",
           "runtimeHostProjectNamed": "{{hostName}} 上的專案",
           "automationCreated": "由自動化建立",
@@ -5585,7 +5585,7 @@
           "groupDeleteFailedDesc": "刪除分組時出現問題。沒有專案被移除。",
           "7a8b9c0d1e": "需要更新",
           "hostAuthNeeded": "需要身份驗證",
-          "hostDisconnected": "已斷開連線",
+          "hostDisconnected": "已中斷連線",
           "failedNestWorkspace": "無法巢狀工作區",
           "sidebarRowMissing": "目標不再存在",
           "failedUnnestWorkspace": "展開工作區失敗",
@@ -6020,13 +6020,13 @@
           "5b8b4b6a01": "需要更新伺服器",
           "9b3c1d2e44": "需要更新客戶端",
           "2c29e2de68": "連線失敗",
-          "bf07aee59e": "斷開連線失敗",
+          "bf07aee59e": "中斷連線失敗",
           "7f1a2b3c4d": "{{value0}} 可訪問",
           "4f2c8a9b10": "{{value0}} 的主機操作",
           "6b7c8d9e10": "主機操作",
           "8d1e2f3a4b": "重新命名…",
           "63f36455cc": "重新連線",
-          "59b553e2aa": "斷開連線",
+          "59b553e2aa": "中斷連線",
           "2d3e4f5a6b": "檢查連線",
           "3c4d5e6f7a": "管理主機…",
           "6e7f8a9b0c": "刪除主機..."
@@ -6066,7 +6066,7 @@
           "6c07f3a91e": "{{value0}} 在 {{value1}} 上"
         },
         "NoticeHostGlyph": {
-          "hostDisconnected": "{{hostName}} 已斷開連線",
+          "hostDisconnected": "{{hostName}} 已中斷連線",
           "sshHostProject": "SSH 主機 {{hostName}} 上的專案",
           "localHostProject": "此主機上的專案",
           "runtimeHostProject": "{{hostName}} 上的專案"
@@ -6453,7 +6453,7 @@
           "4ff2af7524": "使用模型名稱",
           "5cf4b0f85f": "可選的逗號分隔的模型名稱。除非 MiniMax 返回模型特定錯誤，否則請保持為 general。",
           "3c92b0d31c": "general",
-          "0d8e77bc40": "開啟控制台",
+          "0d8e77bc40": "開啟主控台",
           "0b8c1c7e02": "已儲存在本地",
           "43d7a45b97": "如何複製",
           "b8a4f21c3e": "貼上來自 DevTools 的 Cookie 請求頭",
@@ -6495,9 +6495,9 @@
           "selectedEndpointStorage": "儲存在本地，併發送到所選的 MiniMax 端點以重新整理用量。",
           "openSelectedConsole": "在瀏覽器中開啟 {{url}} 並登入。",
           "cookieSelectedEndpoint": "儲存在本地，併發送到所選的 MiniMax 端點以重新整理用量。",
-          "copySelectedConsoleCookie": "開啟所選控制台並登入，然後從開發者工具複製 Cookie 請求標頭（Network → 任意 remains 請求 → Cookie）。",
-          "apiKeySelectedEndpoint": "貼上 MiniMax 控制台 → API 金鑰中的金鑰。儲存在本地，併發送到所選的 MiniMax 端點以重新整理用量。API 金鑰優先於 Cookie。",
-          "apiKeyInstructions": "從 MiniMax 控制台 → API 金鑰中複製金鑰。已儲存的 API 金鑰優先於 Cookie；使用“忘記金鑰”切換回 Cookie。",
+          "copySelectedConsoleCookie": "開啟所選主控台並登入，然後從開發者工具複製 Cookie 請求標頭（Network → 任意 remains 請求 → Cookie）。",
+          "apiKeySelectedEndpoint": "貼上 MiniMax 主控台 → API 金鑰中的金鑰。儲存在本地，併發送到所選的 MiniMax 端點以重新整理用量。API 金鑰優先於 Cookie。",
+          "apiKeyInstructions": "從 MiniMax 主控台 → API 金鑰中複製金鑰。已儲存的 API 金鑰優先於 Cookie；使用“忘記金鑰”切換回 Cookie。",
           "endpointOverseas": "海外 (platform.minimax.io)",
           "endpointChina": "中國 (platform.minimaxi.com)",
           "15e831350e": "從 platform.minimax.io 設定 MiniMax 使用量跟蹤。",
@@ -6508,7 +6508,7 @@
           "f5d8d2a6a1": "在瀏覽器中開啟 platform.minimax.io/console/usage 並登入。",
           "d5267cce63": "）。 auth cookie 仍然涵蓋工作區發現；僅 auth 不足以使用。 OpenCode Go 身份驗證基於 Web，並在 Windows 和 WSL 終端機之間共享。",
           "62ab430f94": "從瀏覽器的 DevTools → Network → 任何 opencode.ai 請求貼上完整的 Cookie 標頭，包括 __Host-console_session（例如",
-          "37b4b4a3f7": "授權=…； __主機控制台_會話=...",
+          "37b4b4a3f7": "授權=…； __主機主控台_會話=...",
           "0335bd31d5": "貼上完整的 opencode.ai Cookie 標頭，包括 __Host-console_session，以進行速率限制提取。",
           "codexLoginLinkPending": "Codex 在您的瀏覽器中打開了此登入連結。複製它以在其他地方（私人視窗或其他設定檔）完成登入。",
           "codexLoginLinkCopied": "已複製",
@@ -6521,7 +6521,7 @@
               "description": "可選的覆蓋設定。如果留空，Orca 將使用您執行 /connect 時 OpenCode 儲存的金鑰，其次使用 OPENCODE_API_KEY。",
               "label": "OpenCode Go API 金鑰",
               "placeholder": "留空以使用 /connect 或 OPENCODE_API_KEY 儲存的金鑰",
-              "help": "用於在狀態列中顯示 OpenCode Go 使用情況。下面的會話 Cookie 僅舊版控制台 (OpenCode Black) 帳號需要。"
+              "help": "用於在狀態列中顯示 OpenCode Go 使用情況。下面的會話 Cookie 僅舊版主控台 (OpenCode Black) 帳號需要。"
             }
           }
         },
@@ -7495,7 +7495,7 @@
           "143961d031": "預設裝置",
           "8aec2f99a0": "重新整理模擬器可用性",
           "ae1612c58c": "可用性",
-          "f9af91ea26": "顯示“新建手機模擬器”操作並允許代理連線到活動模擬器。",
+          "f9af91ea26": "顯示“新增手機模擬器”操作並允許代理連線到活動模擬器。",
           "700ddbf9b1": "啟用手機模擬器",
           "bc39d0f115": "設定對 Orca 和程式開發代理的手機模擬器支援。",
           "6593c9ddd3": "手機模擬器",
@@ -7529,7 +7529,7 @@
           "dd3cd78d04": "使用 Orca 手機端 掃描",
           "35100bca5d": "當您在手機上使用終端機時，Orca 會將其縮小以適合您的手機螢幕。當您關閉應用程式或切換離開時，這可以控制它是保持手機大小（因此互動式 CLI 工具不會迴流）還是將大小調整回桌面。您始終可以在橫幅上使用“恢復此終端機”或“恢復所有終端機”來手動調整大小。",
           "ee56f1c7e4": "當您離開手機應用程式時",
-          "3939fd062c": "撤銷裝置會立即斷開連線。",
+          "3939fd062c": "撤銷裝置會立即中斷連線。",
           "254a6d09e4": "配對",
           "d7ce676270": "配對裝置",
           "e778ecb209": "或者將此程式碼貼上到手機應用程式中：",
@@ -8029,7 +8029,7 @@
           "e6410d72c3": "無法載入執行時環境。",
           "6ef71985da": "無終點",
           "ed3e3f069d": "這將從 Orca 中刪除儲存的伺服器。它不會更改活動伺服器。",
-          "b2fda48c39": "刪除活動伺服器會使此瀏覽器與該主機斷開連線。現有主機會話會保持不變。",
+          "b2fda48c39": "刪除活動伺服器會使此瀏覽器與該主機中斷連線。現有主機會話會保持不變。",
           "9f7665a01b": "刪除活動伺服器會先將 Orca 切換回本地桌面。現有主機會話會保持不變。",
           "3595fd1948": "新連結",
           "54dee18f5c": "隱藏表格",
@@ -8054,12 +8054,12 @@
           "2c85efb3e8": "選擇已儲存的伺服器後，此瀏覽器會將配對的 Orca 執行時用作預設主機。",
           "serverConnected": "已連線",
           "serverChecking": "正在檢查…",
-          "serverDisconnected": "已斷開連線",
+          "serverDisconnected": "已中斷連線",
           "disconnectedServer": "已斷開與 {{value0}} 的連線。",
           "connectToRemoteServers": "連線到遠端伺服器",
-          "connectToRemoteServersHelp": "配對另一個 Orca 執行時，然後在此處連線或斷開連線。僅當你想更改預設主機時，才使用高階 > 活動伺服器。",
+          "connectToRemoteServersHelp": "配對另一個 Orca 執行時，然後在此處連線或中斷連線。僅當你想更改預設主機時，才使用高階 > 活動伺服器。",
           "activeServerRowHelp": "用於透過伺服器路由的專案、終端機和提供商檢查的活動伺服器。",
-          "disconnect": "斷開連線",
+          "disconnect": "中斷連線",
           "connect": "連線",
           "advanced": "高階",
           "serverDetails": "伺服器詳細資訊",
@@ -8363,7 +8363,7 @@
           "db2e48975e": "遠端中繼已重置",
           "025e107643": "無法結束遠端終端機",
           "90e308c98b": "遠端終端機結束",
-          "a43de1d3ee": "斷開連線失敗",
+          "a43de1d3ee": "中斷連線失敗",
           "e95d5ae10e": "連線失敗",
           "c2a69510e3": "刪除目標失敗",
           "a0237eb1ca": "目標已移除",
@@ -8400,7 +8400,7 @@
           "ec6543cee9": "連線",
           "0e53e9f8e8": "測試",
           "1810b51482": "連線中",
-          "4c86f30877": "斷開連線",
+          "4c86f30877": "中斷連線",
           "7f7b3d7ab4": "刪除目標",
           "3d21a22d0e": "移除目標",
           "3d8af2949f": "編輯目標",
@@ -8425,7 +8425,7 @@
         "SshTargetForm": {
           "fea9cb402e": "取消",
           "1b19b00e93": "有限逾時時間必須介於 60 秒到 7 天之間。",
-          "137e88ce8d": "Orca 與此主機斷開連線後，遠端終端機會繼續執行。",
+          "137e88ce8d": "Orca 與此主機中斷連線後，遠端終端機會繼續執行。",
           "b574994adc": "需要停止它們時，請使用“結束遠端終端機”或“重置中繼”。",
           "71fc546097": "保持終端機執行直到重置",
           "92f80edbfd": "遠端終端機持久化",
@@ -8450,7 +8450,7 @@
           "29af933cd5": "新的 SSH 目標",
           "f2331ce599": "編輯 SSH 目標",
           "7c13f58c91": "直到重置",
-          "55c56cf2c7": "斷開連線後的逾時時間（秒）",
+          "55c56cf2c7": "中斷連線後的逾時時間（秒）",
           "4a342f44c1": "高階連線",
           "e9609ddca6": "代理、跳板主機和連線複用",
           "8c922dffba": "複用 SSH 連線以加快設定",
@@ -8566,7 +8566,7 @@
           "4bebcc2b2c": "單詞分隔符",
           "12e06178fa": "行",
           "907b0b9d3e": "自定義",
-          "5336c096af": "{{value0}} 行",
+          "5336c096af": "{{value0}} 列",
           "81d86b2dd2": "為新窗格和已開啟窗格保留的桌面終端機行數。",
           "9df53f7c14": "回滾行數",
           "c3810b2b42": "保留的桌面終端機行數。",
@@ -8602,8 +8602,8 @@
           "cc8c5ca224": "Windows 預設值",
           "d78fc4fdef": "載入分佈",
           "219aaa59f4": "WSL分佈",
-          "2503f1e86b": "當活動工作區不在 WSL 中時，用於新建 WSL 終端機窗格和進行本地代理檢測。",
-          "5fe79a5e56": "選擇新建 WSL 終端機和本地代理掃描所使用的 WSL 發行版。",
+          "2503f1e86b": "當活動工作區不在 WSL 中時，用於新增 WSL 終端機窗格和進行本地代理檢測。",
+          "5fe79a5e56": "選擇新增 WSL 終端機和本地代理掃描所使用的 WSL 發行版。",
           "b637dd57a7": "WSL",
           "f61ac77f16": "git bash",
           "0f1b8669e6": "命令提示符",
@@ -8786,7 +8786,7 @@
           "241325302c": "新增路徑",
           "7ff265071d": "建立新工作樹時，此處列出的每個路徑會在可能時透過 macOS 上的 APFS clone-copy 複製；否則，會從主檢出目錄建立符號連結。",
           "4755f120b6": "工作樹共享路徑",
-          "b07ef5a8b6": "從主檢出目錄放入新建工作樹的路徑。",
+          "b07ef5a8b6": "從主檢出目錄放入新增工作樹的路徑。",
           "d72ba8dc68": "{{value0}} 路徑",
           "9ea912d811": "1 條路徑"
         },
@@ -10154,7 +10154,7 @@
             "f1c53f2820": "工作樹",
             "7e228fc439": "符號連結",
             "c06adcf136": "符號連結",
-            "ed885e589f": "從主檢出目錄放入新建工作樹的路徑。",
+            "ed885e589f": "從主檢出目錄放入新增工作樹的路徑。",
             "01b3377ebc": "工作樹共享路徑",
             "fff8834983": "提示詞",
             "fa3131f223": "模型",
@@ -10597,7 +10597,7 @@
               "2b4a340ce0": "分配",
               "02c772582a": "作業系統",
               "6e3adf4cba": "wsl",
-              "978457945b": "選擇新建 WSL 終端機和本地代理掃描所使用的 WSL 發行版。",
+              "978457945b": "選擇新增 WSL 終端機和本地代理掃描所使用的 WSL 發行版。",
               "1f402b3651": "WSL分佈",
               "d57f870938": "高階",
               "4af2f7526e": "版本",
@@ -10605,7 +10605,7 @@
               "768613e483": "powershell 7",
               "f9162f0b8e": "視窗 Powershell",
               "2d99cd91be": "powershell",
-              "41a69bc24d": "選擇新建終端機視窗時，PowerShell 終端機選項是使用 Windows PowerShell 還是 PowerShell 7+ 啟動。",
+              "41a69bc24d": "選擇新增終端機視窗時，PowerShell 終端機選項是使用 Windows PowerShell 還是 PowerShell 7+ 啟動。",
               "860e0e6402": "PowerShell版本",
               "07ec155fb6": "bash.exe",
               "5a2db98d23": "bash",
@@ -10821,7 +10821,7 @@
                 "eae4a9f16b": "新增 Linear 訪問以瀏覽和連結議題。",
                 "fe9231215b": "在顯示設定操作前正在檢查 Linear 訪問許可權。",
                 "e1f5e6424c": "{{value0}} 個工作區{{value1}} 已連線",
-                "disconnect_all": "斷開連線",
+                "disconnect_all": "中斷連線",
                 "account_scope_prefix": "帳戶範圍",
                 "2d60ec7921": "使用 API token 連線 Jira Cloud 站點，或使用個人訪問令牌或使用者名稱和密碼連線自託管 Jira。憑據會發送到所選遠端執行時並以執行時支援的加密方式儲存。",
                 "977e360b71": "使用 API token 連線 Jira Cloud 站點，或使用個人訪問令牌或使用者名稱和密碼連線自託管 Jira。憑據儲存在本地，本地執行時儲存支援時會進行加密。",
@@ -11215,7 +11215,7 @@
           "0d8e77bc40": "Grok CLI 文件",
           "ad47a33f72": "正在載入…",
           "b2c3d4e5f6": "已登入",
-          "c3d4e5f6a7": "已登入。Orca 只讀取磁碟上的該檔案；如果使用量取得失敗，請重新執行 grok login。",
+          "c3d4e5f6a7": "已登入。Orca 唯讀取磁碟上的該檔案；如果使用量取得失敗，請重新執行 grok login。",
           "d4e5f6a7b8": "會話已過期，請在終端機執行 grok login 以重新整理。",
           "e5f6a7b8c9": "未登入 Grok CLI",
           "f6a7b8c9d0": "在終端機執行 grok login，然後點選此處的重新整理使用量。",
@@ -11342,7 +11342,7 @@
           "update": "更新",
           "title": "更新遠端 Orca 伺服器",
           "description": "檢視已配對的伺服器，並從此 Orca 客戶端更新受支援的安裝。",
-          "restartWarning": "更新將重啟這些伺服器。{{value0}} 個活動分頁和 {{value1}} 個終端機窗格可能會短暫斷開連線。",
+          "restartWarning": "更新將重啟這些伺服器。{{value0}} 個活動分頁和 {{value1}} 個終端機窗格可能會短暫中斷連線。",
           "checking": "正在檢查已配對的伺服器…",
           "empty": "沒有已配對的遠端 Orca 伺服器。",
           "checkAgain": "再次檢查",
@@ -11654,7 +11654,7 @@
           "noteSlashBody": "在聊天中使用 /orca-linear（或用自然語言提出請求），代理會在該輪載入此技能。",
           "noteKeysTitle": "金鑰按執行環境儲存",
           "noteKeysBody": "API 金鑰和工作區儲存在目前執行環境中。",
-          "noteVisibilityTitle": "隱藏不等於斷開連線",
+          "noteVisibilityTitle": "隱藏不等於中斷連線",
           "noteVisibilityBody": "在任務來源中隱藏 Linear 只會將其從選擇器中移除，不會刪除金鑰或技能。",
           "setupChecking": "檢查中…",
           "setupUnverified": "無法驗證"
@@ -12154,7 +12154,7 @@
             "2f4483d6c4": "沒有檔案匹配此篩選條件"
           },
           "FileExplorerBackgroundMenu": {
-            "3b5e2dcb8d": "新建資料夾",
+            "3b5e2dcb8d": "新增資料夾",
             "21fe46ed36": "新檔案"
           },
           "FileExplorerRow": {
@@ -12168,7 +12168,7 @@
             "dd112c81d2": "在 Orca 瀏覽器中開啟",
             "1bb9be455c": "新增為專案...",
             "0fec99bfd7": "建立副本",
-            "f61af83316": "新建資料夾",
+            "f61af83316": "新增資料夾",
             "37c875d827": "新檔案",
             "b3e288bf41": "無法下載“{{value0}}”。",
             "f729bcd97d": "無法下載資料夾“{{value0}}”。",
@@ -12410,7 +12410,7 @@
             "e868cec4e1": "生成…",
             "b355e740b2": "停止生成 {{value0}} 詳細資訊",
             "527e130b6f": "停止生成",
-            "e1970d327d": "新建 {{value0}}",
+            "e1970d327d": "新增 {{value0}}",
             "f4c766f1ca": "為此執行選擇代理和提示詞範本。",
             "1a6a6e0bc5": "生成託管評論詳細資訊",
             "6b122529d4": "生成提交訊息",
@@ -12825,8 +12825,8 @@
                 },
                 "skipped": {
                   "disconnected": {
-                    "title": "主機已斷開連線",
-                    "body": "此儲存庫的執行主機已斷開連線，Orca 無法重新整理 {{reviewLabel}} 狀態。"
+                    "title": "主機已中斷連線",
+                    "body": "此儲存庫的執行主機已中斷連線，Orca 無法重新整理 {{reviewLabel}} 狀態。"
                   },
                   "bare": {
                     "title": "裸儲存庫",
@@ -13994,7 +13994,7 @@
             "d33d7a9c29": "Orca / mobile頁面",
             "25d6e8a491": "mobile頁面",
             "c791677f2f": "恢復",
-            "cf3f98fa3f": "已斷開連線",
+            "cf3f98fa3f": "已中斷連線",
             "091355da3d": "M1迷你·家",
             "0bc1881bc4": "已連線 · 40 個工作樹 · 5 個活動樹",
             "19c212e25e": "MacBook Pro",
@@ -14662,7 +14662,7 @@
               "stream": {
                 "content": {
                   "8b1a0d8694": "模擬器預覽",
-                  "36841af608": "流已斷開連線",
+                  "36841af608": "流已中斷連線",
                   "5f818f12ab": "正在連線模擬器...",
                   "5ee64cd44e": "模擬器螢幕"
                 }
@@ -15171,7 +15171,7 @@
           "fd97c7e585": "替換",
           "44682b4159": "在 Markdown 編輯器中替換",
           "c2884f5e95": "全部替換",
-          "preservedRichContentReadOnly": "保留的富文本內容在富文本模式下為只讀。"
+          "preservedRichContentReadOnly": "保留的富文本內容在富文本模式下為唯讀。"
         },
         "RichMarkdownSlashMenu": {
           "82c6816ff8": "沒有找到塊",
@@ -16160,7 +16160,7 @@
           "376631ef2b": "恢復",
           "b457436d6a": "暫停",
           "0ae52dd760": "Hermes",
-          "e059042585": "只讀",
+          "e059042585": "唯讀",
           "aecdc3681f": "易於管理",
           "8500baacb4": "外部來源",
           "36f71740a7": "選定的工作區",
@@ -16192,7 +16192,7 @@
           "tableHost": "主機",
           "tableStatus": "狀態",
           "tableActions": "操作",
-          "newAutomation": "新建自動化",
+          "newAutomation": "新增自動化",
           "rowActions": "自動化操作",
           "tableLastRun": "最後一次執行",
           "noListMatches": "沒有自動化匹配。",
@@ -16228,7 +16228,7 @@
           "2b0adbce21": "已暫停",
           "b3feba84c7": "目前",
           "92405f1431": "不可用",
-          "dbdcec22bd": "只讀",
+          "dbdcec22bd": "唯讀",
           "0a2d4359a8": "易於管理",
           "330b3c32e8": "可用的",
           "e2532150ed": "自動化",
@@ -16767,7 +16767,7 @@
               "linear": {
                 "issue": {
                   "dialog": {
-                    "dialogTitle": "新建 Linear 議題",
+                    "dialogTitle": "新增 Linear 議題",
                     "dialogDescription": "為所選團隊建立 Linear 議題。"
                   }
                 }
@@ -18136,7 +18136,7 @@
       "certificateChallengeChanged": "證書請求已更改。請重試該頁面並檢視新的警告。",
       "certificateChallengeUnavailable": "此證書請求已不可用。請重試該頁面以重新請求。",
       "certificateProceedFailed": "Orca 無法核准此證書請求。請重試該頁面後再試。",
-      "sshRoutedHint": "此頁面瀏覽工作區的 SSH 主機 - 該主機可能已斷開連線或無法訪問此站點。",
+      "sshRoutedHint": "此頁面瀏覽工作區的 SSH 主機 - 該主機可能已中斷連線或無法訪問此站點。",
       "recheckSshRoute": "執行連線檢查"
     },
     "guestRecovery": {
@@ -18223,7 +18223,7 @@
       "detail": "Orca 仍可正常工作，但本會話中 orca status、orca terminal 和編排等命令不可用。\n\n{{guidance}}\n\n原因：{{cause}}",
       "guidance": {
         "permissionDenied": "Orca 無法寫入其執行時檔案。請檢查 Orca 資料資料夾的許可權，然後重啟。",
-        "storageUnavailable": "磁碟可能已滿或為只讀。請釋放空間，然後重啟 Orca。",
+        "storageUnavailable": "磁碟可能已滿或為唯讀。請釋放空間，然後重啟 Orca。",
         "invalidPath": "Orca 的資料資料夾可能缺失、被移動或路徑過長。請恢復它或使用更短的路徑，然後重啟 Orca。",
         "addressInUse": "另一個程序可能佔用了埠。請重啟 Orca 以重試。",
         "unknown": "請重啟 Orca 以重試。"
@@ -18531,7 +18531,7 @@
     "framesEmpty": "程式暫停時會顯示呼叫幀",
     "variables": "變數",
     "variablesEmpty": "程式暫停時會顯示變數",
-    "console": "控制台",
+    "console": "主控台",
     "action": {
       "debugFile": "除錯 '{{value0}}'",
       "resume": "恢復程式",
@@ -18582,7 +18582,7 @@
     "resize": {
       "frames": "調整棧幀寬度",
       "watches": "調整監視區高度",
-      "sidePane": "調整控制台和斷點寬度"
+      "sidePane": "調整主控台和斷點寬度"
     }
   },
   "run": {
@@ -18760,6 +18760,116 @@
     },
     "action": {
       "runFile": "執行 '{{value0}}'"
+    }
+  },
+  "database": {
+    "connection": {
+      "missing": "已刪除的連線"
+    },
+    "connectionDialog": {
+      "cancel": "取消",
+      "description": "連線從這台電腦發起。儲存後不會再顯示密碼。",
+      "editTitle": "編輯 PostgreSQL 連線",
+      "newTitle": "新增 PostgreSQL 連線",
+      "save": "儲存",
+      "test": "測試連線",
+      "testOk": "已連線到 PostgreSQL {{value0}}",
+      "testing": "正在連線…"
+    },
+    "connectionForm": {
+      "database": "資料庫",
+      "host": "主機",
+      "name": "名稱",
+      "noKeychain": "這個系統沒有安全的密碼儲存，所以密碼只會保留到 Orca 退出為止。",
+      "password": "密碼",
+      "passwordSaved": "已儲存，輸入新密碼即可替換",
+      "port": "埠",
+      "readOnly": "唯讀",
+      "savePassword": "儲存密碼",
+      "ssl": "SSL 模式",
+      "storeForever": "加密儲存",
+      "storeNever": "不儲存",
+      "storeSession": "儲存到 Orca 退出",
+      "user": "使用者"
+    },
+    "console": {
+      "cancel": "取消正在執行的語句",
+      "editorLabel": "SQL 主控台",
+      "errorMarker": "伺服器在這裡報告了錯誤",
+      "resizeResults": "調整結果區大小",
+      "run": "執行",
+      "runAll": "執行所有語句",
+      "runStatement": "執行語句",
+      "runStatementHint": "執行游標所在的語句",
+      "title": "主控台"
+    },
+    "deleteDialog": {
+      "cancel": "取消",
+      "confirm": "刪除",
+      "description": "這會從 Orca 移除這個連線、它儲存的密碼和主控台。資料庫本身不受影響。",
+      "title": "刪除 {{value0}}？"
+    },
+    "explorer": {
+      "connect": "連線",
+      "copyName": "複製名稱",
+      "copyQualifiedName": "複製完整名稱",
+      "deleteConnection": "刪除連線…",
+      "disconnect": "中斷連線",
+      "editConnection": "編輯連線…",
+      "empty": "沒有物件",
+      "label": "資料庫物件",
+      "loading": "正在載入…",
+      "newConsole": "新增主控台",
+      "noConnections": "還沒有連線。",
+      "notNull": "not null",
+      "refresh": "重新整理",
+      "toggle": "展開或摺疊"
+    },
+    "grid": {
+      "null": "NULL",
+      "truncated": "只顯示 {{value1}} 個字元中的前 {{value0}} 個"
+    },
+    "output": {
+      "cancelled": "已取消",
+      "command": "{{value0}} 完成，耗時 {{value1}} 毫秒",
+      "commandRows": "{{value0}}：影響 {{value1}} 列，耗時 {{value2}} 毫秒",
+      "empty": "執行語句後，結果會顯示在這裡。",
+      "rows": "取得 {{value0}} 列，耗時 {{value1}} 毫秒"
+    },
+    "page": {
+      "back": "返回",
+      "desktopOnly": "資料庫功能只能在桌面版使用。",
+      "emptyNoConnections": "新增 PostgreSQL 連線，就能瀏覽結構和執行 SQL。",
+      "emptyWithConnections": "開啟主控台來執行 SQL。在連線上點右鍵可以看到更多操作。",
+      "newConnection": "新增連線",
+      "openConsole": "開啟 {{value0}} 的主控台",
+      "resizeExplorer": "調整資料庫瀏覽器寬度",
+      "title": "資料庫"
+    },
+    "passwordDialog": {
+      "cancel": "取消",
+      "connect": "連線",
+      "title": "{{value0}} 的密碼"
+    },
+    "results": {
+      "capped": "只顯示前 {{value0}} 列。加上 LIMIT 或篩選條件才能看到其餘資料。",
+      "duration": "{{value0}} 毫秒",
+      "loadingMore": "正在載入更多…",
+      "output": "輸出",
+      "rowCount": "{{value0}} 列",
+      "tab": "結果 {{value0}}"
+    },
+    "session": {
+      "connected": "已連線",
+      "connecting": "正在連線…",
+      "disconnected": "未連線",
+      "error": "連線失敗"
+    },
+    "statusBar": {
+      "label": "資料庫"
+    },
+    "tabs": {
+      "close": "關閉主控台"
     }
   }
 }
