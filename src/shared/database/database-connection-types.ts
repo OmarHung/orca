@@ -19,9 +19,16 @@ export function isAbsoluteDatabaseFilePath(value: string): boolean {
 }
 
 const nameSchema = z.string().trim().min(1).max(120)
+/** Marks a connection (e.g. production) across the explorer, tabs and toolbars; null is none. */
+const colorSchema = z
+  .string()
+  .regex(/^#[0-9a-f]{6}$/)
+  .nullable()
+  .optional()
 
 const serverFields = {
   name: nameSchema,
+  color: colorSchema,
   host: z.string().trim().min(1).max(255),
   port: z.number().int().min(1).max(65_535),
   database: z.string().trim().max(128),
@@ -54,6 +61,7 @@ export const databaseConnectionDraftSchema = z.discriminatedUnion('driver', [
     .object({
       driver: z.literal('sqlite'),
       name: nameSchema,
+      color: colorSchema,
       filePath: z.string().min(1).max(4096).refine(isAbsoluteDatabaseFilePath, 'absolute path'),
       readOnly: z.boolean()
     })

@@ -6,6 +6,7 @@ import {
   type DatabaseDriver
 } from '../../../../../shared/database/database-connection-types'
 import type { DatabaseEncryptionStatus } from '../../../../../shared/database/database-session-types'
+import { DatabaseConnectionColorField } from './DatabaseConnectionColorField'
 import { DatabaseServerFields } from './DatabaseServerFields'
 import { DatabaseSqliteFields } from './DatabaseSqliteFields'
 import {
@@ -53,6 +54,7 @@ export function DatabaseConnectionForm(props: FormProps): React.JSX.Element {
       ) : (
         <DatabaseServerFields {...props} />
       )}
+      <DatabaseConnectionColorField value={form.color} onChange={(color) => onChange({ color })} />
     </div>
   )
 }
