@@ -1,11 +1,10 @@
 import React from 'react'
-import { RotateCcw, Square } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
-import { stopDebugSession } from '../debug/debug-session-controller'
 import { RunStatusDot } from './RunStatusDot'
 import { ControlButton } from './RunSessionControls'
 
-/** Status, Restart and Stop for the item's debug session, mirroring the run controls. */
+/** Status and Restart for the item's debug session; the widget's Stop control stops it. */
 export function DebugSessionControls({
   label,
   onRestart
@@ -27,16 +26,6 @@ export function DebugSessionControls({
           }),
           testId: 'run-debug-restart',
           onClick: onRestart
-        }}
-      />
-      <ControlButton
-        action={{
-          icon: Square,
-          label: translate('run.debug.stop', "Stop debugging '{{value0}}'", {
-            value0: label
-          }),
-          testId: 'run-debug-stop',
-          onClick: () => void stopDebugSession()
         }}
       />
     </div>
