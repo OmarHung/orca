@@ -18764,8 +18764,7 @@
   },
   "database": {
     "connection": {
-      "missing": "已刪除的連線",
-      "readOnly": "唯讀"
+      "missing": "已刪除的連線"
     },
     "connectionDialog": {
       "cancel": "取消",
@@ -18795,9 +18794,7 @@
       "password": "密碼",
       "passwordSaved": "已儲存，輸入新密碼即可替換",
       "port": "埠",
-      "readOnly": "唯讀",
       "savePassword": "儲存密碼",
-      "sqlServerReadOnly": "SQL Server 無法把連線設為唯讀，所以 Orca 會拒絕看起來會寫入資料的語句。這是一道保險，不是保證。",
       "sshEmpty": "還沒有儲存的 SSH 主機。在設定中新增後就能透過它連線。",
       "sshHint": "主機和埠以 SSH 主機的角度填寫，例如 localhost 或內部網路位址。",
       "sshNone": "不使用（直接連線）",
@@ -18920,6 +18917,8 @@
       "emptyWithConnections": "開啟主控台來執行 SQL。在連線上點右鍵可以看到更多操作。",
       "newConnection": "新增連線",
       "openConsole": "開啟 {{value0}} 的主控台",
+      "readOnly": "唯讀",
+      "readOnlyHint": "Orca 只會讀取你的資料庫，會修改資料庫的語句不會執行。",
       "resizeExplorer": "調整資料庫瀏覽器寬度",
       "title": "資料庫"
     },
@@ -18957,23 +18956,6 @@
     },
     "tabs": {
       "close": "關閉主控台"
-    },
-    "transaction": {
-      "auto": "自動提交",
-      "commit": "提交",
-      "failed": "交易失敗，請回滾",
-      "lost": "連線已關閉，未提交的交易已回滾，其中的更改都沒有儲存。",
-      "manual": "手動提交",
-      "mode": "交易模式",
-      "open": "交易進行中",
-      "rollBack": "回滾"
-    },
-    "transactionDialog": {
-      "cancel": "取消",
-      "commit": "提交並關閉",
-      "description": "{{value0}} 有進行中的交易，關閉會回滾所有未提交的內容。",
-      "rollBack": "回滾並關閉",
-      "title": "關閉有未提交交易的主控台？"
     },
     "viewer": {
       "copy": "複製值",

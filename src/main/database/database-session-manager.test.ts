@@ -22,7 +22,6 @@ const connection: DatabaseConnection = {
   database: 'app',
   user: 'dev',
   sslMode: 'disable',
-  readOnly: false,
   passwordStorage: 'never',
   createdAt: 0,
   updatedAt: 0

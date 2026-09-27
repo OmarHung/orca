@@ -24,7 +24,6 @@ const draft: DatabaseConnectionDraft = {
   database: 'app',
   user: 'dev',
   sslMode: 'disable',
-  readOnly: false,
   passwordStorage: 'forever'
 }
 
@@ -141,7 +140,7 @@ describe('DatabaseService', () => {
     expect((await service.connect(id)).ok).toBe(true)
     expect(connectPasswords).toHaveLength(1)
 
-    await service.saveConnection({ id, draft: { ...draft, name: 'Renamed', readOnly: true } })
+    await service.saveConnection({ id, draft: { ...draft, name: 'Renamed', port: 5433 } })
     expect((await service.connect(id)).ok).toBe(true)
     expect(connectPasswords).toHaveLength(2)
   })
