@@ -1,5 +1,6 @@
 import { createBrowserUuid } from '@/lib/browser-uuid'
 import { DATABASE_CONNECTION_ID_PATTERN } from '../../../../shared/database/database-connection-types'
+import type { DatabaseTransactionMode } from '../../../../shared/database/database-query-types'
 import { DATABASE_CONSOLE_ID_PATTERN } from '../../../../shared/database/database-session-types'
 
 /** What the run store needs: a tab and the server session its statements run on. */
@@ -7,7 +8,10 @@ export type DatabaseRunTarget = { id: string; connectionId: string; consoleId: s
 
 type TabBase = DatabaseRunTarget & { title: string }
 
-export type DatabaseConsoleTab = TabBase & { kind: 'console' }
+export type DatabaseConsoleTab = TabBase & {
+  kind: 'console'
+  transactionMode: DatabaseTransactionMode
+}
 
 export type DatabaseTableTab = TabBase & {
   kind: 'table'
@@ -27,7 +31,8 @@ export function newConsoleTab(connectionId: string, title: string): DatabaseCons
     id: createBrowserUuid(),
     connectionId,
     consoleId: createBrowserUuid(),
-    title
+    title,
+    transactionMode: 'auto'
   }
 }
 
@@ -82,7 +87,8 @@ export function readPersistedTab(value: unknown): DatabaseTab | null {
     return null
   }
   if (field(value, 'kind') !== 'table') {
-    return { kind: 'console', id, connectionId, consoleId, title }
+    const transactionMode = field(value, 'transactionMode') === 'manual' ? 'manual' : 'auto'
+    return { kind: 'console', id, connectionId, consoleId, title, transactionMode }
   }
   const schema = field(value, 'schema')
   const relation = field(value, 'relation')
