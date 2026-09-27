@@ -18870,6 +18870,7 @@
     },
     "explorer": {
       "connect": "連線",
+      "connections": "連線",
       "copyName": "複製名稱",
       "copyQualifiedName": "複製完整名稱",
       "deleteConnection": "刪除連線…",
@@ -18881,6 +18882,7 @@
       "keys": "鍵",
       "label": "資料庫物件",
       "loading": "正在載入…",
+      "newConnection": "新增連線…",
       "newConsole": "新增主控台",
       "noConnections": "還沒有連線。",
       "notNull": "not null",
