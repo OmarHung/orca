@@ -1,4 +1,5 @@
 import type { DatabaseConnectionDraft } from './database-connection-types'
+import type { DatabaseJobEvent } from './database-script-types'
 import type { DatabaseTransactionMode } from './database-query-types'
 import type { TableChangeSet } from './table-change-sql'
 
@@ -12,6 +13,9 @@ export type DatabaseSessionEvent = {
   message?: string
   serverVersion?: string
 }
+
+/** Everything main pushes on the `database:event` channel. */
+export type DatabasePageEvent = DatabaseSessionEvent | DatabaseJobEvent
 
 export type DatabaseSaveConnectionRequest = {
   /** Absent creates a new connection. */
