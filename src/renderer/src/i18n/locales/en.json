@@ -19377,6 +19377,8 @@
     },
     "connectionForm": {
       "browse": "Browse…",
+      "color": "Color",
+      "colorHint": "Tints this connection’s tabs and toolbars, e.g. red for production.",
       "database": "Database",
       "driver": "Type",
       "file": "Database file",
@@ -19384,6 +19386,7 @@
       "filePlaceholder": "/path/to/app.db",
       "host": "Host",
       "name": "Name",
+      "noColor": "No color",
       "noKeychain": "This system has no secure password storage, so passwords are kept only until Orca quits.",
       "password": "Password",
       "passwordSaved": "Saved — type to replace",
@@ -19400,6 +19403,7 @@
       "storeForever": "Save securely",
       "storeNever": "Never",
       "storeSession": "Until Orca quits",
+      "useColor": "Use color {{value0}}",
       "user": "User"
     },
     "console": {

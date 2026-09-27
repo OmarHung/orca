@@ -19309,6 +19309,8 @@
     },
     "connectionForm": {
       "browse": "浏览…",
+      "color": "颜色",
+      "colorHint": "为这个连接的标签页和工具栏着色，例如用红色标示生产环境。",
       "database": "数据库",
       "driver": "种类",
       "file": "数据库文件",
@@ -19316,6 +19318,7 @@
       "filePlaceholder": "/path/to/app.db",
       "host": "主机",
       "name": "名称",
+      "noColor": "无颜色",
       "noKeychain": "这个系统没有安全的密码存储，所以密码只会保留到 Orca 退出为止。",
       "password": "密码",
       "passwordSaved": "已保存，输入新密码即可替换",
@@ -19332,6 +19335,7 @@
       "storeForever": "加密保存",
       "storeNever": "不保存",
       "storeSession": "保存到 Orca 退出",
+      "useColor": "使用颜色 {{value0}}",
       "user": "用户"
     },
     "console": {
