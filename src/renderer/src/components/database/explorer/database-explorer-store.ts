@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { asDatabaseResult, useDatabaseConnectionsStore } from '../database-connections-store'
+import { invalidateSqlCatalog } from '../console/sql-completion-catalog'
 import {
   childNodesFor,
   connectionNode,
@@ -73,7 +74,11 @@ export const useDatabaseExplorerStore = create<DatabaseExplorerState>((set, get)
       }
     },
 
-    refresh: (node) => load(node),
+    refresh: (node) => {
+      // A manual refresh is how users pick up changes made elsewhere; completion should too.
+      invalidateSqlCatalog(node.connectionId)
+      return load(node)
+    },
 
     showConnected: async (connectionId) => {
       const node = connectionNode(connectionId)
