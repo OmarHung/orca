@@ -144,10 +144,11 @@ export function DatabaseExplorerRow({
           )}
           style={{ paddingLeft: row.depth * INDENT_PX + 4 }}
         >
+          {/* Why aria-hidden: the row's aria-expanded already says this, and it takes no focus. */}
           <button
             type="button"
             tabIndex={-1}
-            aria-label={translate('database.explorer.toggle', 'Expand or collapse')}
+            aria-hidden="true"
             onClick={() => onToggle(node)}
             className={cn(
               'flex size-4 shrink-0 items-center justify-center',
