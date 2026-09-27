@@ -23,6 +23,7 @@ const {
   registerShellHandlersMock,
   registerPetHandlersMock,
   registerDebugHandlersMock,
+  registerDatabaseHandlersMock,
   registerSessionHandlersMock,
   registerUIHandlersMock,
   setTrustedUIRendererWebContentsIdMock,
@@ -96,6 +97,7 @@ const {
   registerShellHandlersMock: vi.fn(),
   registerPetHandlersMock: vi.fn(),
   registerDebugHandlersMock: vi.fn(),
+  registerDatabaseHandlersMock: vi.fn(),
   registerSessionHandlersMock: vi.fn(),
   registerUIHandlersMock: vi.fn(),
   setTrustedUIRendererWebContentsIdMock: vi.fn(),
@@ -284,6 +286,10 @@ vi.mock('../shell', () => ({
 
 vi.mock('../../debug/debug-ipc', () => ({
   registerDebugHandlers: registerDebugHandlersMock
+}))
+
+vi.mock('../../database/database-ipc', () => ({
+  registerDatabaseHandlers: registerDatabaseHandlersMock
 }))
 
 vi.mock('../pets/pet', () => ({
@@ -495,6 +501,7 @@ describe('registerCoreHandlers', () => {
     registerShellHandlersMock.mockReset()
     registerPetHandlersMock.mockReset()
     registerDebugHandlersMock.mockReset()
+    registerDatabaseHandlersMock.mockReset()
     registerSessionHandlersMock.mockReset()
     registerUIHandlersMock.mockReset()
     setTrustedUIRendererWebContentsIdMock.mockReset()
@@ -595,6 +602,7 @@ describe('registerCoreHandlers', () => {
 
     registeredRelaunchExit = registerAppHandlersMock.mock.calls[0]?.[1]?.onBeforeRelaunchExit
     expect(registerDebugHandlersMock).toHaveBeenCalled()
+    expect(registerDatabaseHandlersMock).toHaveBeenCalled()
 
     await expect(
       aiVaultOptions.scanRuntimeAiVaultSessions(
