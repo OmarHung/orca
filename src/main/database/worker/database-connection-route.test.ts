@@ -10,7 +10,6 @@ const server: DatabaseConnectionDraft = {
   database: 'app',
   user: 'dev',
   sslMode: 'verify-full',
-  readOnly: false,
   passwordStorage: 'never',
   sshTunnel: { targetId: 'ssh-1' }
 }
@@ -29,8 +28,7 @@ describe('routeThroughTunnel', () => {
     const file: DatabaseConnectionDraft = {
       driver: 'sqlite',
       name: 'app.db',
-      filePath: '/tmp/app.db',
-      readOnly: false
+      filePath: '/tmp/app.db'
     }
     expect(routeThroughTunnel(file, 41000)).toBe(file)
   })

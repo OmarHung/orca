@@ -23,7 +23,6 @@ export type DatabaseConnectionFormState = {
   passwordEdited: boolean
   passwordStorage: DatabasePasswordStorage
   sslMode: DatabaseSslMode
-  readOnly: boolean
   filePath: string
   /** Saved SSH host to tunnel through, or `NO_SSH_TUNNEL`. */
   sshTargetId: string
@@ -62,7 +61,6 @@ export function initialConnectionForm(
     passwordEdited: false,
     passwordStorage: canStorePasswords ? 'forever' : 'session',
     sslMode: 'prefer',
-    readOnly: false,
     filePath: '',
     sshTargetId: NO_SSH_TUNNEL
   }
@@ -75,7 +73,6 @@ export function initialConnectionForm(
       driver: 'sqlite',
       name: existing.name,
       color: existing.color ?? null,
-      readOnly: existing.readOnly,
       filePath: existing.filePath
     }
   }
@@ -90,7 +87,6 @@ export function initialConnectionForm(
     user: existing.user,
     passwordStorage: existing.passwordStorage,
     sslMode: existing.sslMode,
-    readOnly: existing.readOnly,
     sshTargetId: existing.sshTunnel?.targetId ?? NO_SSH_TUNNEL
   }
 }
@@ -135,8 +131,7 @@ function candidateDraft(form: DatabaseConnectionFormState): unknown {
       driver: 'sqlite',
       name,
       color: form.color,
-      filePath: form.filePath.trim(),
-      readOnly: form.readOnly
+      filePath: form.filePath.trim()
     }
   }
   const port = Number(form.port)
@@ -149,7 +144,6 @@ function candidateDraft(form: DatabaseConnectionFormState): unknown {
     database: form.database.trim(),
     user: form.user,
     sslMode: form.sslMode,
-    readOnly: form.readOnly,
     passwordStorage: form.passwordStorage,
     sshTunnel: form.sshTargetId === NO_SSH_TUNNEL ? null : { targetId: form.sshTargetId }
   }
@@ -191,7 +185,6 @@ const FORM_FIELDS = [
   'passwordEdited',
   'passwordStorage',
   'sslMode',
-  'readOnly',
   'filePath'
 ] as const satisfies readonly (keyof DatabaseConnectionFormState)[]
 
