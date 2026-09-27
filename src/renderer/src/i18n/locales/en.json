@@ -18830,11 +18830,26 @@
       "newConsole": "New Console",
       "noConnections": "No connections yet.",
       "notNull": "not null",
+      "openData": "Open Data",
       "refresh": "Refresh",
       "toggle": "Expand or collapse"
     },
     "grid": {
+      "copy": "Copy",
+      "copyAs": "Copy As",
+      "copyWithHeaders": "Copy with Headers",
+      "exportAs": "{{value0}}…",
+      "exportFailed": "Export failed",
+      "exportLoaded": "Export Loaded Rows",
+      "exported": "Exported {{value0}} rows",
+      "formatCsv": "CSV",
+      "formatJson": "JSON",
+      "formatSql": "SQL INSERT",
+      "formatTsv": "TSV",
       "null": "NULL",
+      "resizeColumn": "Resize column {{value0}}",
+      "selectAll": "Select all",
+      "showValue": "Show Value",
       "truncated": "Showing the first {{value0}} of {{value1}} characters"
     },
     "output": {
@@ -18880,8 +18895,24 @@
     "statusBar": {
       "label": "Database"
     },
+    "table": {
+      "countMissing": "The count query returned no rows.",
+      "countRows": "Count rows",
+      "counting": "Counting…",
+      "orderByPlaceholder": "e.g. created_at desc",
+      "refresh": "Refresh",
+      "totalRows": "{{value0}} total",
+      "wherePlaceholder": "e.g. id > 100"
+    },
     "tabs": {
-      "close": "Close console"
+      "close": "Close tab"
+    },
+    "viewer": {
+      "copy": "Copy value",
+      "empty": "Select a cell to see its value.",
+      "resize": "Resize value viewer",
+      "title": "Value",
+      "toggle": "Value viewer"
     }
   }
 }
