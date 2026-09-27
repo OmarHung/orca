@@ -215,7 +215,8 @@ export async function runDump(run: DumpRun): Promise<DatabaseDumpSummary> {
     return await execute(run, writer, startedAt)
   } catch (error) {
     await run.output.discard()
-    if (!(error instanceof DumpCancelled)) {
+    // Why also isCancelled: a cancel that stops a read in flight surfaces as the driver's error.
+    if (!(error instanceof DumpCancelled) && !run.isCancelled()) {
       throw error
     }
     return {
