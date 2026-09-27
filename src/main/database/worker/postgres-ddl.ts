@@ -5,7 +5,7 @@ import { qualifiedRelationName, quoteSqlName } from '../../../shared/database/sq
 const POSTGRES_10 = 100_000
 const POSTGRES_12 = 120_000
 
-const RELATION_SQL = `
+export const POSTGRES_RELATION_SQL = `
   select c.oid, c.relkind
   from pg_catalog.pg_class c
   join pg_catalog.pg_namespace n on n.oid = c.relnamespace
@@ -27,7 +27,7 @@ function columnsSql(serverVersionNum: number): string {
 
 // NOT NULL (PG 18's contype 'n') is already on the column lines.
 const CONSTRAINTS_SQL = `
-  select conname as name, pg_catalog.pg_get_constraintdef(oid, true) as definition
+  select conname as name, contype as kind, pg_catalog.pg_get_constraintdef(oid, true) as definition
   from pg_catalog.pg_constraint
   where conrelid = $1::oid and contype in ('p', 'u', 'c', 'x', 'f')
   order by case contype when 'p' then 0 when 'u' then 1 when 'c' then 2 when 'x' then 3 else 4 end,
@@ -80,24 +80,33 @@ function withSemicolon(sql: string): string {
   return trimmed.endsWith(';') ? trimmed : `${trimmed};`
 }
 
-async function tableDdl(
+export type PostgresTableDdl = {
+  create: string
+  indexes: string[]
+  /** ALTER TABLE … ADD CONSTRAINT statements, when asked to keep foreign keys apart. */
+  foreignKeys: string[]
+}
+
+export async function postgresTableDdl(
   client: pg.Client,
-  oid: number,
-  relkind: string,
-  name: string,
-  serverVersionNum: number
-): Promise<string> {
+  { oid, relkind, name }: { oid: number; relkind: string; name: string },
+  serverVersionNum: number,
+  options: { separateForeignKeys?: boolean } = {}
+): Promise<PostgresTableDdl> {
   // One after another: a pg client runs one query at a time anyway, and pg@9 refuses overlap.
   const columns = await client.query<ColumnRow>(columnsSql(serverVersionNum), [oid])
-  const constraints = await client.query<{ name: string; definition: string }>(CONSTRAINTS_SQL, [
-    oid
-  ])
+  const constraints = await client.query<{ name: string; kind: string; definition: string }>(
+    CONSTRAINTS_SQL,
+    [oid]
+  )
   const indexes = await client.query<{ definition: string }>(INDEXES_SQL, [oid])
+  const constraint = (row: { name: string; definition: string }): string =>
+    `CONSTRAINT ${quoteSqlName(row.name, 'postgres')} ${row.definition}`
+  const apart = (row: { kind: string }): boolean =>
+    options.separateForeignKeys === true && row.kind === 'f'
   const lines = [
     ...columns.rows.map(columnLine),
-    ...constraints.rows.map(
-      (row) => `CONSTRAINT ${quoteSqlName(row.name, 'postgres')} ${row.definition}`
-    )
+    ...constraints.rows.filter((row) => !apart(row)).map(constraint)
   ]
   let suffix = ''
   if (relkind === 'p') {
@@ -117,8 +126,13 @@ async function tableDdl(
       : ''
   }
   const create = relkind === 'f' ? 'CREATE FOREIGN TABLE' : 'CREATE TABLE'
-  const table = `${create} ${name} (\n${lines.map((line) => `    ${line}`).join(',\n')}\n)${suffix};`
-  return [table, ...indexes.rows.map((row) => withSemicolon(row.definition))].join('\n\n')
+  return {
+    create: `${create} ${name} (\n${lines.map((line) => `    ${line}`).join(',\n')}\n)${suffix};`,
+    indexes: indexes.rows.map((row) => withSemicolon(row.definition)),
+    foreignKeys: constraints.rows
+      .filter(apart)
+      .map((row) => `ALTER TABLE ${name} ADD ${constraint(row)};`)
+  }
 }
 
 export async function postgresDdl(
@@ -133,7 +147,7 @@ export async function postgresDdl(
     )
     return result.rows[0]?.definition.trim() ?? ''
   }
-  const relation = await client.query<{ oid: number; relkind: string }>(RELATION_SQL, [
+  const relation = await client.query<{ oid: number; relkind: string }>(POSTGRES_RELATION_SQL, [
     target.schema,
     target.relation
   ])
@@ -155,5 +169,6 @@ export async function postgresDdl(
     const indexes = await client.query<{ definition: string }>(INDEXES_SQL, [row.oid])
     return [body, ...indexes.rows.map((index) => withSemicolon(index.definition))].join('\n\n')
   }
-  return tableDdl(client, row.oid, row.relkind, name, serverVersionNum)
+  const table = await postgresTableDdl(client, { ...row, name }, serverVersionNum)
+  return [table.create, ...table.indexes].join('\n\n')
 }
