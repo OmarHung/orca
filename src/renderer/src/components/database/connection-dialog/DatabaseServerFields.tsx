@@ -8,6 +8,7 @@ import {
 import type { DatabaseEncryptionStatus } from '../../../../../shared/database/database-session-types'
 import type { DatabaseConnectionFormState } from './database-connection-form-state'
 import { SelectField, SwitchField, TextField } from './database-form-controls'
+import { DatabaseSshTunnelField } from './DatabaseSshTunnelField'
 
 type ServerFieldsProps = {
   form: DatabaseConnectionFormState
@@ -79,6 +80,10 @@ export function DatabaseServerFields(props: ServerFieldsProps): React.JSX.Elemen
   const sslModes = form.driver === 'sqlserver' ? SQLSERVER_SSL_MODES : DATABASE_SSL_MODES
   return (
     <>
+      <DatabaseSshTunnelField
+        value={form.sshTargetId}
+        onChange={(sshTargetId) => onChange({ sshTargetId })}
+      />
       <div className="grid grid-cols-[1fr_6rem] gap-3">
         <TextField
           label={translate('database.connectionForm.host', 'Host')}
