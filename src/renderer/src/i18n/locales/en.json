@@ -16838,7 +16838,7 @@
           "title": "Structure",
           "noFile": "Open a file in the editor to see its structure.",
           "notLoaded": "Structure appears once the file is shown in the editor.",
-          "unsupported": "Structure is available for TypeScript, JavaScript, Python and C# files.",
+          "unsupported": "Structure isn't available for this file type.",
           "error": "Couldn't read this file's structure.",
           "empty": "No symbols in this file.",
           "collapseAll": "Collapse All",

@@ -16682,7 +16682,7 @@
           "title": "结构",
           "noFile": "在编辑器中打开文件以查看其结构。",
           "notLoaded": "文件在编辑器中显示后即可查看结构。",
-          "unsupported": "结构视图支持 TypeScript、JavaScript、Python 和 C# 文件。",
+          "unsupported": "此文件类型不支持结构视图。",
           "error": "无法读取此文件的结构。",
           "empty": "此文件中没有符号。",
           "collapseAll": "全部折叠",
