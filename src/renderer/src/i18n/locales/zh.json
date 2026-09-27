@@ -19360,8 +19360,7 @@
       "noConnections": "还没有连接。",
       "notNull": "not null",
       "openData": "打开数据",
-      "refresh": "刷新",
-      "toggle": "展开或折叠"
+      "refresh": "刷新"
     },
     "grid": {
       "copy": "复制",
