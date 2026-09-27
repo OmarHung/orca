@@ -10,7 +10,12 @@ const mocks = vi.hoisted(() => ({
     openFiles: []
   },
   runConfiguration: vi.fn(async () => {}),
-  runConfigurationAndWait: vi.fn(async () => ({ status: 'succeeded', exitCode: 0 })),
+  runConfigurationAndWait: vi.fn(
+    async (): Promise<{ status: string; exitCode: number | null }> => ({
+      status: 'succeeded',
+      exitCode: 0
+    })
+  ),
   debugLaunchTarget: vi.fn(async () => {}),
   confirmSharedRunConfigurations: vi.fn(async () => 'run'),
   toastError: vi.fn()
@@ -34,7 +39,7 @@ vi.mock('./run-configuration-control', () => ({
   runConfigurationAndWait: mocks.runConfigurationAndWait
 }))
 
-import { launchRunConfiguration } from './run-configuration-launcher'
+import { cancelPendingLaunches, launchRunConfiguration } from './run-configuration-launcher'
 import { useRunConfigurationStore } from './run-configuration-store'
 
 const launch = (reference: string) =>
@@ -82,6 +87,7 @@ describe('launchRunConfiguration', () => {
     expect(mocks.debugLaunchTarget).toHaveBeenCalledWith({
       worktreeId: 'wt',
       title: 'API',
+      sourceKey: 'config:api',
       target: { kind: 'dotnet-program', program: '/repo/wt/bin/Api.dll' },
       cwd: '/repo/wt',
       launchOptions: { env: { PORT: '5000' } }
@@ -144,5 +150,52 @@ describe('launchRunConfiguration', () => {
     await launch('outer')
     expect(mocks.confirmSharedRunConfigurations).toHaveBeenCalled()
     expect(mocks.runConfiguration).not.toHaveBeenCalled()
+  })
+
+  it('stops starting sequential members once the launch is cancelled', async () => {
+    const state = useRunConfigurationStore.getState()
+    useRunConfigurationStore.setState({
+      localByRepo: {
+        repo1: [
+          ...(state.localByRepo.repo1 ?? []),
+          {
+            type: 'compound',
+            id: 'seq',
+            name: 'Seq',
+            configurations: ['build', 'web'],
+            sequential: true,
+            waitAfter: { build: { kind: 'exit' } }
+          }
+        ]
+      }
+    })
+    let finishBuild: (exit: { status: string; exitCode: number | null }) => void = () => {}
+    mocks.runConfigurationAndWait.mockImplementationOnce(
+      () => new Promise((resolve) => (finishBuild = resolve))
+    )
+    const launched = launch('seq')
+    await vi.waitFor(() => expect(mocks.runConfigurationAndWait).toHaveBeenCalled())
+    cancelPendingLaunches('wt')
+    finishBuild({ status: 'stopped', exitCode: null })
+    await launched
+    expect(mocks.runConfiguration).not.toHaveBeenCalled()
+    // Why no toast: the user stopped it; a failure message would be noise.
+    expect(mocks.toastError).not.toHaveBeenCalled()
+  })
+
+  it('lets a new launch replace one of the same configuration that is still starting', async () => {
+    let finishStep: (exit: { status: string; exitCode: number | null }) => void = () => {}
+    mocks.runConfigurationAndWait.mockImplementationOnce(
+      () => new Promise((resolve) => (finishStep = resolve))
+    )
+    const first = launch('api')
+    await vi.waitFor(() => expect(mocks.runConfigurationAndWait).toHaveBeenCalledTimes(1))
+    const second = launch('api')
+    // The rerun restarts the step, which ends the first launch's wait as stopped.
+    await vi.waitFor(() => expect(mocks.runConfigurationAndWait).toHaveBeenCalledTimes(2))
+    finishStep({ status: 'stopped', exitCode: null })
+    await Promise.all([first, second])
+    expect(mocks.debugLaunchTarget).toHaveBeenCalledTimes(1)
+    expect(mocks.toastError).not.toHaveBeenCalled()
   })
 })

@@ -17,7 +17,14 @@ export type RunSession = {
   tabId: string
   status: RunSessionStatus
   exitCode: number | null
+  /** Stop already sent the forceful signals; the next press closes the terminal. */
+  forceStopped?: boolean
 }
+
+/** What the next Stop press does: Ctrl-C, then Ctrl-C with SIGQUIT, then closing the terminal. */
+export type RunStopStage = 'interrupt' | 'force' | 'close'
+
+const STOP_STAGE_ORDER: readonly RunStopStage[] = ['interrupt', 'force', 'close']
 
 export function runSessionKey(worktreeId: string, commandKey: string): string {
   return `${worktreeId}\u0000${commandKey}`
@@ -25,6 +32,18 @@ export function runSessionKey(worktreeId: string, commandKey: string): string {
 
 export function isRunSessionActive(status: RunSessionStatus): boolean {
   return status === 'running' || status === 'stopping'
+}
+
+export function runStopStage(session: RunSession): RunStopStage {
+  if (session.status !== 'stopping') {
+    return 'interrupt'
+  }
+  return session.forceStopped ? 'close' : 'force'
+}
+
+/** The gentlest next step among several runs, so one press never skips a run's gentler step. */
+export function gentlestStopStage(stages: readonly RunStopStage[]): RunStopStage | null {
+  return STOP_STAGE_ORDER.find((stage) => stages.includes(stage)) ?? null
 }
 
 export function finishRunSession(session: RunSession, exitCode: number | null): RunSession {
@@ -46,6 +65,7 @@ type RunSessionState = {
   sessionsByKey: Record<string, RunSession>
   upsertSession: (session: RunSession) => void
   setStatus: (key: string, status: RunSessionStatus) => void
+  markForceStopped: (key: string) => void
   /** Returns the session that finished, if the tab belonged to an active run. */
   finishByTab: (tabId: string, exitCode: number | null) => RunSession | null
 }
@@ -60,6 +80,12 @@ export const useRunSessionStore = create<RunSessionState>((set, get) => ({
     const session = get().sessionsByKey[key]
     if (session) {
       set({ sessionsByKey: { ...get().sessionsByKey, [key]: { ...session, status } } })
+    }
+  },
+  markForceStopped: (key) => {
+    const session = get().sessionsByKey[key]
+    if (session) {
+      set({ sessionsByKey: { ...get().sessionsByKey, [key]: { ...session, forceStopped: true } } })
     }
   },
   finishByTab: (tabId, exitCode) => {
