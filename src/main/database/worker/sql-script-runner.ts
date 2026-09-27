@@ -116,7 +116,16 @@ class SqlScriptExecution {
         line += countNewlines(state.buffer, counted, statement.start)
         counted = statement.start
         await this.runOne(file, line, statement.text)
-        this.report(index, this.bytesBefore + stream.bytesRead, false)
+        // Why subtract: a small file is read whole at once, so what was read says nothing about
+        // how far the run got; the text after this statement has not run yet.
+        this.report(
+          index,
+          () =>
+            this.bytesBefore +
+            stream.bytesRead -
+            Buffer.byteLength(state.buffer.slice(statement.terminatorEnd)),
+          false
+        )
       }
       state.line = line + countNewlines(state.buffer, counted, taken.consumed)
       state.buffer = state.buffer.slice(taken.consumed)
@@ -195,17 +204,19 @@ class SqlScriptExecution {
     }
   }
 
-  private report(fileIndex: number, bytesDone: number, force: boolean): void {
+  /** `bytesDone` is a function when working it out costs more than a throttled report. */
+  private report(fileIndex: number, bytesDone: number | (() => number), force: boolean): void {
     const now = Date.now()
     if (!force && now - this.lastReport < PROGRESS_INTERVAL_MS) {
       return
     }
+    const done = typeof bytesDone === 'number' ? bytesDone : bytesDone()
     this.lastReport = now
     this.run.onProgress({
       fileIndex: Math.max(fileIndex, 0),
       fileCount: this.run.files.length,
       fileName: this.run.files[Math.max(fileIndex, 0)]?.name ?? '',
-      bytesDone: Math.min(bytesDone, this.totalBytes),
+      bytesDone: Math.min(Math.max(done, 0), this.totalBytes),
       totalBytes: this.totalBytes,
       statements: this.statements,
       failed: this.failed
