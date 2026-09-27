@@ -2,7 +2,7 @@ import pg from 'pg'
 import type { ConnectionOptions } from 'node:tls'
 import type {
   DatabaseConnectionDraft,
-  PostgresSslMode
+  DatabaseSslMode
 } from '../../../shared/database/database-connection-types'
 
 export type PostgresConnectionDraft = Extract<DatabaseConnectionDraft, { driver: 'postgres' }>
@@ -11,7 +11,7 @@ const CONNECT_TIMEOUT_MS = 15_000
 const SSL_UNSUPPORTED_MESSAGE = /does not support SSL/i
 
 /** SSL attempts in order; `prefer` falls back to plaintext only when the server refuses SSL. */
-function sslAttempts(mode: PostgresSslMode): (ConnectionOptions | false)[] {
+function sslAttempts(mode: DatabaseSslMode): (ConnectionOptions | false)[] {
   switch (mode) {
     case 'disable':
       return [false]

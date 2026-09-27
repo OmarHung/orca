@@ -27,7 +27,15 @@ export type DatabaseCommandResult = {
 
 export type DatabaseQueryResult = DatabaseRowsResult | DatabaseCommandResult
 
-export type DatabaseRowsPage = { rows: DatabaseCell[][]; hasMore: boolean }
+/** One executed batch; SQL Server batches and MySQL procedures can return several result sets. */
+export type DatabaseExecuteResult = { results: DatabaseQueryResult[] }
+
+export type DatabaseRowsPage = {
+  rows: DatabaseCell[][]
+  hasMore: boolean
+  /** Result sets the batch produced after the paged one finished. */
+  followingResults?: DatabaseQueryResult[]
+}
 
 export type DatabaseErrorCode = 'password-required' | 'not-connected' | 'cancelled' | 'unavailable'
 
@@ -39,6 +47,8 @@ export type DatabaseError = {
   sqlState?: string
   /** 1-based character offset into the executed statement. */
   position?: number
+  /** 1-based line in the executed statement, when the server reports lines instead of offsets. */
+  line?: number
   detail?: string
   hint?: string
 }
