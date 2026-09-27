@@ -18887,7 +18887,8 @@
   },
   "database": {
     "connection": {
-      "missing": "已删除的连接"
+      "missing": "已删除的连接",
+      "readOnly": "只读"
     },
     "connectionDialog": {
       "cancel": "取消",
@@ -18933,6 +18934,9 @@
     },
     "console": {
       "cancel": "取消正在执行的语句",
+      "chooseDatabase": "选择数据库",
+      "chooseSchema": "选择 schema",
+      "database": "数据库",
       "editorLabel": "SQL 控制台",
       "errorMarker": "服务器在这里报告了错误",
       "formatFailed": "部分 SQL 未能格式化",
@@ -18942,6 +18946,7 @@
       "runAll": "执行所有语句",
       "runStatement": "执行语句",
       "runStatementHint": "执行光标所在的语句",
+      "schema": "Schema",
       "title": "控制台"
     },
     "ddl": {

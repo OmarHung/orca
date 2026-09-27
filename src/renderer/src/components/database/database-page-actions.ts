@@ -66,10 +66,14 @@ export const useDatabaseDialogsStore = create<DatabaseDialogsState>((set) => ({
   closeDdl: () => set({ ddlRequest: null })
 }))
 
-export function openDatabaseConsole(connectionId: string): DatabaseConsoleTab {
+/** Opens a console; one opened from a schema (MySQL database) starts in it. */
+export function openDatabaseConsole(
+  connectionId: string,
+  schema: string | null = null
+): DatabaseConsoleTab {
   const name =
     findDatabaseConnection(connectionId)?.name ?? translate('database.console.title', 'Console')
-  return useDatabasePageStore.getState().openConsole(connectionId, name)
+  return useDatabasePageStore.getState().openConsole(connectionId, name, schema)
 }
 
 export function openDatabaseTable(
