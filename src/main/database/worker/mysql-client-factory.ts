@@ -1,8 +1,10 @@
+import { connect as connectSocket } from 'node:net'
 import mysql from 'mysql2'
 import type {
   DatabaseConnectionDraft,
   DatabaseSslMode
 } from '../../../shared/database/database-connection-types'
+import type { RoutedConnection } from './database-connection-route'
 
 export type MysqlConnectionDraft = Extract<DatabaseConnectionDraft, { driver: 'mysql' }>
 
@@ -21,7 +23,8 @@ function sslAttempts(mode: DatabaseSslMode): SslAttempt[] {
     case 'require':
       return [{ rejectUnauthorized: false }]
     case 'verify-full':
-      return [{ rejectUnauthorized: true }]
+      // Why verifyIdentity: without it mysql2 checks the chain but not the host name.
+      return [{ rejectUnauthorized: true, verifyIdentity: true }]
   }
 }
 
@@ -60,16 +63,19 @@ export function endMysqlClient(client: mysql.Connection): Promise<void> {
 
 /** Opens one server session. `onError` must be attached before connect so drops never crash the worker. */
 export async function connectMysqlClient(
-  connection: MysqlConnectionDraft,
+  connection: RoutedConnection<MysqlConnectionDraft>,
   password: string | null,
   onError: (error: Error) => void
 ): Promise<mysql.Connection> {
   const attempts = sslAttempts(connection.sslMode)
   let lastError: unknown = null
   for (const [index, ssl] of attempts.entries()) {
+    const { tlsServerName } = connection
     const client = mysql.createConnection({
-      host: connection.host,
+      // Why the real name as host: mysql2 names and verifies the TLS server after `host`.
+      host: tlsServerName ?? connection.host,
       port: connection.port,
+      ...(tlsServerName ? { stream: () => connectSocket(connection.port, connection.host) } : {}),
       user: connection.user || undefined,
       password: password ?? undefined,
       database: connection.database || undefined,

@@ -2,6 +2,7 @@ import type { DatabaseDriver } from '../../../shared/database/database-connectio
 import type { DatabaseResult } from '../../../shared/database/database-query-types'
 import { tableChangeStatements } from '../../../shared/database/table-change-sql'
 import type { DatabaseDriverSession, OpenDatabaseDriverSession } from './database-driver'
+import { routeThroughTunnel } from './database-connection-route'
 import { toDatabaseError } from './database-error-mapping'
 import type {
   DatabaseWorkerCommand,
@@ -47,7 +48,8 @@ export function createDatabaseWorkerDispatcher(
       case 'connect': {
         await session?.close()
         driver = command.connection.driver
-        session = await openSession(command.connection, command.password, {
+        const connection = routeThroughTunnel(command.connection, command.tunnelPort)
+        session = await openSession(connection, command.password, {
           onConnectionLost: (message) => post({ kind: 'connection-lost', message })
         })
         return { serverVersion: session.serverVersion }
