@@ -61,7 +61,7 @@ export function endMysqlClient(client: mysql.Connection): Promise<void> {
   return new Promise((resolve) => client.end(() => resolve()))
 }
 
-/** Opens one server session. `onError` must be attached before connect so drops never crash the worker. */
+/** Opens one server session; `onError` hears drops once it is open. An error listener stays attached throughout so a drop never crashes the worker. */
 export async function connectMysqlClient(
   connection: RoutedConnection<MysqlConnectionDraft>,
   password: string | null,
@@ -89,12 +89,17 @@ export async function connectMysqlClient(
       jsonStrings: true,
       multipleStatements: false
     })
-    client.on('error', onError)
+    // Why not onError yet: connect's callback reports a failed attempt, and one that `prefer`
+    // abandons for plaintext must not reach the session as a lost connection.
+    const duringConnect = (): void => {}
+    client.on('error', duringConnect)
     try {
       await connect(client)
       if (connection.readOnly) {
         await queryMysqlRows(client, 'SET SESSION TRANSACTION READ ONLY')
       }
+      client.off('error', duringConnect)
+      client.on('error', onError)
       return client
     } catch (error) {
       lastError = error
