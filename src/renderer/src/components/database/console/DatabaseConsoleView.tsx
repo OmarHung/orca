@@ -18,6 +18,8 @@ import { DatabaseConsoleEditor, runDatabaseConsoleFromToolbar } from './Database
 import { DatabaseResultsPane } from './DatabaseResultsPane'
 import { getConsoleRunState, useDatabaseConsoleRunStore } from './database-console-run-store'
 import { useDatabaseConsoleText } from './use-database-console-text'
+import { sqlDialectForDriver } from './database-console-statements'
+import { useDatabaseConnectionsStore } from '../database-connections-store'
 
 const MIN_EDITOR_HEIGHT = 80
 
@@ -37,6 +39,10 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
   )
   const run = useDatabaseConsoleRunStore((state) => state.run)
   const cancel = useDatabaseConsoleRunStore((state) => state.cancel)
+  const driver = useDatabaseConnectionsStore(
+    (state) => state.connections.find((entry) => entry.id === tab.connectionId)?.driver
+  )
+  const dialect = sqlDialectForDriver(driver ?? 'postgres')
   const resultsHeight = useDatabasePageStore((state) => state.resultsHeight)
   const setResultsHeight = useDatabasePageStore((state) => state.setResultsHeight)
 
@@ -67,7 +73,9 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
               size="icon-sm"
               disabled={running || text === null}
               aria-label={translate('database.console.run', 'Run')}
-              onClick={() => runDatabaseConsoleFromToolbar(editorRef.current, 'current', handleRun)}
+              onClick={() =>
+                runDatabaseConsoleFromToolbar(editorRef.current, 'current', dialect, handleRun)
+              }
             >
               <Play />
             </Button>
@@ -104,6 +112,7 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
         {text === null ? null : (
           <DatabaseConsoleEditor
             initialText={text}
+            dialect={dialect}
             errorOffset={errorOffset}
             onChange={update}
             onRun={handleRun}

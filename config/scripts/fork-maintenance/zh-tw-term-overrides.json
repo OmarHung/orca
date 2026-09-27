@@ -125,9 +125,9 @@
     "why": "\"Repository\"."
   },
   {
-    "from": "只讀",
+    "from": "[只隻]讀",
     "to": "唯讀",
-    "why": "\"Read-only\"."
+    "why": "\"Read-only\"; OpenCC sometimes turns 只读 into 隻讀."
   },
   {
     "from": "控制台",
@@ -145,12 +145,12 @@
     "why": "\"Disconnect\"."
   },
   {
-    "from": "(影響|取得|只顯示前) (\\{\\{value\\d\\}\\}) 行",
+    "from": "(影響|取得|只顯示前) (\\{\\{value\\d\\}\\}|\\d+) 行",
     "to": "$1 $2 列",
     "why": "Result rows are 列 in Taiwan; 行 stays where it means lines of text or code."
   },
   {
-    "from": "^(\\{\\{value0\\}\\}) 行$",
+    "from": "^(\\{\\{value0\\}\\}|\\d+) 行$",
     "to": "$1 列",
     "why": "A bare row count (\"{{value0}} rows\"); line counts carry more words."
   }

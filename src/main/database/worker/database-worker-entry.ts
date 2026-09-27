@@ -2,28 +2,52 @@ import { parentPort } from 'node:worker_threads'
 import type { DatabaseWorkerMessage, DatabaseWorkerRequest } from './database-worker-protocol'
 import { createDatabaseWorkerDispatcher } from './database-worker-dispatch'
 
-// Worker thread entry: must stay electron-free (enforced by plain-node-entry-guard).
+// Entry for a worker thread (network drivers) or a forked child process (SQLite, which must be
+// killable mid-statement). Must stay electron-free (enforced by plain-node-entry-guard).
 
-if (!parentPort) {
-  throw new Error('Database worker must run with a parent port.')
+type Transport = {
+  post: (message: DatabaseWorkerMessage) => void
+  onRequest: (listener: (request: DatabaseWorkerRequest) => void) => void
 }
-const port = parentPort
+
+function resolveTransport(): Transport {
+  if (parentPort) {
+    const port = parentPort
+    return {
+      post: (message) => port.postMessage(message),
+      onRequest: (listener) => port.on('message', listener)
+    }
+  }
+  const send = process.send?.bind(process)
+  if (send) {
+    // Why: a child outliving a crashed Orca would hold the SQLite file open.
+    process.on('disconnect', () => process.exit(0))
+    return {
+      post: (message) => void send(message),
+      onRequest: (listener) =>
+        process.on('message', (request: DatabaseWorkerRequest) => listener(request))
+    }
+  }
+  throw new Error('Database worker must run as a worker thread or a forked process.')
+}
+
+const transport = resolveTransport()
 
 const dispatch = createDatabaseWorkerDispatcher((message: DatabaseWorkerMessage) => {
   try {
-    port.postMessage(message)
+    transport.post(message)
   } catch {
-    // A non-cloneable value would otherwise leave the caller waiting forever.
+    // A non-serializable value would otherwise leave the caller waiting forever.
     if (message.kind === 'response') {
-      port.postMessage({
+      transport.post({
         kind: 'response',
         id: message.id,
         result: { ok: false, error: { message: 'Database result could not be serialized.' } }
-      } satisfies DatabaseWorkerMessage)
+      })
     }
   }
 })
 
-port.on('message', (request: DatabaseWorkerRequest) => {
+transport.onRequest((request) => {
   void dispatch(request)
 })

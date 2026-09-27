@@ -65,7 +65,7 @@ function EmptyMain(): React.JSX.Element {
             )
           : translate(
               'database.page.emptyNoConnections',
-              'Add a PostgreSQL connection to browse its schema and run SQL.'
+              'Add a database connection to browse its schema and run SQL.'
             )}
       </p>
       {first ? (
