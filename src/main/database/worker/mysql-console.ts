@@ -8,6 +8,7 @@ import { PagedBatchReader } from './database-batch-reader'
 import { endMysqlClient } from './mysql-client-factory'
 import { encodeMysqlRow, mysqlColumns } from './mysql-values'
 import { commandRowCount, leadingKeyword } from './statement-keyword'
+import type { DatabaseChangeTransaction } from './table-change-transaction'
 
 function affectedRows(header: unknown): number | null {
   const value: unknown =
@@ -71,9 +72,31 @@ export class MysqlConsole {
     }
   }
 
+  async beginChanges(): Promise<DatabaseChangeTransaction> {
+    await this.abandonOpen()
+    await this.control('START TRANSACTION')
+    return {
+      // Why execute: server-side prepared statements bind every value.
+      run: ({ sql, params }) =>
+        new Promise((resolve, reject) => {
+          this.client.execute(sql, params, (error, result) =>
+            error ? reject(error) : resolve(affectedRows(result) ?? 0)
+          )
+        }),
+      commit: () => this.control('COMMIT'),
+      rollback: () => this.control('ROLLBACK')
+    }
+  }
+
   async close(): Promise<void> {
     await this.abandonOpen()
     await endMysqlClient(this.client)
+  }
+
+  private control(sql: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.client.query(sql, (error) => (error ? reject(error) : resolve()))
+    })
   }
 
   private releaseIfDone(reader: PagedBatchReader): void {
