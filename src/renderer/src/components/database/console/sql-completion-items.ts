@@ -25,6 +25,8 @@ type SqlCompletionRequest = {
   offset: number
   dialect: SqlDialect
   catalog: SqlCatalog
+  /** The console's picked schema; absent or null uses the one the server marks current. */
+  currentSchema?: string | null
 }
 
 // Columns first, then tables, schemas and keywords, as DataGrip lists them.
@@ -181,7 +183,7 @@ export async function sqlCompletions(
   const schemas = await request.catalog.schemas()
   const resolver: Resolver = {
     schemas,
-    current: schemas.find((schema) => schema.isCurrent)?.name ?? null,
+    current: request.currentSchema ?? schemas.find((schema) => schema.isCurrent)?.name ?? null,
     request
   }
   const schemaItems = schemas.map((schema, index) =>

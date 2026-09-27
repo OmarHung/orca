@@ -18764,7 +18764,8 @@
   },
   "database": {
     "connection": {
-      "missing": "已刪除的連線"
+      "missing": "已刪除的連線",
+      "readOnly": "唯讀"
     },
     "connectionDialog": {
       "cancel": "取消",
@@ -18810,6 +18811,9 @@
     },
     "console": {
       "cancel": "取消正在執行的語句",
+      "chooseDatabase": "選擇資料庫",
+      "chooseSchema": "選擇 schema",
+      "database": "資料庫",
       "editorLabel": "SQL 主控台",
       "errorMarker": "伺服器在這裡報告了錯誤",
       "formatFailed": "部分 SQL 未能格式化",
@@ -18819,6 +18823,7 @@
       "runAll": "執行所有語句",
       "runStatement": "執行語句",
       "runStatementHint": "執行游標所在的語句",
+      "schema": "Schema",
       "title": "主控台"
     },
     "ddl": {

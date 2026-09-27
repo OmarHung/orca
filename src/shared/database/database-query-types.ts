@@ -38,6 +38,8 @@ export type DatabaseExecuteResult = {
   results: DatabaseQueryResult[]
   /** The console session's transaction afterwards; absent when it wasn't checked. */
   transaction?: DatabaseTransactionState
+  /** Where unqualified names now resolve, when a statement switched it (USE, SET search_path). */
+  schema?: string
 }
 
 export type DatabaseRowsPage = {

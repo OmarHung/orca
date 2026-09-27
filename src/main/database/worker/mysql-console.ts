@@ -4,9 +4,11 @@ import type {
   DatabaseExecuteResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
+import { quoteSqlName } from '../../../shared/database/sql-identifiers'
+import { ConsoleSchema } from './console-schema'
 import { ConsoleTransactions } from './console-transactions'
 import { PagedBatchReader } from './database-batch-reader'
-import { endMysqlClient } from './mysql-client-factory'
+import { endMysqlClient, queryMysqlRows } from './mysql-client-factory'
 import { encodeMysqlRow, mysqlColumns } from './mysql-values'
 import { commandRowCount, leadingKeyword } from './statement-keyword'
 import type { DatabaseChangeTransaction } from './table-change-transaction'
@@ -35,6 +37,19 @@ export class MysqlConsole {
       await this.abandonOpen()
       await this.control(`SET autocommit = ${manual ? 0 : 1}`)
     }
+  })
+
+  // In MySQL a schema is a database, so the console switches with USE.
+  readonly schema = new ConsoleSchema({
+    apply: async (name) => {
+      await this.abandonOpen()
+      await this.control(`USE ${quoteSqlName(name, 'mysql')}`)
+    },
+    current: async () => {
+      const [row] = await queryMysqlRows(this.client, 'select database() as name')
+      return typeof row?.name === 'string' ? row.name : null
+    },
+    mayChange: (sql) => leadingKeyword(sql) === 'USE'
   })
 
   constructor(

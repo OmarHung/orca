@@ -26,6 +26,8 @@ const MARKER_OWNER = 'orca-database'
 type DatabaseConsoleEditorProps = {
   tabId: string
   connectionId: string
+  /** The console's picked schema, for completion; null is the connection's default. */
+  schema: string | null
   initialText: string
   dialect: SqlDialect
   errorOffset: number | null
@@ -85,6 +87,7 @@ function runFromEditor(
 export function DatabaseConsoleEditor({
   tabId,
   connectionId,
+  schema,
   initialText,
   dialect,
   errorOffset,
@@ -102,13 +105,15 @@ export function DatabaseConsoleEditor({
   const onEditorReadyRef = useRef(onEditorReady)
   const dialectRef = useRef(dialect)
   const connectionIdRef = useRef(connectionId)
+  const schemaRef = useRef(schema)
   useLayoutEffect(() => {
     onRunRef.current = onRun
     onShowHistoryRef.current = onShowHistory
     onEditorReadyRef.current = onEditorReady
     dialectRef.current = dialect
     connectionIdRef.current = connectionId
-  }, [onRun, onShowHistory, onEditorReady, dialect, connectionId])
+    schemaRef.current = schema
+  }, [onRun, onShowHistory, onEditorReady, dialect, connectionId, schema])
 
   const fontSize = computeEditorFontSize(settings?.terminalFontSize ?? 13, editorFontZoomLevel)
   const fontFamily = resolveEditorFontFamily(settings)
@@ -123,7 +128,8 @@ export function DatabaseConsoleEditor({
     const unregisterModel = model
       ? registerDatabaseConsoleModel(monaco, model, () => ({
           connectionId: connectionIdRef.current,
-          dialect: dialectRef.current
+          dialect: dialectRef.current,
+          schema: schemaRef.current
         }))
       : () => {}
     // CtrlCmd is ⌘ on macOS and Ctrl elsewhere.
