@@ -1,0 +1,94 @@
+import type mysql from 'mysql2'
+import type { FieldPacket } from 'mysql2'
+import type {
+  DatabaseExecuteResult,
+  DatabaseRowsPage
+} from '../../../shared/database/database-query-types'
+import { PagedBatchReader } from './database-batch-reader'
+import { endMysqlClient } from './mysql-client-factory'
+import { encodeMysqlRow, mysqlColumns } from './mysql-values'
+import { leadingKeyword } from './statement-keyword'
+
+function affectedRows(header: unknown): number | null {
+  const value: unknown =
+    typeof header === 'object' && header !== null ? Reflect.get(header, 'affectedRows') : null
+  return typeof value === 'number' ? value : null
+}
+
+/** One console's MySQL session; its latest statement stays open (flow paused) until fully read. */
+export class MysqlConsole {
+  private reader: PagedBatchReader | null = null
+
+  constructor(
+    readonly client: mysql.Connection,
+    private readonly killQuery: (threadId: number) => Promise<void>
+  ) {}
+
+  async execute(sql: string, pageSize: number): Promise<DatabaseExecuteResult> {
+    await this.abandonOpen()
+    const client = this.client
+    const reader = new PagedBatchReader(
+      { pause: () => client.pause(), resume: () => client.resume() },
+      pageSize
+    )
+    this.reader = reader
+    let fields: FieldPacket[] = []
+    const query = client.query({ sql, rowsAsArray: true })
+    query.on('fields', (next: FieldPacket[] | undefined) => {
+      // Why the guard: statements without a result set still emit `fields`, with no payload.
+      if (!next) {
+        return
+      }
+      fields = next
+      reader.startResultSet(mysqlColumns(next))
+    })
+    query.on('result', (row: unknown) => {
+      if (Array.isArray(row)) {
+        reader.addRow(encodeMysqlRow(row, fields))
+      } else if (!reader.hasProducedRows) {
+        // Why the guard: a CALL ends with an OK packet after its result sets; that one is noise.
+        reader.addCommand(leadingKeyword(sql), affectedRows(row))
+      }
+    })
+    query.on('error', (error: Error) => reader.fail(error))
+    query.on('end', () => reader.finish())
+    try {
+      return await reader.firstPage()
+    } finally {
+      this.releaseIfDone(reader)
+    }
+  }
+
+  async fetch(resultId: string, pageSize: number): Promise<DatabaseRowsPage> {
+    const reader = this.reader
+    if (!reader || reader.pagedResultId !== resultId) {
+      throw new Error('This result is no longer open. Run the statement again to load more rows.')
+    }
+    try {
+      return await reader.nextPage(pageSize)
+    } finally {
+      this.releaseIfDone(reader)
+    }
+  }
+
+  async close(): Promise<void> {
+    await this.abandonOpen()
+    await endMysqlClient(this.client)
+  }
+
+  private releaseIfDone(reader: PagedBatchReader): void {
+    if (!reader.isOpen && this.reader === reader) {
+      this.reader = null
+    }
+  }
+
+  // Why kill first: resuming alone would stream the rest of a huge result just to drop it.
+  private async abandonOpen(): Promise<void> {
+    const reader = this.reader
+    this.reader = null
+    if (reader?.isOpen) {
+      await this.killQuery(this.client.threadId).catch(() => undefined)
+      await reader.abandon()
+    }
+  }
+}

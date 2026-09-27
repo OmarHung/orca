@@ -10,11 +10,15 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { translate } from '@/i18n/i18n'
-import type { DatabaseConnectionSummary } from '../../../../../shared/database/database-connection-types'
+import {
+  DATABASE_DRIVER_NAMES,
+  type DatabaseConnectionSummary
+} from '../../../../../shared/database/database-connection-types'
 import type { DatabaseEncryptionStatus } from '../../../../../shared/database/database-session-types'
 import { asDatabaseResult, useDatabaseConnectionsStore } from '../database-connections-store'
 import { DatabaseConnectionForm } from './DatabaseConnectionForm'
 import {
+  changeConnectionDriver,
   initialConnectionForm,
   parseConnectionForm,
   passwordToSave,
@@ -40,7 +44,7 @@ function TestResult({ state }: { state: TestState }): React.JSX.Element | null {
     return (
       <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <CircleCheck className="size-3.5" />
-        {translate('database.connectionDialog.testOk', 'Connected to PostgreSQL {{value0}}', {
+        {translate('database.connectionDialog.testOk', 'Connected to {{value0}}', {
           value0: state.serverVersion
         })}
       </span>
@@ -105,7 +109,10 @@ export function DatabaseConnectionDialog({
     )
     setTest(
       result.ok
-        ? { status: 'ok', serverVersion: result.value.serverVersion }
+        ? {
+            status: 'ok',
+            serverVersion: `${DATABASE_DRIVER_NAMES[form.driver]} ${result.value.serverVersion}`
+          }
         : { status: 'failed', message: result.error.message }
     )
   }
@@ -137,14 +144,19 @@ export function DatabaseConnectionDialog({
         <DialogHeader>
           <DialogTitle>
             {existing
-              ? translate('database.connectionDialog.editTitle', 'Edit PostgreSQL Connection')
-              : translate('database.connectionDialog.newTitle', 'New PostgreSQL Connection')}
+              ? translate('database.connectionDialog.editTitle', 'Edit Connection')
+              : translate('database.connectionDialog.newTitle', 'New Connection')}
           </DialogTitle>
           <DialogDescription>
-            {translate(
-              'database.connectionDialog.description',
-              'Connections run from this computer. The password is never shown again after you save it.'
-            )}
+            {form.driver === 'sqlite'
+              ? translate(
+                  'database.connectionDialog.sqliteDescription',
+                  'Opens a database file on this computer.'
+                )
+              : translate(
+                  'database.connectionDialog.description',
+                  'Connections run from this computer. The password is never shown again after you save it.'
+                )}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -159,6 +171,12 @@ export function DatabaseConnectionDialog({
             invalid={parsed.ok ? new Set() : parsed.invalidFields}
             hasSavedPassword={existing?.hasSavedPassword ?? false}
             encryption={encryption}
+            driverLocked={existing !== null}
+            onDriverChange={(driver) => {
+              setForm((current) => changeConnectionDriver(current, driver))
+              setTest({ status: 'idle' })
+              setSaveError(null)
+            }}
             onChange={update}
           />
           <div className="min-h-5">

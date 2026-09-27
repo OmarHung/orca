@@ -1,8 +1,9 @@
 import type {
   DatabaseConnection,
-  DatabaseConnectionDraft
+  DatabaseConnectionDraft,
+  DatabaseDriver
 } from '../../shared/database/database-connection-types'
-import type { DatabaseResult } from '../../shared/database/database-query-types'
+import type { DatabaseError, DatabaseResult } from '../../shared/database/database-query-types'
 import type { DatabaseSessionEvent } from '../../shared/database/database-session-types'
 import { DatabaseWorkerClient, type DatabaseWorkerPort } from './database-worker-client'
 import type {
@@ -38,7 +39,7 @@ export class DatabaseSessionManager {
 
   constructor(
     private readonly deps: {
-      spawnWorker: () => DatabaseWorkerPort
+      spawnWorker: (driver: DatabaseDriver) => DatabaseWorkerPort
       emit: (event: DatabaseSessionEvent) => void
     }
   ) {}
@@ -55,7 +56,7 @@ export class DatabaseSessionManager {
     this.deps.emit({ kind: 'session-state', connectionId, state: 'connecting' })
     let entry: SessionEntry
     try {
-      const client = new DatabaseWorkerClient(this.deps.spawnWorker(), (message) =>
+      const client = new DatabaseWorkerClient(this.deps.spawnWorker(connection.driver), (message) =>
         this.handleConnectionLost(connectionId, entry, message)
       )
       entry = { client, serverVersion: null, connecting: null }
@@ -75,7 +76,7 @@ export class DatabaseSessionManager {
   async test(draft: DatabaseConnectionDraft, password: string | null): Promise<ConnectResult> {
     let client: DatabaseWorkerClient
     try {
-      client = new DatabaseWorkerClient(this.deps.spawnWorker(), () => undefined)
+      client = new DatabaseWorkerClient(this.deps.spawnWorker(draft.driver), () => undefined)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       return { ok: false, error: { message, code: 'unavailable' } }
@@ -115,6 +116,22 @@ export class DatabaseSessionManager {
     await Promise.race([entry.client.request({ type: 'close' }), delay(CLOSE_GRACE_MS)])
     await entry.client.terminate()
     this.deps.emit({ kind: 'session-state', connectionId, state: 'disconnected' })
+  }
+
+  /**
+   * Kills the worker so a blocked synchronous statement (SQLite) stops; in-flight requests
+   * settle with `reason`, and the next statement reconnects.
+   */
+  async restart(connectionId: string, reason: DatabaseError): Promise<boolean> {
+    const entry = this.sessions.get(connectionId)
+    if (!entry) {
+      return false
+    }
+    this.sessions.delete(connectionId)
+    // Why emit first: waiting for the worker to die must not delay the UI learning it's gone.
+    this.deps.emit({ kind: 'session-state', connectionId, state: 'disconnected' })
+    await entry.client.terminate(reason)
+    return true
   }
 
   async disposeAll(): Promise<void> {

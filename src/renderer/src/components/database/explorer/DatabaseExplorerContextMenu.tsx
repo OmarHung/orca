@@ -6,7 +6,7 @@ import {
   ContextMenuSeparator
 } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
-import { useDatabaseConnectionsStore } from '../database-connections-store'
+import { findDatabaseConnection, useDatabaseConnectionsStore } from '../database-connections-store'
 import {
   connectDatabase,
   disconnectDatabase,
@@ -67,7 +67,11 @@ function copyText(node: DatabaseExplorerNode): string | null {
     case 'schema':
       return node.schema
     case 'relation':
-      return qualifiedRelationName(node.schema, node.relation.name)
+      return qualifiedRelationName(
+        node.schema,
+        node.relation.name,
+        findDatabaseConnection(node.connectionId)?.driver
+      )
     case 'column':
       return node.column.name
   }

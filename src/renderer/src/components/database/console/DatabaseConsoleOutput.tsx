@@ -10,11 +10,27 @@ import type {
 function describeOutcome(outcome: DatabaseConsoleLogOutcome): string {
   switch (outcome.kind) {
     case 'rows':
+      if (outcome.rowCount === 1 && !outcome.hasMore) {
+        return translate('database.output.oneRow', '1 row retrieved in {{value0}} ms', {
+          value0: outcome.durationMs.toLocaleString()
+        })
+      }
       return translate('database.output.rows', '{{value0}} rows retrieved in {{value1}} ms', {
         value0: `${outcome.rowCount.toLocaleString()}${outcome.hasMore ? '+' : ''}`,
         value1: outcome.durationMs.toLocaleString()
       })
     case 'command':
+      if (!outcome.command) {
+        // Batches (SQL Server) and plain statements don't always name what they did.
+        return outcome.rowCount === null
+          ? translate('database.output.completed', 'Completed in {{value0}} ms', {
+              value0: outcome.durationMs.toLocaleString()
+            })
+          : translate('database.output.rowsAffected', '{{value0}} rows affected in {{value1}} ms', {
+              value0: outcome.rowCount.toLocaleString(),
+              value1: outcome.durationMs.toLocaleString()
+            })
+      }
       return outcome.rowCount === null
         ? translate('database.output.command', '{{value0}} completed in {{value1}} ms', {
             value0: outcome.command,

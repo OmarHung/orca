@@ -1,8 +1,11 @@
 import { existsSync } from 'node:fs'
-import { join } from 'node:path'
 import { Worker } from 'node:worker_threads'
-import type { DatabaseResult } from '../../shared/database/database-query-types'
-import { currentWorkerEntryLayout, resolveWorkerThreadEntryPath } from '../worker-thread-entry-path'
+import type {
+  DatabaseError,
+  DatabaseErrorCode,
+  DatabaseResult
+} from '../../shared/database/database-query-types'
+import { resolveDatabaseWorkerEntryPath } from './database-worker-entry-path'
 import type {
   DatabaseWorkerCommandOf,
   DatabaseWorkerCommandType,
@@ -11,7 +14,6 @@ import type {
   DatabaseWorkerValues
 } from './worker/database-worker-protocol'
 
-const WORKER_ENTRY_FILENAME = 'database-worker-entry.js'
 // Why a cap: a runaway result must kill this data source's worker, not the main process.
 const WORKER_HEAP_LIMIT_MB = 1024
 
@@ -23,18 +25,8 @@ export type DatabaseWorkerPort = {
   terminate: () => Promise<unknown>
 }
 
-function resolveDatabaseWorkerEntryPath(): string {
-  const layout = currentWorkerEntryLayout(__dirname)
-  const primary = resolveWorkerThreadEntryPath(layout, WORKER_ENTRY_FILENAME)
-  if (layout.isPackaged || existsSync(primary)) {
-    return primary
-  }
-  // Rollup can factor this module into out/main/chunks; worker entries stay in out/main.
-  return join(__dirname, '..', WORKER_ENTRY_FILENAME)
-}
-
 export function spawnDatabaseWorker(): DatabaseWorkerPort {
-  const entryPath = resolveDatabaseWorkerEntryPath()
+  const entryPath = resolveDatabaseWorkerEntryPath({ unpacked: false })
   if (!existsSync(entryPath)) {
     throw new Error(`Database worker entry not found: ${entryPath}`)
   }
@@ -55,6 +47,8 @@ export function spawnDatabaseWorker(): DatabaseWorkerPort {
 }
 
 type Resolver = (result: DatabaseResult<unknown>) => void
+
+const CLOSED: DatabaseError = { message: 'Database session closed', code: 'unavailable' }
 
 /** Request/response over one data source's worker; every request settles, even if it dies. */
 export class DatabaseWorkerClient {
@@ -95,18 +89,19 @@ export class DatabaseWorkerClient {
     })
   }
 
-  async terminate(): Promise<void> {
-    this.stop('Database session closed', false)
+  /** Stops the worker; in-flight requests settle with `reason` (by default "session closed"). */
+  async terminate(reason: DatabaseError = CLOSED): Promise<void> {
+    this.stop(reason.message, false, reason.code)
     await this.port.terminate().catch(() => undefined)
   }
 
-  private stop(reason: string, unexpected: boolean): void {
+  private stop(reason: string, unexpected: boolean, code: DatabaseErrorCode = 'unavailable'): void {
     if (this.stoppedReason) {
       return
     }
     this.stoppedReason = reason
     for (const resolve of this.pending.values()) {
-      resolve({ ok: false, error: { message: reason, code: 'unavailable' } })
+      resolve({ ok: false, error: { message: reason, code } })
     }
     this.pending.clear()
     if (unexpected) {

@@ -6,12 +6,21 @@ import type {
   DatabaseWorkerMessage,
   DatabaseWorkerRequest
 } from './database-worker-protocol'
+import { openMysqlSession } from './mysql-session'
 import { openPostgresSession } from './postgres-session'
+import { openSqliteSession } from './sqlite-session'
+import { openSqlServerSession } from './sqlserver-session'
 
 const openDriverSession: OpenDatabaseDriverSession = (connection, password, callbacks) => {
   switch (connection.driver) {
     case 'postgres':
       return openPostgresSession(connection, password, callbacks)
+    case 'mysql':
+      return openMysqlSession(connection, password, callbacks)
+    case 'sqlserver':
+      return openSqlServerSession(connection, password, callbacks)
+    case 'sqlite':
+      return openSqliteSession(connection)
   }
 }
 

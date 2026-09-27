@@ -4,7 +4,7 @@ import type {
   DatabaseIntrospectTarget
 } from '../../shared/database/database-introspection-types'
 import type {
-  DatabaseQueryResult,
+  DatabaseExecuteResult,
   DatabaseResult,
   DatabaseRowsPage
 } from '../../shared/database/database-query-types'
@@ -37,11 +37,13 @@ export type DatabaseApi = {
     connectionId: string,
     target: DatabaseIntrospectTarget
   ) => Promise<DatabaseResult<DatabaseIntrospectResult>>
-  execute: (request: DatabaseExecuteRequest) => Promise<DatabaseResult<DatabaseQueryResult>>
+  execute: (request: DatabaseExecuteRequest) => Promise<DatabaseResult<DatabaseExecuteResult>>
   fetchMore: (request: DatabaseFetchMoreRequest) => Promise<DatabaseResult<DatabaseRowsPage>>
   cancel: (ref: DatabaseConsoleRef) => Promise<boolean>
   closeConsole: (ref: DatabaseConsoleRef) => Promise<void>
   readConsole: (ref: DatabaseConsoleRef) => Promise<string>
   writeConsole: (ref: DatabaseConsoleRef, text: string) => Promise<void>
+  /** Absolute path of the chosen SQLite file, or null when the dialog was cancelled. */
+  pickSqliteFile: () => Promise<string | null>
   onEvent: (callback: (event: DatabaseSessionEvent) => void) => () => void
 }

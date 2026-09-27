@@ -1,10 +1,16 @@
 import { create } from 'zustand'
 import { createBrowserUuid } from '@/lib/browser-uuid'
-import type { DatabaseRowsResult } from '../../../../../shared/database/database-query-types'
+import type {
+  DatabaseExecuteResult,
+  DatabaseQueryResult,
+  DatabaseResult,
+  DatabaseRowsResult
+} from '../../../../../shared/database/database-query-types'
 import { DATABASE_DEFAULT_PAGE_SIZE } from '../../../../../shared/database/database-session-types'
 import type { SqlStatementRange } from '../../../../../shared/database/sql-statement-splitter'
 import { asDatabaseResult, useDatabaseConnectionsStore } from '../database-connections-store'
 import type { DatabaseConsoleTab } from '../database-page-store'
+import { offsetOfStatementLine } from './database-console-statements'
 
 /** Rows kept per result in the renderer; scrolling stops loading past this. */
 export const DATABASE_MAX_BUFFERED_ROWS = 100_000
@@ -59,6 +65,38 @@ type DatabaseConsoleRunStore = {
   dispose: (tabId: string) => void
 }
 
+async function execute(
+  tab: DatabaseConsoleTab,
+  sql: string
+): Promise<DatabaseResult<DatabaseExecuteResult>> {
+  return asDatabaseResult(
+    await window.api.database.execute({
+      connectionId: tab.connectionId,
+      consoleId: tab.consoleId,
+      sql,
+      pageSize: DATABASE_DEFAULT_PAGE_SIZE
+    })
+  )
+}
+
+/** Retries once after reconnecting when main dropped the session (e.g. a restarted SQLite worker). */
+async function executeReconnecting(
+  tab: DatabaseConsoleTab,
+  sql: string
+): Promise<DatabaseResult<DatabaseExecuteResult>> {
+  const response = await execute(tab, sql)
+  if (response.ok || response.error.code !== 'not-connected') {
+    return response
+  }
+  const connections = useDatabaseConnectionsStore.getState()
+  connections.applySessionEvent({
+    kind: 'session-state',
+    connectionId: tab.connectionId,
+    state: 'disconnected'
+  })
+  return (await connections.connect(tab.connectionId)) ? execute(tab, sql) : response
+}
+
 export function getConsoleRunState(
   consoles: Record<string, DatabaseConsoleRunState>,
   tabId: string
@@ -99,6 +137,38 @@ export const useDatabaseConsoleRunStore = create<DatabaseConsoleRunStore>((set, 
       )
     }))
 
+  /** Logs every result of one statement and opens a result tab per row set. */
+  const recordResults = (
+    tabId: string,
+    statement: string,
+    results: readonly DatabaseQueryResult[],
+    options: { focus: boolean }
+  ): void => {
+    for (const value of results) {
+      if (value.kind === 'command') {
+        appendLog(tabId, statement, value)
+        continue
+      }
+      const resultTab: DatabaseResultTab = {
+        id: createBrowserUuid(),
+        statement,
+        result: value,
+        loadingMore: false,
+        loadError: null
+      }
+      patch(tabId, (current) => ({
+        results: [...current.results, resultTab],
+        activeResultId: options.focus ? resultTab.id : current.activeResultId
+      }))
+      appendLog(tabId, statement, {
+        kind: 'rows',
+        rowCount: value.rows.length,
+        hasMore: value.hasMore,
+        durationMs: value.durationMs
+      })
+    }
+  }
+
   return {
     consoles: {},
 
@@ -112,14 +182,7 @@ export const useDatabaseConsoleRunStore = create<DatabaseConsoleRunStore>((set, 
           return
         }
         for (const statement of statements) {
-          const response = asDatabaseResult(
-            await window.api.database.execute({
-              connectionId: tab.connectionId,
-              consoleId: tab.consoleId,
-              sql: statement.text,
-              pageSize: DATABASE_DEFAULT_PAGE_SIZE
-            })
-          )
+          const response = await executeReconnecting(tab, statement.text)
           if (!response.ok) {
             const { error } = response
             appendLog(
@@ -131,32 +194,15 @@ export const useDatabaseConsoleRunStore = create<DatabaseConsoleRunStore>((set, 
             )
             patch(tab.id, () => ({
               activeResultId: OUTPUT_RESULT_ID,
-              errorOffset: error.position ? statement.start + error.position - 1 : null
+              errorOffset: error.position
+                ? statement.start + error.position - 1
+                : error.line
+                  ? offsetOfStatementLine(statement, error.line)
+                  : null
             }))
             return
           }
-          const { value } = response
-          if (value.kind === 'command') {
-            appendLog(tab.id, statement.text, value)
-            continue
-          }
-          const resultTab: DatabaseResultTab = {
-            id: createBrowserUuid(),
-            statement: statement.text,
-            result: value,
-            loadingMore: false,
-            loadError: null
-          }
-          patch(tab.id, (current) => ({
-            results: [...current.results, resultTab],
-            activeResultId: resultTab.id
-          }))
-          appendLog(tab.id, statement.text, {
-            kind: 'rows',
-            rowCount: value.rows.length,
-            hasMore: value.hasMore,
-            durationMs: value.durationMs
-          })
+          recordResults(tab.id, statement.text, response.value.results, { focus: true })
         }
       } finally {
         patch(tab.id, () => ({ running: false }))
@@ -200,6 +246,9 @@ export const useDatabaseConsoleRunStore = create<DatabaseConsoleRunStore>((set, 
               result: { ...current.result, hasMore: false }
             }
       )
+      const following = response.ok ? (response.value.followingResults ?? []) : []
+      // Later result sets of the batch arrive once the paged one is fully read.
+      recordResults(tab.id, target.statement, following, { focus: false })
     },
 
     cancel: async (tab) => {

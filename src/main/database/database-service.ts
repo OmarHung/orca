@@ -1,11 +1,14 @@
-import type { DatabaseConnectionSummary } from '../../shared/database/database-connection-types'
+import {
+  databasePasswordStorage,
+  type DatabaseConnectionSummary
+} from '../../shared/database/database-connection-types'
 import type {
   DatabaseIntrospectResult,
   DatabaseIntrospectTarget
 } from '../../shared/database/database-introspection-types'
 import type {
   DatabaseError,
-  DatabaseQueryResult,
+  DatabaseExecuteResult,
   DatabaseResult,
   DatabaseRowsPage
 } from '../../shared/database/database-query-types'
@@ -49,12 +52,10 @@ export class DatabaseService {
   constructor(private readonly deps: DatabaseServiceDeps) {}
 
   listConnections(): DatabaseConnectionSummary[] {
-    return this.deps.connections
-      .list()
-      .map((connection) => ({
-        ...connection,
-        hasSavedPassword: this.deps.passwords.has(connection.id)
-      }))
+    return this.deps.connections.list().map((connection) => ({
+      ...connection,
+      hasSavedPassword: this.deps.passwords.has(connection.id)
+    }))
   }
 
   encryptionStatus(): DatabaseEncryptionStatus {
@@ -65,7 +66,7 @@ export class DatabaseService {
     request: DatabaseSaveConnectionRequest
   ): DatabaseResult<DatabaseConnectionSummary> {
     const { passwords } = this.deps
-    const storage = request.draft.passwordStorage
+    const storage = databasePasswordStorage(request.draft)
     // Why re-file an existing password: switching storage mode must move it, not strand it.
     const password =
       request.password === undefined
@@ -124,9 +125,9 @@ export class DatabaseService {
         : result
     }
     if (promptedPassword !== undefined) {
-      if (connection.passwordStorage === 'forever') {
+      if (databasePasswordStorage(connection) === 'forever') {
         this.deps.passwords.remember(connectionId, 'forever', promptedPassword)
-      } else if (connection.passwordStorage === 'session') {
+      } else if (databasePasswordStorage(connection) === 'session') {
         this.deps.passwords.rememberForSession(connectionId, promptedPassword)
       }
     }
@@ -144,7 +145,7 @@ export class DatabaseService {
     return this.deps.sessions.request(connectionId, { type: 'introspect', target })
   }
 
-  execute(request: DatabaseExecuteRequest): Promise<DatabaseResult<DatabaseQueryResult>> {
+  execute(request: DatabaseExecuteRequest): Promise<DatabaseResult<DatabaseExecuteResult>> {
     return this.deps.sessions.request(request.connectionId, {
       type: 'execute',
       consoleId: request.consoleId,
@@ -163,6 +164,13 @@ export class DatabaseService {
   }
 
   async cancel(ref: DatabaseConsoleRef): Promise<boolean> {
+    if (this.deps.connections.get(ref.connectionId)?.driver === 'sqlite') {
+      // Why restart: SQLite runs synchronously in its worker, so no cancel message gets through.
+      return this.deps.sessions.restart(ref.connectionId, {
+        message: 'Cancelled. The SQLite connection was restarted to stop the statement.',
+        code: 'cancelled'
+      })
+    }
     const result = await this.deps.sessions.request(ref.connectionId, {
       type: 'cancel',
       consoleId: ref.consoleId
