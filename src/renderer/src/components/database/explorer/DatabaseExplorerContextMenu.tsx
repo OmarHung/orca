@@ -76,6 +76,8 @@ function copyText(node: DatabaseExplorerNode): string | null {
   switch (node.kind) {
     case 'connection':
       return null
+    case 'database':
+      return node.database
     case 'schema':
       return node.schema
     case 'relation':
@@ -102,7 +104,12 @@ function showDdl(node: Extract<DatabaseExplorerNode, { kind: 'relation' | 'routi
   if (node.kind === 'relation') {
     dialogs.showDdl(
       node.connectionId,
-      { kind: 'relation', schema: node.schema, relation: node.relation.name },
+      {
+        kind: 'relation',
+        ...(node.database === null ? {} : { database: node.database }),
+        schema: node.schema,
+        relation: node.relation.name
+      },
       node.relation.name
     )
     return
@@ -111,6 +118,7 @@ function showDdl(node: Extract<DatabaseExplorerNode, { kind: 'relation' | 'routi
     node.connectionId,
     {
       kind: 'routine',
+      ...(node.database === null ? {} : { database: node.database }),
       schema: node.schema,
       identity: node.routine.identity,
       routineKind: node.routine.kind
@@ -129,15 +137,27 @@ export function DatabaseExplorerContextMenu({
   return (
     <ContextMenuContent>
       {node.kind === 'connection' ? <ConnectionItems connectionId={node.connectionId} /> : null}
+      {node.kind === 'database' ? (
+        <ContextMenuItem
+          onSelect={() => openDatabaseConsole(node.connectionId, null, node.database)}
+        >
+          <SquareTerminal />
+          {translate('database.explorer.newConsole', 'New Console')}
+        </ContextMenuItem>
+      ) : null}
       {node.kind === 'schema' ? (
-        <ContextMenuItem onSelect={() => openDatabaseConsole(node.connectionId, node.schema)}>
+        <ContextMenuItem
+          onSelect={() => openDatabaseConsole(node.connectionId, node.schema, node.database)}
+        >
           <SquareTerminal />
           {translate('database.explorer.newConsole', 'New Console')}
         </ContextMenuItem>
       ) : null}
       {node.kind === 'relation' ? (
         <ContextMenuItem
-          onSelect={() => openDatabaseTable(node.connectionId, node.schema, node.relation.name)}
+          onSelect={() =>
+            openDatabaseTable(node.connectionId, node.schema, node.relation.name, node.database)
+          }
         >
           <Table2 />
           {translate('database.explorer.openData', 'Open Data')}
