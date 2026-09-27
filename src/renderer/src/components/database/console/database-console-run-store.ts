@@ -11,10 +11,12 @@ import type { SqlStatementRange } from '../../../../../shared/database/sql-state
 import { asDatabaseResult, useDatabaseConnectionsStore } from '../database-connections-store'
 import type { DatabaseRunTarget } from '../database-page-tabs'
 import { offsetOfStatementLine } from './database-console-statements'
+import { invalidateSqlCatalog } from './sql-completion-catalog'
 
 /** Rows kept per result in the renderer; scrolling stops loading past this. */
 export const DATABASE_MAX_BUFFERED_ROWS = 100_000
 const LOG_LIMIT = 200
+const SCHEMA_CHANGE = /^(create|alter|drop|rename)\b/i
 
 export const OUTPUT_RESULT_ID = 'output'
 
@@ -203,6 +205,13 @@ export const useDatabaseConsoleRunStore = create<DatabaseConsoleRunStore>((set, 
             return
           }
           recordResults(tab.id, statement.text, response.value.results, { focus: true })
+          if (
+            response.value.results.some(
+              (value) => value.kind === 'command' && SCHEMA_CHANGE.test(value.command)
+            )
+          ) {
+            invalidateSqlCatalog(tab.connectionId)
+          }
         }
       } finally {
         patch(tab.id, () => ({ running: false }))
