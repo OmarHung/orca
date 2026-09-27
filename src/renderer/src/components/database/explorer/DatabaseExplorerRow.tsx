@@ -11,6 +11,8 @@ import {
 } from 'lucide-react'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
+import { useAppStore } from '@/store'
+import { isServerConnection } from '../../../../../shared/database/database-connection-types'
 import { cn } from '@/lib/utils'
 import { DatabaseSessionDot } from '../DatabaseConnectionBadge'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
@@ -48,13 +50,25 @@ function NodeIcon({ node }: { node: DatabaseExplorerNode }): React.JSX.Element {
 }
 
 function ConnectionLabel({ connectionId }: { connectionId: string }): React.JSX.Element {
-  const name = useDatabaseConnectionsStore(
-    (state) => state.connections.find((entry) => entry.id === connectionId)?.name ?? ''
+  const connection = useDatabaseConnectionsStore((state) =>
+    state.connections.find((entry) => entry.id === connectionId)
   )
   const session = useDatabaseConnectionsStore((state) => state.sessions[connectionId])
+  const sshTargetId =
+    connection && isServerConnection(connection) ? connection.sshTunnel?.targetId : undefined
+  const sshLabel = useAppStore((state) =>
+    sshTargetId ? (state.sshTargetLabels.get(sshTargetId) ?? null) : undefined
+  )
   return (
     <>
-      <span className="truncate">{name}</span>
+      <span className="truncate">{connection?.name ?? ''}</span>
+      {sshLabel !== undefined ? (
+        <span className="truncate text-muted-foreground">
+          {translate('database.explorer.viaSsh', 'via {{value0}}', {
+            value0: sshLabel ?? translate('database.connectionForm.sshRemoved', 'Removed SSH host')
+          })}
+        </span>
+      ) : null}
       <DatabaseSessionDot state={session?.state ?? 'disconnected'} />
       {session?.state === 'error' && session.message ? (
         <span className="truncate text-destructive" title={session.message}>
