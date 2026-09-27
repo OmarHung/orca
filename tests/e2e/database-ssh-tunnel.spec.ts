@@ -8,6 +8,7 @@ import {
 } from './helpers/database-page'
 import {
   cleanupDockerSshRelayTarget,
+  execDockerSshRelayTargetControlCommand,
   startDockerSshRelayTarget,
   type DockerSshRelayTarget
 } from './helpers/docker-ssh-relay-target'
@@ -83,8 +84,10 @@ test.describe('Database SSH tunnels', () => {
     test.setTimeout(300_000)
     const target = startDockerSshRelayTarget(testInfo)
     try {
+      // A tunnel only forwards ports, so it must work on a host where Orca's relay can't run.
+      execDockerSshRelayTargetControlCommand(target, 'mv "$(command -v node)" /tmp/node.hidden')
       await trustDockerSshHost(electronApp, target)
-      const bastionId = await addBastion(orcaPage, target)
+      await addBastion(orcaPage, target)
       await openDatabasePage(orcaPage)
 
       const mysql = containerAddress(new URL(MYSQL_URL!))
@@ -123,7 +126,8 @@ test.describe('Database SSH tunnels', () => {
       await orcaPage.screenshot({ path: testInfo.outputPath('database-ssh-tunnel.png') })
 
       // Resetting the SSH link takes the tunnel down; connecting again rebuilds both.
-      await orcaPage.evaluate((targetId) => window.api.ssh.disconnect({ targetId }), bastionId)
+      // The SSH host drops our session, as a network change or sshd restart would.
+      execDockerSshRelayTargetControlCommand(target, "pkill -f '^sshd: root' || true")
       await expect(mysqlRow).toContainText(/SSH connection to db-bastion was reset/, {
         timeout: 30_000
       })
