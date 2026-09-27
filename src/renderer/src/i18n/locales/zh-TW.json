@@ -16521,7 +16521,7 @@
           "interrupted": "已中斷",
           "state": {
             "working": "工作中",
-            "monitoring": "監控背景任務",
+            "monitoring": "監控後台任務",
             "blocked": "受阻",
             "waiting": "等待輸入",
             "failed": "失敗",
@@ -17148,7 +17148,7 @@
         "activitySubagentOne": "子代理執行中：{{value0}}",
         "activitySubagentMany": "{{value0}} 個子代理執行中",
         "activityMonitorOne": "正在監控：{{value0}}",
-        "activityMonitorMany": "正在監控 {{value0}} 個背景任務"
+        "activityMonitorMany": "正在監控 {{value0}} 個後台任務"
       },
       "linear-issue-attribute-filter-coverage-notice": {
         "statusPartialTeamCoverage": "過濾 {{value1}} 團隊狀態中的 {{value0}} — 不包括其餘團隊的問題。",
@@ -17558,15 +17558,15 @@
         "byteLength": "{{value0}} 位元組"
       },
       "backgroundTasks": {
-        "monitoring": "監控背景任務",
+        "monitoring": "監控後台任務",
         "stop": "停止",
         "stopTask": "停止{{value0}}",
-        "stopAll": "停止背景任務",
+        "stopAll": "停止後台任務",
         "agent": "後台特工",
         "workflow": "後台工作流程",
         "command": "後台命令",
         "monitor": "後台監控",
-        "task": "背景任務",
+        "task": "後台任務",
         "outputFile": "輸出：{{value0}}",
         "detailsUnavailable": "此會話的任務詳細資訊不可用。",
         "countAgentsOne": "1 個代理",
@@ -17580,7 +17580,7 @@
         "countWorkflowsMany": "{{value0}} 工作流程",
         "countTasksOne": "1 項任務",
         "countTasksMany": "{{value0}} 任務",
-        "headerTotal": "{{value0}} 背景任務",
+        "headerTotal": "{{value0}} 後台任務",
         "stateWorking": "處理中",
         "stateMonitoring": "監控",
         "stateWaiting": "等待",
@@ -18891,7 +18891,6 @@
       "primaryKey": "主鍵",
       "refresh": "重新整理",
       "routines": "例程",
-      "runScript": "執行 SQL 指令碼…",
       "showDdl": "檢視 DDL",
       "unique": "唯一",
       "uniqueKey": "唯一鍵",
@@ -18937,26 +18936,6 @@
       "search": "搜尋查詢歷史",
       "title": "查詢歷史"
     },
-    "jobs": {
-      "button": "任務",
-      "cancel": "取消",
-      "cancelling": "正在取消…",
-      "committed": "已提交",
-      "dismiss": "移除",
-      "finishedDetail": "{{value0}} 條語句 · {{value1}} 個錯誤 · {{value2}} 秒",
-      "list": "背景任務",
-      "moreErrors": "還有 {{value0}} 個",
-      "progress": "進度",
-      "rolledBack": "已回滾",
-      "runningCount": "任務（{{value0}} 個執行中）",
-      "runningDetail": "第 {{value0}}/{{value1}} 個檔案 · {{value2}} 條語句 · {{value3}} 個錯誤",
-      "scriptCancelled": "指令碼已取消，已執行 {{value0}} 條語句",
-      "scriptDone": "指令碼執行完畢：{{value0}} 條語句",
-      "scriptFailed": "指令碼無法執行",
-      "scriptHadErrors": "指令碼執行完畢，有 {{value0}} 個錯誤",
-      "starting": "正在開始…",
-      "titleMany": "{{value0}} 及另外 {{value1}} 個"
-    },
     "output": {
       "cancelled": "已取消",
       "command": "{{value0}} 完成，耗時 {{value1}} 毫秒",
@@ -18995,20 +18974,6 @@
       "output": "輸出",
       "rowCount": "{{value0}} 列",
       "tab": "結果 {{value0}}"
-    },
-    "runScript": {
-      "cancel": "取消",
-      "choose": "選擇檔案…",
-      "chooseAgain": "選擇其他檔案…",
-      "continue": "繼續執行並列出錯誤",
-      "description": "在 {{value0}} 上執行。",
-      "files": "指令碼檔案",
-      "onError": "語句失敗時",
-      "order": "共 {{value0}} 個檔案，{{value1}}。按此順序在同一個連線上執行。",
-      "run": "執行",
-      "stop": "停止",
-      "title": "執行 SQL 指令碼",
-      "transaction": "在一個交易中執行（任何語句失敗都會回滾）"
     },
     "session": {
       "connected": "已連線",
