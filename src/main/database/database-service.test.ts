@@ -88,7 +88,7 @@ describe('DatabaseService', () => {
 
   it('asks for a password when the server rejects the saved one', async () => {
     const service = createService()
-    const saved = service.saveConnection({ draft, password: 'wrong' })
+    const saved = await service.saveConnection({ draft, password: 'wrong' })
     expect(saved.ok).toBe(true)
     if (!saved.ok) {
       return
@@ -103,24 +103,42 @@ describe('DatabaseService', () => {
     expect(createService().listConnections()[0]?.hasSavedPassword).toBe(true)
   })
 
-  it('refuses a "forever" password without OS encryption and saves nothing', () => {
+  it('refuses a "forever" password without OS encryption and saves nothing', async () => {
     const service = createService(false)
-    const result = service.saveConnection({ draft, password: 'secret' })
+    const result = await service.saveConnection({ draft, password: 'secret' })
     expect(result.ok).toBe(false)
     expect(service.listConnections()).toEqual([])
   })
 
-  it('moves the saved password when the storage mode changes', () => {
+  it('moves the saved password when the storage mode changes', async () => {
     const service = createService()
-    const saved = service.saveConnection({ draft, password: 'secret' })
+    const saved = await service.saveConnection({ draft, password: 'secret' })
     if (!saved.ok) {
       throw new Error(saved.error.message)
     }
-    const never = service.saveConnection({
+    const never = await service.saveConnection({
       id: saved.value.id,
       draft: { ...draft, passwordStorage: 'never' }
     })
     expect(never.ok && never.value.hasSavedPassword).toBe(false)
+  })
+
+  it('reconnects with new settings saved while connected, but keeps the session on a rename', async () => {
+    const service = createService()
+    const saved = await service.saveConnection({ draft, password: 'right' })
+    if (!saved.ok) {
+      throw new Error(saved.error.message)
+    }
+    const id = saved.value.id
+    expect((await service.connect(id)).ok).toBe(true)
+
+    await service.saveConnection({ id, draft: { ...draft, name: 'Renamed' } })
+    expect((await service.connect(id)).ok).toBe(true)
+    expect(connectPasswords).toHaveLength(1)
+
+    await service.saveConnection({ id, draft: { ...draft, name: 'Renamed', readOnly: true } })
+    expect((await service.connect(id)).ok).toBe(true)
+    expect(connectPasswords).toHaveLength(2)
   })
 
   it('round-trips console text', async () => {

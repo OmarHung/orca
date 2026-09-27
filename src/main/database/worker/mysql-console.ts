@@ -7,7 +7,7 @@ import type {
 import { PagedBatchReader } from './database-batch-reader'
 import { endMysqlClient } from './mysql-client-factory'
 import { encodeMysqlRow, mysqlColumns } from './mysql-values'
-import { leadingKeyword } from './statement-keyword'
+import { commandRowCount, leadingKeyword } from './statement-keyword'
 
 function affectedRows(header: unknown): number | null {
   const value: unknown =
@@ -47,7 +47,7 @@ export class MysqlConsole {
         reader.addRow(encodeMysqlRow(row, fields))
       } else if (!reader.hasProducedRows) {
         // Why the guard: a CALL ends with an OK packet after its result sets; that one is noise.
-        reader.addCommand(leadingKeyword(sql), affectedRows(row))
+        reader.addCommand(leadingKeyword(sql), commandRowCount(sql, affectedRows(row)))
       }
     })
     query.on('error', (error: Error) => reader.fail(error))

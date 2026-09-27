@@ -44,6 +44,15 @@ for (const fixture of DRIVER_FIXTURES) {
       expect(result).toMatchObject({ kind: 'command', rowCount: 2 })
     })
 
+    it('reports no row count for statements that change no rows, even after ones that did', async () => {
+      const probe = `${fixture.table}_ddl`
+      await expectOk(execute(`update ${fixture.table} set name = name`))
+      const created = onlyResult(await expectOk(execute(`create table ${probe} (id int)`)))
+      const dropped = onlyResult(await expectOk(execute(`drop table ${probe}`)))
+      expect(created).toMatchObject({ kind: 'command', rowCount: null })
+      expect(dropped).toMatchObject({ kind: 'command', rowCount: null })
+    })
+
     it('pages a large result through the open statement', async () => {
       const first = onlyRows(await expectOk(execute(fixture.series(1200))))
       expect(first.rows).toHaveLength(500)

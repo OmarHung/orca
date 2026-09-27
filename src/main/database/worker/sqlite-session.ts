@@ -13,7 +13,7 @@ import type {
 } from '../../../shared/database/database-query-types'
 import { encodeTextCell } from './database-cell-encoding'
 import type { DatabaseDriverSession } from './database-driver'
-import { leadingKeyword } from './statement-keyword'
+import { commandRowCount, leadingKeyword } from './statement-keyword'
 
 type SqliteConnectionDraft = Extract<DatabaseConnectionDraft, { driver: 'sqlite' }>
 type OpenResult = { resultId: string; rows: Iterator<unknown> }
@@ -73,7 +73,12 @@ class SqliteConsole {
       const durationMs = Math.round(performance.now() - startedAt)
       return {
         results: [
-          { kind: 'command', command: leadingKeyword(sql), rowCount: Number(changes), durationMs }
+          {
+            kind: 'command',
+            command: leadingKeyword(sql),
+            rowCount: commandRowCount(sql, Number(changes)),
+            durationMs
+          }
         ]
       }
     }
