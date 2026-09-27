@@ -58,5 +58,21 @@ export type DatabaseScriptSummary = {
   transaction: 'committed' | 'rolled-back' | null
 }
 
+export type DatabaseJobRef = { connectionId: string; jobId: string }
+
+export type DatabaseRunScriptRequest = DatabaseJobRef & {
+  /** From `pickScripts`: which files to run. */
+  token: string
+  options: DatabaseScriptOptions
+}
+
+/** Pushed to the renderer while a job runs. */
+export type DatabaseJobEvent = {
+  kind: 'job-progress'
+  connectionId: string
+  jobId: string
+  progress: DatabaseJobProgress
+}
+
 export const DATABASE_SCRIPT_MAX_FAILURES = 100
 export const DATABASE_JOB_ID_PATTERN = /^[A-Za-z0-9-]{8,64}$/
