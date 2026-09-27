@@ -18,26 +18,49 @@ export function isNumericColumnType(typeName: string): boolean {
   return NUMERIC_TYPE.test(typeName.trim())
 }
 
-function textWidth(text: string): number {
-  return text.length * CHAR_PX + CELL_PADDING_PX
+/** Pixel width of a text in the grid font; the renderer measures it, tests estimate it. */
+export type MeasureGridText = (text: string) => number
+
+export function estimateGridTextWidth(text: string): number {
+  return text.length * CHAR_PX
+}
+
+/** The single-line form a cell shows in the grid (newlines collapse, like DataGrip). */
+export function gridCellDisplayText(cell: DatabaseCell): string | null {
+  const text = databaseCellText(cell)
+  return text === null ? null : text.replace(/\r?\n/g, '↵')
+}
+
+// Room for the sort arrow beside a header name.
+const SORT_ICON_PX = 16
+
+function widestColumnPx(
+  column: DatabaseColumn,
+  rows: readonly DatabaseCell[][],
+  index: number,
+  limits: { sampleRows: number; maxPx: number },
+  measure: MeasureGridText
+): number {
+  let width =
+    Math.max(measure(column.name) + SORT_ICON_PX, measure(column.typeName)) + CELL_PADDING_PX
+  const sample = Math.min(rows.length, limits.sampleRows)
+  for (let row = 0; row < sample && width < limits.maxPx; row += 1) {
+    const text = gridCellDisplayText(rows[row]?.[index] ?? null)
+    if (text !== null) {
+      width = Math.max(width, measure(text) + CELL_PADDING_PX)
+    }
+  }
+  return Math.min(limits.maxPx, Math.max(GRID_MIN_COLUMN_PX, Math.ceil(width)))
 }
 
 /** Sizes each column to its header or widest sampled value, clamped to a readable range. */
 export function measureGridColumns(
   columns: readonly DatabaseColumn[],
-  rows: readonly DatabaseCell[][]
+  rows: readonly DatabaseCell[][],
+  measure: MeasureGridText = estimateGridTextWidth
 ): number[] {
-  return columns.map((column, index) => {
-    let width = Math.max(textWidth(column.name), textWidth(column.typeName))
-    const sample = Math.min(rows.length, SAMPLE_ROWS)
-    for (let row = 0; row < sample && width < GRID_MAX_COLUMN_PX; row += 1) {
-      const text = databaseCellText(rows[row]?.[index] ?? null)
-      if (text !== null) {
-        width = Math.max(width, textWidth(text.split('\n', 1)[0] ?? ''))
-      }
-    }
-    return Math.min(GRID_MAX_COLUMN_PX, Math.max(GRID_MIN_COLUMN_PX, width))
-  })
+  const limits = { sampleRows: SAMPLE_ROWS, maxPx: GRID_MAX_COLUMN_PX }
+  return columns.map((column, index) => widestColumnPx(column, rows, index, limits, measure))
 }
 
 export const GRID_FIT_MAX_COLUMN_PX = 800
@@ -47,23 +70,11 @@ const FIT_SAMPLE_ROWS = 2_000
 export function fitGridColumn(
   column: DatabaseColumn,
   rows: readonly DatabaseCell[][],
-  index: number
+  index: number,
+  measure: MeasureGridText = estimateGridTextWidth
 ): number {
-  let width = Math.max(textWidth(column.name), textWidth(column.typeName))
-  const sample = Math.min(rows.length, FIT_SAMPLE_ROWS)
-  for (let row = 0; row < sample; row += 1) {
-    const text = databaseCellText(rows[row]?.[index] ?? null)
-    if (text !== null) {
-      width = Math.max(width, textWidth(text.split('\n', 1)[0] ?? ''))
-    }
-  }
-  return Math.min(GRID_FIT_MAX_COLUMN_PX, Math.max(GRID_MIN_COLUMN_PX, width))
-}
-
-/** The single-line form a cell shows in the grid (newlines collapse, like DataGrip). */
-export function gridCellDisplayText(cell: DatabaseCell): string | null {
-  const text = databaseCellText(cell)
-  return text === null ? null : text.replace(/\r?\n/g, '↵')
+  const limits = { sampleRows: FIT_SAMPLE_ROWS, maxPx: GRID_FIT_MAX_COLUMN_PX }
+  return widestColumnPx(column, rows, index, limits, measure)
 }
 
 /** The scrollLeft that brings a column fully into view beside the sticky row numbers. */
