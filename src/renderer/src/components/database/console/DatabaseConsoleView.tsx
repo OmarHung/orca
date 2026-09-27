@@ -129,7 +129,12 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
           onClosed={() => editorRef.current?.focus()}
         />
         <div className="ml-2 flex items-center gap-1">
-          <DatabaseTransactionControls tab={tab} running={running} onEnd={endTransaction} />
+          <DatabaseTransactionControls
+            tab={tab}
+            running={running}
+            onEnd={endTransaction}
+            onModeMenuClosed={() => editorRef.current?.focus()}
+          />
         </div>
         {running ? <Loader2 className="size-3.5 animate-spin text-muted-foreground" /> : null}
         <div className="ml-auto">

@@ -20,6 +20,8 @@ type DatabaseTransactionControlsProps = {
   running: boolean
   /** Runs COMMIT or ROLLBACK on the console's session. */
   onEnd: (statement: 'COMMIT' | 'ROLLBACK') => void
+  /** Puts focus back in the console once the mode menu closes. */
+  onModeMenuClosed: () => void
 }
 
 function ToolbarButton({
@@ -60,7 +62,8 @@ function ToolbarButton({
 export function DatabaseTransactionControls({
   tab,
   running,
-  onEnd
+  onEnd,
+  onModeMenuClosed
 }: DatabaseTransactionControlsProps): React.JSX.Element {
   const transaction = useDatabaseConsoleRunStore(
     (state) => getConsoleRunState(state.consoles, tab.id).transaction
@@ -82,7 +85,13 @@ export function DatabaseTransactionControls({
         >
           <SelectValue />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent
+          // Why: returning focus to the trigger would take it from a console the user already clicked.
+          onCloseAutoFocus={(event) => {
+            event.preventDefault()
+            onModeMenuClosed()
+          }}
+        >
           <SelectItem value="auto">
             {translate('database.transaction.auto', 'Auto-commit')}
           </SelectItem>
