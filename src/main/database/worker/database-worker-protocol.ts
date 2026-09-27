@@ -10,7 +10,6 @@ import type {
   DatabaseRowsPage,
   DatabaseTransactionMode
 } from '../../../shared/database/database-query-types'
-import type { TableChangeSet } from '../../../shared/database/table-change-sql'
 
 // Must stay electron-free: imported by the worker thread entry.
 
@@ -34,7 +33,6 @@ export type DatabaseWorkerCommand =
       database?: string
     }
   | { type: 'fetch'; consoleId: string; resultId: string; pageSize: number }
-  | { type: 'applyChanges'; consoleId: string; changeSet: TableChangeSet }
   | { type: 'cancel'; consoleId: string }
   | { type: 'closeConsole'; consoleId: string }
   | { type: 'close' }
@@ -45,7 +43,6 @@ export type DatabaseWorkerValues = {
   ddl: { ddl: string }
   execute: DatabaseExecuteResult
   fetch: DatabaseRowsPage
-  applyChanges: { applied: number }
   cancel: { cancelled: boolean }
   closeConsole: null
   close: null

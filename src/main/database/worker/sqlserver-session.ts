@@ -15,7 +15,6 @@ import type {
   DatabaseDriverSession,
   DatabaseExecuteOptions
 } from './database-driver'
-import type { DatabaseChangeTransaction } from './table-change-transaction'
 import {
   SqlServerRequestQueue,
   closeSqlServer,
@@ -89,11 +88,6 @@ class SqlServerSession implements DatabaseDriverSession {
       throw new Error('This result is no longer open. Run the statement again to load more rows.')
     }
     return (await pending).fetch(resultId, pageSize)
-  }
-
-  // TDS cancels in-band (an attention packet), so no second session is needed.
-  async beginChanges(consoleId: string): Promise<DatabaseChangeTransaction> {
-    return (await this.consoles.acquire(consoleId)).beginChanges()
   }
 
   async cancel(consoleId: string): Promise<boolean> {

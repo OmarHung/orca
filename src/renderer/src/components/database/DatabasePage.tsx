@@ -15,7 +15,6 @@ import { closeDatabasePage } from './database-page-navigation'
 import { openDatabaseConsole, useDatabaseDialogsStore } from './database-page-actions'
 import { DATABASE_EXPLORER_WIDTH, useDatabasePageStore } from './database-page-store'
 import { DatabaseExplorerPanel } from './explorer/DatabaseExplorerPanel'
-import { DatabaseDiscardEditsDialog } from './table/DatabaseDiscardEditsDialog'
 import { DatabaseOpenTransactionDialog } from './console/DatabaseOpenTransactionDialog'
 import { DatabaseDdlDialog } from './explorer/DatabaseDdlDialog'
 import { DatabaseTableView } from './table/DatabaseTableView'
@@ -174,7 +173,6 @@ export default function DatabasePage(): React.JSX.Element {
       <ConnectionEditorHost />
       <DatabasePasswordDialog />
       <DatabaseDeleteConnectionDialog />
-      <DatabaseDiscardEditsDialog />
       <DatabaseOpenTransactionDialog />
       <DatabaseDdlDialog />
     </div>

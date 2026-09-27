@@ -14,15 +14,11 @@ import {
   type DatabaseConsoleLogOutcome
 } from '../console/database-console-run-store'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
-import { useDatabaseDialogsStore } from '../database-page-actions'
 import { useDatabasePageStore, type DatabaseTableTab } from '../database-page-store'
 import { qualifiedRelationName } from '../../../../../shared/database/sql-identifiers'
 import { DatabaseResultGrid } from '../grid/DatabaseResultGrid'
 import type { GridSort } from '../grid/database-grid-sort'
 import { buildTableDataSql, orderByForSort } from '../../../../../shared/database/table-data-sql'
-import { DatabaseChangesPreviewDialog } from './DatabaseChangesPreviewDialog'
-import { DatabaseTableEditControls } from './DatabaseTableEditControls'
-import { useTableEditing } from './use-table-editing'
 import { useTableRowCount, type TableRowCount } from './use-table-row-count'
 
 type TableQuery = { where: string; orderBy: string }
@@ -130,7 +126,7 @@ function QueryError({
   )
 }
 
-/** DataGrip-style table data editor (read-only for now): filter, server-side sort, paging. */
+/** DataGrip-style table data viewer: filter, server-side sort, paging. */
 export function DatabaseTableView({ tab }: { tab: DatabaseTableTab }): React.JSX.Element {
   const connection = useDatabaseConnectionsStore((state) =>
     state.connections.find((entry) => entry.id === tab.connectionId)
@@ -141,7 +137,6 @@ export function DatabaseTableView({ tab }: { tab: DatabaseTableTab }): React.JSX
   const cancel = useDatabaseConsoleRunStore((state) => state.cancel)
   const [draft, setDraft] = useState<TableQuery>({ where: tab.where, orderBy: tab.orderBy })
   const [headerSort, setHeaderSort] = useState<GridSort>(null)
-  const [previewSql, setPreviewSql] = useState<string | null>(null)
   const { rowCount, count, reset: resetCount } = useTableRowCount(tab, driver ?? 'postgres')
 
   // Why keep the previous result while re-running: no flash, and column widths survive.
@@ -168,40 +163,19 @@ export function DatabaseTableView({ tab }: { tab: DatabaseTableTab }): React.JSX
       runTableQuery(tab, driver, query)
     }
   }
-  const tableEditing = useTableEditing({
-    tab,
-    driver,
-    readOnly: connection?.readOnly ?? false,
-    result: shown?.result ?? null,
-    onSubmitted: () => apply({ where: tab.where, orderBy: tab.orderBy })
-  })
-  // Why ask: re-querying reloads the rows that pending edits point at.
-  const keepingEdits = (action: () => void): void => {
-    if (tableEditing.pendingCount > 0) {
-      useDatabaseDialogsStore.getState().askToDiscard(tab.id, action)
-    } else {
-      action()
+  const applyDraft = (): void => {
+    if (draft.orderBy !== tab.orderBy) {
+      setHeaderSort(null)
     }
+    apply(draft)
   }
-  const applyDraft = (): void =>
-    keepingEdits(() => {
-      if (draft.orderBy !== tab.orderBy) {
-        setHeaderSort(null)
-      }
-      apply(draft)
-    })
-  const changeSort = (next: GridSort): void =>
-    keepingEdits(() => {
-      const column = next ? shown?.result.columns[next.column] : undefined
-      const orderBy =
-        next && column && driver ? orderByForSort(column.name, next.direction, driver) : ''
-      setHeaderSort(next)
-      setDraft((previous) => ({ ...previous, orderBy }))
-      apply({ where: tab.where, orderBy })
-    })
-  const submit = (): void => {
-    setPreviewSql(null)
-    void tableEditing.submit()
+  const changeSort = (next: GridSort): void => {
+    const column = next ? shown?.result.columns[next.column] : undefined
+    const orderBy =
+      next && column && driver ? orderByForSort(column.name, next.direction, driver) : ''
+    setHeaderSort(next)
+    setDraft((previous) => ({ ...previous, orderBy }))
+    apply({ where: tab.where, orderBy })
   }
   const shownId = shown?.id ?? null
   const loadMore = useCallback(() => {
@@ -221,7 +195,7 @@ export function DatabaseTableView({ tab }: { tab: DatabaseTableTab }): React.JSX
           size="icon-sm"
           disabled={runState.running || !driver}
           aria-label={translate('database.table.refresh', 'Refresh')}
-          onClick={() => keepingEdits(() => apply({ where: tab.where, orderBy: tab.orderBy }))}
+          onClick={() => apply({ where: tab.where, orderBy: tab.orderBy })}
         >
           <RotateCw />
         </Button>
@@ -234,19 +208,6 @@ export function DatabaseTableView({ tab }: { tab: DatabaseTableTab }): React.JSX
         >
           <Square />
         </Button>
-        {shown ? (
-          <DatabaseTableEditControls
-            lockReason={tableEditing.tableLock}
-            pendingCount={tableEditing.pendingCount}
-            submitting={tableEditing.submitting}
-            hasSelection={tableEditing.hasSelection}
-            onAddRow={tableEditing.addRow}
-            onDeleteRows={tableEditing.deleteSelected}
-            onRevertAll={tableEditing.revertAll}
-            onPreview={() => setPreviewSql(tableEditing.previewSql())}
-            onSubmit={submit}
-          />
-        ) : null}
         <FilterField
           label="WHERE"
           value={draft.where}
@@ -272,7 +233,7 @@ export function DatabaseTableView({ tab }: { tab: DatabaseTableTab }): React.JSX
         {shown && driver ? (
           <DatabaseResultGrid
             columns={shown.result.columns}
-            rows={tableEditing.rows}
+            rows={shown.result.rows}
             canLoadMore={
               !runState.running &&
               shown.result.hasMore &&
@@ -281,7 +242,6 @@ export function DatabaseTableView({ tab }: { tab: DatabaseTableTab }): React.JSX
             }
             onLoadMore={loadMore}
             serverSort={{ sort: headerSort, onChange: changeSort }}
-            editing={tableEditing.editing}
             exportTarget={{
               table: qualifiedRelationName(tab.schema, tab.relation, driver),
               driver,
@@ -295,14 +255,6 @@ export function DatabaseTableView({ tab }: { tab: DatabaseTableTab }): React.JSX
         <DatabaseResultFooter
           result={shown}
           extra={<RowCountControl rowCount={rowCount} onCount={() => void count()} />}
-        />
-      ) : null}
-      {previewSql !== null ? (
-        <DatabaseChangesPreviewDialog
-          sql={previewSql}
-          submitting={tableEditing.submitting}
-          onSubmit={submit}
-          onClose={() => setPreviewSql(null)}
         />
       ) : null}
     </div>

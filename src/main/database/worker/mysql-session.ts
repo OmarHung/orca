@@ -14,7 +14,6 @@ import type {
   DatabaseDriverSession,
   DatabaseExecuteOptions
 } from './database-driver'
-import type { DatabaseChangeTransaction } from './table-change-transaction'
 import {
   connectMysqlClient,
   endMysqlClient,
@@ -66,10 +65,6 @@ class MysqlSession implements DatabaseDriverSession {
       throw new Error('This result is no longer open. Run the statement again to load more rows.')
     }
     return (await pending).fetch(resultId, pageSize)
-  }
-
-  async beginChanges(consoleId: string): Promise<DatabaseChangeTransaction> {
-    return (await this.consoles.acquire(consoleId)).beginChanges()
   }
 
   async cancel(consoleId: string): Promise<boolean> {

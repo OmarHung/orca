@@ -12,7 +12,7 @@ import {
 export const ROW_HEADER_COLUMN = -1
 
 /** The cell (or row-number header) an event happened in. */
-export function gridCellFromTarget(target: EventTarget | null): GridCell | null {
+function gridCellFromTarget(target: EventTarget | null): GridCell | null {
   const element = target instanceof Element ? target.closest<HTMLElement>('[data-grid-row]') : null
   if (!element) {
     return null

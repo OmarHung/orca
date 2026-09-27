@@ -11,7 +11,6 @@ import { PagedBatchReader } from './database-batch-reader'
 import { endMysqlClient, queryMysqlRows } from './mysql-client-factory'
 import { encodeMysqlRow, mysqlColumns } from './mysql-values'
 import { commandRowCount, leadingKeyword } from './statement-keyword'
-import type { DatabaseChangeTransaction } from './table-change-transaction'
 
 // SERVER_STATUS_IN_TRANS in the OK packet's status flags.
 const IN_TRANSACTION_FLAG = 1
@@ -101,22 +100,6 @@ export class MysqlConsole {
       return await reader.nextPage(pageSize)
     } finally {
       this.releaseIfDone(reader)
-    }
-  }
-
-  async beginChanges(): Promise<DatabaseChangeTransaction> {
-    await this.abandonOpen()
-    await this.control('START TRANSACTION')
-    return {
-      // Why execute: server-side prepared statements bind every value.
-      run: ({ sql, params }) =>
-        new Promise((resolve, reject) => {
-          this.client.execute(sql, params, (error, result) =>
-            error ? reject(error) : resolve(affectedRows(result) ?? 0)
-          )
-        }),
-      commit: () => this.control('COMMIT'),
-      rollback: () => this.control('ROLLBACK')
     }
   }
 
