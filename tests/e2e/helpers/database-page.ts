@@ -14,6 +14,19 @@ export async function openDatabasePage(page: Page): Promise<void> {
   await expect(page.getByRole('heading', { name: 'Database' })).toBeVisible()
 }
 
+/** Saves a SQLite connection for `filePath` through the connection dialog. */
+export async function addSqliteConnection(page: Page, filePath: string): Promise<void> {
+  await page.getByRole('button', { name: 'New Connection' }).first().click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Type').click()
+  await page.getByRole('option', { name: 'SQLite' }).click()
+  await dialog.getByLabel('Database file').fill(filePath)
+  await dialog.getByRole('button', { name: 'Test Connection' }).click()
+  await expect(dialog.getByText(/Connected to SQLite 3\./)).toBeVisible({ timeout: 20_000 })
+  await dialog.getByRole('button', { name: 'Save' }).click()
+  await expect(dialog).toBeHidden()
+}
+
 /** Types into the active console's Monaco editor, replacing its text, and runs it. */
 export async function runInConsole(page: Page, sql: string): Promise<void> {
   await page.locator('.monaco-editor').first().click()

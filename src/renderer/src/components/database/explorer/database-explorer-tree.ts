@@ -1,4 +1,3 @@
-import type { DatabaseDriver } from '../../../../../shared/database/database-connection-types'
 import type {
   DatabaseColumnInfo,
   DatabaseIntrospectResult,
@@ -134,39 +133,4 @@ export function flattenDatabaseExplorer(
   }
   roots.forEach((root) => visit(root, 0))
   return rows
-}
-
-// Names that need no quoting: PostgreSQL folds unquoted names to lower case, so only those.
-const PLAIN_NAME: Record<DatabaseDriver, RegExp> = {
-  postgres: /^[a-z_][a-z0-9_$]*$/,
-  mysql: /^[A-Za-z_][A-Za-z0-9_$]*$/,
-  sqlserver: /^[A-Za-z_][A-Za-z0-9_]*$/,
-  sqlite: /^[A-Za-z_][A-Za-z0-9_]*$/
-}
-
-function quoteName(name: string, driver: DatabaseDriver): string {
-  if (PLAIN_NAME[driver].test(name)) {
-    return name
-  }
-  switch (driver) {
-    case 'mysql':
-      return `\`${name.replaceAll('`', '``')}\``
-    case 'sqlserver':
-      return `[${name.replaceAll(']', ']]')}]`
-    case 'postgres':
-    case 'sqlite':
-      return `"${name.replaceAll('"', '""')}"`
-  }
-}
-
-export function qualifiedRelationName(
-  schema: string,
-  relation: string,
-  driver: DatabaseDriver = 'postgres'
-): string {
-  // SQLite's main database needs no prefix.
-  if (driver === 'sqlite' && schema === 'main') {
-    return quoteName(relation, driver)
-  }
-  return `${quoteName(schema, driver)}.${quoteName(relation, driver)}`
 }

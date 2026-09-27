@@ -9,7 +9,7 @@ import type {
 import { DATABASE_DEFAULT_PAGE_SIZE } from '../../../../../shared/database/database-session-types'
 import type { SqlStatementRange } from '../../../../../shared/database/sql-statement-splitter'
 import { asDatabaseResult, useDatabaseConnectionsStore } from '../database-connections-store'
-import type { DatabaseConsoleTab } from '../database-page-store'
+import type { DatabaseRunTarget } from '../database-page-tabs'
 import { offsetOfStatementLine } from './database-console-statements'
 
 /** Rows kept per result in the renderer; scrolling stops loading past this. */
@@ -58,15 +58,15 @@ const EMPTY_RUN_STATE: DatabaseConsoleRunState = {
 
 type DatabaseConsoleRunStore = {
   consoles: Record<string, DatabaseConsoleRunState>
-  run: (tab: DatabaseConsoleTab, statements: SqlStatementRange[]) => Promise<void>
-  fetchMore: (tab: DatabaseConsoleTab, resultTabId: string) => Promise<void>
-  cancel: (tab: DatabaseConsoleTab) => Promise<void>
+  run: (tab: DatabaseRunTarget, statements: SqlStatementRange[]) => Promise<void>
+  fetchMore: (tab: DatabaseRunTarget, resultTabId: string) => Promise<void>
+  cancel: (tab: DatabaseRunTarget) => Promise<void>
   selectResult: (tabId: string, resultId: string) => void
   dispose: (tabId: string) => void
 }
 
 async function execute(
-  tab: DatabaseConsoleTab,
+  tab: DatabaseRunTarget,
   sql: string
 ): Promise<DatabaseResult<DatabaseExecuteResult>> {
   return asDatabaseResult(
@@ -81,7 +81,7 @@ async function execute(
 
 /** Retries once after reconnecting when main dropped the session (e.g. a restarted SQLite worker). */
 async function executeReconnecting(
-  tab: DatabaseConsoleTab,
+  tab: DatabaseRunTarget,
   sql: string
 ): Promise<DatabaseResult<DatabaseExecuteResult>> {
   const response = await execute(tab, sql)
