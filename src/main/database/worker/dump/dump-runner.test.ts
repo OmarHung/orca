@@ -198,4 +198,27 @@ describe('runDump', () => {
     expect(summary).toMatchObject({ cancelled: true, files: [] })
     expect(existsSync(path)).toBe(false)
   })
+
+  it('counts a read that a cancel broke off as cancelled, and any other break as failed', async () => {
+    const interrupted = (byCancel: boolean) => {
+      let batches = 0
+      let broken = false
+      const onRows = (): void => {
+        batches += 1
+        if (batches > 1) {
+          broken = true
+          throw new Error('Canceled.')
+        }
+      }
+      return runDump({
+        source: fakeSource({ onRows }),
+        request: request(),
+        output: new DumpOutput({ kind: 'file', path: join(dir, 'interrupted.sql') }, 'postgres'),
+        onProgress: () => undefined,
+        isCancelled: () => byCancel && broken
+      })
+    }
+    await expect(interrupted(false)).rejects.toThrow('Canceled.')
+    await expect(interrupted(true)).resolves.toMatchObject({ cancelled: true, files: [] })
+  })
 })
