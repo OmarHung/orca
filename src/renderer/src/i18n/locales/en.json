@@ -22292,6 +22292,7 @@
     },
     "explorer": {
       "connect": "Connect",
+      "connections": "Connections",
       "copyName": "Copy Name",
       "copyQualifiedName": "Copy Qualified Name",
       "deleteConnection": "Delete Connection…",
@@ -22303,6 +22304,7 @@
       "keys": "Keys",
       "label": "Database objects",
       "loading": "Loading…",
+      "newConnection": "New Connection…",
       "newConsole": "New Console",
       "noConnections": "No connections yet.",
       "notNull": "not null",

@@ -14,7 +14,7 @@ import { useDatabaseConnectionsStore } from './database-connections-store'
 import { closeDatabasePage } from './database-page-navigation'
 import { openDatabaseConsole, useDatabaseDialogsStore } from './database-page-actions'
 import { DATABASE_EXPLORER_WIDTH, useDatabasePageStore } from './database-page-store'
-import { DatabaseExplorer } from './explorer/DatabaseExplorer'
+import { DatabaseExplorerPanel } from './explorer/DatabaseExplorerPanel'
 import { DatabaseDiscardEditsDialog } from './table/DatabaseDiscardEditsDialog'
 import { DatabaseOpenTransactionDialog } from './console/DatabaseOpenTransactionDialog'
 import { DatabaseDdlDialog } from './explorer/DatabaseDdlDialog'
@@ -128,7 +128,7 @@ function DatabaseWorkbench(): React.JSX.Element {
   return (
     <div ref={containerRef} className="flex min-h-0 flex-1">
       <div className="relative shrink-0 border-r border-border" style={{ width: size }}>
-        <DatabaseExplorer />
+        <DatabaseExplorerPanel />
         <ResizeHandle
           edge="right"
           label={translate('database.page.resizeExplorer', 'Resize database explorer')}
