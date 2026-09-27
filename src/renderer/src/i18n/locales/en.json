@@ -18765,7 +18765,8 @@
   },
   "database": {
     "connection": {
-      "missing": "Deleted connection"
+      "missing": "Deleted connection",
+      "readOnly": "Read-only"
     },
     "connectionDialog": {
       "cancel": "Cancel",
@@ -18811,6 +18812,9 @@
     },
     "console": {
       "cancel": "Cancel running statement",
+      "chooseDatabase": "Choose database",
+      "chooseSchema": "Choose schema",
+      "database": "Database",
       "editorLabel": "SQL console",
       "errorMarker": "The server reported an error here",
       "formatFailed": "Some SQL was left unformatted",
@@ -18820,6 +18824,7 @@
       "runAll": "Run All Statements",
       "runStatement": "Run Statement",
       "runStatementHint": "Run statement at caret",
+      "schema": "Schema",
       "title": "Console"
     },
     "ddl": {
