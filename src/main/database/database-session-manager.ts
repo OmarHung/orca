@@ -1,7 +1,9 @@
-import type {
-  DatabaseConnection,
-  DatabaseConnectionDraft,
-  DatabaseDriver
+import { randomUUID } from 'node:crypto'
+import {
+  isServerConnection,
+  type DatabaseConnection,
+  type DatabaseConnectionDraft,
+  type DatabaseDriver
 } from '../../shared/database/database-connection-types'
 import type { DatabaseError, DatabaseResult } from '../../shared/database/database-query-types'
 import type { DatabaseSessionEvent } from '../../shared/database/database-session-types'
@@ -16,10 +18,22 @@ const CLOSE_GRACE_MS = 2_000
 
 type ConnectResult = DatabaseResult<{ serverVersion: string }>
 
+/** A local port that reaches a connection's server through its SSH host. */
+export type DatabaseTunnel = { localPort: number; close: () => Promise<void> }
+
+export type OpenDatabaseTunnel = (
+  request: { key: string; targetId: string; remoteHost: string; remotePort: number },
+  /** Called at most once if the tunnel goes away on its own. */
+  onLost: (message: string) => void
+) => Promise<DatabaseTunnel>
+
+type Route = { ok: true; tunnel: DatabaseTunnel | null } | { ok: false; error: DatabaseError }
+
 type SessionEntry = {
   client: DatabaseWorkerClient
   serverVersion: string | null
   connecting: Promise<ConnectResult> | null
+  tunnel: DatabaseTunnel | null
 }
 
 type SessionCommand = Exclude<DatabaseWorkerCommandType, 'connect' | 'close'>
@@ -41,6 +55,8 @@ export class DatabaseSessionManager {
     private readonly deps: {
       spawnWorker: (driver: DatabaseDriver) => DatabaseWorkerPort
       emit: (event: DatabaseSessionEvent) => void
+      /** Absent where Orca has no SSH stack (e.g. tests): tunneled connections then fail. */
+      openTunnel?: OpenDatabaseTunnel
     }
   ) {}
 
@@ -59,15 +75,28 @@ export class DatabaseSessionManager {
       const client = new DatabaseWorkerClient(this.deps.spawnWorker(connection.driver), (message) =>
         this.handleConnectionLost(connectionId, entry, message)
       )
-      entry = { client, serverVersion: null, connecting: null }
+      entry = { client, serverVersion: null, connecting: null, tunnel: null }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       this.deps.emit({ kind: 'session-state', connectionId, state: 'error', message })
       return Promise.resolve({ ok: false, error: { message, code: 'unavailable' } })
     }
     this.sessions.set(connectionId, entry)
-    entry.connecting = entry.client
-      .request({ type: 'connect', connection, password })
+    entry.connecting = this.openRoute(connection, connectionId, (message) =>
+      this.handleConnectionLost(connectionId, entry, message)
+    )
+      .then((route): Promise<ConnectResult> | ConnectResult => {
+        if (!route.ok) {
+          return { ok: false, error: route.error }
+        }
+        entry.tunnel = route.tunnel
+        return entry.client.request({
+          type: 'connect',
+          connection,
+          password,
+          tunnelPort: route.tunnel?.localPort
+        })
+      })
       .then((result) => this.settleConnect(connectionId, entry, result))
     return entry.connecting
   }
@@ -81,14 +110,24 @@ export class DatabaseSessionManager {
       const message = error instanceof Error ? error.message : String(error)
       return { ok: false, error: { message, code: 'unavailable' } }
     }
+    const route = await this.openRoute(draft, `test:${randomUUID()}`, () => undefined)
     try {
-      const result = await client.request({ type: 'connect', connection: draft, password })
+      if (!route.ok) {
+        return { ok: false, error: route.error }
+      }
+      const result = await client.request({
+        type: 'connect',
+        connection: draft,
+        password,
+        tunnelPort: route.tunnel?.localPort
+      })
       if (result.ok) {
         await Promise.race([client.request({ type: 'close' }), delay(CLOSE_GRACE_MS)])
       }
       return result
     } finally {
       await client.terminate()
+      await (route.ok ? route.tunnel?.close() : undefined)
     }
   }
 
@@ -115,6 +154,7 @@ export class DatabaseSessionManager {
     this.sessions.delete(connectionId)
     await Promise.race([entry.client.request({ type: 'close' }), delay(CLOSE_GRACE_MS)])
     await entry.client.terminate()
+    await entry.tunnel?.close()
     this.deps.emit({ kind: 'session-state', connectionId, state: 'disconnected' })
   }
 
@@ -131,7 +171,36 @@ export class DatabaseSessionManager {
     // Why emit first: waiting for the worker to die must not delay the UI learning it's gone.
     this.deps.emit({ kind: 'session-state', connectionId, state: 'disconnected' })
     await entry.client.terminate(reason)
+    await entry.tunnel?.close()
     return true
+  }
+
+  /** Opens the connection's SSH tunnel, if it has one, before the worker dials it. */
+  private async openRoute(
+    draft: DatabaseConnectionDraft,
+    key: string,
+    onLost: (message: string) => void
+  ): Promise<Route> {
+    if (!isServerConnection(draft) || !draft.sshTunnel) {
+      return { ok: true, tunnel: null }
+    }
+    const { sshTunnel } = draft
+    if (!this.deps.openTunnel) {
+      return {
+        ok: false,
+        error: { message: 'SSH tunnels are not available here.', code: 'unavailable' }
+      }
+    }
+    try {
+      const tunnel = await this.deps.openTunnel(
+        { key, targetId: sshTunnel.targetId, remoteHost: draft.host, remotePort: draft.port },
+        onLost
+      )
+      return { ok: true, tunnel }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      return { ok: false, error: { message: `SSH tunnel: ${message}` } }
+    }
   }
 
   async disposeAll(): Promise<void> {
@@ -145,6 +214,7 @@ export class DatabaseSessionManager {
   ): ConnectResult {
     entry.connecting = null
     if (this.sessions.get(connectionId) !== entry) {
+      void entry.tunnel?.close()
       return { ok: false, error: { message: 'Connection was closed', code: 'unavailable' } }
     }
     if (result.ok) {
@@ -159,6 +229,7 @@ export class DatabaseSessionManager {
     }
     this.sessions.delete(connectionId)
     void entry.client.terminate()
+    void entry.tunnel?.close()
     this.deps.emit({
       kind: 'session-state',
       connectionId,
@@ -174,11 +245,13 @@ export class DatabaseSessionManager {
     }
     this.sessions.delete(connectionId)
     void entry.client.terminate()
+    void entry.tunnel?.close()
     this.deps.emit({
       kind: 'session-state',
       connectionId,
       state: 'error',
-      message: `Connection lost: ${message}`
+      // Why the check: mysql2's own message already starts with "Connection lost:".
+      message: /^connection lost/i.test(message) ? message : `Connection lost: ${message}`
     })
   }
 }
