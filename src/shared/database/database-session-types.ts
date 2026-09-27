@@ -1,4 +1,5 @@
 import type { DatabaseConnectionDraft } from './database-connection-types'
+import type { DatabaseTransactionMode } from './database-query-types'
 import type { TableChangeSet } from './table-change-sql'
 
 export type DatabaseSessionState = 'disconnected' | 'connecting' | 'connected' | 'error'
@@ -34,6 +35,8 @@ export type DatabaseExecuteRequest = DatabaseConsoleRef & {
   pageSize: number
   /** Console runs go to query history; table browsing's generated queries don't. */
   recordHistory?: boolean
+  /** Absent means auto-commit. */
+  transactionMode?: DatabaseTransactionMode
 }
 
 export type DatabaseFetchMoreRequest = DatabaseConsoleRef & { resultId: string; pageSize: number }
