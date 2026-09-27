@@ -153,5 +153,30 @@
     "from": "^(\\{\\{value0\\}\\}|\\d+) 行$",
     "to": "$1 列",
     "why": "A bare row count (\"{{value0}} rows\"); line counts carry more words."
+  },
+  {
+    "from": "^(已匯出|共) (\\{\\{value0\\}\\}) 行$",
+    "to": "$1 $2 列",
+    "why": "Database result row counts (\"Exported N rows\", \"N total\") are 列 in Taiwan."
+  },
+  {
+    "from": "^(匯出已載入的|計算總)行(數?)$",
+    "to": "$1列$2",
+    "why": "Database grid actions on rows (\"Export Loaded Rows\", \"Count rows\")."
+  },
+  {
+    "from": "^計數查詢沒有返回任何行。$",
+    "to": "計數查詢沒有傳回任何列。",
+    "why": "Database row count error; Taiwan uses 傳回 and 列."
+  },
+  {
+    "from": "^調整 (\\{\\{value0\\}\\}) 列寬$",
+    "to": "調整 $1 欄寬",
+    "why": "Database grid column resize; a column is 欄 in Taiwan (列 is a row)."
+  },
+  {
+    "from": "^選擇一個單元格以檢視它的值。$",
+    "to": "選取一個儲存格以檢視它的值。",
+    "why": "Database grid cell (儲存格); notebook cells keep their existing wording."
   }
 ]
