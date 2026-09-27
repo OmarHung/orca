@@ -15,6 +15,7 @@ export type CodeOutlineSymbolKind =
   | 'variable'
   | 'constant'
   | 'event'
+  | 'array'
 
 /** Lines and columns are 1-based, matching Monaco. */
 export type CodeOutlineSymbol = {
@@ -30,3 +31,6 @@ export type CodeOutlineSymbol = {
   endLine: number
   children: CodeOutlineSymbol[]
 }
+
+/** Maps a text offset to Monaco's 1-based position, e.g. `model.getPositionAt`. */
+export type OffsetToPosition = (offset: number) => { lineNumber: number; column: number }
