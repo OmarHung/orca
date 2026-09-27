@@ -139,16 +139,37 @@ describe('runDetectedConfiguration', () => {
 })
 
 describe('stopConfiguration', () => {
-  it('sends Ctrl-C first, and closes the tab if pressed again while stopping', async () => {
+  it('goes one step further per press: Ctrl-C, then SIGQUIT with the terminal kept, then closing it', async () => {
     await runConfiguration(target)
 
     stopConfiguration('wt', 'cmd')
-    expect(sendRuntimePtyInput).toHaveBeenCalledWith(null, 'pty-tab-1', '\x03')
+    expect(sendRuntimePtyInput).toHaveBeenLastCalledWith(null, 'pty-tab-1', '\x03')
     expect(useRunSessionStore.getState().sessionsByKey[key].status).toBe('stopping')
+
+    stopConfiguration('wt', 'cmd')
+    expect(sendRuntimePtyInput).toHaveBeenLastCalledWith(null, 'pty-tab-1', '\x03\x1c')
+    expect(appState.closeTab).not.toHaveBeenCalled()
+    expect(useRunSessionStore.getState().sessionsByKey[key]).toMatchObject({
+      status: 'stopping',
+      forceStopped: true
+    })
 
     stopConfiguration('wt', 'cmd')
     expect(appState.closeTab).toHaveBeenCalledWith('tab-1')
     expect(useRunSessionStore.getState().sessionsByKey[key].status).toBe('stopped')
+  })
+
+  it('starts over from Ctrl-C when the run is started again', async () => {
+    await runConfiguration(target)
+    stopConfiguration('wt', 'cmd')
+    stopConfiguration('wt', 'cmd')
+    dispatchTerminalCommandFinishedEvent('wt', 131, `tab-1:${LEAF}`)
+    await runConfiguration(target)
+
+    stopConfiguration('wt', 'cmd')
+
+    expect(sendRuntimePtyInput).toHaveBeenLastCalledWith(null, 'pty-tab-1', '\x03')
+    expect(useRunSessionStore.getState().sessionsByKey[key].forceStopped).toBeUndefined()
   })
 
   it('cancels a command the shell has not received yet instead of sending Ctrl-C', async () => {
@@ -197,7 +218,7 @@ describe('rerunConfiguration', () => {
     expect(useRunSessionStore.getState().sessionsByKey[key].status).toBe('running')
   })
 
-  it('closes the tab and starts fresh when the command ignores Ctrl-C', async () => {
+  it('forces, then closes the tab and starts fresh when the command ignores Ctrl-C', async () => {
     vi.useFakeTimers()
     await runConfiguration(target)
     runQuickCommandInNewTab.mockImplementation(() => {
@@ -207,6 +228,9 @@ describe('rerunConfiguration', () => {
 
     const rerun = rerunConfiguration(target)
     await vi.advanceTimersByTimeAsync(3_001)
+    expect(sendRuntimePtyInput).toHaveBeenLastCalledWith(null, 'pty-tab-1', '\x03\x1c')
+    expect(appState.closeTab).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(2_001)
     await rerun
 
     expect(appState.closeTab).toHaveBeenCalledWith('tab-1')
@@ -214,6 +238,21 @@ describe('rerunConfiguration', () => {
       tabId: 'tab-2',
       status: 'running'
     })
+  })
+})
+
+describe('rerunConfiguration after forcing', () => {
+  it('keeps the tab when the forceful signals end the old run', async () => {
+    vi.useFakeTimers()
+    await runConfiguration(target)
+
+    const rerun = rerunConfiguration(target)
+    await vi.advanceTimersByTimeAsync(3_001)
+    dispatchTerminalCommandFinishedEvent('wt', 131, `tab-1:${LEAF}`)
+    await rerun
+
+    expect(appState.closeTab).not.toHaveBeenCalled()
+    expect(sendRuntimePtyInput).toHaveBeenLastCalledWith(null, 'pty-tab-1', 'pnpm dev\r')
   })
 })
 
@@ -229,8 +268,8 @@ describe('runConfigurationAndWait', () => {
     const exit = runConfigurationAndWait(target)
     await vi.waitFor(() => expect(runQuickCommandInNewTab).toHaveBeenCalled())
     stopConfiguration('wt', 'cmd')
-    stopConfiguration('wt', 'cmd')
-    await expect(exit).resolves.toEqual({ status: 'stopped', exitCode: null })
+    dispatchTerminalCommandFinishedEvent('wt', 130, `tab-1:${LEAF}`)
+    await expect(exit).resolves.toEqual({ status: 'stopped', exitCode: 130 })
   })
 
   it('reports a stop when the run tab is closed', async () => {

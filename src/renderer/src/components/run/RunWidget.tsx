@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { ChevronDown, ListVideo } from 'lucide-react'
 import { DropdownMenu, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
   createTerminalQuickCommandDraft,
   TerminalQuickCommandDialog
 } from '@/components/terminal-quick-commands/TerminalQuickCommandDialog'
+import { useConfirmationDialog } from '@/components/confirmation-dialog-context'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { useWorktreeQuickCommands } from '@/hooks/use-worktree-quick-commands'
@@ -13,17 +14,32 @@ import type { TerminalQuickCommand } from '../../../../shared/terminal-quick-com
 import { useTabBarQuickCommandsShortcut } from '../tab-bar/tab-bar-quick-commands-shortcut'
 import { EditRunConfigurationsDialog } from './EditRunConfigurationsDialog'
 import { importWorkspaceLaunchJson, useWorkspaceHasLaunchJson } from './launch-json-import-action'
+import { RunStopControl } from './RunStopControl'
 import { RunWidgetActions } from './RunWidgetActions'
 import { RunWidgetMenu } from './RunWidgetMenu'
+import type { RunWidgetRowActions } from './RunWidgetMenuRow'
 import { loadSharedRunConfigurations } from './run-configuration-launcher'
 import { useRunConfigurationStore, type ListedRunConfiguration } from './run-configuration-store'
 import { useRecentRunStore } from './recent-run-store'
-import { useRunSessionStore } from './run-session-store'
+import { gentlestStopStage, runStopStage } from './run-session-store'
 import type { RunTarget } from './run-configuration-control'
-import type { RunWidgetScope } from './run-widget-actions'
-import { runWidgetItemForRun, runWidgetItems, selectedRunWidgetItem } from './run-widget-items'
+import {
+  debugWidgetItem,
+  runWidgetItem,
+  stopRunWidgetItem,
+  type RunWidgetScope
+} from './run-widget-actions'
+import {
+  footprintRuns,
+  isFootprintDebugging,
+  runWidgetFootprint,
+  type RunWidgetFootprint
+} from './run-widget-activity'
+import { runWidgetItems, selectedRunWidgetItem, type RunWidgetItem } from './run-widget-items'
 import { useWorktreeRunConfigurations } from './use-worktree-run-configurations'
 import { useCompoundQuickCommand } from './use-compound-quick-command'
+import { useFollowActiveRunTerminal } from './use-follow-active-run-terminal'
+import { useRunWidgetActivity } from './use-run-widget-activity'
 
 /** The Run widget's Add Quick Command dialog, which can also save a compound run configuration. */
 function RunWidgetQuickCommandDialog({
@@ -73,13 +89,6 @@ export function RunWidget({
     }
   }
   useTabBarQuickCommandsShortcut({ menuOpen, onOpenChange: onMenuOpenChange })
-  const activeRunKey = useRunSessionStore((s) =>
-    activeTerminalTabId
-      ? Object.values(s.sessionsByKey).find(
-          (session) => session.worktreeId === worktreeId && session.tabId === activeTerminalTabId
-        )?.commandKey
-      : undefined
-  )
   // Why keyed by menuOpen: the file can appear or disappear between openings.
   const hasLaunchJson = useWorkspaceHasLaunchJson(worktreeId, menuOpen)
   const items = runWidgetItems({
@@ -87,24 +96,44 @@ export function RunWidget({
     configurations: data?.listed ?? NO_CONFIGURATIONS,
     quickCommands: [...quick.repoCommands, ...quick.globalCommands]
   })
-  const activeRunItemKey = activeRunKey ? runWidgetItemForRun(items, activeRunKey)?.key : undefined
-  const repoId = data?.repoId
-  // Why on tab change only: switching to a run's terminal shows that run's controls, while a
-  // later pick from the menu still wins until the next switch.
-  useEffect(() => {
-    if (repoId !== undefined && activeRunItemKey) {
-      select(repoId, activeRunItemKey)
-    }
-  }, [activeTerminalTabId, activeRunItemKey, repoId, select])
+  const activity = useRunWidgetActivity(worktreeId)
+  const confirm = useConfirmationDialog()
+  const configurations = (data?.listed ?? NO_CONFIGURATIONS).map((entry) => entry.configuration)
+  const footprints = new Map(
+    items.map((item) => [item.key, runWidgetFootprint(item, configurations)] as const)
+  )
+  const footprintOf = (item: RunWidgetItem): RunWidgetFootprint =>
+    footprints.get(item.key) ?? runWidgetFootprint(item, configurations)
+  const selected = selectedRunWidgetItem(items, selectedKey)
+  useFollowActiveRunTerminal({
+    worktreeId,
+    repoId: data?.repoId,
+    activeTerminalTabId,
+    items,
+    selectedFootprint: selected ? footprintOf(selected) : null
+  })
   if (!data) {
     return null
   }
 
-  const selected = selectedRunWidgetItem(items, selectedKey)
   const scope: RunWidgetScope = {
     worktreeId,
     groupId,
     worktreePath: data.worktreePath
+  }
+  // Why Run and Debug close the menu: they open a terminal or a dialog. Rerun and Stop keep it
+  // open so several runs can be managed in one go.
+  const rowActions: RunWidgetRowActions = {
+    run: (item) => {
+      setMenuOpen(false)
+      void runWidgetItem(item, scope, confirm)
+    },
+    debug: (item) => {
+      setMenuOpen(false)
+      void debugWidgetItem(item, scope, confirm)
+    },
+    rerun: (item) => void runWidgetItem(item, scope, confirm),
+    stop: (item) => stopRunWidgetItem(item, footprintOf(item), activity, worktreeId)
   }
   const quickRepoId = quick.repoId
   const addHostId = quick.hosts.some((host) => host.hostId === quick.executionHostId)
@@ -141,6 +170,15 @@ export function RunWidget({
           items={items}
           selectedKey={selected?.key ?? null}
           onSelect={(item) => select(data.repoId, item.key)}
+          rowState={(item) => {
+            const runs = footprintRuns(footprintOf(item), activity)
+            return {
+              running: runs.length > 0,
+              debugging: isFootprintDebugging(footprintOf(item), activity),
+              stopStage: gentlestStopStage(runs.map(runStopStage))
+            }
+          }}
+          rowActions={rowActions}
           onEditConfigurations={() => setEditorOpen(true)}
           onImportLaunchJson={
             hasLaunchJson ? () => void importWorkspaceLaunchJson(worktreeId, data.repoId) : null
@@ -163,7 +201,15 @@ export function RunWidget({
           }}
         />
       </DropdownMenu>
-      {selected ? <RunWidgetActions item={selected} scope={scope} /> : null}
+      {selected ? (
+        <RunWidgetActions
+          item={selected}
+          scope={scope}
+          footprint={footprintOf(selected)}
+          activity={activity}
+        />
+      ) : null}
+      <RunStopControl worktreeId={worktreeId} activity={activity} />
       {editorOpen ? (
         <EditRunConfigurationsDialog
           worktreeId={worktreeId}

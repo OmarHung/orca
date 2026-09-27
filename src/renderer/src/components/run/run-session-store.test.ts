@@ -3,7 +3,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   finishRunSession,
+  gentlestStopStage,
   runSessionKey,
+  runStopStage,
   useRunSessionStore,
   type RunSession
 } from './run-session-store'
@@ -58,5 +60,25 @@ describe('useRunSessionStore', () => {
 
     expect(useRunSessionStore.getState().finishByTab('tab-1', 1)).toBeNull()
     expect(useRunSessionStore.getState().finishByTab('other-tab', 1)).toBeNull()
+  })
+})
+
+describe('runStopStage', () => {
+  it('interrupts a running run, forces a stopping one, and closes one already forced', () => {
+    expect(runStopStage(session())).toBe('interrupt')
+    expect(runStopStage(session({ status: 'stopping' }))).toBe('force')
+    expect(runStopStage(session({ status: 'stopping', forceStopped: true }))).toBe('close')
+  })
+
+  it('picks the gentlest step among several runs', () => {
+    expect(gentlestStopStage(['close', 'force'])).toBe('force')
+    expect(gentlestStopStage(['close', 'interrupt', 'force'])).toBe('interrupt')
+    expect(gentlestStopStage([])).toBeNull()
+  })
+
+  it('remembers that Stop has forced a run', () => {
+    useRunSessionStore.getState().upsertSession(session({ status: 'stopping' }))
+    useRunSessionStore.getState().markForceStopped(session().key)
+    expect(useRunSessionStore.getState().sessionsByKey[session().key].forceStopped).toBe(true)
   })
 })
