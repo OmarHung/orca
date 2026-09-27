@@ -10,7 +10,13 @@ import type {
   DatabaseRowsPage,
   DatabaseTransactionMode
 } from '../../../shared/database/database-query-types'
+import type {
+  DatabaseJobProgress,
+  DatabaseScriptOptions,
+  DatabaseScriptSummary
+} from '../../../shared/database/database-script-types'
 import type { TableChangeSet } from '../../../shared/database/table-change-sql'
+import type { SqlScriptFileSource } from './sql-script-runner'
 
 // Must stay electron-free: imported by the worker thread entry.
 
@@ -37,6 +43,14 @@ export type DatabaseWorkerCommand =
   | { type: 'applyChanges'; consoleId: string; changeSet: TableChangeSet }
   | { type: 'cancel'; consoleId: string }
   | { type: 'closeConsole'; consoleId: string }
+  /** Runs script files on a session of the job's own, reporting `job-progress` as it goes. */
+  | {
+      type: 'runScript'
+      jobId: string
+      files: SqlScriptFileSource[]
+      options: DatabaseScriptOptions
+    }
+  | { type: 'cancelJob'; jobId: string }
   | { type: 'close' }
 
 export type DatabaseWorkerValues = {
@@ -48,6 +62,8 @@ export type DatabaseWorkerValues = {
   applyChanges: { applied: number }
   cancel: { cancelled: boolean }
   closeConsole: null
+  runScript: DatabaseScriptSummary
+  cancelJob: { cancelled: boolean }
   close: null
 }
 
@@ -64,3 +80,4 @@ export type DatabaseWorkerMessage =
   | { kind: 'response'; id: number; result: DatabaseResult<unknown> }
   /** The server connection dropped outside any request (restart, network loss). */
   | { kind: 'connection-lost'; message: string }
+  | { kind: 'job-progress'; jobId: string; progress: DatabaseJobProgress }
