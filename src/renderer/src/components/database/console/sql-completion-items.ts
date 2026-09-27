@@ -195,7 +195,9 @@ export async function sqlCompletions(
     case 'relation': {
       const schema = site.schema === null ? resolver.current : resolveSchema(resolver, site.schema)
       const relations = await relationItems(resolver, schema)
-      return { prefix, items: site.schema === null ? [...relations, ...schemaItems] : relations }
+      // With a current schema, FROM needs no schema name; `other.` still lists another's tables.
+      const offerSchemas = site.schema === null && resolver.current === null
+      return { prefix, items: offerSchemas ? schemaItems : relations }
     }
     case 'any': {
       const [columns, relations] = await Promise.all([
