@@ -447,6 +447,59 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - **SSL `prefer` 連不上沒有 TLS 的 MySQL／MariaDB**：測試連線 OK，實際連線卻顯示「Connection was closed」。`prefer` 先試 TLS，伺服器沒有 TLS（Debian 套件裝的 MariaDB 預設如此）時改用明文；但被拒絕的那次嘗試被當成「連線中斷」回報，測試連線會忽略這個通知，實際連線則把 session 關掉。改成連上之後才回報中斷；連線途中被中斷時也改為顯示真正原因。原本所有整合測試都用 `disable`，所以沒測到；補了 `mariadb:10.5 --skip-ssl` 的整合測試和 e2e
 - **DROP／ALTER DATABASE 前放開 Orca 自己的閒置連線**：瀏覽過的資料庫會被 Orca 的元資料連線佔住，DROP 會回「正在使用中」；SQL Server 的 `SET SINGLE_USER WITH ROLLBACK IMMEDIATE` 還會把元資料連線踢掉、讓整條連線斷掉。執行這兩種語句前先放開（PG 關掉該資料庫的元資料連線，SQL Server 把元資料連線 `USE` 回預設資料庫）。其他 console 的連線屬於使用者，不動
 
+### Phase 6：Dump、匯出、執行 SQL 腳本（規劃，2026-09-28）
+
+使用者的決定（2026-09-28）：
+
+- Dump 兩種都要：預設用 Orca 內建的產生器，本機有 `pg_dump`／`mysqldump` 時可以改用原生工具
+- 匯出資料只要 SQL INSERT 一種格式
+- 匯入只要「執行 SQL 腳本檔」（匯回 dump 也走這條路）；CSV／Excel 匯入不做
+- 一定要有的選項：dump 成 SQL 時可勾「暫時解除外鍵約束」；dump／匯出可選「每張表一個檔案」或「全部合成一個檔案」
+
+**架構：背景工作（job）**
+
+- dump、匯出、執行腳本都是背景工作，在該連線的 worker 裡用自己的伺服器 session（專用的 console id），不會卡住畫面上的 console 和表格
+- worker 直接讀寫檔案：資料一頁一頁讀、一邊寫出，不把整張表或整個腳本載入記憶體
+- 路徑由 main 的存檔／選資料夾／開檔對話框取得並檢查後交給 worker
+- 進度（第幾張表、幾列、腳本讀到第幾個位元組和第幾條語句）透過事件推到畫面，可以取消
+- 資料庫頁面有「工作」清單：進行中的顯示進度和取消鈕，完成的顯示摘要和「在 Finder 中顯示」
+- 入口在結構樹右鍵：連線、資料庫、schema、資料表節點都有「Dump to SQL…」「Export Data…」「Run SQL Script…」
+
+**6.1 執行 SQL 腳本**
+
+- 可以一次選多個 `.sql` 檔，依檔名順序在同一個 session 執行，所以「每張表一個檔案」的 dump 能一次匯回；可以指定目標資料庫（列出全部資料庫的連線）
+- 串流讀檔、逐段切分語句：沿用現有的分句器（引號、註解、PG 的 `$$`、MySQL 的 `DELIMITER`、SQL Server 的 `GO`），跨讀取區塊時要保留 DELIMITER 狀態，最後一段沒結束的語句留到下一塊
+- 選項：遇錯停止（預設）或繼續並記錄；包成一個交易（預設關，CREATE DATABASE 之類不能在交易裡執行）
+- 結果：執行了幾條、失敗幾條、耗時；錯誤附檔名和行號，失敗的前幾條可以展開看
+- SELECT 的結果不顯示，只計列數
+
+**6.2 內建 dump／匯出**
+
+- 對話框：勾選要 dump 的物件（schema、表、view、routine），內容選「結構加資料／只有結構／只有資料」（只有資料就是「匯出資料（SQL INSERT）」），每條 INSERT 幾列，要不要先 DROP，單一檔案或每表一檔
+- 輸出順序：session 設定 → schema、型別、sequence → 資料表（依外鍵相依排序）→ 資料 → 延後的外鍵 → view（依相依排序）→ routine → trigger → 還原 session 設定
+- 「暫時解除外鍵約束」各資料庫的做法：
+  - MySQL／MariaDB：開頭 `SET FOREIGN_KEY_CHECKS=0`，結尾設回 1（和 mysqldump 一樣）
+  - SQLite：開頭 `PRAGMA foreign_keys=OFF`，結尾 ON（SQLite 不能事後加外鍵，所以外鍵仍寫在 CREATE TABLE 裡）
+  - PostgreSQL、SQL Server：沒有不需要高權限的 session 開關，所以改成建表時不含外鍵，資料匯完才 `ALTER TABLE … ADD CONSTRAINT`（和 pg_dump 一樣）；加上時會檢查既有資料
+  - 沒勾時依外鍵相依順序建表；遇到循環參照時仍把那幾條外鍵延後，並在檔頭註明
+- 每表一檔：依相依順序編號（`001_schema.table.sql`…），另有開頭檔（schema、型別、sequence）和結尾檔（延後的外鍵、view、routine、trigger）。每個檔都自帶 session 設定，單獨執行也成立
+- 要補齊的 DDL（現在的 Show DDL 缺這些，dump 後匯不回去）：PG 的 sequence（含 serial 欄位用的）、enum／domain／composite 型別、trigger、sequence 目前值（`setval`）；SQL Server 的 trigger、使用者定義型別、sequence，identity 資料用 `SET IDENTITY_INSERT`；MySQL 的 trigger、event
+- 值的寫法沿用現有的 `sqlLiteral`（二進位、大數字、日期、JSON 都要保留原樣）
+
+**6.3 原生工具（pg_dump／mysqldump）**
+
+- 偵測 PATH 和常見安裝位置（Homebrew、Postgres.app、Windows 的 Program Files），也可以在設定裡指定路徑；SQL Server 和 SQLite 沒有對應工具，不提供
+- 一律用 `src/shared/child-process/` 的 `spawnProcess`；密碼用 `PGPASSWORD` 環境變數，MySQL 用權限 0600 的暫存設定檔（`--defaults-extra-file`），不放在命令列
+- 走 SSH 隧道的連線，為這個工作另開隧道，工具連到本機埠
+- 選項對應：每表一檔就逐表執行（`pg_dump -t`、`mysqldump db table`）；外鍵選項對應工具本身的行為（mysqldump 預設就關外鍵檢查，pg_dump 預設把外鍵放在資料之後）
+- pg_dump 版本比伺服器舊時會拒絕執行，要把工具的訊息原樣顯示
+
+**驗證方式**
+
+- 來回測試（每種資料庫）：建一組含外鍵循環、自我參照、PG 的 enum 和 serial、SQL Server 的 identity、trigger、互相依賴的 view、routine、各種特殊值（NULL、引號、換行、二進位、超大數字、JSON、時區）的 schema → dump → 用「執行 SQL 腳本」匯進空資料庫 → 比對結構和每張表的內容。單一檔案／每表一檔、解除外鍵勾／不勾都要跑
+- 執行腳本：跨讀取區塊的語句、DELIMITER、GO、遇錯停止／繼續、交易回滾、取消
+- e2e：對話框流程、產生的檔案、工作清單的進度和取消
+
 ## 7. 測試策略
 
 - **單元測試**：值的編碼、各方言的語句切分、DML 產生和識別字引號、設定檔和密碼檔、tunnel 生命週期（mock ssh2）
