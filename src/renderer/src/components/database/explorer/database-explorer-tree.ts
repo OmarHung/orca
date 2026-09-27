@@ -12,11 +12,15 @@ export type DatabaseExplorerFolder = 'routines' | 'keys' | 'indexes'
 
 export type DatabaseExplorerNode =
   | { kind: 'connection'; key: string; connectionId: string }
-  | { kind: 'schema'; key: string; connectionId: string; schema: string }
+  /** One of a server's databases, when the connection lists them all. */
+  | { kind: 'database'; key: string; connectionId: string; database: string }
+  | { kind: 'schema'; key: string; connectionId: string; database: string | null; schema: string }
   | {
       kind: 'relation'
       key: string
       connectionId: string
+      /** Null is the connection's own database. */
+      database: string | null
       schema: string
       relation: DatabaseRelationInfo
     }
@@ -24,6 +28,8 @@ export type DatabaseExplorerNode =
       kind: 'column'
       key: string
       connectionId: string
+      /** Null is the connection's own database. */
+      database: string | null
       schema: string
       relationName: string
       column: DatabaseColumnInfo
@@ -32,6 +38,8 @@ export type DatabaseExplorerNode =
       kind: 'folder'
       key: string
       connectionId: string
+      /** Null is the connection's own database. */
+      database: string | null
       schema: string
       folder: DatabaseExplorerFolder
       /** The table a Keys or Indexes folder belongs to; null for a schema's Routines. */
@@ -41,6 +49,8 @@ export type DatabaseExplorerNode =
       kind: 'routine'
       key: string
       connectionId: string
+      /** Null is the connection's own database. */
+      database: string | null
       schema: string
       routine: DatabaseRoutineInfo
     }
@@ -48,6 +58,8 @@ export type DatabaseExplorerNode =
       kind: 'constraint'
       key: string
       connectionId: string
+      /** Null is the connection's own database. */
+      database: string | null
       schema: string
       relationName: string
       constraint: DatabaseKeyInfo
@@ -56,23 +68,19 @@ export type DatabaseExplorerNode =
       kind: 'index'
       key: string
       connectionId: string
+      /** Null is the connection's own database. */
+      database: string | null
       schema: string
       relationName: string
       index: DatabaseIndexInfo
     }
 
 /** What the explorer knows beyond the answer itself, e.g. SQLite has no routines. */
-export type DatabaseExplorerChildOptions = { routines: boolean }
-
-export type DatabaseExplorerChildren =
-  | { status: 'loading' }
-  | { status: 'error'; message: string }
-  | { status: 'loaded'; nodes: DatabaseExplorerNode[] }
-
-export type DatabaseExplorerRow =
-  | { type: 'node'; key: string; node: DatabaseExplorerNode; depth: number; expanded: boolean }
-  | { type: 'status'; key: string; depth: number; status: 'loading' | 'empty' }
-  | { type: 'status'; key: string; depth: number; status: 'error'; message: string }
+export type DatabaseExplorerChildOptions = {
+  routines: boolean
+  /** A PostgreSQL or SQL Server connection with no database lists all of the server's. */
+  allDatabases?: boolean
+}
 
 // Why encodeURIComponent: object names may contain "/", which would collide keys.
 const segment = (prefix: string, name: string): string => `${prefix}:${encodeURIComponent(name)}`
@@ -105,8 +113,13 @@ const RELATION_FOLDERS: Record<DatabaseRelationInfo['kind'], DatabaseExplorerFol
   'foreign-table': []
 }
 
+type InDatabase = { database: string | null }
+
+const inDatabase = ({ database }: InDatabase): { database?: string } =>
+  database === null ? {} : { database }
+
 function folderNode(
-  parent: DatabaseExplorerNode & { schema: string },
+  parent: DatabaseExplorerNode & InDatabase & { schema: string },
   folder: DatabaseExplorerFolder,
   relationName: string | null
 ): DatabaseExplorerNode {
@@ -114,24 +127,40 @@ function folderNode(
     kind: 'folder',
     key: `${parent.key}/${segment('f', folder)}`,
     connectionId: parent.connectionId,
+    database: parent.database,
     schema: parent.schema,
     folder,
     relationName
   }
 }
 
-export function introspectTargetFor(node: DatabaseExplorerNode): DatabaseIntrospectTarget | null {
+export function introspectTargetFor(
+  node: DatabaseExplorerNode,
+  options: Pick<DatabaseExplorerChildOptions, 'allDatabases'> = {}
+): DatabaseIntrospectTarget | null {
   switch (node.kind) {
     case 'connection':
-      return { level: 'schemas' }
+      return options.allDatabases ? { level: 'databases' } : { level: 'schemas' }
+    case 'database':
+      return { level: 'schemas', database: node.database }
     case 'schema':
-      return { level: 'relations', schema: node.schema }
+      return { level: 'relations', ...inDatabase(node), schema: node.schema }
     case 'relation':
-      return { level: 'columns', schema: node.schema, relation: node.relation.name }
+      return {
+        level: 'columns',
+        ...inDatabase(node),
+        schema: node.schema,
+        relation: node.relation.name
+      }
     case 'folder':
       return node.folder === 'routines' || node.relationName === null
-        ? { level: 'routines', schema: node.schema }
-        : { level: node.folder, schema: node.schema, relation: node.relationName }
+        ? { level: 'routines', ...inDatabase(node), schema: node.schema }
+        : {
+            level: node.folder,
+            ...inDatabase(node),
+            schema: node.schema,
+            relation: node.relationName
+          }
     case 'column':
     case 'routine':
     case 'constraint':
@@ -149,12 +178,18 @@ export function childNodesFor(
   const { connectionId } = parent
   switch (result.level) {
     case 'databases':
-      return []
+      return result.databases.map((database) => ({
+        kind: 'database',
+        key: `${parent.key}/${segment('d', database.name)}`,
+        connectionId,
+        database: database.name
+      }))
     case 'schemas':
       return result.schemas.map((schema) => ({
         kind: 'schema',
         key: `${parent.key}/${segment('s', schema.name)}`,
         connectionId,
+        database: parent.kind === 'database' ? parent.database : null,
         schema: schema.name
       }))
     case 'relations':
@@ -166,6 +201,7 @@ export function childNodesFor(
           kind: 'relation',
           key: `${parent.key}/${segment('r', relation.name)}`,
           connectionId,
+          database: parent.database,
           schema: parent.schema,
           relation
         })),
@@ -180,6 +216,7 @@ export function childNodesFor(
           kind: 'column',
           key: `${parent.key}/${segment('col', column.name)}`,
           connectionId,
+          database: parent.database,
           schema: parent.schema,
           relationName: parent.relation.name,
           column
@@ -194,6 +231,7 @@ export function childNodesFor(
             kind: 'routine',
             key: `${parent.key}/${segment('fn', routine.identity)}`,
             connectionId,
+            database: parent.database,
             schema: parent.schema,
             routine
           }))
@@ -205,6 +243,7 @@ export function childNodesFor(
             kind: 'constraint',
             key: `${parent.key}/${segment('k', `${position}:${constraint.name}`)}`,
             connectionId,
+            database: parent.database,
             schema: parent.schema,
             relationName: parent.relationName ?? '',
             constraint
@@ -216,45 +255,11 @@ export function childNodesFor(
             kind: 'index',
             key: `${parent.key}/${segment('i', index.name)}`,
             connectionId,
+            database: parent.database,
             schema: parent.schema,
             relationName: parent.relationName ?? '',
             index
           }))
         : []
   }
-}
-
-/** Depth-first rows for the visible part of the tree, with loading/error/empty placeholders. */
-export function flattenDatabaseExplorer(
-  roots: readonly DatabaseExplorerNode[],
-  expanded: Readonly<Record<string, boolean>>,
-  children: Readonly<Record<string, DatabaseExplorerChildren>>
-): DatabaseExplorerRow[] {
-  const rows: DatabaseExplorerRow[] = []
-  const visit = (node: DatabaseExplorerNode, depth: number): void => {
-    const isExpanded = isExpandableNode(node) && expanded[node.key] === true
-    rows.push({ type: 'node', key: node.key, node, depth, expanded: isExpanded })
-    if (!isExpanded) {
-      return
-    }
-    const loaded = children[node.key]
-    const statusKey = `${node.key}#status`
-    if (!loaded || loaded.status === 'loading') {
-      rows.push({ type: 'status', key: statusKey, depth: depth + 1, status: 'loading' })
-    } else if (loaded.status === 'error') {
-      rows.push({
-        type: 'status',
-        key: statusKey,
-        depth: depth + 1,
-        status: 'error',
-        message: loaded.message
-      })
-    } else if (loaded.nodes.length === 0) {
-      rows.push({ type: 'status', key: statusKey, depth: depth + 1, status: 'empty' })
-    } else {
-      loaded.nodes.forEach((child) => visit(child, depth + 1))
-    }
-  }
-  roots.forEach((root) => visit(root, 0))
-  return rows
 }

@@ -80,9 +80,10 @@ export function openDatabaseConsole(
 export function openDatabaseTable(
   connectionId: string,
   schema: string,
-  relation: string
+  relation: string,
+  database: string | null = null
 ): DatabaseTableTab {
-  return useDatabasePageStore.getState().openTable(connectionId, schema, relation)
+  return useDatabasePageStore.getState().openTable(connectionId, schema, relation, database)
 }
 
 function releaseTabs(tabs: readonly DatabaseTab[]): void {

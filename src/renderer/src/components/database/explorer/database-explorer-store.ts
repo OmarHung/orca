@@ -5,13 +5,14 @@ import {
   useDatabaseConnectionsStore
 } from '../database-connections-store'
 import { invalidateSqlCatalog } from '../console/sql-completion-catalog'
+import { listsAllDatabases } from '../../../../../shared/database/database-connection-types'
+import type { DatabaseExplorerChildren } from './database-explorer-rows'
 import {
   childNodesFor,
   connectionNode,
   connectionNodeKey,
   introspectTargetFor,
   isExpandableNode,
-  type DatabaseExplorerChildren,
   type DatabaseExplorerNode
 } from './database-explorer-tree'
 
@@ -38,17 +39,21 @@ function withoutConnection<T>(record: Record<string, T>, connectionId: string): 
 
 export const useDatabaseExplorerStore = create<DatabaseExplorerState>((set, get) => {
   const load = async (node: DatabaseExplorerNode): Promise<void> => {
-    const target = introspectTargetFor(node)
+    const connection = findDatabaseConnection(node.connectionId)
+    const options = {
+      routines: connection?.driver !== 'sqlite',
+      allDatabases: connection ? listsAllDatabases(connection) : false
+    }
+    const target = introspectTargetFor(node, options)
     if (!target) {
       return
     }
     set((state) => ({ children: { ...state.children, [node.key]: { status: 'loading' } } }))
     const result = asDatabaseResult(await window.api.database.introspect(node.connectionId, target))
-    const driver = findDatabaseConnection(node.connectionId)?.driver
     const next: DatabaseExplorerChildren = result.ok
       ? {
           status: 'loaded',
-          nodes: childNodesFor(node, result.value, { routines: driver !== 'sqlite' })
+          nodes: childNodesFor(node, result.value, options)
         }
       : { status: 'error', message: result.error.message }
     set((state) => ({ children: { ...state.children, [node.key]: next } }))
