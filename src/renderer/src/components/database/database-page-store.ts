@@ -28,11 +28,16 @@ type PersistedDatabasePage = {
 
 type DatabasePageState = PersistedDatabasePage & {
   /** Opens a new console for the connection and focuses it. */
-  openConsole: (connectionId: string, connectionName: string) => DatabaseConsoleTab
+  openConsole: (
+    connectionId: string,
+    connectionName: string,
+    schema?: string | null
+  ) => DatabaseConsoleTab
   /** Focuses the table's data tab, opening one if needed. */
   openTable: (connectionId: string, schema: string, relation: string) => DatabaseTableTab
   updateTableQuery: (tabId: string, query: { where: string; orderBy: string }) => void
   setTransactionMode: (tabId: string, mode: DatabaseTransactionMode) => void
+  setConsoleSchema: (tabId: string, schema: string | null) => void
   activateTab: (tabId: string) => void
   closeTab: (tabId: string) => void
   closeTabsForConnection: (connectionId: string) => DatabaseTab[]
@@ -118,8 +123,8 @@ export const useDatabasePageStore = create<DatabasePageState>((set, get) => {
   }
   return {
     ...readPersisted(),
-    openConsole: (connectionId, connectionName) => {
-      const tab = newConsoleTab(connectionId, nextConsoleTitle(get().tabs, connectionName))
+    openConsole: (connectionId, connectionName, schema = null) => {
+      const tab = newConsoleTab(connectionId, nextConsoleTitle(get().tabs, connectionName), schema)
       update({ tabs: [...get().tabs, tab], activeTabId: tab.id })
       return tab
     },
@@ -149,6 +154,14 @@ export const useDatabasePageStore = create<DatabasePageState>((set, get) => {
       update({
         tabs: get().tabs.map((tab) =>
           tab.id === tabId && tab.kind === 'console' ? { ...tab, transactionMode: mode } : tab
+        )
+      }),
+    setConsoleSchema: (tabId, schema) =>
+      update({
+        tabs: get().tabs.map((tab) =>
+          tab.id === tabId && tab.kind === 'console' && tab.schema !== schema
+            ? { ...tab, schema }
+            : tab
         )
       }),
     activateTab: (tabId) => update({ activeTabId: tabId }),

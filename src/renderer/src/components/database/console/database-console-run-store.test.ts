@@ -7,6 +7,7 @@ import type {
 } from '../../../../../shared/database/database-query-types'
 import { splitSqlStatements } from '../../../../../shared/database/sql-statement-splitter'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
+import { useDatabasePageStore } from '../database-page-store'
 import type { DatabaseRunTarget } from '../database-page-tabs'
 import {
   OUTPUT_RESULT_ID,
@@ -38,6 +39,7 @@ type ExecuteMock = ReturnType<
       sql: string
       recordHistory?: boolean
       transactionMode?: string
+      schema?: string
     }) => Promise<DatabaseResult<DatabaseExecuteResult>>
   >
 >
@@ -129,6 +131,22 @@ describe('database console run store', () => {
     useDatabaseConsoleRunStore.getState().endTransactions([tab.id])
     expect(state().transaction).toBe('none')
     expect(state().log.at(-1)?.outcome).toMatchObject({ kind: 'error', message: /rolled back/ })
+  })
+
+  it('sends the console’s schema and follows a statement that switches it', async () => {
+    const execute: ExecuteMock = vi.fn(async ({ sql }) => ({
+      ok: true,
+      value: { results: [], ...(sql.startsWith('use') ? { schema: 'audit' } : {}) }
+    }))
+    installApi(execute)
+    const consoleTab = useDatabasePageStore.getState().openConsole(tab.connectionId, 'app', 'sales')
+    const target = { ...tab, id: consoleTab.id }
+    await useDatabaseConsoleRunStore
+      .getState()
+      .run(target, splitSqlStatements('use audit', 'mysql'), { schema: 'sales' })
+    expect(execute.mock.calls[0]?.[0].schema).toBe('sales')
+    const saved = useDatabasePageStore.getState().tabs.find((entry) => entry.id === consoleTab.id)
+    expect(saved).toMatchObject({ kind: 'console', schema: 'audit' })
   })
 
   it('does not rerun a statement in a fresh session when the dropped one held a transaction', async () => {

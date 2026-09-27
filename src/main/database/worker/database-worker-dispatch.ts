@@ -63,7 +63,8 @@ export function createDatabaseWorkerDispatcher(
           command.consoleId,
           command.sql,
           command.pageSize,
-          command.transactionMode ?? 'auto'
+          command.transactionMode ?? 'auto',
+          command.schema
         )
       case 'fetch':
         return requireSession().fetch(command.consoleId, command.resultId, command.pageSize)
