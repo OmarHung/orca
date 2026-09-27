@@ -126,9 +126,12 @@ test('runs, reruns and stops a quick command as a single-instance run configurat
   await expect(trigger).toContainText(LONG_LABEL)
   await expect(controls).toHaveAttribute('data-run-status', 'running')
 
-  await controls.getByTestId('run-stop').click()
+  // The only live run, so the shared Stop control stops it directly.
+  const stopControl = orcaPage.getByTestId('run-stop-control')
+  await expect(stopControl).toHaveAttribute('data-count', '1')
+  await stopControl.getByTestId('run-stop').click()
   await expect(controls).toHaveAttribute('data-run-status', 'stopped', { timeout: 30_000 })
-  await expect(controls.getByTestId('run-stop')).toHaveCount(0)
+  await expect(stopControl).toHaveCount(0)
   await expect(orcaPage.getByTestId('run-configurations-launch')).toBeVisible()
   await orcaPage.screenshot({ path: testInfo.outputPath('run-configuration-stopped.png') })
 })
