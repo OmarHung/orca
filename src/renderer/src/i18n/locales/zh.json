@@ -18993,6 +18993,7 @@
     },
     "explorer": {
       "connect": "连接",
+      "connections": "连接",
       "copyName": "复制名称",
       "copyQualifiedName": "复制完整名称",
       "deleteConnection": "删除连接…",
@@ -19004,6 +19005,7 @@
       "keys": "键",
       "label": "数据库对象",
       "loading": "正在加载…",
+      "newConnection": "新建连接…",
       "newConsole": "新建控制台",
       "noConnections": "还没有连接。",
       "notNull": "not null",
