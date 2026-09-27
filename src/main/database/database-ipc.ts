@@ -24,6 +24,7 @@ import { DATABASE_CONSOLE_MAX_BYTES, DatabaseConsoleFiles } from './database-con
 import { DatabasePasswordVault } from './database-password-vault'
 import { DatabaseService } from './database-service'
 import { DatabaseSessionManager } from './database-session-manager'
+import { createDatabaseTunnelOpener } from './database-ssh-tunnel'
 import { spawnDatabaseProcess } from './database-process-spawn'
 import { spawnDatabaseWorker } from './database-worker-client'
 
@@ -89,7 +90,8 @@ function createDatabaseService(): DatabaseService {
       // Why a process for SQLite: its statements run in native code a thread can't interrupt.
       spawnWorker: (driver) =>
         driver === 'sqlite' ? spawnDatabaseProcess() : spawnDatabaseWorker(),
-      emit: broadcast
+      emit: broadcast,
+      openTunnel: createDatabaseTunnelOpener()
     }),
     consoles: new DatabaseConsoleFiles(join(rootDir, 'consoles'))
   })

@@ -3,7 +3,11 @@ import type { DatabaseConnection } from '../../shared/database/database-connecti
 import type { DatabaseResult } from '../../shared/database/database-query-types'
 import type { DatabaseSessionEvent } from '../../shared/database/database-session-types'
 import type { DatabaseWorkerPort } from './database-worker-client'
-import { DatabaseSessionManager } from './database-session-manager'
+import {
+  DatabaseSessionManager,
+  type DatabaseTunnel,
+  type OpenDatabaseTunnel
+} from './database-session-manager'
 import type {
   DatabaseWorkerCommand,
   DatabaseWorkerMessage
@@ -69,7 +73,10 @@ const connectOk = (command: DatabaseWorkerCommand): DatabaseResult<unknown> =>
     ? { ok: true, value: { serverVersion: '17.0' } }
     : { ok: true, value: null }
 
-function setup(answer = connectOk): {
+function setup(
+  answer = connectOk,
+  openTunnel?: OpenDatabaseTunnel
+): {
   manager: DatabaseSessionManager
   events: DatabaseSessionEvent[]
   workers: FakeWorker[]
@@ -82,10 +89,106 @@ function setup(answer = connectOk): {
       workers.push(worker)
       return worker.port
     },
-    emit: (event) => events.push(event)
+    emit: (event) => events.push(event),
+    openTunnel
   })
   return { manager, events, workers }
 }
+
+const tunneled: DatabaseConnection = {
+  ...connection,
+  host: 'db.internal',
+  sshTunnel: { targetId: 'ssh-1' }
+}
+
+function fakeTunnels(): {
+  open: OpenDatabaseTunnel
+  requests: Parameters<OpenDatabaseTunnel>[0][]
+  lose: (message: string) => void
+  closed: () => number
+} {
+  const requests: Parameters<OpenDatabaseTunnel>[0][] = []
+  let onLost: (message: string) => void = () => undefined
+  let closed = 0
+  return {
+    requests,
+    lose: (message) => onLost(message),
+    closed: () => closed,
+    open: async (request, lost) => {
+      requests.push(request)
+      onLost = lost
+      const tunnel: DatabaseTunnel = {
+        localPort: 40123,
+        close: async () => {
+          closed += 1
+        }
+      }
+      return tunnel
+    }
+  }
+}
+
+describe('DatabaseSessionManager SSH tunnels', () => {
+  it('dials the worker through the tunnel and closes it on disconnect', async () => {
+    const tunnels = fakeTunnels()
+    const { manager, workers } = setup(connectOk, tunnels.open)
+    expect((await manager.connect(tunneled, 'pw')).ok).toBe(true)
+    expect(tunnels.requests).toEqual([
+      { key: tunneled.id, targetId: 'ssh-1', remoteHost: 'db.internal', remotePort: 5432 }
+    ])
+    expect(workers[0]?.commands[0]).toMatchObject({ type: 'connect', tunnelPort: 40123 })
+    await manager.disconnect(tunneled.id)
+    expect(tunnels.closed()).toBe(1)
+  })
+
+  it('reports a tunnel that could not open without dialing the server', async () => {
+    const { manager, events, workers } = setup(connectOk, async () => {
+      throw new Error('authentication failed')
+    })
+    const result = await manager.connect(tunneled, null)
+    expect(result).toMatchObject({
+      ok: false,
+      error: { message: 'SSH tunnel: authentication failed' }
+    })
+    expect(workers[0]?.commands).toEqual([])
+    expect(workers[0]?.terminated()).toBe(true)
+    expect(events.at(-1)).toMatchObject({
+      state: 'error',
+      message: 'SSH tunnel: authentication failed'
+    })
+  })
+
+  it('drops the session when its tunnel goes away', async () => {
+    const tunnels = fakeTunnels()
+    const { manager, events, workers } = setup(connectOk, tunnels.open)
+    await manager.connect(tunneled, null)
+    tunnels.lose('The SSH connection was reset')
+    expect(manager.isConnected(tunneled.id)).toBe(false)
+    expect(workers[0]?.terminated()).toBe(true)
+    expect(events.at(-1)).toMatchObject({
+      state: 'error',
+      message: 'Connection lost: The SSH connection was reset'
+    })
+  })
+
+  it('closes the tunnel when the server refuses the connection', async () => {
+    const tunnels = fakeTunnels()
+    const { manager } = setup(
+      () => ({ ok: false, error: { message: 'password authentication failed' } }),
+      tunnels.open
+    )
+    expect((await manager.connect(tunneled, 'wrong')).ok).toBe(false)
+    expect(tunnels.closed()).toBe(1)
+  })
+
+  it('opens a throwaway tunnel for a connection test', async () => {
+    const tunnels = fakeTunnels()
+    const { manager } = setup(connectOk, tunnels.open)
+    expect((await manager.test(tunneled, null)).ok).toBe(true)
+    expect(tunnels.requests[0]?.key).toMatch(/^test:/)
+    expect(tunnels.closed()).toBe(1)
+  })
+})
 
 describe('DatabaseSessionManager', () => {
   it('connects once even when asked twice concurrently', async () => {
@@ -134,6 +237,15 @@ describe('DatabaseSessionManager', () => {
     expect(manager.isConnected(connection.id)).toBe(false)
     // A dead worker must settle in-flight requests instead of leaving them hanging.
     expect(await pending).toMatchObject({ ok: false, error: { code: 'unavailable' } })
+  })
+
+  it('does not repeat "Connection lost" when the driver already says it', async () => {
+    const { manager, events, workers } = setup()
+    await manager.connect(connection, null)
+    workers[0]?.loseConnection('Connection lost: The server closed the connection.')
+    expect(events.at(-1)).toMatchObject({
+      message: 'Connection lost: The server closed the connection.'
+    })
   })
 
   it('closes the server session before terminating on disconnect', async () => {
