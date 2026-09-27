@@ -146,32 +146,6 @@ describe('DatabaseService', () => {
     expect(connectPasswords).toHaveLength(2)
   })
 
-  it('refuses table edits on a read-only connection before they reach the database', async () => {
-    const service = createService()
-    const saved = await service.saveConnection({
-      draft: { ...draft, readOnly: true },
-      password: 'right'
-    })
-    if (!saved.ok) {
-      throw new Error(saved.error.message)
-    }
-    const result = await service.applyChanges({
-      connectionId: saved.value.id,
-      consoleId: 'console-01',
-      changeSet: {
-        schema: 'public',
-        relation: 'people',
-        keyColumns: ['id'],
-        changes: [{ kind: 'delete', key: ['1'] }]
-      }
-    })
-    expect(result).toMatchObject({
-      ok: false,
-      error: { message: expect.stringContaining('read-only') }
-    })
-    expect(workerCommands).not.toContain('applyChanges')
-  })
-
   it('round-trips console text', async () => {
     const service = createService()
     const ref = { connectionId: 'conn-0001', consoleId: 'console-01' }

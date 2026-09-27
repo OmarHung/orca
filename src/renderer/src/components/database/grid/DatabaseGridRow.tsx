@@ -7,7 +7,6 @@ import {
 } from '../../../../../shared/database/database-query-types'
 import { gridCellDisplayText } from './database-grid-columns'
 import type { GridColumn } from './DatabaseGridHeader'
-import type { GridRowEditState } from './grid-editing-types'
 import { ROW_HEADER_COLUMN } from './use-grid-pointer-selection'
 
 export const GRID_ROW_HEIGHT = 26
@@ -25,20 +24,12 @@ function truncatedTitle(cell: DatabaseCell): string | undefined {
     : undefined
 }
 
-function CellContent({
-  cell,
-  isDefault
-}: {
-  cell: DatabaseCell
-  isDefault: boolean
-}): React.JSX.Element {
+function CellContent({ cell }: { cell: DatabaseCell }): React.JSX.Element {
   const text = gridCellDisplayText(cell)
-  if (isDefault || text === null) {
+  if (text === null) {
     return (
       <span className="italic text-muted-foreground">
-        {isDefault
-          ? translate('database.grid.default', 'DEFAULT')
-          : translate('database.grid.null', 'NULL')}
+        {translate('database.grid.null', 'NULL')}
       </span>
     )
   }
@@ -61,10 +52,7 @@ export function DatabaseGridRow({
   gridTemplate,
   start,
   selectedSpan,
-  focusColumn,
-  editState,
-  failed,
-  editor
+  focusColumn
 }: {
   displayIndex: number
   row: readonly DatabaseCell[]
@@ -75,14 +63,7 @@ export function DatabaseGridRow({
   selectedSpan: { left: number; right: number } | null
   /** Column of the selection's moving corner when it is in this row. */
   focusColumn: number | null
-  editState: GridRowEditState | null
-  /** The last submit failed on this row's change. */
-  failed: boolean
-  /** In-place editor for one of this row's cells. */
-  editor: { column: number; node: React.ReactNode } | null
 }): React.JSX.Element {
-  const deleted = editState?.kind === 'deleted'
-  const inserted = editState?.kind === 'inserted'
   return (
     <div
       role="row"
@@ -101,10 +82,7 @@ export function DatabaseGridRow({
         data-grid-column={ROW_HEADER_COLUMN}
         className={cn(
           'sticky left-0 z-[5] flex items-center justify-end border-b border-r border-border/60 bg-background px-2 text-[10px] text-muted-foreground',
-          selectedSpan && 'bg-muted text-foreground',
-          inserted && 'text-status-success',
-          deleted && 'line-through',
-          failed && 'border-l-2 border-l-destructive font-medium text-destructive'
+          selectedSpan && 'bg-muted text-foreground'
         )}
       >
         {displayIndex + 1}
@@ -113,7 +91,6 @@ export function DatabaseGridRow({
         const cell = row[position] ?? null
         const selected =
           selectedSpan !== null && position >= selectedSpan.left && position <= selectedSpan.right
-        const modified = editState?.modified.has(position) ?? false
         return (
           <div
             role="gridcell"
@@ -125,15 +102,11 @@ export function DatabaseGridRow({
             className={cn(
               'relative flex min-w-0 items-center border-b border-r border-border/60 px-2 text-foreground',
               numeric && 'justify-end',
-              inserted && 'bg-status-success-background',
-              modified && !inserted && 'bg-status-warning-background',
-              deleted && 'bg-destructive/10 text-muted-foreground line-through',
               selected && 'bg-foreground/10',
               position === focusColumn && 'ring-1 ring-inset ring-ring'
             )}
           >
-            <CellContent cell={cell} isDefault={editState?.unset.has(position) ?? false} />
-            {editor?.column === position ? editor.node : null}
+            <CellContent cell={cell} />
           </div>
         )
       })}

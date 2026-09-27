@@ -1,6 +1,5 @@
 import type { DatabaseConnectionDraft } from './database-connection-types'
 import type { DatabaseTransactionMode } from './database-query-types'
-import type { TableChangeSet } from './table-change-sql'
 
 export type DatabaseSessionState = 'disconnected' | 'connecting' | 'connected' | 'error'
 
@@ -44,8 +43,6 @@ export type DatabaseExecuteRequest = DatabaseConsoleRef & {
 }
 
 export type DatabaseFetchMoreRequest = DatabaseConsoleRef & { resultId: string; pageSize: number }
-
-export type DatabaseApplyChangesRequest = DatabaseConsoleRef & { changeSet: TableChangeSet }
 
 export type DatabaseEncryptionStatus = {
   /** False means passwords can only be kept until Orca quits. */
