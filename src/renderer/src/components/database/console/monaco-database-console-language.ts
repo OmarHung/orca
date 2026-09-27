@@ -10,7 +10,12 @@ import { formatSqlConsole } from './sql-console-format'
 type Monaco = typeof MonacoApi
 type TextModel = MonacoApi.editor.ITextModel
 
-export type DatabaseConsoleTarget = { connectionId: string; dialect: SqlDialect }
+export type DatabaseConsoleTarget = {
+  connectionId: string
+  dialect: SqlDialect
+  /** Resolves unqualified names for completion; null uses the connection's current schema. */
+  schema: string | null
+}
 
 // Console models live under their own scheme so .sql files in the file editor keep Monaco's defaults.
 const CONSOLE_SCHEME = 'orca-database-console'
@@ -57,7 +62,8 @@ async function provideCompletions(
     text: model.getValue(),
     offset: model.getOffsetAt(position),
     dialect: target.dialect,
-    catalog: sqlCatalogFor(target.connectionId)
+    catalog: sqlCatalogFor(target.connectionId),
+    currentSchema: target.schema
   })
   const range = {
     startLineNumber: position.lineNumber,

@@ -13,6 +13,8 @@ export type DatabaseRunOptions = {
   recordHistory?: boolean
   /** Absent means auto-commit, as for the table view's queries. */
   transactionMode?: DatabaseTransactionMode
+  /** The console's picked schema; absent keeps the connection's default. */
+  schema?: string
 }
 
 export function transactionLostMessage(): string {
@@ -34,7 +36,8 @@ async function execute(
       sql,
       pageSize: DATABASE_DEFAULT_PAGE_SIZE,
       recordHistory: options.recordHistory,
-      transactionMode: options.transactionMode
+      transactionMode: options.transactionMode,
+      schema: options.schema
     })
   )
 }

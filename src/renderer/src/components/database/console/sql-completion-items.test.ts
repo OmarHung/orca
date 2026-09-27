@@ -125,4 +125,15 @@ describe('SQL completions', () => {
     expect(at('select * from |')).toBe('select * from ')
     expect(at('select 1;\nsel|')).toBe('sel')
   })
+
+  it('resolves unqualified names in the console’s picked schema', async () => {
+    const { items } = await sqlCompletions({
+      text: 'select * from ',
+      offset: 14,
+      dialect: 'postgres',
+      catalog,
+      currentSchema: 'sales'
+    })
+    expect(items.map((entry) => entry.insertText)).toEqual(['orders', 'public', 'sales'])
+  })
 })

@@ -11,6 +11,8 @@ type TabBase = DatabaseRunTarget & { title: string }
 export type DatabaseConsoleTab = TabBase & {
   kind: 'console'
   transactionMode: DatabaseTransactionMode
+  /** The schema (MySQL database) picked for the console; null keeps the connection's default. */
+  schema: string | null
 }
 
 export type DatabaseTableTab = TabBase & {
@@ -25,14 +27,19 @@ export type DatabaseTableTab = TabBase & {
 
 export type DatabaseTab = DatabaseConsoleTab | DatabaseTableTab
 
-export function newConsoleTab(connectionId: string, title: string): DatabaseConsoleTab {
+export function newConsoleTab(
+  connectionId: string,
+  title: string,
+  schema: string | null = null
+): DatabaseConsoleTab {
   return {
     kind: 'console',
     id: createBrowserUuid(),
     connectionId,
     consoleId: createBrowserUuid(),
     title,
-    transactionMode: 'auto'
+    transactionMode: 'auto',
+    schema
   }
 }
 
@@ -88,7 +95,16 @@ export function readPersistedTab(value: unknown): DatabaseTab | null {
   }
   if (field(value, 'kind') !== 'table') {
     const transactionMode = field(value, 'transactionMode') === 'manual' ? 'manual' : 'auto'
-    return { kind: 'console', id, connectionId, consoleId, title, transactionMode }
+    const schema = field(value, 'schema')
+    return {
+      kind: 'console',
+      id,
+      connectionId,
+      consoleId,
+      title,
+      transactionMode,
+      schema: typeof schema === 'string' && schema.length > 0 ? schema : null
+    }
   }
   const schema = field(value, 'schema')
   const relation = field(value, 'relation')
