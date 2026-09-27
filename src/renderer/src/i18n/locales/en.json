@@ -18998,6 +18998,11 @@
       "readOnly": "Read-only",
       "savePassword": "Save password",
       "sqlServerReadOnly": "SQL Server has no read-only session, so Orca refuses statements that look like writes. It is a safety net, not a guarantee.",
+      "sshEmpty": "No saved SSH hosts yet. Add one in Settings to connect through it.",
+      "sshHint": "Host and port are as seen from the SSH host, e.g. localhost or a private address.",
+      "sshNone": "None — connect directly",
+      "sshRemoved": "Removed SSH host",
+      "sshTunnel": "SSH tunnel",
       "ssl": "SSL mode",
       "storeForever": "Save securely",
       "storeNever": "Never",
@@ -19062,7 +19067,8 @@
       "noConnections": "No connections yet.",
       "notNull": "not null",
       "openData": "Open Data",
-      "refresh": "Refresh"
+      "refresh": "Refresh",
+      "viaSsh": "via {{value0}}"
     },
     "grid": {
       "copy": "Copy",

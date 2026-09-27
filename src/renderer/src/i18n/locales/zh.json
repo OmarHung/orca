@@ -18916,6 +18916,11 @@
       "readOnly": "只读",
       "savePassword": "保存密码",
       "sqlServerReadOnly": "SQL Server 无法把连接设为只读，所以 Orca 会拒绝看起来会写入数据的语句。这是一道保险，不是保证。",
+      "sshEmpty": "还没有保存的 SSH 主机。在设置中添加后就能通过它连接。",
+      "sshHint": "主机和端口以 SSH 主机的角度填写，例如 localhost 或内网地址。",
+      "sshNone": "不使用（直接连接）",
+      "sshRemoved": "已删除的 SSH 主机",
+      "sshTunnel": "SSH 隧道",
       "ssl": "SSL 模式",
       "storeForever": "加密保存",
       "storeNever": "不保存",
@@ -18980,7 +18985,8 @@
       "noConnections": "还没有连接。",
       "notNull": "not null",
       "openData": "打开数据",
-      "refresh": "刷新"
+      "refresh": "刷新",
+      "viaSsh": "经由 {{value0}}"
     },
     "grid": {
       "copy": "复制",
