@@ -1,4 +1,5 @@
 import type { DatabaseConnectionSummary } from '../../shared/database/database-connection-types'
+import type { DatabaseDdlTarget } from '../../shared/database/database-ddl-types'
 import type { DatabaseSaveExportRequest } from '../../shared/database/database-export-types'
 import type {
   DatabaseIntrospectResult,
@@ -40,6 +41,8 @@ export type DatabaseApi = {
     connectionId: string,
     target: DatabaseIntrospectTarget
   ) => Promise<DatabaseResult<DatabaseIntrospectResult>>
+  /** CREATE statements for a table, view or routine. */
+  ddl: (connectionId: string, target: DatabaseDdlTarget) => Promise<DatabaseResult<string>>
   execute: (request: DatabaseExecuteRequest) => Promise<DatabaseResult<DatabaseExecuteResult>>
   fetchMore: (request: DatabaseFetchMoreRequest) => Promise<DatabaseResult<DatabaseRowsPage>>
   /** Console statements for a connection, newest first. */

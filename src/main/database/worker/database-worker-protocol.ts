@@ -1,4 +1,5 @@
 import type { DatabaseConnectionDraft } from '../../../shared/database/database-connection-types'
+import type { DatabaseDdlTarget } from '../../../shared/database/database-ddl-types'
 import type {
   DatabaseIntrospectResult,
   DatabaseIntrospectTarget
@@ -22,6 +23,7 @@ export type DatabaseWorkerCommand =
       tunnelPort?: number
     }
   | { type: 'introspect'; target: DatabaseIntrospectTarget }
+  | { type: 'ddl'; target: DatabaseDdlTarget }
   | {
       type: 'execute'
       consoleId: string
@@ -38,6 +40,7 @@ export type DatabaseWorkerCommand =
 export type DatabaseWorkerValues = {
   connect: { serverVersion: string }
   introspect: DatabaseIntrospectResult
+  ddl: { ddl: string }
   execute: DatabaseExecuteResult
   fetch: DatabaseRowsPage
   applyChanges: { applied: number }

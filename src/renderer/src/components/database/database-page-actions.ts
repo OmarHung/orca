@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { translate } from '@/i18n/i18n'
+import { createBrowserUuid } from '@/lib/browser-uuid'
+import type { DatabaseDdlTarget } from '../../../../shared/database/database-ddl-types'
 import {
   getConsoleRunState,
   useDatabaseConsoleRunStore
@@ -25,6 +27,7 @@ type DatabaseDialogsState = {
   pendingDiscard: { tabId: string; proceed: () => void } | null
   /** A console whose close waits for the user to commit or roll back its transaction. */
   closingWithTransaction: string | null
+  ddlRequest: { id: string; connectionId: string; target: DatabaseDdlTarget; title: string } | null
   openConnectionEditor: (target: ConnectionEditorTarget) => void
   closeConnectionEditor: () => void
   askToDeleteConnection: (connectionId: string) => void
@@ -33,6 +36,8 @@ type DatabaseDialogsState = {
   cancelDiscard: () => void
   askToEndTransaction: (tabId: string) => void
   cancelEndTransaction: () => void
+  showDdl: (connectionId: string, target: DatabaseDdlTarget, name: string) => void
+  closeDdl: () => void
 }
 
 export const useDatabaseDialogsStore = create<DatabaseDialogsState>((set) => ({
@@ -40,6 +45,7 @@ export const useDatabaseDialogsStore = create<DatabaseDialogsState>((set) => ({
   deletingConnectionId: null,
   pendingDiscard: null,
   closingWithTransaction: null,
+  ddlRequest: null,
   openConnectionEditor: (target) => set({ connectionEditor: target }),
   closeConnectionEditor: () => set({ connectionEditor: null }),
   askToDeleteConnection: (connectionId) => set({ deletingConnectionId: connectionId }),
@@ -47,7 +53,17 @@ export const useDatabaseDialogsStore = create<DatabaseDialogsState>((set) => ({
   askToDiscard: (tabId, proceed) => set({ pendingDiscard: { tabId, proceed } }),
   cancelDiscard: () => set({ pendingDiscard: null }),
   askToEndTransaction: (tabId) => set({ closingWithTransaction: tabId }),
-  cancelEndTransaction: () => set({ closingWithTransaction: null })
+  cancelEndTransaction: () => set({ closingWithTransaction: null }),
+  showDdl: (connectionId, target, name) =>
+    set({
+      ddlRequest: {
+        id: createBrowserUuid(),
+        connectionId,
+        target,
+        title: translate('database.ddl.title', 'DDL of {{value0}}', { value0: name })
+      }
+    }),
+  closeDdl: () => set({ ddlRequest: null })
 }))
 
 export function openDatabaseConsole(connectionId: string): DatabaseConsoleTab {

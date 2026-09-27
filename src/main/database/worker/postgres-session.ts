@@ -1,4 +1,5 @@
 import type pg from 'pg'
+import type { DatabaseDdlTarget } from '../../../shared/database/database-ddl-types'
 import type {
   DatabaseIntrospectResult,
   DatabaseIntrospectTarget
@@ -13,6 +14,7 @@ import type { DatabaseDriverCallbacks, DatabaseDriverSession } from './database-
 import type { DatabaseChangeTransaction } from './table-change-transaction'
 import { connectPostgresClient, type PostgresConnectionDraft } from './postgres-client-factory'
 import { PostgresConsole } from './postgres-console'
+import { postgresDdl } from './postgres-ddl'
 import { introspectPostgres } from './postgres-introspection'
 import { PostgresTypeNames } from './postgres-type-names'
 
@@ -32,6 +34,10 @@ class PostgresSession implements DatabaseDriverSession {
 
   introspect(target: DatabaseIntrospectTarget): Promise<DatabaseIntrospectResult> {
     return introspectPostgres(this.metaClient, target, this.serverVersionNum)
+  }
+
+  ddl(target: DatabaseDdlTarget): Promise<string> {
+    return postgresDdl(this.metaClient, target, this.serverVersionNum)
   }
 
   async execute(

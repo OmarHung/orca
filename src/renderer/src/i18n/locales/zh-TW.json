@@ -18821,6 +18821,15 @@
       "runStatementHint": "執行游標所在的語句",
       "title": "主控台"
     },
+    "ddl": {
+      "close": "關閉",
+      "copied": "已複製 DDL",
+      "copy": "複製",
+      "description": "建立這個物件的語句。",
+      "editorLabel": "DDL",
+      "loading": "正在讀取定義…",
+      "title": "{{value0}} 的 DDL"
+    },
     "deleteDialog": {
       "cancel": "取消",
       "confirm": "刪除",
@@ -18874,6 +18883,7 @@
       "primaryKey": "主鍵",
       "refresh": "重新整理",
       "routines": "例程",
+      "showDdl": "檢視 DDL",
       "unique": "唯一",
       "uniqueKey": "唯一鍵",
       "viaSsh": "經由 {{value0}}"

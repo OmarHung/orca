@@ -1,5 +1,15 @@
 import React from 'react'
-import { Copy, Pencil, Plug, RefreshCw, SquareTerminal, Table2, Trash2, Unplug } from 'lucide-react'
+import {
+  Copy,
+  FileCode2,
+  Pencil,
+  Plug,
+  RefreshCw,
+  SquareTerminal,
+  Table2,
+  Trash2,
+  Unplug
+} from 'lucide-react'
 import {
   ContextMenuContent,
   ContextMenuItem,
@@ -87,6 +97,28 @@ function copyText(node: DatabaseExplorerNode): string | null {
   }
 }
 
+function showDdl(node: Extract<DatabaseExplorerNode, { kind: 'relation' | 'routine' }>): void {
+  const dialogs = useDatabaseDialogsStore.getState()
+  if (node.kind === 'relation') {
+    dialogs.showDdl(
+      node.connectionId,
+      { kind: 'relation', schema: node.schema, relation: node.relation.name },
+      node.relation.name
+    )
+    return
+  }
+  dialogs.showDdl(
+    node.connectionId,
+    {
+      kind: 'routine',
+      schema: node.schema,
+      identity: node.routine.identity,
+      routineKind: node.routine.kind
+    },
+    node.routine.name
+  )
+}
+
 export function DatabaseExplorerContextMenu({
   node
 }: {
@@ -109,6 +141,12 @@ export function DatabaseExplorerContextMenu({
         >
           <Table2 />
           {translate('database.explorer.openData', 'Open Data')}
+        </ContextMenuItem>
+      ) : null}
+      {node.kind === 'relation' || node.kind === 'routine' ? (
+        <ContextMenuItem onSelect={() => showDdl(node)}>
+          <FileCode2 />
+          {translate('database.explorer.showDdl', 'Show DDL')}
         </ContextMenuItem>
       ) : null}
       {text !== null ? (
