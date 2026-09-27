@@ -179,6 +179,9 @@ export const useDatabaseConsoleRunStore = create<DatabaseConsoleRunStore>((set, 
           if (response.ok && response.value.schema) {
             useDatabasePageStore.getState().setConsoleSchema(tab.id, response.value.schema)
           }
+          if (response.ok && response.value.database) {
+            useDatabasePageStore.getState().setConsoleDatabase(tab.id, response.value.database)
+          }
           if (!response.ok) {
             const { error } = response
             appendLog(
