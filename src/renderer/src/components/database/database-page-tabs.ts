@@ -19,6 +19,8 @@ export type DatabaseConsoleTab = TabBase & {
 
 export type DatabaseTableTab = TabBase & {
   kind: 'table'
+  /** The server database holding the table (PostgreSQL, SQL Server); null is the connection's. */
+  database: string | null
   schema: string
   relation: string
   where: string
@@ -50,7 +52,8 @@ export function newConsoleTab(
 export function newTableTab(
   connectionId: string,
   schema: string,
-  relation: string
+  relation: string,
+  database: string | null = null
 ): DatabaseTableTab {
   return {
     kind: 'table',
@@ -59,6 +62,7 @@ export function newTableTab(
     consoleId: createBrowserUuid(),
     countConsoleId: createBrowserUuid(),
     title: relation,
+    database,
     schema,
     relation,
     where: '',
@@ -117,6 +121,7 @@ export function readPersistedTab(value: unknown): DatabaseTab | null {
   const where = field(value, 'where')
   const orderBy = field(value, 'orderBy')
   const countConsoleId = field(value, 'countConsoleId')
+  const database = field(value, 'database')
   if (
     typeof schema !== 'string' ||
     typeof relation !== 'string' ||
@@ -133,6 +138,7 @@ export function readPersistedTab(value: unknown): DatabaseTab | null {
     consoleId,
     countConsoleId,
     title,
+    database: typeof database === 'string' && database.length > 0 ? database : null,
     schema,
     relation,
     where,
