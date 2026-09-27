@@ -57,7 +57,12 @@ export function createDatabaseWorkerDispatcher(
       case 'introspect':
         return requireSession().introspect(command.target)
       case 'execute':
-        return requireSession().execute(command.consoleId, command.sql, command.pageSize)
+        return requireSession().execute(
+          command.consoleId,
+          command.sql,
+          command.pageSize,
+          command.transactionMode ?? 'auto'
+        )
       case 'fetch':
         return requireSession().fetch(command.consoleId, command.resultId, command.pageSize)
       case 'applyChanges': {
