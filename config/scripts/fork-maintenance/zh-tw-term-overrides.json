@@ -123,5 +123,35 @@
     "from": "倉庫",
     "to": "儲存庫",
     "why": "\"Repository\"."
+  },
+  {
+    "from": "只讀",
+    "to": "唯讀",
+    "why": "\"Read-only\"."
+  },
+  {
+    "from": "控制台",
+    "to": "主控台",
+    "why": "\"Console\" (SQL console, browser console)."
+  },
+  {
+    "from": "(?<!重)新建(?!立)",
+    "to": "新增",
+    "why": "\"New …\" actions (新增連線, 新增主控台); 重新建立 and 新建立 mean (re)created."
+  },
+  {
+    "from": "斷開(連線|連接)",
+    "to": "中斷$1",
+    "why": "\"Disconnect\"."
+  },
+  {
+    "from": "(影響|取得|只顯示前) (\\{\\{value\\d\\}\\}) 行",
+    "to": "$1 $2 列",
+    "why": "Result rows are 列 in Taiwan; 行 stays where it means lines of text or code."
+  },
+  {
+    "from": "^(\\{\\{value0\\}\\}) 行$",
+    "to": "$1 列",
+    "why": "A bare row count (\"{{value0}} rows\"); line counts carry more words."
   }
 ]
