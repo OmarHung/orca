@@ -23,6 +23,9 @@ const PACKAGED_RUNTIME_PACKAGE_ROOTS = [
   'i18next',
   'jsonc-parser',
   'node-pty',
+  // Database page drivers, loaded by the database worker thread.
+  'pg',
+  'pg-cursor',
   'posthog-node',
   'proper-lockfile',
   'qrcode',
