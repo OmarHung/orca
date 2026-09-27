@@ -14,7 +14,7 @@ export class ConsolePool<C extends PooledConsole> {
   private readonly consoles = new Map<string, Promise<C>>()
   private readonly lostInTransaction = new Set<string>()
 
-  constructor(private readonly open: (onLost: () => void) => Promise<C>) {}
+  constructor(private readonly open: (consoleId: string, onLost: () => void) => Promise<C>) {}
 
   acquire(consoleId: string): Promise<C> {
     if (this.lostInTransaction.delete(consoleId)) {
@@ -36,7 +36,7 @@ export class ConsolePool<C extends PooledConsole> {
         () => undefined
       )
     }
-    const created = this.open(forget)
+    const created = this.open(consoleId, forget)
     this.consoles.set(consoleId, created)
     created.catch(forget)
     return created
