@@ -32,7 +32,9 @@ function runTableQuery(tab: DatabaseTableTab, driver: DatabaseDriver, query: Tab
   const sql = buildTableDataSql({ driver, schema: tab.schema, relation: tab.relation, ...query })
   void useDatabaseConsoleRunStore
     .getState()
-    .run(tab, [{ start: 0, end: sql.length, terminatorEnd: sql.length, text: sql }])
+    .run(tab, [{ start: 0, end: sql.length, terminatorEnd: sql.length, text: sql }], {
+      database: tab.database ?? undefined
+    })
 }
 
 function FilterField({
