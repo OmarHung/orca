@@ -22,6 +22,7 @@ import { DatabaseConnectionStore } from './database-connection-store'
 import { saveDatabaseExport } from './database-export-file'
 import { DATABASE_CONSOLE_MAX_BYTES, DatabaseConsoleFiles } from './database-console-files'
 import { DatabasePasswordVault } from './database-password-vault'
+import { DatabaseQueryHistory } from './database-query-history'
 import { DatabaseService } from './database-service'
 import { DatabaseSessionManager } from './database-session-manager'
 import { createDatabaseTunnelOpener } from './database-ssh-tunnel'
@@ -53,7 +54,11 @@ const TestRequestSchema = z
     connectionId: databaseConnectionIdSchema.optional()
   })
   .strict()
-const ExecuteRequestSchema = ConsoleRefSchema.extend({ sql: SqlSchema, pageSize: PageSizeSchema })
+const ExecuteRequestSchema = ConsoleRefSchema.extend({
+  sql: SqlSchema,
+  pageSize: PageSizeSchema,
+  recordHistory: z.boolean().optional()
+})
 const FetchRequestSchema = ConsoleRefSchema.extend({
   resultId: z.string().min(1).max(64),
   pageSize: PageSizeSchema
@@ -93,7 +98,8 @@ function createDatabaseService(): DatabaseService {
       emit: broadcast,
       openTunnel: createDatabaseTunnelOpener()
     }),
-    consoles: new DatabaseConsoleFiles(join(rootDir, 'consoles'))
+    consoles: new DatabaseConsoleFiles(join(rootDir, 'consoles')),
+    history: new DatabaseQueryHistory(join(rootDir, 'history'))
   })
 }
 
@@ -144,6 +150,18 @@ export function registerDatabaseHandlers(): void {
   ipcMain.handle('database:execute', (_event, raw: unknown) => {
     const request = ExecuteRequestSchema.safeParse(raw)
     return request.success ? service.execute(request.data) : INVALID_REQUEST
+  })
+
+  ipcMain.handle('database:listHistory', (_event, raw: unknown) => {
+    const id = databaseConnectionIdSchema.safeParse(raw)
+    return id.success ? service.listHistory(id.data) : []
+  })
+
+  ipcMain.handle('database:clearHistory', async (_event, raw: unknown) => {
+    const id = databaseConnectionIdSchema.safeParse(raw)
+    if (id.success) {
+      await service.clearHistory(id.data)
+    }
   })
 
   ipcMain.handle('database:fetchMore', (_event, raw: unknown) => {

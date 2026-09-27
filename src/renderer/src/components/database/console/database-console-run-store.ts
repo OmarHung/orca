@@ -58,9 +58,18 @@ const EMPTY_RUN_STATE: DatabaseConsoleRunState = {
   errorOffset: null
 }
 
+export type DatabaseRunOptions = {
+  /** Console runs go to query history; the table view's generated queries don't. */
+  recordHistory?: boolean
+}
+
 type DatabaseConsoleRunStore = {
   consoles: Record<string, DatabaseConsoleRunState>
-  run: (tab: DatabaseRunTarget, statements: SqlStatementRange[]) => Promise<void>
+  run: (
+    tab: DatabaseRunTarget,
+    statements: SqlStatementRange[],
+    options?: DatabaseRunOptions
+  ) => Promise<void>
   fetchMore: (tab: DatabaseRunTarget, resultTabId: string) => Promise<void>
   cancel: (tab: DatabaseRunTarget) => Promise<void>
   selectResult: (tabId: string, resultId: string) => void
@@ -69,14 +78,16 @@ type DatabaseConsoleRunStore = {
 
 async function execute(
   tab: DatabaseRunTarget,
-  sql: string
+  sql: string,
+  options: DatabaseRunOptions
 ): Promise<DatabaseResult<DatabaseExecuteResult>> {
   return asDatabaseResult(
     await window.api.database.execute({
       connectionId: tab.connectionId,
       consoleId: tab.consoleId,
       sql,
-      pageSize: DATABASE_DEFAULT_PAGE_SIZE
+      pageSize: DATABASE_DEFAULT_PAGE_SIZE,
+      recordHistory: options.recordHistory
     })
   )
 }
@@ -84,9 +95,10 @@ async function execute(
 /** Retries once after reconnecting when main dropped the session (e.g. a restarted SQLite worker). */
 async function executeReconnecting(
   tab: DatabaseRunTarget,
-  sql: string
+  sql: string,
+  options: DatabaseRunOptions
 ): Promise<DatabaseResult<DatabaseExecuteResult>> {
-  const response = await execute(tab, sql)
+  const response = await execute(tab, sql, options)
   if (response.ok || response.error.code !== 'not-connected') {
     return response
   }
@@ -96,7 +108,7 @@ async function executeReconnecting(
     connectionId: tab.connectionId,
     state: 'disconnected'
   })
-  return (await connections.connect(tab.connectionId)) ? execute(tab, sql) : response
+  return (await connections.connect(tab.connectionId)) ? execute(tab, sql, options) : response
 }
 
 export function getConsoleRunState(
@@ -174,7 +186,7 @@ export const useDatabaseConsoleRunStore = create<DatabaseConsoleRunStore>((set, 
   return {
     consoles: {},
 
-    run: async (tab, statements) => {
+    run: async (tab, statements, options = {}) => {
       if (statements.length === 0 || getConsoleRunState(get().consoles, tab.id).running) {
         return
       }
@@ -184,7 +196,7 @@ export const useDatabaseConsoleRunStore = create<DatabaseConsoleRunStore>((set, 
           return
         }
         for (const statement of statements) {
-          const response = await executeReconnecting(tab, statement.text)
+          const response = await executeReconnecting(tab, statement.text, options)
           if (!response.ok) {
             const { error } = response
             appendLog(
