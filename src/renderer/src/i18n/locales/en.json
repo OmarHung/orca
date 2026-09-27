@@ -19489,6 +19489,7 @@
       "primaryKey": "Primary key",
       "refresh": "Refresh",
       "routines": "Routines",
+      "runScript": "Run SQL Script…",
       "showDdl": "Show DDL",
       "unique": "unique",
       "uniqueKey": "Unique key",
@@ -19534,6 +19535,26 @@
       "search": "Search query history",
       "title": "Query History"
     },
+    "jobs": {
+      "button": "Jobs",
+      "cancel": "Cancel",
+      "cancelling": "Cancelling…",
+      "committed": "Committed",
+      "dismiss": "Dismiss",
+      "finishedDetail": "Statements: {{value0}} · Errors: {{value1}} · {{value2}} s",
+      "list": "Background jobs",
+      "moreErrors": "and {{value0}} more",
+      "progress": "Progress",
+      "rolledBack": "Rolled back",
+      "runningCount": "Jobs ({{value0}} running)",
+      "runningDetail": "File {{value0}} of {{value1}} · Statements: {{value2}} · Errors: {{value3}}",
+      "scriptCancelled": "Script cancelled. Statements run: {{value0}}",
+      "scriptDone": "Script finished. Statements run: {{value0}}",
+      "scriptFailed": "The script could not run",
+      "scriptHadErrors": "Script finished with errors ({{value0}})",
+      "starting": "Starting…",
+      "titleMany": "{{value0}} and {{value1}} more"
+    },
     "output": {
       "cancelled": "Cancelled",
       "command": "{{value0}} completed in {{value1}} ms",
@@ -19572,6 +19593,20 @@
       "output": "Output",
       "rowCount": "{{value0}} rows",
       "tab": "Result {{value0}}"
+    },
+    "runScript": {
+      "cancel": "Cancel",
+      "choose": "Choose Files…",
+      "chooseAgain": "Choose Other Files…",
+      "continue": "Keep going and list the errors",
+      "description": "Runs on {{value0}}.",
+      "files": "Script files",
+      "onError": "When a statement fails",
+      "order": "{{value0}} files, {{value1}}. They run in this order on one connection.",
+      "run": "Run",
+      "stop": "Stop",
+      "title": "Run SQL Script",
+      "transaction": "Run in one transaction (rolled back if anything fails)"
     },
     "session": {
       "connected": "Connected",
