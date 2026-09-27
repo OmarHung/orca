@@ -12,6 +12,8 @@ import type {
   DatabaseExecuteResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
+import type { DumpSource } from './dump/dump-source'
+import { SqliteDumpSource } from './dump/sqlite-dump-source'
 import { sqliteDdl } from './sqlite-ddl'
 import { introspectSqlite } from './sqlite-introspection'
 import { encodeTextCell } from './database-cell-encoding'
@@ -168,6 +170,10 @@ class SqliteSession implements DatabaseDriverSession {
   async closeConsole(consoleId: string): Promise<void> {
     this.consoles.get(consoleId)?.close()
     this.consoles.delete(consoleId)
+  }
+
+  async openDumpSource(): Promise<DumpSource> {
+    return new SqliteDumpSource(openDatabase(this.connection))
   }
 
   async close(): Promise<void> {
