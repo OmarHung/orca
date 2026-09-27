@@ -14,10 +14,10 @@ import {
 } from '../console/database-console-run-store'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
 import { useDatabasePageStore, type DatabaseTableTab } from '../database-page-store'
-import { qualifiedRelationName } from '../database-sql-names'
+import { qualifiedRelationName } from '../../../../../shared/database/sql-identifiers'
 import { DatabaseResultGrid } from '../grid/DatabaseResultGrid'
 import type { GridSort } from '../grid/database-grid-sort'
-import { buildTableDataSql, orderByForSort } from './database-table-query'
+import { buildTableDataSql, orderByForSort } from '../../../../../shared/database/table-data-sql'
 import { useTableRowCount, type TableRowCount } from './use-table-row-count'
 
 type TableQuery = { where: string; orderBy: string }

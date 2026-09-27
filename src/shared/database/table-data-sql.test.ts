@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildTableCountSql, buildTableDataSql, orderByForSort } from './database-table-query'
+import { buildTableCountSql, buildTableDataSql, orderByForSort } from './table-data-sql'
 
 const target = { driver: 'postgres' as const, schema: 'public', relation: 'people' }
 
