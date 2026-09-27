@@ -218,5 +218,15 @@
     "from": "^(主機和埠以 SSH 主機的角度填寫，例如 localhost 或)內網地址。$",
     "to": "$1內部網路位址。",
     "why": "Database connection form: a network address is 位址 in Taiwan."
+  },
+  {
+    "from": "事務",
+    "to": "交易",
+    "why": "\"Transaction\" (database); OpenCC turns 事务 into 交易 only inside some phrases."
+  },
+  {
+    "from": "(?<=提交)併(?=關閉)",
+    "to": "並",
+    "why": "\"Commit and close\"; OpenCC reads 提交并 as 提交併."
   }
 ]

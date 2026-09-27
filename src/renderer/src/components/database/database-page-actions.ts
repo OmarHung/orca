@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 import { translate } from '@/i18n/i18n'
-import { useDatabaseConsoleRunStore } from './console/database-console-run-store'
+import {
+  getConsoleRunState,
+  useDatabaseConsoleRunStore
+} from './console/database-console-run-store'
 import { findDatabaseConnection, useDatabaseConnectionsStore } from './database-connections-store'
 import {
   useDatabasePageStore,
@@ -20,24 +23,31 @@ type DatabaseDialogsState = {
   deletingConnectionId: string | null
   /** An action on a table tab that waits for the user to discard its pending edits. */
   pendingDiscard: { tabId: string; proceed: () => void } | null
+  /** A console whose close waits for the user to commit or roll back its transaction. */
+  closingWithTransaction: string | null
   openConnectionEditor: (target: ConnectionEditorTarget) => void
   closeConnectionEditor: () => void
   askToDeleteConnection: (connectionId: string) => void
   cancelDeleteConnection: () => void
   askToDiscard: (tabId: string, proceed: () => void) => void
   cancelDiscard: () => void
+  askToEndTransaction: (tabId: string) => void
+  cancelEndTransaction: () => void
 }
 
 export const useDatabaseDialogsStore = create<DatabaseDialogsState>((set) => ({
   connectionEditor: null,
   deletingConnectionId: null,
   pendingDiscard: null,
+  closingWithTransaction: null,
   openConnectionEditor: (target) => set({ connectionEditor: target }),
   closeConnectionEditor: () => set({ connectionEditor: null }),
   askToDeleteConnection: (connectionId) => set({ deletingConnectionId: connectionId }),
   cancelDeleteConnection: () => set({ deletingConnectionId: null }),
   askToDiscard: (tabId, proceed) => set({ pendingDiscard: { tabId, proceed } }),
-  cancelDiscard: () => set({ pendingDiscard: null })
+  cancelDiscard: () => set({ pendingDiscard: null }),
+  askToEndTransaction: (tabId) => set({ closingWithTransaction: tabId }),
+  cancelEndTransaction: () => set({ closingWithTransaction: null })
 }))
 
 export function openDatabaseConsole(connectionId: string): DatabaseConsoleTab {
@@ -65,10 +75,18 @@ function releaseTabs(tabs: readonly DatabaseTab[]): void {
   }
 }
 
-/** Closes a tab; a table tab with pending edits asks first unless `discard` is set. */
+/**
+ * Closes a tab. Unless `discard` is set, a table tab with pending edits or a console with an
+ * open transaction asks first.
+ */
 export function closeDatabaseTab(tabId: string, options: { discard?: boolean } = {}): void {
   const tab = useDatabasePageStore.getState().tabs.find((entry) => entry.id === tabId)
   if (!tab) {
+    return
+  }
+  const { transaction } = getConsoleRunState(useDatabaseConsoleRunStore.getState().consoles, tabId)
+  if (!options.discard && tab.kind === 'console' && transaction !== 'none') {
+    useDatabaseDialogsStore.getState().askToEndTransaction(tabId)
     return
   }
   const { edits } = getTableEditState(useDatabaseTableEditsStore.getState().tabs, tabId)

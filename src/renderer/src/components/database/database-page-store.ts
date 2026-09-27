@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { DatabaseTransactionMode } from '../../../../shared/database/database-query-types'
 import {
   newConsoleTab,
   newTableTab,
@@ -31,6 +32,7 @@ type DatabasePageState = PersistedDatabasePage & {
   /** Focuses the table's data tab, opening one if needed. */
   openTable: (connectionId: string, schema: string, relation: string) => DatabaseTableTab
   updateTableQuery: (tabId: string, query: { where: string; orderBy: string }) => void
+  setTransactionMode: (tabId: string, mode: DatabaseTransactionMode) => void
   activateTab: (tabId: string) => void
   closeTab: (tabId: string) => void
   closeTabsForConnection: (connectionId: string) => DatabaseTab[]
@@ -141,6 +143,12 @@ export const useDatabasePageStore = create<DatabasePageState>((set, get) => {
       update({
         tabs: get().tabs.map((tab) =>
           tab.id === tabId && tab.kind === 'table' ? { ...tab, ...query } : tab
+        )
+      }),
+    setTransactionMode: (tabId, mode) =>
+      update({
+        tabs: get().tabs.map((tab) =>
+          tab.id === tabId && tab.kind === 'console' ? { ...tab, transactionMode: mode } : tab
         )
       }),
     activateTab: (tabId) => update({ activeTabId: tabId }),
