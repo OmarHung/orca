@@ -86,7 +86,7 @@ export async function addServerConnection(page: Page, form: ServerConnectionForm
     await dialog.getByLabel('Read-only').click()
   }
   await dialog.getByRole('button', { name: 'Test Connection' }).click()
-  // Why longer through SSH: the first connect deploys Orca's relay on the SSH host.
+  // Why longer through SSH: the first connect also opens the SSH session.
   await expect(dialog.getByText(/^Connected to /)).toBeVisible({
     timeout: form.sshHost ? 90_000 : 30_000
   })
