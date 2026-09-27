@@ -151,7 +151,7 @@ function introspectSqlite(
           .all()
           .map((row) => String(row.name))
           .filter((name) => name !== 'temp')
-          .map((name) => ({ name }))
+          .map((name) => ({ name, isCurrent: name === 'main' }))
       }
     case 'relations':
       return {

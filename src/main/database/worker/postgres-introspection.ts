@@ -8,7 +8,7 @@ import type {
 const POSTGRES_10 = 100_000
 
 const SCHEMAS_SQL = `
-  select nspname as name
+  select nspname as name, nspname = current_schema() as is_current
   from pg_catalog.pg_namespace
   where nspname !~ '^pg_' and nspname <> 'information_schema'
   order by nspname`
@@ -63,8 +63,11 @@ export async function introspectPostgres(
 ): Promise<DatabaseIntrospectResult> {
   switch (target.level) {
     case 'schemas': {
-      const result = await client.query<{ name: string }>(SCHEMAS_SQL)
-      return { level: 'schemas', schemas: result.rows.map((row) => ({ name: row.name })) }
+      const result = await client.query<{ name: string; is_current: boolean | null }>(SCHEMAS_SQL)
+      return {
+        level: 'schemas',
+        schemas: result.rows.map((row) => ({ name: row.name, isCurrent: row.is_current === true }))
+      }
     }
     case 'relations': {
       const result = await client.query<{ name: string; kind: string }>(

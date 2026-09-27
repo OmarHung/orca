@@ -7,7 +7,8 @@ import { queryMysqlRows } from './mysql-client-factory'
 
 // In MySQL a "schema" is a database; hide the server's own.
 const SCHEMAS_SQL = `
-  select schema_name as name from information_schema.schemata
+  select schema_name as name, schema_name = database() as is_current
+  from information_schema.schemata
   where schema_name not in ('mysql', 'information_schema', 'performance_schema', 'sys')
   order by schema_name`
 
@@ -32,7 +33,13 @@ export async function introspectMysql(
   switch (target.level) {
     case 'schemas': {
       const rows = await queryMysqlRows(client, SCHEMAS_SQL)
-      return { level: 'schemas', schemas: rows.map((row) => ({ name: text(row.name) })) }
+      return {
+        level: 'schemas',
+        schemas: rows.map((row) => ({
+          name: text(row.name),
+          isCurrent: Number(row.is_current) === 1
+        }))
+      }
     }
     case 'relations': {
       const rows = await queryMysqlRows(client, RELATIONS_SQL, [target.schema])
