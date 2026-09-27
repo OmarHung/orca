@@ -2,16 +2,21 @@ import type { Locator, Page } from '@stablyai/playwright-test'
 import { expect } from './orca-app'
 import { waitForSessionReady } from './store'
 
-/** Opens the Database page with English copy, whatever the host locale is. */
-export async function openDatabasePage(page: Page): Promise<void> {
+const PAGE_TITLES = { en: 'Database', 'zh-TW': '資料庫' } as const
+
+/** Opens the Database page in English (or `language`), whatever the host locale is. */
+export async function openDatabasePage(
+  page: Page,
+  language: keyof typeof PAGE_TITLES = 'en'
+): Promise<void> {
   await waitForSessionReady(page)
-  // Why: the selectors are English; a zh-TW host locale would otherwise pick zh-TW.
+  // Why: selectors are written in one language; the host locale would otherwise pick one.
   // The page mounts after this, so it renders in the new language.
-  await page.evaluate(async () => {
-    await window.__store!.getState().updateSettings({ uiLanguage: 'en' })
-  })
+  await page.evaluate(async (uiLanguage) => {
+    await window.__store!.getState().updateSettings({ uiLanguage })
+  }, language)
   await page.getByTestId('database-status-toggle').click()
-  await expect(page.getByRole('heading', { name: 'Database' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: PAGE_TITLES[language] })).toBeVisible()
 }
 
 /** Same as `openDatabasePage`, through the Mod+Alt+D shortcut instead of the status bar. */
@@ -86,10 +91,15 @@ export async function explorerMenu(page: Page, row: Locator, item: string): Prom
   await page.getByRole('menuitem', { name: item, exact: true }).click()
 }
 
-/** Types into the active console's Monaco editor, replacing its text, and runs it. */
-export async function runInConsole(page: Page, sql: string): Promise<void> {
+/** Replaces the active console's text without running it. */
+export async function typeInConsole(page: Page, sql: string): Promise<void> {
   await page.locator('.monaco-editor').first().click()
   await page.keyboard.press('ControlOrMeta+A')
   await page.keyboard.type(sql)
+}
+
+/** Types into the active console, replacing its text, and runs the statement at the caret. */
+export async function runInConsole(page: Page, sql: string): Promise<void> {
+  await typeInConsole(page, sql)
   await page.keyboard.press('ControlOrMeta+Enter')
 }
