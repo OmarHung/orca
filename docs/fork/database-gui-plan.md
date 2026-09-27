@@ -134,7 +134,7 @@ worker thread（每個開啟的 session 一個）  驅動、cursor、取消、�
 - 版面：左邊是可拖拉寬度的連線樹，中間是自己的分頁列
   - Console 分頁：上面 Monaco，下面結果區（每個結果集一個分頁，外加 Output 紀錄：耗時、影響列數、錯誤）
   - 資料表分頁：上面是篩選列（`WHERE`、`ORDER BY` 輸入框），中間是表格，下面是待送出變更的工具列
-- 狀態：fork 自己的 zustand store，開啟的分頁和樹的展開狀態存在 localStorage（`orca.database.page.v1`）；連線資料一律向 main 讀取
+- 狀態：fork 自己的 zustand store，開啟的分頁存在 localStorage（`orca.database.page.v1`）；連線資料一律向 main 讀取。樹的展開狀態目前沒有保存：還原它就得在啟動時連上資料庫（可能跳出密碼詢問），待定
 - `DataGrid` 元件：列虛擬化（欄位很多時連欄一起虛擬化）、固定表頭、拖拉欄寬、儲存格和範圍選取、鍵盤移動、複製成 TSV／CSV／JSON／INSERT、NULL 用不同樣式、長文字和 JSON 用側邊檢視器
 - Monaco：`Cmd/Ctrl+Enter` 執行游標所在的語句或選取範圍；執行錯誤標在編輯器上；Phase 5 加上依結構自動補全
 
@@ -269,6 +269,42 @@ SQL Server 的映像檔只有 amd64，在 Apple Silicon 上透過 Rosetta 可以
 - 表頭排序的箭頭只反映點表頭產生的排序；手動輸入的 ORDER BY 不會顯示箭頭
 
 繁體中文：`zh-tw-term-overrides.json` 新增只比對整句的規則，把這幾句的「行」改成「列」、欄寬改成「欄寬」、「單元格」改成「儲存格」，不會影響 notebook 等其他地方的用詞。WHERE、ORDER BY 是 SQL 關鍵字，不翻譯，加進 `localization-coverage-allowlist.json`。
+
+### 6.4 Phase 0–2 補驗證紀錄（2026-09-27）
+
+Phase 0、1 原本只有整合測試和兩個 e2e。這一輪用真實 app 把使用者會碰到的流程都跑過，看截圖，並對每個修正確認「拿掉修正測試就會失敗」。資料庫相關 e2e 共 15 個，全部通過：
+
+| spec | 內容 |
+|---|---|
+| `database-page.spec.ts` | PostgreSQL：連線、分頁、錯誤標記；保留字和大小寫混合名稱的資料表分頁 |
+| `database-page-sqlite.spec.ts` | SQLite：console、取消；資料表分頁的篩選、排序、計數、值檢視器 |
+| `database-grid-transfers.spec.ts` | 各種複製格式和匯出檔案（攔截剪貼簿和存檔對話框，不動到真的剪貼簿） |
+| `database-grid-columns.spec.ts` | 拖拉欄寬、最小寬度、鍵盤調整、雙擊自動調整、重新查詢後保留欄寬 |
+| `database-passwords.spec.ts` | 三種密碼儲存方式、密碼錯誤的提示、重開 app、伺服器改密碼後重新詢問、磁碟上沒有明文 |
+| `database-connections.spec.ts` | 新增（測試失敗、選檔）、改名、中斷／連線、刪除（連帶關掉分頁）、`Mod+Alt+D`、唯讀、Refresh、游標／選取／全部執行 |
+| `database-restart.spec.ts` | 重開 app 後還原頁面、console 文字、資料表分頁和篩選 |
+| `database-server-drivers.spec.ts` | MySQL、MariaDB、SQL Server：連線、兩個結果集（含 `DELIMITER` 建 procedure）、取消、資料表分頁、唯讀 |
+| `database-page-zh-tw.spec.ts` | 繁體中文介面走一遍主要流程 |
+
+伺服器相關 spec 用跟整合測試一樣的環境變數。密碼測試另外需要伺服器對 `orca_pw_*` 帳號要求密碼，在 `pg_hba.conf` 第一行加上：
+
+```
+host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
+```
+
+找到並修正的問題：
+
+- `Mod+Alt+D` 從來沒作用：全域快捷鍵只派送 plugin alias 清單裡的動作。改成跟 `workspace.delete` 一樣單獨派送（Git Log 面板的 `bottomPanel.gitLog.toggle` 有同樣問題，屬於另一個分支，沒動）
+- 連線中編輯設定（唯讀、主機、帳號…）不會生效，舊的 session 繼續用。現在設定有變就中斷，下一個動作用新設定重連；只改名稱或密碼儲存方式不中斷
+- SQLite 對 `CREATE`、`BEGIN` 等語句回報上一個 DML 的列數；MySQL 對 DDL 回報 0 列；SQL Server 的 DDL 沒有標示語句名稱。現在五種資料庫一致：只有會改資料的語句顯示影響列數
+- 識別字是保留字（`user`、`order`）時沒加引號，SQL 會出錯。現在各方言有自己的保留字清單
+- 欄寬用「每字 7px」估算，等寬字型實際較寬，值一開始就被截斷。改用 canvas 以實際字型量測
+- 在欄邊按方向鍵會連帶移動格子選取
+- 數字和時間用系統語系格式化，不跟 Orca 的介面語言
+- 無障礙：連線狀態只用顏色表示、密碼詢問框的輸入欄沒有標籤、結構樹每一列的名稱前面都多了「Expand or collapse」
+- 選取的格子幾乎看不出來（淺灰底），改用樣式規範指定的 `bg-foreground/10`；雙擊結構樹會把文字反白
+
+還沒驗證到的：SSH workspace（Phase 4 才做）、實際打包出的安裝檔（只用模擬目錄驗過）。
 
 ### Phase 3：資料表編輯
 
