@@ -15,6 +15,8 @@ export type DatabaseRunOptions = {
   transactionMode?: DatabaseTransactionMode
   /** The console's picked schema; absent keeps the connection's default. */
   schema?: string
+  /** The console's picked database (PostgreSQL, SQL Server); absent keeps the connection's. */
+  database?: string
 }
 
 export function transactionLostMessage(): string {
@@ -37,7 +39,8 @@ async function execute(
       pageSize: DATABASE_DEFAULT_PAGE_SIZE,
       recordHistory: options.recordHistory,
       transactionMode: options.transactionMode,
-      schema: options.schema
+      schema: options.schema,
+      database: options.database
     })
   )
 }

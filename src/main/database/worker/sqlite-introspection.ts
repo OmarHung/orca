@@ -91,6 +91,8 @@ export function introspectSqlite(
   target: DatabaseIntrospectTarget
 ): DatabaseIntrospectResult {
   switch (target.level) {
+    case 'databases':
+      return { level: 'databases', databases: [] }
     case 'schemas':
       return {
         level: 'schemas',
