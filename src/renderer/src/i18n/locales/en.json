@@ -19013,6 +19013,8 @@
       "cancel": "Cancel running statement",
       "editorLabel": "SQL console",
       "errorMarker": "The server reported an error here",
+      "formatFailed": "Some SQL was left unformatted",
+      "reformat": "Reformat SQL",
       "resizeResults": "Resize results",
       "run": "Run",
       "runAll": "Run All Statements",
