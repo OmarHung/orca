@@ -1,5 +1,6 @@
 import { Connection, Request, TYPES } from 'tedious'
 import type { DatabaseConnectionDraft } from '../../../shared/database/database-connection-types'
+import type { RoutedConnection } from './database-connection-route'
 import type { SqlServerColumnMeta } from './sqlserver-values'
 
 export type SqlServerConnectionDraft = Extract<DatabaseConnectionDraft, { driver: 'sqlserver' }>
@@ -23,7 +24,7 @@ function encryption(mode: SqlServerConnectionDraft['sslMode']): {
 
 /** Opens one TDS session. `onError` must be attached before connect so drops never crash the worker. */
 export function connectSqlServer(
-  connection: SqlServerConnectionDraft,
+  connection: RoutedConnection<SqlServerConnectionDraft>,
   password: string | null,
   onError: (error: Error) => void
 ): Promise<Connection> {
@@ -37,6 +38,7 @@ export function connectSqlServer(
       port: connection.port,
       database: connection.database || undefined,
       ...encryption(connection.sslMode),
+      ...(connection.tlsServerName ? { serverName: connection.tlsServerName } : {}),
       appName: 'Orca',
       connectTimeout: CONNECT_TIMEOUT_MS,
       // Why 0: statements run until they finish or the user cancels.
