@@ -173,6 +173,17 @@ export const AGENT_LAUNCH_CALLER_PROFILES: readonly AgentLaunchCallerProfile[] =
       launchSource: 'quick_command',
       quickCommandLabel: 'Review'
     }
+  },
+  // Fork: "Resolve with AI" on the fork-sync update card.
+  {
+    id: 'fork-sync-conflict',
+    caller: 'src/renderer/src/lib/fork-sync-conflict-agent.ts',
+    args: {
+      agent: 'codex',
+      worktreeId: 'wt-1',
+      prompt: PROMPT,
+      promptDelivery: 'submit-after-ready'
+    }
   }
 ]
 
