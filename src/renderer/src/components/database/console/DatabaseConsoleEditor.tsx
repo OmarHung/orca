@@ -10,6 +10,10 @@ import { resolveDocumentTheme } from '@/lib/document-theme'
 import '@/lib/monaco-setup'
 import { useAppStore } from '@/store'
 import { statementsForRun, type DatabaseRunMode } from './database-console-statements'
+import {
+  databaseConsoleModelPath,
+  registerDatabaseConsoleModel
+} from './monaco-database-console-language'
 import type {
   SqlDialect,
   SqlStatementRange
@@ -20,6 +24,8 @@ type Monaco = typeof MonacoApi
 const MARKER_OWNER = 'orca-database'
 
 type DatabaseConsoleEditorProps = {
+  tabId: string
+  connectionId: string
   initialText: string
   dialect: SqlDialect
   errorOffset: number | null
@@ -76,6 +82,8 @@ function runFromEditor(
 }
 
 export function DatabaseConsoleEditor({
+  tabId,
+  connectionId,
   initialText,
   dialect,
   errorOffset,
@@ -90,11 +98,13 @@ export function DatabaseConsoleEditor({
   const onRunRef = useRef(onRun)
   const onEditorReadyRef = useRef(onEditorReady)
   const dialectRef = useRef(dialect)
+  const connectionIdRef = useRef(connectionId)
   useLayoutEffect(() => {
     onRunRef.current = onRun
     onEditorReadyRef.current = onEditorReady
     dialectRef.current = dialect
-  }, [onRun, onEditorReady, dialect])
+    connectionIdRef.current = connectionId
+  }, [onRun, onEditorReady, dialect, connectionId])
 
   const fontSize = computeEditorFontSize(settings?.terminalFontSize ?? 13, editorFontZoomLevel)
   const fontFamily = resolveEditorFontFamily(settings)
@@ -105,6 +115,13 @@ export function DatabaseConsoleEditor({
     editorRef.current = instance
     monacoRef.current = monaco
     const cleanupFind = installMonacoEditorFindShortcut(instance)
+    const model = instance.getModel()
+    const unregisterModel = model
+      ? registerDatabaseConsoleModel(monaco, model, () => ({
+          connectionId: connectionIdRef.current,
+          dialect: dialectRef.current
+        }))
+      : () => {}
     // CtrlCmd is ⌘ on macOS and Ctrl elsewhere.
     instance.addAction({
       id: 'orca.database.runStatement',
@@ -118,10 +135,25 @@ export function DatabaseConsoleEditor({
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter],
       run: (target) => runFromEditor(target, 'all', dialectRef.current, onRunRef.current)
     })
+    instance.addAction({
+      id: 'orca.database.reformat',
+      label: translate('database.console.reformat', 'Reformat SQL'),
+      // DataGrip's Reformat Code.
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Alt | monaco.KeyCode.KeyL],
+      run: (target) =>
+        target
+          .getAction(
+            target.getSelection()?.isEmpty() === false
+              ? 'editor.action.formatSelection'
+              : 'editor.action.formatDocument'
+          )
+          ?.run()
+    })
     instance.focus()
     onEditorReadyRef.current(instance)
     instance.onDidDispose(() => {
       cleanupFind()
+      unregisterModel()
       editorRef.current = null
       onEditorReadyRef.current(null)
     })
@@ -159,6 +191,7 @@ export function DatabaseConsoleEditor({
         <Editor
           height="100%"
           defaultLanguage="sql"
+          defaultPath={databaseConsoleModelPath(tabId)}
           // Why defaultValue: this editor owns its text after mount, so React never resets undo.
           defaultValue={initialText}
           theme={isDark ? 'vs-dark' : 'vs'}

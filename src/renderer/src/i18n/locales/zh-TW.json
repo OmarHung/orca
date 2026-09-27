@@ -18808,6 +18808,8 @@
       "cancel": "取消正在執行的語句",
       "editorLabel": "SQL 主控台",
       "errorMarker": "伺服器在這裡報告了錯誤",
+      "formatFailed": "部分 SQL 未能格式化",
+      "reformat": "重新格式化 SQL",
       "resizeResults": "調整結果區大小",
       "run": "執行",
       "runAll": "執行所有語句",

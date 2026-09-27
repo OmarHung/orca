@@ -7,6 +7,11 @@ import {
   runInConsole,
   typeInConsole
 } from './helpers/database-page'
+import {
+  consoleSuggestions,
+  moveCaretInLine,
+  triggerSuggest
+} from './helpers/database-console-assist'
 import { test, expect } from './helpers/orca-app'
 
 // Opt-in per server, with the same URLs as the driver integration tests, e.g.
@@ -88,6 +93,19 @@ for (const driver of CASES) {
       await expect(orcaPage.getByText(/^CREATE completed/)).toBeVisible({ timeout: 30_000 })
       await runInConsole(orcaPage, `insert into ${qualified} values (1, 'a'), (2, 'b'), (3, 'c');`)
       await expect(orcaPage.getByText(/^INSERT: 3 rows affected/)).toBeVisible({ timeout: 30_000 })
+
+      // Unqualified names complete from the current schema: the URL's database, or dbo.
+      const suggestions = consoleSuggestions(orcaPage)
+      await typeInConsole(orcaPage, `select * from ${table.slice(0, -3)}`)
+      await triggerSuggest(orcaPage)
+      await expect(suggestions.filter({ hasText: table })).toHaveCount(1)
+      await orcaPage.keyboard.press('Escape')
+      await typeInConsole(orcaPage, `select  from ${table} t`)
+      await moveCaretInLine(orcaPage, 'select '.length)
+      await orcaPage.keyboard.type('t.')
+      await expect(suggestions).toHaveCount(2, { timeout: 10_000 })
+      await expect(suggestions.nth(1)).toContainText('label')
+      await orcaPage.keyboard.press('Escape')
 
       const setup = driver.twoSetsSetup(routine)
       if (setup) {
