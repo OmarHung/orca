@@ -3,9 +3,10 @@ import type {
   DatabaseExecuteResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
+import { ConsoleTransactions } from './console-transactions'
 import { PagedBatchReader } from './database-batch-reader'
 import { assertReadOnlySql } from './read-only-sql-guard'
-import { closeSqlServer } from './sqlserver-client-factory'
+import { closeSqlServer, querySqlServerRows } from './sqlserver-client-factory'
 import {
   encodeSqlServerValue,
   sqlServerTypeName,
@@ -25,6 +26,18 @@ function columnList(
 /** One console's TDS session; a batch stays open (paused) until its rows are read or dropped. */
 export class SqlServerConsole {
   private reader: PagedBatchReader | null = null
+  readonly transactions = new ConsoleTransactions({
+    // XACT_STATE is -1 for a transaction an error left uncommittable.
+    state: async () => {
+      const [row] = await querySqlServerRows(this.client, 'select xact_state() as state')
+      const state = Number(row?.state)
+      return state === 1 ? 'open' : state === -1 ? 'failed' : 'none'
+    },
+    setManual: async (manual) => {
+      await this.abandonOpen()
+      await this.batch(`SET IMPLICIT_TRANSACTIONS ${manual ? 'ON' : 'OFF'}`)
+    }
+  })
 
   constructor(
     readonly client: Connection,

@@ -6,7 +6,8 @@ import type {
 import type {
   DatabaseExecuteResult,
   DatabaseResult,
-  DatabaseRowsPage
+  DatabaseRowsPage,
+  DatabaseTransactionMode
 } from '../../../shared/database/database-query-types'
 import type { TableChangeSet } from '../../../shared/database/table-change-sql'
 
@@ -21,7 +22,13 @@ export type DatabaseWorkerCommand =
       tunnelPort?: number
     }
   | { type: 'introspect'; target: DatabaseIntrospectTarget }
-  | { type: 'execute'; consoleId: string; sql: string; pageSize: number }
+  | {
+      type: 'execute'
+      consoleId: string
+      sql: string
+      pageSize: number
+      transactionMode?: DatabaseTransactionMode
+    }
   | { type: 'fetch'; consoleId: string; resultId: string; pageSize: number }
   | { type: 'applyChanges'; consoleId: string; changeSet: TableChangeSet }
   | { type: 'cancel'; consoleId: string }
