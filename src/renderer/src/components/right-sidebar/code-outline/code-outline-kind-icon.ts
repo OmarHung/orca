@@ -1,6 +1,7 @@
 import {
   Blocks,
   Box,
+  Brackets,
   Braces,
   Hash,
   ListOrdered,
@@ -29,5 +30,6 @@ export const CODE_OUTLINE_KIND_ICON: Record<CodeOutlineSymbolKind, LucideIcon> =
   field: Variable,
   variable: Variable,
   constant: Variable,
-  event: Zap
+  event: Zap,
+  array: Brackets
 }
