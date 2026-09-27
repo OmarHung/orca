@@ -8,6 +8,7 @@ import type {
 import { DATABASE_DEFAULT_PAGE_SIZE } from '../../../../../shared/database/database-session-types'
 import type { SqlStatementRange } from '../../../../../shared/database/sql-statement-splitter'
 import { asDatabaseResult, useDatabaseConnectionsStore } from '../database-connections-store'
+import { useDatabasePageStore } from '../database-page-store'
 import type { DatabaseRunTarget } from '../database-page-tabs'
 import {
   executeReconnecting,
@@ -173,6 +174,10 @@ export const useDatabaseConsoleRunStore = create<DatabaseConsoleRunStore>((set, 
           const transaction = response.ok ? response.value.transaction : response.error.transaction
           if (transaction) {
             patch(tab.id, () => ({ transaction }))
+          }
+          // A statement like USE moved the console; the schema picker follows it.
+          if (response.ok && response.value.schema) {
+            useDatabasePageStore.getState().setConsoleSchema(tab.id, response.value.schema)
           }
           if (!response.ok) {
             const { error } = response

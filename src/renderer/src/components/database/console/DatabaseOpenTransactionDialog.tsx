@@ -37,7 +37,10 @@ export function DatabaseOpenTransactionDialog(): React.JSX.Element | null {
   const commitAndClose = async (): Promise<void> => {
     setCommitting(true)
     const runs = useDatabaseConsoleRunStore.getState()
-    await runs.run(tab, [COMMIT], { transactionMode: tab.transactionMode })
+    await runs.run(tab, [COMMIT], {
+      transactionMode: tab.transactionMode,
+      schema: tab.schema ?? undefined
+    })
     setCommitting(false)
     cancel()
     // A failed COMMIT leaves the console open with the error in its output.
