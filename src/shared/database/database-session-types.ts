@@ -37,6 +37,8 @@ export type DatabaseExecuteRequest = DatabaseConsoleRef & {
   recordHistory?: boolean
   /** Absent means auto-commit. */
   transactionMode?: DatabaseTransactionMode
+  /** The schema (MySQL database) the console picked; absent keeps the connection's default. */
+  schema?: string
 }
 
 export type DatabaseFetchMoreRequest = DatabaseConsoleRef & { resultId: string; pageSize: number }

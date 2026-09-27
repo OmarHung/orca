@@ -24,7 +24,9 @@ export type DatabaseDriverSession = {
     consoleId: string,
     sql: string,
     pageSize: number,
-    mode: DatabaseTransactionMode
+    mode: DatabaseTransactionMode,
+    /** Where unqualified names should resolve; ignored by drivers with no per-session switch. */
+    schema?: string
   ): Promise<DatabaseExecuteResult>
   fetch(consoleId: string, resultId: string, pageSize: number): Promise<DatabaseRowsPage>
   /** Starts a transaction on the console's session for applying table edits. */

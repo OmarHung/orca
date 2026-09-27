@@ -130,7 +130,7 @@ export function DatabaseExplorerContextMenu({
     <ContextMenuContent>
       {node.kind === 'connection' ? <ConnectionItems connectionId={node.connectionId} /> : null}
       {node.kind === 'schema' ? (
-        <ContextMenuItem onSelect={() => openDatabaseConsole(node.connectionId)}>
+        <ContextMenuItem onSelect={() => openDatabaseConsole(node.connectionId, node.schema)}>
           <SquareTerminal />
           {translate('database.explorer.newConsole', 'New Console')}
         </ContextMenuItem>
