@@ -86,6 +86,9 @@ for (const fixture of DRIVER_FIXTURES) {
       expect(schemas.level === 'schemas' && schemas.schemas.map((s) => s.name)).toContain(
         fixture.schema
       )
+      expect(
+        schemas.level === 'schemas' && schemas.schemas.filter((s) => s.isCurrent).map((s) => s.name)
+      ).toEqual([fixture.currentSchema])
       const relations = await expectOk(
         harness.send({ type: 'introspect', target: { level: 'relations', schema: fixture.schema } })
       )

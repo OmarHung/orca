@@ -19,7 +19,8 @@ export type DatabaseRelationKind =
   | 'materialized-view'
   | 'foreign-table'
 
-export type DatabaseSchemaInfo = { name: string }
+/** `isCurrent` marks where unqualified names resolve (search_path, current database, …). */
+export type DatabaseSchemaInfo = { name: string; isCurrent: boolean }
 
 export type DatabaseRelationInfo = { name: string; kind: DatabaseRelationKind }
 
