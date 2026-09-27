@@ -1,6 +1,6 @@
 # Database 工具（DataGrip 風格）：實作計畫（fork 專屬）
 
-> 狀態：Phase 0（基礎架構 + PostgreSQL）、Phase 1（MySQL／MariaDB、SQL Server、SQLite）和 Phase 2（資料表分頁、表格完整化）已完成（2026-09-27），紀錄見 §6.1～§6.3。Phase 3 以後尚未開工
+> 狀態：Phase 0（基礎架構 + PostgreSQL）、Phase 1（MySQL／MariaDB、SQL Server、SQLite）、Phase 2（資料表分頁、表格完整化）和 Phase 3（資料表編輯）已完成（2026-09-27），紀錄見 §6.1～§6.5。Phase 4 以後尚未開工
 > 分支：從 `omar/custom` 開 `feat/database`，每個 Phase 完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -310,6 +310,33 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 
 - 待送出變更、還原、預覽 SQL、在交易中送出
 - 各方言的 INSERT／UPDATE／DELETE 產生和參數化
+
+### 6.5 Phase 3 完成紀錄（2026-09-27）
+
+資料庫相關 e2e 共 17 個全部通過，其中編輯相關：SQLite 兩個（編輯、設 NULL、刪除、新增、預覽、送出、改回；別人先刪掉某列時整批 rollback；重新查詢和關分頁前詢問；沒有主鍵的表唯讀），PostgreSQL（保留字和大小寫混合名稱）、MySQL、MariaDB、SQL Server 各在畫面上改一格並送出。`database-table-changes.integration.test.ts` 對五種資料庫跑同一組變更（刪、改、新增一起送出、別人刪掉的列、主鍵重複），都驗證整批 rollback 並指出是哪一筆。
+
+實作時的決定：
+
+- **SQL 產生**：`src/shared/database/table-change-sql.ts` 依方言產生 DELETE、UPDATE、INSERT，每個值都是參數（`$n`、`?`、`@pn`），識別字依方言加引號。同一個函式也產生預覽用的 SQL（值寫成字面值），所以預覽和實際執行的語句一致。順序固定為刪除 → 修改 → 新增，避免「刪掉主鍵 5 再新增主鍵 5」衝突
+- **交易**：每個驅動提供「執行一句並回傳影響列數、commit、rollback」，共用的 `applyTableChanges` 逐句執行；UPDATE、DELETE 不是剛好 1 列，或任何一句出錯，就整批 rollback，錯誤帶 `changeIndex` 回到畫面，標出是哪一列（新增的選填欄位，舊版不受影響）
+- **各驅動的參數**：pg 用參數化 query；mysql2 用 `execute`（伺服器端 prepared statement；預設的 FOUND_ROWS 讓值沒變的 UPDATE 也算 1 列）；tedious 用 `sp_executesql` 加 NVarChar 參數，由伺服器轉成欄位型別；SQLite 用 prepared statement。值一律以文字送出，由伺服器轉型
+- **在哪個 session 送出**：資料表分頁自己的資料 session。送出前會關掉還開著的 cursor；成功後重新查詢
+- **唯讀**：唯讀連線在 main 就擋下（SQL Server 沒有 session 唯讀），畫面上工具列顯示「Read-only」並說明原因；沒有主鍵的表也一樣
+- **畫面**：雙擊、Enter、F2 或右鍵「Edit Value」就地編輯（多行值用可長高的輸入框，Shift／Alt+Enter 換行）；NULL 格清空後送出仍是 NULL；新增的列沒填的欄位顯示 DEFAULT，送出時省略、由資料表預設值決定。修改的格子、新增的列、要刪除的列各有標示（沿用 status／destructive token）
+- **不丟掉修改**：修改存在每個分頁自己的 store，切換分頁不會消失；重新查詢（重新整理、篩選、點表頭排序）和關分頁前都會詢問
+- **不能編輯的格子**：二進位欄位、只載入預覽的超長值、標記刪除的列，點了會說明原因
+
+已知限制：
+
+- 只支援有主鍵的表；計畫裡「非 null 唯一鍵」還沒做
+- 送出失敗後，資料 session 的 cursor 已關閉，還沒載入的列要重新整理才能繼續往下捲
+- SQL Server：tedious 回報的列數可能把 trigger 改到的列也算進去，有會改其他列的 trigger 的表可能被誤判而拒絕送出（未驗證）
+- 值以文字送出，日期等格式要是伺服器接受的寫法
+- 修改只存在記憶體，關掉 Orca 就沒了（關分頁和重新查詢會先問）
+- 右鍵「Edit Value」延後到選單關閉才開輸入框，避免選單把焦點還給表格時輸入框失焦。e2e 在隱藏視窗執行，焦點事件跟實際桌面不同，這一點只能靠推理，沒辦法在這裡驗證
+- 不能編輯 console 的查詢結果（見 §10）
+
+繁體中文：新增的規則只比對這些資料庫字串整句，把 行 改成 列、二進位制 改成 二進位、事務 改成 交易、引數 改成 參數；Markdown 表格編輯器用「行」表示 row，那些字串不受影響。
 
 ### Phase 4：SSH Tunnel
 
