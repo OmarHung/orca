@@ -85,6 +85,20 @@ export async function addServerConnection(page: Page, form: ServerConnectionForm
   await expect(dialog).toBeHidden()
 }
 
+/** Opens a grid cell's in-place editor, types `value` and stages it with Enter. */
+export async function editGridCell(
+  page: Page,
+  cell: Locator,
+  column: string,
+  value: string
+): Promise<void> {
+  await cell.dblclick()
+  const editor = page.getByRole('textbox', { name: `Edit ${column}` })
+  await editor.fill(value)
+  await editor.press('Enter')
+  await expect(editor).toBeHidden()
+}
+
 /** Right-clicks a row in the database explorer and picks a context menu item. */
 export async function explorerMenu(page: Page, row: Locator, item: string): Promise<void> {
   await row.click({ button: 'right' })
