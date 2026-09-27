@@ -12,6 +12,10 @@ import { test, expect } from './helpers/orca-app'
 async function setTransactionMode(page: Page, mode: 'Auto-commit' | 'Manual commit') {
   await page.getByRole('combobox', { name: 'Transaction mode' }).click()
   await page.getByRole('option', { name: mode }).click()
+  // Focus goes back to the console, so typing right away lands in the editor.
+  await expect
+    .poll(() => page.evaluate(() => document.activeElement?.closest('.monaco-editor') !== null))
+    .toBe(true)
 }
 
 async function expectPeopleCount(page: Page, count: number): Promise<void> {
