@@ -211,10 +211,14 @@ export class MysqlDumpSource implements DumpSource {
     const stream = query.stream({ highWaterMark: batchSize })
     this.stream = stream
     let batch: string[][] = []
-    for await (const row of stream as AsyncIterable<(string | null)[]>) {
+    for await (const row of stream) {
+      const values: unknown = row
+      if (!Array.isArray(values)) {
+        continue
+      }
       batch.push(
-        row.map((value, index) => {
-          if (value === null) {
+        values.map((value: unknown, index) => {
+          if (typeof value !== 'string') {
             return 'NULL'
           }
           const kind = kinds[index]
