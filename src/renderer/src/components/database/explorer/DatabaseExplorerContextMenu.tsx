@@ -15,7 +15,7 @@ import {
   useDatabaseDialogsStore
 } from '../database-page-actions'
 import { useDatabaseExplorerStore } from './database-explorer-store'
-import { qualifiedRelationName } from '../database-sql-names'
+import { qualifiedRelationName } from '../../../../../shared/database/sql-identifiers'
 import type { DatabaseExplorerNode } from './database-explorer-tree'
 
 function copy(text: string): void {

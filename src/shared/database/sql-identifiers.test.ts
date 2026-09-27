@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { qualifiedRelationName, quoteSqlName } from './database-sql-names'
+import { qualifiedRelationName, quoteSqlName } from './sql-identifiers'
 
 describe('SQL names', () => {
   it('quotes identifiers only when needed, in each dialect’s style', () => {
@@ -13,5 +13,14 @@ describe('SQL names', () => {
   it('treats PostgreSQL upper-case names as needing quotes', () => {
     expect(quoteSqlName('Name', 'postgres')).toBe('"Name"')
     expect(quoteSqlName('Name', 'mysql')).toBe('Name')
+  })
+
+  it('quotes reserved words in any letter case', () => {
+    expect(qualifiedRelationName('public', 'user')).toBe('public."user"')
+    expect(quoteSqlName('order', 'postgres')).toBe('"order"')
+    expect(quoteSqlName('Order', 'mysql')).toBe('`Order`')
+    expect(quoteSqlName('KEY', 'sqlserver')).toBe('[KEY]')
+    expect(quoteSqlName('group', 'sqlite')).toBe('"group"')
+    expect(quoteSqlName('name', 'sqlserver')).toBe('name')
   })
 })

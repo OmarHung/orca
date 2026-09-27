@@ -1,5 +1,5 @@
 import React from 'react'
-import { translate } from '@/i18n/i18n'
+import { getIntlLocale, translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import {
   isDatabaseTruncatedCell,
@@ -17,8 +17,8 @@ function truncatedTitle(cell: DatabaseCell): string | undefined {
         'database.grid.truncated',
         'Showing the first {{value0}} of {{value1}} characters',
         {
-          value0: cell.preview.length.toLocaleString(),
-          value1: cell.length.toLocaleString()
+          value0: cell.preview.length.toLocaleString(getIntlLocale()),
+          value1: cell.length.toLocaleString(getIntlLocale())
         }
       )
     : undefined
