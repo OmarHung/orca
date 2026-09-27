@@ -10,7 +10,10 @@ import { resolveDocumentTheme } from '@/lib/document-theme'
 import '@/lib/monaco-setup'
 import { useAppStore } from '@/store'
 import { statementsForRun, type DatabaseRunMode } from './database-console-statements'
-import type { SqlStatementRange } from '../../../../../shared/database/sql-statement-splitter'
+import type {
+  SqlDialect,
+  SqlStatementRange
+} from '../../../../../shared/database/sql-statement-splitter'
 
 type Monaco = typeof MonacoApi
 
@@ -18,6 +21,7 @@ const MARKER_OWNER = 'orca-database'
 
 type DatabaseConsoleEditorProps = {
   initialText: string
+  dialect: SqlDialect
   errorOffset: number | null
   onChange: (text: string) => void
   onRun: (statements: SqlStatementRange[]) => void
@@ -48,6 +52,7 @@ function buildOptions(
 function runFromEditor(
   instance: editor.ICodeEditor,
   mode: DatabaseRunMode,
+  dialect: SqlDialect,
   onRun: (statements: SqlStatementRange[]) => void
 ): void {
   const model = instance.getModel()
@@ -64,13 +69,15 @@ function runFromEditor(
       : {
           start: model.getOffsetAt(selection.getStartPosition()),
           end: model.getOffsetAt(selection.getEndPosition())
-        }
+        },
+    dialect
   )
   onRun(statements)
 }
 
 export function DatabaseConsoleEditor({
   initialText,
+  dialect,
   errorOffset,
   onChange,
   onRun,
@@ -82,10 +89,12 @@ export function DatabaseConsoleEditor({
   const monacoRef = useRef<Monaco | null>(null)
   const onRunRef = useRef(onRun)
   const onEditorReadyRef = useRef(onEditorReady)
+  const dialectRef = useRef(dialect)
   useLayoutEffect(() => {
     onRunRef.current = onRun
     onEditorReadyRef.current = onEditorReady
-  }, [onRun, onEditorReady])
+    dialectRef.current = dialect
+  }, [onRun, onEditorReady, dialect])
 
   const fontSize = computeEditorFontSize(settings?.terminalFontSize ?? 13, editorFontZoomLevel)
   const fontFamily = resolveEditorFontFamily(settings)
@@ -101,13 +110,13 @@ export function DatabaseConsoleEditor({
       id: 'orca.database.runStatement',
       label: translate('database.console.runStatement', 'Run Statement'),
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
-      run: (target) => runFromEditor(target, 'current', onRunRef.current)
+      run: (target) => runFromEditor(target, 'current', dialectRef.current, onRunRef.current)
     })
     instance.addAction({
       id: 'orca.database.runAll',
       label: translate('database.console.runAll', 'Run All Statements'),
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter],
-      run: (target) => runFromEditor(target, 'all', onRunRef.current)
+      run: (target) => runFromEditor(target, 'all', dialectRef.current, onRunRef.current)
     })
     instance.focus()
     onEditorReadyRef.current(instance)
@@ -166,9 +175,10 @@ export function DatabaseConsoleEditor({
 export function runDatabaseConsoleFromToolbar(
   instance: editor.ICodeEditor | null,
   mode: DatabaseRunMode,
+  dialect: SqlDialect,
   onRun: (statements: SqlStatementRange[]) => void
 ): void {
   if (instance) {
-    runFromEditor(instance, mode, onRun)
+    runFromEditor(instance, mode, dialect, onRun)
   }
 }

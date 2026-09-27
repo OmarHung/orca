@@ -145,6 +145,25 @@ describe('DatabaseSessionManager', () => {
     expect(events.at(-1)).toMatchObject({ state: 'disconnected' })
   })
 
+  it('restarts a session so a blocked statement settles as cancelled', async () => {
+    const { manager, events, workers } = setup((command) =>
+      command.type === 'connect' ? connectOk(command) : { ok: true, value: null }
+    )
+    await manager.connect(connection, null)
+    // A worker blocked in a synchronous statement never answers this request.
+    workers[0]!.port.postMessage = () => undefined
+    const running = manager.request(connection.id, { type: 'cancel', consoleId: 'console-1' })
+    const restarted = await manager.restart(connection.id, {
+      message: 'Cancelled',
+      code: 'cancelled'
+    })
+    expect(restarted).toBe(true)
+    expect(await running).toMatchObject({ ok: false, error: { code: 'cancelled' } })
+    expect(workers[0]?.terminated()).toBe(true)
+    expect(events.at(-1)).toMatchObject({ state: 'disconnected' })
+    expect(manager.isConnected(connection.id)).toBe(false)
+  })
+
   it('tests connections in a throwaway worker', async () => {
     const { manager, workers } = setup()
     const result = await manager.test(connection, 'pw')

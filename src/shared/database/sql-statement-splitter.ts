@@ -1,111 +1,92 @@
-export type SqlDialect = 'postgres'
+import {
+  SQL_DIALECT_RULES,
+  commentEnd,
+  isIdentifierChar,
+  isWhitespace,
+  quotedTokenEnd,
+  type SqlDialect,
+  type SqlDialectRules
+} from './sql-dialect-lexing'
+
+export type { SqlDialect } from './sql-dialect-lexing'
 
 export type SqlStatementRange = {
   /** Offset of the first token; leading whitespace and comments are excluded. */
   start: number
-  /** Offset just past the last token; the `;` terminator is excluded. */
+  /** Offset just past the last token; the terminator is excluded. */
   end: number
-  /** Offset just past the `;`, or `end` when the statement is unterminated. */
+  /** Offset just past the terminator, or `end` when the statement is unterminated. */
   terminatorEnd: number
   text: string
 }
 
-type DialectRules = {
-  /** `E'...'` strings, where backslash escapes the next character. */
-  escapeStrings: boolean
-  /** `$tag$ ... $tag$` bodies, which may contain unquoted semicolons. */
-  dollarQuotes: boolean
-  nestedBlockComments: boolean
+type Terminators = { semicolons: boolean }
+
+const GO_LINE = /go(?:[ \t]+\d+)?[ \t]*(?=\r?\n|$)/iy
+const DELIMITER_LINE = /delimiter[ \t]+(\S+)[ \t]*(?=\r?\n|$)/iy
+const WORD = /[A-Za-z_]\w*/y
+
+function lineEnd(sql: string, from: number): number {
+  const newline = sql.indexOf('\n', from)
+  return newline === -1 ? sql.length : newline
 }
 
-const DIALECT_RULES: Record<SqlDialect, DialectRules> = {
-  postgres: { escapeStrings: true, dollarQuotes: true, nestedBlockComments: true }
-}
-
-const DOLLAR_TAG = /\$(?:[A-Za-z_\u0080-￿][\w\u0080-￿]*)?\$/y
-
-function isIdentifierChar(char: string | undefined): boolean {
-  return char !== undefined && /[\w$\u0080-￿]/.test(char)
-}
-
-function isWhitespace(char: string): boolean {
-  return char === ' ' || char === '\n' || char === '\r' || char === '\t' || char === '\f'
-}
-
-function skipQuoted(sql: string, from: number, quote: string, backslashEscapes: boolean): number {
-  let index = from + 1
-  while (index < sql.length) {
-    const char = sql[index]
-    if (backslashEscapes && char === '\\') {
-      index += 2
-      continue
-    }
-    if (char === quote) {
-      if (sql[index + 1] !== quote) {
-        return index + 1
-      }
-      index += 2
-      continue
-    }
-    index += 1
+function atBlankLineStart(sql: string, index: number): boolean {
+  let cursor = index - 1
+  while (cursor >= 0 && (sql[cursor] === ' ' || sql[cursor] === '\t')) {
+    cursor -= 1
   }
-  return sql.length
+  return cursor < 0 || sql[cursor] === '\n'
 }
 
-function skipBlockComment(sql: string, from: number, nested: boolean): number {
-  let depth = 0
-  let index = from
-  while (index < sql.length) {
-    if (sql.startsWith('/*', index) && (nested || depth === 0)) {
-      depth += 1
-      index += 2
-    } else if (sql.startsWith('*/', index)) {
-      depth -= 1
-      index += 2
-      if (depth === 0) {
-        return index
-      }
-    } else {
-      index += 1
+function matchAt(pattern: RegExp, sql: string, index: number): RegExpExecArray | null {
+  pattern.lastIndex = index
+  return pattern.exec(sql)
+}
+
+/** Tracks SQLite `CREATE TRIGGER … BEGIN … END`, where `;` belongs to the body. */
+class TriggerBodyTracker {
+  private leading: string[] = []
+  private depth = 0
+
+  reset(): void {
+    this.leading = []
+    this.depth = 0
+  }
+
+  get insideBody(): boolean {
+    return this.depth > 0
+  }
+
+  onWord(word: string): void {
+    const lower = word.toLowerCase()
+    if (this.leading.length < 3) {
+      this.leading.push(lower)
+    }
+    if (!this.isTrigger()) {
+      return
+    }
+    if (lower === 'begin' || lower === 'case') {
+      this.depth += 1
+    } else if (lower === 'end' && this.depth > 0) {
+      this.depth -= 1
     }
   }
-  return sql.length
+
+  private isTrigger(): boolean {
+    const [first, second, third] = this.leading
+    return (
+      first === 'create' &&
+      (second === 'trigger' ||
+        ((second === 'temp' || second === 'temporary') && third === 'trigger'))
+    )
+  }
 }
 
-function readDollarDelimiter(sql: string, from: number): string | null {
-  if (isIdentifierChar(sql[from - 1])) {
-    return null
-  }
-  DOLLAR_TAG.lastIndex = from
-  return DOLLAR_TAG.exec(sql)?.[0] ?? null
-}
-
-/** Length of the token starting at `index` when it is a string, quoted name, or dollar body. */
-function quotedTokenEnd(sql: string, index: number, rules: DialectRules): number | null {
-  const char = sql[index]
-  if (char === "'") {
-    const prefix = sql[index - 1]
-    const isEscapeString =
-      rules.escapeStrings && (prefix === 'E' || prefix === 'e') && !isIdentifierChar(sql[index - 2])
-    return skipQuoted(sql, index, "'", isEscapeString)
-  }
-  if (char === '"') {
-    return skipQuoted(sql, index, '"', false)
-  }
-  if (char === '$' && rules.dollarQuotes) {
-    const delimiter = readDollarDelimiter(sql, index)
-    if (delimiter) {
-      const close = sql.indexOf(delimiter, index + delimiter.length)
-      return close === -1 ? sql.length : close + delimiter.length
-    }
-  }
-  return null
-}
-
-/** Splits a script into statements the way the server will see them, ignoring `;` inside literals. */
-export function splitSqlStatements(sql: string, dialect: SqlDialect): SqlStatementRange[] {
-  const rules = DIALECT_RULES[dialect]
+function scan(sql: string, rules: SqlDialectRules, terminators: Terminators): SqlStatementRange[] {
   const statements: SqlStatementRange[] = []
+  const trigger = new TriggerBodyTracker()
+  let delimiter = ';'
   let tokenStart: number | null = null
   let lastTokenEnd = 0
 
@@ -119,36 +100,54 @@ export function splitSqlStatements(sql: string, dialect: SqlDialect): SqlStateme
       })
     }
     tokenStart = null
+    trigger.reset()
   }
 
   let index = 0
   while (index < sql.length) {
-    const char = sql[index]!
-    if (char === ';') {
-      flush(index + 1)
-      index += 1
+    const lineStart = atBlankLineStart(sql, index)
+    const delimiterLine =
+      rules.delimiterCommand && tokenStart === null && lineStart
+        ? matchAt(DELIMITER_LINE, sql, index)
+        : null
+    if (delimiterLine) {
+      delimiter = delimiterLine[1]!
+      index = lineEnd(sql, index)
       continue
     }
-    if (sql.startsWith('--', index) || sql.startsWith('/*', index)) {
-      const isLine = char === '-'
-      const newline = sql.indexOf('\n', index)
-      const end = isLine
-        ? newline === -1
-          ? sql.length
-          : newline
-        : skipBlockComment(sql, index, rules.nestedBlockComments)
-      if (tokenStart !== null) {
-        // Why: comments inside a statement belong to it, but not their trailing blanks.
-        lastTokenEnd = index + sql.slice(index, end).trimEnd().length
-      }
+    if (rules.goBatches && lineStart && matchAt(GO_LINE, sql, index)) {
+      const end = lineEnd(sql, index)
+      flush(end)
       index = end
       continue
     }
-    if (isWhitespace(char)) {
+    if (terminators.semicolons && !trigger.insideBody && sql.startsWith(delimiter, index)) {
+      flush(index + delimiter.length)
+      index += delimiter.length
+      continue
+    }
+    const comment = commentEnd(sql, index, rules)
+    if (comment !== null) {
+      if (tokenStart !== null) {
+        // Why: comments inside a statement belong to it, but not their trailing blanks.
+        lastTokenEnd = index + sql.slice(index, comment).trimEnd().length
+      }
+      index = comment
+      continue
+    }
+    if (isWhitespace(sql[index])) {
       index += 1
       continue
     }
-    const end = quotedTokenEnd(sql, index, rules) ?? index + 1
+    let end = quotedTokenEnd(sql, index, rules)
+    if (end === null && !isIdentifierChar(sql[index - 1])) {
+      const word = matchAt(WORD, sql, index)?.[0]
+      if (word) {
+        trigger.onWord(word)
+        end = index + word.length
+      }
+    }
+    end ??= index + 1
     tokenStart ??= index
     lastTokenEnd = end
     index = end
@@ -157,6 +156,20 @@ export function splitSqlStatements(sql: string, dialect: SqlDialect): SqlStateme
     flush(lastTokenEnd)
   }
   return statements
+}
+
+/** Splits a script into statements the way the server will see them, ignoring `;` inside literals. */
+export function splitSqlStatements(sql: string, dialect: SqlDialect): SqlStatementRange[] {
+  return scan(sql, SQL_DIALECT_RULES[dialect], { semicolons: true })
+}
+
+/**
+ * Units to send as one request. SQL Server sends whole `GO` batches so `DECLARE`d variables
+ * stay in scope; every other dialect sends one statement at a time.
+ */
+export function splitSqlBatches(sql: string, dialect: SqlDialect): SqlStatementRange[] {
+  const rules = SQL_DIALECT_RULES[dialect]
+  return scan(sql, rules, { semicolons: !rules.goBatches })
 }
 
 /**

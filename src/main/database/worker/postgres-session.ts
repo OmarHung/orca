@@ -4,7 +4,7 @@ import type {
   DatabaseIntrospectTarget
 } from '../../../shared/database/database-introspection-types'
 import type {
-  DatabaseQueryResult,
+  DatabaseExecuteResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
 import type { DatabaseDriverCallbacks, DatabaseDriverSession } from './database-driver'
@@ -31,8 +31,8 @@ class PostgresSession implements DatabaseDriverSession {
     return introspectPostgres(this.metaClient, target, this.serverVersionNum)
   }
 
-  async execute(consoleId: string, sql: string, pageSize: number): Promise<DatabaseQueryResult> {
-    return (await this.console(consoleId)).execute(sql, pageSize)
+  async execute(consoleId: string, sql: string, pageSize: number): Promise<DatabaseExecuteResult> {
+    return { results: [await (await this.console(consoleId)).execute(sql, pageSize)] }
   }
 
   async fetch(consoleId: string, resultId: string, pageSize: number): Promise<DatabaseRowsPage> {

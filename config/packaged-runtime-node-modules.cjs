@@ -24,6 +24,7 @@ const PACKAGED_RUNTIME_PACKAGE_ROOTS = [
   'jsonc-parser',
   'node-pty',
   // Database page drivers, loaded by the database worker thread.
+  'mysql2',
   'pg',
   'pg-cursor',
   'posthog-node',
