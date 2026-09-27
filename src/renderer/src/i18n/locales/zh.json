@@ -19359,11 +19359,26 @@
       "newConsole": "新建控制台",
       "noConnections": "还没有连接。",
       "notNull": "not null",
+      "openData": "打开数据",
       "refresh": "刷新",
       "toggle": "展开或折叠"
     },
     "grid": {
+      "copy": "复制",
+      "copyAs": "复制为",
+      "copyWithHeaders": "连同表头复制",
+      "exportAs": "{{value0}}…",
+      "exportFailed": "导出失败",
+      "exportLoaded": "导出已加载的行",
+      "exported": "已导出 {{value0}} 行",
+      "formatCsv": "CSV",
+      "formatJson": "JSON",
+      "formatSql": "SQL INSERT",
+      "formatTsv": "TSV",
       "null": "NULL",
+      "resizeColumn": "调整 {{value0}} 列宽",
+      "selectAll": "全选",
+      "showValue": "查看值",
       "truncated": "只显示 {{value1}} 个字符中的前 {{value0}} 个"
     },
     "output": {
@@ -19409,8 +19424,24 @@
     "statusBar": {
       "label": "数据库"
     },
+    "table": {
+      "countMissing": "计数查询没有返回任何行。",
+      "countRows": "计算总行数",
+      "counting": "正在计数…",
+      "orderByPlaceholder": "例如 created_at desc",
+      "refresh": "刷新",
+      "totalRows": "共 {{value0}} 行",
+      "wherePlaceholder": "例如 id > 100"
+    },
     "tabs": {
       "close": "关闭控制台"
+    },
+    "viewer": {
+      "copy": "复制值",
+      "empty": "选择一个单元格以查看它的值。",
+      "resize": "调整值查看器宽度",
+      "title": "值",
+      "toggle": "值查看器"
     }
   }
 }
