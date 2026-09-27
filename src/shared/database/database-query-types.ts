@@ -51,6 +51,8 @@ export type DatabaseError = {
   line?: number
   detail?: string
   hint?: string
+  /** Which change of a submitted change set failed (0-based); the whole set was rolled back. */
+  changeIndex?: number
 }
 
 export type DatabaseResult<T> = { ok: true; value: T } | { ok: false; error: DatabaseError }
