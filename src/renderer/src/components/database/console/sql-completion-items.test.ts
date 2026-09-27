@@ -47,13 +47,27 @@ async function suggest(sqlWithCaret: string, dialect: SqlDialect = 'postgres') {
 }
 
 describe('SQL completions', () => {
-  it('lists the current schema’s tables, then schemas, after FROM', async () => {
+  it('lists only the current schema’s tables after FROM', async () => {
     const { prefix, labels } = await suggest('select * from us|')
     expect(prefix).toBe('us')
-    expect(labels).toEqual([
-      'table:users',
-      'table:"Order Items"',
-      'view:active_users',
+    expect(labels).toEqual(['table:users', 'table:"Order Items"', 'view:active_users'])
+  })
+
+  it('offers schemas after FROM only when none is current, so one can be picked', async () => {
+    const noCurrent: SqlCatalog = {
+      ...catalog,
+      schemas: async () => [
+        { name: 'public', isCurrent: false },
+        { name: 'sales', isCurrent: false }
+      ]
+    }
+    const { items } = await sqlCompletions({
+      text: 'select * from ',
+      offset: 14,
+      dialect: 'mysql',
+      catalog: noCurrent
+    })
+    expect(items.map((entry) => `${entry.kind}:${entry.insertText}`)).toEqual([
       'schema:public',
       'schema:sales'
     ])
@@ -134,6 +148,6 @@ describe('SQL completions', () => {
       catalog,
       currentSchema: 'sales'
     })
-    expect(items.map((entry) => entry.insertText)).toEqual(['orders', 'public', 'sales'])
+    expect(items.map((entry) => entry.insertText)).toEqual(['orders'])
   })
 })
