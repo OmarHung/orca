@@ -18,15 +18,20 @@ import type { DebugLaunchTarget } from '../../../../shared/debug/debug-session-t
 import {
   isRunSessionActive,
   runSessionKey,
+  runStopStage,
   useRunSessionStore,
   type RunSession
 } from './run-session-store'
 
 const CTRL_C = '\x03'
+/** Ctrl-\ makes the tty send SIGQUIT, which ends most programs that trap SIGINT. */
+const CTRL_BACKSLASH = '\x1c'
 /** How often a waited-on run checks that its tab still exists (closing it sends no signal). */
 const RUN_TAB_POLL_MS = 1_000
-/** How long Rerun waits for Ctrl-C to end the old run before closing its tab. */
+/** How long Rerun waits for Ctrl-C to end the old run before forcing it. */
 const RERUN_STOP_TIMEOUT_MS = 3_000
+/** How long Rerun waits after forcing before it closes the old run's tab. */
+const RERUN_FORCE_STOP_TIMEOUT_MS = 2_000
 
 export type RunTarget = {
   worktreeId: string
@@ -171,18 +176,39 @@ export async function runConfiguration(target: RunTarget): Promise<void> {
   }
 }
 
-/** First press sends Ctrl-C; pressing again while it is still stopping closes the tab. */
+function closeRunTab(session: RunSession): void {
+  useAppStore.getState().closeTab(session.tabId)
+  useRunSessionStore.getState().finishByTab(session.tabId, null)
+}
+
+/**
+ * Each press goes one step further, as `runStopStage` names it: Ctrl-C, then the forceful
+ * signals with the terminal kept, and only then closing the terminal.
+ */
 export function stopConfiguration(worktreeId: string, commandKey: string): void {
   const session = liveRunSession(worktreeId, commandKey)
   if (!session || !isRunSessionActive(session.status)) {
     return
   }
-  if (session.status === 'stopping') {
-    useAppStore.getState().closeTab(session.tabId)
-    useRunSessionStore.getState().finishByTab(session.tabId, null)
-    return
+  switch (runStopStage(session)) {
+    case 'interrupt':
+      interrupt(session)
+      return
+    case 'force':
+      forceStop(session)
+      return
+    case 'close':
+      closeRunTab(session)
   }
-  interrupt(session)
+}
+
+/** Another Ctrl-C (some tools exit on the second) plus SIGQUIT; the shell ignores both. */
+function forceStop(session: RunSession): void {
+  const ptyId = firstPtyId(session.tabId)
+  if (ptyId) {
+    sendRuntimePtyInput(useAppStore.getState().settings, ptyId, CTRL_C + CTRL_BACKSLASH)
+  }
+  useRunSessionStore.getState().markForceStopped(session.key)
 }
 
 function interrupt(session: RunSession): void {
@@ -202,24 +228,26 @@ function interrupt(session: RunSession): void {
   useRunSessionStore.getState().setStatus(session.key, 'stopping')
 }
 
-/** Ctrl-C, then waits; false when the program ignored it and its tab was closed instead. */
+function isStillActive(session: RunSession): boolean {
+  return isRunSessionActive(
+    useRunSessionStore.getState().sessionsByKey[session.key]?.status ?? 'stopped'
+  )
+}
+
+/** Ctrl-C, then force, then waits; false when nothing ended it and its tab was closed instead. */
 async function endRun(session: RunSession): Promise<boolean> {
   if (session.status === 'running') {
     interrupt(session)
   }
-  if (
-    !isRunSessionActive(
-      useRunSessionStore.getState().sessionsByKey[session.key]?.status ?? 'stopped'
-    )
-  ) {
+  if (!isStillActive(session) || (await waitForFinish(session.tabId, RERUN_STOP_TIMEOUT_MS))) {
     return true
   }
-  if (await waitForFinish(session.tabId, RERUN_STOP_TIMEOUT_MS)) {
+  forceStop(session)
+  if (await waitForFinish(session.tabId, RERUN_FORCE_STOP_TIMEOUT_MS)) {
     return true
   }
-  // Why: a program that ignores Ctrl-C (or a shell without OSC 133) would block forever.
-  useAppStore.getState().closeTab(session.tabId)
-  useRunSessionStore.getState().finishByTab(session.tabId, null)
+  // Why: a program that ignores both (or a shell without OSC 133) would block forever.
+  closeRunTab(session)
   return false
 }
 

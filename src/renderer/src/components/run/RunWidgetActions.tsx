@@ -1,12 +1,13 @@
 import React from 'react'
-import { Bug, Play } from 'lucide-react'
+import { Bug, Play, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useConfirmationDialog } from '@/components/confirmation-dialog-context'
 import { translate } from '@/i18n/i18n'
 import { useDebugStore } from '../debug/debug-store'
 import { DebugSessionControls } from './DebugSessionControls'
-import { RunSessionControls } from './RunSessionControls'
+import { ControlButton, RunSessionControls } from './RunSessionControls'
+import { RunStatusDot } from './RunStatusDot'
 import { isDebuggingSource } from './run-debug-exclusivity'
 import { isRunSessionActive } from './run-session-store'
 import {
@@ -17,6 +18,12 @@ import {
   runWidgetSessionTarget,
   type RunWidgetScope
 } from './run-widget-actions'
+import {
+  isCompoundItem,
+  isFootprintActive,
+  type RunWidgetActivity,
+  type RunWidgetFootprint
+} from './run-widget-activity'
 import type { RunWidgetItem } from './run-widget-items'
 import { useLiveRunSession } from './use-live-run-session'
 
@@ -86,11 +93,10 @@ function ActionButton({
 }
 
 /**
- * Run, Debug and the live session's controls for the selected item. One item never runs and
- * debugs at once, as in JetBrains: the active mode's button gives way to Rerun/Restart and Stop,
- * and the other mode asks before stopping it.
+ * One item never runs and debugs at once, as in JetBrains: the active mode's button gives way to
+ * Rerun/Restart, and the other mode asks before stopping it.
  */
-export function RunWidgetActions({
+function SingleRunActions({
   item,
   scope
 }: {
@@ -129,6 +135,7 @@ export function RunWidgetActions({
       <RunSessionControls
         target={target}
         testId="run-configurations-session"
+        showStop={false}
         // Why: configurations rerun through the launcher so trust and Before launch apply again.
         onRerun={
           item.kind === 'configuration' ? () => void runWidgetItem(item, scope, confirm) : undefined
@@ -136,5 +143,88 @@ export function RunWidgetActions({
       />
       {debugging ? <DebugSessionControls label={item.label} onRestart={debug} /> : null}
     </>
+  )
+}
+
+/** A compound is live while any member runs or debugs; Rerun starts it all again. */
+function CompoundRunActions({
+  item,
+  scope,
+  live
+}: {
+  item: RunWidgetItem
+  scope: RunWidgetScope
+  live: boolean
+}): React.JSX.Element {
+  const confirm = useConfirmationDialog()
+  const run = (): void => void runWidgetItem(item, scope, confirm)
+  const status = translate('run.status.running', 'Running')
+  return (
+    <>
+      {live ? null : (
+        <ActionButton
+          label={runLabel(item, false)}
+          testId="run-configurations-launch"
+          disabled={false}
+          onClick={run}
+        >
+          <Play />
+        </ActionButton>
+      )}
+      <ActionButton
+        label={debugLabel(item, false)}
+        testId="run-configurations-debug"
+        disabled
+        onClick={() => {}}
+      >
+        <Bug />
+      </ActionButton>
+      <div
+        data-testid="run-configurations-session"
+        data-run-status={live ? 'running' : 'idle'}
+        className="my-auto flex shrink-0 items-center gap-0.5"
+      >
+        {live ? (
+          <>
+            <span
+              className="flex size-4 items-center justify-center"
+              title={`${item.label}: ${status}`}
+            >
+              <RunStatusDot tone="running" />
+            </span>
+            <ControlButton
+              action={{
+                icon: RotateCcw,
+                label: translate('run.action.rerun', "Rerun '{{value0}}'", { value0: item.label }),
+                testId: 'run-rerun',
+                onClick: run
+              }}
+            />
+          </>
+        ) : null}
+      </div>
+    </>
+  )
+}
+
+/**
+ * Run, Debug and the live session's controls for the selected item. Stop lives in the widget's
+ * shared Stop control, which covers every run in the worktree.
+ */
+export function RunWidgetActions({
+  item,
+  scope,
+  footprint,
+  activity
+}: {
+  item: RunWidgetItem
+  scope: RunWidgetScope
+  footprint: RunWidgetFootprint
+  activity: RunWidgetActivity
+}): React.JSX.Element {
+  return isCompoundItem(item) ? (
+    <CompoundRunActions item={item} scope={scope} live={isFootprintActive(footprint, activity)} />
+  ) : (
+    <SingleRunActions item={item} scope={scope} />
   )
 }
