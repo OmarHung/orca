@@ -3,6 +3,7 @@ import type {
   DebugLaunchTarget,
   DebugSessionEvent
 } from '../../../../shared/debug/debug-session-types'
+import { createBrowserUuid } from '@/lib/browser-uuid'
 import { useBottomPanelLayout } from '../bottom-panel/bottom-panel-layout-store'
 import { revealDebugLocation } from './debug-editor-navigation'
 import {
@@ -157,7 +158,7 @@ export async function startDebugSession(options: {
     await stopDebugSession()
   }
   ensureEventSubscription()
-  const sessionId = crypto.randomUUID()
+  const sessionId = createBrowserUuid()
   useDebugStore.getState().setSession({
     id: sessionId,
     worktreeId: options.worktreeId,
