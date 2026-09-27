@@ -26,7 +26,7 @@ import { mysqlDdl } from './mysql-ddl'
 import { introspectMysql } from './mysql-introspection'
 
 class MysqlSession implements DatabaseDriverSession {
-  private readonly consoles = new ConsolePool((onLost) =>
+  private readonly consoles = new ConsolePool((_consoleId, onLost) =>
     connectMysqlClient(this.connection, this.password, onLost).then(
       (client) => new MysqlConsole(client, (threadId) => this.killQuery(threadId))
     )
