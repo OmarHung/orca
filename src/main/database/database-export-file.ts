@@ -17,9 +17,12 @@ const FILTERS: Record<DatabaseExportFormat, Electron.FileFilter> = {
 const ILLEGAL_FILE_NAME_CHARS = /[/\\:*?"<>|\u0000-\u001f]/g
 
 /** Keeps the suggested name legal on every platform (Windows forbids the most). */
+export function exportBaseName(suggestedName: string): string {
+  return suggestedName.replace(ILLEGAL_FILE_NAME_CHARS, '_').slice(0, 100).trim() || 'export'
+}
+
 export function exportFileName(suggestedName: string, format: DatabaseExportFormat): string {
-  const safe = suggestedName.replace(ILLEGAL_FILE_NAME_CHARS, '_').slice(0, 100).trim()
-  return `${safe || 'export'}.${format}`
+  return `${exportBaseName(suggestedName)}.${format}`
 }
 
 /** Asks where to save, then writes the text. A cancelled dialog resolves to `null`. */

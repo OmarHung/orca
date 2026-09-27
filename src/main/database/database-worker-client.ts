@@ -5,6 +5,7 @@ import type {
   DatabaseErrorCode,
   DatabaseResult
 } from '../../shared/database/database-query-types'
+import type { DatabaseJobProgress } from '../../shared/database/database-dump-types'
 import { resolveDatabaseWorkerEntryPath } from './database-worker-entry-path'
 import type {
   DatabaseWorkerCommandOf,
@@ -58,11 +59,16 @@ export class DatabaseWorkerClient {
 
   constructor(
     private readonly port: DatabaseWorkerPort,
-    private readonly onConnectionLost: (message: string) => void
+    private readonly onConnectionLost: (message: string) => void,
+    onJobProgress: (jobId: string, progress: DatabaseJobProgress) => void = () => undefined
   ) {
     port.onMessage((message) => {
       if (message.kind === 'connection-lost') {
         onConnectionLost(message.message)
+        return
+      }
+      if (message.kind === 'job-progress') {
+        onJobProgress(message.jobId, message.progress)
         return
       }
       const resolve = this.pending.get(message.id)

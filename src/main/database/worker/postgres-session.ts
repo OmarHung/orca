@@ -14,6 +14,8 @@ import type {
   DatabaseDriverSession,
   DatabaseExecuteOptions
 } from './database-driver'
+import { PostgresDumpSource } from './dump/postgres-dump-source'
+import type { DumpSource } from './dump/dump-source'
 import { connectPostgresClient, type PostgresConnectionDraft } from './postgres-client-factory'
 import { PostgresConsole } from './postgres-console'
 import { postgresDdl } from './postgres-ddl'
@@ -116,6 +118,16 @@ class PostgresSession implements DatabaseDriverSession {
   closeConsole(consoleId: string): Promise<void> {
     this.consoleDatabases.delete(consoleId)
     return this.consoles.close(consoleId)
+  }
+
+  async openDumpSource(database: string | undefined): Promise<DumpSource> {
+    // Why no loss callback: a dropped dump session fails its own read, not the connection.
+    const client = await connectPostgresClient(
+      { ...this.connection, database: database ?? this.defaultDatabase },
+      this.password,
+      () => undefined
+    )
+    return new PostgresDumpSource(client, this.serverVersionNum)
   }
 
   async close(): Promise<void> {
