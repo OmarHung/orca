@@ -137,7 +137,7 @@ describe('DatabaseService', () => {
     const id = saved.value.id
     expect((await service.connect(id)).ok).toBe(true)
 
-    await service.saveConnection({ id, draft: { ...draft, name: 'Renamed' } })
+    await service.saveConnection({ id, draft: { ...draft, name: 'Renamed', color: '#ef4444' } })
     expect((await service.connect(id)).ok).toBe(true)
     expect(connectPasswords).toHaveLength(1)
 

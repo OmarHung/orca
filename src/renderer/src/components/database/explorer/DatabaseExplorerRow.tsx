@@ -15,6 +15,7 @@ import { useAppStore } from '@/store'
 import { isServerConnection } from '../../../../../shared/database/database-connection-types'
 import { cn } from '@/lib/utils'
 import { DatabaseSessionDot } from '../DatabaseConnectionBadge'
+import { useDatabaseConnectionColor } from '../database-connection-color'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
 import { DatabaseExplorerContextMenu } from './DatabaseExplorerContextMenu'
 import {
@@ -28,10 +29,15 @@ const INDENT_PX = 12
 
 const ICON_CLASS = 'size-3.5 shrink-0 text-muted-foreground'
 
+function ConnectionIcon({ connectionId }: { connectionId: string }): React.JSX.Element {
+  const color = useDatabaseConnectionColor(connectionId)
+  return <Database className={ICON_CLASS} style={color ? { color } : undefined} />
+}
+
 function NodeIcon({ node }: { node: DatabaseExplorerNode }): React.JSX.Element {
   switch (node.kind) {
     case 'connection':
-      return <Database className={ICON_CLASS} />
+      return <ConnectionIcon connectionId={node.connectionId} />
     case 'schema':
       return <Layers className={ICON_CLASS} />
     case 'relation':

@@ -42,7 +42,7 @@ function isPasswordRejection(error: DatabaseError): boolean {
 }
 
 // Draft fields a live session doesn't depend on.
-const SESSION_NEUTRAL_FIELDS = new Set(['name', 'passwordStorage'])
+const SESSION_NEUTRAL_FIELDS = new Set(['name', 'color', 'passwordStorage'])
 
 function changesSessionSettings(
   previous: DatabaseConnection,
