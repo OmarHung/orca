@@ -1,6 +1,6 @@
 # Database 工具（DataGrip 風格）：實作計畫（fork 專屬）
 
-> 狀態：計畫中，尚未開工（2026-09-27）
+> 狀態：Phase 0（基礎架構 + PostgreSQL）已完成（2026-09-27），紀錄見 §6.1。Phase 1 以後尚未開工
 > 分支：從 `omar/custom` 開 `feat/database`，每個 Phase 完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -74,7 +74,7 @@
 | `src/renderer/src/store/slices/ui/ui-slice-view-actions.ts` | `openDatabasePage` / `closeDatabasePage` |
 | `src/renderer/src/app-shell/AppWorkspaceShell.tsx` | `ActivePage` 加 `<DatabasePage />`（lazy load） |
 | `src/renderer/src/lib/right-sidebar-visibility.ts`、`src/renderer/src/app-shell/use-app-chrome-layout.ts` | Database 頁面隱藏右側欄，版面比照 `space` |
-| 入口：`StatusBarSurface.tsx`、`src/shared/keybindings/definitions-core-1.ts`、`app-command-handlers.ts` | 狀態列按鈕和快捷鍵（組合鍵在 Phase 0 查過衝突再決定） |
+| 入口：`StatusBarSurface.tsx`、`src/shared/keybindings/types.ts`、`definitions-core-4.ts`、`app-command-handlers.ts` | 狀態列按鈕和快捷鍵 `Mod+Alt+D`（`definitions-core-1.ts` 已滿 300 行，所以放在 core-4） |
 | `en.json`、`zh.json` | 新增 `database` namespace，再用 `config/scripts/fork-maintenance/generate-zh-tw-locale.mjs` 產生 `zh-TW.json`（不要手改） |
 
 ### 4.2 可以重用的東西
@@ -163,6 +163,36 @@ worker thread（每個開啟的 session 一個）  驅動、cursor、取消、�
 - 結構樹：連線 → schema → 資料表（展開時才載入）
 - Console：Monaco、執行、唯讀結果表格（虛擬捲動、載入更多、取消）
 - 驗收：連到本機 PostgreSQL 17（Homebrew），瀏覽結構；10 萬列結果捲動順暢；`SELECT pg_sleep(30)` 可以取消
+
+### 6.1 Phase 0 完成紀錄（2026-09-27）
+
+驗收都通過了：連到 PostgreSQL 17、瀏覽結構、1,200 列分頁載入、`pg_sleep(30)` 可取消、錯誤位置標在編輯器上。
+
+和原計畫不同、或實作時才決定的地方：
+
+- **Session 切分**：每個連線一個 worker；worker 裡有一個專查結構和取消查詢的 session，另外每個 console 各自一個 server session（跟 DataGrip 預設一樣）。原因是 pg 的 client 一次只跑一個查詢，而沒讀完的 cursor 會一直佔著它
+- **密碼流程**：沒有密碼時先嘗試不帶密碼連線（trust 驗證或 `~/.pgpass`），伺服器拒絕時才跳出密碼提示。提示輸入的密碼依連線的儲存設定處理
+- **上一頁**：Database 頁面記住的「上一個頁面」放在 fork 自己的模組裡，不加進上游的 UI slice
+- **打包**：`pg`、`pg-cursor` 不打包進 bundle，而是加進 `PACKAGED_RUNTIME_PACKAGE_ROOTS`（`pg` 有可選的 `pg-native` 引用）。`pg-cloudflare` 只有 Cloudflare Workers 會載入，沒複製是對的。已用平鋪的 `node_modules` 模擬打包後的目錄，實際跑過建置出來的 worker
+- **繁體中文**：`zh-tw-term-overrides.json` 加了幾條用語規則（只讀→唯讀、控制台→主控台、新建→新增、斷開連線→中斷連線、資料列數的「行」→「列」），會一併修正約 70 個上游字串
+
+已知限制（留到後面的 Phase）：
+
+- Console 結果唯讀；結構樹只有 schema、資料表、view、欄位
+- 語句切分只支援 PostgreSQL 語法；還沒有自動補全，也沒有標示正在執行的語句
+- 重新執行時會清掉上一次的結果分頁
+
+測試方式：
+
+- 單元測試：`pnpm exec vitest run --config config/vitest.config.ts src/main/database src/shared/database src/renderer/src/components/database`
+- 整合測試和 e2e 需要一個可以丟棄的 PostgreSQL，用 `ORCA_TEST_POSTGRES_URL` 開啟，例如在 scratch 目錄 `initdb -U orca_test --auth=trust`，再用 `pg_ctl -o "-p 55439 -c unix_socket_directories='' -c listen_addresses=127.0.0.1" start` 啟動：
+  - `ORCA_TEST_POSTGRES_URL=postgres://orca_test@127.0.0.1:55439/postgres pnpm exec vitest run --config config/vitest.config.ts src/main/database/worker/postgres-session.integration.test.ts`
+  - `ORCA_TEST_POSTGRES_URL=… pnpm run test:e2e tests/e2e/database-page.spec.ts`（spec 會先把介面切成英文，不受系統語系影響）
+
+做 Phase 0 時發現、但不屬於這個功能的既有問題：
+
+- `pnpm run verify:localization-runtime-catalog` 失敗：Run、Quick Commands、語言設定有 4 個字串沒進 `en-runtime-required.json`
+- `pnpm run check:code-quality:changed` 有 5 個既有問題，在 `components/run/ProjectRunContextMenuItems.tsx` 和 IME 的測試檔
 
 ### Phase 1：其他三種資料庫
 

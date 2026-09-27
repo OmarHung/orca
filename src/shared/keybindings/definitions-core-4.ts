@@ -167,5 +167,13 @@ export const KEYBINDING_DEFINITION_CORE_4: readonly KeybindingDefinition[] = [
     scope: 'tabs',
     searchKeywords: ['shortcut', 'tab', 'move', 'right', 'reorder'],
     defaultBindings: platformBindings([])
+  },
+  {
+    id: 'databasePage.toggle',
+    title: 'Toggle Database Page',
+    group: 'Global',
+    scope: 'global',
+    searchKeywords: ['shortcut', 'database', 'sql', 'postgres', 'datagrip', 'query'],
+    defaultBindings: platformBindings(['Mod+Alt+D'])
   }
 ]

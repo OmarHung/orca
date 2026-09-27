@@ -14,6 +14,8 @@ import {
 import { requestTerminalTabRename } from '../../components/tab-bar/terminal-tabs/terminal-tab-rename-request'
 import { useAppStore } from '../../store/index'
 import { useBottomPanelLayout } from '../../components/bottom-panel/bottom-panel-layout-store'
+import { toggleDatabasePage } from '../../components/database/database-page-navigation'
+import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
 import type { usePluginCommands } from '@/store/plugins/catalog/plugin-contribution-catalog'
 import { isGitRepoKind } from '../../../../shared/repository/repo-kind'
 import { openPluginsSettings } from '@/components/settings/navigation/open-plugins-settings'
@@ -279,6 +281,10 @@ export function createAppCommandHandlers(
     ],
     ['sidebar.checks.toggle', () => revealRightSidebarTab('sidebar.checks.toggle', 'checks')],
     ['sidebar.ports.toggle', () => revealRightSidebarTab('sidebar.ports.toggle', 'ports')],
+    [
+      'databasePage.toggle',
+      () => (isWebClientLocation() ? false : claim('databasePage.toggle', toggleDatabasePage))
+    ],
     [
       'bottomPanel.gitLog.toggle',
       () =>

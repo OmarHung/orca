@@ -36,6 +36,7 @@ const ArtifactsPage = lazy(() => import('../components/artifacts/ArtifactsPage')
 const WorkspaceSpacePage = lazy(() => import('../components/workspace-space/WorkspaceSpacePage'))
 const MobilePage = lazy(() => import('../components/mobile/MobilePage'))
 const Terminal = lazy(() => import('../components/terminal/workbench/Terminal'))
+const DatabasePage = lazy(() => import('../components/database/DatabasePage'))
 const BottomPanel = lazy(() =>
   import('../components/bottom-panel/BottomPanel').then((module) => ({
     default: module.BottomPanel
@@ -105,6 +106,7 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
       {activeView === 'activity' ? <ActivityPrototypePage /> : null}
       {activeView === 'space' ? <WorkspaceSpacePage /> : null}
       {activeView === 'mobile' ? <MobilePage /> : null}
+      {activeView === 'database' ? <DatabasePage /> : null}
       {activeView === 'terminal' && creationLayoutActive && activePendingCreationId ? (
         <PendingCreationSurface
           creationId={activePendingCreationId}
