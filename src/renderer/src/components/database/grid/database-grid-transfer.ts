@@ -1,5 +1,5 @@
 import { toast } from 'sonner'
-import { translate } from '@/i18n/i18n'
+import { getIntlLocale, translate } from '@/i18n/i18n'
 import type { DatabaseDriver } from '../../../../../shared/database/database-connection-types'
 import type { DatabaseExportFormat } from '../../../../../shared/database/database-export-types'
 import { asDatabaseResult } from '../database-connections-store'
@@ -59,7 +59,7 @@ export async function saveGridExport(
   } else if (response.value) {
     toast.success(
       translate('database.grid.exported', 'Exported {{value0}} rows', {
-        value0: input.rows.length.toLocaleString()
+        value0: input.rows.length.toLocaleString(getIntlLocale())
       }),
       { description: response.value.filePath }
     )

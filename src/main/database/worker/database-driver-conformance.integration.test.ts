@@ -1,5 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { quoteSqlName } from '../../../shared/database/sql-identifiers'
+import {
+  buildTableCountSql,
+  buildTableDataSql,
+  orderByForSort
+} from '../../../shared/database/table-data-sql'
 import { DRIVER_FIXTURES } from './database-driver-test-fixtures'
 import { createWorkerHarness, expectOk, onlyResult, onlyRows } from './database-worker-test-harness'
 
@@ -78,7 +84,8 @@ for (const fixture of DRIVER_FIXTURES) {
         level: 'relations',
         relations: [
           { name: 'people', kind: 'table' },
-          { name: 'people_view', kind: 'view' }
+          { name: 'people_view', kind: 'view' },
+          { name: 'user', kind: 'table' }
         ]
       })
       const columns = await expectOk(
@@ -93,6 +100,19 @@ for (const fixture of DRIVER_FIXTURES) {
         ['id', true],
         ['name', false]
       ])
+    })
+
+    it('runs table data queries on reserved and mixed-case names', async () => {
+      const table = { driver: fixture.driver, schema: fixture.schema, relation: 'user' }
+      const orderBy = orderByForSort('order', 'desc', fixture.driver)
+      const sorted = onlyRows(
+        await expectOk(execute(buildTableDataSql({ ...table, where: '', orderBy })))
+      )
+      expect(sorted.columns.map((column) => column.name)).toEqual(['order', 'Mixed Case'])
+      expect(sorted.rows.map((row) => row[0])).toEqual(['3', '2', '1'])
+      const where = `${quoteSqlName('Mixed Case', fixture.driver)} is not null`
+      const counted = onlyRows(await expectOk(execute(buildTableCountSql({ ...table, where }))))
+      expect(counted.rows).toEqual([['2']])
     })
 
     it.skipIf(!fixture.sleep)('cancels a running statement', async () => {
