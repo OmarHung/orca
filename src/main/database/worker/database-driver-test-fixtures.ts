@@ -3,18 +3,22 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import type { DatabaseConnectionDraft } from '../../../shared/database/database-connection-types'
+import type {
+  DatabaseConnectionDraft,
+  DatabaseDriver
+} from '../../../shared/database/database-connection-types'
 import { serverConnectionFromUrl } from './database-worker-test-harness'
 
 // Test-only: the same conformance suite runs against every driver with its own SQL.
 
 export type DriverFixture = {
   label: string
+  driver: DatabaseDriver
   /** Null skips the suite (the server's URL env var is unset). */
   open: (
     readOnly?: boolean
   ) => { connection: DatabaseConnectionDraft; password: string | null } | null
-  /** Namespace the introspection test expects to find, holding `people` and `people_view`. */
+  /** Namespace holding `people`, `people_view` and `user` (reserved and mixed-case names). */
   schema: string
   setup: string[]
   teardown: string[]
@@ -37,11 +41,12 @@ function serverFixture(
   label: string,
   driver: 'postgres' | 'mysql' | 'sqlserver',
   env: string,
-  fields: Omit<DriverFixture, 'label' | 'open'>
+  fields: Omit<DriverFixture, 'label' | 'driver' | 'open'>
 ): DriverFixture {
   const url = process.env[env]
   return {
     label,
+    driver,
     open: (readOnly) => (url ? serverConnectionFromUrl(driver, url, readOnly) : null),
     ...fields
   }
@@ -56,7 +61,9 @@ function mysqlFixture(label: string, env: string): DriverFixture {
     setup: [
       `create database ${mysqlSchema}`,
       `create table ${mysqlSchema}.people (id int primary key, name varchar(40) not null)`,
-      `create view ${mysqlSchema}.people_view as select * from ${mysqlSchema}.people`
+      `create view ${mysqlSchema}.people_view as select * from ${mysqlSchema}.people`,
+      `create table ${mysqlSchema}.\`user\` (\`order\` int primary key, \`Mixed Case\` varchar(10))`,
+      `insert into ${mysqlSchema}.\`user\` values (1, 'a'), (2, null), (3, 'c')`
     ],
     teardown: [`drop database ${mysqlSchema}`],
     table: `${mysqlSchema}.people`,
@@ -80,6 +87,7 @@ function sqliteFixture(): DriverFixture {
   }
   return {
     label: 'SQLite',
+    driver: 'sqlite',
     open: (readOnly = false) => ({
       connection: { driver: 'sqlite', name: 'sqlite integration', filePath: filePath(), readOnly },
       password: null
@@ -87,7 +95,9 @@ function sqliteFixture(): DriverFixture {
     schema: 'main',
     setup: [
       'create table people (id integer primary key, name text not null)',
-      'create view people_view as select * from people'
+      'create view people_view as select * from people',
+      'create table "user" ("order" integer primary key, "Mixed Case" text)',
+      `insert into "user" values (1, 'a'), (2, null), (3, 'c')`
     ],
     teardown: [],
     table: 'people',
@@ -110,7 +120,9 @@ export const DRIVER_FIXTURES: DriverFixture[] = [
     setup: [
       `create schema ${postgresSchema}`,
       `create table ${postgresSchema}.people (id int primary key, name text not null)`,
-      `create view ${postgresSchema}.people_view as select * from ${postgresSchema}.people`
+      `create view ${postgresSchema}.people_view as select * from ${postgresSchema}.people`,
+      `create table ${postgresSchema}."user" ("order" int primary key, "Mixed Case" text)`,
+      `insert into ${postgresSchema}."user" values (1, 'a'), (2, null), (3, 'c')`
     ],
     teardown: [`drop schema ${postgresSchema} cascade`],
     table: `${postgresSchema}.people`,
@@ -126,9 +138,12 @@ export const DRIVER_FIXTURES: DriverFixture[] = [
     setup: [
       `create schema ${postgresSchema}`,
       `create table ${postgresSchema}.people (id int primary key, name nvarchar(40) not null)`,
-      `create view ${postgresSchema}.people_view as select * from ${postgresSchema}.people`
+      `create view ${postgresSchema}.people_view as select * from ${postgresSchema}.people`,
+      `create table ${postgresSchema}.[user] ([order] int primary key, [Mixed Case] nvarchar(10))`,
+      `insert into ${postgresSchema}.[user] values (1, 'a'), (2, null), (3, 'c')`
     ],
     teardown: [
+      `drop table ${postgresSchema}.[user]`,
       `drop view ${postgresSchema}.people_view`,
       `drop table ${postgresSchema}.people`,
       `drop schema ${postgresSchema}`

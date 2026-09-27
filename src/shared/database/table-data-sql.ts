@@ -1,5 +1,5 @@
-import type { DatabaseDriver } from '../../../../../shared/database/database-connection-types'
-import { qualifiedRelationName, quoteSqlName } from '../database-sql-names'
+import type { DatabaseDriver } from './database-connection-types'
+import { qualifiedRelationName, quoteSqlName } from './sql-identifiers'
 
 type TableTarget = { driver: DatabaseDriver; schema: string; relation: string }
 

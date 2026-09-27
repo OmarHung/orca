@@ -1,6 +1,6 @@
 import React from 'react'
 import { Loader2 } from 'lucide-react'
-import { translate } from '@/i18n/i18n'
+import { getIntlLocale, translate } from '@/i18n/i18n'
 import { DatabaseValueViewerToggle } from '../grid/DatabaseValueViewer'
 import { DATABASE_MAX_BUFFERED_ROWS, type DatabaseResultTab } from './database-console-run-store'
 
@@ -20,7 +20,7 @@ export function DatabaseResultFooter({
         {rowCount === 1 && !result.result.hasMore
           ? translate('database.results.oneRow', '1 row')
           : translate('database.results.rowCount', '{{value0}} rows', {
-              value0: `${rowCount.toLocaleString()}${result.result.hasMore ? '+' : ''}`
+              value0: `${rowCount.toLocaleString(getIntlLocale())}${result.result.hasMore ? '+' : ''}`
             })}
       </span>
       {extra}
@@ -35,14 +35,14 @@ export function DatabaseResultFooter({
           {translate(
             'database.results.capped',
             'Showing the first {{value0}} rows. Add a LIMIT or filter to see the rest.',
-            { value0: DATABASE_MAX_BUFFERED_ROWS.toLocaleString() }
+            { value0: DATABASE_MAX_BUFFERED_ROWS.toLocaleString(getIntlLocale()) }
           )}
         </span>
       ) : null}
       {result.loadError ? <span className="text-destructive">{result.loadError}</span> : null}
       <span className="ml-auto">
         {translate('database.results.duration', '{{value0}} ms', {
-          value0: result.result.durationMs.toLocaleString()
+          value0: result.result.durationMs.toLocaleString(getIntlLocale())
         })}
       </span>
       <DatabaseValueViewerToggle />

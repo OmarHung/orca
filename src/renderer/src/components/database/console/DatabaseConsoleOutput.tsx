@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { CircleAlert, CircleCheck, CircleSlash } from 'lucide-react'
-import { translate } from '@/i18n/i18n'
+import { getIntlLocale, translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import type {
   DatabaseConsoleLogEntry,
@@ -12,37 +12,37 @@ function describeOutcome(outcome: DatabaseConsoleLogOutcome): string {
     case 'rows':
       if (outcome.rowCount === 1 && !outcome.hasMore) {
         return translate('database.output.oneRow', '1 row retrieved in {{value0}} ms', {
-          value0: outcome.durationMs.toLocaleString()
+          value0: outcome.durationMs.toLocaleString(getIntlLocale())
         })
       }
       return translate('database.output.rows', '{{value0}} rows retrieved in {{value1}} ms', {
-        value0: `${outcome.rowCount.toLocaleString()}${outcome.hasMore ? '+' : ''}`,
-        value1: outcome.durationMs.toLocaleString()
+        value0: `${outcome.rowCount.toLocaleString(getIntlLocale())}${outcome.hasMore ? '+' : ''}`,
+        value1: outcome.durationMs.toLocaleString(getIntlLocale())
       })
     case 'command':
       if (!outcome.command) {
         // Batches (SQL Server) and plain statements don't always name what they did.
         return outcome.rowCount === null
           ? translate('database.output.completed', 'Completed in {{value0}} ms', {
-              value0: outcome.durationMs.toLocaleString()
+              value0: outcome.durationMs.toLocaleString(getIntlLocale())
             })
           : translate('database.output.rowsAffected', '{{value0}} rows affected in {{value1}} ms', {
-              value0: outcome.rowCount.toLocaleString(),
-              value1: outcome.durationMs.toLocaleString()
+              value0: outcome.rowCount.toLocaleString(getIntlLocale()),
+              value1: outcome.durationMs.toLocaleString(getIntlLocale())
             })
       }
       return outcome.rowCount === null
         ? translate('database.output.command', '{{value0}} completed in {{value1}} ms', {
             value0: outcome.command,
-            value1: outcome.durationMs.toLocaleString()
+            value1: outcome.durationMs.toLocaleString(getIntlLocale())
           })
         : translate(
             'database.output.commandRows',
             '{{value0}}: {{value1}} rows affected in {{value2}} ms',
             {
               value0: outcome.command,
-              value1: outcome.rowCount.toLocaleString(),
-              value2: outcome.durationMs.toLocaleString()
+              value1: outcome.rowCount.toLocaleString(getIntlLocale()),
+              value2: outcome.durationMs.toLocaleString(getIntlLocale())
             }
           )
     case 'cancelled':
@@ -87,7 +87,9 @@ export function DatabaseConsoleOutput({
           <OutcomeIcon outcome={entry.outcome} />
           <div className="min-w-0 flex-1">
             <div className="flex gap-2 text-muted-foreground">
-              <span className="shrink-0">{new Date(entry.at).toLocaleTimeString()}</span>
+              <span className="shrink-0">
+                {new Date(entry.at).toLocaleTimeString(getIntlLocale())}
+              </span>
               <span className="truncate" title={entry.statement}>
                 {entry.statement}
               </span>
