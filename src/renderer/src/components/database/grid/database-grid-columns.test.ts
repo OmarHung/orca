@@ -48,6 +48,12 @@ describe('database grid columns', () => {
     expect(fitGridColumn(column, [[null]], 0)).toBe(GRID_MIN_COLUMN_PX)
   })
 
+  it('measures the displayed single-line text with the given measure', () => {
+    const tenPerChar = (text: string) => text.length * 10
+    // 'a↵bcdef' is 7 characters, plus 24px of cell padding.
+    expect(fitGridColumn({ name: 'x', typeName: 't' }, [['a\nbcdef']], 0, tenPerChar)).toBe(94)
+  })
+
   it('scrolls just enough to reveal a column beside the sticky row numbers', () => {
     const widths = [100, 100, 100, 100]
     // Row numbers take 56px, so column 3 spans 356..456 in content coordinates.
