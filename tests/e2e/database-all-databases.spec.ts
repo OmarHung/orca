@@ -4,6 +4,7 @@ import {
   openDatabasePage,
   runInConsole
 } from './helpers/database-page'
+import { adminSql } from './helpers/database-admin'
 import { test, expect } from './helpers/orca-app'
 
 type ServerCase = {
@@ -13,8 +14,9 @@ type ServerCase = {
   home: string
   schema: string
   missingTable: RegExp
-  /** Run one at a time: a console runs the statement at its caret. */
-  dropDatabase: (name: string) => string[]
+  /** Creates `name` holding `items` (1, 2), on a writable connection of the test's own. */
+  seed: (url: string, name: string) => Promise<void>
+  drop: (url: string, name: string) => Promise<void>
 }
 
 const CASES: ServerCase[] = [
@@ -24,7 +26,15 @@ const CASES: ServerCase[] = [
     home: 'postgres',
     schema: 'public',
     missingTable: /relation "items" does not exist/,
-    dropDatabase: (name) => [`drop database ${name} with (force);`]
+    seed: async (url, name) => {
+      await adminSql(url, [`create database ${name}`])
+      await adminSql(
+        url,
+        ['create table items (id int primary key)', 'insert into items values (1), (2)'],
+        { database: name }
+      )
+    },
+    drop: (url, name) => adminSql(url, [`drop database if exists ${name} with (force)`])
   },
   {
     type: 'SQL Server',
@@ -32,10 +42,17 @@ const CASES: ServerCase[] = [
     home: 'master',
     schema: 'dbo',
     missingTable: /Invalid object name 'items'/,
-    dropDatabase: (name) => [
-      `alter database ${name} set single_user with rollback immediate;`,
-      `drop database ${name};`
-    ]
+    seed: (url, name) =>
+      adminSql(url, [
+        `create database ${name}`,
+        `create table ${name}.dbo.items (id int primary key)`,
+        `insert into ${name}.dbo.items values (1), (2)`
+      ]),
+    drop: (url, name) =>
+      adminSql(url, [
+        `alter database ${name} set single_user with rollback immediate`,
+        `drop database ${name}`
+      ])
   }
 ]
 
@@ -49,17 +66,17 @@ for (const server of CASES) {
     url.pathname = '/'
     const database = `orca_e2e_all_${Date.now().toString(36)}`
     const name = `all-${server.type === 'PostgreSQL' ? 'pg' : 'mssql'}`
-    await openDatabasePage(orcaPage)
-    await addServerConnection(orcaPage, { url, type: server.type, name })
-    const tree = orcaPage.getByRole('tree', { name: 'Database objects' })
-    const row = tree.getByRole('treeitem', { name: new RegExp(`^${name}`) })
-    await explorerMenu(orcaPage, row, 'New Console')
-    await runInConsole(orcaPage, `create database ${database};`)
-    await expect(orcaPage.getByText(/^CREATE completed/)).toBeVisible({ timeout: 30_000 })
-    const databasePicker = orcaPage.getByRole('combobox', { name: 'Database' })
-    await expect(databasePicker).toHaveText(server.home)
-
+    await server.seed(server.url!, database)
     try {
+      await openDatabasePage(orcaPage)
+      await addServerConnection(orcaPage, { url, type: server.type, name })
+      const tree = orcaPage.getByRole('tree', { name: 'Database objects' })
+      const row = tree.getByRole('treeitem', { name: new RegExp(`^${name}`) })
+      await explorerMenu(orcaPage, row, 'New Console')
+      await runInConsole(orcaPage, 'select 1;')
+      const databasePicker = orcaPage.getByRole('combobox', { name: 'Database' })
+      await expect(databasePicker).toHaveText(server.home, { timeout: 30_000 })
+
       await row.dblclick()
       await expect(tree.getByRole('treeitem', { name: server.home, exact: true })).toBeVisible({
         timeout: 30_000
@@ -73,12 +90,8 @@ for (const server of CASES) {
           timeout: 30_000
         })
       }
-      await runInConsole(orcaPage, 'create table items (id int primary key);')
-      await expect(orcaPage.getByText(/^CREATE completed/)).toBeVisible({ timeout: 30_000 })
-      await runInConsole(orcaPage, 'insert into items values (1), (2);')
-      await expect(orcaPage.getByText(/^INSERT: 2 rows affected/)).toBeVisible({ timeout: 30_000 })
 
-      // The new database's objects are read from the database itself.
+      // The other database's objects are read from the database itself.
       await databaseRow.dblclick()
       await tree.getByRole('treeitem', { name: server.schema, exact: true }).dblclick()
       const items = tree.getByRole('treeitem', { name: 'items', exact: true })
@@ -104,15 +117,7 @@ for (const server of CASES) {
         timeout: 30_000
       })
     } finally {
-      // The first console, still in the home database.
-      await orcaPage.getByRole('tab', { name }).first().click()
-      for (const statement of server.dropDatabase(database)) {
-        await runInConsole(orcaPage, statement)
-        const keyword = statement.split(' ')[0]!.toUpperCase()
-        await expect(orcaPage.getByText(new RegExp(`^${keyword} completed`))).toBeVisible({
-          timeout: 30_000
-        })
-      }
+      await server.drop(server.url!, database)
     }
   })
 }

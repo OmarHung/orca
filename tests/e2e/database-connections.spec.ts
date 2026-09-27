@@ -6,6 +6,7 @@ import {
   runInConsole
 } from './helpers/database-page'
 import { seedShopDatabase } from './helpers/database-sqlite-shop'
+import { adminSqlite } from './helpers/database-admin'
 import { test, expect } from './helpers/orca-app'
 
 // Needs no server: every connection here is a SQLite file the test creates.
@@ -78,7 +79,7 @@ test('adds, tests, renames, reconnects and deletes a connection, and toggles the
   await expect(orcaPage.getByRole('heading', { name: 'Database' })).toBeVisible()
 })
 
-test('refuses writes on a read-only file, refreshes the explorer and runs caret, selection or all', async ({
+test('refuses writes, refreshes the explorer and runs caret, selection or all', async ({
   orcaPage,
   registerPostElectronShutdownCleanup
 }) => {
@@ -87,24 +88,13 @@ test('refuses writes on a read-only file, refreshes the explorer and runs caret,
   await addSqliteConnection(orcaPage, filePath)
   const tree = orcaPage.getByRole('tree', { name: 'Database objects' })
   const row = tree.getByRole('treeitem', { name: /^shop\.db/ })
-  await explorerMenu(orcaPage, row, 'Edit Connection…')
-  const editDialog = orcaPage.getByRole('dialog', { name: 'Edit Connection' })
-  await editDialog.getByLabel('Read-only').click()
-  await editDialog.getByRole('button', { name: 'Save' }).click()
-  await expect(editDialog).toBeHidden()
 
   await explorerMenu(orcaPage, row, 'New Console')
   await runInConsole(orcaPage, "insert into people values (4, 'Di', null);")
-  await expect(orcaPage.getByText('attempt to write a readonly database')).toBeVisible({
+  await expect(orcaPage.getByText(/read-only, so INSERT statements are not run/)).toBeVisible({
     timeout: 20_000
   })
 
-  // Saving new settings drops the open session, so the next statement runs without read-only.
-  await explorerMenu(orcaPage, row, 'Edit Connection…')
-  await editDialog.getByLabel('Read-only').click()
-  await editDialog.getByRole('button', { name: 'Save' }).click()
-  await expect(editDialog).toBeHidden()
-  await expect(row.getByRole('img', { name: 'Not connected' })).toBeVisible()
   await row.dblclick()
   const main = tree.getByRole('treeitem', { name: 'main', exact: true })
   await main.dblclick()
@@ -112,15 +102,13 @@ test('refuses writes on a read-only file, refreshes the explorer and runs caret,
     timeout: 20_000
   })
 
-  // The explorer shows schema changes after a Refresh.
-  await runInConsole(orcaPage, 'create table orders (id integer primary key);')
-  await expect(orcaPage.getByText(/^CREATE completed/)).toBeVisible({ timeout: 20_000 })
+  // The explorer shows schema changes made elsewhere after a Refresh.
+  await adminSqlite(filePath, ['create table orders (id integer primary key)'])
   const orders = tree.getByRole('treeitem', { name: 'orders', exact: true })
   await expect(orders).toBeHidden()
   await explorerMenu(orcaPage, main, 'Refresh')
   await expect(orders).toBeVisible({ timeout: 20_000 })
-  await runInConsole(orcaPage, 'drop table orders;')
-  await expect(orcaPage.getByText(/^DROP completed/)).toBeVisible({ timeout: 20_000 })
+  await adminSqlite(filePath, ['drop table orders'])
   await explorerMenu(orcaPage, main, 'Refresh')
   await expect(orders).toBeHidden({ timeout: 20_000 })
 
