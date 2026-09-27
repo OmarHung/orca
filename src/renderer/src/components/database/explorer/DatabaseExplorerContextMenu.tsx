@@ -1,5 +1,5 @@
 import React from 'react'
-import { Copy, Pencil, Plug, RefreshCw, SquareTerminal, Trash2, Unplug } from 'lucide-react'
+import { Copy, Pencil, Plug, RefreshCw, SquareTerminal, Table2, Trash2, Unplug } from 'lucide-react'
 import {
   ContextMenuContent,
   ContextMenuItem,
@@ -11,10 +11,12 @@ import {
   connectDatabase,
   disconnectDatabase,
   openDatabaseConsole,
+  openDatabaseTable,
   useDatabaseDialogsStore
 } from '../database-page-actions'
 import { useDatabaseExplorerStore } from './database-explorer-store'
-import { qualifiedRelationName, type DatabaseExplorerNode } from './database-explorer-tree'
+import { qualifiedRelationName } from '../database-sql-names'
+import type { DatabaseExplorerNode } from './database-explorer-tree'
 
 function copy(text: string): void {
   void window.api.ui.writeClipboardText(text)
@@ -91,6 +93,14 @@ export function DatabaseExplorerContextMenu({
         <ContextMenuItem onSelect={() => openDatabaseConsole(node.connectionId)}>
           <SquareTerminal />
           {translate('database.explorer.newConsole', 'New Console')}
+        </ContextMenuItem>
+      ) : null}
+      {node.kind === 'relation' ? (
+        <ContextMenuItem
+          onSelect={() => openDatabaseTable(node.connectionId, node.schema, node.relation.name)}
+        >
+          <Table2 />
+          {translate('database.explorer.openData', 'Open Data')}
         </ContextMenuItem>
       ) : null}
       {text !== null ? (

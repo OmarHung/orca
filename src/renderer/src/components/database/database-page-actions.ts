@@ -2,7 +2,13 @@ import { create } from 'zustand'
 import { translate } from '@/i18n/i18n'
 import { useDatabaseConsoleRunStore } from './console/database-console-run-store'
 import { findDatabaseConnection, useDatabaseConnectionsStore } from './database-connections-store'
-import { useDatabasePageStore, type DatabaseConsoleTab } from './database-page-store'
+import {
+  useDatabasePageStore,
+  type DatabaseConsoleTab,
+  type DatabaseTab,
+  type DatabaseTableTab
+} from './database-page-store'
+import { tabSessionIds } from './database-page-tabs'
 import { useDatabaseExplorerStore } from './explorer/database-explorer-store'
 
 type ConnectionEditorTarget = { mode: 'new' } | { mode: 'edit'; connectionId: string }
@@ -31,24 +37,31 @@ export function openDatabaseConsole(connectionId: string): DatabaseConsoleTab {
   return useDatabasePageStore.getState().openConsole(connectionId, name)
 }
 
-function releaseConsoles(tabs: readonly DatabaseConsoleTab[]): void {
+export function openDatabaseTable(
+  connectionId: string,
+  schema: string,
+  relation: string
+): DatabaseTableTab {
+  return useDatabasePageStore.getState().openTable(connectionId, schema, relation)
+}
+
+function releaseTabs(tabs: readonly DatabaseTab[]): void {
   for (const tab of tabs) {
     useDatabaseConsoleRunStore.getState().dispose(tab.id)
-    // Frees the console's server session; its text stays on disk.
-    void window.api.database.closeConsole({
-      connectionId: tab.connectionId,
-      consoleId: tab.consoleId
-    })
+    // Frees the tab's server sessions; console text stays on disk.
+    for (const consoleId of tabSessionIds(tab)) {
+      void window.api.database.closeConsole({ connectionId: tab.connectionId, consoleId })
+    }
   }
 }
 
-export function closeDatabaseConsoleTab(tabId: string): void {
+export function closeDatabaseTab(tabId: string): void {
   const tab = useDatabasePageStore.getState().tabs.find((entry) => entry.id === tabId)
   if (!tab) {
     return
   }
   useDatabasePageStore.getState().closeTab(tabId)
-  releaseConsoles([tab])
+  releaseTabs([tab])
 }
 
 export async function connectDatabase(connectionId: string, password?: string): Promise<boolean> {
