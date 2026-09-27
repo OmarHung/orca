@@ -541,6 +541,28 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - 要補齊的 DDL（現在的 Show DDL 缺這些，dump 後匯不回去）：PG 的 sequence（含 serial 欄位用的）、enum／domain／composite 型別、trigger、sequence 目前值（`setval`）；SQL Server 的 trigger、使用者定義型別、sequence，identity 資料用 `SET IDENTITY_INSERT`；MySQL 的 trigger、event
 - 值的寫法沿用現有的 `sqlLiteral`（二進位、大數字、日期、JSON 都要保留原樣）
 
+**6.2 完成紀錄（2026-09-28）**
+
+- 結構樹右鍵：連線、資料庫、schema、資料表（和 view）都有「Dump to SQL…」；除了 view 之外也都有「Export Data…」（只寫 INSERT，清單只列資料表）。從資料表開啟時只勾那一張，其他照樣列出可以加選
+- 對話框：依名稱篩選、全選／全不選、多個 schema 時可整組勾選；內容（結構加資料／只有結構／只有資料）、單一檔案或每表一檔、每條 INSERT 幾列（預設 100，上限 1000）、停用外鍵檢查（預設勾）、先 DROP。按「Save As…」或「Choose Folder…」才開原生對話框；每表一檔會在選的資料夾裡另開一個新資料夾（同名就加「 (2)」），不會跟既有檔案混在一起
+- 選好的位置只以 token 交給畫面（一次有效、一小時過期），畫面不能自己指定路徑；版面和位置種類不符（例如選了檔案卻要每表一檔）會拒絕
+- 背景工作：每個 dump 在連線的 worker 裡開自己的連線（沿用 SSH 隧道轉好的位址），不佔用 console。頁首「Jobs」顯示進度（第幾張表、列數、已寫出的大小），可以取消；完成後顯示摘要、說明（dump 無法完整保留的地方）和「在資料夾中顯示」。取消或失敗會刪掉已寫出的檔案；中斷連線時會先取消進行中的 dump、等它清掉檔案
+- 讀取方式：PostgreSQL 用 `REPEATABLE READ READ ONLY` 的快照；MySQL／MariaDB 用 `WITH CONSISTENT SNAPSHOT, READ ONLY`，時間以 UTC 讀寫；SQLite 用一個讀取交易；SQL Server 在資料庫允許時用 `SNAPSHOT` 交易，不允許就逐表讀並在說明裡註明
+- 值：PostgreSQL 一律以 `::text` 讀出；MySQL 以字串讀、二進位用 `HEX()`；SQL Server 的時間用 ISO 8601（style 126，不受 DATEFORMAT 影響）、money 保留 4 位小數、float 以指數寫法、二進位用 `0x…`，字串裡結尾是反斜線的那一行會拆開寫（T-SQL 會把行尾的反斜線當成接續字元吞掉）
+- 自動編號：PG `setval`、GENERATED ALWAYS 用 `OVERRIDING SYSTEM VALUE`；MySQL 靠 `AUTO_INCREMENT` 和 `NO_AUTO_VALUE_ON_ZERO`；SQLite 寫回 `sqlite_sequence`；SQL Server 用 `SET IDENTITY_INSERT`，最後 `DBCC CHECKIDENT … RESEED` 到原本的值
+- SQL Server 的建表 DDL 補齊（Show DDL 也受益）：外鍵的 ON DELETE／ON UPDATE、主鍵和唯一鍵的 CLUSTERED／NONCLUSTERED、索引的 DESC、INCLUDE 和篩選條件、非預設的欄位定序、使用者定義型別加上 schema；dump 另外寫出別名型別（`CREATE TYPE … FROM`）、trigger（停用的照樣停用）
+- 只匯資料又停用外鍵檢查時：MySQL／SQLite 用 session 開關；PostgreSQL 用 `session_replication_role = replica`（需要超級使用者，說明裡會註明）；SQL Server 逐表 `NOCHECK` 那張表自己的外鍵、資料匯完再開回（不重新檢查，SQL Server 會把它標成 not trusted，說明裡會註明）
+- 驗證：四種資料庫各自的來回測試（dump → 匯進空資料庫 → 比對結構、每張表的內容、自動編號的下一個值、view、routine、trigger），涵蓋單一檔案／每表一檔、停用／不停用外鍵、只有結構加只有資料、DROP 後重匯；SQL Server 另測串流中途取消後連線仍可用；worker 測試（進度事件、取消、關閉時先取消）；3 個 e2e（整個 SQLite 資料庫 dump 後匯回比對、單表匯出成每表一檔、取消大型 dump 後檔案被刪除），加上全部資料庫 e2e 30 個通過（SSH 的 2 個需要 Docker SSH 主機，這輪沒跑）。反向驗證了 SQL Server 的 reseed、反斜線、money、時間格式、外鍵動作、NOCHECK、取消時等待請求結束，以及 worker 關閉前先取消
+
+已知限制：
+
+- PostgreSQL 的分割表只寫出父表，分割區不在 dump 裡，所以資料要匯進已經有分割區的資料庫（說明裡會註明）
+- 只匯資料時，SQLite、MySQL、SQL Server 匯入端既有的 trigger 會被觸發
+- PostgreSQL 的 `CREATE TYPE` 沒有 IF NOT EXISTS，重複匯入到已有同名型別的資料庫會失敗
+- 資料表預設值用到的 routine 不會排在那張表之前
+- SQL Server：view／routine 的定義照伺服器存的原文寫出，建立時沒寫 schema 的物件會建到匯入者的預設 schema；XML、空間、columnstore 索引、CLR 型別（assembly）不在 dump 裡；sql_variant 以文字寫出（說明裡會註明）
+- SQLite 的連線如果在 console 取消長語句，worker 會重開，進行中的 dump 也會跟著失敗（main 會刪掉它寫了一半的檔案）
+
 **6.3 原生工具（pg_dump／mysqldump）**
 
 - 偵測 PATH 和常見安裝位置（Homebrew、Postgres.app、Windows 的 Program Files），也可以在設定裡指定路徑；SQL Server 和 SQLite 沒有對應工具，不提供
