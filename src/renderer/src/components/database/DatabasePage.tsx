@@ -20,8 +20,6 @@ import { DatabaseOpenTransactionDialog } from './console/DatabaseOpenTransaction
 import { DatabaseDdlDialog } from './explorer/DatabaseDdlDialog'
 import { DatabaseTableView } from './table/DatabaseTableView'
 import { useDatabaseSessionEvents } from './use-database-session-events'
-import { DatabaseJobsButton } from './jobs/DatabaseJobsButton'
-import { DatabaseRunScriptDialog } from './jobs/DatabaseRunScriptDialog'
 
 const MIN_MAIN_WIDTH = 320
 
@@ -39,9 +37,12 @@ function PageHeader(): React.JSX.Element {
       <h1 className="truncate text-base font-semibold text-foreground">
         {translate('database.page.title', 'Database')}
       </h1>
-      <div className="ml-auto" />
-      <DatabaseJobsButton />
-      <Button variant="outline" size="sm" onClick={() => openEditor({ mode: 'new' })}>
+      <Button
+        variant="outline"
+        size="sm"
+        className="ml-auto"
+        onClick={() => openEditor({ mode: 'new' })}
+      >
         <Plus className="size-3.5" />
         {translate('database.page.newConnection', 'New Connection')}
       </Button>
@@ -176,7 +177,6 @@ export default function DatabasePage(): React.JSX.Element {
       <DatabaseDiscardEditsDialog />
       <DatabaseOpenTransactionDialog />
       <DatabaseDdlDialog />
-      <DatabaseRunScriptDialog />
     </div>
   )
 }
