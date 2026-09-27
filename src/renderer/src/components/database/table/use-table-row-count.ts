@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { translate } from '@/i18n/i18n'
+import { getIntlLocale, translate } from '@/i18n/i18n'
 import type { DatabaseDriver } from '../../../../../shared/database/database-connection-types'
 import {
   databaseCellText,
@@ -8,7 +8,7 @@ import {
 } from '../../../../../shared/database/database-query-types'
 import { asDatabaseResult } from '../database-connections-store'
 import type { DatabaseTableTab } from '../database-page-tabs'
-import { buildTableCountSql } from './database-table-query'
+import { buildTableCountSql } from '../../../../../shared/database/table-data-sql'
 
 export type TableRowCount =
   | { status: 'idle' }
@@ -17,7 +17,7 @@ export type TableRowCount =
   | { status: 'error'; message: string }
 
 function formatCount(text: string): string {
-  return /^\d+$/.test(text) ? BigInt(text).toLocaleString() : text
+  return /^\d+$/.test(text) ? BigInt(text).toLocaleString(getIntlLocale()) : text
 }
 
 /**
