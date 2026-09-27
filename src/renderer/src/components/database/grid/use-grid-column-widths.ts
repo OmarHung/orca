@@ -4,6 +4,7 @@ import type {
   DatabaseColumn
 } from '../../../../../shared/database/database-query-types'
 import { fitGridColumn, measureGridColumns } from './database-grid-columns'
+import { gridTextWidth } from './grid-text-width'
 
 type Measured = { key: string; widths: number[] }
 
@@ -27,11 +28,11 @@ export function useGridColumnWidths(
   const key = columnsKey(columns)
   const [measured, setMeasured] = useState<Measured>(() => ({
     key,
-    widths: measureGridColumns(columns, rows)
+    widths: measureGridColumns(columns, rows, gridTextWidth)
   }))
   let current = measured
   if (measured.key !== key) {
-    current = { key, widths: measureGridColumns(columns, rows) }
+    current = { key, widths: measureGridColumns(columns, rows, gridTextWidth) }
     setMeasured(current)
   }
   const setWidth = (index: number, width: number): void =>
@@ -45,7 +46,7 @@ export function useGridColumnWidths(
     autoFit: (index) => {
       const column = columns[index]
       if (column) {
-        setWidth(index, fitGridColumn(column, rows, index))
+        setWidth(index, fitGridColumn(column, rows, index, gridTextWidth))
       }
     }
   }
