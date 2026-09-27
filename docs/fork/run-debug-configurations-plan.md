@@ -182,12 +182,12 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 
 **實作重點**：
 - `ORCA_TERMINAL_COMMAND_FINISHED_EVENT` 多帶一個 `paneKey`，這樣才知道是哪個 tab 的指令結束了。Orca 的 shell integration 只在真的執行過指令後才送出 `133;D`，所以不需要監聽「指令開始」
-- Stop：第一次按送出 Ctrl-C；狀態還是「停止中」時再按一次就關掉 tab。如果指令還在排隊、shell 還沒收到，就直接取消排隊的指令，不送 Ctrl-C（不然 Ctrl-C 只會清掉空的提示字元，永遠等不到結束訊號）
+- Stop：第一次按送出 Ctrl-C；（2026-09-27 起改成分階段，見文末「分階段停止」）。如果指令還在排隊、shell 還沒收到，就直接取消排隊的指令，不送 Ctrl-C（不然 Ctrl-C 只會清掉空的提示字元，永遠等不到結束訊號）
 - Rerun：送出 Ctrl-C，等指令結束（最多 3 秒）後在同一個 tab 重跑；逾時就關掉 tab 開新的
 - 執行狀態存在獨立的 zustand store（`components/run/run-session-store.ts`），不放在共享的 app store
 
 **已知限制**：
-- 沒有 OSC 133 的 shell（cmd.exe、部分 Git Bash）收不到結束訊號，狀態會停在「執行中」；Stop 按兩次仍然可以關掉 tab
+- 沒有 OSC 133 的 shell（cmd.exe、部分 Git Bash）收不到結束訊號，狀態會停在「執行中」；Stop 連按三次仍然可以關掉 tab
 - 指令已經送進 shell、但 shell 還沒開始執行的那一瞬間按 Stop，也收不到結束訊號，一樣要按第二次
 
 ### Phase 2 提前完成的部分：Python interpreter 和「Current File」（2026-09-26）
@@ -302,7 +302,7 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 6. shell 回報 `133;D` 但沒有 exit code（狀態 `finished`）時，當成正常結束
 
 **已知限制**：
-- 沒有 OSC 133 的 shell 收不到結束訊號，beforeLaunch 會一直等，要手動按 ■（按兩次會關 tab，然後中止）
+- 沒有 OSC 133 的 shell 收不到結束訊號，beforeLaunch 會一直等，要手動按 ■（第三次會關 tab，然後中止）
 - 命令裡的變數值如果含 `(`、`&` 等字元（例如 `Program Files (x86)` 底下的路徑）會被拒絕；WSL workspace 的 `${workspaceFolder}` 可能是 `\\wsl$\…` 路徑，在 WSL 的 shell 裡不能用（尚未實測）
 - 匯入 `.vscode/launch.json` 是使用者主動操作，匯入的設定變成本機設定，**不會再詢問信任**（跟 VS Code 一樣直接執行 launch.json）。匯入前請先看過檔案內容，特別是 `env` 和 `python`
 - 本機設定只存在這台電腦；要共用請放 orca.yaml
@@ -355,3 +355,22 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - compound 多了 `sequential` 和 `waitAfter`（以成員引用為 key，重新排序不會錯位）。每個成員啟動後可以「立即啟動下一個」、「等 N 秒」（1–600）或「等它結束且 exit 0」（失敗就不啟動後面的；debug 成員無法等結束，直接往下）。orca.yaml 也能寫
 - 成員可以直接選 workspace 偵測到的 run（根目錄往下四層，略過 node_modules、bin、obj、dist 等與隱藏資料夾，最多 200 個資料夾；原本兩層會漏掉 `backend/src/Api` 這種 .NET 結構）。挑選器是樹狀：資料夾（只有一個子資料夾的會合併成 `backend/src/Api`）→ 專案（Node／.NET 標籤與 run 數）→ run，可篩選；run 超過 12 個時專案預設收合。選了就轉成相對於 workspace 根目錄的本機 command 設定（已存在相同的就沿用），所以每個 worktree 都能用
 - 入口有兩個：Run widget 的 Add Quick Command 對話框多了第三個 Action「Compound」，存成本機 run 設定（不是 quick command，quick command 的資料結構沒變），存完自動選取；Edit Configurations 的 compound 表單用同一個 `CompoundMembersEditor`
+
+**Compound 執行中的逐一管理（2026-09-27）**：使用者要求 compound 跑起來後，能像 JetBrains 一樣從下拉選單管理每個程式的啟停。現在：
+- **下拉選單每一列**（`RunWidgetMenuRow`）：執行中或除錯中的項目，圖示右下角有綠點，右側固定顯示 ↻（重新執行；只在除錯的項目是「重新開始除錯」）和 ■；沒在跑的項目滑鼠移上去才出現 ▶（和可以除錯的 🐞）。compound 那一列只要有任一成員在跑就算執行中，它的 ■ 會停掉所有成員。點列本身仍然只是「選取」；↻ 和 ■ 不關選單（可以連續管理好幾個），▶ 和 🐞 會關選單（會開 terminal 或對話框）
+- **■ 改成整個 workspace 共用**（`RunStopControl`，跟 JetBrains 一樣不管目前選哪個）：只有一個程式在跑時直接停；兩個以上時右下角顯示數量，點開列出每個「Stop 'X'」（除錯 session 是「Stop debugging 'X'」），最後是「Stop All N」。所以選中項目的控制區不再有自己的 ■（`RunSessionControls` 多了 `showStop`，Python／Node 目前檔案的控制照舊有 ■），`DebugSessionControls` 也只剩狀態和重新開始
+- **選中 compound 時**：只要有成員在跑，▶ 換成狀態點和 ↻（整組重跑，已在跑的成員會單一實例重啟）。啟動 compound 時每個成員都會開新 tab，原本「跟隨目前的 run terminal」會把選取跳到最後一個成員；現在如果目前選的 compound 已經涵蓋那個 run，就維持選取（`use-follow-active-run-terminal.ts`，每次切 tab 只跟隨一次）
+- **哪些 run 屬於哪個項目**（`run-widget-activity.ts`）：compound 用 `planRunConfiguration` 展開（包含巢狀 compound 和 Before launch 步驟），command 成員對應 `config:<id>` 的 run key，debug 成員對應它自己的項目 key。為了讓 debug 成員也對得上，launcher 啟動 debug 設定時一律用成員自己的 `config:<id>` 當 `sourceKey`（原本從 compound 啟動時是空的）
+- **取消還沒啟動的成員**：依序啟動的 compound 在等「N 秒」或「等上一個結束」時按 Stop All 或 compound 的 ■，後面的成員不會再啟動；同一個設定再按一次 ▶／↻ 也會取代還在啟動中的那一次。被取消的那次不會再跳「沒有以 0 退出」的 toast
+- 由 `tests/e2e/compound-run-controls.spec.ts` 在真正的 app 裡驗證（Stop 選單停單一成員、選單列重新啟動、compound 列停全部、Stop All）
+- **已知限制（原本就有，不是這次引入）**：按 ▶ 後 shell 還在啟動、指令還沒打進去時就按 Stop，Ctrl-C 只會清掉空的 prompt，指令也不會再執行，所以不會有結束訊號，那個 run 會一直停在「Stopping…」並佔著 Stop 選單的一格；再按會強制停止，第三次才關掉 tab。e2e 因此會先等成員真的輸出之後才按 Stop
+- **e2e 固定用英文**：fork 加了繁中之後，系統語系是 zh-TW 的 Mac 跑 e2e 會用繁中介面，所有用英文字串定位的測試都會失敗。`tests/e2e/helpers/electron-launch-args.ts` 在 macOS 多傳 `-AppleLanguages (en)`，讓測試不受系統語系影響
+
+**分階段停止（2026-09-27）**：使用者回報 compound 的程式按停止後 terminal 被關掉。查到的原因：當時同時開了兩個 dev 版（不同 worktree，共用 `orca-dev` 設定資料夾與同一個 terminal daemon），另一個 dev 版啟動時換掉了 daemon，這個 dev 版的 terminal 全部斷線；Ctrl-C 送不出去，run 一直停在 Stopping…，這時「再按一次就關 tab」的設計把分頁關掉了。在隔離的 app 裡用相同組合（pnpm 專案）停止一次，分頁會留著。改成：
+- 每按一次 ■ 往前一步（`runStopStage`）：Ctrl-C → 再一次 Ctrl-C 加上 Ctrl-\（SIGQUIT，大部分會攔截 SIGINT 的程式都會結束，shell 本身會忽略），terminal 保留 → 關掉 terminal。按鈕的文字和圖示跟著變成「Stop → Force stop → Close terminal」（■ → ⛔ → ✕），停止中的項目在 Stop 選單和 Run 選單顯示「Stopping…」
+- 一次停多個時（compound 的 ■、Stop All），一按只推進停止進度最慢的那一批（`gentlestStopStage`），所以一次按「Stop」不會順手關掉另一個已經強制過的 terminal
+- Rerun 遇到不理會 Ctrl-C 的程式：等 3 秒 → 強制 → 再等 2 秒 → 才關分頁開新的
+- **沒做真正的 kill**：`pty:signal` 對破壞性訊號只送給 shell 本身（upstream 刻意這樣設計，見 `posix-pty-foreground-group.ts`），要做到「SIGKILL 前景程式、保留 shell」得改 main、daemon 和 SSH relay 的協定並做版本協商，使用者選了輕量版。限制：同時攔截 SIGINT 和 SIGQUIT 的程式（例如 Java 會把 SIGQUIT 當成印 thread dump）只能靠第三步關 terminal；.NET 把 SIGQUIT 當成一般停止要求
+- 由 `tests/e2e/run-staged-stop.spec.ts` 驗證：攔截 SIGINT 的程式在第二步結束且 terminal 還在；兩個都攔截的程式要到明確標示「Close terminal」的第三步才關
+- 平行開多個 dev 版會互相影響（共用 daemon），要同時開請用 `config/scripts/dev-fresh-profile.sh` 給其中一個獨立的設定資料夾
+

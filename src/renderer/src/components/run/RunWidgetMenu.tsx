@@ -1,5 +1,5 @@
 import React from 'react'
-import { Bot, Clock, FileInput, Plus, Settings2, SlidersHorizontal, Zap } from 'lucide-react'
+import { FileInput, Plus, Settings2, SlidersHorizontal } from 'lucide-react'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -7,33 +7,30 @@ import {
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu'
 import { translate } from '@/i18n/i18n'
-import { isTerminalAgentQuickCommand } from '../../../../shared/terminal-quick-commands'
-import { runConfigurationIcon } from './run-configuration-icon'
+import {
+  RunWidgetMenuRow,
+  type RunWidgetRowActions,
+  type RunWidgetRowState
+} from './RunWidgetMenuRow'
 import type { RunWidgetItem } from './run-widget-items'
 
-function itemIcon(item: RunWidgetItem): React.JSX.Element {
-  switch (item.kind) {
-    case 'recent':
-      return <Clock />
-    case 'configuration': {
-      const Icon = runConfigurationIcon(item.configuration)
-      return <Icon />
-    }
-    case 'quick-command':
-      return isTerminalAgentQuickCommand(item.entry.command) ? <Bot /> : <Zap />
-  }
+type RowProps = {
+  selectedKey: string | null
+  onSelect: (item: RunWidgetItem) => void
+  rowState: (item: RunWidgetItem) => RunWidgetRowState
+  rowActions: RunWidgetRowActions
 }
 
 function Section({
   heading,
   items,
   selectedKey,
-  onSelect
-}: {
+  onSelect,
+  rowState,
+  rowActions
+}: RowProps & {
   heading: string
   items: readonly RunWidgetItem[]
-  selectedKey: string | null
-  onSelect: (item: RunWidgetItem) => void
 }): React.JSX.Element | null {
   if (items.length === 0) {
     return null
@@ -42,15 +39,14 @@ function Section({
     <>
       <DropdownMenuLabel>{heading}</DropdownMenuLabel>
       {items.map((item) => (
-        <DropdownMenuItem
+        <RunWidgetMenuRow
           key={item.key}
-          data-current={item.key === selectedKey}
-          data-testid="run-widget-item"
-          onSelect={() => onSelect(item)}
-        >
-          {itemIcon(item)}
-          <span className="truncate">{item.label}</span>
-        </DropdownMenuItem>
+          item={item}
+          current={item.key === selectedKey}
+          state={rowState(item)}
+          actions={rowActions}
+          onSelect={onSelect}
+        />
       ))}
     </>
   )
@@ -61,21 +57,21 @@ export function RunWidgetMenu({
   items,
   selectedKey,
   onSelect,
+  rowState,
+  rowActions,
   onEditConfigurations,
   onImportLaunchJson,
   onAddQuickCommand,
   onManageQuickCommands
-}: {
+}: RowProps & {
   items: readonly RunWidgetItem[]
-  selectedKey: string | null
-  onSelect: (item: RunWidgetItem) => void
   onEditConfigurations: () => void
   /** null when the workspace has no `.vscode/launch.json`. */
   onImportLaunchJson: (() => void) | null
   onAddQuickCommand: (() => void) | null
   onManageQuickCommands: () => void
 }): React.JSX.Element {
-  const sectionProps = { selectedKey, onSelect }
+  const sectionProps = { selectedKey, onSelect, rowState, rowActions }
   return (
     <DropdownMenuContent align="end" className="min-w-60">
       <div className="scrollbar-sleek max-h-[60vh] overflow-y-auto">

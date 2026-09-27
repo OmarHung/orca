@@ -3,13 +3,31 @@ import { useAppStore } from '@/store'
 import { runQuickCommandInNewTab } from '@/lib/run-quick-command-in-new-tab'
 import { resolveCommandLaunch } from '../../../../shared/run-configurations/run-configuration-resolve'
 import { debugLaunchTarget } from '../debug/debug-launch'
-import { runConfiguration, toRunTarget, type RunTarget } from './run-configuration-control'
-import { configurationRunTarget, launchRunConfiguration } from './run-configuration-launcher'
+import { stopDebugSession } from '../debug/debug-session-controller'
+import {
+  runConfiguration,
+  stopConfiguration,
+  toRunTarget,
+  type RunTarget
+} from './run-configuration-control'
+import {
+  cancelPendingLaunches,
+  configurationRunTarget,
+  launchRunConfiguration
+} from './run-configuration-launcher'
 import {
   stopDebuggingBeforeRun,
   stopRunBeforeDebug,
   type RunDebugLaunchContext
 } from './run-debug-exclusivity'
+import { gentlestStopStage, runStopStage, type RunStopStage } from './run-session-store'
+import {
+  footprintRuns,
+  isFootprintDebugging,
+  type RunningProcess,
+  type RunWidgetActivity,
+  type RunWidgetFootprint
+} from './run-widget-activity'
 import type { RunWidgetItem } from './run-widget-items'
 
 export type RunWidgetScope = { worktreeId: string; groupId: string | null; worktreePath: string }
@@ -103,11 +121,7 @@ export async function debugWidgetItem(
     return
   }
   if (item.kind === 'configuration') {
-    await launchRunConfiguration({
-      ...scope,
-      reference: item.configuration.id,
-      sourceKey: item.key
-    })
+    await launchRunConfiguration({ ...scope, reference: item.configuration.id })
     return
   }
   if (item.kind === 'recent' && item.target.debug && item.target.cwd) {
@@ -118,5 +132,63 @@ export async function debugWidgetItem(
       target: item.target.debug,
       sourceKey: item.key
     })
+  }
+}
+
+/** Takes each run one Stop step further, but only those at the gentlest step among them. */
+function stopRunsOneStep(
+  runs: readonly { commandKey: string; stage: RunStopStage }[],
+  worktreeId: string
+): void {
+  const next = gentlestStopStage(runs.map((run) => run.stage))
+  for (const run of runs) {
+    if (run.stage === next) {
+      stopConfiguration(worktreeId, run.commandKey)
+    }
+  }
+}
+
+/** Stops everything an item started; a compound also stops starting the members still to come. */
+export function stopRunWidgetItem(
+  item: RunWidgetItem,
+  footprint: RunWidgetFootprint,
+  activity: RunWidgetActivity,
+  worktreeId: string
+): void {
+  if (item.kind === 'configuration') {
+    cancelPendingLaunches(worktreeId, item.configuration.id)
+  }
+  stopRunsOneStep(
+    footprintRuns(footprint, activity).map((run) => ({
+      commandKey: run.commandKey,
+      stage: runStopStage(run)
+    })),
+    worktreeId
+  )
+  if (isFootprintDebugging(footprint, activity)) {
+    void stopDebugSession()
+  }
+}
+
+export function stopRunningProcess(process: RunningProcess, worktreeId: string): void {
+  if (process.kind === 'debug') {
+    void stopDebugSession()
+    return
+  }
+  stopConfiguration(worktreeId, process.commandKey)
+}
+
+/** JetBrains' Stop All: every run one step further, the debug session, and no further members. */
+export function stopAllRunningProcesses(
+  processes: readonly RunningProcess[],
+  worktreeId: string
+): void {
+  cancelPendingLaunches(worktreeId)
+  stopRunsOneStep(
+    processes.flatMap((process) => (process.kind === 'run' ? [process] : [])),
+    worktreeId
+  )
+  if (processes.some((process) => process.kind === 'debug')) {
+    void stopDebugSession()
   }
 }

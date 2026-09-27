@@ -1,6 +1,5 @@
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
-import { translate } from '@/i18n/i18n'
 import { joinPath } from '@/lib/path'
 import { findWorktreeById } from '@/store/slices/worktree-helpers'
 import { confirmSharedRunConfigurations } from '@/lib/ensure-hooks-confirmed'
@@ -12,13 +11,11 @@ import type {
 } from '../../../../shared/run-configurations/run-configuration-definition'
 import {
   planRunConfiguration,
-  type RunLaunchPlan,
-  type RunPlanErrorCode
+  type RunLaunchPlan
 } from '../../../../shared/run-configurations/run-configuration-plan'
 import {
   resolveCommandLaunch,
-  resolveDebugLaunch,
-  type Resolved
+  resolveDebugLaunch
 } from '../../../../shared/run-configurations/run-configuration-resolve'
 import type { RunConfigurationVariableContext } from '../../../../shared/run-configurations/run-configuration-variables'
 import {
@@ -28,13 +25,17 @@ import {
 import { debugLaunchTarget } from '../debug/debug-launch'
 import { worktreeProjectFiles } from './project-run-detection'
 import {
+  exitFailureMessage,
+  planErrorMessage,
+  resolvedOrToast
+} from './run-configuration-launch-messages'
+import {
   runConfiguration,
   runConfigurationAndWait,
-  type RunExit,
   type RunTarget
 } from './run-configuration-control'
 import { combineRunConfigurations, useRunConfigurationStore } from './run-configuration-store'
-import { configurationCommandKey } from './run-widget-items'
+import { configurationCommandKey, configurationItemKey } from './run-widget-items'
 
 /** The run target a command configuration uses; its key keeps one terminal tab per configuration. */
 export function configurationRunTarget(
@@ -86,51 +87,6 @@ export async function loadSharedRunConfigurations(worktreeId: string): Promise<v
   })
 }
 
-function planErrorMessage(code: RunPlanErrorCode, reference: string): string {
-  switch (code) {
-    case 'missing':
-      return translate(
-        'run.configurations.error.missing',
-        "No run configuration named '{{value0}}'",
-        {
-          value0: reference
-        }
-      )
-    case 'cycle':
-      return translate(
-        'run.configurations.error.cycle',
-        "'{{value0}}' depends on itself through Before launch or a compound",
-        { value0: reference }
-      )
-    case 'step-not-command':
-      return translate(
-        'run.configurations.error.stepNotCommand',
-        "Before launch can only run command configurations; '{{value0}}' is not one",
-        { value0: reference }
-      )
-    case 'multiple-debug':
-      return translate(
-        'run.configurations.error.multipleDebug',
-        "Only one debug session can run at a time; remove '{{value0}}' or run it separately",
-        { value0: reference }
-      )
-  }
-}
-
-function resolvedOrToast<T>(result: Resolved<T>, name: string): T | null {
-  if (result.ok) {
-    return result.value
-  }
-  toast.error(
-    translate(
-      'run.configurations.error.variable',
-      "'{{value0}}' uses {{value1}}, which Orca cannot resolve here",
-      { value0: name, value1: result.variable }
-    )
-  )
-  return null
-}
-
 function activeFileIn(worktreeId: string): string | undefined {
   const state = useAppStore.getState()
   const fileId = state.activeFileIdByWorktree[worktreeId]
@@ -138,31 +94,28 @@ function activeFileIn(worktreeId: string): string | undefined {
   return file?.mode === 'edit' ? file.filePath : undefined
 }
 
+/** A launch still running Before launch steps or starting compound members. */
+type PendingLaunch = { worktreeId: string; reference: string; cancelled: boolean }
+
+const pendingLaunches = new Set<PendingLaunch>()
+
+/** Keeps launches in progress from starting anything more; without a reference, all in the worktree. */
+export function cancelPendingLaunches(worktreeId: string, reference?: string): void {
+  for (const pending of pendingLaunches) {
+    if (
+      pending.worktreeId === worktreeId &&
+      (reference === undefined || pending.reference === reference)
+    ) {
+      pending.cancelled = true
+    }
+  }
+}
+
 type LaunchScope = {
   worktreeId: string
   groupId: string | null
   context: RunConfigurationVariableContext
-  /** Run widget item whose debug session this launch starts. */
-  sourceKey?: string
-}
-
-function exitFailureMessage(role: 'step' | 'member', name: string, exit: RunExit): string {
-  if (role === 'member') {
-    return translate(
-      'run.configurations.error.memberFailed',
-      "'{{value0}}' did not exit with 0, so the rest of the compound was not started",
-      { value0: name }
-    )
-  }
-  return exit.status === 'stopped'
-    ? translate('run.configurations.error.stepStopped', "Before launch '{{value0}}' was stopped", {
-        value0: name
-      })
-    : translate(
-        'run.configurations.error.stepFailed',
-        "Before launch '{{value0}}' did not exit with 0 ({{value1}})",
-        { value0: name, value1: exit.exitCode ?? '?' }
-      )
+  pending: PendingLaunch
 }
 
 /** Runs a command to completion; false (after a toast) unless it exited 0. */
@@ -178,6 +131,9 @@ async function runToSuccess(
   const exit = await runConfigurationAndWait(
     configurationRunTarget(step, launch, scope.worktreeId, scope.groupId)
   )
+  if (scope.pending.cancelled) {
+    return false
+  }
   // `finished` is a clean end from a shell that reports no exit code.
   if (exit.status === 'succeeded' || exit.status === 'finished') {
     return true
@@ -192,11 +148,11 @@ async function runBeforeLaunchSteps(
   scope: LaunchScope
 ): Promise<boolean> {
   for (const step of steps) {
-    if (!(await runToSuccess(step, scope, 'step'))) {
+    if (scope.pending.cancelled || !(await runToSuccess(step, scope, 'step'))) {
       return false
     }
   }
-  return true
+  return !scope.pending.cancelled
 }
 
 function delay(seconds: number): Promise<void> {
@@ -206,6 +162,9 @@ function delay(seconds: number): Promise<void> {
 /** Starts launches in order, honouring each one's wait; a failed wait stops the rest. */
 async function startSequentially(plan: RunLaunchPlan, scope: LaunchScope): Promise<void> {
   for (const launch of plan.launches) {
+    if (scope.pending.cancelled) {
+      return
+    }
     const wait = plan.waitAfter[launch.id]
     // Why command only: a debug session has no exit the launcher can wait on.
     if (wait?.kind === 'exit' && launch.type === 'command') {
@@ -246,7 +205,8 @@ async function startLaunch(
       await debugLaunchTarget({
         worktreeId: scope.worktreeId,
         title: configuration.name,
-        ...(scope.sourceKey ? { sourceKey: scope.sourceKey } : {}),
+        // Why its own key: a compound member's row and the compound both find it by this key.
+        sourceKey: configurationItemKey(configuration.id),
         ...launch
       })
     }
@@ -271,8 +231,26 @@ export async function launchRunConfiguration(options: {
   worktreeId: string
   groupId: string | null
   reference: string
-  sourceKey?: string
 }): Promise<void> {
+  // Why: running it again replaces a launch of it that is still starting members.
+  cancelPendingLaunches(options.worktreeId, options.reference)
+  const pending: PendingLaunch = {
+    worktreeId: options.worktreeId,
+    reference: options.reference,
+    cancelled: false
+  }
+  pendingLaunches.add(pending)
+  try {
+    await launchPlanned(options, pending)
+  } finally {
+    pendingLaunches.delete(pending)
+  }
+}
+
+async function launchPlanned(
+  options: { worktreeId: string; groupId: string | null; reference: string },
+  pending: PendingLaunch
+): Promise<void> {
   const state = useAppStore.getState()
   const worktree = findWorktreeById(state.worktreesByRepo, options.worktreeId)
   const repo = worktree
@@ -307,15 +285,15 @@ export async function launchRunConfiguration(options: {
     context: {
       workspaceFolder: worktree.path,
       file: activeFileIn(options.worktreeId)
-    }
+    },
+    pending
   }
   if (!(await runBeforeLaunchSteps(result.plan.beforeLaunch, scope))) {
     return
   }
-  const mainScope = options.sourceKey ? { ...scope, sourceKey: options.sourceKey } : scope
   if (result.plan.sequential) {
-    await startSequentially(result.plan, mainScope)
+    await startSequentially(result.plan, scope)
     return
   }
-  await Promise.all(result.plan.launches.map((launch) => startLaunch(launch, mainScope)))
+  await Promise.all(result.plan.launches.map((launch) => startLaunch(launch, scope)))
 }

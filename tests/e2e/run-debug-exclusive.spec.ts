@@ -102,7 +102,7 @@ test('one run configuration never runs and debugs at the same time', async ({
   await waitForServerUp(orcaPage)
   await expect(debugButton).toHaveAccessibleName(`Stop and debug '${LABEL}'`)
 
-  await runControls.getByTestId('run-stop').click()
+  await orcaPage.getByTestId('run-stop-control').getByTestId('run-stop').click()
   await expect(runControls).not.toHaveAttribute('data-run-status', 'running', { timeout: 30_000 })
   await expect(runButton).toHaveAccessibleName(`Run '${LABEL}'`)
 })

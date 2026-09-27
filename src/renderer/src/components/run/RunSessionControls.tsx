@@ -1,5 +1,5 @@
 import React from 'react'
-import { RotateCcw, Square } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -7,7 +7,8 @@ import { translate } from '@/i18n/i18n'
 import { RunStatusDot } from './RunStatusDot'
 import { rerunConfiguration, stopConfiguration, type RunTarget } from './run-configuration-control'
 import { describeRunStatus, runStatusTone } from './run-status-presentation'
-import { isRunSessionActive } from './run-session-store'
+import { isRunSessionActive, runStopStage } from './run-session-store'
+import { runStopAction } from './run-stop-stage-presentation'
 import { useLiveRunSession } from './use-live-run-session'
 
 export type ControlAction = {
@@ -43,12 +44,15 @@ export function ControlButton({ action }: { action: ControlAction }): React.JSX.
 export function RunSessionControls({
   target,
   testId = 'run-session-controls',
-  onRerun
+  onRerun,
+  showStop = true
 }: {
   target: RunTarget | null
   testId?: string
   /** Replaces the plain rerun, e.g. to repeat trust checks and Before launch steps. */
   onRerun?: () => void
+  /** False where a shared Stop control already covers this run. */
+  showStop?: boolean
 }): React.JSX.Element {
   const session = useLiveRunSession(target)
   const active = session !== null && isRunSessionActive(session.status)
@@ -56,20 +60,19 @@ export function RunSessionControls({
 
   const actions: ControlAction[] = []
   if (target && active) {
-    actions.push(
-      {
-        icon: RotateCcw,
-        label: translate('run.action.rerun', "Rerun '{{value0}}'", { value0: label }),
-        testId: 'run-rerun',
-        onClick: () => (onRerun ? onRerun() : void rerunConfiguration(target))
-      },
-      {
-        icon: Square,
-        label: translate('run.action.stop', "Stop '{{value0}}'", { value0: label }),
+    actions.push({
+      icon: RotateCcw,
+      label: translate('run.action.rerun', "Rerun '{{value0}}'", { value0: label }),
+      testId: 'run-rerun',
+      onClick: () => (onRerun ? onRerun() : void rerunConfiguration(target))
+    })
+    if (showStop) {
+      actions.push({
+        ...runStopAction(runStopStage(session), label),
         testId: 'run-stop',
         onClick: () => stopConfiguration(target.worktreeId, target.commandKey)
-      }
-    )
+      })
+    }
   }
   const status = describeRunStatus(session)
 
