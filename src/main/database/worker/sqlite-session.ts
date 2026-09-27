@@ -13,6 +13,7 @@ import type {
   DatabaseTransactionMode
 } from '../../../shared/database/database-query-types'
 import { ConsoleTransactions } from './console-transactions'
+import { introspectSqlite } from './sqlite-introspection'
 import { encodeTextCell } from './database-cell-encoding'
 import type { DatabaseDriverSession } from './database-driver'
 import { commandRowCount, leadingKeyword } from './statement-keyword'
@@ -22,10 +23,6 @@ type SqliteConnectionDraft = Extract<DatabaseConnectionDraft, { driver: 'sqlite'
 type OpenResult = { resultId: string; rows: Iterator<unknown> }
 
 const BUSY_TIMEOUT_MS = 5_000
-
-function quoteIdentifier(name: string): string {
-  return `"${name.replaceAll('"', '""')}"`
-}
 
 function encodeValue(value: unknown): DatabaseCell {
   if (value instanceof Uint8Array) {
@@ -144,53 +141,6 @@ class SqliteConsole {
   private closeOpen(): void {
     this.open?.rows.return?.()
     this.open = null
-  }
-}
-
-function introspectSqlite(
-  database: DatabaseSync,
-  target: DatabaseIntrospectTarget
-): DatabaseIntrospectResult {
-  switch (target.level) {
-    case 'schemas':
-      return {
-        level: 'schemas',
-        schemas: database
-          .prepare('PRAGMA database_list')
-          .all()
-          .map((row) => String(row.name))
-          .filter((name) => name !== 'temp')
-          .map((name) => ({ name, isCurrent: name === 'main' }))
-      }
-    case 'relations':
-      return {
-        level: 'relations',
-        relations: database
-          .prepare(
-            `select name, type from ${quoteIdentifier(target.schema)}.sqlite_master
-             where type in ('table', 'view') and name not like 'sqlite_%' order by name`
-          )
-          .all()
-          .map((row) => ({ name: String(row.name), kind: row.type === 'view' ? 'view' : 'table' }))
-      }
-    case 'columns':
-      return {
-        level: 'columns',
-        columns: database
-          .prepare(
-            `PRAGMA ${quoteIdentifier(target.schema)}.table_xinfo(${quoteIdentifier(target.relation)})`
-          )
-          .all()
-          // hidden = 1 marks virtual-table internals; generated columns (2, 3) are real.
-          .filter((row) => Number(row.hidden) !== 1)
-          .map((row) => ({
-            name: String(row.name),
-            dataType: String(row.type ?? ''),
-            nullable: Number(row.notnull) === 0,
-            defaultValue: row.dflt_value === null ? null : String(row.dflt_value),
-            isPrimaryKey: Number(row.pk) > 0
-          }))
-      }
   }
 }
 

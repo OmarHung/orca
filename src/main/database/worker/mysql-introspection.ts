@@ -3,6 +3,7 @@ import type {
   DatabaseIntrospectResult,
   DatabaseIntrospectTarget
 } from '../../../shared/database/database-introspection-types'
+import { mysqlIndexes, mysqlKeys, mysqlRoutines } from './mysql-catalog-objects'
 import { queryMysqlRows } from './mysql-client-factory'
 
 // In MySQL a "schema" is a database; hide the server's own.
@@ -64,5 +65,14 @@ export async function introspectMysql(
         }))
       }
     }
+    case 'routines':
+      return { level: 'routines', routines: await mysqlRoutines(client, target.schema) }
+    case 'keys':
+      return { level: 'keys', keys: await mysqlKeys(client, target.schema, target.relation) }
+    case 'indexes':
+      return {
+        level: 'indexes',
+        indexes: await mysqlIndexes(client, target.schema, target.relation)
+      }
   }
 }
