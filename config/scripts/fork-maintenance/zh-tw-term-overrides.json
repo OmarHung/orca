@@ -213,5 +213,10 @@
     "from": "^這一行的主鍵沒有完整(?:加載|載入)，所以不能修改它。$",
     "to": "這一列的主鍵沒有完整載入，所以不能修改它。",
     "why": "Database grid: rows are 列 and \"loaded\" is 載入 in Taiwan."
+  },
+  {
+    "from": "^(主機和埠以 SSH 主機的角度填寫，例如 localhost 或)內網地址。$",
+    "to": "$1內部網路位址。",
+    "why": "Database connection form: a network address is 位址 in Taiwan."
   }
 ]
