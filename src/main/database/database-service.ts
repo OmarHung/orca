@@ -1,5 +1,7 @@
 import {
   databasePasswordStorage,
+  type DatabaseConnection,
+  type DatabaseConnectionDraft,
   type DatabaseConnectionSummary
 } from '../../shared/database/database-connection-types'
 import type {
@@ -36,6 +38,20 @@ function isPasswordRejection(error: DatabaseError): boolean {
   )
 }
 
+// Draft fields a live session doesn't depend on.
+const SESSION_NEUTRAL_FIELDS = new Set(['name', 'passwordStorage'])
+
+function changesSessionSettings(
+  previous: DatabaseConnection,
+  next: DatabaseConnectionDraft
+): boolean {
+  return Object.entries(next).some(
+    ([key, value]) =>
+      !SESSION_NEUTRAL_FIELDS.has(key) &&
+      JSON.stringify(value) !== JSON.stringify(Reflect.get(previous, key))
+  )
+}
+
 function unknownConnection(): DatabaseResult<never> {
   return { ok: false, error: { message: 'This connection no longer exists.', code: 'unavailable' } }
 }
@@ -62,9 +78,9 @@ export class DatabaseService {
     return this.deps.passwords.encryptionStatus()
   }
 
-  saveConnection(
+  async saveConnection(
     request: DatabaseSaveConnectionRequest
-  ): DatabaseResult<DatabaseConnectionSummary> {
+  ): Promise<DatabaseResult<DatabaseConnectionSummary>> {
     const { passwords } = this.deps
     const storage = databasePasswordStorage(request.draft)
     // Why re-file an existing password: switching storage mode must move it, not strand it.
@@ -81,7 +97,12 @@ export class DatabaseService {
     ) {
       return { ok: false, error: { message: NO_SECURE_PASSWORD_STORAGE, code: 'unavailable' } }
     }
+    const previous = request.id ? this.deps.connections.get(request.id) : null
     const saved = this.deps.connections.save(request.id, request.draft)
+    // Why: a session opened with the old host, user or read-only flag would silently keep them.
+    if (previous && changesSessionSettings(previous, request.draft)) {
+      await this.deps.sessions.disconnect(saved.id)
+    }
     const stored =
       password === null
         ? passwords.forget(saved.id)
