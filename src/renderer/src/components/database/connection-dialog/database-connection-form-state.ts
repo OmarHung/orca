@@ -12,6 +12,8 @@ import {
 export type DatabaseConnectionFormState = {
   driver: DatabaseDriver
   name: string
+  /** One of the connection colors, or null for none. */
+  color: string | null
   host: string
   port: string
   database: string
@@ -53,6 +55,7 @@ export function initialConnectionForm(
   const base: DatabaseConnectionFormState = {
     driver: 'postgres',
     name: '',
+    color: null,
     host: 'localhost',
     ...serverDefaults('postgres'),
     password: '',
@@ -71,6 +74,7 @@ export function initialConnectionForm(
       ...base,
       driver: 'sqlite',
       name: existing.name,
+      color: existing.color ?? null,
       readOnly: existing.readOnly,
       filePath: existing.filePath
     }
@@ -79,6 +83,7 @@ export function initialConnectionForm(
     ...base,
     driver: existing.driver,
     name: existing.name,
+    color: existing.color ?? null,
     host: existing.host,
     port: String(existing.port),
     database: existing.database,
@@ -126,12 +131,19 @@ export function defaultConnectionName(form: DatabaseConnectionFormState): string
 function candidateDraft(form: DatabaseConnectionFormState): unknown {
   const name = form.name.trim() || defaultConnectionName(form)
   if (form.driver === 'sqlite') {
-    return { driver: 'sqlite', name, filePath: form.filePath.trim(), readOnly: form.readOnly }
+    return {
+      driver: 'sqlite',
+      name,
+      color: form.color,
+      filePath: form.filePath.trim(),
+      readOnly: form.readOnly
+    }
   }
   const port = Number(form.port)
   return {
     driver: form.driver,
     name,
+    color: form.color,
     host: form.host.trim(),
     port: Number.isInteger(port) ? port : Number.NaN,
     database: form.database.trim(),
@@ -170,6 +182,7 @@ export function passwordToSave(form: DatabaseConnectionFormState): string | unde
 const FORM_FIELDS = [
   'driver',
   'name',
+  'color',
   'host',
   'port',
   'database',
