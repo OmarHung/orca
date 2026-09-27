@@ -7,6 +7,12 @@ import type {
 } from '../../shared/database/database-introspection-types'
 import type { DatabaseHistoryEntry } from '../../shared/database/database-query-history-types'
 import type {
+  DatabaseJobRef,
+  DatabasePickedScripts,
+  DatabaseRunScriptRequest,
+  DatabaseScriptSummary
+} from '../../shared/database/database-script-types'
+import type {
   DatabaseExecuteResult,
   DatabaseResult,
   DatabaseRowsPage
@@ -17,8 +23,8 @@ import type {
   DatabaseEncryptionStatus,
   DatabaseExecuteRequest,
   DatabaseFetchMoreRequest,
+  DatabasePageEvent,
   DatabaseSaveConnectionRequest,
-  DatabaseSessionEvent,
   DatabaseTestConnectionRequest
 } from '../../shared/database/database-session-types'
 
@@ -62,5 +68,10 @@ export type DatabaseApi = {
   saveExport: (
     request: DatabaseSaveExportRequest
   ) => Promise<DatabaseResult<{ filePath: string } | null>>
-  onEvent: (callback: (event: DatabaseSessionEvent) => void) => () => void
+  /** Opens the script picker; null when it was cancelled. */
+  pickScripts: () => Promise<DatabasePickedScripts | null>
+  /** Resolves when the whole run ends; progress arrives as `job-progress` events. */
+  runScript: (request: DatabaseRunScriptRequest) => Promise<DatabaseResult<DatabaseScriptSummary>>
+  cancelJob: (ref: DatabaseJobRef) => Promise<boolean>
+  onEvent: (callback: (event: DatabasePageEvent) => void) => () => void
 }

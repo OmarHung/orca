@@ -16,12 +16,15 @@ import type { DatabaseResult } from '../../shared/database/database-query-types'
 import {
   DATABASE_CONSOLE_ID_PATTERN,
   DATABASE_MAX_PAGE_SIZE,
-  type DatabaseSessionEvent
+  type DatabasePageEvent
 } from '../../shared/database/database-session-types'
 import { getSecretStore } from '../../shared/secret-store'
 import { DatabaseConnectionStore } from './database-connection-store'
 import { saveDatabaseExport } from './database-export-file'
 import { DATABASE_CONSOLE_MAX_BYTES, DatabaseConsoleFiles } from './database-console-files'
+import { registerDatabaseJobHandlers } from './database-job-ipc'
+import { DatabaseJobService } from './database-job-service'
+import { DatabaseScriptPicks } from './database-script-picks'
 import { DatabasePasswordVault } from './database-password-vault'
 import { DatabaseQueryHistory } from './database-query-history'
 import { DatabaseService } from './database-service'
@@ -82,7 +85,7 @@ const INVALID_REQUEST: DatabaseResult<never> = {
   error: { message: 'Invalid database request' }
 }
 
-function broadcast(event: DatabaseSessionEvent): void {
+function broadcast(event: DatabasePageEvent): void {
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) {
       window.webContents.send('database:event', event)
@@ -90,25 +93,31 @@ function broadcast(event: DatabaseSessionEvent): void {
   }
 }
 
-function createDatabaseService(): DatabaseService {
+function createDatabaseServices(): { service: DatabaseService; jobs: DatabaseJobService } & {
+  picks: DatabaseScriptPicks
+} {
   const rootDir = join(app.getPath('userData'), 'database')
-  return new DatabaseService({
+  const sessions = new DatabaseSessionManager({
+    // Why a process for SQLite: its statements run in native code a thread can't interrupt.
+    spawnWorker: (driver) => (driver === 'sqlite' ? spawnDatabaseProcess() : spawnDatabaseWorker()),
+    emit: broadcast,
+    emitJobProgress: broadcast,
+    openTunnel: createDatabaseTunnelOpener()
+  })
+  const service = new DatabaseService({
     connections: new DatabaseConnectionStore(join(rootDir, 'connections.json')),
     passwords: new DatabasePasswordVault(join(rootDir, 'passwords.json'), getSecretStore),
-    sessions: new DatabaseSessionManager({
-      // Why a process for SQLite: its statements run in native code a thread can't interrupt.
-      spawnWorker: (driver) =>
-        driver === 'sqlite' ? spawnDatabaseProcess() : spawnDatabaseWorker(),
-      emit: broadcast,
-      openTunnel: createDatabaseTunnelOpener()
-    }),
+    sessions,
     consoles: new DatabaseConsoleFiles(join(rootDir, 'consoles')),
     history: new DatabaseQueryHistory(join(rootDir, 'history'))
   })
+  const picks = new DatabaseScriptPicks()
+  return { service, jobs: new DatabaseJobService({ sessions, picks }), picks }
 }
 
 export function registerDatabaseHandlers(): void {
-  const service = createDatabaseService()
+  const { service, jobs, picks } = createDatabaseServices()
+  registerDatabaseJobHandlers(jobs, picks)
 
   ipcMain.handle('database:listConnections', () => service.listConnections())
   ipcMain.handle('database:encryptionStatus', () => service.encryptionStatus())
