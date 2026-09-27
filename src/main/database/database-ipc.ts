@@ -10,6 +10,7 @@ import {
   DATABASE_EXPORT_MAX_CHARS
 } from '../../shared/database/database-export-types'
 import { databaseIntrospectTargetSchema } from '../../shared/database/database-introspection-types'
+import { tableChangeSetSchema } from '../../shared/database/table-change-sql'
 import type { DatabaseResult } from '../../shared/database/database-query-types'
 import {
   DATABASE_CONSOLE_ID_PATTERN,
@@ -57,6 +58,7 @@ const FetchRequestSchema = ConsoleRefSchema.extend({
   pageSize: PageSizeSchema
 })
 
+const ApplyChangesRequestSchema = ConsoleRefSchema.extend({ changeSet: tableChangeSetSchema })
 const SaveExportSchema = z
   .object({
     suggestedName: z.string().max(200),
@@ -145,6 +147,11 @@ export function registerDatabaseHandlers(): void {
   ipcMain.handle('database:fetchMore', (_event, raw: unknown) => {
     const request = FetchRequestSchema.safeParse(raw)
     return request.success ? service.fetchMore(request.data) : INVALID_REQUEST
+  })
+
+  ipcMain.handle('database:applyChanges', (_event, raw: unknown) => {
+    const request = ApplyChangesRequestSchema.safeParse(raw)
+    return request.success ? service.applyChanges(request.data) : INVALID_REQUEST
   })
 
   ipcMain.handle('database:cancel', (_event, raw: unknown) => {
