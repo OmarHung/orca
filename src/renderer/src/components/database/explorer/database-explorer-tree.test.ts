@@ -11,7 +11,10 @@ const root = connectionNode('conn-0001')
 describe('database explorer tree', () => {
   const schemas = childNodesFor(root, {
     level: 'schemas',
-    schemas: [{ name: 'public' }, { name: 'a/b' }]
+    schemas: [
+      { name: 'public', isCurrent: true },
+      { name: 'a/b', isCurrent: false }
+    ]
   })
   const [publicSchema, slashSchema] = schemas
 
