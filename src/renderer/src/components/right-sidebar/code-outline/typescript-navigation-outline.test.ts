@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { typescript as ts } from 'monaco-editor/esm/vs/language/typescript/lib/typescriptServices.js'
-import { navigationTreeToOutline, type OffsetToPosition } from './typescript-navigation-outline'
+import { navigationTreeToOutline } from './typescript-navigation-outline'
+import { offsetToPositionIn } from './offset-position-fixture'
 
 const FILE_NAME = '/file.tsx'
 
@@ -22,13 +23,6 @@ function navigationTree(source: string): unknown {
   return ts.createLanguageService(host).getNavigationTree(FILE_NAME)
 }
 
-function offsetToPosition(source: string): OffsetToPosition {
-  return (offset) => {
-    const before = source.slice(0, offset).split('\n')
-    return { lineNumber: before.length, column: (before.at(-1)?.length ?? 0) + 1 }
-  }
-}
-
 describe('navigationTreeToOutline', () => {
   const source = [
     "import { x } from './x'",
@@ -46,7 +40,7 @@ describe('navigationTreeToOutline', () => {
   ].join('\n')
 
   it('keeps declarations and named callbacks, drops imports', () => {
-    const outline = navigationTreeToOutline(navigationTree(source), offsetToPosition(source))
+    const outline = navigationTreeToOutline(navigationTree(source), offsetToPositionIn(source))
     expect(
       outline.map((symbol) => ({
         name: symbol.name,
@@ -66,12 +60,12 @@ describe('navigationTreeToOutline', () => {
   })
 
   it('reveals the name and spans the whole declaration', () => {
-    const circle = navigationTreeToOutline(navigationTree(source), offsetToPosition(source))[2]
+    const circle = navigationTreeToOutline(navigationTree(source), offsetToPositionIn(source))[2]
     expect(circle).toMatchObject({ line: 4, column: 14, startLine: 4, endLine: 8 })
   })
 
   it('returns nothing for a malformed tree', () => {
-    expect(navigationTreeToOutline({ text: 42 }, offsetToPosition(''))).toEqual([])
-    expect(navigationTreeToOutline(undefined, offsetToPosition(''))).toEqual([])
+    expect(navigationTreeToOutline({ text: 42 }, offsetToPositionIn(''))).toEqual([])
+    expect(navigationTreeToOutline(undefined, offsetToPositionIn(''))).toEqual([])
   })
 })
