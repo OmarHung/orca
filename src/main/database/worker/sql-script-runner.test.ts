@@ -76,6 +76,15 @@ describe('runSqlScript', () => {
     expect(progress.at(-1)).toBe(file.size)
   })
 
+  it('reports how far the run got, not how much of the file was read', async () => {
+    const file = scriptFile('p.sql', 'select 1;\nselect 2;\n')
+    const session = fakeSession()
+    const { summary, progress } = run([file], session, AUTO, { chunkBytes: 1024 })
+    await summary
+    // The first statement's report comes before the second runs, though both were read at once.
+    expect(progress).toEqual(['select 1;'.length, file.size])
+  })
+
   it('keeps going past failures when asked, counting each', async () => {
     const file = scriptFile('b.sql', 'select boom1;\nselect 1;\nselect boom2;\nselect 2')
     const session = fakeSession()
