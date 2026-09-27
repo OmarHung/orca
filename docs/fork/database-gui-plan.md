@@ -228,11 +228,14 @@ worker thread（每個開啟的 session 一個）  驅動、cursor、取消、�
 docker run -d --rm --name orca-db-it-mysql -p 127.0.0.1:53306:3306 -e MYSQL_ROOT_PASSWORD=orca-test-pw -e MYSQL_DATABASE=orca_it mysql:8.4
 docker run -d --rm --name orca-db-it-mariadb -p 127.0.0.1:53307:3306 -e MARIADB_ROOT_PASSWORD=orca-test-pw -e MARIADB_DATABASE=orca_it mariadb:11
 docker run -d --rm --name orca-db-it-mssql -p 127.0.0.1:51433:1433 -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD=Orca-test-Pw1 mcr.microsoft.com/mssql/server:2022-latest
+# 沒有 TLS 的伺服器（像 Debian 套件裝的 MariaDB），測 SSL prefer 退回明文
+docker run -d --rm --name orca-db-it-mariadb105 -p 127.0.0.1:53308:3306 -e MARIADB_ROOT_PASSWORD=orca-test-pw -e MARIADB_DATABASE=orca_it mariadb:10.5 --skip-ssl
 
 ORCA_TEST_POSTGRES_URL=postgres://orca_test@127.0.0.1:55439/postgres \
 ORCA_TEST_MYSQL_URL=mysql://root:orca-test-pw@127.0.0.1:53306/orca_it \
 ORCA_TEST_MARIADB_URL=mysql://root:orca-test-pw@127.0.0.1:53307/orca_it \
 ORCA_TEST_SQLSERVER_URL=sqlserver://sa:Orca-test-Pw1@127.0.0.1:51433/master \
+ORCA_TEST_MYSQL_NO_SSL_URL=mysql://root:orca-test-pw@127.0.0.1:53308/orca_it \
 pnpm exec vitest run --config config/vitest.config.ts src/main/database
 ```
 
@@ -441,6 +444,7 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
   - PG 的一條連線只能在一個資料庫，所以：讀其他資料庫的結構時第一次用到才另開元資料連線；console 換資料庫時重新連線，交易進行中會先要求提交或回滾；沒填資料庫時從 `postgres` 維護資料庫進入
   - PG 的 console 在這種連線上同時有 Database 和 Schema 兩個選單，換資料庫時 schema 回到該資料庫的預設
   - 結果欄位的型別名稱在結果所在的資料庫查（enum、domain 的 OID 各資料庫不同）
+- **SSL `prefer` 連不上沒有 TLS 的 MySQL／MariaDB**：測試連線 OK，實際連線卻顯示「Connection was closed」。`prefer` 先試 TLS，伺服器沒有 TLS（Debian 套件裝的 MariaDB 預設如此）時改用明文；但被拒絕的那次嘗試被當成「連線中斷」回報，測試連線會忽略這個通知，實際連線則把 session 關掉。改成連上之後才回報中斷；連線途中被中斷時也改為顯示真正原因。原本所有整合測試都用 `disable`，所以沒測到；補了 `mariadb:10.5 --skip-ssl` 的整合測試和 e2e
 - **DROP／ALTER DATABASE 前放開 Orca 自己的閒置連線**：瀏覽過的資料庫會被 Orca 的元資料連線佔住，DROP 會回「正在使用中」；SQL Server 的 `SET SINGLE_USER WITH ROLLBACK IMMEDIATE` 還會把元資料連線踢掉、讓整條連線斷掉。執行這兩種語句前先放開（PG 關掉該資料庫的元資料連線，SQL Server 把元資料連線 `USE` 回預設資料庫）。其他 console 的連線屬於使用者，不動
 
 ## 7. 測試策略
