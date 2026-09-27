@@ -14,6 +14,7 @@ import type {
 import { encodeTextCell } from './database-cell-encoding'
 import type { DatabaseDriverSession } from './database-driver'
 import { commandRowCount, leadingKeyword } from './statement-keyword'
+import type { DatabaseChangeTransaction } from './table-change-transaction'
 
 type SqliteConnectionDraft = Extract<DatabaseConnectionDraft, { driver: 'sqlite' }>
 type OpenResult = { resultId: string; rows: Iterator<unknown> }
@@ -61,6 +62,16 @@ class SqliteConsole {
   private open: OpenResult | null = null
 
   constructor(private readonly database: DatabaseSync) {}
+
+  beginChanges(): DatabaseChangeTransaction {
+    this.closeOpen()
+    this.database.exec('BEGIN')
+    return {
+      run: async ({ sql, params }) => Number(this.database.prepare(sql).run(...params).changes),
+      commit: async () => this.database.exec('COMMIT'),
+      rollback: async () => this.database.exec('ROLLBACK')
+    }
+  }
 
   execute(sql: string, pageSize: number): DatabaseExecuteResult {
     this.closeOpen()
@@ -188,12 +199,11 @@ class SqliteSession implements DatabaseDriverSession {
   }
 
   async execute(consoleId: string, sql: string, pageSize: number): Promise<DatabaseExecuteResult> {
-    let target = this.consoles.get(consoleId)
-    if (!target) {
-      target = new SqliteConsole(openDatabase(this.connection))
-      this.consoles.set(consoleId, target)
-    }
-    return target.execute(sql, pageSize)
+    return this.console(consoleId).execute(sql, pageSize)
+  }
+
+  async beginChanges(consoleId: string): Promise<DatabaseChangeTransaction> {
+    return this.console(consoleId).beginChanges()
   }
 
   async fetch(consoleId: string, resultId: string, pageSize: number): Promise<DatabaseRowsPage> {
@@ -220,6 +230,15 @@ class SqliteSession implements DatabaseDriverSession {
     }
     this.consoles.clear()
     this.metaDatabase.close()
+  }
+
+  private console(consoleId: string): SqliteConsole {
+    let target = this.consoles.get(consoleId)
+    if (!target) {
+      target = new SqliteConsole(openDatabase(this.connection))
+      this.consoles.set(consoleId, target)
+    }
+    return target
   }
 }
 

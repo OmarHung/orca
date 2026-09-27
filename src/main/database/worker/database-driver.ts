@@ -7,6 +7,7 @@ import type {
   DatabaseExecuteResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
+import type { DatabaseChangeTransaction } from './table-change-transaction'
 
 /**
  * One open data source. Each console gets its own server session so a half-read result
@@ -17,6 +18,8 @@ export type DatabaseDriverSession = {
   introspect(target: DatabaseIntrospectTarget): Promise<DatabaseIntrospectResult>
   execute(consoleId: string, sql: string, pageSize: number): Promise<DatabaseExecuteResult>
   fetch(consoleId: string, resultId: string, pageSize: number): Promise<DatabaseRowsPage>
+  /** Starts a transaction on the console's session for applying table edits. */
+  beginChanges(consoleId: string): Promise<DatabaseChangeTransaction>
   /** Resolves true when the server accepted the cancel request. */
   cancel(consoleId: string): Promise<boolean>
   closeConsole(consoleId: string): Promise<void>

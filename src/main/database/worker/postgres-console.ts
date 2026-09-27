@@ -8,6 +8,7 @@ import type {
 } from '../../../shared/database/database-query-types'
 import { encodeTextCell } from './database-cell-encoding'
 import type { PostgresTypeNames } from './postgres-type-names'
+import type { DatabaseChangeTransaction } from './table-change-transaction'
 
 const BOOL_OID = 16
 
@@ -101,6 +102,17 @@ export class PostgresConsole {
       await this.closeOpenResult()
     }
     return { rows: encodeRows(page.rows, open.boolColumns), hasMore }
+  }
+
+  async beginChanges(): Promise<DatabaseChangeTransaction> {
+    await this.closeOpenResult()
+    await this.client.query('BEGIN')
+    return {
+      run: async ({ sql, params }) =>
+        (await this.client.query({ text: sql, values: params })).rowCount ?? 0,
+      commit: async () => void (await this.client.query('COMMIT')),
+      rollback: async () => void (await this.client.query('ROLLBACK'))
+    }
   }
 
   async close(): Promise<void> {
