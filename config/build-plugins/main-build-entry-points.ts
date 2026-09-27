@@ -37,6 +37,9 @@ export const MAIN_BUILD_ENTRY_POINTS: Record<string, string> = {
   'claude-profile-setup-worker-entry': resolve(
     'src/main/claude-accounts/claude-profile-setup-worker-entry.ts'
   ),
+  // Why: node:sqlite is synchronous and big result pages parse on the CPU; each
+  // connected data source gets its own worker so neither blocks the UI thread.
+  'database-worker-entry': resolve('src/main/database/worker/database-worker-entry.ts'),
   'profile-state-backup-worker-entry': resolve(
     'src/main/persistence/profile-state/profile-state-backup-worker-entry.ts'
   ),
