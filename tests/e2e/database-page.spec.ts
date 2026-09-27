@@ -1,5 +1,4 @@
-import type { Page } from '@stablyai/playwright-test'
-import { openDatabasePage, runInConsole } from './helpers/database-page'
+import { addServerConnection, openDatabasePage, runInConsole } from './helpers/database-page'
 import { test, expect } from './helpers/orca-app'
 
 // Opt-in: a disposable PostgreSQL with trust auth, e.g. postgres://orca_test@127.0.0.1:55439/postgres
@@ -69,7 +68,7 @@ test.describe('Database page', () => {
     const connectionName = `${url.pathname.slice(1)}@${url.hostname}`
     const schema = `e2e_${Date.now()}`
     await openDatabasePage(orcaPage)
-    await addPostgresConnection(orcaPage, url)
+    await addServerConnection(orcaPage, { url })
 
     await orcaPage.getByRole('button', { name: `Open Console for ${connectionName}` }).click()
     await runInConsole(orcaPage, `create schema ${schema};`)
@@ -111,17 +110,3 @@ test.describe('Database page', () => {
     await expect(orcaPage.getByText(/^DROP completed/)).toBeVisible({ timeout: 20_000 })
   })
 })
-
-async function addPostgresConnection(page: Page, url: URL): Promise<void> {
-  const database = url.pathname.slice(1)
-  await page.getByRole('button', { name: 'New Connection' }).first().click()
-  const dialog = page.getByRole('dialog')
-  await dialog.getByLabel('Host').fill(url.hostname)
-  await dialog.getByLabel('Port').fill(url.port)
-  await dialog.getByLabel('Database', { exact: true }).fill(database)
-  await dialog.getByLabel('User').fill(decodeURIComponent(url.username))
-  await dialog.getByLabel('SSL mode').click()
-  await page.getByRole('option', { name: 'disable' }).click()
-  await dialog.getByRole('button', { name: 'Save' }).click()
-  await expect(dialog).toBeHidden()
-}
