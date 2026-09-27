@@ -1,11 +1,13 @@
 import React from 'react'
 import {
   Copy,
+  FileDown,
   FileCode2,
   Pencil,
   Plug,
   RefreshCw,
   SquareTerminal,
+  Sheet,
   Table2,
   Trash2,
   Unplug
@@ -25,6 +27,7 @@ import {
   useDatabaseDialogsStore
 } from '../database-page-actions'
 import { useDatabaseExplorerStore } from './database-explorer-store'
+import { useDatabaseJobsStore, type DatabaseDumpScope } from '../jobs/database-jobs-store'
 import { qualifiedRelationName } from '../../../../../shared/database/sql-identifiers'
 import { isExpandableNode, type DatabaseExplorerNode } from './database-explorer-tree'
 
@@ -97,6 +100,62 @@ function copyText(node: DatabaseExplorerNode): string | null {
     case 'folder':
       return null
   }
+}
+
+type DumpableNode = Extract<
+  DatabaseExplorerNode,
+  { kind: 'connection' | 'database' | 'schema' | 'relation' }
+>
+
+function isDumpable(node: DatabaseExplorerNode): node is DumpableNode {
+  switch (node.kind) {
+    case 'connection':
+    case 'database':
+    case 'schema':
+      return true
+    case 'relation':
+      return node.relation.kind !== 'foreign-table'
+    case 'column':
+    case 'folder':
+    case 'routine':
+    case 'constraint':
+    case 'index':
+      return false
+  }
+}
+
+/** What a dump opened on `node` covers, e.g. `prod › shop › sales › people`. */
+function dumpScope(node: DumpableNode, dataOnly: boolean): DatabaseDumpScope {
+  const connectionName = findDatabaseConnection(node.connectionId)?.name ?? ''
+  const database = node.kind === 'connection' ? null : node.database
+  const schema = node.kind === 'schema' || node.kind === 'relation' ? node.schema : null
+  const only = node.kind === 'relation' ? { schema: node.schema, name: node.relation.name } : null
+  const label = [connectionName, database, schema, only?.name]
+    .filter((part): part is string => Boolean(part))
+    .join(' › ')
+  return { connectionId: node.connectionId, database, schema, only, dataOnly, label }
+}
+
+function DumpItems({ node }: { node: DumpableNode }): React.JSX.Element {
+  const jobs = useDatabaseJobsStore.getState()
+  const isView =
+    node.kind === 'relation' &&
+    (node.relation.kind === 'view' || node.relation.kind === 'materialized-view')
+  return (
+    <>
+      <ContextMenuSeparator />
+      <ContextMenuItem onSelect={() => jobs.openDump(dumpScope(node, false))}>
+        <FileDown />
+        {translate('database.explorer.dumpToSql', 'Dump to SQL…')}
+      </ContextMenuItem>
+      {isView ? null : (
+        <ContextMenuItem onSelect={() => jobs.openDump(dumpScope(node, true))}>
+          <Sheet />
+          {translate('database.explorer.exportData', 'Export Data…')}
+        </ContextMenuItem>
+      )}
+    </>
+  )
 }
 
 function showDdl(node: Extract<DatabaseExplorerNode, { kind: 'relation' | 'routine' }>): void {
@@ -183,6 +242,7 @@ export function DatabaseExplorerContextMenu({
           {translate('database.explorer.refresh', 'Refresh')}
         </ContextMenuItem>
       ) : null}
+      {isDumpable(node) ? <DumpItems node={node} /> : null}
     </ContextMenuContent>
   )
 }
