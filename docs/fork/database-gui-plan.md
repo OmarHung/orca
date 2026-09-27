@@ -3,6 +3,45 @@
 > 狀態：Phase 0（基礎架構 + PostgreSQL）、Phase 1（MySQL／MariaDB、SQL Server、SQLite）、Phase 2（資料表分頁、表格完整化）、Phase 3（資料表編輯）和 Phase 4（SSH Tunnel）已完成（2026-09-27），紀錄見 §6.1～§6.6。Phase 5 尚未開工
 > 分支：從 `omar/custom` 開 `feat/database`，每個 Phase 完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
+>
+> **2026-09-28 方向調整：整個 Database 工具只做唯讀。** 資料表編輯（Phase 3）、console 交易控制、執行 SQL 腳本（Phase 6.1）都已移除，見 §0。下面各 Phase 的完成紀錄保留原樣，當作歷史。
+
+## 0. 方向調整：全部唯讀（2026-09-28）
+
+使用者決定所有功能都只能做唯讀操作。決定的內容：
+
+- **伺服器端強制，加上送出前檢查**（兩層都要）
+- **保留 dump 和匯出**（Phase 6.2／6.3）：它們只從資料庫讀，寫的是本機檔案；但不再有在 Orca 裡匯回去的功能
+- **不要再加回寫入功能**，除非使用者明確要求
+
+已移除：
+
+- 資料表編輯：改格子、新增／刪除列、預覽和送出、離開前的「捨棄修改」詢問；`applyChanges` IPC 和 worker 指令、變更 SQL 產生器、驅動的 `beginChanges`
+- Console 的交易控制：Auto-commit／Manual 模式、Commit／Roll Back、關閉有交易的 console 時的詢問；worker 的 `ConsoleTransactions`
+- 執行 SQL 腳本（Phase 6.1）：以 revert 移除（`e188283865`）
+- 每條連線的「Read-only」開關和鎖頭圖示：現在一律唯讀，頁首標題旁顯示「Read-only」，滑過去有說明
+- DROP／ALTER DATABASE 前釋放 Orca 閒置連線的處理（寫入語句已經送不出去）
+- 補全不再提供寫入用的關鍵字（INSERT INTO、UPDATE、CREATE、COMMIT、RETURNING…）
+
+唯讀怎麼保證：
+
+- **送出前**：worker 收到的每一條 console／資料表語句都先過 `readOnlyViolation`（`src/shared/database/sql-read-only-guard.ts`），跳過字串、註解和加引號的名稱，只看關鍵字
+  - 開頭是寫入指令的語句：INSERT、UPDATE、DELETE、MERGE、REPLACE、CREATE、ALTER、DROP、TRUNCATE、GRANT、VACUUM、ATTACH、LOAD、BACKUP、DO…
+  - 任何位置出現就擋的詞：INSERT、UPDATE、DELETE、MERGE、DROP、ALTER、CREATE、COMMIT、ROLLBACK…，可以抓到 CTE 裡的 DELETE、`FOR UPDATE`、SQL Server 沒有分號的 batch 裡後面的語句
+  - 跳出唯讀的寫法：`READ WRITE`、改 `default_transaction_read_only`／`transaction_read_only` 等設定（包括 `set_config(…)`、`@@session.x` 的寫法）、`SET GLOBAL`、`INTO OUTFILE`，以及 SQL Server 的動態 SQL（`EXEC(…)`、`sp_executesql`）
+  - 寫成函式呼叫的詞不算（MySQL 的 `insert(…)`、`replace(…)`），接在 `.` 後面的欄位名稱也不算
+- **伺服器端**：
+  - PostgreSQL：每條 session（包括結構資料用的）都設 `default_transaction_read_only = on`
+  - MySQL／MariaDB：`SET SESSION TRANSACTION READ ONLY`
+  - SQLite：一律以唯讀模式開檔
+  - SQL Server 沒有唯讀 session：console 開啟隱含交易（`IMPLICIT_TRANSACTIONS ON`），每個 batch 讀完就 `ROLLBACK`（結果還沒讀完就等讀完、放棄或關閉時），避免把鎖留在資料庫上
+- **驗證**：五種資料庫的 conformance 測試都有「送出前拒絕寫入」和「繞過檢查直接交給驅動的寫入也不會留下」兩項；逐層反向驗證過，拿掉任何一層都有測試失敗
+
+已知限制：
+
+- SQL Server 的 stored procedure 如果自己 COMMIT，寫入會保留（外層的隱含交易被它提交掉）；要完全保證，請用唯讀登入（例如只有 `db_datareader`）
+- 關鍵字檢查會擋掉少數其實是讀取的寫法，例如 `SELECT … FOR UPDATE`、名稱剛好沒加引號叫 `delete` 的欄位
+- 測試資料改由測試自己另開可寫入的連線建立（整合測試用 `database-test-admin.ts`，e2e 用 `helpers/database-admin.ts`），不經過 app
 
 ## 1. 目標
 
@@ -20,7 +59,7 @@
 | D1 | 形式 | **做成內建功能，不做成插件**。上游的插件 API（v0，實驗階段）有三個限制：面板只能呼叫 3 個 host 動作，叫不到自己的 worker；面板訊息上限 64KB、每 10 秒 30 則；面板只能放在側邊欄。要擴充這些得改上游插件核心，而且改完的插件也只能在 fork 上跑 |
 | D2 | 位置 | **獨立的 Database 頁面**（新的 `TopLevelView: 'database'`，跟 Settings、Tasks、Space 同一層）。不做成編輯區分頁，也不放右側欄或底部面板。原因是要對上游的改動最少，而且頁面不綁 workspace，SSH／WSL／資料夾 workspace 都一樣能用 |
 | D3 | 資料庫 | PostgreSQL、MySQL／MariaDB、SQL Server、SQLite |
-| D4 | v1 範圍 | 連線管理和結構樹、SQL Console 和結果表格、資料表直接編輯、SSH Tunnel |
+| D4 | v1 範圍 | 連線管理和結構樹、SQL Console 和結果表格、~~資料表直接編輯~~（2026-09-28 移除，全部唯讀，見 §0）、SSH Tunnel |
 | D5 | 驅動 | 只用 MIT 授權的純 JS 驅動和 Node 內建的 `node:sqlite`，**不加原生模組**，避開 Linux glibc 下限的問題 |
 | D6 | 執行位置 | 所有資料庫連線都在**本機**的 worker thread 裡執行。遠端資料庫一律經 SSH tunnel 連線，不走 relay。Tunnel 斷線時就回報斷線，**不會悄悄改成直接連線**（`docs/reference/ssh-execution-boundary.md`） |
 | D7 | 密碼 | 用 `getSecretStore()` 加密後存檔，**加密不可用時不存明文**。密碼只存在 main，永遠不送到 renderer |
@@ -309,7 +348,7 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 
 還沒驗證到的：SSH workspace（Phase 4 才做）、實際打包出的安裝檔（只用模擬目錄驗過）。
 
-### Phase 3：資料表編輯
+### Phase 3：資料表編輯（2026-09-28 已移除，見 §0）
 
 - 待送出變更、還原、預覽 SQL、在交易中送出
 - 各方言的 INSERT／UPDATE／DELETE 產生和參數化
@@ -447,7 +486,7 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - **SSL `prefer` 連不上沒有 TLS 的 MySQL／MariaDB**：測試連線 OK，實際連線卻顯示「Connection was closed」。`prefer` 先試 TLS，伺服器沒有 TLS（Debian 套件裝的 MariaDB 預設如此）時改用明文；但被拒絕的那次嘗試被當成「連線中斷」回報，測試連線會忽略這個通知，實際連線則把 session 關掉。改成連上之後才回報中斷；連線途中被中斷時也改為顯示真正原因。原本所有整合測試都用 `disable`，所以沒測到；補了 `mariadb:10.5 --skip-ssl` 的整合測試和 e2e
 - **DROP／ALTER DATABASE 前放開 Orca 自己的閒置連線**：瀏覽過的資料庫會被 Orca 的元資料連線佔住，DROP 會回「正在使用中」；SQL Server 的 `SET SINGLE_USER WITH ROLLBACK IMMEDIATE` 還會把元資料連線踢掉、讓整條連線斷掉。執行這兩種語句前先放開（PG 關掉該資料庫的元資料連線，SQL Server 把元資料連線 `USE` 回預設資料庫）。其他 console 的連線屬於使用者，不動
 
-### Phase 6：Dump、匯出、執行 SQL 腳本（6.1 完成，2026-09-28）
+### Phase 6：Dump、匯出（2026-09-28 改為唯讀：6.1 執行 SQL 腳本已移除，見 §0）
 
 使用者的決定（2026-09-28）：
 
@@ -463,9 +502,9 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - 路徑由 main 的存檔／選資料夾／開檔對話框取得並檢查後交給 worker
 - 進度（第幾張表、幾列、腳本讀到第幾個位元組和第幾條語句）透過事件推到畫面，可以取消
 - 資料庫頁面有「工作」清單：進行中的顯示進度和取消鈕，完成的顯示摘要和「在 Finder 中顯示」
-- 入口在結構樹右鍵：連線、資料庫、schema、資料表節點都有「Dump to SQL…」「Export Data…」「Run SQL Script…」
+- 入口在結構樹右鍵：連線、資料庫、schema、資料表節點都有「Dump to SQL…」「Export Data…」（「Run SQL Script…」已隨唯讀方向移除）
 
-**6.1 執行 SQL 腳本**
+**6.1 執行 SQL 腳本（已移除）**
 
 - 可以一次選多個 `.sql` 檔，依檔名順序在同一個 session 執行，所以「每張表一個檔案」的 dump 能一次匯回；可以指定目標資料庫（列出全部資料庫的連線）
 - 串流讀檔、逐段切分語句：沿用現有的分句器（引號、註解、PG 的 `$$`、MySQL 的 `DELIMITER`、SQL Server 的 `GO`），跨讀取區塊時要保留 DELIMITER 狀態，最後一段沒結束的語句留到下一塊
