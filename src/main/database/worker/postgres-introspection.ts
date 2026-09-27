@@ -8,6 +8,12 @@ import { postgresIndexes, postgresKeys, postgresRoutines } from './postgres-cata
 
 const POSTGRES_10 = 100_000
 
+const DATABASES_SQL = `
+  select datname as name, datname = current_database() as is_current
+  from pg_catalog.pg_database
+  where datallowconn and not datistemplate
+  order by datname`
+
 const SCHEMAS_SQL = `
   select nspname as name, nspname = current_schema() as is_current
   from pg_catalog.pg_namespace
@@ -63,6 +69,13 @@ export async function introspectPostgres(
   serverVersionNum: number
 ): Promise<DatabaseIntrospectResult> {
   switch (target.level) {
+    case 'databases': {
+      const result = await client.query<{ name: string; is_current: boolean }>(DATABASES_SQL)
+      return {
+        level: 'databases',
+        databases: result.rows.map((row) => ({ name: row.name, isCurrent: row.is_current }))
+      }
+    }
     case 'schemas': {
       const result = await client.query<{ name: string; is_current: boolean | null }>(SCHEMAS_SQL)
       return {

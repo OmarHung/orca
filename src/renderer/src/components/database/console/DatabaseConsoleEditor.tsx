@@ -28,6 +28,7 @@ type DatabaseConsoleEditorProps = {
   connectionId: string
   /** The console's picked schema, for completion; null is the connection's default. */
   schema: string | null
+  database: string | null
   initialText: string
   dialect: SqlDialect
   errorOffset: number | null
@@ -88,6 +89,7 @@ export function DatabaseConsoleEditor({
   tabId,
   connectionId,
   schema,
+  database,
   initialText,
   dialect,
   errorOffset,
@@ -106,6 +108,7 @@ export function DatabaseConsoleEditor({
   const dialectRef = useRef(dialect)
   const connectionIdRef = useRef(connectionId)
   const schemaRef = useRef(schema)
+  const databaseRef = useRef(database)
   useLayoutEffect(() => {
     onRunRef.current = onRun
     onShowHistoryRef.current = onShowHistory
@@ -113,7 +116,8 @@ export function DatabaseConsoleEditor({
     dialectRef.current = dialect
     connectionIdRef.current = connectionId
     schemaRef.current = schema
-  }, [onRun, onShowHistory, onEditorReady, dialect, connectionId, schema])
+    databaseRef.current = database
+  }, [onRun, onShowHistory, onEditorReady, dialect, connectionId, schema, database])
 
   const fontSize = computeEditorFontSize(settings?.terminalFontSize ?? 13, editorFontZoomLevel)
   const fontFamily = resolveEditorFontFamily(settings)
@@ -129,7 +133,8 @@ export function DatabaseConsoleEditor({
       ? registerDatabaseConsoleModel(monaco, model, () => ({
           connectionId: connectionIdRef.current,
           dialect: dialectRef.current,
-          schema: schemaRef.current
+          schema: schemaRef.current,
+          database: databaseRef.current
         }))
       : () => {}
     // CtrlCmd is ⌘ on macOS and Ctrl elsewhere.

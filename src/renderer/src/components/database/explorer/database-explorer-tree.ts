@@ -148,6 +148,8 @@ export function childNodesFor(
 ): DatabaseExplorerNode[] {
   const { connectionId } = parent
   switch (result.level) {
+    case 'databases':
+      return []
     case 'schemas':
       return result.schemas.map((schema) => ({
         kind: 'schema',
