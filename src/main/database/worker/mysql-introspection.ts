@@ -32,6 +32,9 @@ export async function introspectMysql(
   target: DatabaseIntrospectTarget
 ): Promise<DatabaseIntrospectResult> {
   switch (target.level) {
+    // A MySQL database is what the tree calls a schema.
+    case 'databases':
+      return { level: 'databases', databases: [] }
     case 'schemas': {
       const rows = await queryMysqlRows(client, SCHEMAS_SQL)
       return {
