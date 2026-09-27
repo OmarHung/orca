@@ -16,6 +16,8 @@ import { openDatabaseConsole, useDatabaseDialogsStore } from './database-page-ac
 import { DATABASE_EXPLORER_WIDTH, useDatabasePageStore } from './database-page-store'
 import { DatabaseExplorerPanel } from './explorer/DatabaseExplorerPanel'
 import { DatabaseDdlDialog } from './explorer/DatabaseDdlDialog'
+import { DatabaseDumpDialog } from './jobs/DatabaseDumpDialog'
+import { DatabaseJobsButton } from './jobs/DatabaseJobsButton'
 import { DatabaseTableView } from './table/DatabaseTableView'
 import { useDatabaseSessionEvents } from './use-database-session-events'
 
@@ -45,12 +47,9 @@ function PageHeader(): React.JSX.Element {
         <Lock className="size-3" />
         {translate('database.page.readOnly', 'Read-only')}
       </span>
-      <Button
-        variant="outline"
-        size="sm"
-        className="ml-auto"
-        onClick={() => openEditor({ mode: 'new' })}
-      >
+      <div className="ml-auto" />
+      <DatabaseJobsButton />
+      <Button variant="outline" size="sm" onClick={() => openEditor({ mode: 'new' })}>
         <Plus className="size-3.5" />
         {translate('database.page.newConnection', 'New Connection')}
       </Button>
@@ -183,6 +182,7 @@ export default function DatabasePage(): React.JSX.Element {
       <DatabasePasswordDialog />
       <DatabaseDeleteConnectionDialog />
       <DatabaseDdlDialog />
+      <DatabaseDumpDialog />
     </div>
   )
 }
