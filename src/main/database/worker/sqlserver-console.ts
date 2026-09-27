@@ -44,7 +44,8 @@ export class SqlServerConsole {
         reader?.fail(error)
         return
       }
-      if (affected !== null && !reader?.hasProducedRows) {
+      // Why also without a count: DDL reports none, and should still be named (CREATE, DROP…).
+      if (!reader?.hasProducedRows) {
         reader?.addCommand(leadingKeyword(sql), affected)
       }
       reader?.finish()
