@@ -65,8 +65,6 @@ export type DatabaseError = {
   line?: number
   detail?: string
   hint?: string
-  /** Which change of a submitted change set failed (0-based); the whole set was rolled back. */
-  changeIndex?: number
   /** The console session's transaction after the failure, when it was checked. */
   transaction?: DatabaseTransactionState
 }
