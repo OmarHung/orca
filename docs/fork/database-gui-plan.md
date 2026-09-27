@@ -379,6 +379,51 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - 手動交易模式（Commit／Rollback 按鈕）
 - 快捷鍵、繁體中文字串
 
+### 6.7 Phase 5 完成紀錄（2026-09-27）
+
+五項功能都做完，每項都有單元測試、五種資料庫的整合測試（PostgreSQL、MySQL、MariaDB、SQL Server、SQLite），以及 e2e 和截圖檢查；關鍵行為都做過反向驗證（拿掉實作後測試會失敗）。
+
+- **自動補全與格式化**
+  - 補全依游標所在語句判斷位置：FROM／JOIN／UPDATE／INTO 後列出資料表和 schema，`schema.` 後列出該 schema 的表，`別名.` 或 `表名.` 後列出欄位（FROM 寫在後面也認得），其他位置依序列出欄位、資料表、關鍵字（大小寫跟著打的字）
+  - 需要引號的名稱依方言自動加上
+  - 結構資料只在已連線時讀取，依連線快取；跑過 CREATE／ALTER／DROP／RENAME、在結構樹按 Refresh、或連線中斷時清掉快取
+  - 為了知道「不寫 schema 時指的是哪個」，schema 清單多回報目前 schema：PG 的 `current_schema()`、MySQL 的 `database()`、SQL Server 的預設 schema、SQLite 的 main
+  - 格式化用 `sql-formatter`，快捷鍵 `Mod+Alt+L`（DataGrip 的 Reformat Code），Monaco 的 Format Document 也可以用。一次只格式化一條語句，所以 `GO`、`DELIMITER`、語句之間的註解都不會動；解析不了的語句保持原樣並提示
+  - 補全和格式化只掛在 console 的 model 上（自訂 URI scheme），不影響一般 `.sql` 檔
+- **查詢歷史**
+  - console 執行的語句依連線記錄，表格畫面自動產生的查詢不記錄
+  - 工具列按鈕或 `Mod+Alt+E`（DataGrip 的 Browse Query History）打開可搜尋的清單，Enter 插入游標處後焦點回到 console
+  - 存在 `userData/database/history/<連線>.json`，權限 0600。上限 500 筆，SQL 總量上限 2 MB，超過 64 KB 的語句不記
+  - 重跑的語句移到最上面；同一連線的寫入和讀取排隊，避免兩個 console 同時完成時互相覆蓋
+  - 刪除連線時一併刪除；清除歷史要在清單裡再確認一次
+- **手動交易模式**
+  - 每個 console 可切換 Auto-commit／Manual commit（記在分頁上）。模式隨每個請求送出，連線重建後不會悄悄變回自動提交
+  - MySQL 用 `autocommit=0`，SQL Server 用 `IMPLICIT_TRANSACTIONS ON`，PG／SQLite 在需要時送 `BEGIN`；VACUUM、CREATE DATABASE、CREATE INDEX CONCURRENTLY 等不能在交易裡執行的語句不送（比照 psql）
+  - 交易狀態問伺服器：PG 用空查詢同步後讀 transaction status（出錯時錯誤比最終狀態先到），MySQL 用 `DO 0` 回傳的 IN_TRANS 旗標，SQL Server 用 `XACT_STATE()`，SQLite 用 `isTransaction`
+  - Auto 模式只在有交易開著、或語句可能開交易時才多查這一次；結果還在分頁讀取時不查，避免排在未完成的查詢後面卡住
+  - 交易開著時不能切回自動提交（MySQL 會因此直接提交）
+  - PG 出錯後的「交易失敗」狀態只能回滾，Commit 按鈕停用
+  - 伺服器斷開一個有交易的 console 連線時（例如 `idle_in_transaction_session_timeout`），下一條語句會說明交易已被回滾，不會默默重連；整個連線中斷時 console 也會記錄這件事，不會在新 session 重跑語句
+  - 關閉有交易的 console 會詢問：取消、回滾並關閉、提交並關閉
+- **連線顏色**：沿用 repo 顏色色票（去掉中性灰）。結構樹的連線圖示上色，該連線的分頁頂端有色條，console 和表格工具列淡淡上色。改顏色不會中斷連線
+- **結構樹與 DDL**
+  - schema 下多 Routines（function／procedure 和參數；SQLite 沒有）。表格欄位後面多 Keys（主鍵、唯一鍵、外鍵和它指向的表）和 Indexes（欄位或運算式、是否唯一）。materialized view 只有 Indexes，view 都沒有
+  - 右鍵「Show DDL」打開唯讀 SQL 編輯器，可複製
+  - 伺服器有存原文的直接用：MySQL 的 SHOW CREATE、SQL Server 的 OBJECT_DEFINITION、PG 的 pg_get_viewdef／pg_get_functiondef（用 regprocedure 簽章分辨 overload）、SQLite 的 sqlite_master（連同索引和觸發器）
+  - PG 和 SQL Server 的資料表從系統表重建：欄位、identity、生成欄位、預設值（SQL Server 保留約束名稱）、NOT NULL、各種約束，以及不是約束建立的索引；PG 另外處理 PARTITION BY 和 foreign table
+  - 驗證方式：把兩張相關資料表和 routine 的 DDL 實際執行到另一個 schema，比對兩邊的欄位、鍵、索引、routine 完全一致
+
+這一輪順便修正的問題：
+
+- **選交易模式後焦點被搶走**：選單關閉時把焦點還給選單按鈕，選完立刻打字會打到一半被打斷（完整 e2e 抓到的，console 裡只剩「select」）。改成焦點回到 console
+
+已知限制與觀察：
+
+- 補全不看 console session 自己的 `SET search_path`／`USE`，目前 schema 以結構查詢用的那條連線為準
+- 手動模式下連讀取也會開交易（和 DataGrip 相同），所以會一直顯示「交易進行中」直到提交或回滾
+- DDL 重建不含註解（COMMENT）、權限、擁有者、觸發器（SQLite 例外）；SQL Server 的叢集／非叢集只區分索引，不區分主鍵
+- 一次完整 e2e 在機器負載很高時（比平常慢一倍），MariaDB 的 `call` 沒有產生結果、30 秒逾時；之後單獨跑 3 次、完整跑 2 次都無法重現，原因不明
+
 ## 7. 測試策略
 
 - **單元測試**：值的編碼、各方言的語句切分、DML 產生和識別字引號、設定檔和密碼檔、tunnel 生命週期（mock ssh2）
