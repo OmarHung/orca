@@ -4,6 +4,7 @@ import type {
   DatabaseIntrospectResult,
   DatabaseIntrospectTarget
 } from '../../shared/database/database-introspection-types'
+import type { DatabaseHistoryEntry } from '../../shared/database/database-query-history-types'
 import type {
   DatabaseExecuteResult,
   DatabaseResult,
@@ -41,6 +42,9 @@ export type DatabaseApi = {
   ) => Promise<DatabaseResult<DatabaseIntrospectResult>>
   execute: (request: DatabaseExecuteRequest) => Promise<DatabaseResult<DatabaseExecuteResult>>
   fetchMore: (request: DatabaseFetchMoreRequest) => Promise<DatabaseResult<DatabaseRowsPage>>
+  /** Console statements for a connection, newest first. */
+  listHistory: (connectionId: string) => Promise<DatabaseHistoryEntry[]>
+  clearHistory: (connectionId: string) => Promise<void>
   /** Applies table edits in one transaction; see `table-change-sql`. */
   applyChanges: (
     request: DatabaseApplyChangesRequest

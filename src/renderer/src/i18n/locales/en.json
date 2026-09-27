@@ -19489,6 +19489,22 @@
       "showValue": "Show Value",
       "truncated": "Showing the first {{value0}} of {{value1}} characters"
     },
+    "history": {
+      "cancelClear": "Cancel",
+      "cancelled": "Cancelled",
+      "clear": "Clear",
+      "clearFailed": "Couldn’t clear query history",
+      "clearHistory": "Clear History…",
+      "confirmClear": "Clear {{value0}} statements?",
+      "confirmClearOne": "Clear 1 statement?",
+      "count": "{{value0}} statements",
+      "countOne": "1 statement",
+      "empty": "Statements you run in consoles appear here.",
+      "failed": "Failed",
+      "noMatches": "No statements match your search.",
+      "search": "Search query history",
+      "title": "Query History"
+    },
     "output": {
       "cancelled": "Cancelled",
       "command": "{{value0}} completed in {{value1}} ms",

@@ -19421,6 +19421,22 @@
       "showValue": "查看值",
       "truncated": "只显示 {{value1}} 个字符中的前 {{value0}} 个"
     },
+    "history": {
+      "cancelClear": "取消",
+      "cancelled": "已取消",
+      "clear": "清除",
+      "clearFailed": "无法清除查询历史",
+      "clearHistory": "清除历史…",
+      "confirmClear": "清除 {{value0}} 条语句？",
+      "confirmClearOne": "清除 1 条语句？",
+      "count": "{{value0}} 条语句",
+      "countOne": "1 条语句",
+      "empty": "在控制台中执行的语句会显示在这里。",
+      "failed": "失败",
+      "noMatches": "没有语句符合搜索。",
+      "search": "搜索查询历史",
+      "title": "查询历史"
+    },
     "output": {
       "cancelled": "已取消",
       "command": "{{value0}} 完成，耗时 {{value1}} 毫秒",

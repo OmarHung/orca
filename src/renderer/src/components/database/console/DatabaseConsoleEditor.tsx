@@ -31,6 +31,7 @@ type DatabaseConsoleEditorProps = {
   errorOffset: number | null
   onChange: (text: string) => void
   onRun: (statements: SqlStatementRange[]) => void
+  onShowHistory: () => void
   /** Hands the editor to toolbar buttons that run from the caret. */
   onEditorReady: (instance: editor.ICodeEditor | null) => void
 }
@@ -89,6 +90,7 @@ export function DatabaseConsoleEditor({
   errorOffset,
   onChange,
   onRun,
+  onShowHistory,
   onEditorReady
 }: DatabaseConsoleEditorProps): React.JSX.Element {
   const settings = useAppStore((state) => state.settings)
@@ -96,15 +98,17 @@ export function DatabaseConsoleEditor({
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
   const monacoRef = useRef<Monaco | null>(null)
   const onRunRef = useRef(onRun)
+  const onShowHistoryRef = useRef(onShowHistory)
   const onEditorReadyRef = useRef(onEditorReady)
   const dialectRef = useRef(dialect)
   const connectionIdRef = useRef(connectionId)
   useLayoutEffect(() => {
     onRunRef.current = onRun
+    onShowHistoryRef.current = onShowHistory
     onEditorReadyRef.current = onEditorReady
     dialectRef.current = dialect
     connectionIdRef.current = connectionId
-  }, [onRun, onEditorReady, dialect, connectionId])
+  }, [onRun, onShowHistory, onEditorReady, dialect, connectionId])
 
   const fontSize = computeEditorFontSize(settings?.terminalFontSize ?? 13, editorFontZoomLevel)
   const fontFamily = resolveEditorFontFamily(settings)
@@ -134,6 +138,13 @@ export function DatabaseConsoleEditor({
       label: translate('database.console.runAll', 'Run All Statements'),
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter],
       run: (target) => runFromEditor(target, 'all', dialectRef.current, onRunRef.current)
+    })
+    instance.addAction({
+      id: 'orca.database.showHistory',
+      label: translate('database.history.title', 'Query History'),
+      // DataGrip's Browse Query History.
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Alt | monaco.KeyCode.KeyE],
+      run: () => onShowHistoryRef.current()
     })
     instance.addAction({
       id: 'orca.database.reformat',
@@ -203,6 +214,20 @@ export function DatabaseConsoleEditor({
       </div>
     </div>
   )
+}
+
+/** Puts `text` at the caret, replacing any selection, as one undoable edit. */
+export function insertDatabaseConsoleText(instance: editor.ICodeEditor | null, text: string): void {
+  const selection = instance?.getSelection()
+  if (!instance || !selection) {
+    return
+  }
+  instance.pushUndoStop()
+  instance.executeEdits('orca.database.history', [
+    { range: selection, text, forceMoveMarkers: true }
+  ])
+  instance.pushUndoStop()
+  instance.focus()
 }
 
 export function runDatabaseConsoleFromToolbar(
