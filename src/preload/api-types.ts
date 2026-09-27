@@ -51,6 +51,7 @@ import type { PetApi } from './api/pet-api'
 import type { AppIconApi } from './api/app-icon-api'
 import type { BrowserPasswordsApi } from './api/browser-passwords-api'
 import type { DebugApi } from './api/debug-api'
+import type { DatabaseApi } from './api/database-api'
 import type { PythonApi } from './api/python-api'
 import type { PluginsApi } from './api/plugin-host-api'
 import type { PreflightApi } from './api/preflight-api'
@@ -131,6 +132,7 @@ export type PreloadApi = {
   pet: PetApi
   appIcon: AppIconApi
   debug: DebugApi
+  database: DatabaseApi
   python: PythonApi
   browser: BrowserApi
   browserPasswords: BrowserPasswordsApi
