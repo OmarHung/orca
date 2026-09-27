@@ -4,6 +4,7 @@ import {
   type DatabaseConnectionDraft,
   type DatabaseConnectionSummary
 } from '../../shared/database/database-connection-types'
+import type { DatabaseDdlTarget } from '../../shared/database/database-ddl-types'
 import type {
   DatabaseIntrospectResult,
   DatabaseIntrospectTarget
@@ -171,6 +172,11 @@ export class DatabaseService {
     target: DatabaseIntrospectTarget
   ): Promise<DatabaseResult<DatabaseIntrospectResult>> {
     return this.deps.sessions.request(connectionId, { type: 'introspect', target })
+  }
+
+  async ddl(connectionId: string, target: DatabaseDdlTarget): Promise<DatabaseResult<string>> {
+    const result = await this.deps.sessions.request(connectionId, { type: 'ddl', target })
+    return result.ok ? { ok: true, value: result.value.ddl } : result
   }
 
   async execute(request: DatabaseExecuteRequest): Promise<DatabaseResult<DatabaseExecuteResult>> {
