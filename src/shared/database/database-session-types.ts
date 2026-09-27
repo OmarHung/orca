@@ -29,7 +29,12 @@ export type DatabaseTestConnectionRequest = {
 
 export type DatabaseConsoleRef = { connectionId: string; consoleId: string }
 
-export type DatabaseExecuteRequest = DatabaseConsoleRef & { sql: string; pageSize: number }
+export type DatabaseExecuteRequest = DatabaseConsoleRef & {
+  sql: string
+  pageSize: number
+  /** Console runs go to query history; table browsing's generated queries don't. */
+  recordHistory?: boolean
+}
 
 export type DatabaseFetchMoreRequest = DatabaseConsoleRef & { resultId: string; pageSize: number }
 
