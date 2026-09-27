@@ -18592,7 +18592,10 @@
       "stop": "Stop '{{value0}}'",
       "runNamed": "Run '{{value0}}'",
       "stopDebugAndRun": "Stop debugging and run '{{value0}}'",
-      "stopAndDebug": "Stop and debug '{{value0}}'"
+      "stopAndDebug": "Stop and debug '{{value0}}'",
+      "forceStop": "Force stop '{{value0}}'",
+      "closeTerminal": "Close terminal '{{value0}}'",
+      "closeTerminals": "Close the terminals of '{{value0}}'"
     },
     "status": {
       "running": "Running",
@@ -18698,7 +18701,11 @@
       "recent": "Recent",
       "quickCommands": "Quick commands",
       "addQuickCommand": "Add Quick Command…",
-      "manageQuickCommands": "Manage Quick Commands…"
+      "manageQuickCommands": "Manage Quick Commands…",
+      "stopAll": "Stop All",
+      "stopRunning": "Stop ({{value0}} running)",
+      "forceStopAll": "Force Stop All",
+      "closeAllTerminals": "Close All Terminals"
     },
     "exclusive": {
       "debugging": {
