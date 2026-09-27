@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { DatabaseSync, type StatementSync } from 'node:sqlite'
 import type { DatabaseConnectionDraft } from '../../../shared/database/database-connection-types'
+import type { DatabaseDdlTarget } from '../../../shared/database/database-ddl-types'
 import type {
   DatabaseIntrospectResult,
   DatabaseIntrospectTarget
@@ -13,6 +14,7 @@ import type {
   DatabaseTransactionMode
 } from '../../../shared/database/database-query-types'
 import { ConsoleTransactions } from './console-transactions'
+import { sqliteDdl } from './sqlite-ddl'
 import { introspectSqlite } from './sqlite-introspection'
 import { encodeTextCell } from './database-cell-encoding'
 import type { DatabaseDriverSession } from './database-driver'
@@ -155,6 +157,10 @@ class SqliteSession implements DatabaseDriverSession {
 
   async introspect(target: DatabaseIntrospectTarget): Promise<DatabaseIntrospectResult> {
     return introspectSqlite(this.metaDatabase, target)
+  }
+
+  async ddl(target: DatabaseDdlTarget): Promise<string> {
+    return sqliteDdl(this.metaDatabase, target)
   }
 
   async execute(

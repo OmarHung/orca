@@ -1,4 +1,5 @@
 import type { DatabaseConnectionDraft } from '../../../shared/database/database-connection-types'
+import type { DatabaseDdlTarget } from '../../../shared/database/database-ddl-types'
 import type {
   DatabaseIntrospectResult,
   DatabaseIntrospectTarget
@@ -17,6 +18,8 @@ import type { DatabaseChangeTransaction } from './table-change-transaction'
 export type DatabaseDriverSession = {
   readonly serverVersion: string
   introspect(target: DatabaseIntrospectTarget): Promise<DatabaseIntrospectResult>
+  /** The CREATE statements for a table, view or routine, read on the metadata session. */
+  ddl(target: DatabaseDdlTarget): Promise<string>
   execute(
     consoleId: string,
     sql: string,
