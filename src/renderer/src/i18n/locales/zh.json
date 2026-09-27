@@ -18822,6 +18822,15 @@
       "runStatementHint": "执行光标所在的语句",
       "title": "控制台"
     },
+    "ddl": {
+      "close": "关闭",
+      "copied": "已复制 DDL",
+      "copy": "复制",
+      "description": "创建这个对象的语句。",
+      "editorLabel": "DDL",
+      "loading": "正在读取定义…",
+      "title": "{{value0}} 的 DDL"
+    },
     "deleteDialog": {
       "cancel": "取消",
       "confirm": "删除",
@@ -18875,6 +18884,7 @@
       "primaryKey": "主键",
       "refresh": "刷新",
       "routines": "例程",
+      "showDdl": "查看 DDL",
       "unique": "唯一",
       "uniqueKey": "唯一键",
       "viaSsh": "经由 {{value0}}"
