@@ -3,8 +3,7 @@ import {
   childNodesFor,
   connectionNode,
   flattenDatabaseExplorer,
-  introspectTargetFor,
-  qualifiedRelationName
+  introspectTargetFor
 } from './database-explorer-tree'
 
 const root = connectionNode('conn-0001')
@@ -55,13 +54,5 @@ describe('database explorer tree', () => {
       }
     )
     expect(rows).toHaveLength(1)
-  })
-
-  it('quotes identifiers only when needed, in each dialect’s style', () => {
-    expect(qualifiedRelationName('public', 'users')).toBe('public.users')
-    expect(qualifiedRelationName('Sales', 'order "items"')).toBe('"Sales"."order ""items"""')
-    expect(qualifiedRelationName('shop', 'Order Items', 'mysql')).toBe('shop.`Order Items`')
-    expect(qualifiedRelationName('dbo', 'a]b', 'sqlserver')).toBe('dbo.[a]]b]')
-    expect(qualifiedRelationName('main', 'people', 'sqlite')).toBe('people')
   })
 })

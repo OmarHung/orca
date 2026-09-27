@@ -245,6 +245,20 @@
     "reason": "Actual Claude CLI tool-result line in the terminal still; preserve the illustrative output and line count."
   },
   {
+    "filePath": "src/renderer/src/components/database/table/DatabaseTableView.tsx",
+    "kind": "jsx-attribute:label",
+    "text": "WHERE",
+    "dynamic": false,
+    "count": 1
+  },
+  {
+    "filePath": "src/renderer/src/components/database/table/DatabaseTableView.tsx",
+    "kind": "jsx-attribute:label",
+    "text": "ORDER BY",
+    "dynamic": false,
+    "count": 1
+  },
+  {
     "filePath": "src/renderer/src/components/emulator-pane/use-emulator-video-stream.ts",
     "kind": "object-property:error",
     "text": "This build does not support WebCodecs H.264 decoding.",

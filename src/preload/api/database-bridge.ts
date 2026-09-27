@@ -20,6 +20,7 @@ export const databaseApi = {
   readConsole: (ref) => ipcRenderer.invoke('database:readConsole', ref),
   writeConsole: (ref, text) => ipcRenderer.invoke('database:writeConsole', ref, text),
   pickSqliteFile: () => ipcRenderer.invoke('database:pickSqliteFile'),
+  saveExport: (request) => ipcRenderer.invoke('database:saveExport', request),
   onEvent: (callback) => {
     const listener = (_event: Electron.IpcRendererEvent, event: DatabaseSessionEvent) =>
       callback(event)

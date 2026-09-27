@@ -7,18 +7,17 @@ import type {
 } from '../../../../../shared/database/database-query-types'
 import { splitSqlStatements } from '../../../../../shared/database/sql-statement-splitter'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
-import type { DatabaseConsoleTab } from '../database-page-store'
+import type { DatabaseRunTarget } from '../database-page-tabs'
 import {
   OUTPUT_RESULT_ID,
   getConsoleRunState,
   useDatabaseConsoleRunStore
 } from './database-console-run-store'
 
-const tab: DatabaseConsoleTab = {
+const tab: DatabaseRunTarget = {
   id: 'tab-1',
   connectionId: 'conn-0001',
-  consoleId: 'console-01',
-  title: 'Local'
+  consoleId: 'console-01'
 }
 
 const rows = (count: number, start = 0): string[][] =>
