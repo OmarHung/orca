@@ -179,7 +179,8 @@ export class DatabaseService {
       type: 'execute',
       consoleId: request.consoleId,
       sql: request.sql,
-      pageSize: request.pageSize
+      pageSize: request.pageSize,
+      transactionMode: request.transactionMode
     })
     if (request.recordHistory && this.deps.connections.get(request.connectionId)) {
       const finishedAt = Date.now()
