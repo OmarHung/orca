@@ -102,7 +102,7 @@ export function DatabaseGridRow({
             className={cn(
               'flex min-w-0 items-center border-b border-r border-border/60 px-2',
               numeric && 'justify-end',
-              selected && 'bg-accent',
+              selected && 'bg-foreground/10',
               position === focusColumn && 'ring-1 ring-inset ring-ring'
             )}
           >
