@@ -1,15 +1,30 @@
 import type * as Monaco from 'monaco-editor'
 import type { CodeOutlineSymbol } from './code-outline-types'
 import { navigationTreeToOutline } from './typescript-navigation-outline'
+import { jsonDocumentToOutline } from './json-outline'
 import type { TreeSitterOutlineLanguage } from './tree-sitter-outline-extract'
 
-type OutlineSource = 'typescript' | 'javascript' | TreeSitterOutlineLanguage
+type OutlineSource = 'typescript' | 'javascript' | 'json' | 'yaml' | TreeSitterOutlineLanguage
 
+/** Monaco language id → where its outline comes from. */
 const SOURCE_BY_LANGUAGE = new Map<string, OutlineSource>([
   ['typescript', 'typescript'],
   ['javascript', 'javascript'],
   ['python', 'python'],
-  ['csharp', 'csharp']
+  ['csharp', 'csharp'],
+  ['go', 'go'],
+  ['java', 'java'],
+  ['rust', 'rust'],
+  // Why: no C grammar is bundled; the C++ one parses C's declarations the same way.
+  ['c', 'cpp'],
+  ['cpp', 'cpp'],
+  ['php', 'php'],
+  ['ruby', 'ruby'],
+  ['shell', 'bash'],
+  ['powershell', 'powershell'],
+  ['css', 'css'],
+  ['json', 'json'],
+  ['yaml', 'yaml']
 ])
 
 export function isCodeOutlineLanguage(languageId: string): boolean {
@@ -19,22 +34,16 @@ export function isCodeOutlineLanguage(languageId: string): boolean {
 const WORKER_REGISTRATION_ATTEMPTS = 60
 const WORKER_REGISTRATION_RETRY_MS = 250
 
-type WorkerAccessor = Awaited<ReturnType<typeof Monaco.typescript.getTypeScriptWorker>>
-
-// Why: Monaco registers the TS worker lazily after the first model of that language appears, so
-// an outline requested as the file opens can arrive first and be told it is "not registered".
-async function waitForTypeScriptWorker(
-  monaco: typeof Monaco,
-  source: 'typescript' | 'javascript'
-): Promise<WorkerAccessor> {
+// Why: Monaco registers a language worker lazily after the first model of that language appears,
+// so an outline requested as the file opens can arrive first and be told it is "not registered".
+// Monaco rejects with a bare string there, not an Error.
+async function waitForMonacoWorker<T>(getWorker: () => Promise<T>): Promise<T> {
   for (let attempt = 1; ; attempt++) {
     try {
-      return source === 'typescript'
-        ? await monaco.typescript.getTypeScriptWorker()
-        : await monaco.typescript.getJavaScriptWorker()
+      return await getWorker()
     } catch (error) {
-      const notRegistered = error instanceof Error && error.message.includes('not registered')
-      if (!notRegistered || attempt >= WORKER_REGISTRATION_ATTEMPTS) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (!message.includes('not registered') || attempt >= WORKER_REGISTRATION_ATTEMPTS) {
         throw error
       }
       await new Promise((resolve) => setTimeout(resolve, WORKER_REGISTRATION_RETRY_MS))
@@ -47,13 +56,31 @@ async function loadTypeScriptOutline(
   model: Monaco.editor.ITextModel,
   source: 'typescript' | 'javascript'
 ): Promise<CodeOutlineSymbol[]> {
-  const getWorker = await waitForTypeScriptWorker(monaco, source)
+  const getWorker = await waitForMonacoWorker(() =>
+    source === 'typescript'
+      ? monaco.typescript.getTypeScriptWorker()
+      : monaco.typescript.getJavaScriptWorker()
+  )
   const worker = await getWorker(model.uri)
   const tree: unknown = await worker.getNavigationTree(model.uri.toString())
   if (model.isDisposed()) {
     return []
   }
   return navigationTreeToOutline(tree, (offset) => model.getPositionAt(offset))
+}
+
+// Why: Monaco's JSON worker already parses the model (comments included) for validation.
+async function loadJsonOutline(
+  monaco: typeof Monaco,
+  model: Monaco.editor.ITextModel
+): Promise<CodeOutlineSymbol[]> {
+  const getWorker = await waitForMonacoWorker(() => monaco.json.getWorker())
+  const worker = await getWorker(model.uri)
+  const document = await worker.parseJSONDocument(model.uri.toString())
+  if (model.isDisposed()) {
+    return []
+  }
+  return jsonDocumentToOutline(document?.root, (offset) => model.getPositionAt(offset))
 }
 
 /** Returns null when the model's language has no outline source. */
@@ -68,7 +95,14 @@ export async function loadCodeOutline(
   if (source === 'typescript' || source === 'javascript') {
     return loadTypeScriptOutline(monaco, model, source)
   }
-  // Why: the WASM parsers are several MB; load them only once a Python/C# file is outlined.
+  if (source === 'json') {
+    return loadJsonOutline(monaco, model)
+  }
+  if (source === 'yaml') {
+    const { yamlOutline } = await import('./yaml-outline')
+    return yamlOutline(model.getValue(), (offset) => model.getPositionAt(offset))
+  }
+  // Why: the WASM parsers are several MB; load one only once a file of its language is outlined.
   const { parseTreeSitterOutline } = await import('./tree-sitter-outline-runtime')
   return parseTreeSitterOutline(source, model.getValue())
 }
