@@ -9,6 +9,7 @@ import { ResizeHandle } from '../../bottom-panel/ResizeHandle'
 import { useDragResize } from '../../bottom-panel/use-drag-resize'
 import type { SqlStatementRange } from '../../../../../shared/database/sql-statement-splitter'
 import { DatabaseConnectionBadge } from '../DatabaseConnectionBadge'
+import { connectionTintStyle, useDatabaseConnectionColor } from '../database-connection-color'
 import {
   DATABASE_RESULTS_HEIGHT,
   useDatabasePageStore,
@@ -50,6 +51,7 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
   )
   const dialect = sqlDialectForDriver(driver ?? 'postgres')
   const [historyOpen, setHistoryOpen] = useState(false)
+  const color = useDatabaseConnectionColor(tab.connectionId)
   const resultsHeight = useDatabasePageStore((state) => state.resultsHeight)
   const setResultsHeight = useDatabasePageStore((state) => state.setResultsHeight)
 
@@ -78,7 +80,10 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
 
   return (
     <div ref={containerRef} className="flex h-full min-h-0 flex-col">
-      <div className="flex h-9 shrink-0 items-center gap-1 border-b border-border px-2">
+      <div
+        className="flex h-9 shrink-0 items-center gap-1 border-b border-border px-2"
+        style={connectionTintStyle(color)}
+      >
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

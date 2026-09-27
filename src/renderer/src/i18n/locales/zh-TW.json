@@ -18779,6 +18779,8 @@
     },
     "connectionForm": {
       "browse": "瀏覽…",
+      "color": "顏色",
+      "colorHint": "為這個連線的分頁和工具欄著色，例如用紅色標示生產環境。",
       "database": "資料庫",
       "driver": "種類",
       "file": "資料庫檔案",
@@ -18786,6 +18788,7 @@
       "filePlaceholder": "/path/to/app.db",
       "host": "主機",
       "name": "名稱",
+      "noColor": "無顏色",
       "noKeychain": "這個系統沒有安全的密碼儲存，所以密碼只會保留到 Orca 退出為止。",
       "password": "密碼",
       "passwordSaved": "已儲存，輸入新密碼即可替換",
@@ -18802,6 +18805,7 @@
       "storeForever": "加密儲存",
       "storeNever": "不儲存",
       "storeSession": "儲存到 Orca 退出",
+      "useColor": "使用顏色 {{value0}}",
       "user": "使用者"
     },
     "console": {
