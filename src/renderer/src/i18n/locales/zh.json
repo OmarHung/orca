@@ -18765,8 +18765,7 @@
   },
   "database": {
     "connection": {
-      "missing": "已删除的连接",
-      "readOnly": "只读"
+      "missing": "已删除的连接"
     },
     "connectionDialog": {
       "cancel": "取消",
@@ -18796,9 +18795,7 @@
       "password": "密码",
       "passwordSaved": "已保存，输入新密码即可替换",
       "port": "端口",
-      "readOnly": "只读",
       "savePassword": "保存密码",
-      "sqlServerReadOnly": "SQL Server 无法把连接设为只读，所以 Orca 会拒绝看起来会写入数据的语句。这是一道保险，不是保证。",
       "sshEmpty": "还没有保存的 SSH 主机。在设置中添加后就能通过它连接。",
       "sshHint": "主机和端口以 SSH 主机的角度填写，例如 localhost 或内网地址。",
       "sshNone": "不使用（直接连接）",
@@ -18921,6 +18918,8 @@
       "emptyWithConnections": "打开控制台来执行 SQL。在连接上点右键可以看到更多操作。",
       "newConnection": "新建连接",
       "openConsole": "打开 {{value0}} 的控制台",
+      "readOnly": "只读",
+      "readOnlyHint": "Orca 只会读取你的数据库，会修改数据库的语句不会执行。",
       "resizeExplorer": "调整数据库浏览器宽度",
       "title": "数据库"
     },
@@ -18958,23 +18957,6 @@
     },
     "tabs": {
       "close": "关闭控制台"
-    },
-    "transaction": {
-      "auto": "自动提交",
-      "commit": "提交",
-      "failed": "事务失败，请回滚",
-      "lost": "连接已关闭，未提交的事务已回滚，其中的更改都没有保存。",
-      "manual": "手动提交",
-      "mode": "事务模式",
-      "open": "事务进行中",
-      "rollBack": "回滚"
-    },
-    "transactionDialog": {
-      "cancel": "取消",
-      "commit": "提交并关闭",
-      "description": "{{value0}} 有进行中的事务，关闭会回滚所有未提交的内容。",
-      "rollBack": "回滚并关闭",
-      "title": "关闭有未提交事务的控制台？"
     },
     "viewer": {
       "copy": "复制值",
