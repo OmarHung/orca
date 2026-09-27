@@ -103,7 +103,7 @@ export class DatabaseService {
     }
     const previous = request.id ? this.deps.connections.get(request.id) : null
     const saved = this.deps.connections.save(request.id, request.draft)
-    // Why: a session opened with the old host, user or read-only flag would silently keep them.
+    // Why: a session opened with the old host or user would silently keep them.
     if (previous && changesSessionSettings(previous, request.draft)) {
       await this.deps.sessions.disconnect(saved.id)
     }
@@ -183,7 +183,6 @@ export class DatabaseService {
       consoleId: request.consoleId,
       sql: request.sql,
       pageSize: request.pageSize,
-      transactionMode: request.transactionMode,
       schema: request.schema,
       database: request.database
     })

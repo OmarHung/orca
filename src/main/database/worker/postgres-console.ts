@@ -4,12 +4,10 @@ import Cursor from 'pg-cursor'
 import type {
   DatabaseCell,
   DatabaseQueryResult,
-  DatabaseRowsPage,
-  DatabaseTransactionState
+  DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
 import { quoteSqlName } from '../../../shared/database/sql-identifiers'
 import { ConsoleSchema } from './console-schema'
-import { ConsoleTransactions } from './console-transactions'
 import { encodeTextCell } from './database-cell-encoding'
 import type { PostgresTypeNames } from './postgres-type-names'
 
@@ -44,10 +42,6 @@ function encodeRows(rows: unknown[][], boolColumns: boolean[]): DatabaseCell[][]
   )
 }
 
-function transactionState(status: string | null): DatabaseTransactionState {
-  return status === 'T' ? 'open' : status === 'E' ? 'failed' : 'none'
-}
-
 function elapsedMs(startedAt: number): number {
   return Math.round(performance.now() - startedAt)
 }
@@ -55,18 +49,6 @@ function elapsedMs(startedAt: number): number {
 /** One console's server session plus the cursor of its most recent row-returning statement. */
 export class PostgresConsole {
   private openResult: OpenResult | null = null
-  readonly transactions = new ConsoleTransactions({
-    // Why the empty query: a failed statement reports its error before the server's final status.
-    state: async () => {
-      await this.client.query('')
-      return transactionState(this.client.getTransactionStatus())
-    },
-    begin: async () => {
-      await this.closeOpenResult()
-      await this.client.query('BEGIN')
-    }
-  })
-
   // Why keep public: extensions (uuid-ossp, pgcrypto…) usually install their functions there.
   readonly schema = new ConsoleSchema({
     apply: async (name) => {
