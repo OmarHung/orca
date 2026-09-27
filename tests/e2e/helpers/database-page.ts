@@ -49,7 +49,6 @@ export type ServerConnectionForm = {
   name?: string
   passwordStorage?: 'Save securely' | 'Until Orca quits' | 'Never'
   sslMode?: 'disable' | 'prefer' | 'require' | 'verify-full'
-  readOnly?: boolean
   /** Label of a saved SSH host to tunnel through. */
   sshHost?: string
 }
@@ -82,9 +81,6 @@ export async function addServerConnection(page: Page, form: ServerConnectionForm
   }
   await dialog.getByLabel('SSL mode').click()
   await page.getByRole('option', { name: form.sslMode ?? 'disable', exact: true }).click()
-  if (form.readOnly) {
-    await dialog.getByLabel('Read-only').click()
-  }
   await dialog.getByRole('button', { name: 'Test Connection' }).click()
   // Why longer through SSH: the first connect also opens the SSH session.
   await expect(dialog.getByText(/^Connected to /)).toBeVisible({
