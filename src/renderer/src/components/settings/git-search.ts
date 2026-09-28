@@ -71,6 +71,18 @@ export const getGitPaneSearchEntries = createLocalizedCatalog(() => [
     ]
   },
   {
+    title: translate('inlineBlame.settings.title', 'Inline Blame'),
+    description: translate(
+      'inlineBlame.settings.description',
+      'Show who last changed the line under the caret, when, and in which commit, after the end of that line. Hover it for the commit and a link to its changes.'
+    ),
+    keywords: [
+      ...translateSearchKeyword('inlineBlame.settings.keywordBlame', 'blame'),
+      ...translateSearchKeyword('inlineBlame.settings.keywordAnnotate', 'annotate'),
+      ...translateSearchKeyword('inlineBlame.settings.keywordAuthor', 'author')
+    ]
+  },
+  {
     title: translate('gitBranchStatus.settings.title', 'Branch Status & Auto Fetch'),
     description: translate(
       'gitBranchStatus.settings.description',

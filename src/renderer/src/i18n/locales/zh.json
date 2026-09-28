@@ -19335,5 +19335,18 @@
       "keywordAutoFetch": "自动 fetch",
       "keywordGitFetch": "git fetch"
     }
+  },
+  "inlineBlame": {
+    "uncommitted": "未提交的更改",
+    "openChanges": "打开更改",
+    "copySha": "复制 Hash",
+    "openFailed": "无法打开这个 commit。",
+    "settings": {
+      "title": "行内 Blame",
+      "description": "在光标所在行的行尾显示最后修改这行的人、时间与 commit。鼠标移上去可查看 commit 并打开其更改。",
+      "keywordBlame": "blame",
+      "keywordAnnotate": "标注",
+      "keywordAuthor": "作者"
+    }
   }
 }

@@ -16,7 +16,17 @@ import {
 import { computeDiff, type GitExec } from './git-handler-ops'
 import { checkIgnoredPathsOp } from './git-handler-check-ignore'
 import { loadGitHistoryFromExecutor } from '../shared/git-history'
+import { loadGitBlameFromExecutor } from '../shared/git-blame'
 import { stableInFlightKey } from '../shared/in-flight-promise-dedupe'
+
+// Why: validate relative paths to prevent traversal outside the worktree.
+function assertInsideWorktree(worktreePath: string, filePath: string): void {
+  const resolved = path.resolve(worktreePath, filePath)
+  const rel = path.relative(path.resolve(worktreePath), resolved)
+  if (rel === '..' || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel)) {
+    throw new Error(`Path "${filePath}" resolves outside the worktree`)
+  }
+}
 
 function resolveSubmoduleStatusArea(
   params: Record<string, unknown>
@@ -101,15 +111,21 @@ export class GitHandlerReadOperations extends GitHandlerOperationContext {
     })
   }
 
+  async blame(params: Record<string, unknown>) {
+    const worktreePath = params.worktreePath as string
+    const filePath = params.filePath as string
+    assertInsideWorktree(worktreePath, filePath)
+    return loadGitBlameFromExecutor(
+      (args, cwd, execOptions) => this.git(args, cwd, execOptions),
+      worktreePath,
+      filePath
+    )
+  }
+
   async getDiff(params: Record<string, unknown>, context?: RequestContext) {
     const worktreePath = params.worktreePath as string
     const filePath = params.filePath as string
-    // Why: validate relative paths to prevent traversal outside the worktree.
-    const resolved = path.resolve(worktreePath, filePath)
-    const rel = path.relative(path.resolve(worktreePath), resolved)
-    if (rel === '..' || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel)) {
-      throw new Error(`Path "${filePath}" resolves outside the worktree`)
-    }
+    assertInsideWorktree(worktreePath, filePath)
     const staged = params.staged as boolean
     const compareAgainstHead = params.compareAgainstHead as boolean | undefined
     // Why: register dedupe before awaiting so identical reads coalesce.
