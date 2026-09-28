@@ -25,6 +25,7 @@ import type {
   GitHistoryOptions,
   GitHistoryResult
 } from '../../shared/git/history/git-history-types'
+import type { GitBlameResult } from '../../shared/git-blame'
 import type { CommitMessageDraftContext } from '../../shared/source-control/ai/generation/commit-message-generation'
 import type { ConflictResolution } from '../../shared/source-control/listing/source-control-entry-actions'
 import type { GitProviderStatusOptions } from './git-provider-status-options'
@@ -69,6 +70,7 @@ export type IGitProvider = {
     compareAgainstHead?: boolean,
     oldPath?: string
   ): Promise<GitDiffResult>
+  getBlame(worktreePath: string, filePath: string): Promise<GitBlameResult>
   stageFile(worktreePath: string, filePath: string): Promise<void>
   resolveConflict(
     worktreePath: string,

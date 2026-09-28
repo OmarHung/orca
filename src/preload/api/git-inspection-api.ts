@@ -1,3 +1,4 @@
+import type { GitBlameResult } from '../../shared/git-blame'
 import type {
   GitBranchCompareResult,
   GitCommitCompareResult,
@@ -86,6 +87,11 @@ export type GitInspectionApi = {
     connectionId?: string
     wakeWslDistro?: boolean
   }) => Promise<GitDiffResult>
+  blame: (args: {
+    worktreePath: string
+    filePath: string
+    connectionId?: string
+  }) => Promise<GitBlameResult>
   branchCompare: (args: {
     worktreePath: string
     baseRef: string

@@ -83,6 +83,8 @@ export const gitApi = {
     connectionId?: string
     wakeWslDistro?: boolean
   }) => ipcRenderer.invoke('git:diff', args),
+  blame: (args: { worktreePath: string; filePath: string; connectionId?: string }) =>
+    ipcRenderer.invoke('git:blame', args),
   branchCompare: (args: { worktreePath: string; baseRef: string; connectionId?: string }) =>
     ipcRenderer.invoke('git:branchCompare', args),
   commitCompare: (args: { worktreePath: string; commitId: string; connectionId?: string }) =>

@@ -29,6 +29,7 @@ import { PluginEditorSourceFallbackNotice } from './PluginEditorNeedsDesktopNoti
 import PluginCustomEditorFrame from './PluginCustomEditorFrame'
 import PluginBytesCustomEditorSurface from './PluginBytesCustomEditorSurface'
 import { getChangeMarkersBaseline } from './change-markers/change-markers-baseline'
+import { canUseChangesModeForFile } from './editor-panel-file-mode'
 
 // Retry is a user act: it may start a stopped WSL distro.
 const USER_RETRY = { wakeWslDistro: true }
@@ -286,6 +287,11 @@ export function EditorEditFileSurface({
         }
         markdownDocuments={isMarkdown ? markdownDocuments.markdownDocuments : undefined}
         changeMarkersBaseline={isMarkersMode ? getChangeMarkersBaseline(diffContent) : null}
+        inlineBlameRelativePath={
+          canUseChangesModeForFile(activeFile) && activeFile.readOnly !== true
+            ? activeFile.relativePath
+            : null
+        }
       />
     </RecoverableRenderErrorBoundary>
   )

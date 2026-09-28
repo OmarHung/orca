@@ -38,6 +38,7 @@ import { useMonacoTheme } from '@/hooks/use-monaco-theme'
 import { useEditorModelRekeyCarry } from './model-lifetime/identity/editor-model-rekey-carry'
 import { useMonacoDebugDecorations } from '../debug/use-monaco-debug-decorations'
 import { useMonacoChangeMarkers } from './change-markers/use-monaco-change-markers'
+import { useMonacoInlineBlame } from './inline-blame/use-monaco-inline-blame'
 
 type MonacoEditorProps = {
   fileId: string
@@ -66,6 +67,8 @@ type MonacoEditorProps = {
   autoHeight?: boolean
   // Why: HEAD text for the change-marker gutter; null/undefined leaves the gutter plain.
   changeMarkersBaseline?: string | null
+  // Why: worktree-relative path for current-line blame; null/undefined leaves blame off.
+  inlineBlameRelativePath?: string | null
 }
 
 export default function MonacoEditor({
@@ -90,7 +93,8 @@ export default function MonacoEditor({
   passiveMirror = false,
   liveTail = false,
   autoHeight = false,
-  changeMarkersBaseline = null
+  changeMarkersBaseline = null,
+  inlineBlameRelativePath = null
 }: MonacoEditorProps): React.JSX.Element {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
   const editorContainerRef = useRef<HTMLDivElement | null>(null)
@@ -206,6 +210,7 @@ export default function MonacoEditor({
 
   useMonacoDebugDecorations(mountedEditor, filePath, language)
   useMonacoChangeMarkers(mountedEditor, changeMarkersBaseline, language, isDark)
+  useMonacoInlineBlame(mountedEditor, worktreeId, inlineBlameRelativePath)
 
   const decorations = useMonacoEditorDecorations({
     editorRef,
