@@ -8,7 +8,7 @@ import type {
 } from '../../../shared/database/database-query-types'
 import { quoteSqlName } from '../../../shared/database/sql-identifiers'
 import { ConsoleSchema } from './console-schema'
-import { encodeTextCell } from './database-cell-encoding'
+import { cellText } from './database-cell-encoding'
 import type { PostgresTypeNames } from './postgres-type-names'
 
 const BOOL_OID = 16
@@ -37,7 +37,7 @@ function encodeRows(rows: unknown[][], boolColumns: boolean[]): DatabaseCell[][]
       if (boolColumns[column] && (value === 't' || value === 'f')) {
         return value === 't' ? 'true' : 'false'
       }
-      return encodeTextCell(value)
+      return cellText(value)
     })
   )
 }
