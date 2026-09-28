@@ -169,12 +169,24 @@ export function createOpenCombinedDiff(
       )
     },
 
-    openCommitAllDiffs: (worktreeId, worktreePath, compare, entries, subject, message) => {
-      const commitCompare = toCommitCompareSnapshot(compare, subject, message)
-      const id = `${worktreeId}::all-diffs::commit::${commitCompare.commitOid}`
-      const label = subject
-        ? `Commit ${commitCompare.compareRef}: ${subject}`
-        : `Commit ${commitCompare.compareRef}`
+    openCommitAllDiffs: (worktreeId, worktreePath, compare, entries, subject, message, options) => {
+      const compareLabel = options?.compareLabel
+      const snapshot = toCommitCompareSnapshot(compare, subject, message)
+      const commitCompare = compareLabel
+        ? {
+            ...snapshot,
+            compareLabel,
+            compareRef: `${snapshot.parentOid?.slice(0, 7) ?? 'empty'}..${snapshot.commitOid.slice(0, 7)}`
+          }
+        : snapshot
+      const id = compareLabel
+        ? `${worktreeId}::all-diffs::compare::${commitCompare.parentOid ?? 'empty-tree'}..${commitCompare.commitOid}`
+        : `${worktreeId}::all-diffs::commit::${commitCompare.commitOid}`
+      const label =
+        compareLabel ??
+        (subject
+          ? `Commit ${commitCompare.compareRef}: ${subject}`
+          : `Commit ${commitCompare.compareRef}`)
       set((s) => {
         const runtimeEnvironmentId = resolveDiffRuntimeEnvironmentId(s, worktreeId, undefined)
         const existing = s.openFiles.find((f) => f.id === id)

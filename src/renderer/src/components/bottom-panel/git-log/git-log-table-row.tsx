@@ -14,7 +14,7 @@ type GitLogTableRowProps = React.HTMLAttributes<HTMLButtonElement> & {
   /** Lanes only make sense over the unfiltered, contiguous log. */
   showGraph: boolean
   gridTemplateColumns: string
-  onSelectCommit: (id: string) => void
+  onSelectCommit: (id: string, event: React.MouseEvent) => void
 }
 
 export const GitLogTableRow = React.forwardRef<HTMLButtonElement, GitLogTableRowProps>(
@@ -48,7 +48,7 @@ export const GitLogTableRow = React.forwardRef<HTMLButtonElement, GitLogTableRow
           className
         )}
         style={{ gridTemplateColumns }}
-        onClick={() => onSelectCommit(item.id)}
+        onClick={(event) => onSelectCommit(item.id, event)}
       >
         <span
           className="flex min-w-0 items-center gap-1.5 overflow-hidden"

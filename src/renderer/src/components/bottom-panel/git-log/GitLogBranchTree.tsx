@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { ChevronDown, Folder, GitBranch, Layers, Search, Star, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
 import {
   buildGitLogBranchTree,
@@ -10,6 +11,10 @@ import {
 import { ALL_GIT_LOG_SCOPE, HEAD_GIT_LOG_SCOPE, type GitLogScope } from './git-log-scope'
 import type { GitLogBranchListState } from './use-git-log-history'
 import type { GitHistoryBranch } from '../../../../../shared/git-history'
+import {
+  GitLogBranchCompareMenu,
+  type GitLogCompareHandler
+} from './compare/GitLogCompareMenuItems'
 
 const NO_BRANCHES: readonly GitHistoryBranch[] = []
 const INDENT_PX = 12
@@ -19,37 +24,36 @@ type GitLogBranchTreeProps = {
   branchList: GitLogBranchListState
   scope: GitLogScope
   onScopeChange: (scope: GitLogScope) => void
+  onCompare: GitLogCompareHandler
 }
 
-function TreeRow({
-  depth,
-  selected,
-  onClick,
-  children,
-  title
-}: {
+type TreeRowProps = React.ComponentPropsWithoutRef<'button'> & {
   depth: number
   selected?: boolean
-  onClick: () => void
-  children: React.ReactNode
-  title?: string
-}): React.JSX.Element {
+}
+
+// Why forwardRef + prop spread: a branch row is a context-menu trigger, which injects handlers.
+const TreeRow = React.forwardRef<HTMLButtonElement, TreeRowProps>(function TreeRow(
+  { depth, selected, className, style, children, ...buttonProps },
+  ref
+) {
   return (
     <button
+      ref={ref}
       type="button"
-      title={title}
       data-current={selected ? 'true' : undefined}
       className={cn(
         'flex h-6 w-full min-w-0 items-center gap-1.5 pr-2 text-left text-xs',
-        selected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
+        selected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50',
+        className
       )}
-      style={{ paddingLeft: BASE_PADDING_PX + depth * INDENT_PX }}
-      onClick={onClick}
+      style={{ paddingLeft: BASE_PADDING_PX + depth * INDENT_PX, ...style }}
+      {...buttonProps}
     >
       {children}
     </button>
   )
-}
+})
 
 function groupLabel(node: GitLogBranchTreeNode): string {
   if (node.kind !== 'group') {
@@ -67,7 +71,8 @@ function BranchTreeMessage({ children }: { children: React.ReactNode }): React.J
 export function GitLogBranchTree({
   branchList,
   scope,
-  onScopeChange
+  onScopeChange,
+  onCompare
 }: GitLogBranchTreeProps): React.JSX.Element {
   const [query, setQuery] = useState('')
   const [collapsedKeys, setCollapsedKeys] = useState<ReadonlySet<string>>(() => new Set())
@@ -125,27 +130,35 @@ export function GitLogBranchTree({
       if (node.kind === 'branch') {
         const selected = scope.kind === 'ref' && scope.fullName === node.branch.fullName
         return (
-          <TreeRow
-            key={node.key}
-            depth={depth}
-            selected={selected}
-            title={
-              node.branch.upstream
-                ? `${node.branch.name} → ${node.branch.upstream}`
-                : node.branch.name
-            }
-            onClick={() => onScopeChange({ kind: 'ref', fullName: node.branch.fullName })}
-          >
-            {node.branch.isHead ? (
-              <Star
-                className="size-3.5 shrink-0 fill-current text-git-graph-ref"
-                aria-label={translate('bottomPanel.gitLog.currentBranch', 'Current branch')}
-              />
-            ) : (
-              <GitBranch className="size-3.5 shrink-0 text-muted-foreground" />
-            )}
-            <span className="truncate">{node.label}</span>
-          </TreeRow>
+          <ContextMenu key={node.key}>
+            <ContextMenuTrigger asChild>
+              <TreeRow
+                depth={depth}
+                selected={selected}
+                title={
+                  node.branch.upstream
+                    ? `${node.branch.name} → ${node.branch.upstream}`
+                    : node.branch.name
+                }
+                onClick={() => onScopeChange({ kind: 'ref', fullName: node.branch.fullName })}
+              >
+                {node.branch.isHead ? (
+                  <Star
+                    className="size-3.5 shrink-0 fill-current text-git-graph-ref"
+                    aria-label={translate('bottomPanel.gitLog.currentBranch', 'Current branch')}
+                  />
+                ) : (
+                  <GitBranch className="size-3.5 shrink-0 text-muted-foreground" />
+                )}
+                <span className="truncate">{node.label}</span>
+              </TreeRow>
+            </ContextMenuTrigger>
+            <GitLogBranchCompareMenu
+              branch={node.branch}
+              branches={branches}
+              onCompare={onCompare}
+            />
+          </ContextMenu>
         )
       }
       const collapsed = !isFiltering && collapsedKeys.has(node.key)

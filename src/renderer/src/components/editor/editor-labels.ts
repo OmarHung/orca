@@ -77,6 +77,9 @@ export function getEditorDisplayLabel(
       : translate('auto.components.editor.editorLabels.branchChangesBase', 'Branch Changes (base)')
   }
   if (source === 'combined-commit') {
+    if (file.commitCompare?.compareLabel) {
+      return file.commitCompare.compareLabel
+    }
     if (file.commitCompare?.subject) {
       return translate(
         'auto.components.editor.editorLabels.commitWithSubject',
