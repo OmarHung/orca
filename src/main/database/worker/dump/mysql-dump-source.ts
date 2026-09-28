@@ -235,10 +235,12 @@ export class MysqlDumpSource implements DumpSource {
     }
   }
 
-  dropTables(tables: readonly DumpTableInfo[]) {
-    return tables.length === 0
-      ? []
-      : [{ sql: `DROP TABLE IF EXISTS ${tables.map((table) => table.sqlName).join(', ')}` }]
+  // One database drops from whichever the script runs in, as it loads there; several name theirs.
+  dropTables(tables: readonly DumpTableInfo[], schemaCount: number) {
+    const names = tables.map((table) =>
+      schemaCount > 1 ? `${q(table.schema)}.${q(table.name)}` : table.sqlName
+    )
+    return names.length === 0 ? [] : [{ sql: `DROP TABLE IF EXISTS ${names.join(', ')}` }]
   }
 
   cancel(): void {

@@ -63,8 +63,11 @@ export type DumpSource = {
   routine(
     routine: Extract<DatabaseDumpObject, { kind: 'routine' }>
   ): Promise<{ create: DumpStatement[]; drop: DumpStatement }>
-  /** DROP statements for these tables, given in reverse creation order. */
-  dropTables(tables: readonly DumpTableInfo[]): DumpStatement[]
+  /**
+   * DROP statements for these tables, given in reverse creation order, from whatever schema the
+   * script is in: with several schemas each table must be named in its own.
+   */
+  dropTables(tables: readonly DumpTableInfo[], schemaCount: number): DumpStatement[]
   /** Stops a read in flight. */
   cancel(): void
 }
