@@ -42,11 +42,13 @@ type EditorPanelRenderModelParams = {
   markdownDefaultViewMode?: MarkdownDefaultViewMode
   markdownRichModeSizeOverridden: boolean
   isChangesMode: boolean
-  isMarkersMode?: boolean
   canOpenWorkspaceFileBrowser: boolean
   /** Enabled plugins' editors for this file, in priority order. */
   customEditors?: readonly ActivePluginCustomEditor[]
   customEditorChoice?: CustomEditorViewChoice
+  // Why: HEAD change markers ride on the normal editor, so they are a toggle, not a view mode.
+  changeMarkersEnabled?: boolean
+  isChangeMarkersEligible?: boolean
 }
 
 export function getEditorPanelRenderModel({
@@ -59,10 +61,11 @@ export function getEditorPanelRenderModel({
   markdownDefaultViewMode,
   markdownRichModeSizeOverridden,
   isChangesMode,
-  isMarkersMode = false,
   canOpenWorkspaceFileBrowser,
   customEditors = [],
-  customEditorChoice
+  customEditorChoice,
+  changeMarkersEnabled = false,
+  isChangeMarkersEligible = false
 }: EditorPanelRenderModelParams) {
   const isSingleDiff =
     activeFile.mode === 'diff' &&
@@ -138,7 +141,7 @@ export function getEditorPanelRenderModel({
     activeFile.mode === 'edit' && fileContents[activeFile.id]?.isBinary === true
   const availableEditorToggleModes =
     isBinaryEditSurface || !canUseChangesModeForFile(activeFile)
-      ? editorToggleModes.filter((mode) => mode !== 'changes' && mode !== 'markers')
+      ? editorToggleModes.filter((mode) => mode !== 'changes')
       : editorToggleModes
   const inlineFileContent = activeFile.mode === 'edit' ? fileContents[activeFile.id] : undefined
   const customEditorContentReady =
@@ -162,17 +165,14 @@ export function getEditorPanelRenderModel({
     eligible: eligibleCustomEditors.length > 0,
     sourceModes: availableEditorToggleModes
   })
-  const activeCustomEditor =
-    isChangesMode || isMarkersMode ? null : (customEditorToggle?.active ?? null)
+  const activeCustomEditor = isChangesMode ? null : (customEditorToggle?.active ?? null)
   const effectiveToggleValue: EditorToggleValue = isChangesMode
     ? 'changes'
-    : isMarkersMode
-      ? 'markers'
-      : activeCustomEditor
-        ? customEditorToggleValue(activeCustomEditor)
-        : hasViewModeToggle
-          ? mdViewMode
-          : 'edit'
+    : activeCustomEditor
+      ? customEditorToggleValue(activeCustomEditor)
+      : hasViewModeToggle
+        ? mdViewMode
+        : 'edit'
   const toggleModes = customEditorToggle?.modes ?? availableEditorToggleModes
   const inlineMarkdownContent =
     activeFile.mode === 'edit'
@@ -186,7 +186,6 @@ export function getEditorPanelRenderModel({
     activeFile.mode === 'edit' &&
     inlineMarkdownContent !== null &&
     !isChangesMode &&
-    !isMarkersMode &&
     inlineFileContent !== undefined &&
     inlineFileContent.isBinary !== true &&
     !inlineFileContent.loadError &&
@@ -233,10 +232,16 @@ export function getEditorPanelRenderModel({
         fileContents[activeFile.id]?.isBinary !== true &&
         !fileContents[activeFile.id]?.loadError &&
         activeFile.conflict?.conflictStatus !== 'unresolved'))
+  const canToggleChangeMarkers =
+    isChangeMarkersEligible &&
+    !isChangesMode &&
+    activeCustomEditor === null &&
+    (!hasViewModeToggle || mdViewMode === 'source')
   return {
     isSingleDiff,
     isDiffSurface: isSingleDiff || isChangesMode,
-    isMarkersMode,
+    canToggleChangeMarkers,
+    showChangeMarkers: canToggleChangeMarkers && changeMarkersEnabled,
     isCombinedDiff,
     worktreeEntries,
     resolvedLanguage,

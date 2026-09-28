@@ -64,7 +64,7 @@ async function readDraft(page: Page, filePath: string): Promise<string | undefin
   return page.evaluate((id) => window.__store?.getState().editorDrafts[id], filePath)
 }
 
-test('change markers mark uncommitted edits in the gutter and roll one back', async ({
+test('the edit view marks uncommitted edits in the gutter and rolls one back', async ({
   orcaPage,
   testRepoPath,
   registerPostElectronShutdownCleanup
@@ -84,7 +84,6 @@ test('change markers mark uncommitted edits in the gutter and roll one back', as
   await waitForSessionReady(orcaPage)
   await activateGoldenWorktree(orcaPage, testRepoPath, fixture.worktreePath)
   await openEditorFile(orcaPage, fixture.worktreePath, FILE_NAME)
-  await orcaPage.getByRole('radio', { name: 'Change Markers' }).click()
 
   const gutter = orcaPage.locator('.margin-view-overlays')
   // "cron" gained a comma before "betaBanner", so that pair reads as one modified hunk.
@@ -122,4 +121,12 @@ test('change markers mark uncommitted edits in the gutter and roll one back', as
   await orcaPage.locator('.monaco-editor .view-line').first().click()
   await orcaPage.keyboard.press('Escape')
   await expect(peek).toBeHidden()
+
+  // The header switch hides the gutter and brings it back.
+  const toggle = orcaPage.getByTestId('change-markers-toggle')
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+  await toggle.click()
+  await expect(gutter.locator('.orca-change-marker')).toHaveCount(0)
+  await toggle.click()
+  await expect(gutter.locator('.orca-change-marker')).toHaveCount(3)
 })

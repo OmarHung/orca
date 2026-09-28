@@ -24,6 +24,7 @@ import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
 import type { ArtifactWriteRequest } from '../../../../shared/artifacts/artifacts'
 import { ArtifactPublishButton } from '@/components/artifacts/ArtifactPublishButton'
 import { editorArtifactSourceKey } from './editor-artifact-upload'
+import { ChangeMarkersToggleButton } from './change-markers/ChangeMarkersToggleButton'
 
 const NO_CUSTOM_EDITOR_TITLES: Readonly<Record<CustomEditorToggleValue, string>> = {}
 
@@ -33,6 +34,7 @@ type EditorPanelHeaderProps = {
   isSingleDiff: boolean
   isDiffSurface: boolean
   hasChangeMarkers?: boolean
+  canToggleChangeMarkers?: boolean
   isMarkdown: boolean
   isCsv: boolean
   isNotebook: boolean
@@ -71,6 +73,7 @@ export function EditorPanelHeader({
   isSingleDiff,
   isDiffSurface,
   hasChangeMarkers = false,
+  canToggleChangeMarkers = false,
   isMarkdown,
   isCsv,
   isNotebook,
@@ -213,7 +216,7 @@ export function EditorPanelHeader({
           iconClassName="size-3"
         />
       )}
-      {(isDiffSurface || hasChangeMarkers) && (
+      {(isDiffSurface || (hasChangeMarkers && changeCount > 0)) && (
         <TooltipProvider>
           {isDiffSurface && (
             <Tooltip>
@@ -290,6 +293,7 @@ export function EditorPanelHeader({
           </Tooltip>
         </TooltipProvider>
       )}
+      {canToggleChangeMarkers && <ChangeMarkersToggleButton />}
       {hasEditorToggle &&
         !activeFile.csvPreviewOnly &&
         (canSetMarkdownDefaultView ? (
