@@ -554,7 +554,8 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - 結構樹右鍵：連線、資料庫、schema、資料表（和 view）都有「Dump to SQL…」；除了 view 之外也都有「Export Data…」（只寫 INSERT，清單只列資料表）。從資料表開啟時只勾那一張，其他照樣列出可以加選
 - 對話框：依名稱篩選、全選／全不選、多個 schema 時可整組勾選；內容（結構加資料／只有結構／只有資料）、單一檔案或每表一檔、每條 INSERT 幾列（預設 100，上限 1000）、停用外鍵檢查（預設勾）、先 DROP。按「Save As…」或「Choose Folder…」才開原生對話框；每表一檔會在選的資料夾裡另開一個新資料夾（同名就加「 (2)」），不會跟既有檔案混在一起
 - 選好的位置只以 token 交給畫面（一次有效、一小時過期），畫面不能自己指定路徑；版面和位置種類不符（例如選了檔案卻要每表一檔）會拒絕
-- 背景工作：每個 dump 在連線的 worker 裡開自己的連線（沿用 SSH 隧道轉好的位址），不佔用 console。頁首「Jobs」顯示進度（第幾張表、列數、已寫出的大小），可以取消；完成後顯示摘要、說明（dump 無法完整保留的地方）和「在資料夾中顯示」。取消或失敗會刪掉已寫出的檔案；中斷連線時會先取消進行中的 dump、等它清掉檔案
+- 背景工作：每個 dump 在連線的 worker 裡開自己的連線（沿用 SSH 隧道轉好的位址），不佔用 console。頁首「Jobs」顯示進度（第幾張表、列數、已寫出的大小），可以取消；完成後顯示摘要、說明（dump 無法完整保留的地方）和「在資料夾中顯示」。中斷連線時會先取消進行中的 dump、等它清掉檔案
+- 輸出的生命週期（2026-09-28 修正）：dump 先寫進同一個資料夾裡的隱藏暫存檔（`.<檔名>.<job id>.partial`；每表一檔則是同名的隱藏暫存資料夾），全部寫完、fsync 之後才原子地 rename 成正式檔名（覆寫既有檔案也是這一步才發生），最後 fsync 所在資料夾。失敗或取消只刪掉暫存檔，原本的檔案保持完整；worker 中途死掉時由 main 依 job id 刪掉暫存檔；正常結束 Orca 時也會刪掉進行中 dump 的暫存檔。crash 時可能留下隱藏的 `.partial`，但不會出現看起來完整的 `.sql`。等待開檔和 drain 改用 `events.once`，錯誤由一個固定的 listener 記下，大型 dump 不再累積 error listener
 - 讀取方式：PostgreSQL 用 `REPEATABLE READ READ ONLY` 的快照；MySQL／MariaDB 用 `WITH CONSISTENT SNAPSHOT, READ ONLY`，時間以 UTC 讀寫；SQLite 用一個讀取交易；SQL Server 在資料庫允許時用 `SNAPSHOT` 交易，不允許就逐表讀並在說明裡註明
 - 值：PostgreSQL 一律以 `::text` 讀出；MySQL 以字串讀、二進位用 `HEX()`；SQL Server 的時間用 ISO 8601（style 126，不受 DATEFORMAT 影響）、money 保留 4 位小數、float 以指數寫法、二進位用 `0x…`，字串裡結尾是反斜線的那一行會拆開寫（T-SQL 會把行尾的反斜線當成接續字元吞掉）
 - 自動編號：PG `setval`、GENERATED ALWAYS 用 `OVERRIDING SYSTEM VALUE`；MySQL 靠 `AUTO_INCREMENT` 和 `NO_AUTO_VALUE_ON_ZERO`；SQLite 寫回 `sqlite_sequence`；SQL Server 用 `SET IDENTITY_INSERT`，最後 `DBCC CHECKIDENT … RESEED` 到原本的值
@@ -569,12 +570,14 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - PostgreSQL 的 `CREATE TYPE` 沒有 IF NOT EXISTS，重複匯入到已有同名型別的資料庫會失敗
 - 資料表預設值用到的 routine 不會排在那張表之前
 - SQL Server：view／routine 的定義照伺服器存的原文寫出，建立時沒寫 schema 的物件會建到匯入者的預設 schema；XML、空間、columnstore 索引、CLR 型別（assembly）不在 dump 裡；sql_variant 以文字寫出（說明裡會註明）
-- SQLite 的連線如果在 console 取消長語句，worker 會重開，進行中的 dump 也會跟著失敗（main 會刪掉它寫了一半的檔案）
+- SQLite 的連線如果在 console 取消長語句，worker 會重開，進行中的 dump 也會跟著失敗（main 會刪掉它的暫存檔，原本的檔案不動）
+- Orca crash（或被強制結束）時，進行中 dump 的隱藏 `.partial` 暫存檔會留在目的地資料夾，需要手動刪除
+- 成功覆寫既有檔案後，新檔案用的是新建檔案的權限，不沿用原檔的權限
 
 **6.3 原生工具（pg_dump／mysqldump）**
 
 - 偵測 PATH 和常見安裝位置（Homebrew、Postgres.app、Windows 的 Program Files），也可以在設定裡指定路徑；SQL Server 和 SQLite 沒有對應工具，不提供
-- 一律用 `src/shared/child-process/` 的 `spawnProcess`；密碼用 `PGPASSWORD` 環境變數，MySQL 用權限 0600 的暫存設定檔（`--defaults-extra-file`），不放在命令列
+- 一律用 `src/shared/child-process/` 的 `spawnProcess`；密碼用 `PGPASSWORD` 環境變數，MySQL 用只有目前使用者能讀的暫存設定檔（`--defaults-extra-file`），不放在命令列
 - 走 SSH 隧道的連線，為這個工作另開隧道，工具連到本機埠
 - 選項對應：每表一檔就逐表執行（`pg_dump -t`、`mysqldump db table`）；外鍵選項對應工具本身的行為（mysqldump 預設就關外鍵檢查，pg_dump 預設把外鍵放在資料之後）
 - pg_dump 版本比伺服器舊時會拒絕執行，要把工具的訊息原樣顯示
@@ -584,7 +587,7 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - Dump 對話框多一個「Tool」：PostgreSQL、MySQL／MariaDB 連線可以選「Orca（內建）」或偵測到的 `pg_dump 17.9`／`mysqldump 8.4.3`，下面顯示工具的完整路徑。找不到時該選項停用並說明要安裝；pg_dump 比伺服器舊時也停用，並說明要裝哪一版。SQLite、SQL Server 不顯示這個欄位
 - 偵測：PATH 加上常見位置（macOS 的 Homebrew `opt/libpq`、`opt/postgresql@*`、`opt/mysql*`、`opt/mariadb*`、Postgres.app、`/usr/local/mysql*`；Linux 的 `/usr/lib/postgresql/*/bin`、`/usr/pgsql-*`；Windows 的 Program Files 下的 PostgreSQL、MySQL Server、MariaDB），用 `--version` 判斷版本和來源（MySQL 或 MariaDB 的用戶端），挑最新的；MySQL 連線優先挑跟伺服器同來源的用戶端。每次開對話框和開始 dump 時都重新偵測，不另做設定頁的路徑欄位（原計畫的「在設定裡指定路徑」沒做）
 - 在連線的 worker 裡用 `spawnProcess` 執行，工具連的是 worker 本身連的位址：走 SSH 隧道的連線就連同一條隧道的本機埠（沒有另開隧道，隧道本來就接受多條連線）。工具的輸出直接串流寫進檔案（受磁碟速度節制），進度顯示已寫出的大小和第幾張表（工具不回報列數，所以不顯示列數）；取消會結束工具，失敗會顯示工具最後幾行錯誤訊息，兩者都會刪掉已寫出的檔案
-- 密碼：PostgreSQL 用 `PGPASSWORD`；MySQL 寫進權限 0600 的暫存 `[client]` 設定檔，用 `--defaults-extra-file` 帶入，結束就刪掉。都不出現在命令列
+- 密碼：PostgreSQL 用 `PGPASSWORD`；MySQL 寫進暫存 `[client]` 設定檔，用 `--defaults-extra-file` 帶入。都不出現在命令列。設定檔用 `src/shared/secure-file.ts` 的 `writeSecureFile` 寫在自己的暫存資料夾（`orca-mysqldump-<pid>-…`）裡：POSIX 是 0600（資料夾 0700），Windows 在檔案以正式名稱出現之前就設好只有目前使用者的 ACL；限制沒有成功就不寫、不執行 dump。正常完成、失敗、取消都由 plan 的 cleanup 刪掉；Orca crash 留下的資料夾（pid 已不存在）會在下一次 mysqldump 前清掉
 - pg_dump：`--no-owner --no-privileges`（跟內建 dump 一樣，誰匯入就屬於誰）、INSERT 格式（`--rows-per-insert`，pg_dump 12 以前只能一列一條並註明）、`--clean --if-exists`、只匯資料加停用外鍵時用 `--disable-triggers`（需要超級使用者，說明裡會註明）。環境變數 `PGOPTIONS=-c default_transaction_read_only=on`，伺服器照樣擋寫入。走隧道時 `--host` 用原本的主機名、`PGHOSTADDR=127.0.0.1`，TLS 仍然對原主機驗證。整個 schema 都勾選時用 `-n`（包含型別、函式、sequence），只勾部分時用 `-t` 並註明 pg_dump 不會帶上這些表用到的型別和函式；只勾了 routine 沒有其他物件時會拒絕並說明
 - pg_dump 每表一檔：開頭檔 `--section=pre-data`，每張表一個 `--section=data -t 表` 的檔，結尾檔 `--section=post-data`（加上沒有表擁有的 sequence 值）。勾了先 DROP 時，開頭檔先刪掉這些表的外鍵（pg_dump 把外鍵放在 post-data，否則重匯時 DROP TABLE 會被擋）
 - mysqldump：`--single-transaction --no-tablespaces --hex-blob --protocol=TCP`；MySQL 用戶端加 `--set-gtid-purged=OFF`，8.0 以上加 `--skip-column-statistics`（否則對 MariaDB 伺服器會失敗），不加密時加 `--get-server-public-key`（MySQL 8 預設的登入方式沒有 TLS 時需要）。SSL：MySQL 用戶端用 `--ssl-mode`；MariaDB 用戶端沒有 "prefer"，先用 TLS 連、失敗且還沒寫出任何東西時改用不加密重試。每條 INSERT 一列時用 `--skip-extended-insert`，其餘由 mysqldump 依大小分批（對話框有說明）。沒勾先 DROP 時加 `--skip-add-drop-table`。多個資料庫時每段前面加 `CREATE DATABASE IF NOT EXISTS`／`USE`
