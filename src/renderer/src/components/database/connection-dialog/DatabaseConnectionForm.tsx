@@ -24,6 +24,7 @@ type FormProps = {
   driverLocked: boolean
   onDriverChange: (driver: DatabaseDriver) => void
   onChange: (patch: Partial<DatabaseConnectionFormState>) => void
+  onAddSshHost: () => void
 }
 
 export function DatabaseConnectionForm(props: FormProps): React.JSX.Element {
