@@ -176,6 +176,7 @@ patchedDependencies:
   i18next-cli@1.74.2: 7955b89d3aa229f477408608d331f78c85148a85a85913729f89fac65ad8b207
   lint-staged@16.4.0: 7333b3837f80a7fbd045964db6d76ba4fc118e49134bdbabb00585b6b7b60673
   node-pty@1.1.0: 92c95cffab383d86b3b13a460c75a08074468ebf1f3911db8e874e083201f192
+  tedious@20.0.0: ae611cb83acc7682a5fe1a89f7230e1747b6906a7b0c3f9f34ec6dc3053fff5d
 
 importers:
 
@@ -261,7 +262,7 @@ importers:
         version: 3.7.0
       tedious:
         specifier: ^20.0.0
-        version: 20.0.0(supports-color@7.2.0)
+        version: 20.0.0(patch_hash=ae611cb83acc7682a5fe1a89f7230e1747b6906a7b0c3f9f34ec6dc3053fff5d)(supports-color@7.2.0)
       tldts:
         specifier: 7.4.16
         version: 7.4.16
@@ -15772,7 +15773,7 @@ snapshots:
       minizlib: 3.1.0
       yallist: 5.0.0
 
-  tedious@20.0.0(supports-color@7.2.0):
+  tedious@20.0.0(patch_hash=ae611cb83acc7682a5fe1a89f7230e1747b6906a7b0c3f9f34ec6dc3053fff5d)(supports-color@7.2.0):
     dependencies:
       '@azure/core-auth': 1.11.0(supports-color@7.2.0)
       '@azure/identity': 4.13.3(supports-color@7.2.0)
