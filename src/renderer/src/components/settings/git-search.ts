@@ -71,6 +71,20 @@ export const getGitPaneSearchEntries = createLocalizedCatalog(() => [
     ]
   },
   {
+    title: translate('gitBranchStatus.settings.title', 'Branch Status & Auto Fetch'),
+    description: translate(
+      'gitBranchStatus.settings.description',
+      "Show the active workspace's branch, commits to push or pull, and uncommitted files in the status bar, and keep its remote branches current with a background fetch."
+    ),
+    keywords: [
+      ...translateSearchKeyword('gitBranchStatus.settings.keywordStatusBar', 'status bar'),
+      ...translateSearchKeyword('gitBranchStatus.settings.keywordAhead', 'ahead'),
+      ...translateSearchKeyword('gitBranchStatus.settings.keywordBehind', 'behind'),
+      ...translateSearchKeyword('gitBranchStatus.settings.keywordAutoFetch', 'auto fetch'),
+      ...translateSearchKeyword('gitBranchStatus.settings.keywordGitFetch', 'git fetch')
+    ]
+  },
+  {
     title: translate(
       'auto.components.settings.git.search.compareAgainstUpstreamTitle',
       'Default Compare Base'
