@@ -16,7 +16,7 @@ import type { DumpSource } from './dump/dump-source'
 import { SqliteDumpSource } from './dump/sqlite-dump-source'
 import { sqliteDdl } from './sqlite-ddl'
 import { introspectSqlite } from './sqlite-introspection'
-import { encodeTextCell } from './database-cell-encoding'
+import { cellText } from './database-cell-encoding'
 import type { DatabaseDriverSession, DatabaseExecuteOptions } from './database-driver'
 import { commandRowCount, leadingKeyword } from './statement-keyword'
 
@@ -27,9 +27,9 @@ const BUSY_TIMEOUT_MS = 5_000
 
 function encodeValue(value: unknown): DatabaseCell {
   if (value instanceof Uint8Array) {
-    return encodeTextCell(`0x${Buffer.from(value).toString('hex')}`)
+    return cellText(`0x${Buffer.from(value).toString('hex')}`)
   }
-  return encodeTextCell(value)
+  return cellText(value)
 }
 
 function readPage(
