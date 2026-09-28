@@ -93,7 +93,12 @@ export async function addServerConnection(page: Page, form: ServerConnectionForm
 /** Right-clicks a row in the database explorer and picks a context menu item. */
 export async function explorerMenu(page: Page, row: Locator, item: string): Promise<void> {
   await row.click({ button: 'right' })
-  await page.getByRole('menuitem', { name: item, exact: true }).click()
+  // Why the open one: a menu closed a moment ago stays until its exit animation ends, and a
+  // background window can hold that animation back.
+  await page
+    .locator('[role="menu"][data-state="open"]')
+    .getByRole('menuitem', { name: item, exact: true })
+    .click()
 }
 
 /** Replaces the active console's text without running it. */
