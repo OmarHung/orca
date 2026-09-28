@@ -33,6 +33,82 @@ export const fixture = (database: string): string[] => [
   'create trigger orders_upper before insert on orders for each row set new.code = upper(new.code)'
 ]
 
+/**
+ * Objects whose meaning hangs on the session they were made in: how their text reads under
+ * ANSI_QUOTES and NO_BACKSLASH_ESCAPES, their literals' collation, and a routine made before
+ * the database's default collation changed. The built-in dump's own; mysqldump's output
+ * alters the source database by name around such a routine.
+ */
+export const contextFixture = (database: string): string[] => [
+  `use ${database}`,
+  'create table notes (id int primary key, body varchar(60) null)',
+  "set session sql_mode = 'ANSI_QUOTES,NO_BACKSLASH_ESCAPES,STRICT_ALL_TABLES'",
+  `create function "quoted"("value" varchar(20)) returns varchar(60) deterministic
+     comment 'it''s c:\\dir' return concat('a\\b|', "value")`,
+  `create procedure "path_of"() select 'x\\y' as "path"`,
+  `create trigger "notes_tab" before insert on "notes" for each row begin
+     set new."body" = concat(new."body", '\\t'); set new."id" = new."id";
+   end`,
+  "set session sql_mode = 'STRICT_TRANS_TABLES'",
+  'set session collation_connection = latin1_german2_ci',
+  "create function literal_collation() returns varchar(60) deterministic return collation('x')",
+  // Why a bare literal: a view keeps no sql_mode, and collation()'s nullability follows it.
+  "create view literal_view as select 'x' as c",
+  'set names utf8mb4',
+  `create function local_collation() returns varchar(60) deterministic
+     begin declare v varchar(10) default 'a'; return collation(v); end`,
+  `alter database ${database} collate utf8mb4_bin`
+]
+
+export function contextObjects(database: string): DatabaseDumpObject[] {
+  const routine = (name: string, routineKind: 'function' | 'procedure'): DatabaseDumpObject => ({
+    kind: 'routine',
+    schema: database,
+    name,
+    identity: name,
+    routineKind
+  })
+  return [
+    { kind: 'table', schema: database, name: 'notes' },
+    { kind: 'view', schema: database, name: 'literal_view' },
+    routine('quoted', 'function'),
+    routine('path_of', 'procedure'),
+    routine('literal_collation', 'function'),
+    routine('local_collation', 'function')
+  ]
+}
+
+/** What the context objects do when used; each use leaves the database as it found it. */
+export async function contextBehaviour(url: string, database: string): Promise<unknown> {
+  const client = await mysqlAt(url, database)
+  try {
+    const [values] = await client.query(
+      `select quoted('z') as quoted, literal_collation() as literal, local_collation() as local,
+              (select collation(c) from literal_view) as view`
+    )
+    const [called] = await client.query('call path_of()')
+    const path = Array.isArray(called) ? called[0] : called
+    await client.query("insert into notes values (1, 'n')")
+    const [note] = await client.query('select body from notes where id = 1')
+    await client.query('delete from notes where id = 1')
+    return { values, path, note }
+  } finally {
+    await client.end()
+  }
+}
+
+export function mysqlAt(url: string, database: string): Promise<mysql.Connection> {
+  const parsed = new URL(url)
+  return mysql.createConnection({
+    host: parsed.hostname,
+    port: Number(parsed.port),
+    user: decodeURIComponent(parsed.username),
+    password: decodeURIComponent(parsed.password),
+    database,
+    timezone: 'Z'
+  })
+}
+
 /** Every object the fixture makes in `database`. */
 export function dumpObjects(database: string): DatabaseDumpObject[] {
   return [
@@ -61,15 +137,7 @@ export function dumpObjects(database: string): DatabaseDumpObject[] {
 }
 
 export async function snapshot(url: string, database: string): Promise<Record<string, unknown>> {
-  const parsed = new URL(url)
-  const client = await mysql.createConnection({
-    host: parsed.hostname,
-    port: Number(parsed.port),
-    user: decodeURIComponent(parsed.username),
-    password: decodeURIComponent(parsed.password),
-    database,
-    timezone: 'Z'
-  })
+  const client = await mysqlAt(url, database)
   try {
     const result: Record<string, unknown> = {}
     for (const name of ['people', 'orders', 'a', 'b', 'people_view', 'people_view_ids']) {
@@ -88,16 +156,27 @@ export async function snapshot(url: string, database: string): Promise<Record<st
       [database]
     )
     result.columns = columns
+    // Each stored object with the session it was made in, which decides what its text means.
     const [routines] = await client.query(
-      'select ROUTINE_NAME, ROUTINE_TYPE from information_schema.ROUTINES where ROUTINE_SCHEMA = ? order by 1',
+      `select ROUTINE_NAME, ROUTINE_TYPE, SQL_MODE, CHARACTER_SET_CLIENT, COLLATION_CONNECTION,
+              DATABASE_COLLATION, ROUTINE_COMMENT, ROUTINE_DEFINITION
+       from information_schema.ROUTINES where ROUTINE_SCHEMA = ? order by 1`,
       [database]
     )
     result.routines = routines
     const [triggers] = await client.query(
-      'select TRIGGER_NAME from information_schema.TRIGGERS where TRIGGER_SCHEMA = ?',
+      `select TRIGGER_NAME, SQL_MODE, CHARACTER_SET_CLIENT, COLLATION_CONNECTION,
+              DATABASE_COLLATION, ACTION_STATEMENT
+       from information_schema.TRIGGERS where TRIGGER_SCHEMA = ? order by 1`,
       [database]
     )
     result.triggers = triggers
+    const [views] = await client.query(
+      `select TABLE_NAME, CHARACTER_SET_CLIENT, COLLATION_CONNECTION
+       from information_schema.VIEWS where TABLE_SCHEMA = ? order by 1`,
+      [database]
+    )
+    result.views = views
     return result
   } finally {
     await client.end()
