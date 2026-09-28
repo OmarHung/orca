@@ -25,6 +25,10 @@ import {
 } from './CompareAgainstUpstreamSetting'
 import { getAutoRenameBranchSearchEntries } from './auto-rename-branch-search'
 import {
+  GitBranchStatusSettings,
+  gitBranchStatusSettingsMatchSearch
+} from './GitBranchStatusSettings'
+import {
   KEEP_LOCAL_MAIN_UP_TO_DATE_SECTION_ID,
   getKeepLocalMainUpToDateTitle
 } from './keep-local-main-up-to-date-setting'
@@ -294,6 +298,13 @@ export function GitPane({
     }) ? (
       <SourceControlGroupOrderSetting
         key="source-control-group-order"
+        settings={settings}
+        updateSettings={updateSettings}
+      />
+    ) : null,
+    gitBranchStatusSettingsMatchSearch(searchQuery) ? (
+      <GitBranchStatusSettings
+        key="git-branch-status"
         settings={settings}
         updateSettings={updateSettings}
       />
