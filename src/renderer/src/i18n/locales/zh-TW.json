@@ -19241,5 +19241,24 @@
       "keywordAnnotate": "標註",
       "keywordAuthor": "作者"
     }
+  },
+  "revisionCompare": {
+    "withBranchAction": "Git：與分支比較…",
+    "withRevisionAction": "Git：與版本比較…",
+    "notGit": "這個檔案不在 Git 儲存庫中。",
+    "hostTooOld": "請更新這台主機上的 Orca 才能列出分支。",
+    "fileHistory": "修改過這個檔案的 commit",
+    "recentCommits": "最近的 commit",
+    "branchTitle": "與分支比較",
+    "revisionTitle": "與版本比較",
+    "description": "以 diff 顯示這個檔案與另一個版本的差異。",
+    "searchBranches": "搜尋分支…",
+    "searchRevisions": "依訊息、hash 或作者搜尋…",
+    "loading": "載入中…",
+    "noMatches": "沒有符合的項目。",
+    "binary": "無法比較二進位檔案。",
+    "banner": "正在與 {{label}}（{{sha}}）比較",
+    "close": "關閉比較",
+    "loadingFile": "正在載入 {{label}}…"
   }
 }

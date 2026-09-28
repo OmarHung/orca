@@ -6,6 +6,7 @@ import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/R
 import NewWorkspaceComposerModal from '../components/NewWorkspaceComposerModal'
 import { CrashReportDialog } from '../components/crash-report/CrashReportDialog'
 import { MarkdownTemplatePicker } from '../components/editor/MarkdownTemplatePicker'
+import { RevisionComparePicker } from '../components/editor/revision-compare/RevisionComparePicker'
 import RecentTabSwitcher from '../components/tab-bar/RecentTabSwitcher'
 import { SkillFreshnessUpdateDialog } from '../components/skills/SkillFreshnessUpdateDialog'
 import { StarNagCard } from '../components/StarNagCard'
@@ -332,6 +333,7 @@ export function AppRootSurfaces(props: {
       ) : null}
       <ModalBoundary boundaryId="modal.markdown-template-picker" resetKey={activeModal}>
         <MarkdownTemplatePicker />
+        <RevisionComparePicker />
       </ModalBoundary>
       <RecoverableRenderErrorBoundary
         boundaryId="modal.crash-report"
