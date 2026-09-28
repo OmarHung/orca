@@ -139,11 +139,12 @@ export function createGitApi(): NonNullable<Partial<PreloadApi>['git']> {
         ...(admissionTier ? { admissionTier } : {})
       })
     },
-    commitCompare: async ({ worktreePath, commitId }) => {
+    commitCompare: async ({ worktreePath, commitId, baseCommitId }) => {
       const worktree = await resolveRuntimeWorktreeByPath(worktreePath)
       return callRuntimeResult('git.commitCompare', {
         worktree: toRuntimeWorktreeSelector(worktree.id),
-        commitId
+        commitId,
+        ...(baseCommitId ? { baseCommitId } : {})
       })
     },
     upstreamStatus: async ({ worktreePath, pushTarget }) => {
