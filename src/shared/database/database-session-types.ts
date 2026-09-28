@@ -1,5 +1,6 @@
 import type { DatabaseConnectionDraft } from './database-connection-types'
 import type { DatabaseJobEvent } from './database-dump-types'
+import type { DatabaseLongValueSlice } from './database-query-types'
 
 export type DatabaseSessionState = 'disconnected' | 'connecting' | 'connected' | 'error'
 
@@ -44,6 +45,11 @@ export type DatabaseExecuteRequest = DatabaseConsoleRef & {
 }
 
 export type DatabaseFetchMoreRequest = DatabaseConsoleRef & { resultId: string; pageSize: number }
+
+export type DatabaseReadLongValuesRequest = DatabaseConsoleRef & {
+  resultId: string
+  slices: DatabaseLongValueSlice[]
+}
 
 export type DatabaseEncryptionStatus = {
   /** False means passwords can only be kept until Orca quits. */
