@@ -5,7 +5,7 @@ import type { SqlCatalog } from './sql-completion-catalog'
 import { sqlCompletions, statementAtCaret } from './sql-completion-items'
 
 function column(name: string, dataType = 'integer'): DatabaseColumnInfo {
-  return { name, dataType, nullable: true, defaultValue: null, isPrimaryKey: false }
+  return { name, dataType, nullable: true, defaultValue: null, isPrimaryKey: false, comment: null }
 }
 
 const catalog: SqlCatalog = {
@@ -16,12 +16,12 @@ const catalog: SqlCatalog = {
   relations: async (schema) =>
     schema === 'public'
       ? [
-          { name: 'users', kind: 'table' },
-          { name: 'Order Items', kind: 'table' },
-          { name: 'active_users', kind: 'view' }
+          { name: 'users', kind: 'table', comment: null },
+          { name: 'Order Items', kind: 'table', comment: null },
+          { name: 'active_users', kind: 'view', comment: null }
         ]
       : schema === 'sales'
-        ? [{ name: 'orders', kind: 'table' }]
+        ? [{ name: 'orders', kind: 'table', comment: null }]
         : [],
   columns: async (schema, relation) => {
     const key = `${schema}.${relation}`
