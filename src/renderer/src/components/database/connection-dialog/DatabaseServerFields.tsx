@@ -16,6 +16,7 @@ type ServerFieldsProps = {
   hasSavedPassword: boolean
   encryption: DatabaseEncryptionStatus | null
   onChange: (patch: Partial<DatabaseConnectionFormState>) => void
+  onAddSshHost: () => void
 }
 
 function storageOptions(
@@ -76,13 +77,14 @@ function PasswordFields({
 }
 
 export function DatabaseServerFields(props: ServerFieldsProps): React.JSX.Element {
-  const { form, invalid, onChange } = props
+  const { form, invalid, onChange, onAddSshHost } = props
   const sslModes = form.driver === 'sqlserver' ? SQLSERVER_SSL_MODES : DATABASE_SSL_MODES
   return (
     <>
       <DatabaseSshTunnelField
         value={form.sshTargetId}
         onChange={(sshTargetId) => onChange({ sshTargetId })}
+        onAddSshHost={onAddSshHost}
       />
       <div className="grid grid-cols-[1fr_6rem] gap-3">
         <TextField
