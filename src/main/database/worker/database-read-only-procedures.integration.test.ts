@@ -24,24 +24,35 @@ function inDatabase(
   return connection.driver === 'sqlite' ? connection : { ...connection, database }
 }
 
-// Skipped suites are still collected, so their targets exist; this address is never dialed.
-const UNSET_URL = 'unset://unset@127.0.0.1:1/unset'
-
-function targetIn(
+/**
+ * A server's admin target and its target in `database`, read from the URL on first use: a
+ * skipped suite is still collected, and must not read a URL that isn't there.
+ */
+function serverAt(
   url: string | undefined,
   driver: 'postgres' | 'mysql' | 'sqlserver',
   database: string
-) {
-  const server = serverConnectionFromUrl(driver, url ?? UNSET_URL)
-  return { server, target: { ...server, connection: inDatabase(server.connection, database) } }
+): () => { server: Target; target: Target } {
+  let parsed: { server: Target; target: Target } | null = null
+  return () => {
+    if (!url) {
+      throw new Error(`No ${driver} test server URL is set.`)
+    }
+    const server = parsed?.server ?? serverConnectionFromUrl(driver, url)
+    parsed ??= {
+      server,
+      target: { ...server, connection: inDatabase(server.connection, database) }
+    }
+    return parsed
+  }
 }
 
 /** A console on a worker of its own, as the page runs statements. */
-function consoleOn(target: Target) {
+function consoleOn(target: () => Target) {
   const harness = createWorkerHarness()
   const consoleId = randomUUID()
   return {
-    open: () => expectOk(harness.send({ type: 'connect', ...target })),
+    open: () => expectOk(harness.send({ type: 'connect', ...target() })),
     run: (sql: string) => harness.send({ type: 'execute', consoleId, sql, pageSize: 100 }),
     close: () => harness.send({ type: 'close' })
   }
@@ -49,7 +60,7 @@ function consoleOn(target: Target) {
 
 /** One value read on a fresh session, so it sees only what was committed. */
 async function committed(target: Target, sql: string): Promise<string> {
-  const reader = consoleOn(target)
+  const reader = consoleOn(() => target)
   await reader.open()
   try {
     return String(onlyRows(await expectOk(reader.run(sql))).rows[0]?.[0])
@@ -79,19 +90,19 @@ const sqlServerDatabase = `orca_ro_${randomUUID().slice(0, 8)}`
 const SQLSERVER_URL = process.env.ORCA_TEST_SQLSERVER_URL
 
 describe.skipIf(!SQLSERVER_URL)('SQL Server read-only boundary', () => {
-  const { server, target } = targetIn(SQLSERVER_URL, 'sqlserver', sqlServerDatabase)
-  const console = consoleOn(target)
-  const logged = () => committed(target, 'select count(*) from dbo.audit_log')
+  const at = serverAt(SQLSERVER_URL, 'sqlserver', sqlServerDatabase)
+  const console = consoleOn(() => at().target)
+  const logged = () => committed(at().target, 'select count(*) from dbo.audit_log')
   const lastOrderId = () =>
     committed(
-      target,
+      at().target,
       "select cast(current_value as int) from sys.sequences where name = 'order_ids'"
     )
 
   beforeAll(async () => {
-    await runAdminSql(server, [`create database ${sqlServerDatabase}`])
+    await runAdminSql(at().server, [`create database ${sqlServerDatabase}`])
     await runAdminSql(
-      server,
+      at().server,
       [
         'create table dbo.audit_log (id int identity primary key, note nvarchar(50))',
         'create sequence dbo.order_ids start with 100',
@@ -114,7 +125,7 @@ describe.skipIf(!SQLSERVER_URL)('SQL Server read-only boundary', () => {
   afterAll(async () => {
     await console.close()
     await runAdminSql(
-      server,
+      at().server,
       [
         `alter database ${sqlServerDatabase} set single_user with rollback immediate`,
         `drop database ${sqlServerDatabase}`
@@ -124,9 +135,9 @@ describe.skipIf(!SQLSERVER_URL)('SQL Server read-only boundary', () => {
   })
 
   it('refuses procedures, whose own COMMIT outlives the batch’s rollback', async () => {
-    await pastTheCheck(target, 'exec dbo.archive_orders')
+    await pastTheCheck(at().target, 'exec dbo.archive_orders')
     expect(await logged()).toBe('1')
-    await runAdminSql(server, ['delete from dbo.audit_log'], { database: sqlServerDatabase })
+    await runAdminSql(at().server, ['delete from dbo.audit_log'], { database: sqlServerDatabase })
 
     const calls = [
       'exec dbo.archive_orders',
@@ -154,7 +165,7 @@ describe.skipIf(!SQLSERVER_URL)('SQL Server read-only boundary', () => {
 
   it('refuses a sequence’s next value, which a rollback doesn’t hand back', async () => {
     const before = await lastOrderId()
-    await pastTheCheck(target, 'select next value for dbo.order_ids')
+    await pastTheCheck(at().target, 'select next value for dbo.order_ids')
     const after = await lastOrderId()
     expect(Number(after)).toBe(Number(before) + 1)
 
@@ -165,13 +176,16 @@ describe.skipIf(!SQLSERVER_URL)('SQL Server read-only boundary', () => {
   })
 
   it('asks for the password again when SQL Server refuses the login', async () => {
-    const attempt = consoleOn({ connection: server.connection, password: 'not-the-password' })
+    const attempt = consoleOn(() => ({
+      connection: at().server.connection,
+      password: 'not-the-password'
+    }))
     expect(await attempt.open().catch((error: unknown) => String(error))).toMatch(
       /Login failed for user/
     )
     const harness = createWorkerHarness()
     expect(
-      await harness.send({ type: 'connect', connection: server.connection, password: 'nope' })
+      await harness.send({ type: 'connect', connection: at().server.connection, password: 'nope' })
     ).toMatchObject({
       ok: false,
       error: {
@@ -184,8 +198,8 @@ describe.skipIf(!SQLSERVER_URL)('SQL Server read-only boundary', () => {
     expect(
       await harness.send({
         type: 'connect',
-        connection: inDatabase(server.connection, 'orca_no_such_database'),
-        password: server.password
+        connection: inDatabase(at().server.connection, 'orca_no_such_database'),
+        password: at().server.password
       })
     ).toMatchObject({
       ok: false,
@@ -201,11 +215,11 @@ const postgresSchema = `orca_ro_${randomUUID().slice(0, 8)}`
 const POSTGRES_URL = process.env.ORCA_TEST_POSTGRES_URL
 
 describe.skipIf(!POSTGRES_URL)('PostgreSQL read-only boundary', () => {
-  const { server } = targetIn(POSTGRES_URL, 'postgres', '')
-  const console = consoleOn(server)
+  const at = serverAt(POSTGRES_URL, 'postgres', '')
+  const console = consoleOn(() => at().server)
 
   beforeAll(async () => {
-    await runAdminSql(server, [
+    await runAdminSql(at().server, [
       `create schema ${postgresSchema}`,
       `create table ${postgresSchema}.audit_log (note text)`,
       `create procedure ${postgresSchema}.archive_orders() language plpgsql as $$
@@ -220,16 +234,16 @@ describe.skipIf(!POSTGRES_URL)('PostgreSQL read-only boundary', () => {
 
   afterAll(async () => {
     await console.close()
-    await runAdminSql(server, [`drop schema if exists ${postgresSchema} cascade`], {
+    await runAdminSql(at().server, [`drop schema if exists ${postgresSchema} cascade`], {
       ignoreErrors: true
     })
   })
 
   it('refuses CALL, whose procedure can leave the read-only session and commit', async () => {
-    const logged = () => committed(server, `select count(*) from ${postgresSchema}.audit_log`)
-    await pastTheCheck(server, `call ${postgresSchema}.archive_orders()`)
+    const logged = () => committed(at().server, `select count(*) from ${postgresSchema}.audit_log`)
+    await pastTheCheck(at().server, `call ${postgresSchema}.archive_orders()`)
     expect(await logged()).toBe('1')
-    await runAdminSql(server, [`delete from ${postgresSchema}.audit_log`])
+    await runAdminSql(at().server, [`delete from ${postgresSchema}.audit_log`])
 
     expect(await console.run(`call ${postgresSchema}.archive_orders()`)).toMatchObject(
       refusedAs('CALL')
@@ -243,14 +257,14 @@ describe.each([
   { label: 'MariaDB', url: process.env.ORCA_TEST_MARIADB_URL }
 ])('$label read-only boundary', ({ url }) => {
   const database = `orca_ro_${randomUUID().slice(0, 8)}`
-  const mysql = targetIn(url, 'mysql', database)
-  const console = consoleOn(mysql.target)
+  const at = serverAt(url, 'mysql', database)
+  const console = consoleOn(() => at().target)
 
   beforeAll(async () => {
     if (!url) {
       return
     }
-    await runAdminSql(mysql.server, [
+    await runAdminSql(at().server, [
       `create database ${database}`,
       `create table ${database}.audit_log (note varchar(20))`,
       `create procedure ${database}.archive_orders() begin
@@ -266,18 +280,18 @@ describe.each([
   afterAll(async () => {
     if (url) {
       await console.close()
-      await runAdminSql(mysql.server, [`drop database if exists ${database}`], {
+      await runAdminSql(at().server, [`drop database if exists ${database}`], {
         ignoreErrors: true
       })
     }
   })
 
   it.skipIf(!url)('refuses CALL and PREPARE, which reach a procedure that commits', async () => {
-    const { target } = mysql
+    const { target } = at()
     const logged = () => committed(target, 'select count(*) from audit_log')
     await pastTheCheck(target, 'call archive_orders()')
     expect(await logged()).toBe('1')
-    await runAdminSql(mysql.server, [`delete from ${database}.audit_log`])
+    await runAdminSql(at().server, [`delete from ${database}.audit_log`])
 
     expect(await console.run('call archive_orders()')).toMatchObject(refusedAs('CALL'))
     expect(await console.run("prepare s from 'call archive_orders()'")).toMatchObject(
