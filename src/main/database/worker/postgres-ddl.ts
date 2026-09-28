@@ -1,6 +1,7 @@
 import type pg from 'pg'
 import type { DatabaseDdlTarget } from '../../../shared/database/database-ddl-types'
 import { qualifiedRelationName, quoteSqlName } from '../../../shared/database/sql-identifiers'
+import { postgresRelationComments, postgresRoutineComments } from './postgres-ddl-comments'
 
 const POSTGRES_10 = 100_000
 const POSTGRES_12 = 120_000
@@ -85,6 +86,8 @@ export type PostgresTableDdl = {
   indexes: string[]
   /** ALTER TABLE … ADD CONSTRAINT statements, when asked to keep foreign keys apart. */
   foreignKeys: string[]
+  /** COMMENT ON the table and its columns, for after it is created. */
+  comments: string[]
 }
 
 export async function postgresTableDdl(
@@ -131,21 +134,26 @@ export async function postgresTableDdl(
     indexes: indexes.rows.map((row) => withSemicolon(row.definition)),
     foreignKeys: constraints.rows
       .filter(apart)
-      .map((row) => `ALTER TABLE ${name} ADD ${constraint(row)};`)
+      .map((row) => `ALTER TABLE ${name} ADD ${constraint(row)};`),
+    comments: await postgresRelationComments(client, { oid, relkind, name })
   }
 }
 
-export async function postgresDdl(
+/** Each statement Show DDL writes for a table, view or routine, its comments last. */
+export async function postgresDdlStatements(
   client: pg.Client,
   target: DatabaseDdlTarget,
   serverVersionNum: number
-): Promise<string> {
+): Promise<string[]> {
   if (target.kind === 'routine') {
     const result = await client.query<{ definition: string }>(
       'select pg_catalog.pg_get_functiondef($1::pg_catalog.regprocedure) as definition',
       [target.identity]
     )
-    return result.rows[0]?.definition.trim() ?? ''
+    const definition = result.rows[0]?.definition
+    return definition
+      ? [withSemicolon(definition), ...(await postgresRoutineComments(client, target))]
+      : []
   }
   const relation = await client.query<{ oid: number; relkind: string }>(POSTGRES_RELATION_SQL, [
     target.schema,
@@ -163,12 +171,24 @@ export async function postgresDdl(
     )
     const create = row.relkind === 'm' ? 'CREATE MATERIALIZED VIEW' : 'CREATE OR REPLACE VIEW'
     const body = withSemicolon(`${create} ${name} AS\n${view.rows[0]?.definition ?? ''}`)
-    if (row.relkind === 'v') {
-      return body
-    }
-    const indexes = await client.query<{ definition: string }>(INDEXES_SQL, [row.oid])
-    return [body, ...indexes.rows.map((index) => withSemicolon(index.definition))].join('\n\n')
+    const indexes =
+      row.relkind === 'm'
+        ? (await client.query<{ definition: string }>(INDEXES_SQL, [row.oid])).rows
+        : []
+    return [
+      body,
+      ...indexes.map((index) => withSemicolon(index.definition)),
+      ...(await postgresRelationComments(client, { ...row, name }))
+    ]
   }
   const table = await postgresTableDdl(client, { ...row, name }, serverVersionNum)
-  return [table.create, ...table.indexes].join('\n\n')
+  return [table.create, ...table.indexes, ...table.comments]
+}
+
+export async function postgresDdl(
+  client: pg.Client,
+  target: DatabaseDdlTarget,
+  serverVersionNum: number
+): Promise<string> {
+  return (await postgresDdlStatements(client, target, serverVersionNum)).join('\n\n')
 }

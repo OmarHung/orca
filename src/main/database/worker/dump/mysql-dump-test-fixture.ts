@@ -8,10 +8,12 @@ export const fixture = (database: string): string[] => [
   `use ${database}`,
   "set session sql_mode = 'NO_AUTO_VALUE_ON_ZERO,STRICT_TRANS_TABLES'",
   `create table people (
-     id int auto_increment primary key, name varchar(100) not null,
+     id int auto_increment primary key,
+     name varchar(100) not null comment 'what they''re called',
      mood enum('ok', 'meh', 'it''s') null, tags set('a', 'b') null, data json null,
      photo blob null, amount decimal(30, 10) null, born date null, seen timestamp(6) null,
-     flags bit(3) null, big bigint unsigned null, doubled decimal(31, 10) generated always as (amount * 2) virtual)`,
+     flags bit(3) null, big bigint unsigned null, doubled decimal(31, 10) generated always as (amount * 2) virtual)
+   comment 'People, it''s \\\\ 50% 中文 🎉'`,
   `create table orders (
      id int auto_increment primary key, person_id int not null, code varchar(20) null unique,
      constraint orders_person_fk foreign key (person_id) references people (id))`,
@@ -145,13 +147,13 @@ export async function snapshot(url: string, database: string): Promise<Record<st
       result[name] = rows
     }
     const [tables] = await client.query(
-      `select TABLE_NAME, AUTO_INCREMENT from information_schema.TABLES
+      `select TABLE_NAME, AUTO_INCREMENT, TABLE_COMMENT from information_schema.TABLES
        where TABLE_SCHEMA = ? and TABLE_TYPE = 'BASE TABLE' order by TABLE_NAME`,
       [database]
     )
     result.tables = tables
     const [columns] = await client.query(
-      `select TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, EXTRA
+      `select TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, EXTRA, COLUMN_COMMENT
        from information_schema.COLUMNS where TABLE_SCHEMA = ? order by TABLE_NAME, ORDINAL_POSITION`,
       [database]
     )

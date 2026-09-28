@@ -87,7 +87,15 @@ const FIXTURE = [
   'create procedure sales.two_sets as begin select 1; select 2; end',
   `create trigger sales.orders_upper on sales.orders after insert as
    begin set nocount on; update o set code = upper(o.code) from sales.orders o join inserted i on i.id = o.id end`,
-  'disable trigger sales.orders_upper on sales.orders'
+  'disable trigger sales.orders_upper on sales.orders',
+  // Descriptions with quotes, a line break and characters past ASCII.
+  `declare @people nvarchar(200) = N'People, it''s 50% 中文 🎉' + nchar(10) + N'next line';
+   exec sys.sp_addextendedproperty N'MS_Description', @people, N'SCHEMA', N'dbo', N'TABLE', N'people'`,
+  "exec sys.sp_addextendedproperty N'MS_Description', N'what they''re called', N'SCHEMA', N'dbo', N'TABLE', N'people', N'COLUMN', N'name'",
+  "exec sys.sp_addextendedproperty N'MS_Description', N'the order code', N'SCHEMA', N'sales', N'TABLE', N'orders', N'COLUMN', N'code'",
+  "exec sys.sp_addextendedproperty N'MS_Description', N'just names', N'SCHEMA', N'dbo', N'VIEW', N'people_view'",
+  "exec sys.sp_addextendedproperty N'MS_Description', N'two result sets', N'SCHEMA', N'sales', N'PROCEDURE', N'two_sets'",
+  "exec sys.sp_addextendedproperty N'MS_Description', N'adds one', N'SCHEMA', N'dbo', N'FUNCTION', N'add_one'"
 ]
 
 const OBJECTS: DatabaseDumpObject[] = [
@@ -140,6 +148,10 @@ const CATALOG_QUERIES = {
   triggers: 'select name, is_disabled from sys.triggers order by name',
   types:
     'select schema_name(schema_id) as s, name, is_nullable from sys.types where is_user_defined = 1',
+  comments: `select object_schema_name(major_id) as s, object_name(major_id) as o,
+               col_name(major_id, minor_id) as c, cast(value as nvarchar(max)) as v
+             from sys.extended_properties where class = 1 and name = N'MS_Description'
+             order by s, o, minor_id`,
   sequences: `select schema_name(schema_id) as s, name, type_name(user_type_id) as type, precision,
                 scale, cast(start_value as varchar(50)) as start_value,
                 cast(increment as varchar(50)) as increment,
