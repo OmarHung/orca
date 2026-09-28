@@ -100,6 +100,11 @@ export function registerDatabaseJobHandlers(
     return request.success ? jobs.dump(request.data) : INVALID_REQUEST
   })
 
+  ipcMain.handle('database:dumpTool', (_event, raw: unknown) => {
+    const connectionId = databaseConnectionIdSchema.safeParse(raw)
+    return connectionId.success ? jobs.dumpTool(connectionId.data) : INVALID_REQUEST
+  })
+
   ipcMain.handle('database:cancelJob', (_event, raw: unknown) => {
     const ref = JobRefSchema.safeParse(raw)
     return ref.success ? jobs.cancelJob(ref.data) : false

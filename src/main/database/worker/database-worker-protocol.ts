@@ -12,6 +12,7 @@ import type {
 import type {
   DatabaseDumpRequest,
   DatabaseDumpSummary,
+  DatabaseDumpTool,
   DatabaseJobProgress
 } from '../../../shared/database/database-dump-types'
 import type { DumpDestination } from './dump/dump-output'
@@ -47,6 +48,8 @@ export type DatabaseWorkerCommand =
       destination: DumpDestination
     }
   | { type: 'cancelJob'; jobId: string }
+  /** The pg_dump or mysqldump a native dump would run; null for other databases or none found. */
+  | { type: 'dumpTool' }
   | { type: 'close' }
 
 export type DatabaseWorkerValues = {
@@ -59,6 +62,7 @@ export type DatabaseWorkerValues = {
   closeConsole: null
   dump: DatabaseDumpSummary
   cancelJob: { cancelled: boolean }
+  dumpTool: DatabaseDumpTool | null
   close: null
 }
 

@@ -87,6 +87,11 @@ export class DumpOutput {
     await this.write('\n')
   }
 
+  /** Text as it is, e.g. a native tool's output passed through. */
+  async raw(chunk: string | Buffer): Promise<void> {
+    await this.write(chunk)
+  }
+
   async finish(): Promise<string[]> {
     await this.closeCurrent()
     return [...this.written]
@@ -108,12 +113,12 @@ export class DumpOutput {
     this.written.push(path)
   }
 
-  private async write(text: string): Promise<void> {
+  private async write(text: string | Buffer): Promise<void> {
     const stream = this.stream
     if (!stream) {
       throw new Error('The dump has no open file.')
     }
-    this.bytes += Buffer.byteLength(text)
+    this.bytes += typeof text === 'string' ? Buffer.byteLength(text) : text.length
     if (!stream.write(text)) {
       await new Promise<void>((resolve, reject) => {
         stream.once('drain', resolve)
