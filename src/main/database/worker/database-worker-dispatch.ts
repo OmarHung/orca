@@ -4,6 +4,7 @@ import { readOnlyRefusal, readOnlyViolation } from '../../../shared/database/sql
 import type { DatabaseDriverSession, OpenDatabaseDriverSession } from './database-driver'
 import { routeThroughTunnel } from './database-connection-route'
 import { toDatabaseError } from './database-error-mapping'
+import { LongValueStore } from './database-long-values'
 import { DatabaseWorkerJobs } from './database-worker-jobs'
 import type { NativeDumpTarget } from './dump/native/native-dump-plan'
 import { findDumpTool } from './dump/native/native-dump-tools'
@@ -40,6 +41,8 @@ export function createDatabaseWorkerDispatcher(
   // What pg_dump or mysqldump connects to: the same (tunneled) address and password.
   let nativeTarget: NativeDumpTarget | null = null
   const jobs = new DatabaseWorkerJobs(post)
+  // Why here, not in each driver: every row leaves the worker through this dispatcher.
+  const longValues = new LongValueStore()
 
   const requireSession = (): DatabaseDriverSession => {
     if (!session) {
@@ -73,16 +76,29 @@ export function createDatabaseWorkerDispatcher(
         if (violation) {
           throw new Error(readOnlyRefusal(violation, driver))
         }
-        return requireSession().execute(command.consoleId, command.sql, command.pageSize, {
-          schema: command.schema,
-          database: command.database
-        })
+        longValues.startStatement(command.consoleId)
+        const result = await requireSession().execute(
+          command.consoleId,
+          command.sql,
+          command.pageSize,
+          { schema: command.schema, database: command.database }
+        )
+        return longValues.previewExecute(command.consoleId, result)
       }
-      case 'fetch':
-        return requireSession().fetch(command.consoleId, command.resultId, command.pageSize)
+      case 'fetch': {
+        const page = await requireSession().fetch(
+          command.consoleId,
+          command.resultId,
+          command.pageSize
+        )
+        return longValues.previewPage(command.consoleId, command.resultId, page)
+      }
+      case 'readValues':
+        return { values: longValues.read(command.consoleId, command.resultId, command.slices) }
       case 'cancel':
         return { cancelled: session ? await session.cancel(command.consoleId) : false }
       case 'closeConsole':
+        longValues.dropConsole(command.consoleId)
         await session?.closeConsole(command.consoleId)
         return null
       case 'dump':
@@ -97,6 +113,7 @@ export function createDatabaseWorkerDispatcher(
             })
           : null
       case 'close': {
+        longValues.clear()
         await jobs.stopAll()
         const closing = session
         session = null
