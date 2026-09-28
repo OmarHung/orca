@@ -3,7 +3,7 @@ import type { DatabaseDumpObject } from '../../../../shared/database/database-du
 import { quoteSqlName } from '../../../../shared/database/sql-identifiers'
 import { catalogText, type CatalogRow } from '../catalog-row-grouping'
 import { closeSqlServer, querySqlServerRows } from '../sqlserver-client-factory'
-import { SQL_SERVER_OBJECT_ID, sqlServerTableDdl } from '../sqlserver-ddl'
+import { SQL_SERVER_OBJECT_ID, sqlServerComments, sqlServerTableDdl } from '../sqlserver-ddl'
 import type { DumpStatement } from './dump-output'
 import {
   ALIAS_TYPES_SQL,
@@ -172,7 +172,7 @@ export class SqlServerDumpSource implements DumpSource {
     const triggers = await querySqlServerRows(this.client, TRIGGERS_SQL, parameters)
     return {
       requires: [...aliasTypes.map(aliasTypeStatement), ...sequences],
-      create: [ddl.create, ...ddl.indexes].map((sql) => ({ sql })),
+      create: [ddl.create, ...ddl.indexes, ...ddl.comments].map((sql) => ({ sql })),
       foreignKeys: ddl.foreignKeys.map((sql) => ({ sql })),
       triggers: triggers.flatMap((trigger) => this.triggerStatements(table, trigger))
     }
@@ -239,7 +239,7 @@ export class SqlServerDumpSource implements DumpSource {
     const sqlName = `${q(view.schema)}.${q(view.name)}`
     return {
       definition,
-      create: [{ sql: definition }],
+      create: [definition, ...(await this.comments(view))].map((sql) => ({ sql })),
       drop: {
         sql: `IF OBJECT_ID(${sqlServerTextLiteral(sqlName)}, N'V') IS NOT NULL DROP VIEW ${sqlName}`
       }
@@ -250,7 +250,9 @@ export class SqlServerDumpSource implements DumpSource {
     const sqlName = `${q(routine.schema)}.${q(routine.name)}`
     const kind = routine.routineKind === 'procedure' ? 'PROCEDURE' : 'FUNCTION'
     return {
-      create: [{ sql: await this.definition(routine) }],
+      create: [await this.definition(routine), ...(await this.comments(routine))].map((sql) => ({
+        sql
+      })),
       drop: {
         sql: `IF OBJECT_ID(${sqlServerTextLiteral(sqlName)}) IS NOT NULL DROP ${kind} ${sqlName}`
       }
@@ -286,6 +288,10 @@ export class SqlServerDumpSource implements DumpSource {
         ? [{ sql: `DISABLE TRIGGER ${q(table.schema)}.${q(name)} ON ${table.sqlName}` }]
         : [])
     ]
+  }
+
+  private comments(object: { schema: string; name: string }): Promise<string[]> {
+    return sqlServerComments(this.client, object.schema, object.name)
   }
 
   private async definition(object: { schema: string; name: string }): Promise<string> {
