@@ -11,6 +11,8 @@ import { findDumpTool } from './native-dump-tools'
 import { pgDumpPlan } from './pg-dump-plan'
 
 export type NativeDumpJob = {
+  /** Names the dump's partial output, which main cleans up if the worker dies. */
+  jobId?: string
   target: NativeDumpTarget | null
   request: DatabaseDumpRequest
   destination: DumpDestination
@@ -42,7 +44,7 @@ export async function runNativeDump(job: NativeDumpJob): Promise<DatabaseDumpSum
       : await mysqldumpPlan({ tool, target, request })
   const runner = new NativeDumpRunner({
     plan,
-    output: new DumpOutput(job.destination, driver),
+    output: new DumpOutput(job.destination, driver, job.jobId),
     tableCount: request.objects.filter((object) => object.kind === 'table').length,
     onProgress: job.onProgress,
     isCancelled: job.isCancelled
