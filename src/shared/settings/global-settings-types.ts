@@ -248,6 +248,8 @@ export type GlobalSettings = GlobalSettingsBase & {
   gitAutoFetchEnabled: boolean
   /** Minutes between automatic fetches of one repository. */
   gitAutoFetchIntervalMinutes: number
+  /** JetBrains-style gutter bars for lines that differ from HEAD in file editors. */
+  editorChangeMarkersEnabled: boolean
   /** Whether to show the Orca app name in the titlebar. */
   showTitlebarAppName: boolean
   /** Hides the Tasks sidebar button (also removes it from keyboard navigation). */
