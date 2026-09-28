@@ -18841,6 +18841,7 @@
       "title": "Delete {{value0}}?"
     },
     "dump": {
+      "builtin": "Orca (built-in)",
       "cancel": "Cancel",
       "chooseFolder": "Choose Folder…",
       "contents": "Contents",
@@ -18856,9 +18857,13 @@
       "filter": "Filter by name",
       "layout": "Files",
       "loading": "Loading objects…",
+      "mysqldumpForeignKeys": "mysqldump always switches foreign key checks off in its file.",
+      "mysqldumpRows": "mysqldump groups rows by size; 1 writes one row per INSERT.",
       "noMatch": "No objects match.",
       "notConnected": "Connect to list objects.",
       "objects": "Objects",
+      "pgDumpDisableTriggers": "Adds pg_dump’s --disable-triggers; loading the file then takes a superuser.",
+      "pgDumpForeignKeys": "pg_dump always adds foreign keys after the rows.",
       "rowsPerInsert": "Rows per INSERT",
       "saveAs": "Save As…",
       "selectAll": "Select All",
@@ -18867,7 +18872,10 @@
       "singleFile": "One file",
       "structureAndData": "Structure and data",
       "structureOnly": "Structure only",
-      "title": "Dump to SQL"
+      "title": "Dump to SQL",
+      "tool": "Tool",
+      "toolMissing": "{{value0}} (not found)",
+      "toolMissingHint": "Install {{value0}} to use it. Orca looks for it on PATH and in the usual install folders."
     },
     "explorer": {
       "connect": "Connect",
@@ -18942,15 +18950,18 @@
       "dumpDone": "Dump saved",
       "dumpFailed": "The dump failed",
       "dumpFinished": "Tables: {{value0}} · Rows: {{value1}} · {{value2}} · {{value3}} s",
+      "dumpFinishedNoRows": "Tables: {{value0}} · {{value1}} · {{value2}} s",
       "dumpOf": "Dump of {{value0}}",
       "dumpRunning": "Tables: {{value0}} of {{value1}} · Rows: {{value2}} · {{value3}}",
+      "dumpRunningNoRows": "Tables: {{value0}} of {{value1}} · {{value2}}",
       "exportOf": "Export of {{value0}}",
       "list": "Background jobs",
       "notes": "Notes",
       "progress": "Progress",
       "runningCount": "Jobs ({{value0}} running)",
       "showInFolder": "Show in Folder",
-      "starting": "Starting…"
+      "starting": "Starting…",
+      "withTool": "{{value0}} with {{value1}}"
     },
     "output": {
       "cancelled": "Cancelled",

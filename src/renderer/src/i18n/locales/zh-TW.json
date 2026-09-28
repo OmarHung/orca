@@ -18840,6 +18840,7 @@
       "title": "刪除 {{value0}}？"
     },
     "dump": {
+      "builtin": "Orca（內建）",
       "cancel": "取消",
       "chooseFolder": "選擇資料夾…",
       "contents": "內容",
@@ -18855,9 +18856,13 @@
       "filter": "按名稱篩選",
       "layout": "檔案",
       "loading": "正在載入物件…",
+      "mysqldumpForeignKeys": "mysqldump 一定會在檔案裡關閉外鍵檢查。",
+      "mysqldumpRows": "mysqldump 按大小把資料分批寫成 INSERT；設為 1 則每條資料各寫一個 INSERT。",
       "noMatch": "沒有符合的物件。",
       "notConnected": "連線後才能列出物件。",
       "objects": "物件",
+      "pgDumpDisableTriggers": "會加上 pg_dump 的 --disable-triggers；匯入這個檔案需要超級使用者。",
+      "pgDumpForeignKeys": "pg_dump 一定會在資料之後才加上外鍵。",
       "rowsPerInsert": "每個 INSERT 的列數",
       "saveAs": "另存為…",
       "selectAll": "全選",
@@ -18866,7 +18871,10 @@
       "singleFile": "單個檔案",
       "structureAndData": "結構和資料",
       "structureOnly": "僅結構",
-      "title": "傾印為 SQL"
+      "title": "傾印為 SQL",
+      "tool": "工具",
+      "toolMissing": "{{value0}}（未找到）",
+      "toolMissingHint": "安裝 {{value0}} 後才能使用。Orca 會在 PATH 和常見的安裝資料夾中尋找它。"
     },
     "explorer": {
       "connect": "連線",
@@ -18941,15 +18949,18 @@
       "dumpDone": "傾印已儲存",
       "dumpFailed": "傾印失敗",
       "dumpFinished": "表：{{value0}} · 列：{{value1}} · {{value2}} · {{value3}} 秒",
+      "dumpFinishedNoRows": "表：{{value0}} · {{value1}} · {{value2}} 秒",
       "dumpOf": "傾印 {{value0}}",
       "dumpRunning": "表：{{value0}} / {{value1}} · 列：{{value2}} · {{value3}}",
+      "dumpRunningNoRows": "表：{{value0}} / {{value1}} · {{value2}}",
       "exportOf": "匯出 {{value0}} 的資料",
       "list": "背景任務",
       "notes": "說明",
       "progress": "進度",
       "runningCount": "任務（{{value0}} 個進行中）",
       "showInFolder": "在資料夾中顯示",
-      "starting": "正在開始…"
+      "starting": "正在開始…",
+      "withTool": "{{value0}}（使用 {{value1}}）"
     },
     "output": {
       "cancelled": "已取消",
