@@ -4,6 +4,8 @@ const SQLSTATE_PATTERN = /^[0-9A-Z]{5}$/
 // PostgreSQL 57014 query_canceled, MySQL ER_QUERY_INTERRUPTED, tedious attention ack.
 const CANCELLED_CODES = new Set(['57014', 'ER_QUERY_INTERRUPTED', 'ECANCEL'])
 const MYSQL_LINE = /\bat line (\d+)\b/
+/** SQL Server's "Login failed for user", which follows every refused login, e.g. 4060's too. */
+export const SQLSERVER_LOGIN_FAILED = 18456
 
 function readString(source: object, key: string): string | undefined {
   const value: unknown = Reflect.get(source, key)
@@ -40,8 +42,12 @@ export function toDatabaseError(error: unknown): DatabaseError {
   const cancelled =
     (sqlState !== undefined && CANCELLED_CODES.has(sqlState)) ||
     CANCELLED_CODES.has(readString(error, 'code') ?? '')
-  // tedious' ELOGIN: the server refused the login, which a (new) password may fix.
-  const loginRejected = readString(error, 'code') === 'ELOGIN'
+  // tedious' ELOGIN: a refused login, which a (new) password may fix unless the server gave
+  // another reason, such as 4060 "Cannot open database".
+  const number = readPositiveInteger(error, 'number')
+  const loginRejected =
+    readString(error, 'code') === 'ELOGIN' &&
+    (number === undefined || number === SQLSERVER_LOGIN_FAILED)
   const position = readPositiveInteger(error, 'position')
   const line = readPositiveInteger(error, 'lineNumber') ?? Number(MYSQL_LINE.exec(message)?.[1])
   const detail = readString(error, 'detail')
