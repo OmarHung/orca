@@ -18451,16 +18451,16 @@
     "hide": "隱藏底部面板",
     "gitLog": {
       "range": {
-        "summary": "{{commits}} 個 commit · {{files}} 個檔案變更",
+        "summary": "{{commits}} 個 commit · {{files}} 個檔案更改",
         "pending": "{{commits}} 個 commit",
-        "span": "從 {{base}} 到 {{target}} 的變更"
+        "span": "從 {{base}} 到 {{target}} 的更改"
       },
       "compare": {
         "tabLabel": "比較 {{base}} → {{target}}",
         "identical": "兩邊是同一個 commit。",
         "hostTooOld": "請更新這台主機上的 Orca 才能比較兩個版本。",
         "failed": "無法比較這兩個版本。",
-        "select": "選取以進行比較",
+        "select": "選擇以進行比較",
         "withSelected": "與「{{name}}」比較",
         "versions": "比較兩個版本",
         "withCurrent": "與目前分支比較",
@@ -19176,18 +19176,18 @@
   "changeMarkers": {
     "show": "顯示變更標記",
     "hide": "隱藏變更標記",
-    "gutterTooltip": "點擊查看變更內容",
+    "gutterTooltip": "點選檢視更改內容",
     "kind": {
       "added": "新增",
       "modified": "修改",
       "deleted": "刪除"
     },
-    "rollback": "還原此變更",
+    "rollback": "還原此更改",
     "copyOriginal": "複製原始內容",
     "copied": "已複製",
     "close": "關閉",
-    "closePreview": "關閉變更預覽",
-    "originalAriaLabel": "變更前的內容"
+    "closePreview": "關閉更改預覽",
+    "originalAriaLabel": "更改前的內容"
   },
   "gitBranchStatus": {
     "noUpstream": "沒有上游分支",
@@ -19196,10 +19196,10 @@
     "behindCount_one": "{{count}} 個 commit 待拉取",
     "behindCount_other": "{{count}} 個 commit 待拉取",
     "upToDate": "已與 {{upstream}} 同步",
-    "noChanges": "沒有未提交的變更",
-    "changedFiles_one": "{{count}} 個檔案有未提交的變更",
-    "changedFiles_other": "{{count}} 個檔案有未提交的變更",
-    "changedFilesPartial": "超過 {{count}} 個檔案有未提交的變更",
+    "noChanges": "沒有未提交的更改",
+    "changedFiles_one": "{{count}} 個檔案有未提交的更改",
+    "changedFiles_other": "{{count}} 個檔案有未提交的更改",
+    "changedFilesPartial": "超過 {{count}} 個檔案有未提交的更改",
     "conflicts_one": "{{count}} 個檔案有衝突",
     "conflicts_other": "{{count}} 個檔案有衝突",
     "autoFetchOff": "自動 fetch 已關閉",
@@ -19212,14 +19212,14 @@
     "fetch": "Fetch",
     "openSourceControl": "原始碼控制",
     "openSettings": "設定",
-    "ariaLabel": "分支 {{branch}}，{{ahead}} 個待推送，{{behind}} 個待拉取，{{changes}} 個檔案有變更",
+    "ariaLabel": "分支 {{branch}}，{{ahead}} 個待推送，{{behind}} 個待拉取，{{changes}} 個檔案有更改",
     "settings": {
       "title": "分支狀態與自動 Fetch",
       "description": "在狀態列顯示目前工作區的分支、待推送／待拉取的 commit 與未提交的檔案，並在背景 fetch 讓遠端分支保持最新。",
       "statusBar": "在狀態列顯示分支狀態",
-      "statusBarDescription": "點擊可查看上游資訊、立即 Fetch，或開啟原始碼控制。",
+      "statusBarDescription": "點選可檢視上游資訊、立即 Fetch，或開啟原始碼控制。",
       "autoFetch": "自動 Fetch",
-      "autoFetchDescription": "在背景對目前工作區的儲存庫執行 git fetch，讓待拉取數量保持最新。視窗隱藏時暫停；失敗時不跳出通知，而是顯示在狀態列的詳細資訊中。",
+      "autoFetchDescription": "在背景對目前工作區的儲存庫執行 git fetch，讓待拉取數量保持最新。視窗隱藏時暫停；失敗時不彈出通知，而是顯示在狀態列的詳細資訊中。",
       "interval": "Fetch 間隔",
       "minutes": "{{minutes}} 分鐘",
       "keywordStatusBar": "狀態列",
@@ -19230,13 +19230,13 @@
     }
   },
   "inlineBlame": {
-    "uncommitted": "未提交的變更",
-    "openChanges": "開啟變更",
+    "uncommitted": "未提交的更改",
+    "openChanges": "開啟更改",
     "copySha": "複製 Hash",
     "openFailed": "無法開啟這個 commit。",
     "settings": {
       "title": "行內 Blame",
-      "description": "在游標所在行的行尾顯示最後修改這行的人、時間與 commit。滑鼠移上去可查看 commit 並開啟其變更。",
+      "description": "在游標所在行的行尾顯示最後修改這行的人、時間與 commit。點選它可檢視 commit 並開啟其更改。",
       "keywordBlame": "blame",
       "keywordAnnotate": "標註",
       "keywordAuthor": "作者"
@@ -19253,9 +19253,9 @@
     "revisionTitle": "與版本比較",
     "description": "以 diff 顯示這個檔案與另一個版本的差異。",
     "searchBranches": "搜尋分支…",
-    "searchRevisions": "依訊息、hash 或作者搜尋…",
+    "searchRevisions": "按訊息、hash 或作者搜尋…",
     "loading": "載入中…",
-    "noMatches": "沒有符合的項目。",
+    "noMatches": "沒有匹配結果。",
     "binary": "無法比較二進位檔案。",
     "banner": "正在與 {{label}}（{{sha}}）比較",
     "close": "關閉比較",
