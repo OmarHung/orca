@@ -22,6 +22,7 @@ import { getDiff } from '../../git/source-control/file-diff'
 import { getHistory } from '../../git/history'
 import { isGitWorktreeMutationInFlight } from '../../git/command-runner/git-worktree-mutation-state'
 import type { GitMutationInFlight } from '../../../shared/git/commands/git-mutation-in-flight'
+import { readGitHistoryIpcOptions } from './git-history-ipc-options'
 import { checkIgnoredPaths } from '../../git/source-control/check-ignored-paths'
 import {
   appendFolderToGitignore,
@@ -201,15 +202,7 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
         wakeWslDistro?: boolean
       } & GitHistoryOptions
     ): Promise<GitHistoryResult> => {
-      const options: GitHistoryOptions = {
-        limit: args.limit,
-        baseRef: args.baseRef,
-        branchOnly: args.branchOnly,
-        skip: args.skip,
-        revision: typeof args.revision === 'string' ? args.revision : null,
-        allBranches: args.allBranches === true,
-        includeRefs: args.includeRefs === true
-      }
+      const options = readGitHistoryIpcOptions(args)
       requireReachableGitRoute(getConnectionExecutionHostId(args.connectionId))
       return readWorktreeGitUnlessWslStopped(
         store,

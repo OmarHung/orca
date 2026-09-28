@@ -205,9 +205,11 @@ export async function loadGitHistoryFromExecutor(
     }
   }
 
+  const path = options.path?.trim() || undefined
   const parsed = await runHistoryLog(git, cwd, limit, historyRevisions, {
     skip,
-    shortstat: Boolean(branchBase)
+    shortstat: Boolean(branchBase),
+    path
   })
   const items = parsed.slice(0, limit)
   if (branchBase) {
@@ -234,7 +236,8 @@ export async function loadGitHistoryFromExecutor(
     ...(branchBase ? { branch: branchBase.range } : {}),
     ...(options.skip !== undefined ? { skip } : {}),
     revisionScope: logTarget.scope,
-    ...withRefs(refs)
+    ...withRefs(refs),
+    ...(path ? { path } : {})
   }
 }
 
@@ -272,7 +275,7 @@ async function runHistoryLog(
   cwd: string,
   limit: number,
   revisions: string[],
-  { skip, shortstat = false }: { skip: number; shortstat?: boolean }
+  { skip, shortstat = false, path }: { skip: number; shortstat?: boolean; path?: string }
 ) {
   const { stdout } = await git(
     [
@@ -286,7 +289,8 @@ async function runHistoryLog(
       ...(shortstat ? ['--shortstat'] : []),
       ...(skip > 0 ? [`--skip=${skip}`] : []),
       `-n${limit + 1}`,
-      ...revisions
+      ...revisions,
+      ...(path ? ['--', path] : [])
     ],
     cwd
   )
