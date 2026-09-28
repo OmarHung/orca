@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import type { DatabaseConnectionDraft } from '../../../../shared/database/database-connection-types'
 import type { DatabaseDumpOptions } from '../../../../shared/database/database-dump-types'
 import { runProcess } from '../../../../shared/child-process/run-process'
 import { runAdminSql } from '../database-test-admin'
@@ -20,17 +21,26 @@ const tool = url ? await findDumpTool({ driver: 'postgres', serverVersion: '0' }
 const dir = mkdtempSync(join(tmpdir(), 'orca-pg-native-dump-'))
 afterAll(() => rmSync(dir, { recursive: true, force: true }))
 
+type Server = {
+  admin: { connection: DatabaseConnectionDraft; password: string | null }
+  target: NativeDumpTarget
+}
+
 describe.skipIf(!tool)('PostgreSQL dump with pg_dump', () => {
-  // Skipped suites are still collected; without a URL this address is never dialed.
-  const server = serverConnectionFromUrl('postgres', url ?? 'postgres://unset@127.0.0.1:1/unset')
-  const connection = server.connection.driver === 'postgres' ? server.connection : null
-  const sourceDatabase = connection?.database || 'postgres'
+  // Why beforeAll: a skipped suite is still collected, so nothing here may read the URL.
+  let server: Server | null = null
   const restored: string[] = []
-  let target: NativeDumpTarget | null = null
+  const ready = (): Server => {
+    if (!server) {
+      throw new Error('The PostgreSQL test server was not set up.')
+    }
+    return server
+  }
+  const sourceDatabase = () => ready().target.connection.database || 'postgres'
 
   const dump = async (options: Partial<DatabaseDumpOptions>, path: string) =>
     runNativeDump({
-      target,
+      target: ready().target,
       request: {
         objects: OBJECTS,
         completeSchemas: [schema],
@@ -45,6 +55,7 @@ describe.skipIf(!tool)('PostgreSQL dump with pg_dump', () => {
 
   /** Loads the files with psql, as a user would, stopping at the first error. */
   const psql = async (files: string[], database: string): Promise<void> => {
+    const { connection, password } = ready().target
     for (const file of files) {
       const result = await runProcess({
         program: join(dirname(tool!.path), process.platform === 'win32' ? 'psql.exe' : 'psql'),
@@ -53,13 +64,13 @@ describe.skipIf(!tool)('PostgreSQL dump with pg_dump', () => {
           '--quiet',
           '-v',
           'ON_ERROR_STOP=1',
-          `--host=${connection!.host}`,
-          `--port=${connection!.port}`,
-          `--username=${connection!.user}`,
+          `--host=${connection.host}`,
+          `--port=${connection.port}`,
+          `--username=${connection.user}`,
           `--dbname=${database}`,
           `--file=${file}`
         ],
-        env: { ...process.env, PGPASSWORD: server.password ?? '' },
+        env: { ...process.env, PGPASSWORD: password ?? '' },
         timeoutMs: 60_000
       })
       if (result.code !== 0) {
@@ -71,26 +82,38 @@ describe.skipIf(!tool)('PostgreSQL dump with pg_dump', () => {
   const newDatabase = async (): Promise<string> => {
     const database = `orca_native_target_${randomUUID().slice(0, 8)}`
     restored.push(database)
-    await runAdminSql(server, [`create database ${database}`])
+    await runAdminSql(ready().admin, [`create database ${database}`])
     return database
   }
 
   beforeAll(async () => {
-    await runAdminSql(server, FIXTURE)
-    const client = await connectPostgresClient(connection!, server.password, () => undefined)
+    const admin = serverConnectionFromUrl('postgres', url!)
+    if (admin.connection.driver !== 'postgres') {
+      throw new Error('ORCA_TEST_POSTGRES_URL is not a PostgreSQL URL.')
+    }
+    await runAdminSql(admin, FIXTURE)
+    const client = await connectPostgresClient(admin.connection, admin.password, () => undefined)
     const version = await client.query<{ server_version: string }>('show server_version')
     await client.end()
-    target = {
-      connection: connection!,
-      password: server.password,
-      serverVersion: version.rows[0]?.server_version ?? '0'
+    server = {
+      admin,
+      target: {
+        connection: admin.connection,
+        password: admin.password,
+        serverVersion: version.rows[0]?.server_version ?? '0'
+      }
     }
   })
 
   afterAll(async () => {
-    await runAdminSql(server, [`drop schema if exists ${schema} cascade`], { ignoreErrors: true })
+    if (!server) {
+      return
+    }
+    await runAdminSql(server.admin, [`drop schema if exists ${schema} cascade`], {
+      ignoreErrors: true
+    })
     for (const database of restored) {
-      await runAdminSql(server, [`drop database if exists ${database} with (force)`], {
+      await runAdminSql(server.admin, [`drop database if exists ${database} with (force)`], {
         ignoreErrors: true
       })
     }
@@ -102,7 +125,7 @@ describe.skipIf(!tool)('PostgreSQL dump with pg_dump', () => {
     expect(readFileSync(summary.files[0]!, 'utf8')).toMatch(/INSERT INTO/)
     const database = await newDatabase()
     await psql(summary.files, database)
-    expect(await snapshot(database)).toEqual(await snapshot(sourceDatabase))
+    expect(await snapshot(database)).toEqual(await snapshot(sourceDatabase()))
   })
 
   it('restores a file per table twice over, dropping what the first load made', async () => {
@@ -120,7 +143,7 @@ describe.skipIf(!tool)('PostgreSQL dump with pg_dump', () => {
     const database = await newDatabase()
     await psql(summary.files, database)
     await psql(summary.files, database)
-    expect(await snapshot(database)).toEqual(await snapshot(sourceDatabase))
+    expect(await snapshot(database)).toEqual(await snapshot(sourceDatabase()))
   })
 
   it('exports only rows into the same structure, with triggers off while they load', async () => {
@@ -130,6 +153,6 @@ describe.skipIf(!tool)('PostgreSQL dump with pg_dump', () => {
     expect(data.notes.join(' ')).toMatch(/disable-triggers/)
     const database = await newDatabase()
     await psql([...structure.files, ...data.files], database)
-    expect(await snapshot(database)).toEqual(await snapshot(sourceDatabase))
+    expect(await snapshot(database)).toEqual(await snapshot(sourceDatabase()))
   })
 })
