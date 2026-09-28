@@ -10,6 +10,8 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { translate } from '@/i18n/i18n'
+import { useAppStore } from '@/store'
+import { AddRemoteHostDialog } from '../../sidebar/AddRemoteHostDialog'
 import {
   DATABASE_DRIVER_NAMES,
   type DatabaseConnectionSummary
@@ -30,6 +32,15 @@ type TestState =
   | { status: 'testing' }
   | { status: 'ok'; serverVersion: string }
   | { status: 'failed'; message: string }
+
+/** The one SSH host that appeared since `before`; none when nothing or several were added. */
+function addedSshTargetId(
+  before: ReadonlySet<string>,
+  after: ReadonlyMap<string, string>
+): string | null {
+  const added = [...after.keys()].filter((id) => !before.has(id))
+  return added.length === 1 ? added[0] : null
+}
 
 function TestResult({ state }: { state: TestState }): React.JSX.Element | null {
   if (state.status === 'testing') {
@@ -75,6 +86,8 @@ export function DatabaseConnectionDialog({
   const [test, setTest] = useState<TestState>({ status: 'idle' })
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  // Why a baseline: Add SSH host reports no id, so the new host is the one not listed before.
+  const [sshIdsBeforeAdd, setSshIdsBeforeAdd] = useState<ReadonlySet<string> | null>(null)
   const parsed = parseConnectionForm(form)
 
   useEffect(() => {
@@ -93,6 +106,16 @@ export function DatabaseConnectionDialog({
     setForm((current) => ({ ...current, ...patch }))
     setTest({ status: 'idle' })
     setSaveError(null)
+  }
+
+  const finishAddingSshHost = (): void => {
+    const added = sshIdsBeforeAdd
+      ? addedSshTargetId(sshIdsBeforeAdd, useAppStore.getState().sshTargetLabels)
+      : null
+    setSshIdsBeforeAdd(null)
+    if (added) {
+      update({ sshTargetId: added })
+    }
   }
 
   const runTest = async (): Promise<void> => {
@@ -179,6 +202,9 @@ export function DatabaseConnectionDialog({
               setSaveError(null)
             }}
             onChange={update}
+            onAddSshHost={() =>
+              setSshIdsBeforeAdd(new Set(useAppStore.getState().sshTargetLabels.keys()))
+            }
           />
           <div className="min-h-5">
             {saveError ? (
@@ -206,6 +232,11 @@ export function DatabaseConnectionDialog({
             </div>
           </DialogFooter>
         </form>
+        {/* Why outside the form: React bubbles its form's submit through the portal into ours. */}
+        <AddRemoteHostDialog
+          mode={sshIdsBeforeAdd ? 'ssh' : null}
+          onOpenChange={(mode) => mode === null && finishAddingSshHost()}
+        />
       </DialogContent>
     </Dialog>
   )
