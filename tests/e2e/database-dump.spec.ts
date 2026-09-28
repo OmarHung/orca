@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -131,7 +131,7 @@ test('exports one table’s rows into a new folder with a file per table', async
   expect(text).not.toMatch(/CREATE TABLE|INSERT INTO orders/)
 })
 
-test('cancels a running dump and removes what it wrote', async ({
+test('cancels a running dump, leaving the file it would replace as it was', async ({
   orcaPage,
   electronApp,
   registerPostElectronShutdownCleanup
@@ -149,7 +149,9 @@ test('cancels a running dump and removes what it wrote', async ({
   const dialog = orcaPage.getByRole('dialog', { name: 'Dump to SQL' })
   await expect(dialog.getByText('Selected: 1 of 1')).toBeVisible({ timeout: 20_000 })
   await dialog.getByLabel('Rows per INSERT').fill('1')
+  // An earlier dump the new one would replace; cancelling must leave it as it was.
   const target = join(dir, 'slow.sql')
+  writeFileSync(target, '-- the earlier dump\n')
   await stubDialogs(electronApp, target)
   await dialog.getByRole('button', { name: 'Save As…' }).click()
 
@@ -161,5 +163,6 @@ test('cancels a running dump and removes what it wrote', async ({
     timeout: 20_000
   })
   await expect(job).toContainText('Cancelled; its files were removed.')
-  expect(existsSync(target)).toBe(false)
+  expect(readFileSync(target, 'utf8')).toBe('-- the earlier dump\n')
+  expect(readdirSync(dir).sort()).toEqual(['shop.db', 'slow.sql'])
 })

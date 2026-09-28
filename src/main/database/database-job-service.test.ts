@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -6,6 +6,7 @@ import type { DatabaseDumpRequest } from '../../shared/database/database-dump-ty
 import type { DatabaseError } from '../../shared/database/database-query-types'
 import { DatabaseDumpDestinations } from './database-dump-destinations'
 import { DatabaseJobService } from './database-job-service'
+import { partialDumpPath } from './worker/dump/dump-output'
 
 const dir = mkdtempSync(join(tmpdir(), 'orca-job-service-'))
 afterAll(() => rmSync(dir, { recursive: true, force: true }))
@@ -58,14 +59,52 @@ describe('DatabaseJobService.dump', () => {
     expect(destinations.take(file.token)).toBeNull()
   })
 
-  it('removes what a worker that died mid-dump left behind', async () => {
-    const { destinations, jobs } = failingService(
-      { message: 'Database worker stopped', code: 'unavailable' },
-      false
-    )
+  it('removes the partial output of a worker that died mid-dump, and keeps the file', async () => {
     const path = existingFile('died.sql')
+    const partial = partialDumpPath({ kind: 'file', path }, 'job-00000001')
+    const destinations = new DatabaseDumpDestinations()
+    const jobs = new DatabaseJobService({
+      destinations,
+      sessions: {
+        request: async () => {
+          // The worker had written part of the dump before it died.
+          writeFileSync(partial, 'INSERT INTO people VALUES (1);')
+          return { ok: false, error: { message: 'Database worker stopped', code: 'unavailable' } }
+        },
+        isConnected: () => false
+      }
+    })
     await run(jobs, destinations.register({ kind: 'file', path }).token)
-    expect(existsSync(path)).toBe(false)
+    expect(existsSync(partial)).toBe(false)
+    expect(readFileSync(path, 'utf8')).toBe('earlier dump')
+  })
+
+  it('removes a running dump’s partial output when Orca quits', async () => {
+    const path = join(dir, 'quit.sql')
+    const partial = partialDumpPath({ kind: 'file', path }, 'job-00000001')
+    let finish: () => void = () => undefined
+    const destinations = new DatabaseDumpDestinations()
+    const jobs = new DatabaseJobService({
+      destinations,
+      sessions: {
+        request: () =>
+          new Promise((resolve) => {
+            writeFileSync(partial, 'INSERT INTO people VALUES (1);')
+            finish = () => resolve({ ok: false, error: { message: 'Database session closed' } })
+          }),
+        isConnected: () => true
+      }
+    })
+    const running = run(jobs, destinations.register({ kind: 'file', path }).token)
+    await new Promise((resolve) => setImmediate(resolve))
+    jobs.discardRunning()
+    expect(existsSync(partial)).toBe(false)
+    finish()
+    await running
+    // Once the job has ended there is nothing of its left to remove.
+    writeFileSync(partial, 'someone else')
+    jobs.discardRunning()
+    expect(existsSync(partial)).toBe(true)
   })
 
   it('keeps the file when the worker is alive or the dump never reached it', async () => {

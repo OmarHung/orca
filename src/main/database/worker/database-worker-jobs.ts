@@ -33,6 +33,7 @@ export class DatabaseWorkerJobs {
     const run = async (): Promise<DatabaseDumpSummary> => {
       if (request.options.engine === 'native') {
         return runNativeDump({
+          jobId,
           target: nativeTarget,
           request,
           destination,
@@ -49,7 +50,7 @@ export class DatabaseWorkerJobs {
         return await runDump({
           source,
           request,
-          output: new DumpOutput(destination, source.dialect),
+          output: new DumpOutput(destination, source.dialect, jobId),
           onProgress,
           isCancelled
         })
