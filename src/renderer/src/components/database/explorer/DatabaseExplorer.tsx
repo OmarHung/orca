@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { translate } from '@/i18n/i18n'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
@@ -19,6 +19,27 @@ type NodeRow = Extract<ExplorerRow, { type: 'node' }>
 
 function isNodeRow(row: ExplorerRow | undefined): row is NodeRow {
   return row?.type === 'node'
+}
+
+/**
+ * The widest row's full width, so the tree scrolls sideways instead of cutting names short. Each
+ * row reports its width as it renders; widths stay remembered by key, so scrolling keeps the width.
+ */
+function useWidestRow(rows: readonly ExplorerRow[]): {
+  widest: number
+  onMeasure: (key: string, width: number) => void
+} {
+  const [widths, setWidths] = useState<ReadonlyMap<string, number>>(() => new Map())
+  const onMeasure = useCallback((key: string, width: number) => {
+    setWidths((current) =>
+      current.get(key) === width ? current : new Map(current).set(key, width)
+    )
+  }, [])
+  const widest = useMemo(
+    () => rows.reduce((max, row) => Math.max(max, widths.get(row.key) ?? 0), 0),
+    [rows, widths]
+  )
+  return { widest, onMeasure }
 }
 
 export function DatabaseExplorer(): React.JSX.Element {
@@ -46,6 +67,7 @@ export function DatabaseExplorer(): React.JSX.Element {
     estimateSize: () => EXPLORER_ROW_HEIGHT,
     overscan: 12
   })
+  const { widest, onMeasure } = useWidestRow(rows)
 
   const activate = (node: DatabaseExplorerNode): void => {
     if (node.kind === 'relation') {
@@ -109,7 +131,10 @@ export function DatabaseExplorer(): React.JSX.Element {
       onKeyDown={handleKeyDown}
       className="h-full min-h-0 select-none overflow-auto scrollbar-sleek outline-none"
     >
-      <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
+      <div
+        className="relative min-w-full"
+        style={{ height: virtualizer.getTotalSize(), width: widest || undefined }}
+      >
         {virtualizer.getVirtualItems().map((item) => {
           const row = rows[item.index]!
           return (
@@ -124,6 +149,7 @@ export function DatabaseExplorer(): React.JSX.Element {
                 onSelect={select}
                 onToggle={(node) => void toggle(node)}
                 onActivate={activate}
+                onMeasure={onMeasure}
               />
             </div>
           )
