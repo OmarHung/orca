@@ -41,7 +41,13 @@ export const FIXTURE = [
   `create function add_one(i int) returns int language sql as 'select i + 1'`,
   `create function upper_code() returns trigger language plpgsql as $$
      begin new.code := upper(new.code); return new; end $$`,
-  'create trigger orders_upper before insert on orders for each row execute function upper_code()'
+  'create trigger orders_upper before insert on orders for each row execute function upper_code()',
+  // Comments with quotes, a backslash, a percent sign, a line break and characters past ASCII.
+  "comment on table people is 'People, it''s \\ 50% 中文 🎉\nnext line'",
+  "comment on column people.name is 'what they''re called'",
+  "comment on column orders.doubled is 'twice the total'",
+  "comment on view people_view is 'just names'",
+  "comment on function add_one(int) is 'adds one'"
 ]
 
 export const OBJECTS: DatabaseDumpObject[] = [
@@ -71,6 +77,19 @@ export const OPTIONS: DatabaseDumpOptions = {
   rowsPerInsert: 2,
   dropExisting: false
 }
+
+// Every comment on the schema's tables, views, columns and routines.
+const COMMENTS_SQL = `
+  select coalesce(c.relname, p.proname) as object, a.attname as column_name, d.description
+  from pg_catalog.pg_description d
+  left join pg_catalog.pg_class c
+    on d.classoid = 'pg_catalog.pg_class'::regclass and c.oid = d.objoid
+  left join pg_catalog.pg_proc p
+    on d.classoid = 'pg_catalog.pg_proc'::regclass and p.oid = d.objoid
+  left join pg_catalog.pg_attribute a
+    on c.oid is not null and a.attrelid = d.objoid and a.attnum = d.objsubid
+  where coalesce(c.relnamespace, p.pronamespace) = $1::regnamespace
+  order by 1, 2 nulls first`
 
 const SEQUENCES_SQL = `
   select sequencename, data_type::text, start_value::text, min_value::text, max_value::text,
@@ -106,6 +125,7 @@ export async function snapshot(database: string): Promise<Record<string, unknown
   try {
     const result: Record<string, unknown> = {}
     result.sequences = (await client.query(SEQUENCES_SQL, [schema])).rows
+    result.comments = (await client.query(COMMENTS_SQL, [schema])).rows
     for (const name of ['people', 'orders', 'a', 'b', 'people_view', 'people_view_ids']) {
       const rows = await client.query(`select t::text from ${schema}.${name} t order by 1`)
       result[name] = rows.rows
