@@ -19771,5 +19771,24 @@
       "keywordAnnotate": "标注",
       "keywordAuthor": "作者"
     }
+  },
+  "revisionCompare": {
+    "withBranchAction": "Git：与分支比较…",
+    "withRevisionAction": "Git：与版本比较…",
+    "notGit": "这个文件不在 Git 仓库中。",
+    "hostTooOld": "请更新这台主机上的 Orca 才能列出分支。",
+    "fileHistory": "修改过这个文件的 commit",
+    "recentCommits": "最近的 commit",
+    "branchTitle": "与分支比较",
+    "revisionTitle": "与版本比较",
+    "description": "以 diff 显示这个文件与另一个版本的差异。",
+    "searchBranches": "搜索分支…",
+    "searchRevisions": "按消息、hash 或作者搜索…",
+    "loading": "加载中…",
+    "noMatches": "没有匹配的项目。",
+    "binary": "无法比较二进制文件。",
+    "banner": "正在与 {{label}}（{{sha}}）比较",
+    "close": "关闭比较",
+    "loadingFile": "正在加载 {{label}}…"
   }
 }

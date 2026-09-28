@@ -55,6 +55,13 @@ function logCall(calls: string[][]): string[] | undefined {
 }
 
 describe('git history revision scope', () => {
+  it('limits the log to one path after -- and echoes it', async () => {
+    const { executor, calls } = createExecutor()
+    const result = await loadGitHistoryFromExecutor(executor, '/repo', { path: '-odd/file.ts' })
+    expect(logCall(calls)?.slice(-2)).toEqual(['--', '-odd/file.ts'])
+    expect(result.path).toBe('-odd/file.ts')
+  })
+
   it('logs HEAD and reports the head scope by default', async () => {
     const { executor, calls } = createExecutor()
     const result = await loadGitHistoryFromExecutor(executor, '/repo', {})

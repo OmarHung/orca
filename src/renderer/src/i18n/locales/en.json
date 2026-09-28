@@ -19839,5 +19839,24 @@
       "keywordAnnotate": "annotate",
       "keywordAuthor": "author"
     }
+  },
+  "revisionCompare": {
+    "withBranchAction": "Git: Compare with Branch…",
+    "withRevisionAction": "Git: Compare with Revision…",
+    "notGit": "This file is not in a Git repository.",
+    "hostTooOld": "Update Orca on this host to list its branches.",
+    "fileHistory": "Commits that changed this file",
+    "recentCommits": "Recent commits",
+    "branchTitle": "Compare with Branch",
+    "revisionTitle": "Compare with Revision",
+    "description": "Show this file as a diff against another version.",
+    "searchBranches": "Search branches…",
+    "searchRevisions": "Search by message, hash or author…",
+    "loading": "Loading…",
+    "noMatches": "No matches.",
+    "binary": "Binary files cannot be compared.",
+    "banner": "Comparing with {{label}} ({{sha}})",
+    "close": "Close Comparison",
+    "loadingFile": "Loading {{label}}…"
   }
 }
