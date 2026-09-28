@@ -13,6 +13,7 @@ import {
 } from '../hooks/usePrimarySelectionPaste'
 import { useRadixBodyPointerEventsRecovery } from '../hooks/useRadixBodyPointerEventsRecovery'
 import { useGitStatusPolling } from '../components/right-sidebar/useGitStatusPolling'
+import { useGitAutoFetch } from '../components/git-branch-status/use-git-auto-fetch'
 import { useOsc52ClipboardDefaultOnNotice } from '../components/terminal-pane/osc52-clipboard-default-on-notice'
 import { useWebSessionTabsSync } from '../runtime/web-session-tabs-sync/use-web-session-tabs-sync'
 import { useLocalStructuredSessionTabsSync } from '../runtime/local-structured-session-tabs-sync'
@@ -56,6 +57,7 @@ export function useAppShellServices(): void {
   useAutomationDispatchEvents()
   // Why: git polling lives at App level (RightSidebar unmounts when closed, stranding stale Rebasing/Merging badges); gate on workspaceSessionReady so it doesn't compete with first paint.
   useGitStatusPolling({ enabled: workspaceSessionReady })
+  useGitAutoFetch({ enabled: workspaceSessionReady })
   // Why: wire file-change watching at App level so the editor keeps hearing FS changes when Explorer unmounts (right-sidebar switches to Source Control/Checks).
   useEditorExternalWatch()
   useReadOnScreenAttention()
