@@ -152,8 +152,7 @@ export type ActivityBarPosition = 'top' | 'side'
 export type MarkdownViewMode = 'source' | 'rich' | 'preview'
 
 // Why: orthogonal to MarkdownViewMode; 'changes' renders diff-vs-HEAD in place of the editor without a separate tab. See reviews/changes-view-mode-plan.md.
-// 'markers' keeps the editor and marks lines that differ from HEAD in its gutter.
-export type EditorViewMode = 'edit' | 'changes' | 'markers'
+export type EditorViewMode = 'edit' | 'changes'
 
 /** Enough state to restore a tab via `openFile` after `closeFile`. */
 // Why: omit mirroredFromRuntimeSession so a user-reopened tab isn't treated as host-owned and culled by the next web session sync.

@@ -19281,8 +19281,8 @@
     }
   },
   "changeMarkers": {
-    "toggleLabel": "变更标记",
-    "toggleTitle": "编辑文件，并在行号旁标示未提交的更改",
+    "show": "显示变更标记",
+    "hide": "隐藏变更标记",
     "gutterTooltip": "点击查看更改内容",
     "kind": {
       "added": "新增",

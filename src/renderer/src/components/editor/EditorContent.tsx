@@ -51,7 +51,7 @@ export function EditorContent({
   mdViewMode,
   inlineMarkdownRenderState,
   isChangesMode,
-  isMarkersMode = false,
+  showChangeMarkers = false,
   sideBySide,
   showMarkdownTableOfContents = false,
   showMarkdownFrontmatter = false,
@@ -80,7 +80,7 @@ export function EditorContent({
   mdViewMode: MarkdownViewMode
   inlineMarkdownRenderState: MarkdownRenderState | null
   isChangesMode: boolean
-  isMarkersMode?: boolean
+  showChangeMarkers?: boolean
   sideBySide: boolean
   showMarkdownTableOfContents?: boolean
   showMarkdownFrontmatter?: boolean
@@ -251,7 +251,7 @@ export function EditorContent({
         mdViewMode={mdViewMode}
         inlineMarkdownRenderState={inlineMarkdownRenderState}
         isChangesMode={isChangesMode}
-        isMarkersMode={isMarkersMode}
+        showChangeMarkers={showChangeMarkers}
         sideBySide={sideBySide}
         showMarkdownTableOfContents={showMarkdownTableOfContents}
         showMarkdownFrontmatter={showMarkdownFrontmatter}
