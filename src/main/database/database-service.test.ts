@@ -187,7 +187,7 @@ describe('DatabaseService', () => {
     expect(never.ok && never.value.hasSavedPassword).toBe(false)
   })
 
-  it('reconnects with new settings saved while connected, but keeps the session on a rename', async () => {
+  it('reconnects with new settings saved while connected, but keeps the session on a rename or regroup', async () => {
     const service = createService()
     const saved = await service.saveConnection({ draft, password: 'right' })
     if (!saved.ok) {
@@ -196,9 +196,14 @@ describe('DatabaseService', () => {
     const id = saved.value.id
     expect((await service.connect(id)).ok).toBe(true)
 
-    await service.saveConnection({ id, draft: { ...draft, name: 'Renamed', color: '#ef4444' } })
+    await service.saveConnection({
+      id,
+      draft: { ...draft, name: 'Renamed', color: '#ef4444', group: 'prod' }
+    })
+    service.setConnectionGroup({ connectionIds: [id], group: 'staging' })
     expect((await service.connect(id)).ok).toBe(true)
     expect(connectPasswords).toHaveLength(1)
+    expect(service.listConnections()[0]).toMatchObject({ group: 'staging' })
 
     await service.saveConnection({ id, draft: { ...draft, name: 'Renamed', port: 5433 } })
     expect((await service.connect(id)).ok).toBe(true)

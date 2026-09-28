@@ -74,14 +74,17 @@ function TestResult({ state }: { state: TestState }): React.JSX.Element | null {
 
 export function DatabaseConnectionDialog({
   existing,
+  initialGroup = null,
   onClose
 }: {
   existing: DatabaseConnectionSummary | null
+  /** Group a new connection starts in, e.g. when added from a group's menu. */
+  initialGroup?: string | null
   onClose: () => void
 }): React.JSX.Element {
   const [encryption, setEncryption] = useState<DatabaseEncryptionStatus | null>(null)
   const [form, setForm] = useState<DatabaseConnectionFormState>(() =>
-    initialConnectionForm(existing, true)
+    initialConnectionForm(existing, true, initialGroup)
   )
   const [test, setTest] = useState<TestState>({ status: 'idle' })
   const [saving, setSaving] = useState(false)

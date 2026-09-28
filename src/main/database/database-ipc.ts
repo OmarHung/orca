@@ -3,6 +3,7 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { z } from 'zod'
 import {
   databaseConnectionDraftSchema,
+  databaseConnectionGroupSchema,
   databaseConnectionIdSchema
 } from '../../shared/database/database-connection-types'
 import {
@@ -53,6 +54,12 @@ const SaveRequestSchema = z
     id: databaseConnectionIdSchema.optional(),
     draft: databaseConnectionDraftSchema,
     password: PasswordSchema.nullable().optional()
+  })
+  .strict()
+const SetGroupRequestSchema = z
+  .object({
+    connectionIds: z.array(databaseConnectionIdSchema).min(1).max(1000),
+    group: databaseConnectionGroupSchema
   })
   .strict()
 const TestRequestSchema = z
@@ -152,6 +159,15 @@ export function registerDatabaseHandlers(): void {
   ipcMain.handle('database:saveConnection', (_event, raw: unknown) => {
     const request = SaveRequestSchema.safeParse(raw)
     return request.success ? service.saveConnection(request.data) : INVALID_REQUEST
+  })
+
+  ipcMain.handle('database:setConnectionGroup', (_event, raw: unknown) => {
+    const request = SetGroupRequestSchema.safeParse(raw)
+    if (!request.success) {
+      return INVALID_REQUEST
+    }
+    service.setConnectionGroup(request.data)
+    return { ok: true, value: null }
   })
 
   ipcMain.handle('database:deleteConnection', async (_event, raw: unknown) => {
