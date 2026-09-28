@@ -12,10 +12,13 @@ import { FormField } from '../../run/RunConfigurationFormField'
 /** Label + input, with the label also naming the input for assistive tech. */
 export function TextField({
   label,
+  description,
   ...inputProps
-}: { label: string } & React.ComponentProps<typeof Input>): React.JSX.Element {
+}: { label: string; description?: string } & React.ComponentProps<
+  typeof Input
+>): React.JSX.Element {
   return (
-    <FormField label={label}>
+    <FormField label={label} description={description}>
       <Input aria-label={label} {...inputProps} />
     </FormField>
   )
@@ -25,19 +28,21 @@ export type SelectOption<T extends string> = { value: T; label: string; disabled
 
 export function SelectField<T extends string>({
   label,
+  description,
   value,
   options,
   disabled,
   onChange
 }: {
   label: string
+  description?: string
   value: T
   options: readonly SelectOption<T>[]
   disabled?: boolean
   onChange: (value: T) => void
 }): React.JSX.Element {
   return (
-    <FormField label={label}>
+    <FormField label={label} description={description}>
       <Select
         value={value}
         disabled={disabled}

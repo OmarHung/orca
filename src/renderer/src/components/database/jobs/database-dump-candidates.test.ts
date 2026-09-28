@@ -78,6 +78,13 @@ describe('dump candidates', () => {
     expect(
       buildDumpRequest({ ...SCOPE, database: null }, GROUPS, selected, OPTIONS)
     ).not.toHaveProperty('database')
+    // Native tools dump a schema whole only when every one of its objects is checked.
+    expect(request.completeSchemas).toEqual([])
+    const all = initialDumpSelection(GROUPS, null)
+    expect(buildDumpRequest(SCOPE, GROUPS, all, OPTIONS).completeSchemas).toEqual([
+      'public',
+      'sales'
+    ])
   })
 
   it('names the file after the narrowest thing it holds and the day', () => {

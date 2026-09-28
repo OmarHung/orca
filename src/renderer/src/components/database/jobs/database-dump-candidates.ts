@@ -134,7 +134,15 @@ export function buildDumpRequest(
     .flatMap((group) => group.candidates)
     .filter((candidate) => selected.has(candidate.key))
     .map((candidate) => candidate.object)
-  return { ...(scope.database === null ? {} : { database: scope.database }), objects, options }
+  const completeSchemas = groups
+    .filter((group) => group.candidates.every((candidate) => selected.has(candidate.key)))
+    .map((group) => group.schema)
+  return {
+    ...(scope.database === null ? {} : { database: scope.database }),
+    objects,
+    options,
+    completeSchemas
+  }
 }
 
 /** e.g. `sales-2026-09-28`, named after the narrowest thing the dialog was opened on. */
