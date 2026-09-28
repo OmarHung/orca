@@ -25,6 +25,7 @@ import {
 import { createEditorPanelDraftSelector } from './editor-panel-draft-selector'
 import { createCurrentMarkdownArtifactRequest } from './markdown-artifact-upload'
 import { useEditorPanelSave } from './useEditorPanelSave'
+import { useRevisionCompareStore } from './revision-compare/revision-compare-store'
 
 function EditorPanelInner({
   activeFileId: activeFileIdProp,
@@ -263,6 +264,8 @@ function EditorPanelInner({
   }
   const handleEditorToggleChange = (next: EditorToggleValue): void => {
     const fileId = activeFile.id
+    // Why: picking a view mode leaves a "Compare with Branch/Revision" diff.
+    useRevisionCompareStore.getState().clearBaseline(fileId)
     if (activeFile.mode === 'diff' && model.isMarkdown && next === 'rich') {
       handleOpenDiffTargetFile('rich')
       return

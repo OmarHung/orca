@@ -17,6 +17,7 @@ import {
   getDiff
 } from '../../git/status'
 import { getHistory } from '../../git/history'
+import { readGitHistoryIpcOptions } from './git-history-ipc-options'
 import { checkIgnoredPaths } from '../../git/check-ignored-paths'
 import {
   appendFolderToGitignore,
@@ -190,13 +191,7 @@ export function registerFilesystemGitStatusHandlers(context: FilesystemHandlerCo
       _event,
       args: { worktreePath: string; connectionId?: string } & GitHistoryOptions
     ): Promise<GitHistoryResult> => {
-      const options: GitHistoryOptions = {
-        limit: args.limit,
-        baseRef: args.baseRef,
-        revision: typeof args.revision === 'string' ? args.revision : null,
-        allBranches: args.allBranches === true,
-        includeRefs: args.includeRefs === true
-      }
+      const options = readGitHistoryIpcOptions(args)
       if (args.connectionId) {
         const provider = getSshGitProvider(args.connectionId)
         if (!provider) {
