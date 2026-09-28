@@ -73,7 +73,7 @@ function fakeSource(options: { onRows?: () => void } = {}): DumpSource {
       drop: { sql: `DROP VIEW IF EXISTS ${schema}.${name}` }
     }),
     routine: async (routine) => ({
-      create: { sql: `CREATE FUNCTION ${routine.identity}` },
+      create: [{ sql: `CREATE FUNCTION ${routine.identity}` }],
       drop: { sql: `DROP FUNCTION IF EXISTS ${routine.identity}` }
     }),
     dropTables: (tables) => [
