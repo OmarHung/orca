@@ -58,7 +58,7 @@ describe('database explorer tree', () => {
   it('adds a Routines folder to schemas unless the database has none', () => {
     const relations = {
       level: 'relations' as const,
-      relations: [{ name: 't', kind: 'table' as const }]
+      relations: [{ name: 't', kind: 'table' as const, comment: null }]
     }
     const withRoutines = childNodesFor(publicSchema!, relations)
     expect(withRoutines.map((node) => node.kind)).toEqual(['relation', 'folder'])
@@ -69,7 +69,10 @@ describe('database explorer tree', () => {
   it('adds Keys and Indexes folders only where the relation kind has them', () => {
     const columns = { level: 'columns' as const, columns: [] }
     const relationOf = (kind: 'table' | 'view' | 'materialized-view') =>
-      childNodesFor(publicSchema!, { level: 'relations', relations: [{ name: 't', kind }] })[0]!
+      childNodesFor(publicSchema!, {
+        level: 'relations',
+        relations: [{ name: 't', kind, comment: null }]
+      })[0]!
     const folders = (kind: 'table' | 'view' | 'materialized-view') =>
       childNodesFor(relationOf(kind), columns).map((node) =>
         node.kind === 'folder' ? node.folder : node.kind
@@ -109,7 +112,7 @@ describe('database explorer tree', () => {
     })
     const [table, routines] = childNodesFor(salesPublic, {
       level: 'relations',
-      relations: [{ name: 't', kind: 'table' }]
+      relations: [{ name: 't', kind: 'table', comment: null }]
     })
     expect(introspectTargetFor(table!)).toEqual({
       level: 'columns',
@@ -129,7 +132,7 @@ describe('database explorer tree', () => {
   it('keys unnamed constraints apart by position', () => {
     const table = childNodesFor(publicSchema!, {
       level: 'relations',
-      relations: [{ name: 't', kind: 'table' }]
+      relations: [{ name: 't', kind: 'table', comment: null }]
     })[0]!
     const [keysFolder] = childNodesFor(table, { level: 'columns', columns: [] })
     const unnamed = { name: '', kind: 'foreign' as const, columns: ['a'], references: null }

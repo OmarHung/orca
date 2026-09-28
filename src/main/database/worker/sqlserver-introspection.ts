@@ -3,6 +3,7 @@ import type {
   DatabaseIntrospectResult,
   DatabaseIntrospectTarget
 } from '../../../shared/database/database-introspection-types'
+import { catalogComment } from './catalog-row-grouping'
 import { sqlServerIndexes, sqlServerKeys, sqlServerRoutines } from './sqlserver-catalog-objects'
 import { querySqlServerRows } from './sqlserver-client-factory'
 
@@ -18,9 +19,16 @@ const SCHEMAS_SQL = `
   where s.name not in ('sys', 'INFORMATION_SCHEMA', 'guest') and s.name not like 'db[_]%'
   order by s.name`
 
+// A comment is the MS_Description extended property: on the object (minor_id 0) or a column.
+const descriptionOf = (majorId: string, minorId: string): string => `
+  left join sys.extended_properties ep
+    on ep.class = 1 and ep.major_id = ${majorId} and ep.minor_id = ${minorId}
+    and ep.name = N'MS_Description'`
+
 const RELATIONS_SQL = `
-  select o.name, o.type from sys.objects o
+  select o.name, o.type, cast(ep.value as nvarchar(max)) as comment from sys.objects o
   join sys.schemas s on s.schema_id = o.schema_id
+  ${descriptionOf('o.object_id', '0')}
   where s.name = @schema and o.type in ('U', 'V') and o.is_ms_shipped = 0
   order by o.name`
 
@@ -32,8 +40,10 @@ const COLUMNS_SQL = `
            select 1 from sys.index_columns ic
            join sys.indexes i on i.object_id = ic.object_id and i.index_id = ic.index_id
            where i.is_primary_key = 1 and ic.object_id = c.object_id and ic.column_id = c.column_id
-         ) then 1 else 0 end as is_primary_key
+         ) then 1 else 0 end as is_primary_key,
+         cast(ep.value as nvarchar(max)) as comment
   from sys.columns c
+  ${descriptionOf('c.object_id', 'c.column_id')}
   where c.object_id = object_id(quotename(@schema) + '.' + quotename(@relation))
   order by c.column_id`
 
@@ -85,7 +95,8 @@ export async function introspectSqlServer(
         level: 'relations',
         relations: rows.map((row) => ({
           name: String(row.name),
-          kind: String(row.type).trim() === 'V' ? 'view' : 'table'
+          kind: String(row.type).trim() === 'V' ? 'view' : 'table',
+          comment: catalogComment(row.comment)
         }))
       }
     }
@@ -101,7 +112,8 @@ export async function introspectSqlServer(
           dataType: formatSqlServerColumnType(row),
           nullable: row.is_nullable === true,
           defaultValue: typeof row.default_value === 'string' ? row.default_value : null,
-          isPrimaryKey: row.is_primary_key === 1
+          isPrimaryKey: row.is_primary_key === 1,
+          comment: catalogComment(row.comment)
         }))
       }
     }
