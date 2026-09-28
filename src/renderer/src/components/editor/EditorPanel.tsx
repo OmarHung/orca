@@ -35,6 +35,7 @@ import { useFileCustomEditors } from '@/store/plugins/file-editors/plugin-custom
 import { applyCustomEditorToggle } from './view-mode/custom-editor-toggle'
 import { editorPanelFileActions } from './editor-panel-file-actions'
 import { runAfterEditorFramesFlush } from './save/flush/editor-pending-flush'
+import { useRevisionCompareStore } from './revision-compare/revision-compare-store'
 
 function EditorPanelInner({
   activeFileId: activeFileIdProp,
@@ -269,6 +270,8 @@ function EditorPanelInner({
   }
   const applyEditorToggle = (next: EditorToggleValue): void => {
     const fileId = activeFile.id
+    // Why: picking a view mode leaves a "Compare with Branch/Revision" diff.
+    useRevisionCompareStore.getState().clearBaseline(fileId)
     if (activeFile.mode === 'diff' && model.isMarkdown && next === 'rich') {
       handleOpenDiffTargetFile('rich')
       return

@@ -73,6 +73,8 @@ export type GitHistoryOptions = {
   allBranches?: boolean
   /** Also return the repository's branch list in `refs`. */
   includeRefs?: boolean
+  /** Only commits that touched this worktree-relative path (the editor's "Compare with Revision"). */
+  path?: string | null
 }
 
 export type GitHistoryBranchRange = {
@@ -129,6 +131,8 @@ export type GitHistoryResult = {
   revisionScope?: GitHistoryRevisionScope
   /** Present only when `includeRefs` was requested and the host supports it. */
   branchList?: GitHistoryBranchList
+  /** Echoes the path the log was limited to; absent from a host that ignores `path`. */
+  path?: string
 }
 
 export type GitHistoryExecutor = (
