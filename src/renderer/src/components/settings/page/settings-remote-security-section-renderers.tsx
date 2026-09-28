@@ -5,6 +5,7 @@ import { RuntimeServersHeaderActions } from '../runtime-environments/runtime-ser
 import { RuntimeServersPageProvider } from '../runtime-environments/runtime-servers-page-context'
 import { SshPane } from '../ssh/SshPane'
 import { SshHostsHeaderSlot, SshHostsHeaderSlotProvider } from '../ssh/ssh-hosts-header-slot'
+import { SshSavedPassphrasesSection } from '../ssh/SshSavedPassphrasesSection'
 import { SettingsSection } from '../section-layout/SettingsSection'
 import { translate } from '@/i18n/i18n'
 import type { Translate } from '@/i18n/use-translate'
@@ -71,7 +72,12 @@ export function renderSshSettingsSection(
         searchEntries={navigation.getSectionSearchEntries('ssh')}
         headerAction={mounted ? <SshHostsHeaderSlot /> : undefined}
       >
-        {mounted ? <SshPane addTargetIntentSignal={model.sshHostAddIntentSignal} /> : null}
+        {mounted ? (
+          <div className="space-y-4">
+            <SshPane addTargetIntentSignal={model.sshHostAddIntentSignal} />
+            <SshSavedPassphrasesSection />
+          </div>
+        ) : null}
       </SettingsSection>
     </SshHostsHeaderSlotProvider>
   ) : null

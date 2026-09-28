@@ -20,6 +20,7 @@ import {
 
 import { registerSshBrowseHandler } from './ssh-browse'
 import { registerCredentialHandler } from './ssh-passphrase'
+import { registerSshSavedPassphraseHandlers } from './ssh-saved-passphrases'
 import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
 import {
   initializeSshConnectionGenerationSession,
@@ -133,6 +134,7 @@ export async function registerSshHandlers(
     })
 
   registerCredentialHandler()
+  registerSshSavedPassphraseHandlers()
 
   const callbacks = createSshConnectionCallbacks()
   if (connectionManager) {
