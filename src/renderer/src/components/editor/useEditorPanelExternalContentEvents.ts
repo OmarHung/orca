@@ -156,8 +156,7 @@ export function useEditorPanelExternalContentEvents({
           // Why: external writes must replace any in-flight pre-change read so
           // the tab shows the new on-disk content, not a stale dedupe result.
           reloads.run(`content:${file.id}`, () => runContentReload(file.id, eventGeneration))
-          const viewMode = editorViewModeRef.current[file.id]
-          if (viewMode === 'changes' || viewMode === 'markers') {
+          if (editorViewModeRef.current[file.id] === 'changes') {
             reloads.run(`diff:${file.id}`, () => runDiffReload(file.id, eventGeneration))
           } else {
             invalidatedDiffFileIds.push(file.id)
