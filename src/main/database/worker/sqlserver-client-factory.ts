@@ -1,6 +1,7 @@
 import { Connection, Request, TYPES } from 'tedious'
 import type { DatabaseConnectionDraft } from '../../../shared/database/database-connection-types'
 import type { RoutedConnection } from './database-connection-route'
+import { SQLSERVER_LOGIN_FAILED } from './database-error-mapping'
 import type { SqlServerColumnMeta } from './sqlserver-values'
 
 export type SqlServerConnectionDraft = Extract<DatabaseConnectionDraft, { driver: 'sqlserver' }>
@@ -22,6 +23,8 @@ function encryption(mode: SqlServerConnectionDraft['sslMode']): {
   }
 }
 
+type SqlServerLoginReason = { number: number; message: string }
+
 /**
  * A login SQL Server refused (tedious' ELOGIN), with every reason it sent: for a database it
  * can't open, 4060's "Cannot open database" comes before the 18456 that tedious alone keeps.
@@ -31,19 +34,24 @@ export class SqlServerLoginError extends Error {
 
   constructor(
     message: string,
-    /** The last error the server sent, usually 18456 "Login failed for user". */
+    /** The server's reason: 18456 for the login itself, else the one before it, e.g. 4060. */
     readonly number: number | undefined
   ) {
     super(message)
   }
 }
 
-function loginFailure(error: Error, reasons: readonly { number: number; message: string }[]) {
+export function sqlServerLoginFailure(
+  error: Error,
+  reasons: readonly SqlServerLoginReason[]
+): Error {
   if (Reflect.get(error, 'code') !== 'ELOGIN') {
     return error
   }
   const messages = [...new Set(reasons.map((reason) => reason.message))]
-  return new SqlServerLoginError(messages.join(' ') || error.message, reasons.at(-1)?.number)
+  const reason =
+    reasons.find((candidate) => candidate.number !== SQLSERVER_LOGIN_FAILED) ?? reasons.at(-1)
+  return new SqlServerLoginError(messages.join(' ') || error.message, reason?.number)
 }
 
 /** Opens one TDS session. `onError` must be attached before connect so drops never crash the worker. */
@@ -73,8 +81,8 @@ export function connectSqlServer(
     }
   })
   client.on('error', onError)
-  const reasons: { number: number; message: string }[] = []
-  const onLoginError = (token: { number: number; message: string }): void => {
+  const reasons: SqlServerLoginReason[] = []
+  const onLoginError = (token: SqlServerLoginReason): void => {
     reasons.push({ number: token.number, message: token.message })
   }
   client.on('errorMessage', onLoginError)
@@ -83,7 +91,7 @@ export function connectSqlServer(
       client.removeListener('errorMessage', onLoginError)
       if (error) {
         client.close()
-        reject(loginFailure(error, reasons))
+        reject(sqlServerLoginFailure(error, reasons))
       } else {
         resolve(client)
       }

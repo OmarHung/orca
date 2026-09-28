@@ -38,11 +38,14 @@ const MISSING_PASSWORD_MESSAGE =
   /password must be a string|password authentication failed|Login failed for user/i
 
 function isPasswordRejection(error: DatabaseError): boolean {
-  return (
-    error.code === 'password-required' ||
-    (error.sqlState !== undefined && AUTH_SQLSTATES.has(error.sqlState)) ||
-    MISSING_PASSWORD_MESSAGE.test(error.message)
-  )
+  if (error.code === 'password-required') {
+    return true
+  }
+  // Why the message only without a code: SQL Server's 4060 "Cannot open database" ends in
+  // "Login failed for user" too.
+  return error.sqlState !== undefined
+    ? AUTH_SQLSTATES.has(error.sqlState)
+    : MISSING_PASSWORD_MESSAGE.test(error.message)
 }
 
 // Draft fields a live session doesn't depend on.
