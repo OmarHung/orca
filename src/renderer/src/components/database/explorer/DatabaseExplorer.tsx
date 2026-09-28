@@ -1,24 +1,28 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { translate } from '@/i18n/i18n'
+import { cn } from '@/lib/utils'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
 import { openDatabaseTable } from '../database-page-actions'
+import { useDatabasePageStore } from '../database-page-store'
 import { DatabaseExplorerRow, EXPLORER_ROW_HEIGHT } from './DatabaseExplorerRow'
 import { useDatabaseExplorerStore } from './database-explorer-store'
 import {
+  databaseExplorerRoots,
   flattenDatabaseExplorer,
   type DatabaseExplorerRow as ExplorerRow
 } from './database-explorer-rows'
-import {
-  connectionNode,
-  isExpandableNode,
-  type DatabaseExplorerNode
-} from './database-explorer-tree'
+import { isExpandableNode, type DatabaseExplorerNode } from './database-explorer-tree'
+import { TOP_LEVEL_DROP, useConnectionGroupDrop } from './use-connection-group-drop'
 
-type NodeRow = Extract<ExplorerRow, { type: 'node' }>
+type ItemRow = Extract<ExplorerRow, { type: 'node' | 'group' }>
 
-function isNodeRow(row: ExplorerRow | undefined): row is NodeRow {
-  return row?.type === 'node'
+function isItemRow(row: ExplorerRow | undefined): row is ItemRow {
+  return row?.type === 'node' || row?.type === 'group'
+}
+
+function canExpand(row: ItemRow): boolean {
+  return row.type === 'group' || isExpandableNode(row.node)
 }
 
 /**
@@ -50,16 +54,20 @@ export function DatabaseExplorer(): React.JSX.Element {
   const selectedKey = useDatabaseExplorerStore((state) => state.selectedKey)
   const select = useDatabaseExplorerStore((state) => state.select)
   const toggle = useDatabaseExplorerStore((state) => state.toggle)
+  const collapsedGroups = useDatabasePageStore((state) => state.collapsedConnectionGroups)
+  const setGroupCollapsed = useDatabasePageStore((state) => state.setConnectionGroupCollapsed)
 
   const rows = useMemo(
     () =>
       flattenDatabaseExplorer(
-        connections.map((connection) => connectionNode(connection.id)),
+        databaseExplorerRoots(connections),
         expanded,
-        children
+        children,
+        new Set(collapsedGroups)
       ),
-    [connections, expanded, children]
+    [connections, expanded, children, collapsedGroups]
   )
+  const { dropTarget, handlers: dropHandlers } = useConnectionGroupDrop(rows, scrollRef)
 
   const virtualizer = useVirtualizer({
     count: rows.length,
@@ -76,31 +84,42 @@ export function DatabaseExplorer(): React.JSX.Element {
       void toggle(node)
     }
   }
+  const toggleGroup = (group: string): void =>
+    setGroupCollapsed(group, !collapsedGroups.includes(group))
+  const toggleRow = (row: ItemRow): void => {
+    if (row.type === 'group') {
+      toggleGroup(row.group)
+    } else {
+      void toggle(row.node)
+    }
+  }
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
-    const nodeRows = rows.filter(isNodeRow)
-    const index = nodeRows.findIndex((row) => row.key === selectedKey)
-    const current = nodeRows[index]
-    let next: NodeRow | undefined
+    const itemRows = rows.filter(isItemRow)
+    const index = itemRows.findIndex((row) => row.key === selectedKey)
+    const current = itemRows[index]
+    let next: ItemRow | undefined
     switch (event.key) {
       case 'ArrowDown':
-        next = nodeRows[Math.min(nodeRows.length - 1, index + 1)]
+        next = itemRows[Math.min(itemRows.length - 1, index + 1)]
         break
       case 'ArrowUp':
-        next = nodeRows[Math.max(0, index - 1)]
+        next = itemRows[Math.max(0, index - 1)]
         break
       case 'ArrowRight':
-        if (current && isExpandableNode(current.node) && !current.expanded) {
-          void toggle(current.node)
+        if (current && canExpand(current) && !current.expanded) {
+          toggleRow(current)
         }
         break
       case 'ArrowLeft':
         if (current?.expanded) {
-          void toggle(current.node)
+          toggleRow(current)
         }
         break
       case 'Enter':
-        if (current) {
+        if (current?.type === 'group') {
+          toggleGroup(current.group)
+        } else if (current) {
           activate(current.node)
         }
         break
@@ -129,7 +148,11 @@ export function DatabaseExplorer(): React.JSX.Element {
       tabIndex={0}
       aria-label={translate('database.explorer.label', 'Database objects')}
       onKeyDown={handleKeyDown}
-      className="h-full min-h-0 select-none overflow-auto scrollbar-sleek outline-none"
+      {...dropHandlers}
+      className={cn(
+        'h-full min-h-0 select-none overflow-auto scrollbar-sleek outline-none',
+        dropTarget === TOP_LEVEL_DROP && 'ring-1 ring-inset ring-ring'
+      )}
     >
       <div
         className="relative min-w-full"
@@ -140,14 +163,17 @@ export function DatabaseExplorer(): React.JSX.Element {
           return (
             <div
               key={row.key}
+              data-row-key={row.key}
               className="absolute inset-x-0"
               style={{ height: EXPLORER_ROW_HEIGHT, transform: `translateY(${item.start}px)` }}
             >
               <DatabaseExplorerRow
                 row={row}
                 selected={row.key === selectedKey}
+                dropTarget={row.type === 'group' && row.key === dropTarget}
                 onSelect={select}
                 onToggle={(node) => void toggle(node)}
+                onToggleGroup={toggleGroup}
                 onActivate={activate}
                 onMeasure={onMeasure}
               />

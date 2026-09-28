@@ -24,6 +24,12 @@ export type DatabaseSaveConnectionRequest = {
   password?: string | null
 }
 
+export type DatabaseSetConnectionGroupRequest = {
+  connectionIds: string[]
+  /** Null moves the connections back to the top level. */
+  group: string | null
+}
+
 export type DatabaseTestConnectionRequest = {
   draft: DatabaseConnectionDraft
   /** Absent falls back to the password saved for `connectionId`. */

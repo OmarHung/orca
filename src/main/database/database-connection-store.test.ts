@@ -51,6 +51,25 @@ describe('DatabaseConnectionStore', () => {
     expect(createStore().list()).toEqual([])
   })
 
+  it('moves connections between groups in one write, leaving the rest alone', () => {
+    const store = createStore()
+    const first = store.save(undefined, draft)
+    const second = store.save(undefined, { ...draft, name: 'Other' })
+    const third = store.save(undefined, { ...draft, name: 'Third', group: 'prod' })
+
+    clock = 2_000
+    store.setGroup([first.id, third.id], 'prod')
+    expect(createStore().list()).toEqual([
+      { ...first, group: 'prod', updatedAt: 2_000 },
+      second,
+      third
+    ])
+
+    clock = 3_000
+    store.setGroup([first.id, 'missing-id'], null)
+    expect(createStore().get(first.id)).toEqual({ ...first, group: null, updatedAt: 3_000 })
+  })
+
   it('never writes a password field', () => {
     createStore().save(undefined, draft)
     expect(readFileSync(filePath, 'utf8')).not.toMatch(/password"\s*:/i)

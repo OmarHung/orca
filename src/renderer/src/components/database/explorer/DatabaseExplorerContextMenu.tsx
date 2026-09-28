@@ -28,6 +28,7 @@ import {
   useDatabaseDialogsStore
 } from '../database-page-actions'
 import { useDatabaseExplorerStore } from './database-explorer-store'
+import { MoveToGroupSubmenu } from './DatabaseExplorerGroupMenus'
 import { useDatabaseJobsStore, type DatabaseDumpScope } from '../jobs/database-jobs-store'
 import type { DatabasePropertiesTarget } from '../../../../../shared/database/database-properties-types'
 import { qualifiedRelationName } from '../../../../../shared/database/sql-identifiers'
@@ -116,6 +117,7 @@ function ConnectionItems({ connectionId }: { connectionId: string }): React.JSX.
         </ContextMenuItem>
       )}
       <ContextMenuSeparator />
+      <MoveToGroupSubmenu connectionId={connectionId} />
       <ContextMenuItem
         onSelect={() => dialogs.openConnectionEditor({ mode: 'edit', connectionId })}
       >

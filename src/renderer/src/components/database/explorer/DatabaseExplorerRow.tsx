@@ -6,6 +6,7 @@ import {
   Database,
   Eye,
   Folder,
+  FolderOpen,
   Key,
   KeyRound,
   Layers,
@@ -25,6 +26,7 @@ import { DatabaseSessionDot } from '../DatabaseConnectionBadge'
 import { useDatabaseConnectionColor } from '../database-connection-color'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
 import { DatabaseExplorerContextMenu } from './DatabaseExplorerContextMenu'
+import { DatabaseExplorerGroupContextMenu } from './DatabaseExplorerGroupMenus'
 import { commentLine, constraintLabel, folderLabel } from './database-explorer-labels'
 import type { DatabaseExplorerRow as ExplorerRow } from './database-explorer-rows'
 import { isExpandableNode, type DatabaseExplorerNode } from './database-explorer-tree'
@@ -235,28 +237,23 @@ function StatusRow({ row }: { row: Extract<ExplorerRow, { type: 'status' }> }): 
   )
 }
 
-export function DatabaseExplorerRow({
-  row,
-  selected,
-  onSelect,
-  onToggle,
-  onActivate,
-  onMeasure
-}: {
-  row: ExplorerRow
+type TreeItemProps = {
+  row: Extract<ExplorerRow, { type: 'node' | 'group' }>
+  expandable: boolean
   selected: boolean
+  /** Highlighted as where a dragged connection would land. */
+  dropTarget: boolean
   onSelect: (key: string) => void
-  onToggle: (node: DatabaseExplorerNode) => void
-  /** Double-click: opens a table's data, expands anything else. */
-  onActivate: (node: DatabaseExplorerNode) => void
-  /** Reports the row's full width, so the tree can scroll sideways to it. */
+  onToggle: () => void
+  onActivate: () => void
   onMeasure: (key: string, width: number) => void
-}): React.JSX.Element {
-  if (row.type === 'status') {
-    return <StatusRow row={row} />
-  }
-  const { node } = row
-  const expandable = isExpandableNode(node)
+  icon: React.ReactNode
+  label: React.ReactNode
+  menu: React.ReactNode
+}
+
+function TreeItem(props: TreeItemProps): React.JSX.Element {
+  const { row, expandable, selected, onSelect, onMeasure } = props
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -266,11 +263,14 @@ export function DatabaseExplorerRow({
           aria-expanded={expandable ? row.expanded : undefined}
           aria-selected={selected}
           data-current={selected ? 'true' : undefined}
+          // Why only connections: they are what moves between groups.
+          draggable={row.type === 'node' && row.node.kind === 'connection'}
           onMouseDown={() => onSelect(row.key)}
-          onDoubleClick={() => onActivate(node)}
+          onDoubleClick={props.onActivate}
           className={cn(
             'flex h-full cursor-default items-center gap-1 text-xs hover:bg-accent',
-            selected && 'bg-accent'
+            (selected || props.dropTarget) && 'bg-accent',
+            props.dropTarget && 'ring-1 ring-inset ring-ring'
           )}
           style={{ paddingLeft: row.depth * INDENT_PX + 4, paddingRight: ROW_END_PADDING }}
         >
@@ -279,7 +279,7 @@ export function DatabaseExplorerRow({
             type="button"
             tabIndex={-1}
             aria-hidden="true"
-            onClick={() => onToggle(node)}
+            onClick={props.onToggle}
             className={cn(
               'flex size-4 shrink-0 items-center justify-center',
               !expandable && 'invisible'
@@ -289,13 +289,73 @@ export function DatabaseExplorerRow({
               className={cn('size-3 transition-transform', row.expanded && 'rotate-90')}
             />
           </button>
-          <NodeIcon node={node} />
+          {props.icon}
           <MeasuredLabel rowKey={row.key} onMeasure={onMeasure}>
-            <NodeLabel node={node} />
+            {props.label}
           </MeasuredLabel>
         </div>
       </ContextMenuTrigger>
-      <DatabaseExplorerContextMenu node={node} />
+      {props.menu}
     </ContextMenu>
+  )
+}
+
+export function DatabaseExplorerRow({
+  row,
+  selected,
+  dropTarget,
+  onSelect,
+  onToggle,
+  onToggleGroup,
+  onActivate,
+  onMeasure
+}: {
+  row: ExplorerRow
+  selected: boolean
+  dropTarget: boolean
+  onSelect: (key: string) => void
+  onToggle: (node: DatabaseExplorerNode) => void
+  onToggleGroup: (group: string) => void
+  /** Double-click: opens a table's data, expands anything else. */
+  onActivate: (node: DatabaseExplorerNode) => void
+  /** Reports the row's full width, so the tree can scroll sideways to it. */
+  onMeasure: (key: string, width: number) => void
+}): React.JSX.Element {
+  if (row.type === 'status') {
+    return <StatusRow row={row} />
+  }
+  const common = { selected, dropTarget, onSelect, onMeasure }
+  if (row.type === 'group') {
+    const Icon = row.expanded ? FolderOpen : Folder
+    return (
+      <TreeItem
+        {...common}
+        row={row}
+        expandable
+        onToggle={() => onToggleGroup(row.group)}
+        onActivate={() => onToggleGroup(row.group)}
+        icon={<Icon className={ICON_CLASS} />}
+        label={
+          <>
+            <span>{row.group}</span>
+            <span className="text-muted-foreground">{row.count}</span>
+          </>
+        }
+        menu={<DatabaseExplorerGroupContextMenu group={row.group} />}
+      />
+    )
+  }
+  const { node } = row
+  return (
+    <TreeItem
+      {...common}
+      row={row}
+      expandable={isExpandableNode(node)}
+      onToggle={() => onToggle(node)}
+      onActivate={() => onActivate(node)}
+      icon={<NodeIcon node={node} />}
+      label={<NodeLabel node={node} />}
+      menu={<DatabaseExplorerContextMenu node={node} />}
+    />
   )
 }
