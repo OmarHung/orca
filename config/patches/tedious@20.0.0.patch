@@ -1,0 +1,80 @@
+diff --git a/lib/value-parser.js b/lib/value-parser.js
+index 496b9c737e0f007628fc20068aa94ec0c87756b2..f0bd702b2656d3655c526bbd61e454457b312aa5 100644
+--- a/lib/value-parser.js
++++ b/lib/value-parser.js
+@@ -43,13 +43,20 @@ function readReal(buf, offset) {
+ function readFloat(buf, offset) {
+   return (0, _helpers.readDoubleLE)(buf, offset);
+ }
++// Orca: decimal text of an unscaled integer, so no value passes through a JS number.
++function scaledText(unscaled, scale) {
++  const negative = unscaled < 0n;
++  const digits = (negative ? -unscaled : unscaled).toString().padStart(scale + 1, '0');
++  const text = scale > 0 ? digits.slice(0, -scale) + '.' + digits.slice(-scale) : digits;
++  return negative ? '-' + text : text;
++}
+ function readSmallMoney(buf, offset) {
+   let value;
+   ({
+     offset,
+     value
+   } = (0, _helpers.readInt32LE)(buf, offset));
+-  return new _helpers.Result(value / MONEY_DIVISOR, offset);
++  return new _helpers.Result(scaledText(BigInt(value), 4), offset);
+ }
+ function readMoney(buf, offset) {
+   let high;
+@@ -62,7 +69,7 @@ function readMoney(buf, offset) {
+     offset,
+     value: low
+   } = (0, _helpers.readUInt32LE)(buf, offset));
+-  return new _helpers.Result((low + 0x100000000 * high) / MONEY_DIVISOR, offset);
++  return new _helpers.Result(scaledText(BigInt(high) * 0x100000000n + BigInt(low), 4), offset);
+ }
+ function readBit(buf, offset) {
+   let value;
+@@ -459,32 +466,20 @@ function readNumeric(buf, offset, dataLength, _precision, scale) {
+     offset,
+     value: sign
+   } = (0, _helpers.readUInt8)(buf, offset));
+-  sign = sign === 1 ? 1 : -1;
+-  let value;
+-  if (dataLength === 5) {
+-    ({
+-      offset,
+-      value
+-    } = (0, _helpers.readUInt32LE)(buf, offset));
+-  } else if (dataLength === 9) {
+-    ({
+-      offset,
+-      value
+-    } = (0, _helpers.readUNumeric64LE)(buf, offset));
+-  } else if (dataLength === 13) {
+-    ({
+-      offset,
+-      value
+-    } = (0, _helpers.readUNumeric96LE)(buf, offset));
+-  } else if (dataLength === 17) {
+-    ({
+-      offset,
+-      value
+-    } = (0, _helpers.readUNumeric128LE)(buf, offset));
+-  } else {
++  sign = sign === 1 ? 1n : -1n;
++  if (dataLength !== 5 && dataLength !== 9 && dataLength !== 13 && dataLength !== 17) {
+     throw new Error((0, _sprintfJs.sprintf)('Unsupported numeric dataLength %d', dataLength));
+   }
+-  return new _helpers.Result(value * sign / Math.pow(10, scale), offset);
++  // Orca: the exact value as text; a JS number keeps only about 15 of its up to 38 digits.
++  const byteLength = dataLength - 1;
++  if (buf.length < offset + byteLength) {
++    throw new _helpers.NotEnoughDataError(offset + byteLength);
++  }
++  let value = 0n;
++  for (let index = byteLength - 1; index >= 0; index--) {
++    value = value << 8n | BigInt(buf[offset + index]);
++  }
++  return new _helpers.Result(scaledText(value * sign, scale), offset + byteLength);
+ }
+ function readVariant(buf, offset, options, dataLength) {
+   let baseType;
