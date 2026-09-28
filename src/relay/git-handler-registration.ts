@@ -15,6 +15,7 @@ export function registerGitHandlers(
   dispatcher.onRequest('git.history', (p, context) => handlers.read.history(p, context))
   dispatcher.onRequest('git.commit', (p) => handlers.changes.commit(p))
   dispatcher.onRequest('git.diff', (p, context) => handlers.read.getDiff(p, context))
+  dispatcher.onRequest('git.blame', (p) => handlers.read.blame(p))
   dispatcher.onRequest('git.stage', (p) => handlers.changes.stage(p))
   dispatcher.onRequest('git.unstage', (p) => handlers.changes.unstage(p))
   dispatcher.onRequest('git.bulkStage', (p) => handlers.changes.bulkStage(p))

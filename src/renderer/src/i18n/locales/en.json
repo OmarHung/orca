@@ -19810,5 +19810,18 @@
       "keywordAutoFetch": "auto fetch",
       "keywordGitFetch": "git fetch"
     }
+  },
+  "inlineBlame": {
+    "uncommitted": "Uncommitted changes",
+    "openChanges": "Open Changes",
+    "copySha": "Copy Hash",
+    "openFailed": "Could not open the commit.",
+    "settings": {
+      "title": "Inline Blame",
+      "description": "Show who last changed the line under the caret, when, and in which commit, after the end of that line. Hover it for the commit and a link to its changes.",
+      "keywordBlame": "blame",
+      "keywordAnnotate": "annotate",
+      "keywordAuthor": "author"
+    }
   }
 }
