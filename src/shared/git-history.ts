@@ -217,7 +217,8 @@ export async function loadGitHistoryFromExecutor(
     }
   }
 
-  const parsed = await runHistoryLog(git, cwd, limit, historyRevisions)
+  const path = options.path?.trim() || undefined
+  const parsed = await runHistoryLog(git, cwd, limit, historyRevisions, path)
   const items = parsed.slice(0, limit)
   const hasIncomingChanges =
     Boolean(remoteRef?.revision && mergeBase) && remoteRef?.revision !== mergeBase
@@ -236,7 +237,8 @@ export async function loadGitHistoryFromExecutor(
     hasMore: parsed.length > limit,
     limit,
     revisionScope: logTarget.scope,
-    ...withRefs(refs)
+    ...withRefs(refs),
+    ...(path ? { path } : {})
   }
 }
 
@@ -269,7 +271,8 @@ async function runHistoryLog(
   git: GitHistoryExecutor,
   cwd: string,
   limit: number,
-  revisions: string[]
+  revisions: string[],
+  path?: string
 ) {
   const { stdout } = await git(
     [
@@ -281,7 +284,8 @@ async function runHistoryLog(
       '--topo-order',
       '--decorate=full',
       `-n${limit + 1}`,
-      ...revisions
+      ...revisions,
+      ...(path ? ['--', path] : [])
     ],
     cwd
   )
