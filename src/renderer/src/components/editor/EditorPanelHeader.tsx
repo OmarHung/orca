@@ -20,6 +20,7 @@ import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
 import type { ArtifactWriteRequest } from '../../../../shared/artifacts'
 import { ArtifactPublishButton } from '@/components/artifacts/ArtifactPublishButton'
 import { markdownArtifactSourceKey } from './markdown-artifact-upload'
+import { ChangeMarkersToggleButton } from './change-markers/ChangeMarkersToggleButton'
 
 type EditorPanelHeaderProps = {
   activeFile: OpenFile
@@ -27,6 +28,7 @@ type EditorPanelHeaderProps = {
   isSingleDiff: boolean
   isDiffSurface: boolean
   hasChangeMarkers?: boolean
+  canToggleChangeMarkers?: boolean
   isMarkdown: boolean
   isCsv: boolean
   isNotebook: boolean
@@ -62,6 +64,7 @@ export function EditorPanelHeader({
   isSingleDiff,
   isDiffSurface,
   hasChangeMarkers = false,
+  canToggleChangeMarkers = false,
   isMarkdown,
   isCsv,
   isNotebook,
@@ -188,7 +191,7 @@ export function EditorPanelHeader({
           iconClassName="size-3"
         />
       )}
-      {(isDiffSurface || hasChangeMarkers) && (
+      {(isDiffSurface || (hasChangeMarkers && changeCount > 0)) && (
         // Why: the adjacent diff controls use the same tooltip timing, so they
         // share one provider instead of creating redundant Radix contexts.
         <TooltipProvider delayDuration={300}>
@@ -270,6 +273,7 @@ export function EditorPanelHeader({
           </Tooltip>
         </TooltipProvider>
       )}
+      {canToggleChangeMarkers && <ChangeMarkersToggleButton />}
       {hasEditorToggle && !activeFile.csvPreviewOnly && (
         <EditorViewToggle
           value={effectiveToggleValue}
