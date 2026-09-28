@@ -1,7 +1,7 @@
 import type pg from 'pg'
 import Cursor from 'pg-cursor'
 import { qualifiedRelationName, quoteSqlName } from '../../../../shared/database/sql-identifiers'
-import { POSTGRES_RELATION_SQL, postgresDdl, postgresTableDdl } from '../postgres-ddl'
+import { POSTGRES_RELATION_SQL, postgresDdlStatements, postgresTableDdl } from '../postgres-ddl'
 import type {
   DumpSource,
   DumpStructureOptions,
@@ -143,7 +143,9 @@ export class PostgresDumpSource implements DumpSource {
     const triggers = await this.client.query<{ definition: string }>(TRIGGERS_SQL, [relation.oid])
     return {
       requires: needs.requires.map((sql) => ({ sql })),
-      create: [ddl.create, ...needs.ownedBy, ...ddl.indexes].map((sql) => ({ sql })),
+      create: [ddl.create, ...needs.ownedBy, ...ddl.indexes, ...ddl.comments].map((sql) => ({
+        sql
+      })),
       foreignKeys: ddl.foreignKeys.map((sql) => ({ sql })),
       triggers: triggers.rows.map((row) => ({ sql: row.definition }))
     }
@@ -190,15 +192,16 @@ export class PostgresDumpSource implements DumpSource {
   async view(view: { schema: string; name: string }) {
     const relation = await this.relation(view)
     const sqlName = qualifiedRelationName(view.schema, view.name, 'postgres')
-    const definition = await postgresDdl(
+    const statements = await postgresDdlStatements(
       this.client,
       { kind: 'relation', schema: view.schema, relation: view.name },
       this.serverVersionNum
     )
     const materialized = relation.relkind === 'm'
     return {
-      definition,
-      create: definition.split(/\n\n(?=CREATE )/).map((sql) => ({ sql })),
+      // Why the CREATE alone: a comment naming another view would only muddle the ordering.
+      definition: statements[0] ?? '',
+      create: statements.map((sql) => ({ sql })),
       drop: { sql: `DROP ${materialized ? 'MATERIALIZED VIEW' : 'VIEW'} IF EXISTS ${sqlName}` }
     }
   }
@@ -208,7 +211,7 @@ export class PostgresDumpSource implements DumpSource {
     routineKind: 'function' | 'procedure'
     schema: string
   }) {
-    const definition = await postgresDdl(
+    const statements = await postgresDdlStatements(
       this.client,
       {
         kind: 'routine',
@@ -220,7 +223,7 @@ export class PostgresDumpSource implements DumpSource {
     )
     const kind = routine.routineKind === 'procedure' ? 'PROCEDURE' : 'FUNCTION'
     return {
-      create: [{ sql: definition }],
+      create: statements.map((sql) => ({ sql })),
       drop: { sql: `DROP ${kind} IF EXISTS ${routine.identity}` }
     }
   }
