@@ -141,7 +141,7 @@ async function writeFinish(source: DumpSource, writer: DumpWriter, plan: Plan): 
   for (const routine of plan.routines) {
     writer.checkCancelled()
     await writer.enter(routine.schema)
-    await writer.statements([(await source.routine(routine)).create])
+    await writer.statements((await source.routine(routine)).create)
   }
   for (const table of plan.order) {
     await writer.enter(table.schema)
