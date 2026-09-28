@@ -70,6 +70,8 @@ export function createDatabaseWorkerDispatcher(
         return requireSession().introspect(command.target)
       case 'ddl':
         return { ddl: await requireSession().ddl(command.target) }
+      case 'properties':
+        return requireSession().properties(command.target)
       case 'execute': {
         // Why here: every statement from the page passes this one door before any session.
         const violation = readOnlyViolation(command.sql, driver)
