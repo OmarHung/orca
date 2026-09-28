@@ -156,6 +156,15 @@ describe('DatabaseService', () => {
       ok: false,
       error: { code: 'unavailable' }
     })
+
+    // Nor is a database SQL Server can't open, though its message ends in "Login failed for user".
+    rejection = {
+      message:
+        'Cannot open database "orders" requested by the login. The login failed. Login failed for user \'sa\'.',
+      sqlState: '4060'
+    }
+    const refused = await service.connect(saved.value.id)
+    expect(refused).toEqual({ ok: false, error: rejection })
   })
 
   it('refuses a "forever" password without OS encryption and saves nothing', async () => {
