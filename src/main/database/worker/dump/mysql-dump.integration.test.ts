@@ -3,7 +3,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { DatabaseDumpOptions } from '../../../../shared/database/database-dump-types'
+import type {
+  DatabaseDumpObject,
+  DatabaseDumpOptions
+} from '../../../../shared/database/database-dump-types'
 import { splitSqlStatements } from '../../../../shared/database/sql-statement-splitter'
 import { runAdminSql } from '../database-test-admin'
 import { serverConnectionFromUrl } from '../database-worker-test-harness'
@@ -47,7 +50,11 @@ describe.each(SERVERS)('$label dump', ({ url }) => {
     dropExisting: false
   }
 
-  const dump = async (changes: Partial<DatabaseDumpOptions>, path: string) => {
+  const dump = async (
+    changes: Partial<DatabaseDumpOptions>,
+    path: string,
+    dumped: DatabaseDumpObject[] = objects
+  ) => {
     if (target?.connection.driver !== 'mysql') {
       throw new Error('no MySQL target')
     }
@@ -58,7 +65,7 @@ describe.each(SERVERS)('$label dump', ({ url }) => {
     try {
       return await runDump({
         source,
-        request: { objects, options: { ...options, ...changes } },
+        request: { objects: dumped, options: { ...options, ...changes } },
         output: new DumpOutput(
           changes.layout === 'file-per-table' ? { kind: 'folder', path } : { kind: 'file', path },
           'mysql'
@@ -142,6 +149,48 @@ describe.each(SERVERS)('$label dump', ({ url }) => {
       note: [{ body: 'n\\t' }]
     })
     expect(await contextBehaviour(url!, into)).toEqual(behaviour)
+  })
+
+  it.skipIf(!url)('drops each database’s own table when several share a name', async () => {
+    const [sales, archive, current] = ['sales', 'archive', 'current'].map(
+      (name) => `orca_dump_${name}_${randomUUID().slice(0, 8)}`
+    )
+    created.push(sales, archive, current)
+    const orders = (name: string) => `create table ${name}.orders (id int primary key, note text)`
+    await runAdminSql(target!, [
+      ...[sales, archive, current].map((name) => `create database ${name}`),
+      orders(sales),
+      orders(archive),
+      orders(current),
+      `insert into ${sales}.orders values (1, 'sale')`,
+      `insert into ${archive}.orders values (2, 'archived')`,
+      `insert into ${current}.orders values (3, 'not in the dump')`
+    ])
+    const summary = await dump({ dropExisting: true }, join(dir, `${database}-two.sql`), [
+      { kind: 'table', schema: sales, name: 'orders' },
+      { kind: 'table', schema: archive, name: 'orders' }
+    ])
+    await runAdminSql(target!, [
+      `insert into ${sales}.orders values (9, 'after the dump')`,
+      `alter table ${archive}.orders add column extra int`
+    ])
+    // Loaded from a session whose own database has an `orders` of its own.
+    const client = await mysqlAt(url!, current)
+    try {
+      for (const statement of splitSqlStatements(
+        readFileSync(summary.files[0]!, 'utf8'),
+        'mysql'
+      )) {
+        await client.query(statement.text)
+      }
+      const rows = async (name: string) =>
+        (await client.query(`select * from ${name}.orders order by id`))[0]
+      expect(await rows(sales)).toEqual([{ id: 1, note: 'sale' }])
+      expect(await rows(archive)).toEqual([{ id: 2, note: 'archived' }])
+      expect(await rows(current)).toEqual([{ id: 3, note: 'not in the dump' }])
+    } finally {
+      await client.end()
+    }
   })
 
   it.skipIf(!url)('restores from a file per table with foreign key checks left on', async () => {
