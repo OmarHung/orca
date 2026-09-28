@@ -18,6 +18,7 @@ import {
   admitSshDetectedPorts
 } from '../../shared/ssh-retained-payload-admission'
 import type { FilesystemPathFlavor } from '../../shared/filesystem-entry-types'
+import type { SshCredentialSubmitResult } from '../../shared/ssh-saved-passphrase-types'
 import type { PreloadApi } from '../api-types'
 
 export const sshApi = {
@@ -158,6 +159,7 @@ export const sshApi = {
       targetId: string
       kind: 'passphrase' | 'password' | 'keyboard-interactive'
       detail: string
+      canRemember?: boolean
     }) => void
   ): (() => void) => {
     const listener = (
@@ -167,6 +169,7 @@ export const sshApi = {
         targetId: string
         kind: 'passphrase' | 'password' | 'keyboard-interactive'
         detail: string
+        canRemember?: boolean
       }
     ) => callback(data)
     ipcRenderer.on('ssh:credential-request', listener)
@@ -180,6 +183,14 @@ export const sshApi = {
     return () => ipcRenderer.removeListener('ssh:credential-resolved', listener)
   },
 
-  submitCredential: (args: { requestId: string; value: string | null }): Promise<void> =>
-    ipcRenderer.invoke('ssh:submitCredential', args)
+  submitCredential: (args: {
+    requestId: string
+    value: string | null
+    remember?: boolean
+  }): Promise<SshCredentialSubmitResult> => ipcRenderer.invoke('ssh:submitCredential', args),
+
+  listSavedPassphrases: (): Promise<string[]> => ipcRenderer.invoke('ssh:listSavedPassphrases'),
+
+  forgetSavedPassphrase: (args: { keyPath: string }): Promise<void> =>
+    ipcRenderer.invoke('ssh:forgetSavedPassphrase', args)
 } satisfies PreloadApi['ssh']

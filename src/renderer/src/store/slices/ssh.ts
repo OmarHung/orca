@@ -29,6 +29,8 @@ export type SshCredentialRequest = {
   targetId: string
   kind: 'passphrase' | 'password' | 'keyboard-interactive'
   detail: string
+  /** Main offers "remember" only for an encrypted key file it can seal a passphrase for. */
+  canRemember?: boolean
 }
 
 export type SshSlice = {

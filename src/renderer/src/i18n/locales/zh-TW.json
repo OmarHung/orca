@@ -19121,5 +19121,20 @@
       "title": "值",
       "toggle": "值檢視器"
     }
+  },
+  "sshSavedPassphrases": {
+    "dialog": {
+      "remember": "記住口令",
+      "rememberHint": "透過作業系統鑰匙串加密儲存，可在 SSH 設定中移除。",
+      "wrongPassphrase": "口令不正確，無法解鎖此金鑰。",
+      "notSaved": "無法儲存口令，下次連線時仍會詢問。"
+    },
+    "settings": {
+      "title": "已儲存的金鑰口令",
+      "description": "Orca 會自動解鎖這些 SSH 金鑰，不再詢問口令。口令透過作業系統鑰匙串加密儲存。",
+      "forget": "移除",
+      "forgetFailed": "無法移除口令",
+      "loadFailed": "無法載入已儲存的口令"
+    }
   }
 }

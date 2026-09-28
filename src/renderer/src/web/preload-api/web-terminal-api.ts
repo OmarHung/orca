@@ -178,6 +178,8 @@ export function createSshApi(): NonNullable<Partial<PreloadApi>['ssh']> {
     browseDir: () => Promise.resolve({ entries: [], resolvedPath: '', pathFlavor: 'posix' }),
     onCredentialRequest: () => noopUnsubscribe,
     onCredentialResolved: () => noopUnsubscribe,
-    submitCredential: () => Promise.resolve()
+    submitCredential: () => Promise.resolve({ status: 'accepted', remembered: false } as const),
+    listSavedPassphrases: () => Promise.resolve([]),
+    forgetSavedPassphrase: () => Promise.resolve()
   }
 }
