@@ -2,6 +2,7 @@ import { gitSyncForkDefaultBranch } from '../git/fork-sync'
 import type { GitRuntimeOptions } from '../git/git-runtime-options'
 import { checkIgnoredPaths } from '../git/check-ignored-paths'
 import { checkoutBranch, listLocalBranches } from '../git/checkout'
+import { getBlame } from '../git/blame'
 import { getHistory } from '../git/history'
 import { gitFastForward, gitFetch, gitPull, gitPullRebaseFromBase, gitPush } from '../git/remote'
 import { getRemoteCommitUrl, getRemoteFileUrl, isGitRepo } from '../git/repo'
@@ -75,6 +76,9 @@ export function createLocalGitProvider(options: LocalGitProviderOptions = {}): L
     getStagedCommitContext: (worktreePath) => getStagedCommitContext(worktreePath, interactive),
     getDiff: (worktreePath, filePath, staged, compareAgainstHead) =>
       getDiff(worktreePath, filePath, staged, compareAgainstHead, interactive),
+    // Why: a hint beside the caret must never queue ahead of status polls or user actions.
+    getBlame: (worktreePath, filePath) =>
+      getBlame(worktreePath, filePath, { ...base, admissionTier: 'background' }),
     stageFile: (worktreePath, filePath) => stageFile(worktreePath, filePath, interactive),
     unstageFile: (worktreePath, filePath) => unstageFile(worktreePath, filePath, interactive),
     bulkStageFiles: async (worktreePath, filePaths, scope) => {
