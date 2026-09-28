@@ -23,6 +23,8 @@ type PersistedDatabasePage = {
   resultsHeight: number
   valueViewerOpen: boolean
   valueViewerWidth: number
+  /** Explorer groups the user folded; groups start unfolded. */
+  collapsedConnectionGroups: string[]
 }
 
 type DatabasePageState = PersistedDatabasePage & {
@@ -50,6 +52,7 @@ type DatabasePageState = PersistedDatabasePage & {
   setResultsHeight: (height: number) => void
   toggleValueViewer: () => void
   setValueViewerWidth: (width: number) => void
+  setConnectionGroupCollapsed: (group: string, collapsed: boolean) => void
 }
 
 function clamp(value: unknown, limits: { min: number; fallback: number; max: number }): number {
@@ -83,7 +86,12 @@ function readPersisted(): PersistedDatabasePage {
     explorerWidth: clamp(parsed.explorerWidth, DATABASE_EXPLORER_WIDTH),
     resultsHeight: clamp(parsed.resultsHeight, DATABASE_RESULTS_HEIGHT),
     valueViewerOpen: parsed.valueViewerOpen === true,
-    valueViewerWidth: clamp(parsed.valueViewerWidth, DATABASE_VALUE_VIEWER_WIDTH)
+    valueViewerWidth: clamp(parsed.valueViewerWidth, DATABASE_VALUE_VIEWER_WIDTH),
+    collapsedConnectionGroups: Array.isArray(parsed.collapsedConnectionGroups)
+      ? parsed.collapsedConnectionGroups.filter(
+          (group: unknown): group is string => typeof group === 'string'
+        )
+      : []
   }
 }
 
@@ -94,7 +102,8 @@ function writePersisted(state: PersistedDatabasePage): void {
     explorerWidth: state.explorerWidth,
     resultsHeight: state.resultsHeight,
     valueViewerOpen: state.valueViewerOpen,
-    valueViewerWidth: state.valueViewerWidth
+    valueViewerWidth: state.valueViewerWidth,
+    collapsedConnectionGroups: state.collapsedConnectionGroups
   }
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
@@ -197,6 +206,10 @@ export const useDatabasePageStore = create<DatabasePageState>((set, get) => {
     setResultsHeight: (height) => update({ resultsHeight: clamp(height, DATABASE_RESULTS_HEIGHT) }),
     toggleValueViewer: () => update({ valueViewerOpen: !get().valueViewerOpen }),
     setValueViewerWidth: (width) =>
-      update({ valueViewerWidth: clamp(width, DATABASE_VALUE_VIEWER_WIDTH) })
+      update({ valueViewerWidth: clamp(width, DATABASE_VALUE_VIEWER_WIDTH) }),
+    setConnectionGroupCollapsed: (group, collapsed) => {
+      const others = get().collapsedConnectionGroups.filter((name) => name !== group)
+      update({ collapsedConnectionGroups: collapsed ? [...others, group] : others })
+    }
   }
 })
