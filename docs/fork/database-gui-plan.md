@@ -410,7 +410,7 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - **連不到時說清楚**：ssh2 的轉發在對方拒絕時只會默默關掉 socket，驅動只會看到「連線被關閉」。所以開隧道前先用同一條 SSH 連線試開一次通道，失敗就顯示 SSH 主機的原因
 - **斷線偵測**：SSH 連線被重置或中斷時（`registerSshProviderRequestAbort`），隧道關閉並把資料庫連線標示為中斷；訊息寫「隧道已無法使用」，不說遠端程序結束（依 `ssh-execution-boundary.md`）。系統 OpenSSH 的 `ssh -L` 程序結束時也一樣。之後重新連線會重建 SSH 和隧道
 - **TLS 仍驗證真正的主機**：驅動連到 127.0.0.1 的本機埠，但憑證要對原本的資料庫主機名稱驗證。pg 用 `ssl.servername`、tedious 用 `serverName`；mysql2 只會拿 `host` 當 TLS 名稱，所以 host 保留真正的名稱，socket 改由 `stream` 連到本機埠
-- **畫面**：連線表單多一個「SSH tunnel」選單（已儲存的 SSH 主機；主機被刪掉時仍顯示「Removed SSH host」，不會悄悄改成直連）；結構樹的連線後面顯示「via 主機名稱」
+- **畫面**：連線表單多一個「SSH tunnel」選單（已儲存的 SSH 主機；主機被刪掉時仍顯示「Removed SSH host」，不會悄悄改成直連）；結構樹的連線後面顯示「via 主機名稱」。選單最後一項「新增 SSH 主機…」會打開 Orca 原本的新增 SSH 主機視窗，存好後自動選到新主機，已填的欄位不會清掉（2026-09-28）
 
 這一輪順便修正的問題：
 

@@ -4,13 +4,18 @@ import { useAppStore } from '@/store'
 import { NO_SSH_TUNNEL } from './database-connection-form-state'
 import { SelectField } from './database-form-controls'
 
+// Why a sentinel option: picking it opens Add SSH host instead of becoming the saved value.
+const ADD_SSH_HOST = 'add-ssh-host'
+
 /** Picks one of Orca's saved SSH hosts to reach the server through, or none. */
 export function DatabaseSshTunnelField({
   value,
-  onChange
+  onChange,
+  onAddSshHost
 }: {
   value: string
   onChange: (value: string) => void
+  onAddSshHost: () => void
 }): React.JSX.Element {
   const labels = useAppStore((state) => state.sshTargetLabels)
   const hosts = [...labels]
@@ -38,9 +43,13 @@ export function DatabaseSshTunnelField({
             label: translate('database.connectionForm.sshNone', 'None — connect directly')
           },
           ...hosts,
-          ...missing
+          ...missing,
+          {
+            value: ADD_SSH_HOST,
+            label: translate('database.connectionForm.sshAdd', 'Add SSH host…')
+          }
         ]}
-        onChange={onChange}
+        onChange={(next) => (next === ADD_SSH_HOST ? onAddSshHost() : onChange(next))}
       />
       <p className="text-[11px] text-muted-foreground">
         {value !== NO_SSH_TUNNEL
@@ -51,7 +60,7 @@ export function DatabaseSshTunnelField({
           : hosts.length === 0
             ? translate(
                 'database.connectionForm.sshEmpty',
-                'No saved SSH hosts yet. Add one in Settings to connect through it.'
+                'No saved SSH hosts yet. Choose “Add SSH host…” to create one.'
               )
             : null}
       </p>
