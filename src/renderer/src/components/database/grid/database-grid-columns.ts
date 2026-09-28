@@ -94,3 +94,8 @@ export function scrollLeftToReveal(
     ? Math.min(right - clientWidth, left - GRID_ROW_NUMBER_PX)
     : scrollLeft
 }
+
+/** A column header's tooltip: its name, with the column's comment below when it has one. */
+export function gridHeaderTitle(name: string, comment: string | undefined): string {
+  return comment ? `${name}\n${comment}` : name
+}

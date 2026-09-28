@@ -32,3 +32,8 @@ export function constraintLabel(key: DatabaseKeyInfo): { name: string; detail: s
     : ''
   return { name: key.name || keyKindLabel(key.kind), detail: `${columns}${target}` }
 }
+
+/** A comment on one line, as the tree shows it after a name; its title keeps the line breaks. */
+export function commentLine(comment: string): string {
+  return comment.replace(/\s+/g, ' ').trim()
+}

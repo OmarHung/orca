@@ -46,6 +46,8 @@ type DatabaseResultGridProps = {
   onLoadMore: () => void
   /** Table data sorts on the server; query results sort the rows already loaded. */
   serverSort?: { sort: GridSort; onChange: (sort: GridSort) => void }
+  /** Table data: each column's comment by name, for its header tooltip. */
+  columnComments?: ReadonlyMap<string, string>
   exportTarget: GridExportTarget
 }
 
@@ -61,6 +63,7 @@ export function DatabaseResultGrid({
   canLoadMore,
   onLoadMore,
   serverSort,
+  columnComments,
   exportTarget
 }: DatabaseResultGridProps): React.JSX.Element {
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -204,6 +207,7 @@ export function DatabaseResultGrid({
             >
               <DatabaseGridHeader
                 gridColumns={gridColumns}
+                columnComments={columnComments}
                 widths={widths}
                 gridTemplate={gridTemplate}
                 height={HEADER_HEIGHT}

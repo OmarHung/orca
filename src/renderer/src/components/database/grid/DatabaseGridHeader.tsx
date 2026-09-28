@@ -5,13 +5,18 @@ import { cn } from '@/lib/utils'
 import type { DatabaseColumn } from '../../../../../shared/database/database-query-types'
 import { ResizeHandle } from '../../bottom-panel/ResizeHandle'
 import { useDragResize } from '../../bottom-panel/use-drag-resize'
-import { GRID_FIT_MAX_COLUMN_PX, GRID_MIN_COLUMN_PX } from './database-grid-columns'
+import {
+  GRID_FIT_MAX_COLUMN_PX,
+  GRID_MIN_COLUMN_PX,
+  gridHeaderTitle
+} from './database-grid-columns'
 import type { GridSort } from './database-grid-sort'
 
 export type GridColumn = { id: string; position: number; column: DatabaseColumn; numeric: boolean }
 
 function HeaderCell({
   gridColumn,
+  comment,
   width,
   sort,
   onSort,
@@ -19,6 +24,7 @@ function HeaderCell({
   onAutoFit
 }: {
   gridColumn: GridColumn
+  comment: string | undefined
   width: number
   sort: GridSort
   onSort: () => void
@@ -46,7 +52,7 @@ function HeaderCell({
       <button
         type="button"
         onClick={onSort}
-        title={column.name}
+        title={gridHeaderTitle(column.name, comment)}
         className={cn(
           'flex min-w-0 flex-1 flex-col justify-center px-2 text-left hover:bg-accent/60',
           numeric && 'items-end text-right'
@@ -78,6 +84,7 @@ function HeaderCell({
 
 export function DatabaseGridHeader({
   gridColumns,
+  columnComments,
   widths,
   gridTemplate,
   height,
@@ -88,6 +95,8 @@ export function DatabaseGridHeader({
   onSelectAll
 }: {
   gridColumns: GridColumn[]
+  /** Comments by column name, shown in the header's tooltip (table data only). */
+  columnComments: ReadonlyMap<string, string> | undefined
   widths: number[]
   gridTemplate: string
   height: number
@@ -113,6 +122,7 @@ export function DatabaseGridHeader({
         <HeaderCell
           key={gridColumn.id}
           gridColumn={gridColumn}
+          comment={columnComments?.get(gridColumn.column.name)}
           width={widths[gridColumn.position] ?? GRID_MIN_COLUMN_PX}
           sort={sort}
           onSort={() => onSort(gridColumn.position)}
