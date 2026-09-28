@@ -398,5 +398,25 @@
     "from": "口令",
     "to": "密碼",
     "why": "\"Passphrase\" (SSH keys); 口令 is Mainland usage, Taiwan UI copy says 密碼."
+  },
+  {
+    "from": "^無法比較二進位制檔案。$",
+    "to": "無法比較二進位檔案。",
+    "why": "Editor revision compare: Taiwan says 二進位."
+  },
+  {
+    "from": "^跟蹤 \\{\\{upstream\\}\\}$",
+    "to": "追蹤 {{upstream}}",
+    "why": "Branch status details: \"Tracking origin/main\"; Taiwan says 追蹤."
+  },
+  {
+    "from": "並在後台 fetch",
+    "to": "並在背景 fetch",
+    "why": "Branch status settings: \"in the background\"; Taiwan says 背景."
+  },
+  {
+    "from": "^在後台對目前工作區的儲存庫",
+    "to": "在背景對目前工作區的儲存庫",
+    "why": "Auto fetch setting: \"in the background\"; Taiwan says 背景."
   }
 ]
