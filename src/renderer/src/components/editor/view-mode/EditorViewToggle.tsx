@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   Code,
   Eye,
+  FileDiff,
   FileText,
   GitCompareArrows,
   NotebookText,
@@ -16,8 +17,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import type { MarkdownViewMode } from '@/store/slices/editor/types/open-file'
 import { translate } from '@/i18n/i18n'
 
-// Combine markdown modes with orthogonal edit/changes state in one mutually exclusive toggle; edit is the non-markdown source counterpart.
-type BuiltInEditorToggleValue = MarkdownViewMode | 'edit' | 'changes'
+// Combine markdown modes with orthogonal edit/changes/markers state in one mutually exclusive toggle; edit is the non-markdown source counterpart.
+type BuiltInEditorToggleValue = MarkdownViewMode | 'edit' | 'changes' | 'markers'
 /** A plugin custom editor, by its `<pluginKey>/<editorId>` key. */
 export type CustomEditorToggleValue = `plugin-editor:${string}`
 export type EditorToggleValue = BuiltInEditorToggleValue | CustomEditorToggleValue
@@ -57,6 +58,18 @@ const DEFAULT_VIEW_MODE_METADATA: Record<BuiltInEditorToggleValue, ViewModeMetad
     // Disambiguate uncommitted HEAD changes from the sidebar’s branch-base diff.
     get title() {
       return translate('auto.components.editor.EditorViewToggle.167f45888c', 'Uncommitted changes')
+    }
+  },
+  markers: {
+    get label() {
+      return translate('changeMarkers.toggleLabel', 'Change Markers')
+    },
+    icon: FileDiff,
+    get title() {
+      return translate(
+        'changeMarkers.toggleTitle',
+        'Edit with uncommitted changes marked in the gutter'
+      )
     }
   }
 }
@@ -111,8 +124,9 @@ function viewModeMetadata(
   if (isCustomEditorToggleValue(viewMode)) {
     return { label: customEditorTitles?.[viewMode] ?? viewMode, icon: PenTool }
   }
-  // Changes keeps its default metadata; markdown modes and Source accept presentation overrides.
-  const override = viewMode === 'changes' ? undefined : metadataOverride?.[viewMode]
+  // Changes and markers keep default metadata; markdown modes and Source accept presentation overrides.
+  const override =
+    viewMode === 'changes' || viewMode === 'markers' ? undefined : metadataOverride?.[viewMode]
   return override ?? DEFAULT_VIEW_MODE_METADATA[viewMode]
 }
 

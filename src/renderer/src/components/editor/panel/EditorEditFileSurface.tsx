@@ -34,6 +34,7 @@ import type { ActivePluginCustomEditor } from '@/store/plugins/file-editors/plug
 import { PluginEditorSourceFallbackNotice } from '../plugin-editors/PluginEditorNeedsDesktopNotice'
 import PluginCustomEditorFrame from '../plugin-editors/PluginCustomEditorFrame'
 import PluginBytesCustomEditorSurface from '../plugin-editors/PluginBytesCustomEditorSurface'
+import { getChangeMarkersBaseline } from '../change-markers/change-markers-baseline'
 
 // Retry is a user act: it may start a stopped WSL distro.
 
@@ -63,6 +64,7 @@ export function EditorEditFileSurface({
   mdViewMode,
   inlineMarkdownRenderState,
   isChangesMode,
+  isMarkersMode = false,
   sideBySide,
   showMarkdownTableOfContents,
   showMarkdownFrontmatter,
@@ -97,6 +99,7 @@ export function EditorEditFileSurface({
   mdViewMode: MarkdownViewMode
   inlineMarkdownRenderState: MarkdownRenderState | null
   isChangesMode: boolean
+  isMarkersMode?: boolean
   sideBySide: boolean
   showMarkdownTableOfContents: boolean
   showMarkdownFrontmatter: boolean
@@ -290,10 +293,12 @@ export function EditorEditFileSurface({
             : undefined
         }
         markdownDocuments={isMarkdown ? markdownDocuments.markdownDocuments : undefined}
+        changeMarkersBaseline={isMarkersMode ? getChangeMarkersBaseline(diffContent) : null}
       />
     </RecoverableRenderErrorBoundary>
   )
 
+  // Why: change markers annotate the source text, so rich/preview renderers step aside.
   const editorSurface = customEditor ? (
     <PluginCustomEditorFrame
       key={`${activeFile.id}\u0000${customEditor.key}`}
@@ -305,6 +310,8 @@ export function EditorEditFileSurface({
       onSave={handleSave}
       onDirtyHint={handleDirtyStateHint}
     />
+  ) : isMarkersMode ? (
+    monacoEditor
   ) : isMarkdown ? (
     <EditorMarkdownFileSurface
       activeFile={activeFile}
