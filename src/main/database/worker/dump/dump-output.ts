@@ -1,7 +1,10 @@
-import { createWriteStream, type WriteStream } from 'node:fs'
-import { mkdir, rm } from 'node:fs/promises'
-import { join } from 'node:path'
+import { randomUUID } from 'node:crypto'
+import { once } from 'node:events'
+import { createWriteStream, existsSync, type WriteStream } from 'node:fs'
+import { mkdir, rename, rm } from 'node:fs/promises'
+import { basename, dirname, join } from 'node:path'
 import type { SqlDialect } from '../../../../shared/database/sql-dialect-lexing'
+import { bestEffortFsyncDirectorySync, fsyncFileSync } from '../../../../shared/secure-file'
 
 export type DumpStatement = {
   sql: string
@@ -45,34 +48,49 @@ export function safeFileName(name: string): string {
 export type DumpDestination = { kind: 'file'; path: string } | { kind: 'folder'; path: string }
 
 /**
- * Where a dump is written: one file, or a folder of numbered files (one per table). Writes
- * wait for the stream to drain, so a slow disk slows the reads instead of filling memory.
+ * Where a dump is written until it is whole: a hidden sibling of the file or folder it becomes,
+ * named so it never looks like a finished .sql. Main derives the same path from the job id to
+ * clean up after a worker that died mid-dump.
+ */
+export function partialDumpPath(destination: DumpDestination, id: string): string {
+  return join(dirname(destination.path), `.${basename(destination.path)}.${id}.partial`)
+}
+
+/**
+ * A dump's output: one file, or a folder of numbered files (one per table). Everything goes to
+ * the partial path first and replaces the destination only once finished, so a failed or
+ * cancelled dump (or a crash) leaves an existing file as it was. Writes wait for the stream to
+ * drain, so a slow disk slows the reads instead of filling memory.
  */
 export class DumpOutput {
   private stream: WriteStream | null = null
-  private readonly written: string[] = []
+  /** The first write error, kept by one listener so waits don't each add their own. */
+  private failure: Error | null = null
+  private readonly names: string[] = []
+  private readonly partial: string
+  private published = false
   bytes = 0
 
   constructor(
     private readonly destination: DumpDestination,
-    readonly dialect: SqlDialect
-  ) {}
-
-  get files(): readonly string[] {
-    return this.written
+    readonly dialect: SqlDialect,
+    id: string = randomUUID()
+  ) {
+    this.partial = partialDumpPath(destination, id)
   }
 
   /** Starts the next file of a folder dump; a single-file dump opens its only file once. */
   async startFile(name: string): Promise<void> {
     if (this.destination.kind === 'file') {
       if (!this.stream) {
-        await this.open(this.destination.path)
+        await this.open(this.partial)
       }
       return
     }
     await this.closeCurrent()
-    await mkdir(this.destination.path, { recursive: true })
-    await this.open(join(this.destination.path, name))
+    await mkdir(this.partial, { recursive: true })
+    await this.open(join(this.partial, name))
+    this.names.push(name)
   }
 
   async comment(text: string): Promise<void> {
@@ -92,48 +110,86 @@ export class DumpOutput {
     await this.write(chunk)
   }
 
+  /** Flushes the dump to disk and puts it in place of the destination; returns its files. */
   async finish(): Promise<string[]> {
     await this.closeCurrent()
-    return [...this.written]
+    const { path } = this.destination
+    if (this.destination.kind === 'file') {
+      if (!existsSync(this.partial)) {
+        await this.open(this.partial)
+        await this.closeCurrent()
+      }
+      // Why sync first: after a crash the renamed file must hold everything it claims to.
+      fsyncFileSync(this.partial)
+      await rename(this.partial, path)
+      this.published = true
+      bestEffortFsyncDirectorySync(dirname(path))
+      return [path]
+    }
+    await mkdir(this.partial, { recursive: true })
+    for (const name of this.names) {
+      fsyncFileSync(join(this.partial, name))
+    }
+    bestEffortFsyncDirectorySync(this.partial)
+    if (existsSync(path)) {
+      throw new Error(`${path} already exists; choose the folder again.`)
+    }
+    await rename(this.partial, path)
+    this.published = true
+    bestEffortFsyncDirectorySync(dirname(path))
+    return this.names.map((name) => join(path, name))
   }
 
-  /** Removes what was written, e.g. after a cancel, so no half dump is left looking whole. */
+  /** Removes what was written, e.g. after a cancel; a finished dump stays where it was put. */
   async discard(): Promise<void> {
-    await this.closeCurrent().catch(() => undefined)
-    await Promise.all(this.written.map((path) => rm(path, { force: true })))
+    const stream = this.stream
+    this.stream = null
+    if (stream && !stream.closed) {
+      stream.destroy()
+      await once(stream, 'close').catch(() => undefined)
+    }
+    if (!this.published) {
+      // Best effort: a discard follows a failure, whose error must not be replaced by this one.
+      await rm(this.partial, { recursive: true, force: true }).catch(() => undefined)
+    }
   }
 
   private async open(path: string): Promise<void> {
-    const stream = createWriteStream(path, { encoding: 'utf8' })
-    await new Promise<void>((resolve, reject) => {
-      stream.once('open', () => resolve())
-      stream.once('error', reject)
+    const stream = createWriteStream(path)
+    stream.on('error', (error) => {
+      this.failure ??= error
     })
+    await once(stream, 'open')
     this.stream = stream
-    this.written.push(path)
   }
 
-  private async write(text: string | Buffer): Promise<void> {
+  private async write(chunk: string | Buffer): Promise<void> {
     const stream = this.stream
+    if (this.failure) {
+      throw this.failure
+    }
     if (!stream) {
       throw new Error('The dump has no open file.')
     }
-    this.bytes += typeof text === 'string' ? Buffer.byteLength(text) : text.length
-    if (!stream.write(text)) {
-      await new Promise<void>((resolve, reject) => {
-        stream.once('drain', resolve)
-        stream.once('error', reject)
-      })
+    this.bytes += typeof chunk === 'string' ? Buffer.byteLength(chunk) : chunk.length
+    if (!stream.write(chunk)) {
+      // Why events.once: it removes both its drain and error listeners, whichever fires.
+      await once(stream, 'drain')
     }
   }
 
   private async closeCurrent(): Promise<void> {
     const stream = this.stream
     this.stream = null
-    if (stream) {
-      await new Promise<void>((resolve, reject) => {
-        stream.end((error?: Error | null) => (error ? reject(error) : resolve()))
-      })
+    // Why destroy a failed stream: it will never emit 'finish' to wait for.
+    if (stream && this.failure) {
+      stream.destroy()
+    } else if (stream) {
+      stream.end()
+      await once(stream, 'finish')
+    }
+    if (this.failure) {
+      throw this.failure
     }
   }
 }
