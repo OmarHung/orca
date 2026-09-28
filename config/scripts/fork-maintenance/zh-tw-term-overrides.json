@@ -263,5 +263,135 @@
     "from": "^後台任務$",
     "to": "背景任務",
     "why": "\"Background jobs\"; Taiwan says 背景. Anchored so upstream strings stay as they are."
+  },
+  {
+    "from": "^匯出內容會超過 \\{\\{value0\\}\\} 個字元。請減少匯出的行或列。$",
+    "to": "匯出內容會超過 {{value0}} 個字元。請減少匯出的列或欄。",
+    "why": "\"The export would pass {{value0}} characters. Export fewer rows or columns.\" (database grid); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^Orca 已不再儲存 \\{\\{value0\\}\\} 個超過 \\{\\{value1\\}\\} 字元的值的完整內容（只儲存有限的量，優先保留最新的結果），因此沒有寫出任何內容。請重新執行查詢後再試一次。$",
+    "to": "Orca 已不再保存 {{value0}} 個超過 {{value1}} 字元的值的完整內容（只保存有限的量，優先保留最新的結果），因此沒有寫出任何內容。請重新執行查詢後再試一次。",
+    "why": "\"Orca no longer holds the whole text of {{value0}} values longer than {{value1}} characters (it keeps a limited amount, newest results first), so nothing was written. Run the query again, then try again.\" (database grid); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^訪問方法$",
+    "to": "存取方法",
+    "why": "\"Access method\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^下一個自增值$",
+    "to": "下一個自動遞增值",
+    "why": "\"Next auto-increment value\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^排序規則$",
+    "to": "定序",
+    "why": "\"Collation\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^相容級別$",
+    "to": "相容性層級",
+    "why": "\"Compatibility level\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^包含型別$",
+    "to": "自主類型",
+    "why": "\"Containment\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^伺服器報告的設定。$",
+    "to": "伺服器回報的設定。",
+    "why": "\"Settings as the server reports them.\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^永續性$",
+    "to": "持久性",
+    "why": "\"Durability\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^版本型別$",
+    "to": "版本類型",
+    "why": "\"Edition\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^檔案組$",
+    "to": "檔案群組",
+    "why": "\"Filegroup\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^空閒頁數$",
+    "to": "可用頁數",
+    "why": "\"Free pages\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^區域設定提供程式$",
+    "to": "地區設定提供者",
+    "why": "\"Locale provider\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^鎖升級$",
+    "to": "鎖定擴大",
+    "why": "\"Lock escalation\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^頁大小$",
+    "to": "頁面大小",
+    "why": "\"Page size\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^分割槽鍵$",
+    "to": "分割區鍵",
+    "why": "\"Partition key\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^所屬分割槽表$",
+    "to": "所屬分割表",
+    "why": "\"Partition of\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^持久化方式$",
+    "to": "保存方式",
+    "why": "\"Persistence\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^已填充資料$",
+    "to": "已填入資料",
+    "why": "\"Populated\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^讀已提交快照$",
+    "to": "讀取認可快照",
+    "why": "\"Read committed snapshot\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^恢復模式$",
+    "to": "復原模式",
+    "why": "\"Recovery model\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^行格式$",
+    "to": "列格式",
+    "why": "\"Row format\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^行級安全$",
+    "to": "資料列層級安全性",
+    "why": "\"Row-level security\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^行數（估計）$",
+    "to": "列數（估計）",
+    "why": "\"Rows (estimated)\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^安全型別$",
+    "to": "安全性類型",
+    "why": "\"Security\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "^時態型別$",
+    "to": "時態類型",
+    "why": "\"Temporal type\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
   }
 ]
