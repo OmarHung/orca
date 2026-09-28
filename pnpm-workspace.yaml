@@ -183,3 +183,4 @@ patchedDependencies:
   ws@8.22.0: config/patches/ws@8.22.0.patch
   oxlint-plugin-anti-slop@0.1.2: config/patches/oxlint-plugin-anti-slop@0.1.2.patch
   monaco-editor@0.55.1: config/patches/monaco-editor@0.55.1.patch
+  tedious@20.0.0: config/patches/tedious@20.0.0.patch

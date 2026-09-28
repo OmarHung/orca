@@ -184,6 +184,7 @@ patchedDependencies:
   monaco-editor@0.55.1: 53b71f7d8a7c00b76ffdb73ce83d18e31692f193f5fafa6a390e48f5b3fdd636
   node-pty@1.1.0: 2aa312c1b29d733bfd3e3ece2fbbb4eed7750384d7d9f91effd27318a75b7a95
   oxlint-plugin-anti-slop@0.1.2: c10c871702365a0c2c59e9f1c5fb92df97cae5755d534c0a3d83c6368f6feafe
+  tedious@20.0.0: ae611cb83acc7682a5fe1a89f7230e1747b6906a7b0c3f9f34ec6dc3053fff5d
   ws@8.22.0: 9393e04dd9a90b01eb7aa35fcd5b1431b5038ce999fbbd82651136193ba51f14
 
 importers:
@@ -273,7 +274,7 @@ importers:
         version: 3.7.0
       tedious:
         specifier: ^20.0.0
-        version: 20.0.0(supports-color@7.2.0)
+        version: 20.0.0(patch_hash=ae611cb83acc7682a5fe1a89f7230e1747b6906a7b0c3f9f34ec6dc3053fff5d)(supports-color@7.2.0)
       tldts:
         specifier: 7.4.16
         version: 7.4.16
@@ -16451,7 +16452,7 @@ snapshots:
       minizlib: 3.1.0
       yallist: 5.0.0
 
-  tedious@20.0.0(supports-color@7.2.0):
+  tedious@20.0.0(patch_hash=ae611cb83acc7682a5fe1a89f7230e1747b6906a7b0c3f9f34ec6dc3053fff5d)(supports-color@7.2.0):
     dependencies:
       '@azure/core-auth': 1.11.0(supports-color@7.2.0)
       '@azure/identity': 4.13.3(supports-color@7.2.0)
