@@ -5,6 +5,7 @@ import { RuntimeServersHeaderActions } from '../runtime-environments/runtime-ser
 import { RuntimeServersPageProvider } from '../runtime-environments/runtime-servers-page-context'
 import { SshPane } from '../ssh/SshPane'
 import { SshHostsHeaderSlot, SshHostsHeaderSlotProvider } from '../ssh/ssh-hosts-header-slot'
+import { SshSavedPassphrasesSection } from '../ssh/SshSavedPassphrasesSection'
 import { SettingsSection } from '../section-layout/SettingsSection'
 import { translate } from '@/i18n/i18n'
 import type { SettingsRenderContext } from './settings-render-context'
@@ -68,7 +69,12 @@ export function renderSshSettingsSection(context: SettingsRenderContext): React.
         // Host groups already supply surfaces; another frame would nest cards.
         bodyClassName="rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
       >
-        {mounted ? <SshPane addTargetIntentSignal={model.sshHostAddIntentSignal} /> : null}
+        {mounted ? (
+          <div className="space-y-4">
+            <SshPane addTargetIntentSignal={model.sshHostAddIntentSignal} />
+            <SshSavedPassphrasesSection />
+          </div>
+        ) : null}
       </SettingsSection>
     </SshHostsHeaderSlotProvider>
   ) : null

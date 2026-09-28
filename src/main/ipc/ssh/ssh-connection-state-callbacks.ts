@@ -14,7 +14,7 @@ import { connectionManager, getCurrentMainWindow } from './ssh-ipc-context'
 import { getSshTargetRegistryStore } from '../../ssh/targets/ssh-target-registry'
 import { recordSshSignInRequirement } from './ssh-sign-in-requirement'
 import { restoreManagedHostPortForwards } from './ssh-managed-port-forward-restore'
-import { requestCredential } from './ssh-passphrase'
+import { requestSshCredential } from './ssh-passphrase'
 import { broadcastSshState } from './ssh-renderer-broadcast'
 
 export function handleSshConnectionStateChange(targetId: string, state: SshConnectionState): void {
@@ -47,13 +47,24 @@ export function handleSshConnectionStateChange(targetId: string, state: SshConne
 
 export function createSshConnectionCallbacks(): SshConnectionCallbacks {
   return {
-    onCredentialRequest: (targetId, kind, detail, echo, signal) => {
+    onCredentialRequest: async (targetId, kind, detail, echo, signal) => {
       // After Cancel, only explicit connects may prompt again.
       if (isSshCredentialDeclined(targetId, signal)) {
-        return Promise.resolve(null)
+        return null
       }
-      credentialRequestedForTarget.add(targetId)
-      return requestCredential(getCurrentMainWindow, targetId, kind, detail, echo, signal)
+      const answer = await requestSshCredential(
+        getCurrentMainWindow,
+        targetId,
+        kind,
+        detail,
+        echo,
+        signal
+      )
+      // Why: a remembered passphrase won't prompt next time, so startup can connect this target eagerly.
+      if (answer.asksAgain && !signal?.aborted) {
+        credentialRequestedForTarget.add(targetId)
+      }
+      return answer.value
     },
     onStateChange: handleSshConnectionStateChange
   }
