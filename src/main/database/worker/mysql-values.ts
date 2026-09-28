@@ -1,6 +1,6 @@
 import type { FieldPacket } from 'mysql2'
 import type { DatabaseCell, DatabaseColumn } from '../../../shared/database/database-query-types'
-import { encodeTextCell } from './database-cell-encoding'
+import { cellText } from './database-cell-encoding'
 
 const BINARY_CHARSET = 63
 const UNSIGNED_FLAG = 32
@@ -77,11 +77,11 @@ function encodeBuffer(value: Buffer, field: FieldPacket | undefined): string {
 export function encodeMysqlRow(row: unknown[], fields: readonly FieldPacket[]): DatabaseCell[] {
   return row.map((value, index) => {
     if (Buffer.isBuffer(value)) {
-      return encodeTextCell(encodeBuffer(value, fields[index]))
+      return cellText(encodeBuffer(value, fields[index]))
     }
     if (typeof value === 'object' && value !== null) {
-      return encodeTextCell(JSON.stringify(value))
+      return cellText(JSON.stringify(value))
     }
-    return encodeTextCell(value)
+    return cellText(value)
   })
 }

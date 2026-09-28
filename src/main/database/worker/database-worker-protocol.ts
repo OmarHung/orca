@@ -6,6 +6,8 @@ import type {
 } from '../../../shared/database/database-introspection-types'
 import type {
   DatabaseExecuteResult,
+  DatabaseLongValueSlice,
+  DatabaseLongValues,
   DatabaseResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
@@ -38,6 +40,8 @@ export type DatabaseWorkerCommand =
       database?: string
     }
   | { type: 'fetch'; consoleId: string; resultId: string; pageSize: number }
+  /** Slices of values the rows carried only as previews; bounded per read. */
+  | { type: 'readValues'; consoleId: string; resultId: string; slices: DatabaseLongValueSlice[] }
   | { type: 'cancel'; consoleId: string }
   | { type: 'closeConsole'; consoleId: string }
   /** Dumps on a session of the job's own, reporting `job-progress` as it goes. */
@@ -58,6 +62,7 @@ export type DatabaseWorkerValues = {
   ddl: { ddl: string }
   execute: DatabaseExecuteResult
   fetch: DatabaseRowsPage
+  readValues: DatabaseLongValues
   cancel: { cancelled: boolean }
   closeConsole: null
   dump: DatabaseDumpSummary
