@@ -5,6 +5,7 @@ import { RuntimeServersHeaderActions } from './runtime-servers-header-actions'
 import { RuntimeServersPageProvider } from './runtime-servers-page-context'
 import { SshPane } from './SshPane'
 import { SshHostsHeaderSlot, SshHostsHeaderSlotProvider } from './ssh-hosts-header-slot'
+import { SshSavedPassphrasesSection } from './SshSavedPassphrasesSection'
 import { SettingsSection } from './SettingsSection'
 import { translate } from '@/i18n/i18n'
 import type { SettingsRenderContext } from './settings-render-context'
@@ -65,7 +66,12 @@ export function renderSshSettingsSection(context: SettingsRenderContext): React.
         // Why unframed: the host groups are the page's own surfaces; a band around them nests cards.
         bodyClassName="rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
       >
-        {mounted ? <SshPane addTargetIntentSignal={model.sshHostAddIntentSignal} /> : null}
+        {mounted ? (
+          <div className="space-y-4">
+            <SshPane addTargetIntentSignal={model.sshHostAddIntentSignal} />
+            <SshSavedPassphrasesSection />
+          </div>
+        ) : null}
       </SettingsSection>
     </SshHostsHeaderSlotProvider>
   ) : null
