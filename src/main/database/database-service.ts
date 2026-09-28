@@ -28,6 +28,7 @@ import type {
   DatabaseFetchMoreRequest,
   DatabaseReadLongValuesRequest,
   DatabaseSaveConnectionRequest,
+  DatabaseSetConnectionGroupRequest,
   DatabaseTestConnectionRequest
 } from '../../shared/database/database-session-types'
 import type { DatabaseConnectionStore } from './database-connection-store'
@@ -53,7 +54,7 @@ function isPasswordRejection(error: DatabaseError): boolean {
 }
 
 // Draft fields a live session doesn't depend on.
-const SESSION_NEUTRAL_FIELDS = new Set(['name', 'color', 'passwordStorage'])
+const SESSION_NEUTRAL_FIELDS = new Set(['name', 'color', 'group', 'passwordStorage'])
 
 function changesSessionSettings(
   previous: DatabaseConnection,
@@ -126,6 +127,11 @@ export class DatabaseService {
       return stored
     }
     return { ok: true, value: { ...saved, hasSavedPassword: passwords.has(saved.id) } }
+  }
+
+  /** Regrouping is cosmetic: open sessions stay. */
+  setConnectionGroup(request: DatabaseSetConnectionGroupRequest): void {
+    this.deps.connections.setGroup(request.connectionIds, request.group)
   }
 
   async deleteConnection(connectionId: string): Promise<void> {

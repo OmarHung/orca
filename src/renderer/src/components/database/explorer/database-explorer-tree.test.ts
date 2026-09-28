@@ -1,8 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import { flattenDatabaseExplorer } from './database-explorer-rows'
+import {
+  databaseExplorerRoots,
+  flattenDatabaseExplorer,
+  type DatabaseExplorerRow
+} from './database-explorer-rows'
 import { childNodesFor, connectionNode, introspectTargetFor } from './database-explorer-tree'
 
 const root = connectionNode('conn-0001')
+
+function rowLabel(row: DatabaseExplorerRow): string {
+  switch (row.type) {
+    case 'group':
+      return `group:${row.group}`
+    case 'node':
+      return row.node.kind === 'connection' ? row.node.connectionId : row.node.kind
+    case 'status':
+      return row.status
+  }
+}
 
 describe('database explorer tree', () => {
   const schemas = childNodesFor(root, {
@@ -34,14 +49,55 @@ describe('database explorer tree', () => {
         [slashSchema!.key]: { status: 'loaded', nodes: [] }
       }
     )
-    expect(rows.map((row) => (row.type === 'node' ? row.node.kind : row.status))).toEqual([
-      'connection',
-      'schema',
-      'loading',
-      'schema',
-      'empty'
-    ])
+    expect(rows.map(rowLabel)).toEqual(['conn-0001', 'schema', 'loading', 'schema', 'empty'])
     expect(rows.map((row) => row.depth)).toEqual([0, 1, 2, 1, 2])
+  })
+
+  it('lists groups by name before the ungrouped connections, each in saved order', () => {
+    const roots = databaseExplorerRoots([
+      { id: 'conn-0001' },
+      { id: 'conn-0002', group: 'prod 10' },
+      { id: 'conn-0003', group: 'prod 9' },
+      { id: 'conn-0004', group: null },
+      { id: 'conn-0005', group: 'prod 10' }
+    ])
+    const rows = flattenDatabaseExplorer(roots, {}, {})
+    expect(rows.map(rowLabel)).toEqual([
+      'group:prod 9',
+      'conn-0003',
+      'group:prod 10',
+      'conn-0002',
+      'conn-0005',
+      'conn-0001',
+      'conn-0004'
+    ])
+    expect(rows.map((row) => row.depth)).toEqual([0, 1, 0, 1, 1, 0, 0])
+    expect(rows[2]).toMatchObject({ type: 'group', count: 2, expanded: true })
+  })
+
+  it('hides a collapsed group’s connections and tags every row with its group', () => {
+    const [group, ungrouped] = databaseExplorerRoots([
+      { id: 'conn-0001', group: 'prod' },
+      { id: 'conn-0002' }
+    ])
+    const grouped = connectionNode('conn-0001')
+    const expanded = { [grouped.key]: true }
+    const children = { [grouped.key]: { status: 'loading' as const } }
+    const rows = flattenDatabaseExplorer([group!, ungrouped!], expanded, children)
+    expect(rows.map((row) => [rowLabel(row), row.depth, row.group])).toEqual([
+      ['group:prod', 0, 'prod'],
+      ['conn-0001', 1, 'prod'],
+      ['loading', 2, 'prod'],
+      ['conn-0002', 0, null]
+    ])
+    const collapsed = flattenDatabaseExplorer(
+      [group!, ungrouped!],
+      expanded,
+      children,
+      new Set(['prod'])
+    )
+    expect(collapsed.map(rowLabel)).toEqual(['group:prod', 'conn-0002'])
+    expect(collapsed[0]).toMatchObject({ expanded: false })
   })
 
   it('hides children of collapsed nodes', () => {

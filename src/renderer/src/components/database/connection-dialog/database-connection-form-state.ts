@@ -8,12 +8,15 @@ import {
   type DatabasePasswordStorage,
   type DatabaseSslMode
 } from '../../../../../shared/database/database-connection-types'
+import { normalizeDatabaseConnectionGroup } from '../database-connection-groups'
 
 export type DatabaseConnectionFormState = {
   driver: DatabaseDriver
   name: string
   /** One of the connection colors, or null for none. */
   color: string | null
+  /** Explorer group; blank is none. */
+  group: string
   host: string
   port: string
   database: string
@@ -49,12 +52,14 @@ function serverDefaults(driver: DatabaseDriver): { port: string; database: strin
 
 export function initialConnectionForm(
   existing: DatabaseConnectionSummary | null,
-  canStorePasswords: boolean
+  canStorePasswords: boolean,
+  newGroup: string | null = null
 ): DatabaseConnectionFormState {
   const base: DatabaseConnectionFormState = {
     driver: 'postgres',
     name: '',
     color: null,
+    group: newGroup ?? '',
     host: 'localhost',
     ...serverDefaults('postgres'),
     password: '',
@@ -73,6 +78,7 @@ export function initialConnectionForm(
       driver: 'sqlite',
       name: existing.name,
       color: existing.color ?? null,
+      group: existing.group ?? '',
       filePath: existing.filePath
     }
   }
@@ -81,6 +87,7 @@ export function initialConnectionForm(
     driver: existing.driver,
     name: existing.name,
     color: existing.color ?? null,
+    group: existing.group ?? '',
     host: existing.host,
     port: String(existing.port),
     database: existing.database,
@@ -131,6 +138,7 @@ function candidateDraft(form: DatabaseConnectionFormState): unknown {
       driver: 'sqlite',
       name,
       color: form.color,
+      group: normalizeDatabaseConnectionGroup(form.group),
       filePath: form.filePath.trim()
     }
   }
@@ -139,6 +147,7 @@ function candidateDraft(form: DatabaseConnectionFormState): unknown {
     driver: form.driver,
     name,
     color: form.color,
+    group: normalizeDatabaseConnectionGroup(form.group),
     host: form.host.trim(),
     port: Number.isInteger(port) ? port : Number.NaN,
     database: form.database.trim(),
@@ -177,6 +186,7 @@ const FORM_FIELDS = [
   'driver',
   'name',
   'color',
+  'group',
   'host',
   'port',
   'database',
