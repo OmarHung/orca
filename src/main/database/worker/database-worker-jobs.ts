@@ -1,11 +1,15 @@
-import type { DatabaseDumpSummary } from '../../../shared/database/database-dump-types'
+import type {
+  DatabaseDumpProgress,
+  DatabaseDumpSummary
+} from '../../../shared/database/database-dump-types'
 import type { DatabaseDriverSession } from './database-driver'
 import type { DatabaseWorkerCommandOf, DatabaseWorkerMessage } from './database-worker-protocol'
-import type { DumpSource } from './dump/dump-source'
 import { DumpOutput } from './dump/dump-output'
 import { runDump } from './dump/dump-runner'
+import { runNativeDump } from './dump/native/native-dump-job'
+import type { NativeDumpTarget } from './dump/native/native-dump-plan'
 
-type RunningJob = { cancelled: boolean; source: DumpSource | null; done: Promise<unknown> }
+type RunningJob = { cancelled: boolean; stop: (() => void) | null; done: Promise<unknown> }
 
 /** Long-running work (dumps) on server sessions of its own, so consoles stay usable. */
 export class DatabaseWorkerJobs {
@@ -15,24 +19,39 @@ export class DatabaseWorkerJobs {
 
   async dump(
     session: DatabaseDriverSession,
-    { jobId, request, destination }: DatabaseWorkerCommandOf<'dump'>
+    { jobId, request, destination }: DatabaseWorkerCommandOf<'dump'>,
+    nativeTarget: NativeDumpTarget | null
   ): Promise<DatabaseDumpSummary> {
     if (this.running.has(jobId)) {
       throw new Error('This job is already running.')
     }
-    const job: RunningJob = { cancelled: false, source: null, done: Promise.resolve() }
+    const job: RunningJob = { cancelled: false, stop: null, done: Promise.resolve() }
     this.running.set(jobId, job)
+    const onProgress = (progress: DatabaseDumpProgress): void =>
+      this.post({ kind: 'job-progress', jobId, progress: { kind: 'dump', ...progress } })
+    const isCancelled = (): boolean => job.cancelled
     const run = async (): Promise<DatabaseDumpSummary> => {
+      if (request.options.engine === 'native') {
+        return runNativeDump({
+          target: nativeTarget,
+          request,
+          destination,
+          onProgress,
+          isCancelled,
+          onStop: (stop) => {
+            job.stop = stop
+          }
+        })
+      }
       const source = await session.openDumpSource(request.database)
-      job.source = source
+      job.stop = () => source.cancel()
       try {
         return await runDump({
           source,
           request,
           output: new DumpOutput(destination, source.dialect),
-          onProgress: (progress) =>
-            this.post({ kind: 'job-progress', jobId, progress: { kind: 'dump', ...progress } }),
-          isCancelled: () => job.cancelled
+          onProgress,
+          isCancelled
         })
       } finally {
         await source.close().catch(() => undefined)
@@ -63,7 +82,7 @@ export class DatabaseWorkerJobs {
       return false
     }
     job.cancelled = true
-    job.source?.cancel()
+    job.stop?.()
     return true
   }
 }
