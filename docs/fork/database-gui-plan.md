@@ -633,6 +633,16 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - explorer 不再截斷名稱和型別，改成橫向捲動：每列回報自己的完整寬度，內層寬度取最寬的一列並依列記住，上下捲動時捲軸長度不跳
 - 驗證：四種伺服器的 live 整合測試（註解、DDL、dump 來回、屬性），e2e `database-properties.spec.ts`（SQLite 屬性和橫向捲動、PostgreSQL 的樹／欄位標題／屬性裡的註解）
 
+### 連線群組（2026-09-28）
+
+- 像 DataGrip 的資料夾：每個連線多一個 `group`（字串，null／沒有＝最上層），存在 `connections.json`；群組只由連線推導，最後一個連線移出後群組就消失，沒有空群組
+- 只有一層，不支援巢狀（DataGrip 的 `a/b` 寫法沒有做）；群組依名稱排序（數字自然排序、不分大小寫）排在前面，未分組的連線在後，組內維持儲存順序
+- 設定方式：連線對話框的「群組」欄位（打字建新群組，右邊選單挑現有的）；連線右鍵「移到群組」（其他群組／新增群組…／移出群組）；把連線拖到群組列或組內任一列＝移入，拖到群組以外＝移到最上層；群組右鍵「新增連線…」（預填群組）、「重新命名群組…」（改成現有名稱＝合併）、「解散群組」（連線回最上層，不刪連線）
+- 換群組是外觀設定：`database:setConnectionGroup` 一次寫入多個連線，不斷線；對話框改群組也列在 `SESSION_NEUTRAL_FIELDS`，不會重連
+- 群組摺疊狀態存在 renderer 的 `orca.database.page.v1`（預設展開）；移入群組時會自動展開，重新命名會帶著摺疊狀態
+- 拖放的 drop 用 window capture 監聽：preload 在 document capture 階段會取消並攔下所有不是 Orca 檔案拖曳的 drop，React 的 `onDrop` 收不到
+- 驗證：單元測試（分組排序、列展開／摺疊、store 的 `setGroup`、表單來回、改群組不斷線），e2e `database-connection-groups.spec.ts`（對話框、右鍵移入、摺疊、改名、拖放、解散，移動時保持連線）
+
 ## 7. 測試策略
 
 - **單元測試**：值的編碼、各方言的語句切分、DML 產生和識別字引號、設定檔和密碼檔、tunnel 生命週期（mock ssh2）
