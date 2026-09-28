@@ -18450,6 +18450,11 @@
     "resize": "調整底部面板大小",
     "hide": "隱藏底部面板",
     "gitLog": {
+      "range": {
+        "summary": "{{commits}} 個 commit · {{files}} 個檔案變更",
+        "pending": "{{commits}} 個 commit",
+        "span": "從 {{base}} 到 {{target}} 的變更"
+      },
       "compare": {
         "tabLabel": "比較 {{base}} → {{target}}",
         "identical": "兩邊是同一個 commit。",
