@@ -21,6 +21,7 @@ import type {
   DumpTableStructure,
   DumpViewDefinition
 } from './dump-source'
+import { SqlServerDumpSequences } from './sqlserver-dump-sequences'
 import {
   sqlServerTextLiteral,
   sqlServerValueKind,
@@ -40,11 +41,14 @@ export class SqlServerDumpSource implements DumpSource {
   readonly notes: string[] = []
   private readonly plans = new Map<string, TablePlan>()
   private readonly rowCounts = new Map<string, number>()
+  private readonly sequences: SqlServerDumpSequences
   private request: Request | null = null
   private inTransaction = false
   private checksOffWhileLoading = false
 
-  constructor(private readonly client: Connection) {}
+  constructor(private readonly client: Connection) {
+    this.sequences = new SqlServerDumpSequences(client)
+  }
 
   async begin(): Promise<void> {
     const [database] = await querySqlServerRows(
@@ -163,9 +167,10 @@ export class SqlServerDumpSource implements DumpSource {
       separateForeignKeys
     })
     const aliasTypes = await querySqlServerRows(this.client, ALIAS_TYPES_SQL, parameters)
+    const sequences = await this.sequences.creates(table)
     const triggers = await querySqlServerRows(this.client, TRIGGERS_SQL, parameters)
     return {
-      requires: aliasTypes.map(aliasTypeStatement),
+      requires: [...aliasTypes.map(aliasTypeStatement), ...sequences],
       create: [ddl.create, ...ddl.indexes].map((sql) => ({ sql })),
       foreignKeys: ddl.foreignKeys.map((sql) => ({ sql })),
       triggers: triggers.flatMap((trigger) => this.triggerStatements(table, trigger))
@@ -198,9 +203,10 @@ export class SqlServerDumpSource implements DumpSource {
 
   async afterRows(table: DumpTableInfo): Promise<DumpStatement[]> {
     const keys = this.loadingForeignKeys(table)
-    const statements = keys
-      ? [{ sql: `ALTER TABLE ${table.sqlName} CHECK CONSTRAINT ${keys}` }]
-      : []
+    const statements = [
+      ...(keys ? [{ sql: `ALTER TABLE ${table.sqlName} CHECK CONSTRAINT ${keys}` }] : []),
+      ...(await this.sequences.states(table, this.notes))
+    ]
     if (!table.explicitIdentity) {
       return statements
     }
