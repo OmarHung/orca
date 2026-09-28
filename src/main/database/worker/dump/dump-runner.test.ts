@@ -146,6 +146,36 @@ describe('runDump', () => {
     ])
   })
 
+  it('drops tables from several schemas in one statement, told how many schemas there are', async () => {
+    const path = join(dir, 'two-schemas.sql')
+    const source = fakeSource()
+    const schemaCounts: number[] = []
+    await runDump({
+      source: {
+        ...source,
+        dropTables: (tables, schemaCount) => {
+          schemaCounts.push(schemaCount)
+          return source.dropTables(tables, schemaCount)
+        }
+      },
+      request: {
+        objects: [
+          { kind: 'table', schema: 's', name: 'orders' },
+          { kind: 'table', schema: 't', name: 'orders' }
+        ],
+        options: { ...OPTIONS, dropExisting: true }
+      },
+      output: new DumpOutput({ kind: 'file', path }, 'postgres'),
+      onProgress: () => undefined,
+      isCancelled: () => false
+    })
+    expect(schemaCounts).toEqual([2])
+    // Why one statement: PostgreSQL drops tables that reference each other only together.
+    expect(
+      statements(readFileSync(path, 'utf8')).filter((sql) => sql.startsWith('DROP TABLE'))
+    ).toEqual(['DROP TABLE IF EXISTS t.orders, s.orders'])
+  })
+
   it('keeps foreign keys apart when asked to switch checks off, and writes a file per table', async () => {
     const folder = join(dir, 'per-table')
     const summary = await runDump({
