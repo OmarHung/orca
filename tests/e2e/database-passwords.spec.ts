@@ -190,6 +190,41 @@ test.describe('Database passwords', () => {
   })
 })
 
+const SQLSERVER_URL = process.env.ORCA_TEST_SQLSERVER_URL
+
+test.describe('SQL Server passwords', () => {
+  test.skip(!SQLSERVER_URL, 'set ORCA_TEST_SQLSERVER_URL to a disposable SQL Server')
+
+  test('asks for the password when SQL Server refuses the login, and connects on a retry', async ({
+    orcaPage
+  }, testInfo) => {
+    const url = new URL(SQLSERVER_URL!)
+    await openDatabasePage(orcaPage)
+    await addServerConnection(orcaPage, {
+      url,
+      type: 'SQL Server',
+      name: 'mssql-never',
+      passwordStorage: 'Never'
+    })
+
+    // With no password to send, SQL Server refuses the login (18456); that must open the prompt.
+    const row = treeRow(orcaPage, 'mssql-never')
+    const prompt = orcaPage.getByRole('dialog', { name: 'Password for mssql-never' })
+    await row.dblclick()
+    await expect(prompt).toBeVisible({ timeout: 30_000 })
+
+    await prompt.getByLabel('Password').fill('wrong-password')
+    await prompt.getByRole('button', { name: 'Connect' }).click()
+    await expect(prompt.getByText(/Login failed for user/)).toBeVisible({ timeout: 30_000 })
+    await orcaPage.screenshot({ path: testInfo.outputPath('sqlserver-password-rejected.png') })
+
+    await prompt.getByLabel('Password').fill(decodeURIComponent(url.password))
+    await prompt.getByRole('button', { name: 'Connect' }).click()
+    await expect(prompt).toBeHidden({ timeout: 30_000 })
+    await expect(row.getByRole('img', { name: 'Connected' })).toBeVisible({ timeout: 30_000 })
+  })
+})
+
 function filesUnder(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
     const path = join(dir, entry)
