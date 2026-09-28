@@ -142,6 +142,29 @@ describe.skipIf(!SQLSERVER_URL)('sql server driver specifics (integration)', () 
     ])
   })
 
+  it('shows decimal, numeric and money digit for digit, never through a JS number', async () => {
+    const result = onlyRows(
+      await expectOk(
+        execute(
+          `select cast('12345678901234567890.123456789012345678' as decimal(38,18)) as d,
+                  cast('99999999999999999999999999999999999999' as numeric(38,0)) as n,
+                  cast(9007199254740993 as numeric(19,0)) as past_safe,
+                  cast(-0.5 as decimal(5,2)) as negative,
+                  cast(922337203685477.5807 as money) as m`
+        )
+      )
+    )
+    expect(result.rows).toEqual([
+      [
+        '12345678901234567890.123456789012345678',
+        '99999999999999999999999999999999999999',
+        '9007199254740993',
+        '-0.50',
+        '922337203685477.5807'
+      ]
+    ])
+  })
+
   it('reports the line of an error inside a batch', async () => {
     const result = await execute('select 1;\nselect * from orca_missing_table')
     expect(result.ok ? null : result.error).toMatchObject({ line: 2, sqlState: '208' })
