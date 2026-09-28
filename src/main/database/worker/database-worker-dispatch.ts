@@ -1,6 +1,6 @@
 import type { DatabaseDriver } from '../../../shared/database/database-connection-types'
 import type { DatabaseResult } from '../../../shared/database/database-query-types'
-import { readOnlyViolation } from '../../../shared/database/sql-read-only-guard'
+import { readOnlyRefusal, readOnlyViolation } from '../../../shared/database/sql-read-only-guard'
 import type { DatabaseDriverSession, OpenDatabaseDriverSession } from './database-driver'
 import { routeThroughTunnel } from './database-connection-route'
 import { toDatabaseError } from './database-error-mapping'
@@ -71,9 +71,7 @@ export function createDatabaseWorkerDispatcher(
         // Why here: every statement from the page passes this one door before any session.
         const violation = readOnlyViolation(command.sql, driver)
         if (violation) {
-          throw new Error(
-            `Orca's database tools are read-only, so ${violation} statements are not run.`
-          )
+          throw new Error(readOnlyRefusal(violation, driver))
         }
         return requireSession().execute(command.consoleId, command.sql, command.pageSize, {
           schema: command.schema,

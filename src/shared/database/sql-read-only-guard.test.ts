@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SqlDialect } from './sql-dialect-lexing'
-import { readOnlyViolation } from './sql-read-only-guard'
+import { readOnlyRefusal, readOnlyViolation } from './sql-read-only-guard'
 
 const DIALECTS: SqlDialect[] = ['postgres', 'mysql', 'sqlserver', 'sqlite']
 
@@ -9,7 +9,6 @@ describe('readOnlyViolation', () => {
     const reads = [
       "select * from people where name = 'delete me' -- update later",
       'with recent as (select * from orders) select count(*) from recent',
-      'explain select 1',
       "select t.update, t.delete_flag, replace(name, 'a', 'b') from t",
       'select "drop", "create" from t',
       '/* insert into t values (1) */ select 1'
@@ -18,6 +17,9 @@ describe('readOnlyViolation', () => {
       for (const sql of reads) {
         expect(readOnlyViolation(sql, dialect), `${dialect}: ${sql}`).toBeNull()
       }
+    }
+    for (const dialect of ['postgres', 'mysql', 'sqlite'] as const) {
+      expect(readOnlyViolation('explain select 1', dialect), dialect).toBeNull()
     }
     expect(readOnlyViolation('show tables', 'mysql')).toBeNull()
     expect(readOnlyViolation("select insert('abc', 1, 1, 'x')", 'mysql')).toBeNull()
@@ -99,5 +101,27 @@ describe('readOnlyViolation', () => {
       'SP_EXECUTESQL'
     )
     expect(readOnlyViolation('exec sp_help t', 'sqlserver')).toBeNull()
+  })
+
+  it('refuses procedure calls, which can commit and leave read-only on their own', () => {
+    expect(readOnlyViolation('call archive_orders()', 'postgres')).toBe('CALL')
+    expect(readOnlyViolation('CALL archive_orders(1)', 'mysql')).toBe('CALL')
+    expect(readOnlyViolation('select 1; call archive_orders()', 'mysql')).toBe('CALL')
+    // A procedure name inside a string is invisible to the check: MySQL runs it through PREPARE.
+    expect(readOnlyViolation("prepare s from 'call archive_orders()'", 'mysql')).toBe('PREPARE')
+    expect(readOnlyViolation('execute s', 'mysql')).toBe('EXECUTE')
+    // PostgreSQL prepares only queries and DML, which the read-only session refuses itself.
+    expect(readOnlyViolation('prepare s as select 1', 'postgres')).toBeNull()
+    expect(readOnlyViolation('exec dbo.archive_orders', 'sqlserver')).toBe('EXEC')
+  })
+
+  it('says why a procedure call is refused, and which SQL Server procedures still run', () => {
+    expect(readOnlyRefusal('INSERT', 'postgres')).toBe(
+      "Orca's database tools are read-only, so INSERT statements are not run."
+    )
+    expect(readOnlyRefusal('CALL', 'mysql')).toMatch(/can commit and write on its own\.$/)
+    expect(readOnlyRefusal('EXEC', 'sqlserver')).toMatch(
+      /Only these system procedures run: sp_help,/
+    )
   })
 })
