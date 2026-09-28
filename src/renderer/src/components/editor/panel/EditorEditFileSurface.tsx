@@ -35,6 +35,9 @@ import { PluginEditorSourceFallbackNotice } from '../plugin-editors/PluginEditor
 import PluginCustomEditorFrame from '../plugin-editors/PluginCustomEditorFrame'
 import PluginBytesCustomEditorSurface from '../plugin-editors/PluginBytesCustomEditorSurface'
 import { getChangeMarkersBaseline } from '../change-markers/change-markers-baseline'
+import { canUseChangesModeForFile } from '../view-mode/editor-panel-file-mode'
+import { RevisionCompareView } from '../revision-compare/RevisionCompareView'
+import { useRevisionCompareStore } from '../revision-compare/revision-compare-store'
 
 // Retry is a user act: it may start a stopped WSL distro.
 
@@ -119,6 +122,8 @@ export function EditorEditFileSurface({
   reloadContent: (file: OpenFile, options?: ReloadContentOptions) => void
 }): React.JSX.Element {
   const t = useTranslate()
+  // Why before the early returns: hooks must run on every render.
+  const revisionBaseline = useRevisionCompareStore((s) => s.baselineByFileId[activeFile.id])
   if (activeFile.conflict?.kind === 'conflict-placeholder') {
     return <ConflictPlaceholderView file={activeFile} />
   }
@@ -217,6 +222,30 @@ export function EditorEditFileSurface({
       />
     ) : null
 
+  if (revisionBaseline) {
+    const compareView = (
+      <RevisionCompareView
+        file={activeFile}
+        baseline={revisionBaseline}
+        modifiedContent={currentContent}
+        language={monacoLanguage}
+        sideBySide={sideBySide}
+        viewStateScopeId={viewStateScopeId}
+        diffViewStateKey={diffViewStateKey}
+        onContentChange={handleContentChange}
+        onSave={isMarkdown ? markdownDocuments.mdSave : handleSave}
+      />
+    )
+    return externalChangeBanner ? (
+      <div className="flex flex-1 min-h-0 flex-col">
+        {externalChangeBanner}
+        <div className="min-h-0 flex-1">{compareView}</div>
+      </div>
+    ) : (
+      compareView
+    )
+  }
+
   if (isChangesMode) {
     const changesView = (
       <ChangesModeView
@@ -294,6 +323,11 @@ export function EditorEditFileSurface({
         }
         markdownDocuments={isMarkdown ? markdownDocuments.markdownDocuments : undefined}
         changeMarkersBaseline={showChangeMarkers ? getChangeMarkersBaseline(diffContent) : null}
+        gitRelativePath={
+          canUseChangesModeForFile(activeFile) && activeFile.readOnly !== true
+            ? activeFile.relativePath
+            : null
+        }
       />
     </RecoverableRenderErrorBoundary>
   )

@@ -40,6 +40,7 @@ import { useEditorModelRekeyCarry } from '../model-lifetime/identity/editor-mode
 import { useNewModelLineEnding } from '../model-lifetime/buffer-text/editor-new-model-line-ending'
 import { useMonacoDebugDecorations } from '../../debug/use-monaco-debug-decorations'
 import { useMonacoChangeMarkers } from '../change-markers/use-monaco-change-markers'
+import { useMonacoRevisionCompareActions } from '../revision-compare/use-monaco-revision-compare-actions'
 
 type MonacoEditorProps = {
   fileId: string
@@ -68,6 +69,8 @@ type MonacoEditorProps = {
   autoHeight?: boolean
   // Why: HEAD text for the change-marker gutter; null/undefined leaves the gutter plain.
   changeMarkersBaseline?: string | null
+  // Why: worktree-relative path for git features (compare); null/undefined turns them off.
+  gitRelativePath?: string | null
 }
 
 export default function MonacoEditor({
@@ -92,7 +95,8 @@ export default function MonacoEditor({
   passiveMirror = false,
   liveTail = false,
   autoHeight = false,
-  changeMarkersBaseline = null
+  changeMarkersBaseline = null,
+  gitRelativePath = null
 }: MonacoEditorProps): React.JSX.Element {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
   const editorContainerRef = useRef<HTMLDivElement | null>(null)
@@ -216,6 +220,7 @@ export default function MonacoEditor({
 
   useMonacoDebugDecorations(mountedEditor, filePath, language)
   useMonacoChangeMarkers(mountedEditor, changeMarkersBaseline, language, isDark)
+  useMonacoRevisionCompareActions(mountedEditor, fileId, worktreeId, gitRelativePath)
 
   const decorations = useMonacoEditorDecorations({
     editorRef,
