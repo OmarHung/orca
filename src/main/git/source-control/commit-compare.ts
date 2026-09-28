@@ -9,7 +9,9 @@ import { resolveRefOid } from './compare-ref-oids'
 export async function getCommitCompare(
   worktreePath: string,
   commitId: string,
-  options: GitRuntimeOptions = {}
+  options: GitRuntimeOptions = {},
+  // Why: compares against any commit instead of the first parent (Git Log "Compare Versions").
+  baseCommitId?: string
 ): Promise<GitCommitCompareResult> {
   let commitOid = ''
   try {
@@ -39,11 +41,16 @@ export async function getCommitCompare(
   }
 
   try {
-    const { stdout } = await gitExecFileAsync(
-      ['rev-list', '--parents', '-n', '1', commitOid],
-      gitOptionsForWorktree(worktreePath, options)
-    )
-    const firstParent = parseGitRevListFirstParentOid(stdout)
+    const firstParent = baseCommitId
+      ? await resolveRefOid(worktreePath, `${baseCommitId}^{commit}`, options)
+      : parseGitRevListFirstParentOid(
+          (
+            await gitExecFileAsync(
+              ['rev-list', '--parents', '-n', '1', commitOid],
+              gitOptionsForWorktree(worktreePath, options)
+            )
+          ).stdout
+        )
     summary.parentOid = firstParent
     summary.baseRef = firstParent ? firstParent.slice(0, 7) : 'empty tree'
 

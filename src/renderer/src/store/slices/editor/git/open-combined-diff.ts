@@ -179,15 +179,27 @@ export function createOpenCombinedDiff(
 
     openCommitAllDiffs: (worktreeId, worktreePath, compare, entries, subject, message, options) => {
       const contentOwner = editorOpenOwner(get(), worktreeId, options)
-      const commitCompare = toCommitCompareSnapshot(compare, subject, message)
+      const compareLabel = options?.compareLabel
+      const snapshot = toCommitCompareSnapshot(compare, subject, message)
+      const commitCompare = compareLabel
+        ? {
+            ...snapshot,
+            compareLabel,
+            compareRef: `${snapshot.parentOid?.slice(0, 7) ?? 'empty'}..${snapshot.commitOid.slice(0, 7)}`
+          }
+        : snapshot
       const id = qualifyEditorContentId(
-        `${worktreeId}::all-diffs::commit::${commitCompare.commitOid}`,
+        compareLabel
+          ? `${worktreeId}::all-diffs::compare::${commitCompare.parentOid ?? 'empty-tree'}..${commitCompare.commitOid}`
+          : `${worktreeId}::all-diffs::commit::${commitCompare.commitOid}`,
         contentOwner.runtimeEnvironmentId,
         contentOwner.operationProvenance?.generation.route.executionHostId ?? undefined
       )
-      const label = subject
-        ? `Commit ${commitCompare.compareRef}: ${subject}`
-        : `Commit ${commitCompare.compareRef}`
+      const label =
+        compareLabel ??
+        (subject
+          ? `Commit ${commitCompare.compareRef}: ${subject}`
+          : `Commit ${commitCompare.compareRef}`)
       const placementId = options?.placementWorkspaceId ?? worktreeId
       const intent = editorPlacementIntent(get, placementId)
       const groupId = resolveEditorOpenTargetGroupId(get(), placementId, options?.targetGroupId)
