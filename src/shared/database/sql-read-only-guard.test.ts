@@ -103,6 +103,40 @@ describe('readOnlyViolation', () => {
     expect(readOnlyViolation('exec sp_help t', 'sqlserver')).toBeNull()
   })
 
+  it('reads MySQL and MariaDB executable comments as the code the server runs', () => {
+    const writes: [string, string][] = [
+      ['/*!40101 SET SESSION TRANSACTION READ WRITE */', 'READ WRITE'],
+      ['/*!50000 INSERT INTO t VALUES (1) */', 'INSERT'],
+      ['/*!40101SET SESSION TRANSACTION READ WRITE*/', 'READ WRITE'],
+      ['/*! set @@session.transaction_read_only = 0 */', 'TRANSACTION_READ_ONLY'],
+      ['/*M!100100 DELETE FROM t */', 'DELETE'],
+      ['select 1 /*!50000 ; load data infile "x" into table t */', 'LOAD'],
+      ['select 1 /*!; set global max_connections = 10 */', 'SET GLOBAL'],
+      ["/*!50000 select '*/' */ /*!50000 ; call archive_orders() */", 'CALL']
+    ]
+    for (const [sql, word] of writes) {
+      expect(readOnlyViolation(sql, 'mysql'), sql).toBe(word)
+    }
+  })
+
+  it('still skips comments, strings, quoted names and optimizer hints around executable code', () => {
+    const reads = [
+      '/*!40101 SELECT \'delete\', `drop`, "insert" /* update t */ */',
+      'select /*!40101 SQL_NO_CACHE */ * from t',
+      "/*!50000 select 'x */ delete from t' */",
+      '/* was /*!50000 delete from t */ select 1',
+      '# /*!50000 delete from t */\nselect 1',
+      'select /*+ QB_NAME(update) SET_VAR(sort_buffer_size = 16M) */ * from t'
+    ]
+    for (const sql of reads) {
+      expect(readOnlyViolation(sql, 'mysql'), sql).toBeNull()
+    }
+    // Only MySQL runs them; elsewhere `/*!` opens an ordinary comment.
+    for (const dialect of ['postgres', 'sqlserver', 'sqlite'] as const) {
+      expect(readOnlyViolation('/*!50000 delete from t */ select 1', dialect), dialect).toBeNull()
+    }
+  })
+
   it('refuses procedure calls, which can commit and leave read-only on their own', () => {
     expect(readOnlyViolation('call archive_orders()', 'postgres')).toBe('CALL')
     expect(readOnlyViolation('CALL archive_orders(1)', 'mysql')).toBe('CALL')
