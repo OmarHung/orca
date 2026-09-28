@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -16,85 +15,17 @@ import {
   type DatabaseDumpOptions
 } from '../../../../../shared/database/database-dump-types'
 import { SelectField, TextField } from '../connection-dialog/database-form-controls'
-import { useDatabaseConnectionsStore } from '../database-connections-store'
-import {
-  buildDumpRequest,
-  initialDumpSelection,
-  loadDumpCandidates,
-  suggestedDumpName,
-  type DumpCandidateGroup
-} from './database-dump-candidates'
+import { buildDumpRequest, suggestedDumpName } from './database-dump-candidates'
+import { CheckboxField, DumpToolField, foreignKeyOption } from './DatabaseDumpFields'
 import { DatabaseDumpObjectList } from './DatabaseDumpObjectList'
 import { useDatabaseJobsStore, type DatabaseDumpScope } from './database-jobs-store'
+import { useDumpDialogData } from './use-dump-dialog-data'
 
 type Contents = DatabaseDumpOptions['contents']
 type Layout = DatabaseDumpOptions['layout']
 
-type LoadState =
-  | { status: 'loading' }
-  | { status: 'error'; message: string }
-  | { status: 'loaded'; groups: DumpCandidateGroup[]; initial: ReadonlySet<string> }
-
 const DEFAULT_ROWS_PER_INSERT = 100
 const NOTHING: ReadonlySet<string> = new Set()
-
-function useDumpCandidates(scope: DatabaseDumpScope): LoadState {
-  const [state, setState] = useState<LoadState>({ status: 'loading' })
-  useEffect(() => {
-    let current = true
-    const load = async (): Promise<void> => {
-      const connected = await useDatabaseConnectionsStore.getState().connect(scope.connectionId)
-      if (!connected) {
-        const session = useDatabaseConnectionsStore.getState().sessions[scope.connectionId]
-        throw new Error(
-          session?.message ?? translate('database.dump.notConnected', 'Connect to list objects.')
-        )
-      }
-      const groups = await loadDumpCandidates(scope)
-      if (current) {
-        setState({ status: 'loaded', groups, initial: initialDumpSelection(groups, scope.only) })
-      }
-    }
-    load().catch(
-      (error: unknown) =>
-        current &&
-        setState({
-          status: 'error',
-          message: error instanceof Error ? error.message : String(error)
-        })
-    )
-    return () => {
-      current = false
-    }
-  }, [scope])
-  return state
-}
-
-function CheckboxField({
-  label,
-  description,
-  checked,
-  onChange
-}: {
-  label: string
-  description: string
-  checked: boolean
-  onChange: (checked: boolean) => void
-}): React.JSX.Element {
-  return (
-    <label className="flex items-start gap-2.5">
-      <Checkbox
-        checked={checked}
-        onCheckedChange={(next) => onChange(next === true)}
-        className="mt-0.5"
-      />
-      <span className="min-w-0 space-y-0.5">
-        <span className="block text-sm">{label}</span>
-        <span className="block text-xs text-muted-foreground">{description}</span>
-      </span>
-    </label>
-  )
-}
 
 function parseRowsPerInsert(text: string): number | null {
   const value = Number(text)
@@ -110,10 +41,11 @@ function DumpForm({
   scope: DatabaseDumpScope
   onClose: () => void
 }): React.JSX.Element {
-  const load = useDumpCandidates(scope)
+  const load = useDumpDialogData(scope)
   // Null until the user changes it: what the dialog was opened on is checked at first.
   const [picked, setPicked] = useState<ReadonlySet<string> | null>(null)
   const selected = picked ?? (load.status === 'loaded' ? load.initial : NOTHING)
+  const [wantsNative, setWantsNative] = useState(false)
   const [contents, setContents] = useState<Contents>(scope.dataOnly ? 'data' : 'structure-and-data')
   const [layout, setLayout] = useState<Layout>('single-file')
   const [rowsText, setRowsText] = useState(String(DEFAULT_ROWS_PER_INSERT))
@@ -122,6 +54,12 @@ function DumpForm({
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const rowsPerInsert = parseRowsPerInsert(rowsText)
+  const tool = load.status === 'loaded' && load.tool.kind === 'found' ? load.tool.tool : null
+  const native = wantsNative && tool !== null && tool.problem === null
+  const foreignKeys = foreignKeyOption(
+    native && load.status === 'loaded' ? load.tool : null,
+    contents
+  )
   const canStart =
     load.status === 'loaded' && selected.size > 0 && rowsPerInsert !== null && !starting
 
@@ -141,14 +79,19 @@ function DumpForm({
       }
       const request = buildDumpRequest(scope, load.groups, selected, {
         contents,
-        disableForeignKeys,
+        disableForeignKeys: foreignKeys.locked || disableForeignKeys,
         layout,
         rowsPerInsert,
-        dropExisting: contents !== 'data' && dropExisting
+        dropExisting: contents !== 'data' && dropExisting,
+        engine: native ? 'native' : 'builtin'
       })
-      void useDatabaseJobsStore
-        .getState()
-        .startDump({ connectionId: scope.connectionId, source: scope.label, destination, request })
+      void useDatabaseJobsStore.getState().startDump({
+        connectionId: scope.connectionId,
+        source: scope.label,
+        tool: native ? tool.kind : null,
+        destination,
+        request
+      })
       onClose()
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught))
@@ -188,7 +131,10 @@ function DumpForm({
         ) : load.status === 'error' ? (
           <p className="text-sm text-destructive">{load.message}</p>
         ) : (
-          <DatabaseDumpObjectList groups={load.groups} selected={selected} onChange={setPicked} />
+          <>
+            <DatabaseDumpObjectList groups={load.groups} selected={selected} onChange={setPicked} />
+            <DumpToolField choice={load.tool} native={native} onChange={setWantsNative} />
+          </>
         )}
         <div className="grid grid-cols-2 gap-3">
           {scope.dataOnly ? null : (
@@ -224,6 +170,14 @@ function DumpForm({
           {contents === 'structure' ? null : (
             <TextField
               label={translate('database.dump.rowsPerInsert', 'Rows per INSERT')}
+              description={
+                native && tool.flavor !== 'postgres'
+                  ? translate(
+                      'database.dump.mysqldumpRows',
+                      'mysqldump groups rows by size; 1 writes one row per INSERT.'
+                    )
+                  : undefined
+              }
               type="number"
               min={1}
               max={DATABASE_DUMP_MAX_ROWS_PER_INSERT}
@@ -235,11 +189,9 @@ function DumpForm({
         </div>
         <CheckboxField
           label={translate('database.dump.disableForeignKeys', 'Disable foreign key checks')}
-          description={translate(
-            'database.dump.disableForeignKeysHint',
-            'Lets the file load in any table order without foreign key errors.'
-          )}
-          checked={disableForeignKeys}
+          description={foreignKeys.hint}
+          checked={foreignKeys.locked || disableForeignKeys}
+          disabled={foreignKeys.locked}
           onChange={setDisableForeignKeys}
         />
         {contents === 'data' ? null : (

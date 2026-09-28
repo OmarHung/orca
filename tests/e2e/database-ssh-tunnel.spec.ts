@@ -1,5 +1,10 @@
 import { execFileSync } from 'node:child_process'
-import type { Page } from '@stablyai/playwright-test'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import type { ElectronApplication, Page } from '@stablyai/playwright-test'
+import { findDumpTool } from '../../src/main/database/worker/dump/native/native-dump-tools'
+import { adminSql } from './helpers/database-admin'
 import {
   addServerConnection,
   explorerMenu,
@@ -77,12 +82,67 @@ test.describe('Database SSH tunnels', () => {
     'needs ORCA_E2E_SSH_DOCKER=1 and the MySQL/PostgreSQL test URLs'
   )
 
+  /**
+   * Dumps `schema` with the server's native tool, which dials the connection's tunnel itself,
+   * and returns the file's text; null where the tool isn't installed.
+   */
+  async function nativeDump(
+    page: Page,
+    electronApp: ElectronApplication,
+    connection: string,
+    driver: 'postgres' | 'mysql',
+    schema: string
+  ): Promise<string | null> {
+    const tool = await findDumpTool({ driver, serverVersion: '0' })
+    if (!tool) {
+      return null
+    }
+    const connectionItem = connectionRow(page, connection)
+    if ((await connectionItem.getAttribute('aria-expanded')) !== 'true') {
+      await connectionItem.dblclick()
+    }
+    const schemaRow = page
+      .getByRole('tree', { name: 'Database objects' })
+      .getByRole('treeitem', { name: schema, exact: true })
+    await expect(schemaRow).toBeVisible({ timeout: 60_000 })
+    await explorerMenu(page, schemaRow, 'Dump to SQL…')
+    const dialog = page.getByRole('dialog', { name: 'Dump to SQL' })
+    await expect(dialog.getByText('Selected: 1 of 1')).toBeVisible({ timeout: 60_000 })
+    await dialog.getByLabel('Tool').click()
+    await page.getByRole('option', { name: `${tool.kind} ${tool.version}` }).click()
+    const dir = mkdtempSync(join(tmpdir(), 'orca-e2e-ssh-dump-'))
+    const target = join(dir, `${schema}.sql`)
+    try {
+      await electronApp.evaluate(({ dialog: native }, picked) => {
+        native.showSaveDialog = async () => ({ canceled: false, filePath: picked })
+      }, target)
+      await dialog.getByRole('button', { name: 'Save As…' }).click()
+      await expect(dialog).toBeHidden()
+      // The saved toast names this dump's file; an earlier dump's toast may still be up.
+      await expect(page.getByText(target, { exact: true })).toBeVisible({ timeout: 60_000 })
+      return readFileSync(target, 'utf8')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
   test('reaches MySQL and PostgreSQL through a saved SSH host and recovers from an SSH reset', async ({
     orcaPage,
     electronApp
   }, testInfo) => {
     test.setTimeout(300_000)
     const target = startDockerSshRelayTarget(testInfo)
+    // Seeded before the explorer lists anything, for the native dumps below.
+    // Named apart, so each shows under its own connection only.
+    const schema = `e2e_ssh_dump_${Date.now().toString(36)}`
+    const mysqlSchema = `${schema}_my`
+    const seed = (create: string, name: string) => [
+      `${create} ${name}`,
+      `create table ${name}.items (id int primary key, name varchar(20))`,
+      `insert into ${name}.items values (1, 'through the tunnel')`
+    ]
+    await adminSql(POSTGRES_URL!, seed('create schema', schema))
+    await adminSql(MYSQL_URL!, seed('create database', mysqlSchema))
     try {
       // A tunnel only forwards ports, so it must work on a host where Orca's relay can't run.
       execDockerSshRelayTargetControlCommand(target, 'mv "$(command -v node)" /tmp/node.hidden')
@@ -125,6 +185,22 @@ test.describe('Database SSH tunnels', () => {
       ).toBeVisible({ timeout: 60_000 })
       await orcaPage.screenshot({ path: testInfo.outputPath('database-ssh-tunnel.png') })
 
+      // pg_dump and mysqldump dial the same tunnel the connection's own sessions use.
+      const pgDump = await nativeDump(orcaPage, electronApp, 'pg-via-ssh', 'postgres', schema)
+      if (pgDump !== null) {
+        expect(pgDump).toMatch(/INSERT INTO [^;]*items[^;]*through the tunnel/)
+      }
+      const mysqlDump = await nativeDump(
+        orcaPage,
+        electronApp,
+        'mysql-via-ssh',
+        'mysql',
+        mysqlSchema
+      )
+      if (mysqlDump !== null) {
+        expect(mysqlDump).toMatch(/INSERT INTO `items`[^;]*through the tunnel/)
+      }
+
       // Resetting the SSH link takes the tunnel down; connecting again rebuilds both.
       // The SSH host drops our session, as a network change or sshd restart would.
       execDockerSshRelayTargetControlCommand(target, "pkill -f '^sshd: root' || true")
@@ -152,6 +228,12 @@ test.describe('Database SSH tunnels', () => {
       ).toBeVisible({ timeout: 60_000 })
     } finally {
       cleanupDockerSshRelayTarget(target)
+      await adminSql(POSTGRES_URL!, [`drop schema if exists ${schema} cascade`], {
+        ignoreErrors: true
+      })
+      await adminSql(MYSQL_URL!, [`drop database if exists ${mysqlSchema}`], {
+        ignoreErrors: true
+      })
     }
   })
 })

@@ -27,18 +27,28 @@ function RunningDetail({ job }: { job: DatabaseDumpJob }): React.JSX.Element {
     <div className="flex flex-col gap-1.5">
       <Progress value={percent} aria-label={translate('database.jobs.progress', 'Progress')} />
       <p className="truncate text-xs text-muted-foreground tabular-nums">
-        {progress
-          ? translate(
-              'database.jobs.dumpRunning',
-              'Tables: {{value0}} of {{value1}} · Rows: {{value2}} · {{value3}}',
-              {
-                value0: String(progress.tablesDone),
-                value1: String(progress.tableCount),
-                value2: String(progress.rows),
-                value3: formatBytes(progress.bytes)
-              }
-            )
-          : translate('database.jobs.starting', 'Starting…')}
+        {!progress
+          ? translate('database.jobs.starting', 'Starting…')
+          : progress.rows === null
+            ? translate(
+                'database.jobs.dumpRunningNoRows',
+                'Tables: {{value0}} of {{value1}} · {{value2}}',
+                {
+                  value0: String(progress.tablesDone),
+                  value1: String(progress.tableCount),
+                  value2: formatBytes(progress.bytes)
+                }
+              )
+            : translate(
+                'database.jobs.dumpRunning',
+                'Tables: {{value0}} of {{value1}} · Rows: {{value2}} · {{value3}}',
+                {
+                  value0: String(progress.tablesDone),
+                  value1: String(progress.tableCount),
+                  value2: String(progress.rows),
+                  value3: formatBytes(progress.bytes)
+                }
+              )}
         {progress?.currentTable ? ` · ${progress.currentTable}` : ''}
       </p>
     </div>
@@ -60,16 +70,26 @@ function FinishedDetail({ job }: { job: DatabaseDumpJob }): React.JSX.Element {
   return (
     <div className="flex flex-col gap-1.5">
       <p className="text-xs text-muted-foreground tabular-nums">
-        {translate(
-          'database.jobs.dumpFinished',
-          'Tables: {{value0}} · Rows: {{value1}} · {{value2}} · {{value3}} s',
-          {
-            value0: String(summary.tables),
-            value1: String(summary.rows),
-            value2: formatBytes(summary.bytes),
-            value3: (summary.durationMs / 1000).toFixed(1)
-          }
-        )}
+        {summary.rows === null
+          ? translate(
+              'database.jobs.dumpFinishedNoRows',
+              'Tables: {{value0}} · {{value1}} · {{value2}} s',
+              {
+                value0: String(summary.tables),
+                value1: formatBytes(summary.bytes),
+                value2: (summary.durationMs / 1000).toFixed(1)
+              }
+            )
+          : translate(
+              'database.jobs.dumpFinished',
+              'Tables: {{value0}} · Rows: {{value1}} · {{value2}} · {{value3}} s',
+              {
+                value0: String(summary.tables),
+                value1: String(summary.rows),
+                value2: formatBytes(summary.bytes),
+                value3: (summary.durationMs / 1000).toFixed(1)
+              }
+            )}
       </p>
       {summary.notes.length > 0 ? (
         <ul aria-label={translate('database.jobs.notes', 'Notes')} className="flex flex-col gap-1">
@@ -94,15 +114,23 @@ export function DatabaseJobRow({
   onDismiss: () => void
 }): React.JSX.Element {
   const running = job.status === 'running'
-  const title = job.dataOnly
+  const what = job.dataOnly
     ? translate('database.jobs.exportOf', 'Export of {{value0}}', { value0: job.source })
     : translate('database.jobs.dumpOf', 'Dump of {{value0}}', { value0: job.source })
+  const title = job.tool
+    ? translate('database.jobs.withTool', '{{value0}} with {{value1}}', {
+        value0: what,
+        value1: job.tool
+      })
+    : what
   return (
     <div className="flex flex-col gap-2 px-3 py-2.5">
       <div className="flex items-start gap-2">
         <StatusIcon status={job.status} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{title}</p>
+          <p className="truncate text-sm font-medium" title={title}>
+            {title}
+          </p>
           <p className="truncate text-xs text-muted-foreground" title={job.destination}>
             {job.destination}
           </p>
