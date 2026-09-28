@@ -104,6 +104,7 @@ export function EditorPanelShell({
           copiedPathVisible={copiedPathVisible}
           isSingleDiff={model.isSingleDiff}
           isDiffSurface={model.isDiffSurface}
+          hasChangeMarkers={model.isMarkersMode}
           isMarkdown={model.isMarkdown}
           isCsv={model.isCsv}
           isNotebook={model.isNotebook}
@@ -151,6 +152,7 @@ export function EditorPanelShell({
           mdViewMode={model.mdViewMode}
           inlineMarkdownRenderState={model.inlineMarkdownRenderState}
           isChangesMode={model.isDiffSurface && !model.isSingleDiff}
+          isMarkersMode={model.isMarkersMode}
           sideBySide={sideBySide}
           pendingEditorReveal={pendingEditorReveal}
           handleContentChange={onContentChange}

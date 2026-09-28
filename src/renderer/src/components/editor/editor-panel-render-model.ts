@@ -26,6 +26,7 @@ type EditorPanelRenderModelParams = {
   markdownViewMode: StoreState['markdownViewMode']
   markdownRichModeSizeOverridden: boolean
   isChangesMode: boolean
+  isMarkersMode?: boolean
   canOpenWorkspaceFileBrowser: boolean
 }
 
@@ -38,6 +39,7 @@ export function getEditorPanelRenderModel({
   markdownViewMode,
   markdownRichModeSizeOverridden,
   isChangesMode,
+  isMarkersMode = false,
   canOpenWorkspaceFileBrowser
 }: EditorPanelRenderModelParams) {
   const isSingleDiff =
@@ -114,13 +116,15 @@ export function getEditorPanelRenderModel({
     activeFile.mode === 'edit' && fileContents[activeFile.id]?.isBinary === true
   const availableEditorToggleModes =
     isBinaryEditSurface || !canUseChangesModeForFile(activeFile)
-      ? editorToggleModes.filter((mode) => mode !== 'changes')
+      ? editorToggleModes.filter((mode) => mode !== 'changes' && mode !== 'markers')
       : editorToggleModes
   const effectiveToggleValue: EditorToggleValue = isChangesMode
     ? 'changes'
-    : hasViewModeToggle
-      ? mdViewMode
-      : 'edit'
+    : isMarkersMode
+      ? 'markers'
+      : hasViewModeToggle
+        ? mdViewMode
+        : 'edit'
   const inlineMarkdownContent =
     activeFile.mode === 'edit'
       ? (editorDrafts[activeFile.id] ?? fileContents[activeFile.id]?.content ?? null)
@@ -134,6 +138,7 @@ export function getEditorPanelRenderModel({
     activeFile.mode === 'edit' &&
     inlineMarkdownContent !== null &&
     !isChangesMode &&
+    !isMarkersMode &&
     inlineFileContent !== undefined &&
     inlineFileContent.isBinary !== true &&
     !inlineFileContent.loadError &&
@@ -175,6 +180,7 @@ export function getEditorPanelRenderModel({
   return {
     isSingleDiff,
     isDiffSurface: isSingleDiff || isChangesMode,
+    isMarkersMode,
     isCombinedDiff,
     worktreeEntries,
     resolvedLanguage,

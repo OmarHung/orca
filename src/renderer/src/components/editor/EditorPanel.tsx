@@ -115,24 +115,27 @@ function EditorPanelInner({
     }
   }
 
-  const requestedChangesMode =
-    !!activeFile &&
-    activeFile.mode === 'edit' &&
-    canUseChangesModeForFile(activeFile) &&
-    editorViewMode[activeFile.id] === 'changes'
+  const requestedViewMode =
+    !!activeFile && activeFile.mode === 'edit' && canUseChangesModeForFile(activeFile)
+      ? editorViewMode[activeFile.id]
+      : undefined
+  const requestedChangesMode = requestedViewMode === 'changes'
+  const requestedMarkersMode = requestedViewMode === 'markers'
   const { fileContents, diffContents, reloadContent } = useEditorPanelContentState({
     activeFile,
-    isChangesMode: requestedChangesMode,
+    // Why: both modes read the HEAD side of the diff; only Changes renders it as one.
+    isChangesMode: requestedChangesMode || requestedMarkersMode,
     openFiles,
     gitStatusEntries,
     editorViewMode,
     isVisible
   })
-  const isChangesMode =
-    requestedChangesMode &&
+  const isTextFileLoaded =
     !!activeFile &&
     !fileContents[activeFile.id]?.isBinary &&
     !fileContents[activeFile.id]?.loadError
+  const isChangesMode = requestedChangesMode && isTextFileLoaded
+  const isMarkersMode = requestedMarkersMode && isTextFileLoaded
   const {
     renameDialogFile,
     renameError,
@@ -215,6 +218,7 @@ function EditorPanelInner({
     markdownViewMode,
     markdownRichModeSizeOverridden,
     isChangesMode,
+    isMarkersMode,
     canOpenWorkspaceFileBrowser
   })
 
@@ -255,8 +259,8 @@ function EditorPanelInner({
       handleOpenDiffTargetFile('rich')
       return
     }
-    if (next === 'changes') {
-      setEditorViewMode(fileId, 'changes')
+    if (next === 'changes' || next === 'markers') {
+      setEditorViewMode(fileId, next)
       return
     }
     setEditorViewMode(fileId, 'edit')
