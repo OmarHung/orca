@@ -14,6 +14,8 @@ export const databaseApi = {
   introspect: (connectionId, target) =>
     ipcRenderer.invoke('database:introspect', connectionId, target),
   ddl: (connectionId, target) => ipcRenderer.invoke('database:ddl', connectionId, target),
+  properties: (connectionId, target) =>
+    ipcRenderer.invoke('database:properties', connectionId, target),
   execute: (request) => ipcRenderer.invoke('database:execute', request),
   fetchMore: (request) => ipcRenderer.invoke('database:fetchMore', request),
   readLongValues: (request) => ipcRenderer.invoke('database:readLongValues', request),

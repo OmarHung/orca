@@ -5,6 +5,10 @@ import type {
   DatabaseIntrospectTarget
 } from '../../../shared/database/database-introspection-types'
 import type {
+  DatabaseObjectProperties,
+  DatabasePropertiesTarget
+} from '../../../shared/database/database-properties-types'
+import type {
   DatabaseExecuteResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
@@ -26,6 +30,8 @@ export type DatabaseDriverSession = {
   introspect(target: DatabaseIntrospectTarget): Promise<DatabaseIntrospectResult>
   /** The CREATE statements for a table, view or routine, read on the metadata session. */
   ddl(target: DatabaseDdlTarget): Promise<string>
+  /** Settings of the server, a database, schema, table or view, read on the metadata session. */
+  properties(target: DatabasePropertiesTarget): Promise<DatabaseObjectProperties>
   execute(
     consoleId: string,
     sql: string,
