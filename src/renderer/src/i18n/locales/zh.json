@@ -19686,5 +19686,21 @@
       "forgetFailed": "无法移除口令",
       "loadFailed": "无法加载已保存的口令"
     }
+  },
+  "changeMarkers": {
+    "toggleLabel": "变更标记",
+    "toggleTitle": "编辑文件，并在行号旁标示未提交的更改",
+    "gutterTooltip": "点击查看更改内容",
+    "kind": {
+      "added": "新增",
+      "modified": "修改",
+      "deleted": "删除"
+    },
+    "rollback": "还原此更改",
+    "copyOriginal": "复制原始内容",
+    "copied": "已复制",
+    "close": "关闭",
+    "closePreview": "关闭更改预览",
+    "originalAriaLabel": "更改前的内容"
   }
 }

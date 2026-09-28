@@ -89,7 +89,8 @@ export function useEditorPanelExternalContentEvents({
             force: true,
             externalEventGeneration: eventGeneration
           })
-          if (editorViewModeRef.current[file.id] === 'changes') {
+          const viewMode = editorViewModeRef.current[file.id]
+          if (viewMode === 'changes' || viewMode === 'markers') {
             void loadDiffContent(file, {
               force: true,
               externalEventGeneration: eventGeneration

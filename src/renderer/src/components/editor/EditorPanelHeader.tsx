@@ -26,6 +26,7 @@ type EditorPanelHeaderProps = {
   copiedPathVisible: boolean
   isSingleDiff: boolean
   isDiffSurface: boolean
+  hasChangeMarkers?: boolean
   isMarkdown: boolean
   isCsv: boolean
   isNotebook: boolean
@@ -61,6 +62,7 @@ export function EditorPanelHeader({
   copiedPathVisible,
   isSingleDiff,
   isDiffSurface,
+  hasChangeMarkers = false,
   isMarkdown,
   isCsv,
   isNotebook,
@@ -189,32 +191,34 @@ export function EditorPanelHeader({
           iconClassName="size-3"
         />
       )}
-      {isDiffSurface && (
+      {(isDiffSurface || hasChangeMarkers) && (
         // Why: the adjacent diff controls use the same tooltip timing, so they
         // share one provider instead of creating redundant Radix contexts.
         <TooltipProvider delayDuration={300}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-                onClick={onToggleSideBySide}
-              >
-                {sideBySide ? <Rows2 size={14} /> : <Columns2 size={14} />}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" sideOffset={4}>
-              {sideBySide
-                ? translate(
-                    'auto.components.editor.EditorPanelHeader.94756f08ba',
-                    'Switch to inline diff'
-                  )
-                : translate(
-                    'auto.components.editor.EditorPanelHeader.e836faacfa',
-                    'Switch to side-by-side diff'
-                  )}
-            </TooltipContent>
-          </Tooltip>
+          {isDiffSurface && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                  onClick={onToggleSideBySide}
+                >
+                  {sideBySide ? <Rows2 size={14} /> : <Columns2 size={14} />}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={4}>
+                {sideBySide
+                  ? translate(
+                      'auto.components.editor.EditorPanelHeader.94756f08ba',
+                      'Switch to inline diff'
+                    )
+                  : translate(
+                      'auto.components.editor.EditorPanelHeader.e836faacfa',
+                      'Switch to side-by-side diff'
+                    )}
+              </TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
