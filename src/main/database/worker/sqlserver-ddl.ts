@@ -6,6 +6,7 @@ import { catalogText, groupByName, type CatalogRow } from './catalog-row-groupin
 import { sqlServerKeys } from './sqlserver-catalog-objects'
 import { querySqlServerRows } from './sqlserver-client-factory'
 import { formatSqlServerColumnType } from './sqlserver-introspection'
+import { sqlServerTextLiteral } from './dump/sqlserver-dump-values'
 
 export const SQL_SERVER_OBJECT_ID = "object_id(quotename(@schema) + N'.' + quotename(@name))"
 const OBJECT_ID = SQL_SERVER_OBJECT_ID
@@ -55,6 +56,28 @@ const INDEXES_SQL = `
   where i.object_id = ${OBJECT_ID} and i.type in (1, 2)
     and i.is_primary_key = 0 and i.is_unique_constraint = 0
   order by i.name, ic.is_included_column, ic.key_ordinal, ic.index_column_id`
+
+// SSMS's Description: the MS_Description property on the object (minor_id 0) or a column.
+const COMMENTS_SQL = `
+  select o.type, c.name as column_name, cast(ep.value as nvarchar(max)) as comment
+  from sys.extended_properties ep
+  join sys.objects o on o.object_id = ep.major_id
+  left join sys.columns c on c.object_id = ep.major_id and c.column_id = ep.minor_id
+  where ep.class = 1 and ep.name = N'MS_Description' and ep.major_id = ${OBJECT_ID}
+    and (ep.minor_id = 0 or c.name is not null)
+  order by ep.minor_id`
+
+const COMMENT_LEVEL_TYPES: Record<string, string> = {
+  U: 'TABLE',
+  V: 'VIEW',
+  P: 'PROCEDURE',
+  PC: 'PROCEDURE',
+  FN: 'FUNCTION',
+  IF: 'FUNCTION',
+  TF: 'FUNCTION',
+  FS: 'FUNCTION',
+  FT: 'FUNCTION'
+}
 
 const quote = (name: string): string => quoteSqlName(name, 'sqlserver')
 const columnList = (columns: readonly string[]): string => columns.map(quote).join(', ')
@@ -127,11 +150,45 @@ function indexStatement(table: string, rows: readonly CatalogRow[]): string {
   return `CREATE ${unique}${clustered}INDEX ${quote(catalogText(first?.name))} ON ${table} (${keyList})${include}${filter};`
 }
 
+/** Sets the MS_Description of an object (level 1) or one of its columns (level 2). */
+export function sqlServerCommentStatement(target: {
+  schema: string
+  type: string
+  name: string
+  column: string | null
+  comment: string
+}): string {
+  const column =
+    target.column === null
+      ? ''
+      : `, @level2type = N'COLUMN', @level2name = ${sqlServerTextLiteral(target.column)}`
+  return `EXEC sys.sp_addextendedproperty @name = N'MS_Description', @value = ${sqlServerTextLiteral(target.comment)}, @level0type = N'SCHEMA', @level0name = ${sqlServerTextLiteral(target.schema)}, @level1type = N'${target.type}', @level1name = ${sqlServerTextLiteral(target.name)}${column};`
+}
+
+/** sp_addextendedproperty calls that restore the object's and its columns' descriptions. */
+export async function sqlServerComments(
+  client: Connection,
+  schema: string,
+  name: string
+): Promise<string[]> {
+  const rows = await querySqlServerRows(client, COMMENTS_SQL, { schema, name })
+  return rows.flatMap((row) => {
+    const type = COMMENT_LEVEL_TYPES[catalogText(row.type).trim()]
+    if (!type || typeof row.comment !== 'string') {
+      return []
+    }
+    const column = typeof row.column_name === 'string' ? row.column_name : null
+    return [sqlServerCommentStatement({ schema, type, name, column, comment: row.comment })]
+  })
+}
+
 export type SqlServerTableDdl = {
   create: string
   indexes: string[]
   /** ALTER TABLE … ADD CONSTRAINT statements, when asked to keep foreign keys apart. */
   foreignKeys: string[]
+  /** The table's and its columns' descriptions, for after it is created. */
+  comments: string[]
 }
 
 export async function sqlServerTableDdl(
@@ -170,7 +227,8 @@ export async function sqlServerTableDdl(
   return {
     create: `CREATE TABLE ${table} (\n${lines.map((line) => `    ${line}`).join(',\n')}\n);`,
     indexes,
-    foreignKeys: keys.filter(apart).map((key) => `ALTER TABLE ${table} ADD ${line(key)};`)
+    foreignKeys: keys.filter(apart).map((key) => `ALTER TABLE ${table} ADD ${line(key)};`),
+    comments: await sqlServerComments(client, schema, relation)
   }
 }
 
@@ -186,10 +244,12 @@ export async function sqlServerDdl(client: Connection, target: DatabaseDdlTarget
   }
   if (catalogText(kind.type).trim() === 'U') {
     const table = await sqlServerTableDdl(client, target.schema, name)
-    return [table.create, ...table.indexes].join('\n\n')
+    return [table.create, ...table.indexes, ...table.comments].join('\n\n')
   }
   if (typeof kind.definition !== 'string') {
     throw new Error(NO_DEFINITION_MESSAGE)
   }
-  return kind.definition.trim()
+  const comments = await sqlServerComments(client, target.schema, name)
+  // Why GO: CREATE VIEW, PROCEDURE and FUNCTION must each be alone in a batch.
+  return [kind.definition.trim(), ...comments].join('\nGO\n\n')
 }
