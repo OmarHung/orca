@@ -4,7 +4,8 @@ import type {
   DatabaseDumpRequest,
   DatabaseDumpTool
 } from '../../../../../shared/database/database-dump-types'
-import { mysqldumpRuns, mysqlOptionFile } from './mysqldump-plan'
+import { mysqldumpRuns } from './mysqldump-plan'
+import { mysqlOptionFileText } from './mysql-option-file'
 import type { NativeDumpTarget, NativeServerConnection } from './native-dump-plan'
 import { pgDumpPlan } from './pg-dump-plan'
 
@@ -259,6 +260,6 @@ describe('mysqldumpRuns', () => {
   })
 
   it('writes a password any option file reads back', () => {
-    expect(mysqlOptionFile('a"b\\c#d\ne')).toBe('[client]\npassword="a\\"b\\\\c#d\\ne"\n')
+    expect(mysqlOptionFileText('a"b\\c#d\ne')).toBe('[client]\npassword="a\\"b\\\\c#d\\ne"\n')
   })
 })
