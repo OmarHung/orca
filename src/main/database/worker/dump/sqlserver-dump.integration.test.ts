@@ -28,6 +28,15 @@ const source = `orca_dump_${randomUUID().slice(0, 8)}`
 const FIXTURE = [
   'create schema sales',
   'create type dbo.code_text from nvarchar(20) not null',
+  // Sequences behind defaults: one two tables share, one cycling past its end, one used up,
+  // and one never used whose type only the sequence names.
+  'create type dbo.ticket from int not null',
+  `create sequence sales.order_numbers as bigint
+     start with 1000 increment by 10 minvalue 1000 maxvalue 99999 no cycle cache 20`,
+  `create sequence dbo.countdown as decimal(12, 0)
+     start with -5 increment by -2 minvalue -9 maxvalue 0 cycle no cache`,
+  'create sequence dbo.levels as tinyint start with 1 minvalue 1 maxvalue 3',
+  'create sequence dbo.later as dbo.ticket start with 7',
   `create table dbo.people (
      id int identity(1, 1) primary key,
      name nvarchar(100) not null constraint people_name_df default N'?',
@@ -40,11 +49,16 @@ const FIXTURE = [
   `create table sales.orders (
      id int identity(10, 5) primary key nonclustered, person_id int not null,
      code nvarchar(20) null,
+     number bigint not null constraint orders_number_df default (next value for sales.order_numbers),
      constraint orders_person_fk foreign key (person_id) references dbo.people (id) on delete cascade)`,
   'create clustered index orders_code_idx on sales.orders (code desc)',
   'create index orders_person_idx on sales.orders (person_id) include (code) where code is not null',
-  'create table dbo.a (id int primary key, b_id int null)',
-  'create table dbo.b (id int primary key, a_id int null references dbo.a (id))',
+  `create table dbo.a (id int primary key, b_id int null,
+     n bigint not null constraint a_n_df default (next value for sales.order_numbers),
+     level tinyint null constraint a_level_df default (next value for dbo.levels))`,
+  `create table dbo.b (id int primary key, a_id int null references dbo.a (id),
+     later int null constraint b_later_df default (next value for dbo.later),
+     countdown decimal(12, 0) null constraint b_countdown_df default (next value for dbo.countdown))`,
   'alter table dbo.a add constraint a_b_fk foreign key (b_id) references dbo.b (id)',
   `insert into dbo.people
      (name, latin, photo, amount, price, score, ratio, born, seen, legacy, at, t, flag, big, guid, doc, code)
@@ -60,8 +74,12 @@ const FIXTURE = [
   // Why: the next identity value (4) must survive, not restart after the highest row left.
   "delete from dbo.people where name = N'Cy'",
   "insert into sales.orders (person_id, code) values (1, N'a1'), (2, N'b''2'), (1, null)",
-  'insert into dbo.a values (1, null), (2, null)',
-  'insert into dbo.b values (10, 1), (20, 2)',
+  'insert into dbo.a (id, b_id) values (1, null), (2, null)',
+  'declare @v sql_variant = next value for dbo.levels',
+  'insert into dbo.b (id, a_id, later) values (10, 1, null), (20, 2, null)',
+  // -5 and -7 went to b's rows; on past -9 to 0, then -2: the cycle has wrapped.
+  `declare @v sql_variant = next value for dbo.countdown;
+   set @v = next value for dbo.countdown; set @v = next value for dbo.countdown`,
   'update dbo.a set b_id = 10 where id = 1',
   'create view dbo.people_view as select id, name from dbo.people',
   'create view dbo.people_view_ids as select id from dbo.people_view',
@@ -121,8 +139,18 @@ const CATALOG_QUERIES = {
             where type in ('V', 'FN', 'P', 'TR') order by s, name`,
   triggers: 'select name, is_disabled from sys.triggers order by name',
   types:
-    'select schema_name(schema_id) as s, name, is_nullable from sys.types where is_user_defined = 1'
+    'select schema_name(schema_id) as s, name, is_nullable from sys.types where is_user_defined = 1',
+  sequences: `select schema_name(schema_id) as s, name, type_name(user_type_id) as type, precision,
+                scale, cast(start_value as varchar(50)) as start_value,
+                cast(increment as varchar(50)) as increment,
+                cast(minimum_value as varchar(50)) as minimum_value,
+                cast(maximum_value as varchar(50)) as maximum_value, is_cycling, is_cached,
+                cache_size, cast(current_value as varchar(50)) as current_value,
+                cast(last_used_value as varchar(50)) as last_used_value, is_exhausted
+              from sys.sequences order by s, name`
 }
+
+const SEQUENCES = ['sales.order_numbers', 'dbo.countdown', 'dbo.levels', 'dbo.later']
 
 function sqlServerTarget() {
   const target = serverConnectionFromUrl('sqlserver', url!)
@@ -151,6 +179,31 @@ async function snapshot(database: string): Promise<Record<string, unknown>> {
       result[table] = Array.isArray(rows)
         ? rows.map((value: Record<string, unknown>) => ({ ...value, version: null }))
         : rows
+    }
+    return result
+  } finally {
+    await closeSqlServer(client)
+  }
+}
+
+/** The next two values of each sequence, or the error that stops it, taking them. */
+async function nextValues(database: string): Promise<Record<string, string[]>> {
+  const { connection, password } = sqlServerTarget()
+  const client = await connectSqlServer({ ...connection, database }, password, () => undefined)
+  try {
+    const result: Record<string, string[]> = {}
+    for (const name of SEQUENCES) {
+      const values: string[] = []
+      for (let taken = 0; taken < 2; taken += 1) {
+        const sql = `select cast(next value for ${name} as varchar(50)) as value`
+        values.push(
+          await querySqlServerRows(client, sql).then(
+            ([row]) => String(row?.value),
+            (error: unknown) => (error instanceof Error ? error.message : String(error))
+          )
+        )
+      }
+      result[name] = values
     }
     return result
   } finally {
@@ -242,6 +295,28 @@ describe.skipIf(!url)('SQL Server dump', () => {
     const database = await newDatabase()
     await runScript(database, summary.files)
     expect(await snapshot(database)).toEqual(await snapshot(source))
+  })
+
+  it('creates each sequence before its tables, once, handing out the same values after', async () => {
+    const summary = await dump({}, join(dir, 'sequences.sql'))
+    const script = readFileSync(summary.files[0]!, 'utf8')
+    // Two tables draw from sales.order_numbers; it is created and moved on once.
+    expect(script.match(/CREATE SEQUENCE sales\.order_numbers /g)).toHaveLength(1)
+    expect(script.match(/@sequence_name = N'sales\.order_numbers'/g)).toHaveLength(1)
+    expect(script.indexOf('CREATE SEQUENCE sales.order_numbers')).toBeLessThan(
+      script.indexOf('CREATE TABLE sales.orders')
+    )
+    const database = await newDatabase()
+    await runScript(database, summary.files)
+    const exhausted = /reached its minimum or maximum value/
+    const expected = await nextValues(source)
+    expect(expected).toEqual({
+      'sales.order_numbers': ['1050', '1060'],
+      'dbo.countdown': ['-4', '-6'],
+      'dbo.levels': [expect.stringMatching(exhausted), expect.stringMatching(exhausted)],
+      'dbo.later': ['7', '8']
+    })
+    expect(await nextValues(database)).toEqual(expected)
   })
 
   it('restores from a file per table twice over, dropping what the first load made', async () => {

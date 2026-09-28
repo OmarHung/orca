@@ -4,6 +4,7 @@ import { SQL_SERVER_OBJECT_ID } from '../sqlserver-ddl'
 import { formatSqlServerColumnType } from '../sqlserver-introspection'
 import type { DumpStatement } from './dump-output'
 import type { DumpTableInfo } from './dump-source'
+import { DEFAULT_SEQUENCE_IDS } from './sqlserver-dump-sequences'
 import { sqlServerTextLiteral } from './sqlserver-dump-values'
 
 const q = (name: string): string => quoteSqlName(name, 'sqlserver')
@@ -19,12 +20,17 @@ export const FOREIGN_KEYS_SQL = `
   from sys.foreign_keys fk join sys.objects r on r.object_id = fk.referenced_object_id
   where fk.parent_object_id = ${SQL_SERVER_OBJECT_ID}`
 
+// Alias types of the table's columns and of the sequences its defaults draw from.
 export const ALIAS_TYPES_SQL = `
-  select distinct schema_name(t.schema_id) as type_schema, t.name,
+  select schema_name(t.schema_id) as type_schema, t.name,
          type_name(t.system_type_id) as type_name, t.max_length, t.precision, t.scale, t.is_nullable
-  from sys.columns c join sys.types t on t.user_type_id = c.user_type_id
-  where c.object_id = ${SQL_SERVER_OBJECT_ID}
-    and t.is_user_defined = 1 and t.is_assembly_type = 0 and t.is_table_type = 0`
+  from sys.types t
+  where t.is_user_defined = 1 and t.is_assembly_type = 0 and t.is_table_type = 0
+    and (t.user_type_id in (select c.user_type_id from sys.columns c
+                            where c.object_id = ${SQL_SERVER_OBJECT_ID})
+      or t.user_type_id in (select s.user_type_id from sys.sequences s
+                            where s.object_id in (${DEFAULT_SEQUENCE_IDS})))
+  order by type_schema, t.name`
 
 export const TRIGGERS_SQL = `
   select name, object_definition(object_id) as definition, is_disabled
