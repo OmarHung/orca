@@ -22,6 +22,30 @@ function encryption(mode: SqlServerConnectionDraft['sslMode']): {
   }
 }
 
+/**
+ * A login SQL Server refused (tedious' ELOGIN), with every reason it sent: for a database it
+ * can't open, 4060's "Cannot open database" comes before the 18456 that tedious alone keeps.
+ */
+export class SqlServerLoginError extends Error {
+  readonly code = 'ELOGIN'
+
+  constructor(
+    message: string,
+    /** The last error the server sent, usually 18456 "Login failed for user". */
+    readonly number: number | undefined
+  ) {
+    super(message)
+  }
+}
+
+function loginFailure(error: Error, reasons: readonly { number: number; message: string }[]) {
+  if (Reflect.get(error, 'code') !== 'ELOGIN') {
+    return error
+  }
+  const messages = [...new Set(reasons.map((reason) => reason.message))]
+  return new SqlServerLoginError(messages.join(' ') || error.message, reasons.at(-1)?.number)
+}
+
 /** Opens one TDS session. `onError` must be attached before connect so drops never crash the worker. */
 export function connectSqlServer(
   connection: RoutedConnection<SqlServerConnectionDraft>,
@@ -49,11 +73,17 @@ export function connectSqlServer(
     }
   })
   client.on('error', onError)
+  const reasons: { number: number; message: string }[] = []
+  const onLoginError = (token: { number: number; message: string }): void => {
+    reasons.push({ number: token.number, message: token.message })
+  }
+  client.on('errorMessage', onLoginError)
   return new Promise((resolve, reject) => {
     client.connect((error) => {
+      client.removeListener('errorMessage', onLoginError)
       if (error) {
         client.close()
-        reject(error)
+        reject(loginFailure(error, reasons))
       } else {
         resolve(client)
       }

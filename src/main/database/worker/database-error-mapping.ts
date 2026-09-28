@@ -40,6 +40,8 @@ export function toDatabaseError(error: unknown): DatabaseError {
   const cancelled =
     (sqlState !== undefined && CANCELLED_CODES.has(sqlState)) ||
     CANCELLED_CODES.has(readString(error, 'code') ?? '')
+  // tedious' ELOGIN: the server refused the login, which a (new) password may fix.
+  const loginRejected = readString(error, 'code') === 'ELOGIN'
   const position = readPositiveInteger(error, 'position')
   const line = readPositiveInteger(error, 'lineNumber') ?? Number(MYSQL_LINE.exec(message)?.[1])
   const detail = readString(error, 'detail')
@@ -48,6 +50,7 @@ export function toDatabaseError(error: unknown): DatabaseError {
     message,
     ...(sqlState ? { sqlState } : {}),
     ...(cancelled ? { code: 'cancelled' as const } : {}),
+    ...(loginRejected ? { code: 'password-required' as const } : {}),
     ...(position ? { position } : {}),
     ...(Number.isInteger(line) && line > 0 ? { line } : {}),
     ...(detail ? { detail } : {}),
