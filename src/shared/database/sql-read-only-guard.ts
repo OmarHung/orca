@@ -8,6 +8,10 @@ import {
   type SqlDialectRules
 } from './sql-dialect-lexing'
 import { splitSqlStatements } from './sql-statement-splitter'
+import {
+  SQL_SERVER_READ_ONLY_PROCEDURES,
+  sqlServerBatchViolation
+} from './sqlserver-read-only-rules'
 
 // Orca's database tools are read-only. The server enforces it (read-only sessions, SQL Server's
 // rolled-back transactions); this check refuses writes before they are sent, with a clear reason.
@@ -61,6 +65,17 @@ const WRITE_STATEMENTS = new Set([
   'RESET',
   'DISCARD'
 ])
+
+/**
+ * Statements that run code Orca can't read: a procedure can commit, leave read-only for its own
+ * session and write (PostgreSQL's CALL), and MySQL's PREPARE/EXECUTE run SQL held in a string.
+ */
+const DIALECT_STATEMENTS: Record<SqlDialect, ReadonlySet<string>> = {
+  postgres: new Set(['CALL']),
+  mysql: new Set(['CALL', 'PREPARE', 'EXECUTE']),
+  sqlite: new Set(),
+  sqlserver: new Set()
+}
 
 /** Words that write wherever they appear: a CTE's DELETE, a statement after another. */
 const WRITE_WORDS = new Set([
@@ -148,7 +163,7 @@ function statementViolation(sql: string, dialect: SqlDialect): string | null {
   const all = words(sql, SQL_DIALECT_RULES[dialect])
   const keywords = all.filter((word) => word.before !== '.' && word.after !== '(')
   const first = all[0]?.text
-  if (first && WRITE_STATEMENTS.has(first)) {
+  if (first && (WRITE_STATEMENTS.has(first) || DIALECT_STATEMENTS[dialect].has(first))) {
     return first
   }
   for (const word of all) {
@@ -184,5 +199,19 @@ export function readOnlyViolation(sql: string, dialect: SqlDialect): string | nu
       return violation
     }
   }
-  return null
+  // SQL Server's rules read the whole batch: only its first statement may omit EXEC.
+  return dialect === 'sqlserver' ? sqlServerBatchViolation(sql) : null
+}
+
+/** What the console shows for a refused statement. */
+export function readOnlyRefusal(violation: string, dialect: SqlDialect): string {
+  const refused = `Orca's database tools are read-only, so ${violation} statements are not run.`
+  if (violation === 'CALL' || (dialect === 'sqlserver' && violation === 'EXEC')) {
+    const allowed =
+      dialect === 'sqlserver'
+        ? ` Only these system procedures run: ${[...SQL_SERVER_READ_ONLY_PROCEDURES].join(', ')}.`
+        : ''
+    return `${refused} A procedure can commit and write on its own.${allowed}`
+  }
+  return refused
 }

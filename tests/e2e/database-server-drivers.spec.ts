@@ -23,10 +23,14 @@ type DriverCase = {
   type: 'MySQL / MariaDB' | 'SQL Server'
   schema: (url: URL) => string
   labelType: string
-  /** Fixture statements for a routine returning two result sets; none where a batch does. */
-  twoSetsRoutine: (name: string) => string[]
-  callTwoSets: (name: string) => string
-  dropTwoSets: (name: string) => string[]
+  /** Two SELECTs, and whether they run as one batch (SQL Server) or with Run All. */
+  twoSets: string
+  twoSetsWithRunAll: boolean
+  /** A procedure that would write; calling it must be refused before it reaches the server. */
+  procedure: (name: string) => string[]
+  callProcedure: (name: string) => string
+  procedureRefusal: RegExp
+  dropProcedure: (name: string) => string[]
   sleep: string
 }
 
@@ -34,11 +38,12 @@ const MYSQL_CASE: Omit<DriverCase, 'label' | 'env'> = {
   type: 'MySQL / MariaDB',
   schema: (url) => url.pathname.slice(1),
   labelType: 'varchar(20)',
-  twoSetsRoutine: (name) => [
-    `create procedure ${name}() begin select 1 as first; select 2 as second; end`
-  ],
-  callTwoSets: (name) => `call ${name}();`,
-  dropTwoSets: (name) => [`drop procedure if exists ${name}`],
+  twoSets: 'select 1 as first;\nselect 2 as second;',
+  twoSetsWithRunAll: true,
+  procedure: (name) => [`create procedure ${name}() begin delete from ${name}_missing; end`],
+  callProcedure: (name) => `call ${name}();`,
+  procedureRefusal: /read-only, so CALL statements are not run/,
+  dropProcedure: (name) => [`drop procedure if exists ${name}`],
   sleep: 'select sleep(30) as slept;'
 }
 
@@ -51,10 +56,13 @@ const CASES: DriverCase[] = [
     type: 'SQL Server',
     schema: () => 'dbo',
     labelType: 'nvarchar(20)',
-    // Why no routine: one batch with two SELECTs already returns two result sets.
-    twoSetsRoutine: () => [],
-    callTwoSets: () => 'select 1 as first\nselect 2 as second',
-    dropTwoSets: () => [],
+    // One batch with two SELECTs returns two result sets.
+    twoSets: 'select 1 as first\nselect 2 as second',
+    twoSetsWithRunAll: false,
+    procedure: (name) => [`create procedure dbo.${name} as delete from dbo.${name}_missing`],
+    callProcedure: (name) => `exec dbo.${name}`,
+    procedureRefusal: /read-only, so EXEC statements are not run/,
+    dropProcedure: (name) => [`drop procedure if exists dbo.${name}`],
     sleep: "waitfor delay '00:00:30';"
   }
 ]
@@ -77,7 +85,7 @@ for (const driver of CASES) {
       await adminSql(url, [
         `create table ${qualified} (id int primary key, label ${driver.labelType})`,
         `insert into ${qualified} values (1, 'a'), (2, 'b'), (3, 'c')`,
-        ...driver.twoSetsRoutine(routine)
+        ...driver.procedure(routine)
       ])
       try {
         await openDatabasePage(orcaPage)
@@ -111,7 +119,14 @@ for (const driver of CASES) {
         await expect(suggestions.nth(1)).toContainText('label')
         await orcaPage.keyboard.press('Escape')
 
-        await runInConsole(orcaPage, driver.callTwoSets(routine))
+        // A procedure can commit on its own, so calling one is refused too.
+        await runInConsole(orcaPage, driver.callProcedure(routine))
+        await expect(orcaPage.getByText(driver.procedureRefusal)).toBeVisible({ timeout: 30_000 })
+
+        await typeInConsole(orcaPage, driver.twoSets)
+        await orcaPage.keyboard.press(
+          driver.twoSetsWithRunAll ? 'ControlOrMeta+Shift+Enter' : 'ControlOrMeta+Enter'
+        )
         const resultTabs = orcaPage.getByRole('tab', { name: /^Result \d+$/ })
         await expect(resultTabs).toHaveCount(2, { timeout: 30_000 })
         // The newest result set is shown; the earlier one is a click away.
@@ -140,7 +155,7 @@ for (const driver of CASES) {
         await expect(orcaPage.getByText(/^2 rows$/)).toBeVisible({ timeout: 30_000 })
         await orcaPage.screenshot({ path: testInfo.outputPath(`${driver.label}-table-data.png`) })
       } finally {
-        await adminSql(url, [...driver.dropTwoSets(routine), `drop table ${qualified}`], {
+        await adminSql(url, [...driver.dropProcedure(routine), `drop table ${qualified}`], {
           ignoreErrors: true
         })
       }
