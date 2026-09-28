@@ -16,6 +16,7 @@ export const databaseApi = {
   ddl: (connectionId, target) => ipcRenderer.invoke('database:ddl', connectionId, target),
   execute: (request) => ipcRenderer.invoke('database:execute', request),
   fetchMore: (request) => ipcRenderer.invoke('database:fetchMore', request),
+  readLongValues: (request) => ipcRenderer.invoke('database:readLongValues', request),
   listHistory: (connectionId) => ipcRenderer.invoke('database:listHistory', connectionId),
   clearHistory: (connectionId) => ipcRenderer.invoke('database:clearHistory', connectionId),
   cancel: (ref) => ipcRenderer.invoke('database:cancel', ref),

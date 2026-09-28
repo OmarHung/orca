@@ -12,6 +12,7 @@ import type {
 import type {
   DatabaseError,
   DatabaseExecuteResult,
+  DatabaseLongValues,
   DatabaseResult,
   DatabaseRowsPage
 } from '../../shared/database/database-query-types'
@@ -21,6 +22,7 @@ import type {
   DatabaseEncryptionStatus,
   DatabaseExecuteRequest,
   DatabaseFetchMoreRequest,
+  DatabaseReadLongValuesRequest,
   DatabaseSaveConnectionRequest,
   DatabaseTestConnectionRequest
 } from '../../shared/database/database-session-types'
@@ -218,6 +220,17 @@ export class DatabaseService {
       consoleId: request.consoleId,
       resultId: request.resultId,
       pageSize: request.pageSize
+    })
+  }
+
+  readLongValues(
+    request: DatabaseReadLongValuesRequest
+  ): Promise<DatabaseResult<DatabaseLongValues>> {
+    return this.deps.sessions.request(request.connectionId, {
+      type: 'readValues',
+      consoleId: request.consoleId,
+      resultId: request.resultId,
+      slices: request.slices
     })
   }
 

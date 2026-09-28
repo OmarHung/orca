@@ -245,7 +245,12 @@ export function DatabaseTableView({ tab }: { tab: DatabaseTableTab }): React.JSX
             exportTarget={{
               table: qualifiedRelationName(tab.schema, tab.relation, driver),
               driver,
-              fileName: tab.relation
+              fileName: tab.relation,
+              result: {
+                connectionId: tab.connectionId,
+                consoleId: tab.consoleId,
+                resultId: shown.result.resultId
+              }
             }}
           />
         ) : null}
