@@ -11,7 +11,11 @@ import {
 } from '../../shared/database/database-export-types'
 import { databaseDdlTargetSchema } from '../../shared/database/database-ddl-types'
 import { databaseIntrospectTargetSchema } from '../../shared/database/database-introspection-types'
-import type { DatabaseResult } from '../../shared/database/database-query-types'
+import {
+  DATABASE_LONG_VALUE_READ_MAX_CHARS,
+  DATABASE_LONG_VALUE_READ_MAX_SLICES,
+  type DatabaseResult
+} from '../../shared/database/database-query-types'
 import {
   DATABASE_CONSOLE_ID_PATTERN,
   DATABASE_MAX_PAGE_SIZE,
@@ -67,6 +71,29 @@ const ExecuteRequestSchema = ConsoleRefSchema.extend({
 const FetchRequestSchema = ConsoleRefSchema.extend({
   resultId: z.string().min(1).max(64),
   pageSize: PageSizeSchema
+})
+const CharIndexSchema = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER)
+const ReadLongValuesSchema = ConsoleRefSchema.extend({
+  resultId: z.string().min(1).max(64),
+  slices: z
+    .array(
+      z
+        .object({
+          row: CharIndexSchema,
+          column: CharIndexSchema,
+          start: CharIndexSchema,
+          end: CharIndexSchema
+        })
+        .strict()
+        .refine((slice) => slice.end > slice.start)
+    )
+    .min(1)
+    .max(DATABASE_LONG_VALUE_READ_MAX_SLICES)
+    .refine(
+      (slices) =>
+        slices.reduce((total, slice) => total + (slice.end - slice.start), 0) <=
+        DATABASE_LONG_VALUE_READ_MAX_CHARS
+    )
 })
 
 const SaveExportSchema = z
@@ -185,6 +212,11 @@ export function registerDatabaseHandlers(): void {
   ipcMain.handle('database:fetchMore', (_event, raw: unknown) => {
     const request = FetchRequestSchema.safeParse(raw)
     return request.success ? service.fetchMore(request.data) : INVALID_REQUEST
+  })
+
+  ipcMain.handle('database:readLongValues', (_event, raw: unknown) => {
+    const request = ReadLongValuesSchema.safeParse(raw)
+    return request.success ? service.readLongValues(request.data) : INVALID_REQUEST
   })
 
   ipcMain.handle('database:cancel', (_event, raw: unknown) => {
