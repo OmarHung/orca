@@ -5,6 +5,10 @@ import type {
   DatabaseIntrospectTarget
 } from '../../../shared/database/database-introspection-types'
 import type {
+  DatabaseObjectProperties,
+  DatabasePropertiesTarget
+} from '../../../shared/database/database-properties-types'
+import type {
   DatabaseExecuteResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
@@ -27,6 +31,7 @@ import { SqlServerDumpSource } from './dump/sqlserver-dump-source'
 import { SqlServerConsole } from './sqlserver-console'
 import { sqlServerDdl } from './sqlserver-ddl'
 import { introspectSqlServer } from './sqlserver-introspection'
+import { sqlServerProperties } from './sqlserver-properties'
 
 class SqlServerSession implements DatabaseDriverSession {
   private readonly consoles = new ConsolePool((_consoleId, onLost) =>
@@ -69,6 +74,10 @@ class SqlServerSession implements DatabaseDriverSession {
 
   ddl(target: DatabaseDdlTarget): Promise<string> {
     return this.onMeta(target.database, (client) => sqlServerDdl(client, target))
+  }
+
+  properties(target: DatabasePropertiesTarget): Promise<DatabaseObjectProperties> {
+    return sqlServerProperties((database, task) => this.onMeta(database, task), target)
   }
 
   async execute(

@@ -5,6 +5,10 @@ import type {
   DatabaseIntrospectTarget
 } from '../../../shared/database/database-introspection-types'
 import type {
+  DatabaseObjectProperties,
+  DatabasePropertiesTarget
+} from '../../../shared/database/database-properties-types'
+import type {
   DatabaseExecuteResult,
   DatabaseLongValueSlice,
   DatabaseLongValues,
@@ -31,6 +35,7 @@ export type DatabaseWorkerCommand =
     }
   | { type: 'introspect'; target: DatabaseIntrospectTarget }
   | { type: 'ddl'; target: DatabaseDdlTarget }
+  | { type: 'properties'; target: DatabasePropertiesTarget }
   | {
       type: 'execute'
       consoleId: string
@@ -60,6 +65,7 @@ export type DatabaseWorkerValues = {
   connect: { serverVersion: string }
   introspect: DatabaseIntrospectResult
   ddl: { ddl: string }
+  properties: DatabaseObjectProperties
   execute: DatabaseExecuteResult
   fetch: DatabaseRowsPage
   readValues: DatabaseLongValues
