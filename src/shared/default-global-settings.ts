@@ -149,6 +149,7 @@ export function buildDefaultSettings(args: {
     gitAutoFetchEnabled: false,
     gitAutoFetchIntervalMinutes: 15,
     gitInlineBlameEnabled: true,
+    editorChangeMarkersEnabled: true,
     showTitlebarAppName: true,
     showTasksButton: true,
     showAutomationsButton: true,
