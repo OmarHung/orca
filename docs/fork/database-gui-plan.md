@@ -265,7 +265,7 @@ worker thread（每個開啟的 session 一個）  驅動、cursor、取消、�
 
 已知限制：
 
-- SQL Server：只支援 SQL 帳號登入（沒有 Windows／Azure AD）；`tedious` 把 DECIMAL 轉成 JS 數字，超過約 15 位有效數字會失去精度；`datetime2(7)` 只顯示到毫秒；混合批次（DML 加 SELECT）不顯示 DML 的影響列數
+- SQL Server：只支援 SQL 帳號登入（沒有 Windows／Azure AD）；~~`tedious` 把 DECIMAL 轉成 JS 數字，超過約 15 位有效數字會失去精度~~（2026-09-28 修正，見 Phase 2 完成紀錄的「精確的 SQL Server 數字」）；`datetime2(7)` 只顯示到毫秒；混合批次（DML 加 SELECT）不顯示 DML 的影響列數
 - MySQL：FLOAT／DOUBLE 以 JS 數字的格式顯示
 - SQLite：不能建立新檔案；SSH workspace 裡遠端主機上的 SQLite 檔案還不支援
 
@@ -308,12 +308,16 @@ SQL Server 的映像檔只有 amd64，在 Apple Silicon 上透過 Rosetta 可以
 - **重新查詢不閃爍**：資料表重新查詢時先保留上一份結果；欄寬以欄位名稱加型別當 key，所以篩選、排序後手動調過的欄寬都還在
 - **選取和複製**：拖曳、Shift＋點擊、點列號選整列、Shift＋方向鍵、`Mod+A`；`Mod+C` 複製成 TSV（貼到試算表會落在同樣的格子）。右鍵選單另有連同表頭複製、複製為 CSV／JSON／SQL INSERT。console 結果不知道來源表，INSERT 用 `my_table` 當表名
 - **匯出**：「匯出已載入的列」用新的 `database:saveExport` IPC（存檔對話框加寫檔，內容上限 256M 字元，檔名依各平台規則清理），完成後跳 toast
+- **超長值的複製和匯出（2026-09-28 修正）**：超過 10,000 字元（`DATABASE_CELL_PREVIEW_MAX_CHARS`）的值以前只把預覽寫進複製和匯出，而且照樣顯示成功。現在 driver 交出完整文字，worker 的 dispatcher（每一列離開 worker 的唯一出口）才截成預覽，並把完整文字留在 `LongValueStore`：以 console、result、從結果第一列起算的列號（跨分頁、跨後續結果集）和欄位為 key，每個 worker 上限 64M 字元，空間不夠時先丟最久沒用到的結果，單獨放不下的值不會擠掉別人，關掉 console 就一起丟。複製和匯出（CSV／TSV／JSON／SQL INSERT，選取範圍或全部已載入的列）先依每格在結果裡的位置，透過 `database:readLongValues` 分段讀回完整值：每次最多 4M 字元、1,000 段（main 用 zod 檢查），一個值可以跨多次讀取。任何一個值已經不在（被擠掉、超過上限、session 重開或中斷）就什麼都不寫，錯誤 toast 說明原因，要求重新查詢；只有真的存檔之後才顯示成功。輸出格式本身遇到預覽會丟錯，所以預覽不可能默默寫進檔案。剪貼簿 16 MB、匯出 256M 字元的上限不變，超過時在讀取前就拒絕並說明；剪貼簿寫入失敗也會回報
+- **精確的 SQL Server 數字（2026-09-28 修正）**：`tedious` 把 DECIMAL／NUMERIC 算成 JS 數字（值 ÷ 10^scale），decimal(38,18) 或超過 `Number.MAX_SAFE_INTEGER` 的 numeric 在格子、複製、匯出都會變成近似值，money 超過約 9,000 億也會掉分。`config/patches/tedious@20.0.0.patch`（沿用專案既有的 pnpm patch 機制）改成從線上的位元組組出 BigInt 再依 scale 寫成文字：每一位數、scale 的尾端 0、正負號都保留；money／smallmoney 一樣處理，固定四位小數（和 SSMS 相同）。tedious 會被打包進資料庫 worker，所以要改依賴本身，執行期包一層在打包後不一定生效。值被切在封包中間時照樣丟 `NotEnoughDataError`，讓串流解析器等下一段
 - **值檢視器**：`Shift+Enter`、右鍵「Show Value」或結果下方的按鈕開關，寬度可拖拉，開關和寬度都記在 localStorage。JSON 物件／陣列會排版；被截斷的值只顯示預覽和原本長度（預覽截在中間，不嘗試排版）
 - **快捷鍵顯示**：右鍵選單和提示用共用的 `formatKeybinding`，Mac 顯示符號，其他平台顯示 `Ctrl`／`Shift`
 
 已知限制：
 
-- 被截斷的超長值，值檢視器和複製都只拿得到預覽（要看完整值得等之後補「讀取完整值」）
+- 被截斷的超長值，格子和值檢視器仍只顯示預覽和原本長度；複製和匯出會讀回完整值（見上面的修正）
+- worker 只保留有限的完整值（每個連線 64M 字元，最新的結果優先）：結果很多或值很大時，較舊結果的複製和匯出會被拒絕並要求重新查詢。SQLite 的「取消」會重開 worker，所以取消之後，之前結果裡的超長值也需要重新查詢
+- 單一複製超過剪貼簿 16 MB、匯出超過 256M 字元時會拒絕（不提高 IPC 上限），請減少選取的範圍
 - 匯出和複製只含已載入的列（最多 100,000 列），不會重新查詢整張表
 - 計算總列數無法取消；在超大表上可能跑很久（不影響資料捲動）
 - 表頭排序的箭頭只反映點表頭產生的排序；手動輸入的 ORDER BY 不會顯示箭頭
