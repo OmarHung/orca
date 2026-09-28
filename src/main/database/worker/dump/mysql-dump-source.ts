@@ -264,12 +264,14 @@ export class MysqlDumpSource implements DumpSource {
     const kind = routine.routineKind === 'procedure' ? 'PROCEDURE' : 'FUNCTION'
     const [row] = await queryMysqlRows(this.client, `SHOW CREATE ${kind} ${q(routine.name)}`)
     return {
-      create: {
-        sql: withoutDefiner(
-          createColumn(row, `Create ${kind === 'PROCEDURE' ? 'Procedure' : 'Function'}`)
-        ),
-        compound: true
-      },
+      create: [
+        {
+          sql: withoutDefiner(
+            createColumn(row, `Create ${kind === 'PROCEDURE' ? 'Procedure' : 'Function'}`)
+          ),
+          compound: true
+        }
+      ],
       drop: { sql: `DROP ${kind} IF EXISTS ${q(routine.name)}` }
     }
   }
