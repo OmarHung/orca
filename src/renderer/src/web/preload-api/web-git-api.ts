@@ -137,11 +137,12 @@ export function createGitApi(): NonNullable<Partial<PreloadApi>['git']> {
     blame: async () => {
       throw new Error('Inline blame is not available for remote runtimes.')
     },
-    commitCompare: async ({ worktreePath, commitId }) => {
+    commitCompare: async ({ worktreePath, commitId, baseCommitId }) => {
       const worktree = await resolveRuntimeWorktreeByPath(worktreePath)
       return callRuntimeResult('git.commitCompare', {
         worktree: toRuntimeWorktreeSelector(worktree.id),
-        commitId
+        commitId,
+        ...(baseCommitId ? { baseCommitId } : {})
       })
     },
     upstreamStatus: async ({ worktreePath, pushTarget }) => {

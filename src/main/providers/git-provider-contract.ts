@@ -54,7 +54,11 @@ export type IGitProvider = {
     baseRef: string,
     options?: { admissionTier?: GitAdmissionTier }
   ): Promise<GitBranchCompareResult>
-  getCommitCompare(worktreePath: string, commitId: string): Promise<GitCommitCompareResult>
+  getCommitCompare(
+    worktreePath: string,
+    commitId: string,
+    baseCommitId?: string
+  ): Promise<GitCommitCompareResult>
   getUpstreamStatus(worktreePath: string, pushTarget?: GitPushTarget): Promise<GitUpstreamStatus>
   pushBranch(
     worktreePath: string,

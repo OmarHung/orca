@@ -79,6 +79,7 @@ export type GitInspectionApi = {
   commitCompare: (args: {
     worktreePath: string
     commitId: string
+    baseCommitId?: string
     connectionId?: string
   }) => Promise<GitCommitCompareResult>
   upstreamStatus: (args: {

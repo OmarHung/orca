@@ -60,8 +60,12 @@ export const gitApi = {
     ipcRenderer.invoke('git:blame', args),
   branchCompare: (args: { worktreePath: string; baseRef: string; connectionId?: string }) =>
     ipcRenderer.invoke('git:branchCompare', args),
-  commitCompare: (args: { worktreePath: string; commitId: string; connectionId?: string }) =>
-    ipcRenderer.invoke('git:commitCompare', args),
+  commitCompare: (args: {
+    worktreePath: string
+    commitId: string
+    baseCommitId?: string
+    connectionId?: string
+  }) => ipcRenderer.invoke('git:commitCompare', args),
   upstreamStatus: (args: {
     worktreePath: string
     connectionId?: string

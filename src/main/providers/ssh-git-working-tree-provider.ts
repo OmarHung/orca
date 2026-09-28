@@ -124,10 +124,16 @@ export class SshGitWorkingTreeProvider extends SshGitNoninteractiveProvider {
     })) as GitBranchCompareResult
   }
 
-  async getCommitCompare(worktreePath: string, commitId: string): Promise<GitCommitCompareResult> {
+  async getCommitCompare(
+    worktreePath: string,
+    commitId: string,
+    baseCommitId?: string
+  ): Promise<GitCommitCompareResult> {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: The relay answers git.commitCompare with its commitCompare op's GitCommitCompareResult; a base it ignores still returns that shape, and the renderer checks parentOid.
     return (await this.mux.request('git.commitCompare', {
       worktreePath,
-      commitId
+      commitId,
+      ...(baseCommitId ? { baseCommitId } : {})
     })) as GitCommitCompareResult
   }
 }

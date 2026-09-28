@@ -38,7 +38,8 @@ export class GitHandlerComparisonOperations extends GitHandlerOperationContext {
   async commitCompare(params: Record<string, unknown>) {
     const worktreePath = params.worktreePath as string
     const commitId = params.commitId as string
-    return commitCompareOp(this.git.bind(this), worktreePath, commitId)
+    const baseCommitId = typeof params.baseCommitId === 'string' ? params.baseCommitId : undefined
+    return commitCompareOp(this.git.bind(this), worktreePath, commitId, baseCommitId)
   }
 
   async upstreamStatus(params: Record<string, unknown>) {

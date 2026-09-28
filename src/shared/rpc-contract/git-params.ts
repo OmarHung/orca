@@ -72,7 +72,9 @@ export const GitCommitCompare = WorktreeSelector.extend({
   commitId: z
     .unknown()
     .transform((v) => (typeof v === 'string' ? v : ''))
-    .pipe(FullGitObjectId)
+    .pipe(FullGitObjectId),
+  // Why: optional so older clients keep the first-parent compare; see getCommitCompare.
+  baseCommitId: FullGitObjectId.optional()
 })
 
 export const GitHistory = WorktreeSelector.extend({
