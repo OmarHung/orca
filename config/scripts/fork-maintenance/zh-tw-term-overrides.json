@@ -393,5 +393,10 @@
     "from": "^時態型別$",
     "to": "時態類型",
     "why": "\"Temporal type\" (database Properties); OpenCC keeps Mainland wording or reads 行/列 as rows/columns. Anchored so other strings stay as they are."
+  },
+  {
+    "from": "口令",
+    "to": "密碼",
+    "why": "\"Passphrase\" (SSH keys); 口令 is Mainland usage, Taiwan UI copy says 密碼."
   }
 ]
