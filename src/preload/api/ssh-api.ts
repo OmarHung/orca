@@ -14,6 +14,7 @@ import type {
 } from '../../shared/ssh-types'
 import type { SshManagedServerMoveResult } from '../../shared/ssh-managed-server-move'
 import type { FilesystemPathFlavor } from '../../shared/filesystem-entry-types'
+import type { SshCredentialSubmitResult } from '../../shared/ssh-saved-passphrase-types'
 
 export type SshApi = {
   listTargets: () => Promise<SshTarget[]>
@@ -78,8 +79,15 @@ export type SshApi = {
       kind: 'passphrase' | 'password' | 'keyboard-interactive'
       detail: string
       echo?: boolean
+      canRemember?: boolean
     }) => void
   ) => () => void
   onCredentialResolved: (callback: (data: { requestId: string }) => void) => () => void
-  submitCredential: (args: { requestId: string; value: string | null }) => Promise<void>
+  submitCredential: (args: {
+    requestId: string
+    value: string | null
+    remember?: boolean
+  }) => Promise<SshCredentialSubmitResult>
+  listSavedPassphrases: () => Promise<string[]>
+  forgetSavedPassphrase: (args: { keyPath: string }) => Promise<void>
 }

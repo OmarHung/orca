@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
+import { SshPassphraseRememberControls } from './SshPassphraseRememberControls'
 
 export function SshPassphraseDialog(): React.JSX.Element | null {
   const request = useAppStore((s) => s.sshCredentialQueue[0] ?? null)
@@ -19,6 +21,8 @@ export function SshPassphraseDialog(): React.JSX.Element | null {
   const removeRequest = useAppStore((s) => s.removeSshCredentialRequest)
   const [value, setValue] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [remember, setRemember] = useState(false)
+  const [wrongPassphrase, setWrongPassphrase] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const focusFrameRef = useRef<number | null>(null)
 
@@ -35,6 +39,8 @@ export function SshPassphraseDialog(): React.JSX.Element | null {
     if (requestId) {
       setValue('')
       setSubmitting(false)
+      setRemember(false)
+      setWrongPassphrase(false)
     }
   }
 
@@ -68,9 +74,32 @@ export function SshPassphraseDialog(): React.JSX.Element | null {
       return
     }
     setSubmitting(true)
+    const wantsRemember = remember && request.canRemember === true
     try {
-      await window.api.ssh.submitCredential({ requestId: request.requestId, value })
+      const result = await window.api.ssh.submitCredential({
+        requestId: request.requestId,
+        value,
+        remember: wantsRemember
+      })
+      if (result.status === 'wrong-passphrase') {
+        // Why flushSync: the input was disabled while submitting, so it must be re-enabled before it can take focus.
+        flushSync(() => {
+          setWrongPassphrase(true)
+          setSubmitting(false)
+        })
+        inputRef.current?.focus()
+        inputRef.current?.select()
+        return
+      }
       removeRequest(request.requestId)
+      if (wantsRemember && !result.remembered) {
+        toast.error(
+          translate(
+            'sshSavedPassphrases.dialog.notSaved',
+            "The passphrase couldn't be saved, so Orca will ask for it next time."
+          )
+        )
+      }
     } catch (err) {
       toast.error(
         err instanceof Error
@@ -82,7 +111,7 @@ export function SshPassphraseDialog(): React.JSX.Element | null {
       )
       setSubmitting(false)
     }
-  }, [request, value, removeRequest])
+  }, [request, value, remember, removeRequest])
 
   const handleCancel = useCallback(async () => {
     if (request) {
@@ -191,7 +220,10 @@ export function SshPassphraseDialog(): React.JSX.Element | null {
             ref={setInputRef}
             type={isKeyboardInteractive && request.echo ? 'text' : 'password'}
             value={value}
-            onChange={(e) => setValue(e.target.value)}
+            onChange={(e) => {
+              setValue(e.target.value)
+              setWrongPassphrase(false)
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
@@ -216,8 +248,16 @@ export function SshPassphraseDialog(): React.JSX.Element | null {
             }
             className="h-8 text-sm"
             disabled={submitting}
+            aria-invalid={wrongPassphrase}
           />
         </div>
+        <SshPassphraseRememberControls
+          wrongPassphrase={wrongPassphrase}
+          canRemember={request.kind === 'passphrase' && request.canRemember === true}
+          remember={remember}
+          disabled={submitting}
+          onRememberChange={setRemember}
+        />
         <DialogFooter className="mt-1">
           <Button
             variant="outline"

@@ -77,8 +77,8 @@ export class DatabaseSshConnections {
     }
     const connection = this.deps.createConnection(target, {
       onStateChange: (_id, state) => this.onStateChange(targetId, connection, state),
-      onCredentialRequest: (id, kind, detail, signal) =>
-        requestCredential(getCurrentMainWindow, id, kind, detail, signal)
+      onCredentialRequest: (id, kind, detail, echo, signal) =>
+        requestCredential(getCurrentMainWindow, id, kind, detail, echo, signal)
     })
     const created = connection.connect().then(() => {
       const link: Link = { connection, users: 0, watchers: new Set() }
