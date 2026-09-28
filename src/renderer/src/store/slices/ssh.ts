@@ -32,6 +32,8 @@ export type SshCredentialRequest = {
   /** RFC 4256 echo flag for keyboard-interactive prompts: when true the
    * server allows the typed response to be shown. */
   echo?: boolean
+  /** Main offers "remember" only for an encrypted key file it can seal a passphrase for. */
+  canRemember?: boolean
 }
 
 export type SshSlice = {

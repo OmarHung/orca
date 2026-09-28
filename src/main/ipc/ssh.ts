@@ -34,6 +34,7 @@ export {
 } from '../ssh/ssh-target-registry'
 import { registerSshBrowseHandler } from './ssh-browse'
 import { registerCredentialHandler } from './ssh-passphrase'
+import { registerSshSavedPassphraseHandlers } from './ssh-saved-passphrases'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import {
   initializeSshConnectionGenerationSession,
@@ -187,6 +188,7 @@ export function registerSshHandlers(
   registerAdvertisedUrlRefresh(getCurrentMainWindow)
 
   registerCredentialHandler()
+  registerSshSavedPassphraseHandlers()
 
   const callbacks = createSshConnectionCallbacks()
   if (connectionManager) {

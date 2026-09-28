@@ -19719,5 +19719,20 @@
       "title": "Value",
       "toggle": "Value viewer"
     }
+  },
+  "sshSavedPassphrases": {
+    "dialog": {
+      "remember": "Remember passphrase",
+      "rememberHint": "Encrypted with the OS keychain. You can forget it in SSH settings.",
+      "wrongPassphrase": "That passphrase doesn't unlock this key.",
+      "notSaved": "The passphrase couldn't be saved, so Orca will ask for it next time."
+    },
+    "settings": {
+      "title": "Saved key passphrases",
+      "description": "Orca unlocks these SSH keys without asking. The passphrases are encrypted with the OS keychain.",
+      "forget": "Forget",
+      "forgetFailed": "Couldn't forget the passphrase",
+      "loadFailed": "Couldn't load saved passphrases"
+    }
   }
 }
