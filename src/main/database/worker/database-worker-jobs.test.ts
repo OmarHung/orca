@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -62,9 +62,11 @@ describe('worker dump jobs', () => {
     await harness.send({ type: 'close' })
   })
 
-  it('stops a job it is asked to cancel, leaving no file behind', async () => {
+  it('stops a job it is asked to cancel, leaving the file it would replace as it was', async () => {
     const harness = await connected()
-    const path = join(dir, 'cancelled.sql')
+    const folder = mkdtempSync(join(dir, 'cancel-'))
+    const path = join(folder, 'cancelled.sql')
+    writeFileSync(path, 'the earlier dump\n')
     const running = harness.send({
       type: 'dump',
       jobId: 'job-cancel-01',
@@ -75,13 +77,15 @@ describe('worker dump jobs', () => {
       cancelled: true
     })
     expect(await expectOk(running)).toMatchObject({ cancelled: true, files: [] })
-    expect(existsSync(path)).toBe(false)
+    expect(readFileSync(path, 'utf8')).toBe('the earlier dump\n')
+    expect(readdirSync(folder)).toEqual(['cancelled.sql'])
     await harness.send({ type: 'close' })
   })
 
   it('cancels running jobs before closing, so a disconnect leaves no half dump', async () => {
     const harness = await connected()
-    const path = join(dir, 'closed.sql')
+    const folder = mkdtempSync(join(dir, 'close-'))
+    const path = join(folder, 'closed.sql')
     const running = harness.send({
       type: 'dump',
       jobId: 'job-close-001',
@@ -90,6 +94,6 @@ describe('worker dump jobs', () => {
     })
     await expectOk(harness.send({ type: 'close' }))
     expect(await expectOk(running)).toMatchObject({ cancelled: true })
-    expect(existsSync(path)).toBe(false)
+    expect(readdirSync(folder)).toEqual([])
   })
 })

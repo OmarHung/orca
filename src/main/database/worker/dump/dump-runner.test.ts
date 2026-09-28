@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -185,8 +185,10 @@ describe('runDump', () => {
     expect(text).toMatch(/INSERT INTO s\.people/)
   })
 
-  it('removes what it wrote when cancelled', async () => {
-    const path = join(dir, 'cancelled.sql')
+  it('leaves the file it would replace as it was when cancelled, and nothing else', async () => {
+    const folder = mkdtempSync(join(dir, 'cancelled-'))
+    const path = join(folder, 'cancelled.sql')
+    writeFileSync(path, 'the earlier dump\n')
     let batches = 0
     const summary = await runDump({
       source: fakeSource({ onRows: () => (batches += 1) }),
@@ -196,7 +198,34 @@ describe('runDump', () => {
       isCancelled: () => batches > 1
     })
     expect(summary).toMatchObject({ cancelled: true, files: [] })
-    expect(existsSync(path)).toBe(false)
+    expect(readFileSync(path, 'utf8')).toBe('the earlier dump\n')
+    expect(readdirSync(folder)).toEqual(['cancelled.sql'])
+  })
+
+  it('leaves the file it would replace as it was when the dump fails partway', async () => {
+    const folder = mkdtempSync(join(dir, 'failed-'))
+    const path = join(folder, 'failed.sql')
+    writeFileSync(path, 'the earlier dump\n')
+    let batches = 0
+    const failing = fakeSource({
+      onRows: () => {
+        batches += 1
+        if (batches > 1) {
+          throw new Error('server closed the connection')
+        }
+      }
+    })
+    await expect(
+      runDump({
+        source: failing,
+        request: request(),
+        output: new DumpOutput({ kind: 'file', path }, 'postgres'),
+        onProgress: () => undefined,
+        isCancelled: () => false
+      })
+    ).rejects.toThrow('server closed the connection')
+    expect(readFileSync(path, 'utf8')).toBe('the earlier dump\n')
+    expect(readdirSync(folder)).toEqual(['failed.sql'])
   })
 
   it('counts a read that a cancel broke off as cancelled, and any other break as failed', async () => {
