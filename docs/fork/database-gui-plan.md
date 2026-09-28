@@ -571,6 +571,25 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - 選項對應：每表一檔就逐表執行（`pg_dump -t`、`mysqldump db table`）；外鍵選項對應工具本身的行為（mysqldump 預設就關外鍵檢查，pg_dump 預設把外鍵放在資料之後）
 - pg_dump 版本比伺服器舊時會拒絕執行，要把工具的訊息原樣顯示
 
+**6.3 完成紀錄（2026-09-28）**
+
+- Dump 對話框多一個「Tool」：PostgreSQL、MySQL／MariaDB 連線可以選「Orca（內建）」或偵測到的 `pg_dump 17.9`／`mysqldump 8.4.3`，下面顯示工具的完整路徑。找不到時該選項停用並說明要安裝；pg_dump 比伺服器舊時也停用，並說明要裝哪一版。SQLite、SQL Server 不顯示這個欄位
+- 偵測：PATH 加上常見位置（macOS 的 Homebrew `opt/libpq`、`opt/postgresql@*`、`opt/mysql*`、`opt/mariadb*`、Postgres.app、`/usr/local/mysql*`；Linux 的 `/usr/lib/postgresql/*/bin`、`/usr/pgsql-*`；Windows 的 Program Files 下的 PostgreSQL、MySQL Server、MariaDB），用 `--version` 判斷版本和來源（MySQL 或 MariaDB 的用戶端），挑最新的；MySQL 連線優先挑跟伺服器同來源的用戶端。每次開對話框和開始 dump 時都重新偵測，不另做設定頁的路徑欄位（原計畫的「在設定裡指定路徑」沒做）
+- 在連線的 worker 裡用 `spawnProcess` 執行，工具連的是 worker 本身連的位址：走 SSH 隧道的連線就連同一條隧道的本機埠（沒有另開隧道，隧道本來就接受多條連線）。工具的輸出直接串流寫進檔案（受磁碟速度節制），進度顯示已寫出的大小和第幾張表（工具不回報列數，所以不顯示列數）；取消會結束工具，失敗會顯示工具最後幾行錯誤訊息，兩者都會刪掉已寫出的檔案
+- 密碼：PostgreSQL 用 `PGPASSWORD`；MySQL 寫進權限 0600 的暫存 `[client]` 設定檔，用 `--defaults-extra-file` 帶入，結束就刪掉。都不出現在命令列
+- pg_dump：`--no-owner --no-privileges`（跟內建 dump 一樣，誰匯入就屬於誰）、INSERT 格式（`--rows-per-insert`，pg_dump 12 以前只能一列一條並註明）、`--clean --if-exists`、只匯資料加停用外鍵時用 `--disable-triggers`（需要超級使用者，說明裡會註明）。環境變數 `PGOPTIONS=-c default_transaction_read_only=on`，伺服器照樣擋寫入。走隧道時 `--host` 用原本的主機名、`PGHOSTADDR=127.0.0.1`，TLS 仍然對原主機驗證。整個 schema 都勾選時用 `-n`（包含型別、函式、sequence），只勾部分時用 `-t` 並註明 pg_dump 不會帶上這些表用到的型別和函式；只勾了 routine 沒有其他物件時會拒絕並說明
+- pg_dump 每表一檔：開頭檔 `--section=pre-data`，每張表一個 `--section=data -t 表` 的檔，結尾檔 `--section=post-data`（加上沒有表擁有的 sequence 值）。勾了先 DROP 時，開頭檔先刪掉這些表的外鍵（pg_dump 把外鍵放在 post-data，否則重匯時 DROP TABLE 會被擋）
+- mysqldump：`--single-transaction --no-tablespaces --hex-blob --protocol=TCP`；MySQL 用戶端加 `--set-gtid-purged=OFF`，8.0 以上加 `--skip-column-statistics`（否則對 MariaDB 伺服器會失敗），不加密時加 `--get-server-public-key`（MySQL 8 預設的登入方式沒有 TLS 時需要）。SSL：MySQL 用戶端用 `--ssl-mode`；MariaDB 用戶端沒有 "prefer"，先用 TLS 連、失敗且還沒寫出任何東西時改用不加密重試。每條 INSERT 一列時用 `--skip-extended-insert`，其餘由 mysqldump 依大小分批（對話框有說明）。沒勾先 DROP 時加 `--skip-add-drop-table`。多個資料庫時每段前面加 `CREATE DATABASE IF NOT EXISTS`／`USE`
+- mysqldump 每表一檔：每張表一個檔，view 全部放在一個檔（mysqldump 只在同一次執行裡處理 view 之間的相依），routine 一個檔
+- 驗證：本機的 pg_dump 17.9 和 mysqldump 8.4.3（官方版）對測試用的 PostgreSQL 17、MySQL 8.4、MariaDB 11.8 做來回測試，用工具旁邊的 psql／mysql 匯入空資料庫再比對（跟內建 dump 用同一份 fixture 和比對方式）：單一檔案、每表一檔重匯兩次、只有結構加只有資料；單元測試涵蓋偵測和版本選擇、兩種工具的參數、密碼設定檔的跳脫、執行器（輸出、錯誤訊息、TLS 重試、取消）；e2e：PostgreSQL 和 MySQL 用原生工具 dump、SSH 隧道 e2e 裡兩種工具都透過隧道 dump 成功（SSH 主機上沒有 node）。反向驗證了 per-table 的 `--exclude-table-data`、先刪外鍵、view 放同一檔、`--skip-column-statistics`。全部資料庫 e2e 34 個通過
+
+已知限制：
+
+- MariaDB 自己的 `mariadb-dump` 本機沒有，那條路徑（`--ssl`／`--skip-ssl` 和 TLS 重試）只有單元測試
+- mysqldump 會保留 view、routine、trigger 的 DEFINER，用別的帳號匯入需要相應權限（說明裡會註明）；每表一檔時每次執行各自一個快照，表之間讀到的時間點略有不同（說明裡會註明）
+- 走 SSH 隧道又設 verify-full 時，mysqldump 只能拿 127.0.0.1 驗證憑證，會直接拒絕並建議改用內建 dump 或 require
+- pg_dump 17.6 以後的純文字檔開頭有 `\restrict`，只能用 psql 匯入
+
 **驗證方式**
 
 - 來回測試（每種資料庫）：建一組含外鍵循環、自我參照、PG 的 enum 和 serial、SQL Server 的 identity、trigger、互相依賴的 view、routine、各種特殊值（NULL、引號、換行、二進位、超大數字、JSON、時區）的 schema → dump → 用「執行 SQL 腳本」匯進空資料庫 → 比對結構和每張表的內容。單一檔案／每表一檔、解除外鍵勾／不勾都要跑
