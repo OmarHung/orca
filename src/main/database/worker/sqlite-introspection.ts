@@ -112,7 +112,12 @@ export function introspectSqlite(
              where type in ('table', 'view') and name not like 'sqlite_%' order by name`
           )
           .all()
-          .map((row) => ({ name: String(row.name), kind: row.type === 'view' ? 'view' : 'table' }))
+          // SQLite has no comments.
+          .map((row) => ({
+            name: String(row.name),
+            kind: row.type === 'view' ? 'view' : 'table',
+            comment: null
+          }))
       }
     case 'columns':
       return {
@@ -125,7 +130,8 @@ export function introspectSqlite(
             dataType: String(row.type ?? ''),
             nullable: Number(row.notnull) === 0,
             defaultValue: row.dflt_value === null ? null : String(row.dflt_value),
-            isPrimaryKey: Number(row.pk) > 0
+            isPrimaryKey: Number(row.pk) > 0,
+            comment: null
           }))
       }
     // SQLite has no stored routines.
