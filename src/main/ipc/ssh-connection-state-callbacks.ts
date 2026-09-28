@@ -10,7 +10,7 @@ import {
   testingTargets
 } from './ssh-connect-attempt-registry'
 import { connectionManager, getCurrentMainWindow } from './ssh-ipc-context'
-import { requestCredential } from './ssh-passphrase'
+import { requestSshCredential } from './ssh-passphrase'
 import { clearRelayLostBackoff } from './ssh-relay-lost-backoff'
 import {
   broadcastSshState,
@@ -120,9 +120,20 @@ export function handleSshConnectionStateChange(targetId: string, state: SshConne
 
 export function createSshConnectionCallbacks(): SshConnectionCallbacks {
   return {
-    onCredentialRequest: (targetId, kind, detail, echo, signal) => {
-      credentialRequestedForTarget.add(targetId)
-      return requestCredential(getCurrentMainWindow, targetId, kind, detail, echo, signal)
+    onCredentialRequest: async (targetId, kind, detail, echo, signal) => {
+      const answer = await requestSshCredential(
+        getCurrentMainWindow,
+        targetId,
+        kind,
+        detail,
+        echo,
+        signal
+      )
+      // Why: a remembered passphrase won't prompt next time, so startup can connect this target eagerly.
+      if (answer.asksAgain && !signal?.aborted) {
+        credentialRequestedForTarget.add(targetId)
+      }
+      return answer.value
     },
     onStateChange: handleSshConnectionStateChange
   }

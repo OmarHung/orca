@@ -19244,5 +19244,20 @@
       "title": "值",
       "toggle": "值查看器"
     }
+  },
+  "sshSavedPassphrases": {
+    "dialog": {
+      "remember": "记住口令",
+      "rememberHint": "通过操作系统钥匙串加密保存，可在 SSH 设置中移除。",
+      "wrongPassphrase": "口令不正确，无法解锁此密钥。",
+      "notSaved": "无法保存口令，下次连接时仍会询问。"
+    },
+    "settings": {
+      "title": "已保存的密钥口令",
+      "description": "Orca 会自动解锁这些 SSH 密钥，不再询问口令。口令通过操作系统钥匙串加密保存。",
+      "forget": "移除",
+      "forgetFailed": "无法移除口令",
+      "loadFailed": "无法加载已保存的口令"
+    }
   }
 }
