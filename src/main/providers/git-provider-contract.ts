@@ -14,6 +14,7 @@ import type { GitStageWorktreeScope } from '../../shared/git-stage-worktree-scop
 import type { RemoveWorktreeResult } from '../../shared/worktree/create-types'
 import type { GitPushTarget, GitWorktreeInfo } from '../../shared/worktree/types'
 import type { GitHistoryOptions, GitHistoryResult } from '../../shared/git-history'
+import type { GitBlameResult } from '../../shared/git-blame'
 import type { CommitMessageDraftContext } from '../../shared/commit-message-generation'
 import type { GitProviderStatusOptions } from './git-provider-status-options'
 import type { GitAdmissionTier } from '../git/command-runner/git-exec-options'
@@ -37,6 +38,7 @@ export type IGitProvider = {
     staged: boolean,
     compareAgainstHead?: boolean
   ): Promise<GitDiffResult>
+  getBlame(worktreePath: string, filePath: string): Promise<GitBlameResult>
   stageFile(worktreePath: string, filePath: string): Promise<void>
   unstageFile(worktreePath: string, filePath: string): Promise<void>
   bulkStageFiles(
