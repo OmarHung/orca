@@ -1,8 +1,6 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import type { DatabaseSslMode } from '../../../../../shared/database/database-connection-types'
 import type { DatabaseDumpTool } from '../../../../../shared/database/database-dump-types'
+import { writeMysqlOptionFile } from './mysql-option-file'
 import { majorVersion } from './native-dump-tools'
 import {
   objectsBySchema,
@@ -20,17 +18,6 @@ const MYSQL_SSL_MODES: Record<DatabaseSslMode, string> = {
 }
 
 const q = (name: string): string => `\`${name.replaceAll('`', '``')}\``
-
-/** A `[client]` option file carrying the password, so it never shows on a command line. */
-export function mysqlOptionFile(password: string): string {
-  const escaped = password
-    .replaceAll('\\', '\\\\')
-    .replaceAll('"', '\\"')
-    .replaceAll('\n', '\\n')
-    .replaceAll('\r', '\\r')
-    .replaceAll('\t', '\\t')
-  return `[client]\npassword="${escaped}"\n`
-}
 
 // Why no "prefer" for MariaDB's client: --ssl fails outright on a server without TLS, so a
 // preferred connection tries TLS and retries a run without it (see NativeDumpPlan.withoutTls).
@@ -172,23 +159,21 @@ export function mysqldumpRuns(
   return { runs, notes, withoutTls: preferred ? withoutTls : null }
 }
 
-export async function mysqldumpPlan(input: NativePlanInput): Promise<NativeDumpPlan> {
+/** The runs, with the password in an option file that the plan's cleanup removes. */
+export async function mysqldumpPlan(
+  input: NativePlanInput,
+  writeOptionFile: typeof writeMysqlOptionFile = writeMysqlOptionFile
+): Promise<NativeDumpPlan> {
   const password = input.target.password
-  const dir = password === null ? null : await mkdtemp(join(tmpdir(), 'orca-mysqldump-'))
+  const optionFile = password === null ? null : await writeOptionFile(password)
   const cleanup = async (): Promise<void> => {
-    if (dir) {
-      await rm(dir, { recursive: true, force: true })
-    }
+    await optionFile?.remove()
   }
   try {
-    const optionFile = dir && password !== null ? join(dir, 'client.cnf') : null
-    if (optionFile && password !== null) {
-      await writeFile(optionFile, mysqlOptionFile(password), { mode: 0o600 })
-    }
     return {
       tool: input.tool,
       env: { ...process.env },
-      ...mysqldumpRuns(input, optionFile),
+      ...mysqldumpRuns(input, optionFile?.path ?? null),
       cleanup
     }
   } catch (error) {
