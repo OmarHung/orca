@@ -234,6 +234,9 @@ export function registerDatabaseHandlers(): void {
       : INVALID_REQUEST
   })
 
-  // Why: database server sessions must not outlive Orca.
-  app.on('will-quit', () => void service.disposeAll())
+  // Why: database server sessions and half-written dumps must not outlive Orca.
+  app.on('will-quit', () => {
+    jobs.discardRunning()
+    void service.disposeAll()
+  })
 }
