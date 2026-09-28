@@ -2,6 +2,7 @@ import { rm } from 'node:fs/promises'
 import type {
   DatabaseDumpJobRequest,
   DatabaseDumpSummary,
+  DatabaseDumpTool,
   DatabaseJobRef
 } from '../../shared/database/database-dump-types'
 import type { DatabaseResult } from '../../shared/database/database-query-types'
@@ -45,6 +46,11 @@ export class DatabaseJobService {
       await rm(destination.path, { recursive: true, force: true }).catch(() => undefined)
     }
     return result
+  }
+
+  /** The pg_dump or mysqldump a native dump on this connection would run. */
+  dumpTool(connectionId: string): Promise<DatabaseResult<DatabaseDumpTool | null>> {
+    return this.deps.sessions.request(connectionId, { type: 'dumpTool' })
   }
 
   async cancelJob(ref: DatabaseJobRef): Promise<boolean> {
