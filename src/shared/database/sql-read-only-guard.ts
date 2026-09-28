@@ -1,6 +1,7 @@
 import {
   SQL_DIALECT_RULES,
   commentEnd,
+  executableCodeStart,
   isIdentifierChar,
   isWhitespace,
   quotedTokenEnd,
@@ -131,14 +132,31 @@ function neighbour(sql: string, from: number, step: 1 | -1): string | undefined 
   return sql[index]
 }
 
-/** Bare words, skipping literals, comments and quoted names. */
-function words(sql: string, rules: SqlDialectRules): Word[] {
-  const found: Word[] = []
+/**
+ * Bare words of each `;`-separated statement, skipping literals, comments and quoted names.
+ * MySQL runs `/*!…*\/` text as code, so it is read as code, and a `;` in it still ends a statement.
+ */
+function statementWords(sql: string, rules: SqlDialectRules): Word[][] {
+  let current: Word[] = []
+  const statements = [current]
+  let executable = false
   let index = 0
   while (index < sql.length) {
+    const code = executableCodeStart(sql, index, rules)
+    if (code !== null || (executable && sql.startsWith('*/', index))) {
+      executable = code !== null
+      index = code ?? index + 2
+      continue
+    }
     const skipped = commentEnd(sql, index, rules) ?? quotedTokenEnd(sql, index, rules)
     if (skipped !== null) {
       index = skipped
+      continue
+    }
+    if (sql[index] === ';') {
+      current = []
+      statements.push(current)
+      index += 1
       continue
     }
     WORD.lastIndex = index
@@ -148,19 +166,28 @@ function words(sql: string, rules: SqlDialectRules): Word[] {
       continue
     }
     const end = index + match[0].length
-    found.push({
+    current.push({
       text: match[0].toUpperCase(),
       before: neighbour(sql, index - 1, -1),
       after: neighbour(sql, end, 1)
     })
     index = end
   }
-  return found
+  return statements
 }
 
 function statementViolation(sql: string, dialect: SqlDialect): string | null {
+  for (const all of statementWords(sql, SQL_DIALECT_RULES[dialect])) {
+    const violation = wordsViolation(all, dialect)
+    if (violation) {
+      return violation
+    }
+  }
+  return null
+}
+
+function wordsViolation(all: Word[], dialect: SqlDialect): string | null {
   // Why skip these: `t.update` is a column and `replace(…)` / MySQL's `insert(…)` are functions.
-  const all = words(sql, SQL_DIALECT_RULES[dialect])
   const keywords = all.filter((word) => word.before !== '.' && word.after !== '(')
   const first = all[0]?.text
   if (first && (WRITE_STATEMENTS.has(first) || DIALECT_STATEMENTS[dialect].has(first))) {

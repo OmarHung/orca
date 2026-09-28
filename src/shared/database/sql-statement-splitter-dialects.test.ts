@@ -44,6 +44,10 @@ describe('splitSqlStatements (mysql)', () => {
       '/*!40101 SET NAMES utf8 */',
       'select 1'
     ])
+    // MariaDB runs `/*M!…*/` too, so a script of only that is still a statement.
+    expect(texts('/*M!100100 SET NAMES utf8 */;', 'mysql')).toEqual([
+      '/*M!100100 SET NAMES utf8 */'
+    ])
   })
 })
 

@@ -47,6 +47,8 @@ export const SQL_DIALECT_RULES: Record<SqlDialect, SqlDialectRules> = {
 }
 
 const DOLLAR_TAG = /\$(?:[A-Za-z_\u0080-￿][\w\u0080-￿]*)?\$/y
+// MySQL `/*!50700` and MariaDB `/*M!100100`, with their optional minimum server version.
+const EXECUTABLE_CODE_OPENER = /\/\*M?!\d*/y
 
 export function isIdentifierChar(char: string | undefined): boolean {
   return char !== undefined && /[\w$\u0080-￿]/.test(char)
@@ -98,10 +100,30 @@ function skipBlockComment(sql: string, from: number, nested: boolean): number {
 }
 
 function isExecutableComment(sql: string, index: number, rules: SqlDialectRules): boolean {
-  return rules.mysqlComments && (sql.startsWith('/*!', index) || sql.startsWith('/*+', index))
+  return (
+    rules.mysqlComments &&
+    (sql.startsWith('/*!', index) || sql.startsWith('/*M!', index) || sql.startsWith('/*+', index))
+  )
 }
 
-/** End offset when a comment starts at `index`, else null. MySQL `/*!…*\/` is code, not a comment. */
+/**
+ * End of a `/*!` or `/*M!` opener when one starts at `index`, else null. The server runs the text
+ * up to the next `*\/` as code; `/*+` optimizer hints are not included.
+ */
+export function executableCodeStart(
+  sql: string,
+  index: number,
+  rules: SqlDialectRules
+): number | null {
+  if (!rules.mysqlComments) {
+    return null
+  }
+  EXECUTABLE_CODE_OPENER.lastIndex = index
+  const opener = EXECUTABLE_CODE_OPENER.exec(sql)
+  return opener ? index + opener[0].length : null
+}
+
+/** End offset when a comment starts at `index`, else null. `/*!…*\/` and `/*M!…*\/` are code. */
 export function commentEnd(sql: string, index: number, rules: SqlDialectRules): number | null {
   const lineComment =
     (sql.startsWith('--', index) &&

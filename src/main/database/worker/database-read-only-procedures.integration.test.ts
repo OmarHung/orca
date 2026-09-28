@@ -69,13 +69,16 @@ async function committed(target: Target, sql: string): Promise<string> {
   }
 }
 
-/** Runs `sql` straight on a driver session, as a statement the check missed would arrive. */
-async function pastTheCheck(target: Target, sql: string): Promise<void> {
+/** Runs `statements` straight on one console, as statements the check missed would arrive. */
+async function pastTheCheck(target: Target, ...statements: string[]): Promise<void> {
   const session = await openDriverSession(target.connection, target.password, {
     onConnectionLost: () => undefined
   })
+  const consoleId = randomUUID()
   try {
-    await session.execute(randomUUID(), sql, 10, {}).catch(() => undefined)
+    for (const sql of statements) {
+      await session.execute(consoleId, sql, 10, {}).catch(() => undefined)
+    }
   } finally {
     await session.close()
   }
@@ -299,5 +302,25 @@ describe.each([
     )
     expect(await console.run('execute s')).toMatchObject(refusedAs('EXECUTE'))
     expect(await logged()).toBe('0')
+  })
+
+  it.skipIf(!url)('refuses writes in executable comments, which the server runs', async () => {
+    const { target } = at()
+    const logged = () => committed(target, 'select count(*) from audit_log')
+    const leaveReadOnly = '/*!40101 SET SESSION TRANSACTION READ WRITE */'
+    const insert = "/*!50000 INSERT INTO audit_log VALUES ('hidden') */"
+    await pastTheCheck(target, leaveReadOnly, insert)
+    expect(await logged()).toBe('1')
+    await runAdminSql(at().server, [`delete from ${database}.audit_log`])
+
+    expect(await console.run(leaveReadOnly)).toMatchObject(refusedAs('READ WRITE'))
+    expect(await console.run(insert)).toMatchObject(refusedAs('INSERT'))
+    expect(
+      await console.run("/*M!100100 INSERT INTO audit_log VALUES ('hidden') */")
+    ).toMatchObject(refusedAs('INSERT'))
+    expect(await logged()).toBe('0')
+    await expectOk(
+      console.run('select /*+ MAX_EXECUTION_TIME(1000) */ /*!40101 count(*) */ from audit_log')
+    )
   })
 })
