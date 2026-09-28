@@ -21,7 +21,7 @@ function getTitle(): string {
 function getDescription(): string {
   return translate(
     'inlineBlame.settings.description',
-    'Show who last changed the line under the caret, when, and in which commit, after the end of that line. Hover it for the commit and a link to its changes.'
+    'Show who last changed the line under the caret, when, and in which commit, after the end of that line. Click it for the commit and a link to its changes.'
   )
 }
 
