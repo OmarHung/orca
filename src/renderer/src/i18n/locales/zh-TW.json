@@ -18908,6 +18908,7 @@
     "grid": {
       "copy": "複製",
       "copyAs": "複製為",
+      "copyFailed": "複製失敗",
       "copyWithHeaders": "連同表頭複製",
       "exportAs": "{{value0}}…",
       "exportFailed": "匯出失敗",
@@ -18918,10 +18919,14 @@
       "formatSql": "SQL INSERT",
       "formatTsv": "TSV",
       "null": "NULL",
+      "readingValues": "正在讀取完整的值…",
       "resizeColumn": "調整 {{value0}} 欄寬",
       "selectAll": "全選",
       "showValue": "檢視值",
-      "truncated": "只顯示 {{value1}} 個字元中的前 {{value0}} 個"
+      "tooLargeToCopy": "複製內容會超過剪貼簿 {{value0}} MB 的上限。請少選一些，或改為匯出成檔案。",
+      "tooLargeToExport": "匯出內容會超過 {{value0}} 個字元。請減少匯出的列或欄。",
+      "truncated": "只顯示 {{value1}} 個字元中的前 {{value0}} 個",
+      "valuesGone": "Orca 已不再保存 {{value0}} 個超過 {{value1}} 字元的值的完整內容（只保存有限的量，優先保留最新的結果），因此沒有寫出任何內容。請重新執行查詢後再試一次。"
     },
     "history": {
       "cancelClear": "取消",

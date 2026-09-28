@@ -1,4 +1,5 @@
 import {
+  DATABASE_CELL_PREVIEW_MAX_CHARS,
   DATABASE_LONG_VALUE_READ_MAX_CHARS,
   DATABASE_LONG_VALUE_READ_MAX_SLICES,
   type DatabaseCell,
@@ -7,9 +8,6 @@ import {
   type DatabaseQueryResult,
   type DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
-
-/** Longer values ship as a preview; the grid shows the true length. */
-export const DATABASE_CELL_PREVIEW_MAX_CHARS = 10_000
 
 /** Full text kept of values shipped as previews, per worker; older results go first. */
 export const DATABASE_LONG_VALUE_BUDGET_CHARS = 64 * 1024 * 1024
