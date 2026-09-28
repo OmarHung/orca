@@ -1,7 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { DatabaseDdlTarget } from '../../../shared/database/database-ddl-types'
 import type { DatabaseIntrospectTarget } from '../../../shared/database/database-introspection-types'
-import { splitSqlStatements } from '../../../shared/database/sql-statement-splitter'
+import {
+  splitSqlBatches,
+  splitSqlStatements
+} from '../../../shared/database/sql-statement-splitter'
 import { DRIVER_FIXTURES } from './database-driver-test-fixtures'
 import { runAdminSql } from './database-test-admin'
 import { createWorkerHarness, expectOk } from './database-worker-test-harness'
@@ -72,7 +75,11 @@ for (const fixture of DRIVER_FIXTURES) {
       'recreates the same tables and routines from its DDL in another schema',
       async () => {
         const dialect = fixture.driver
-        const retarget = (text: string): string => text.replaceAll(`${fixture.schema}.`, `${copy}.`)
+        // SQL Server's descriptions name the schema as a string of their own.
+        const retarget = (text: string): string =>
+          text
+            .replaceAll(`${fixture.schema}.`, `${copy}.`)
+            .replaceAll(`N'${fixture.schema}'`, `N'${copy}'`)
         // SHOW CREATE names objects unqualified, so MySQL's copy runs with its database current.
         const copyDatabase = fixture.driver === 'mysql' ? copy : undefined
         await run([
@@ -95,8 +102,14 @@ for (const fixture of DRIVER_FIXTURES) {
             identity: routine.identity,
             routineKind: routine.kind
           })
-          // Routine bodies hold semicolons, so each goes to the server whole.
-          await run([retarget(text).replace(/;\s*$/, '')], copyDatabase)
+          // Routine bodies hold semicolons, so each goes to the server whole (SQL Server's
+          // descriptions follow in batches of their own).
+          await run(
+            dialect === 'sqlserver'
+              ? splitSqlBatches(retarget(text), dialect).map((batch) => batch.text)
+              : [retarget(text).replace(/;\s*$/, '')],
+            copyDatabase
+          )
         }
         const copied = await introspect({ level: 'routines', schema: copy })
         const names = (result: typeof copied) =>
