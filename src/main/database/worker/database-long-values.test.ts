@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  DATABASE_CELL_PREVIEW_MAX_CHARS,
   DATABASE_LONG_VALUE_READ_MAX_CHARS,
   DATABASE_LONG_VALUE_READ_MAX_SLICES,
   type DatabaseCell,
   type DatabaseRowsResult
 } from '../../../shared/database/database-query-types'
-import { DATABASE_CELL_PREVIEW_MAX_CHARS, LongValueStore } from './database-long-values'
+import { LongValueStore } from './database-long-values'
 
 const long = (char: string, length = 12_000): string => char.repeat(length)
 
