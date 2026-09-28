@@ -52,10 +52,15 @@ export class RuntimeGitDiffCommands {
 
   async getRuntimeGitCommitCompare(
     worktreeSelector: string,
-    commitId: string
+    commitId: string,
+    baseCommitId?: string
   ): Promise<GitCommitCompareResult> {
     const target = await this.host.resolveRuntimeGitTarget(worktreeSelector)
-    return requireRuntimeGitProvider(target).getCommitCompare(target.worktree.path, commitId)
+    return requireRuntimeGitProvider(target).getCommitCompare(
+      target.worktree.path,
+      commitId,
+      baseCommitId
+    )
   }
 
   async getRuntimeGitBranchDiff(

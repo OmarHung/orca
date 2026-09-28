@@ -52,6 +52,9 @@ export function getEditorDisplayLabel(
     return `Branch Changes (${file.branchCompare?.baseRef ?? 'base'})`
   }
   if (source === 'combined-commit') {
+    if (file.commitCompare?.compareLabel) {
+      return file.commitCompare.compareLabel
+    }
     return file.commitCompare?.subject
       ? `Commit ${file.commitCompare.compareRef}: ${file.commitCompare.subject}`
       : `Commit ${file.commitCompare?.compareRef ?? 'diff'}`

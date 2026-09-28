@@ -40,6 +40,8 @@ export type CommitCompareSnapshot = Pick<
   compareVersion: string
   subject?: string
   message?: string
+  /** Set for a Git Log compare of two revisions; names the tab instead of "Commit …". */
+  compareLabel?: string
 }
 
 export type CombinedDiffAlternate = {
