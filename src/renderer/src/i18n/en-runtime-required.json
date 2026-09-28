@@ -2366,6 +2366,7 @@
             "af80ed83c1": "Split Down"
           },
           "TabBarQuickCommandsButton": {
+            "a2c7a33831": "Command",
             "c781f992e4": "destructive"
           },
           "shell": {
@@ -2978,6 +2979,26 @@
       "viewing": "Viewing: {{path}}"
     }
   },
+  "gitBranchStatus": {
+    "aheadCount_one": "{{count}} commit to push",
+    "aheadCount_other": "{{count}} commits to push",
+    "behindCount_one": "{{count}} commit to pull",
+    "behindCount_other": "{{count}} commits to pull",
+    "changedFiles_one": "{{count}} file with uncommitted changes",
+    "changedFiles_other": "{{count}} files with uncommitted changes",
+    "conflicts_one": "{{count}} file with conflicts",
+    "conflicts_other": "{{count}} files with conflicts"
+  },
+  "run": {
+    "compound": {
+      "detected": "Detected in workspace"
+    },
+    "configurations": {
+      "add": {
+        "compound": "Add compound (start several together or in order)"
+      }
+    }
+  },
   "runtimeRpc": {
     "startupFailure": {
       "guidance": {
@@ -2990,6 +3011,11 @@
     }
   },
   "settings": {
+    "appearance": {
+      "language": {
+        "chineseTraditional": "中文（繁體）"
+      }
+    },
     "browser": {
       "clientHostedRemote": {
         "description": "Render remote workspace pages on this desktop; network traffic still goes through the remote host. Applies to new pages only.",

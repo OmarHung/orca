@@ -256,6 +256,12 @@ export type GlobalSettings = {
   sourceControlGroupOrder: SourceControlGroupOrder
   /** Compare base defaults to the branch upstream instead of the repo default; affects only the compare/diff view, not the PR/rebase target. Per-user. */
   sourceControlCompareAgainstUpstream: boolean
+  /** Status-bar segment with the active workspace's branch, ahead/behind and change count. */
+  gitBranchStatusBarEnabled: boolean
+  /** Periodically runs `git fetch` for the active workspace's repository. */
+  gitAutoFetchEnabled: boolean
+  /** Minutes between automatic fetches of one repository. */
+  gitAutoFetchIntervalMinutes: number
   /** Whether to show the Orca app name in the titlebar. */
   showTitlebarAppName: boolean
   /** Hides the Tasks sidebar button (also removes it from keyboard navigation). */
