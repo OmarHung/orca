@@ -87,38 +87,82 @@ async function typeDefinition(client: pg.Client, type: UserType): Promise<string
   return `CREATE TYPE ${name} AS (${fields.rows.map((field) => `${q(field.name)} ${field.type}`).join(', ')})`
 }
 
-async function sequenceDefinition(
+export type PostgresSequenceDefinition = {
+  data_type: string
+  start_value: string
+  min_value: string
+  max_value: string
+  increment_by: string
+  cycle: boolean
+  cache_size: string
+}
+
+async function readSequence(
   client: pg.Client,
   sequence: { schema: string; name: string }
-): Promise<string> {
-  const result = await client.query<{
-    data_type: string
-    start_value: string
-    min_value: string
-    max_value: string
-    increment_by: string
-    cycle: boolean
-    cache_size: string
-  }>(
+): Promise<PostgresSequenceDefinition> {
+  const result = await client.query<PostgresSequenceDefinition>(
     `select data_type::text as data_type, start_value::text, min_value::text, max_value::text,
             increment_by::text, cycle, cache_size::text
      from pg_catalog.pg_sequences where schemaname = $1 and sequencename = $2`,
     [sequence.schema, sequence.name]
   )
-  const row = result.rows[0]!
+  return result.rows[0]!
+}
+
+function sequenceCreate(name: string, sequence: PostgresSequenceDefinition): string {
   return [
-    `CREATE SEQUENCE IF NOT EXISTS ${qualifiedRelationName(sequence.schema, sequence.name, 'postgres')}`,
-    `AS ${row.data_type} INCREMENT BY ${row.increment_by}`,
-    `MINVALUE ${row.min_value} MAXVALUE ${row.max_value}`,
-    `START WITH ${row.start_value} CACHE ${row.cache_size}`,
-    row.cycle ? 'CYCLE' : 'NO CYCLE'
+    `CREATE SEQUENCE IF NOT EXISTS ${name}`,
+    `AS ${sequence.data_type} INCREMENT BY ${sequence.increment_by}`,
+    `MINVALUE ${sequence.min_value} MAXVALUE ${sequence.max_value}`,
+    `START WITH ${sequence.start_value} CACHE ${sequence.cache_size}`,
+    sequence.cycle ? 'CYCLE' : 'NO CYCLE'
   ].join(' ')
+}
+
+/** `body` in dollar quotes whose tag it doesn't contain. */
+function dollarQuoted(body: string): string {
+  let tag = '$orca$'
+  for (let attempt = 1; body.includes(tag); attempt += 1) {
+    tag = `$orca${attempt}$`
+  }
+  return `${tag}${body}${tag}`
+}
+
+/**
+ * Runs before CREATE SEQUENCE IF NOT EXISTS, which keeps a sequence the target already has: one
+ * defined otherwise stops the load or, with `dropExisting`, is dropped when nothing else uses it.
+ */
+export function postgresSequenceGuard(
+  name: string,
+  sequence: PostgresSequenceDefinition,
+  dropExisting: boolean
+): string {
+  const regclass = `pg_catalog.to_regclass(${postgresTextLiteral(name)})`
+  const bigint = (value: string): string => `${postgresTextLiteral(value)}::bigint`
+  const dumped = [
+    `${postgresTextLiteral(sequence.data_type)}::regtype::oid`,
+    bigint(sequence.increment_by),
+    bigint(sequence.min_value),
+    bigint(sequence.max_value),
+    bigint(sequence.cache_size),
+    String(sequence.cycle)
+  ].join(', ')
+  const differs = `EXISTS (SELECT 1 FROM pg_catalog.pg_sequence WHERE seqrelid = ${regclass} AND (seqtypid, seqincrement, seqmin, seqmax, seqcache, seqcycle) IS DISTINCT FROM (${dumped}))`
+  // Why USING MESSAGE: RAISE's format string would read a `%` in the name.
+  const refuse = (hint: string): string =>
+    `RAISE EXCEPTION USING MESSAGE = ${postgresTextLiteral(`Sequence ${name} already exists with a definition other than the dumped one.`)}, HINT = ${postgresTextLiteral(hint)};`
+  const onDifference = dropExisting
+    ? `IF EXISTS (SELECT 1 FROM pg_catalog.pg_depend WHERE refclassid = 'pg_catalog.pg_class'::regclass AND refobjid = ${regclass} AND deptype = 'n') THEN ${refuse("Other objects use it, so the dump can't replace it.")} END IF; DROP SEQUENCE ${name};`
+    : refuse('Drop it, or dump again dropping existing objects first.')
+  return `DO ${dollarQuoted(`BEGIN IF ${differs} THEN ${onDifference} END IF; END`)}`
 }
 
 /** Types and sequences `oid`'s columns need, and the ALTER SEQUENCE … OWNED BY that ties them. */
 export async function postgresTableRequirements(
   client: pg.Client,
-  table: { oid: number; sqlName: string }
+  table: { oid: number; sqlName: string },
+  dropExisting: boolean
 ): Promise<{ requires: string[]; ownedBy: string[] }> {
   const types = await client.query<UserType>(USER_TYPES_SQL, [table.oid])
   const sequences = await client.query<{ oid: number; schema: string; name: string }>(
@@ -131,11 +175,15 @@ export async function postgresTableRequirements(
   }
   const ownedBy: string[] = []
   for (const sequence of sequences.rows) {
-    requires.push(await sequenceDefinition(client, sequence))
+    const name = qualifiedRelationName(sequence.schema, sequence.name, 'postgres')
+    const definition = await readSequence(client, sequence)
+    requires.push(
+      postgresSequenceGuard(name, definition, dropExisting),
+      sequenceCreate(name, definition)
+    )
     const owner = await client.query<{ column: string }>(OWNED_BY_SQL, [sequence.oid, table.oid])
     const column = owner.rows[0]?.column
     if (column) {
-      const name = qualifiedRelationName(sequence.schema, sequence.name, 'postgres')
       ownedBy.push(`ALTER SEQUENCE ${name} OWNED BY ${table.sqlName}.${q(column)}`)
     }
   }

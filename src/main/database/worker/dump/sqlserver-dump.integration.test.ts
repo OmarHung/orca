@@ -332,6 +332,58 @@ describe.skipIf(!url)('SQL Server dump', () => {
     expect(await snapshot(database)).toEqual(await snapshot(source))
   })
 
+  it('replaces a sequence the target defines otherwise, or stops when it can’t', async () => {
+    const replacing = await dump({ dropExisting: true }, join(dir, 'replacing.sql'))
+    const keeping = await dump({}, join(dir, 'keeping.sql'))
+    // Another step, range, cycling and cache than the source's sales.order_numbers.
+    const differing = [
+      'create schema sales',
+      `create sequence sales.order_numbers as bigint
+         start with 1 increment by 1 minvalue 1 maxvalue 999999 cycle cache 5`
+    ]
+    /** sales.order_numbers's step and cycling in `database`. */
+    const orderNumbers = async (database: string) => {
+      const { connection, password } = sqlServerTarget()
+      const client = await connectSqlServer({ ...connection, database }, password, () => undefined)
+      try {
+        return await querySqlServerRows(
+          client,
+          `select cast(increment as varchar(20)) as increment, is_cycling
+           from sys.sequences where object_id = object_id(N'sales.order_numbers')`
+        )
+      } finally {
+        await closeSqlServer(client)
+      }
+    }
+    const asTheTargetHadIt = [{ increment: '1', is_cycling: true }]
+
+    const replaced = await newDatabase()
+    await runAdminSql(sqlServerTarget(), differing, { database: replaced })
+    await runScript(replaced, replacing.files)
+    expect(await snapshot(replaced)).toEqual(await snapshot(source))
+
+    const shared = await newDatabase()
+    await runAdminSql(
+      sqlServerTarget(),
+      [
+        ...differing,
+        'create table dbo.elsewhere (n bigint default (next value for sales.order_numbers))'
+      ],
+      { database: shared }
+    )
+    await expect(runScript(shared, replacing.files)).rejects.toThrow(
+      /Sequence sales\.order_numbers already exists with a definition other than the dumped one, and other objects use it/
+    )
+    expect(await orderNumbers(shared)).toEqual(asTheTargetHadIt)
+
+    const kept = await newDatabase()
+    await runAdminSql(sqlServerTarget(), differing, { database: kept })
+    await expect(runScript(kept, keeping.files)).rejects.toThrow(
+      /Sequence sales\.order_numbers already exists with a definition other than the dumped one\. Drop it/
+    )
+    expect(await orderNumbers(kept)).toEqual(asTheTargetHadIt)
+  })
+
   it('exports only rows, loading into the same structure with its keys switched off', async () => {
     const structure = await dump({ contents: 'structure' }, join(dir, 'structure.sql'))
     const data = await dump({ contents: 'data' }, join(dir, 'data.sql'))

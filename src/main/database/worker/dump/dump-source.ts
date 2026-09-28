@@ -21,6 +21,13 @@ export type DumpTableStructure = {
   triggers: DumpStatement[]
 }
 
+export type DumpStructureOptions = {
+  /** Foreign keys as ALTER TABLE statements in `foreignKeys`, not inline. */
+  separateForeignKeys: boolean
+  /** The script drops what it replaces, so a `requires` object defined otherwise may be rebuilt. */
+  dropExisting: boolean
+}
+
 export type DumpViewDefinition = {
   /** The view's text, read to order views that select from views. */
   definition: string
@@ -52,7 +59,7 @@ export type DumpSource = {
   /** Statements that make `schema` current for unqualified names (MySQL's USE). */
   enterSchema(schema: string, schemaCount: number): DumpStatement[]
   tableInfo(table: { schema: string; name: string }): Promise<DumpTableInfo>
-  tableStructure(table: DumpTableInfo, separateForeignKeys: boolean): Promise<DumpTableStructure>
+  tableStructure(table: DumpTableInfo, options: DumpStructureOptions): Promise<DumpTableStructure>
   /** The table's rows in batches, each value already a literal. */
   rows(table: DumpTableInfo, batchSize: number): AsyncIterable<string[][]>
   /** Around a table's rows: SQL Server's IDENTITY_INSERT, PostgreSQL's setval after them. */

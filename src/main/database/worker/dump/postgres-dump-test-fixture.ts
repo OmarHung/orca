@@ -72,8 +72,12 @@ export const OPTIONS: DatabaseDumpOptions = {
   dropExisting: false
 }
 
-/** Every table's rows and every view's rows as text, ordered, for comparing two databases. */
-export async function snapshot(database: string): Promise<Record<string, unknown>> {
+const SEQUENCES_SQL = `
+  select sequencename, data_type::text, start_value::text, min_value::text, max_value::text,
+         increment_by::text, cycle, cache_size::text
+  from pg_catalog.pg_sequences where schemaname = $1 order by sequencename`
+
+async function connectTo(database: string): Promise<pg.Client> {
   const target = serverConnectionFromUrl('postgres', url!)
   const client = new pg.Client({
     host: target.connection.driver === 'postgres' ? target.connection.host : '',
@@ -83,8 +87,25 @@ export async function snapshot(database: string): Promise<Record<string, unknown
     database
   })
   await client.connect()
+  return client
+}
+
+/** How each of the fixture schema's sequences in `database` is defined. */
+export async function sequenceDefinitions(database: string): Promise<unknown[]> {
+  const client = await connectTo(database)
+  try {
+    return (await client.query(SEQUENCES_SQL, [schema])).rows
+  } finally {
+    await client.end()
+  }
+}
+
+/** Every table's rows and every view's rows as text, ordered, for comparing two databases. */
+export async function snapshot(database: string): Promise<Record<string, unknown>> {
+  const client = await connectTo(database)
   try {
     const result: Record<string, unknown> = {}
+    result.sequences = (await client.query(SEQUENCES_SQL, [schema])).rows
     for (const name of ['people', 'orders', 'a', 'b', 'people_view', 'people_view_ids']) {
       const rows = await client.query(`select t::text from ${schema}.${name} t order by 1`)
       result[name] = rows.rows

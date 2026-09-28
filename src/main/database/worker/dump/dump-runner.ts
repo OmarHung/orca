@@ -59,7 +59,13 @@ async function planDump(
   if (structure) {
     for (const table of order) {
       writer.checkCancelled()
-      structures.set(tableKey(table), await source.tableStructure(table, separateForeignKeys))
+      structures.set(
+        tableKey(table),
+        await source.tableStructure(table, {
+          separateForeignKeys,
+          dropExisting: options.dropExisting
+        })
+      )
     }
     for (const view of objects.filter((object) => object.kind === 'view')) {
       writer.checkCancelled()

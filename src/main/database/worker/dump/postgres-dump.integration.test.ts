@@ -10,7 +10,15 @@ import { connectPostgresClient } from '../postgres-client-factory'
 import { DumpOutput } from './dump-output'
 import { runDump } from './dump-runner'
 import { PostgresDumpSource } from './postgres-dump-source'
-import { FIXTURE, OBJECTS, OPTIONS, schema, snapshot, url } from './postgres-dump-test-fixture'
+import {
+  FIXTURE,
+  OBJECTS,
+  OPTIONS,
+  schema,
+  sequenceDefinitions,
+  snapshot,
+  url
+} from './postgres-dump-test-fixture'
 
 // Opt-in through ORCA_TEST_POSTGRES_URL; the role must be allowed to create a database.
 
@@ -45,13 +53,24 @@ describe.skipIf(!url)('PostgreSQL dump', () => {
     }
   }
 
-  const restore = async (files: string[]): Promise<string> => {
+  /** A new database, with `setup` run in it. */
+  const newDatabase = async (setup: string[] = []): Promise<string> => {
     const database = `orca_dump_target_${randomUUID().slice(0, 8)}`
     restored.push(database)
     await runAdminSql(target!, [`create database ${database}`])
+    await runAdminSql(target!, setup, { database })
+    return database
+  }
+
+  const load = async (database: string, files: string[]): Promise<void> => {
     for (const file of files) {
       await runAdminSql(target!, [readFileSync(file, 'utf8')], { database })
     }
+  }
+
+  const restore = async (files: string[]): Promise<string> => {
+    const database = await newDatabase()
+    await load(database, files)
     return database
   }
 
@@ -86,6 +105,35 @@ describe.skipIf(!url)('PostgreSQL dump', () => {
     expect(summary.notes.join(' ')).toMatch(/cycle/)
     const database = await restore(files)
     expect(await snapshot(database)).toEqual(await snapshot(sourceDatabase))
+  })
+
+  it('replaces a sequence the target defines otherwise, or stops when it can’t', async () => {
+    const replacing = await dump({ dropExisting: true }, join(dir, 'replacing.sql'))
+    const keeping = await dump({}, join(dir, 'keeping.sql'))
+    // Another type, step, range, cycling and cache than the source's people_id_seq, owned by
+    // no table the dump drops.
+    const differing = [
+      `create schema ${schema}`,
+      `create sequence ${schema}.people_id_seq as bigint
+         increment by 3 minvalue -100 maxvalue 100000 cache 4 cycle`
+    ]
+    const refused = /people_id_seq"? already exists with a definition other than the dumped one/
+
+    const replaced = await newDatabase(differing)
+    await load(replaced, replacing.files)
+    expect(await snapshot(replaced)).toEqual(await snapshot(sourceDatabase))
+
+    const shared = await newDatabase([
+      ...differing,
+      `create table ${schema}.elsewhere (id bigint default nextval('${schema}.people_id_seq'))`
+    ])
+    const asTheTargetHadIt = await sequenceDefinitions(shared)
+    await expect(load(shared, replacing.files)).rejects.toThrow(refused)
+    expect(await sequenceDefinitions(shared)).toEqual(asTheTargetHadIt)
+
+    const kept = await newDatabase(differing)
+    await expect(load(kept, keeping.files)).rejects.toThrow(refused)
+    expect(await sequenceDefinitions(kept)).toEqual(asTheTargetHadIt)
   })
 
   it('exports only rows, loading into the same structure', async () => {

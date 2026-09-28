@@ -45,7 +45,7 @@ function fakeSource(options: { onRows?: () => void } = {}): DumpSource {
       explicitIdentity: name === 'people',
       references: (REFERENCES[name] ?? []).map((reference) => ({ schema, name: reference }))
     }),
-    tableStructure: async (table, separateForeignKeys) => ({
+    tableStructure: async (table, { separateForeignKeys }) => ({
       requires: [{ sql: 'CREATE TYPE mood' }],
       create: [
         {
