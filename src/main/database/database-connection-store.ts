@@ -41,6 +41,21 @@ export class DatabaseConnectionStore {
     return saved
   }
 
+  /** Files the connections under `group` (null: the top level) in one write. */
+  setGroup(ids: readonly string[], group: string | null): void {
+    const moving = new Set(ids)
+    const connections = this.read()
+    const timestamp = this.now()
+    const next = connections.map((connection) =>
+      moving.has(connection.id) && (connection.group ?? null) !== group
+        ? { ...connection, group, updatedAt: timestamp }
+        : connection
+    )
+    if (next.some((connection, index) => connection !== connections[index])) {
+      this.write(next)
+    }
+  }
+
   delete(id: string): void {
     const connections = this.read()
     const next = connections.filter((connection) => connection.id !== id)

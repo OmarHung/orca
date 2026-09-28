@@ -24,6 +24,7 @@ import type {
   DatabasePageEvent,
   DatabaseReadLongValuesRequest,
   DatabaseSaveConnectionRequest,
+  DatabaseSetConnectionGroupRequest,
   DatabaseTestConnectionRequest
 } from '../../shared/database/database-session-types'
 import type {
@@ -41,6 +42,8 @@ export type DatabaseApi = {
   saveConnection: (
     request: DatabaseSaveConnectionRequest
   ) => Promise<DatabaseResult<DatabaseConnectionSummary>>
+  /** Moves connections into an explorer group, or back to the top level. */
+  setConnectionGroup: (request: DatabaseSetConnectionGroupRequest) => Promise<DatabaseResult<null>>
   deleteConnection: (connectionId: string) => Promise<void>
   testConnection: (
     request: DatabaseTestConnectionRequest
