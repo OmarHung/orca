@@ -249,13 +249,15 @@ export async function loadGitHistoryFromExecutor(
     }
   }
 
+  const path = options.path?.trim() || undefined
   let parsed: ReturnType<typeof parseGitHistoryLog>
   try {
     parsed = await runHistoryLog(git, cwd, limit, historyRevisions, {
       skip,
       shortstat: Boolean(branchBase),
       // Why: scoped revisions are oids or fixed pseudo-refs, but chosen ref catalogs can be long.
-      stdin: !scoped && (refs !== 'head' || Boolean(pinned))
+      stdin: !scoped && (refs !== 'head' || Boolean(pinned)),
+      path
     })
   } catch (error) {
     if (pinned && /bad object|unknown revision|invalid object|bad revision/i.test(String(error))) {
@@ -287,7 +289,8 @@ export async function loadGitHistoryFromExecutor(
     hasMore: parsed.length > limit,
     limit,
     ...(branchBase ? { branch: branchBase.range } : {}),
-    ...(options.skip !== undefined ? { skip } : {})
+    ...(options.skip !== undefined ? { skip } : {}),
+    ...(path ? { path } : {})
   }
 }
 
@@ -328,8 +331,9 @@ async function runHistoryLog(
   {
     skip,
     shortstat = false,
-    stdin = false
-  }: { skip: number; shortstat?: boolean; stdin?: boolean }
+    stdin = false,
+    path
+  }: { skip: number; shortstat?: boolean; stdin?: boolean; path?: string }
 ) {
   const { stdout } = await git(
     [
@@ -343,7 +347,8 @@ async function runHistoryLog(
       ...(shortstat ? ['--shortstat'] : []),
       ...(skip > 0 ? [`--skip=${skip}`] : []),
       `-n${limit + 1}`,
-      ...(stdin ? ['--stdin'] : revisions)
+      ...(stdin ? ['--stdin'] : revisions),
+      ...(path ? ['--', path] : [])
     ],
     cwd,
     stdin ? `${revisions.join('\n')}\n` : undefined

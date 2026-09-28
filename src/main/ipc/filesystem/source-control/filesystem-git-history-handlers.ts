@@ -11,6 +11,7 @@ import { getConnectionExecutionHostId } from '../../../../shared/execution-host/
 import { requireReachableGitRoute } from '../../../providers/execution-host-provider-dispatch'
 import { readWorktreeGitUnlessWslStopped } from './wsl-gated-worktree-git-read'
 import type { FilesystemHandlerContext } from '../filesystem-handler-context'
+import { readGitHistoryIpcOptions } from '../git-history-ipc-options'
 
 export function registerFilesystemGitHistoryHandlers({ store }: FilesystemHandlerContext): void {
   ipcMain.handle(
@@ -37,17 +38,7 @@ export function registerFilesystemGitHistoryHandlers({ store }: FilesystemHandle
         wakeWslDistro?: boolean
       } & GitHistoryOptions
     ): Promise<GitHistoryResult> => {
-      const options: GitHistoryOptions = {
-        limit: args.limit,
-        baseRef: args.baseRef,
-        branchOnly: args.branchOnly,
-        refs: args.refs,
-        historyToken: args.historyToken,
-        skip: args.skip,
-        revision: typeof args.revision === 'string' ? args.revision : null,
-        allBranches: args.allBranches === true,
-        includeRefs: args.includeRefs === true
-      }
+      const options = readGitHistoryIpcOptions(args)
       requireReachableGitRoute(getConnectionExecutionHostId(args.connectionId))
       return readWorktreeGitUnlessWslStopped(
         store,
