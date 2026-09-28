@@ -118,7 +118,7 @@ export const GIT_METHODS = [
     name: 'git.commitCompare',
     params: GitCommitCompare,
     handler: async (params, { runtime }) =>
-      runtime.getRuntimeGitCommitCompare(params.worktree, params.commitId)
+      runtime.getRuntimeGitCommitCompare(params.worktree, params.commitId, params.baseCommitId)
   }),
   defineMethod({
     name: 'git.upstreamStatus',

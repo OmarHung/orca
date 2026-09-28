@@ -12,8 +12,16 @@ function assertFullGitObjectId(value: string, label: string): void {
   }
 }
 
-export async function commitCompare(git: GitExec, worktreePath: string, commitId: string) {
+export async function commitCompare(
+  git: GitExec,
+  worktreePath: string,
+  commitId: string,
+  baseCommitId?: string
+) {
   assertFullGitObjectId(commitId, 'commitId')
+  if (baseCommitId !== undefined) {
+    assertFullGitObjectId(baseCommitId, 'baseCommitId')
+  }
   let commitOid = ''
   try {
     const { stdout } = await git(
@@ -46,11 +54,16 @@ export async function commitCompare(git: GitExec, worktreePath: string, commitId
   }
 
   try {
-    const { stdout: parentsOut } = await git(
-      ['rev-list', '--parents', '-n', '1', commitOid],
-      worktreePath
-    )
-    const firstParent = parseGitRevListFirstParentOid(parentsOut)
+    const firstParent = baseCommitId
+      ? (
+          await git(
+            ['rev-parse', '--verify', '--end-of-options', `${baseCommitId}^{commit}`],
+            worktreePath
+          )
+        ).stdout.trim()
+      : parseGitRevListFirstParentOid(
+          (await git(['rev-list', '--parents', '-n', '1', commitOid], worktreePath)).stdout
+        )
     summary.parentOid = firstParent
     summary.baseRef = firstParent ? firstParent.slice(0, 7) : 'empty tree'
 
