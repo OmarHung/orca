@@ -21,6 +21,8 @@ export type DatabaseDumpJob = {
   /** The file or folder it writes. */
   destination: string
   dataOnly: boolean
+  /** The native tool that writes it (e.g. pg_dump); null for Orca's own dump. */
+  tool: string | null
   status: DatabaseJobStatus
   progress: DatabaseDumpProgress | null
   summary: DatabaseDumpSummary | null
@@ -44,6 +46,7 @@ export type DatabaseDumpScope = {
 export type DatabaseDumpStart = {
   connectionId: string
   source: string
+  tool: string | null
   destination: DatabaseDumpDestination
   request: DatabaseDumpRequest
 }
@@ -94,7 +97,7 @@ export const useDatabaseJobsStore = create<DatabaseJobsState>((set, get) => {
     openDump: (scope) => set({ dumpScope: scope }),
     closeDump: () => set({ dumpScope: null }),
 
-    startDump: async ({ connectionId, source, destination, request }) => {
+    startDump: async ({ connectionId, source, tool, destination, request }) => {
       const id = createBrowserUuid()
       const job: DatabaseDumpJob = {
         id,
@@ -102,6 +105,7 @@ export const useDatabaseJobsStore = create<DatabaseJobsState>((set, get) => {
         source,
         destination: destination.label,
         dataOnly: request.options.contents === 'data',
+        tool,
         status: 'running',
         progress: null,
         summary: null,
