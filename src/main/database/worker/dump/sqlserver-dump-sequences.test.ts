@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   sequenceCreateStatement,
+  sequenceGuardStatement,
   sequenceStateStatement,
   valuesHandedOut,
   type SequenceNumbers
@@ -98,6 +99,52 @@ describe('sequenceCreateStatement', () => {
         true
       ).sql
     ).toMatch(/AS dbo\.ticket START WITH .* NO CYCLE CACHE$/)
+  })
+})
+
+describe('sequenceGuardStatement', () => {
+  const differs = (matches: string) =>
+    `IF EXISTS (SELECT 1 FROM sys.sequences WHERE object_id = OBJECT_ID(N'sales.[order]]numbers]') AND NOT (${matches}))`
+  const matchesRow = `system_type_id = TYPE_ID(N'bigint') AND precision = 19 AND scale = 0 AND increment = 10 AND minimum_value = 1000 AND maximum_value = 1050 AND is_cycling = 0 AND is_cached = 1 AND cache_size = 20`
+
+  it('stops a load into a sequence defined otherwise, unless asked to drop what is there', () => {
+    expect(sequenceGuardStatement(row(), false).sql).toBe(
+      `${differs(matchesRow)} THROW 50000, N'Sequence sales.[order]]numbers] already exists with a definition other than the dumped one. Drop it, or dump again dropping existing objects first.', 1`
+    )
+  })
+
+  it('drops a sequence defined otherwise that nothing else uses, and refuses one in use', () => {
+    expect(sequenceGuardStatement(row(), true).sql).toBe(
+      `${differs(matchesRow)}
+BEGIN
+IF EXISTS (SELECT 1 FROM sys.sql_expression_dependencies WHERE referenced_id = OBJECT_ID(N'sales.[order]]numbers]')) THROW 50000, N'Sequence sales.[order]]numbers] already exists with a definition other than the dumped one, and other objects use it, so the dump can''t replace it.', 1;
+DROP SEQUENCE sales.[order]]numbers];
+END`
+    )
+  })
+
+  it('compares the base type, range, cycling and cache the source has', () => {
+    const sql = sequenceGuardStatement(
+      row({
+        type_name: 'decimal',
+        precision: 12,
+        alias_schema: 'dbo',
+        alias_name: 'ticket',
+        increment: '-2',
+        minimum_value: '-9',
+        maximum_value: '0',
+        is_cycling: true,
+        is_cached: false,
+        cache_size: null
+      }),
+      true
+    ).sql
+    expect(sql).toContain(
+      `NOT (system_type_id = TYPE_ID(N'decimal') AND precision = 12 AND scale = 0 AND increment = -2 AND minimum_value = -9 AND maximum_value = 0 AND is_cycling = 1 AND is_cached = 0)`
+    )
+    expect(sequenceGuardStatement(row({ cache_size: null }), true).sql).toContain(
+      'is_cached = 1 AND cache_size IS NULL)'
+    )
   })
 })
 
