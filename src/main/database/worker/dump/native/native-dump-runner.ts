@@ -11,6 +11,8 @@ const PROGRESS_INTERVAL_MS = 250
 const STDERR_LIMIT = 16 * 1024
 const MAX_WARNINGS = 5
 const ERROR_LINES = 8
+// How long a stopped tool gets to close, first after SIGTERM and again after SIGKILL.
+const STOP_GRACE_MS = 5_000
 
 type Spawn = typeof spawnProcess
 type Exit = { code: number | null; signal: NodeJS.Signals | null; error: Error | null }
@@ -23,6 +25,19 @@ export type NativeDumpRun = {
   onProgress: (progress: DatabaseDumpProgress) => void
   isCancelled: () => boolean
   spawn?: Spawn
+}
+
+/** Whether `closed` settles within `ms`. */
+async function closesWithin(closed: Promise<void>, ms: number): Promise<boolean> {
+  let timer: NodeJS.Timeout | undefined
+  const timedOut = new Promise<false>((resolve) => {
+    timer = setTimeout(() => resolve(false), ms)
+  })
+  try {
+    return await Promise.race([closed.then(() => true), timedOut])
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 function stderrLines(stderr: string): string[] {
@@ -139,8 +154,10 @@ export class NativeDumpRunner {
     child.stderr.on('data', (chunk: Buffer) => {
       stderr = (stderr + chunk.toString('utf8')).slice(-STDERR_LIMIT)
     })
+    const closed = new Promise<void>((resolve) => child.once('close', () => resolve()))
     const exited = new Promise<Exit>((resolve) => {
-      child.once('error', (error) => resolve({ code: null, signal: null, error }))
+      // Why `on`: a failed kill emits 'error' too, and an unheard one would crash the worker.
+      child.on('error', (error) => resolve({ code: null, signal: null, error }))
       child.once('close', (code, signal) => resolve({ code, signal, error: null }))
     })
     try {
@@ -159,9 +176,27 @@ export class NativeDumpRunner {
       }
     } finally {
       this.child = null
-      if (child.exitCode === null && child.signalCode === null) {
-        child.kill()
-      }
+      await this.stop(child, closed)
+    }
+  }
+
+  /** Stops a tool still running, and waits for it to let go of the files cleanup removes. */
+  private async stop(child: ReturnType<Spawn>, closed: Promise<void>): Promise<void> {
+    if (child.pid === undefined) {
+      return
+    }
+    if (child.exitCode === null && child.signalCode === null) {
+      child.kill()
+    }
+    if (await closesWithin(closed, STOP_GRACE_MS)) {
+      return
+    }
+    child.kill('SIGKILL')
+    // Why destroy: a grandchild still holding the pipes would keep 'close' from ever firing.
+    child.stdout.destroy()
+    child.stderr.destroy()
+    if (!(await closesWithin(closed, STOP_GRACE_MS))) {
+      console.warn(`[database] ${this.run.plan.tool.kind} did not exit after SIGKILL`)
     }
   }
 

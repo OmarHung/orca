@@ -2,6 +2,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
+import { spawnProcess } from '../../../../../shared/child-process/run-process'
 import { DumpOutput } from '../dump-output'
 import type { NativeDumpPlan, NativeRun } from './native-dump-plan'
 import { NativeDumpRunner } from './native-dump-runner'
@@ -33,6 +34,13 @@ function plan(
     withoutTls: null,
     cleanup: async () => onCleanup(),
     ...changes
+  }
+}
+
+/** Output whose disk fails on the tool's first chunk. */
+class FailingOutput extends DumpOutput {
+  override async raw(): Promise<void> {
+    throw new Error('disk full')
   }
 }
 
@@ -174,6 +182,35 @@ describe('NativeDumpRunner', () => {
     })
     expect(await cancelled.execute()).toMatchObject({ cancelled: true })
     expect(cleaned).toEqual(['finished', 'failed', 'cancelled'])
+  })
+
+  it('waits for a tool it stopped to close before cleaning up after an output failure', async () => {
+    const events: string[] = []
+    let closed: Promise<void> = Promise.resolve()
+    // Writes, then takes a while to exit once asked, as a tool flushing its connection would.
+    const lingering = `process.on('SIGTERM', () => setTimeout(() => process.exit(0), 400)); ${ENDLESS}`
+    const failed = new NativeDumpRunner({
+      plan: plan([{ ...run('slow', lingering), prelude: '' }], {}, () => events.push('cleanup')),
+      output: new FailingOutput({ kind: 'file', path: join(dir, 'disk-full.sql') }, 'postgres'),
+      tableCount: 1,
+      onProgress: () => undefined,
+      isCancelled: () => false,
+      spawn: (spec) => {
+        const child = spawnProcess(spec)
+        closed = new Promise((resolve) =>
+          child.once('close', () => {
+            events.push('close')
+            resolve()
+          })
+        )
+        return child
+      }
+    })
+      .execute()
+      .catch((error: unknown) => events.push(`failed: ${String(error)}`))
+    await failed
+    await closed
+    expect(events).toEqual(['close', 'cleanup', 'failed: Error: disk full'])
   })
 
   it('leaves the file it would replace as it was when the tool fails partway', async () => {
