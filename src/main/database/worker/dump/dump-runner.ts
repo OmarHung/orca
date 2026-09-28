@@ -122,7 +122,7 @@ async function writeRows(
     await writer.statements([
       { sql: insertStatement(table.sqlName, table.columns, batch, { overridingSystemValue }) }
     ])
-    writer.progress.rows += batch.length
+    writer.progress.rows = (writer.progress.rows ?? 0) + batch.length
     writer.report(false)
   }
   await writer.statements(await source.afterRows(table))
