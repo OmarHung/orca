@@ -619,6 +619,20 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - 執行腳本：跨讀取區塊的語句、DELIMITER、GO、遇錯停止／繼續、交易回滾、取消
 - e2e：對話框流程、產生的檔案、工作清單的進度和取消
 
+### Phase 7：註解與屬性（2026-09-28）
+
+- 註解（comment）：introspection 的表和欄位多了 `comment`（PostgreSQL 的 `obj_description`／`col_description`、MySQL／MariaDB 的 `TABLE_COMMENT`／`COLUMN_COMMENT`、SQL Server 的 `MS_Description`，SQLite 沒有）。MySQL 的 view 的 TABLE_COMMENT 一律是 'VIEW'，當成沒有註解
+- 顯示位置：explorer 的表名和欄位型別後面（淡色、換行收成空白、最寬 20rem，完整內容在 title）；資料表分頁的欄位標題 tooltip（名稱＋換行＋註解；console 結果沒有）；屬性對話框
+- Show DDL 和內建 dump 保留註解：PostgreSQL 在 CREATE 之後寫 `COMMENT ON TABLE|VIEW|MATERIALIZED VIEW|FOREIGN TABLE|COLUMN|FUNCTION|PROCEDURE`；SQL Server 寫 `EXEC sys.sp_addextendedproperty @name = N'MS_Description', …`（dump 裡各自一個 GO batch，Show DDL 的 view／routine 後面先接 GO）；MySQL／MariaDB 本來就在 SHOW CREATE 裡。來回測試比對註解
+- 屬性（右鍵「屬性…」，連線、資料庫、schema、表／view）：唯讀，在 metadata session 讀取，某一項讀不到（權限、版本）只略過並寫在對話框底部，不整個失敗
+  - 連線：伺服器版本、預設字元集／定序、預設引擎、時區等，加上連線目前資料庫
+  - 資料庫：MySQL 的字元集／定序／加密，PostgreSQL 的 owner／encoding／collate／ctype／locale provider／tablespace／大小，SQL Server 的定序／相容性層級／復原模式／快照設定／大小，SQLite 的檔案／編碼／page size／journal mode 等
+  - 表／view：MySQL 的引擎／row format／定序／AUTO_INCREMENT／估計列數／大小，PostgreSQL 的 owner／persistence／access method／reloptions／分割／RLS／大小，SQL Server 的 filegroup／memory-optimized／temporal／lock escalation／列數／大小，SQLite 的 STRICT／WITHOUT ROWID；另有欄位表（型別、可 NULL、預設值、字元集、定序、註解）
+  - MySQL 8 的 information_schema 統計預設快取一天，讀表屬性時暫時把 `information_schema_stats_expiry` 設成 0，讀完還原
+  - SQL Server 的大小需要 VIEW DATABASE STATE，只有 db_datareader 的帳號看不到大小（整合測試驗證）
+- explorer 不再截斷名稱和型別，改成橫向捲動：每列回報自己的完整寬度，內層寬度取最寬的一列並依列記住，上下捲動時捲軸長度不跳
+- 驗證：四種伺服器的 live 整合測試（註解、DDL、dump 來回、屬性），e2e `database-properties.spec.ts`（SQLite 屬性和橫向捲動、PostgreSQL 的樹／欄位標題／屬性裡的註解）
+
 ## 7. 測試策略
 
 - **單元測試**：值的編碼、各方言的語句切分、DML 產生和識別字引號、設定檔和密碼檔、tunnel 生命週期（mock ssh2）
