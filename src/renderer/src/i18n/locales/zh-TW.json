@@ -18450,6 +18450,17 @@
     "resize": "調整底部面板大小",
     "hide": "隱藏底部面板",
     "gitLog": {
+      "compare": {
+        "tabLabel": "比較 {{base}} → {{target}}",
+        "identical": "兩邊是同一個 commit。",
+        "hostTooOld": "請更新這台主機上的 Orca 才能比較兩個版本。",
+        "failed": "無法比較這兩個版本。",
+        "select": "選取以進行比較",
+        "withSelected": "與「{{name}}」比較",
+        "versions": "比較兩個版本",
+        "withCurrent": "與目前分支比較",
+        "withBranch": "與分支比較"
+      },
       "toggleLabel": "Git 日誌",
       "userFilter": "使用者",
       "allUsers": "所有使用者",
