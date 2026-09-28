@@ -1,5 +1,18 @@
-/** A cell too large to ship whole; the grid shows the preview and the full length. */
+/**
+ * A cell too large to ship whole; the grid shows the preview and the full length. The worker
+ * keeps the full text within a budget, for copy and export to read in bounded slices.
+ */
 export type DatabaseTruncatedCell = { preview: string; length: number }
+
+/** Characters `[start, end)` of the long value at `row` (from the result's first) and `column`. */
+export type DatabaseLongValueSlice = { row: number; column: number; start: number; end: number }
+
+/** Null where the worker no longer holds that value (evicted, over budget, or restarted). */
+export type DatabaseLongValues = { values: (string | null)[] }
+
+// Why caps on one read: every reply crosses IPC, so a copy or export reads in bounded steps.
+export const DATABASE_LONG_VALUE_READ_MAX_CHARS = 4 * 1024 * 1024
+export const DATABASE_LONG_VALUE_READ_MAX_SLICES = 1_000
 
 /**
  * Cells travel as the database's own text form (not JS numbers or Dates) so numeric

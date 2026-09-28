@@ -79,6 +79,39 @@ for (const fixture of DRIVER_FIXTURES) {
       expect(third.rows.at(-1)).toEqual(['1200'])
     })
 
+    it('ships long text and binary as previews, and reads them back whole across pages', async () => {
+      const first = onlyRows(await expectOk(execute(fixture.longValues(3), 2)))
+      expect(first.rows[0]).toEqual([
+        '1',
+        { preview: 'x'.repeat(10_000), length: 12_001 },
+        { preview: fixture.longBinary.slice(0, 10_000), length: 12_002 }
+      ])
+      const second = await expectOk(
+        harness.send({ type: 'fetch', consoleId, resultId: first.resultId, pageSize: 2 })
+      )
+      expect(second.rows[0]?.[0]).toBe('3')
+      const whole = (row: number, column: number) => ({ row, column, start: 0, end: 20_000 })
+      const read = await expectOk(
+        harness.send({
+          type: 'readValues',
+          consoleId,
+          resultId: first.resultId,
+          slices: [
+            whole(0, 1),
+            whole(2, 1),
+            whole(2, 2),
+            { row: 1, column: 1, start: 11_999, end: 12_001 }
+          ]
+        })
+      )
+      expect(read.values).toEqual([
+        `${'x'.repeat(12_000)}1`,
+        `${'x'.repeat(12_000)}3`,
+        fixture.longBinary,
+        'x2'
+      ])
+    })
+
     it('fails cleanly on a missing table and keeps the console usable', async () => {
       const result = await execute('select * from orca_missing_table')
       expect(result.ok).toBe(false)
