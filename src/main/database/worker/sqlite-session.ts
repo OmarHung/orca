@@ -8,6 +8,10 @@ import type {
   DatabaseIntrospectTarget
 } from '../../../shared/database/database-introspection-types'
 import type {
+  DatabaseObjectProperties,
+  DatabasePropertiesTarget
+} from '../../../shared/database/database-properties-types'
+import type {
   DatabaseCell,
   DatabaseExecuteResult,
   DatabaseRowsPage
@@ -16,6 +20,7 @@ import type { DumpSource } from './dump/dump-source'
 import { SqliteDumpSource } from './dump/sqlite-dump-source'
 import { sqliteDdl } from './sqlite-ddl'
 import { introspectSqlite } from './sqlite-introspection'
+import { sqliteProperties } from './sqlite-properties'
 import { cellText } from './database-cell-encoding'
 import type { DatabaseDriverSession, DatabaseExecuteOptions } from './database-driver'
 import { commandRowCount, leadingKeyword } from './statement-keyword'
@@ -143,6 +148,10 @@ class SqliteSession implements DatabaseDriverSession {
 
   async ddl(target: DatabaseDdlTarget): Promise<string> {
     return sqliteDdl(this.metaDatabase, target)
+  }
+
+  async properties(target: DatabasePropertiesTarget): Promise<DatabaseObjectProperties> {
+    return sqliteProperties(this.metaDatabase, target)
   }
 
   async execute(
