@@ -11,6 +11,8 @@ import {
 import { waitForSessionReady } from './helpers/store'
 
 const FILE_NAME = 'notes.ts'
+// Why: a view-line's visible center can land on the annotation itself, which opens the details card.
+const LINE_START = { position: { x: 4, y: 4 } }
 const AUTHOR = 'Blame Author'
 
 function git(args: string[], cwd: string): void {
@@ -69,22 +71,28 @@ test('inline blame names the author of the caret line and opens its commit', asy
   await activateGoldenWorktree(orcaPage, testRepoPath, worktree)
   await openEditorFile(orcaPage, worktree, FILE_NAME)
 
-  const lines = orcaPage.locator('.monaco-editor .view-line')
+  // Why by text: Monaco reuses view-line nodes, so their DOM order is not line order.
+  const lineA = orcaPage.locator('.monaco-editor .view-line', { hasText: /const\sa\s=\s1/ })
+  const lineB = orcaPage.locator('.monaco-editor .view-line', { hasText: /const\sb\s=\s3/ })
   const annotation = orcaPage.locator('.monaco-editor .orca-inline-blame')
-  await lines.nth(0).click()
+  await lineA.click(LINE_START)
   // Why \s: Monaco renders spaces in injected text as non-breaking spaces.
   await expect(annotation).toHaveText(/^Blame\sAuthor,\s.+\s•\sSeed\sthe\snotes\smodule$/, {
     timeout: 30_000
   })
   await orcaPage.screenshot({ path: testInfo.outputPath('inline-blame.png') })
 
-  await lines.nth(1).click()
+  await lineB.click(LINE_START)
   await expect(annotation).toHaveText(/^Uncommitted\schanges$/)
 
-  await lines.nth(0).click()
+  await lineA.click(LINE_START)
   await expect(annotation).toHaveText(/Seed\sthe\snotes\smodule$/)
-  await annotation.hover()
+  // The details card opens on a click, not on a bare hover.
   const hover = orcaPage.locator('.monaco-hover').filter({ hasText: 'Open Changes' })
+  await annotation.hover()
+  await orcaPage.waitForTimeout(1_000)
+  await expect(hover).toBeHidden()
+  await annotation.click()
   await expect(hover).toBeVisible()
   await expect(hover).toContainText('blame@example.invalid')
   await orcaPage.screenshot({ path: testInfo.outputPath('inline-blame-hover.png') })
