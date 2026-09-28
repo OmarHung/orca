@@ -118,6 +118,7 @@ patchedDependencies:
   '@xterm/xterm@6.1.0-beta.303': 46d3a0bda5b06d32716dec3e7d8bfcbb2cb19062dfe7502d3f4c04da7af256f5
   lint-staged@16.4.0: 7333b3837f80a7fbd045964db6d76ba4fc118e49134bdbabb00585b6b7b60673
   node-pty@1.1.0: 346cb29d33dd6eeb14910ff411c7584b0b2ff9a4b271c4b6d23c3b48e6548f74
+  tedious@20.0.0: ae611cb83acc7682a5fe1a89f7230e1747b6906a7b0c3f9f34ec6dc3053fff5d
 
 importers:
 
@@ -197,7 +198,7 @@ importers:
         version: 1.17.0
       tedious:
         specifier: ^20.0.0
-        version: 20.0.0(supports-color@7.2.0)
+        version: 20.0.0(patch_hash=ae611cb83acc7682a5fe1a89f7230e1747b6906a7b0c3f9f34ec6dc3053fff5d)(supports-color@7.2.0)
       tldts:
         specifier: 7.4.14
         version: 7.4.14
@@ -15044,7 +15045,7 @@ snapshots:
       minizlib: 3.1.0
       yallist: 5.0.0
 
-  tedious@20.0.0(supports-color@7.2.0):
+  tedious@20.0.0(patch_hash=ae611cb83acc7682a5fe1a89f7230e1747b6906a7b0c3f9f34ec6dc3053fff5d)(supports-color@7.2.0):
     dependencies:
       '@azure/core-auth': 1.11.0(supports-color@7.2.0)
       '@azure/identity': 4.13.3(supports-color@7.2.0)
