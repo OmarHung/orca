@@ -26,9 +26,19 @@ const colorSchema = z
   .nullable()
   .optional()
 
+export const DATABASE_CONNECTION_GROUP_MAX_LENGTH = 120
+/** Explorer group the connection is filed under; null is the top level. */
+export const databaseConnectionGroupSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(DATABASE_CONNECTION_GROUP_MAX_LENGTH)
+  .nullable()
+
 const serverFields = {
   name: nameSchema,
   color: colorSchema,
+  group: databaseConnectionGroupSchema.optional(),
   host: z.string().trim().min(1).max(255),
   port: z.number().int().min(1).max(65_535),
   database: z.string().trim().max(128),
@@ -61,6 +71,7 @@ export const databaseConnectionDraftSchema = z.discriminatedUnion('driver', [
       driver: z.literal('sqlite'),
       name: nameSchema,
       color: colorSchema,
+      group: databaseConnectionGroupSchema.optional(),
       filePath: z.string().min(1).max(4096).refine(isAbsoluteDatabaseFilePath, 'absolute path')
     })
     .strict()
