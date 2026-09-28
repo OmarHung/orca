@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { randomUUID } from 'node:crypto'
@@ -9,7 +9,7 @@ import { runAdminSql } from '../database-test-admin'
 import { serverConnectionFromUrl } from '../database-worker-test-harness'
 import { connectMysqlClient, endMysqlClient, queryMysqlRows } from '../mysql-client-factory'
 import { dumpObjects, fixture, SERVERS, snapshot } from './mysql-dump-test-fixture'
-import { mysqlOptionFile } from './native/mysqldump-plan'
+import { mysqlOptionFileText } from './native/mysql-option-file'
 import { runNativeDump } from './native/native-dump-job'
 import type { NativeDumpTarget } from './native/native-dump-plan'
 import { findDumpTool } from './native/native-dump-tools'
@@ -37,8 +37,8 @@ describe.each(SERVERS)('$label dump with mysqldump', ({ url }) => {
   const created: string[] = [database]
   let target: NativeDumpTarget | null = null
 
-  const dump = async (changes: Partial<DatabaseDumpOptions>, path: string) =>
-    runNativeDump({
+  const dump = async (changes: Partial<DatabaseDumpOptions>, path: string) => {
+    const summary = await runNativeDump({
       target,
       request: {
         objects: dumpObjects(database),
@@ -51,6 +51,12 @@ describe.each(SERVERS)('$label dump with mysqldump', ({ url }) => {
       isCancelled: () => false,
       onStop: () => undefined
     })
+    // The password's option file is gone with the dump.
+    expect(
+      readdirSync(tmpdir()).filter((name) => name.startsWith(`orca-mysqldump-${process.pid}-`))
+    ).toEqual([])
+    return summary
+  }
 
   /** Loads the files with the mysql client beside mysqldump, as a user would. */
   const restore = async (files: string[]): Promise<string> => {
@@ -58,7 +64,7 @@ describe.each(SERVERS)('$label dump with mysqldump', ({ url }) => {
     created.push(into)
     await runAdminSql(server!, [`create database ${into}`])
     const options = join(dir, `${into}.cnf`)
-    writeFileSync(options, mysqlOptionFile(server!.password ?? ''), { mode: 0o600 })
+    writeFileSync(options, mysqlOptionFileText(server!.password ?? ''), { mode: 0o600 })
     for (const file of files) {
       const result = await runProcess({
         program: join(dirname(tool!.path), tool!.flavor === 'mariadb' ? 'mariadb' : 'mysql'),
