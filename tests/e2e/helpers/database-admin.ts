@@ -3,11 +3,14 @@ import { serverConnectionFromUrl } from '../../../src/main/database/worker/datab
 
 // Orca's database tools are read-only, so e2e fixtures are written straight through the drivers.
 
-const DRIVERS = new Map([
+type ServerDriver = Parameters<typeof serverConnectionFromUrl>[0]
+
+// Why string keys: a URL's protocol can be anything, and an unknown one must miss, not fail to type.
+const DRIVERS: ReadonlyMap<string, ServerDriver> = new Map<string, ServerDriver>([
   ['postgres:', 'postgres'],
   ['mysql:', 'mysql'],
   ['sqlserver:', 'sqlserver']
-] as const)
+])
 
 /** Runs `statements` on a writable connection to the server behind a test URL. */
 export async function adminSql(
