@@ -5,6 +5,10 @@ import type {
   DatabaseIntrospectTarget
 } from '../../../shared/database/database-introspection-types'
 import type {
+  DatabaseObjectProperties,
+  DatabasePropertiesTarget
+} from '../../../shared/database/database-properties-types'
+import type {
   DatabaseExecuteResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
@@ -20,6 +24,7 @@ import { connectPostgresClient, type PostgresConnectionDraft } from './postgres-
 import { PostgresConsole } from './postgres-console'
 import { postgresDdl } from './postgres-ddl'
 import { introspectPostgres } from './postgres-introspection'
+import { postgresProperties } from './postgres-properties'
 import { PostgresTypeNames } from './postgres-type-names'
 
 class PostgresSession implements DatabaseDriverSession {
@@ -47,6 +52,13 @@ class PostgresSession implements DatabaseDriverSession {
 
   async ddl(target: DatabaseDdlTarget): Promise<string> {
     return postgresDdl(await this.metaFor(target.database), target, this.serverVersionNum)
+  }
+
+  async properties(target: DatabasePropertiesTarget): Promise<DatabaseObjectProperties> {
+    // Why the connection's own session for a database: pg_database is shared by all of them.
+    const database =
+      target.kind === 'schema' || target.kind === 'relation' ? target.database : undefined
+    return postgresProperties(await this.metaFor(database), target, this.serverVersionNum)
   }
 
   private metaFor(database: string | undefined): Promise<pg.Client> {
