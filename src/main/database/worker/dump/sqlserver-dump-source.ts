@@ -243,7 +243,7 @@ export class SqlServerDumpSource implements DumpSource {
     const sqlName = `${q(routine.schema)}.${q(routine.name)}`
     const kind = routine.routineKind === 'procedure' ? 'PROCEDURE' : 'FUNCTION'
     return {
-      create: { sql: await this.definition(routine) },
+      create: [{ sql: await this.definition(routine) }],
       drop: {
         sql: `IF OBJECT_ID(${sqlServerTextLiteral(sqlName)}) IS NOT NULL DROP ${kind} ${sqlName}`
       }
