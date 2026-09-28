@@ -52,7 +52,7 @@ export function EditorEditFileSurface({
   mdViewMode,
   inlineMarkdownRenderState,
   isChangesMode,
-  isMarkersMode = false,
+  showChangeMarkers = false,
   sideBySide,
   showMarkdownTableOfContents,
   showMarkdownFrontmatter,
@@ -85,7 +85,7 @@ export function EditorEditFileSurface({
   mdViewMode: MarkdownViewMode
   inlineMarkdownRenderState: MarkdownRenderState | null
   isChangesMode: boolean
-  isMarkersMode?: boolean
+  showChangeMarkers?: boolean
   sideBySide: boolean
   showMarkdownTableOfContents: boolean
   showMarkdownFrontmatter: boolean
@@ -253,7 +253,7 @@ export function EditorEditFileSurface({
             : undefined
         }
         markdownDocuments={isMarkdown ? markdownDocuments.markdownDocuments : undefined}
-        changeMarkersBaseline={isMarkersMode ? getChangeMarkersBaseline(diffContent) : null}
+        changeMarkersBaseline={showChangeMarkers ? getChangeMarkersBaseline(diffContent) : null}
         inlineBlameRelativePath={
           canUseChangesModeForFile(activeFile) && activeFile.readOnly !== true
             ? activeFile.relativePath
@@ -263,10 +263,7 @@ export function EditorEditFileSurface({
     </RecoverableRenderErrorBoundary>
   )
 
-  // Why: change markers annotate the source text, so rich/preview renderers step aside.
-  const editorSurface = isMarkersMode ? (
-    monacoEditor
-  ) : isMarkdown ? (
+  const editorSurface = isMarkdown ? (
     <EditorMarkdownFileSurface
       activeFile={activeFile}
       viewStateScopeId={viewStateScopeId}

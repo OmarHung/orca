@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import {
   Code,
   Eye,
-  FileDiff,
   FileText,
   GitCompareArrows,
   NotebookText,
@@ -16,8 +15,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import type { MarkdownViewMode } from '@/store/slices/editor'
 import { translate } from '@/i18n/i18n'
 
-// Combine markdown modes with orthogonal edit/changes/markers state in one mutually exclusive toggle; edit is the non-markdown source counterpart.
-export type EditorToggleValue = MarkdownViewMode | 'edit' | 'changes' | 'markers'
+// Combine markdown modes with orthogonal edit/changes state in one mutually exclusive toggle; edit is the non-markdown source counterpart.
+export type EditorToggleValue = MarkdownViewMode | 'edit' | 'changes'
 
 type ViewModeMetadata = { label: string; icon: LucideIcon; title?: string }
 
@@ -54,18 +53,6 @@ const DEFAULT_VIEW_MODE_METADATA: Record<EditorToggleValue, ViewModeMetadata> = 
     // Disambiguate uncommitted HEAD changes from the sidebar’s branch-base diff.
     get title() {
       return translate('auto.components.editor.EditorViewToggle.167f45888c', 'Uncommitted changes')
-    }
-  },
-  markers: {
-    get label() {
-      return translate('changeMarkers.toggleLabel', 'Change Markers')
-    },
-    icon: FileDiff,
-    get title() {
-      return translate(
-        'changeMarkers.toggleTitle',
-        'Edit with uncommitted changes marked in the gutter'
-      )
     }
   }
 }
@@ -118,7 +105,7 @@ export default function EditorViewToggle({
         }}
       >
         {modes.map((viewMode) => {
-          // Only markdown modes accept presentation overrides; edit, changes and markers keep default metadata.
+          // Only markdown modes accept presentation overrides; edit and changes keep default metadata.
           const override = (
             metadataOverride as Partial<Record<EditorToggleValue, ViewModeMetadata>> | undefined
           )?.[viewMode]
