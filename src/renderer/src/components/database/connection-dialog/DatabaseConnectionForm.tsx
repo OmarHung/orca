@@ -7,6 +7,7 @@ import {
 } from '../../../../../shared/database/database-connection-types'
 import type { DatabaseEncryptionStatus } from '../../../../../shared/database/database-session-types'
 import { DatabaseConnectionColorField } from './DatabaseConnectionColorField'
+import { DatabaseConnectionGroupField } from './DatabaseConnectionGroupField'
 import { DatabaseServerFields } from './DatabaseServerFields'
 import { DatabaseSqliteFields } from './DatabaseSqliteFields'
 import {
@@ -55,6 +56,7 @@ export function DatabaseConnectionForm(props: FormProps): React.JSX.Element {
       ) : (
         <DatabaseServerFields {...props} />
       )}
+      <DatabaseConnectionGroupField value={form.group} onChange={(group) => onChange({ group })} />
       <DatabaseConnectionColorField value={form.color} onChange={(color) => onChange({ color })} />
     </div>
   )
