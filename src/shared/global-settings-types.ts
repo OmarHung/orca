@@ -264,6 +264,8 @@ export type GlobalSettings = {
   gitAutoFetchIntervalMinutes: number
   /** GitLens-style author/date/summary after the caret line in file editors. */
   gitInlineBlameEnabled: boolean
+  /** JetBrains-style gutter bars for lines that differ from HEAD in file editors. */
+  editorChangeMarkersEnabled: boolean
   /** Whether to show the Orca app name in the titlebar. */
   showTitlebarAppName: boolean
   /** Hides the Tasks sidebar button (also removes it from keyboard navigation). */

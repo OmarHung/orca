@@ -19756,8 +19756,8 @@
     }
   },
   "changeMarkers": {
-    "toggleLabel": "Change Markers",
-    "toggleTitle": "Edit with uncommitted changes marked in the gutter",
+    "show": "Show change markers",
+    "hide": "Hide change markers",
     "gutterTooltip": "Click to show what changed",
     "kind": {
       "added": "Added",

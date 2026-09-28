@@ -27,8 +27,10 @@ type EditorPanelRenderModelParams = {
   markdownViewMode: StoreState['markdownViewMode']
   markdownRichModeSizeOverridden: boolean
   isChangesMode: boolean
-  isMarkersMode?: boolean
   canOpenWorkspaceFileBrowser: boolean
+  // Why: HEAD change markers ride on the normal editor, so they are a toggle, not a view mode.
+  changeMarkersEnabled?: boolean
+  isChangeMarkersEligible?: boolean
 }
 
 export function getEditorPanelRenderModel({
@@ -40,8 +42,9 @@ export function getEditorPanelRenderModel({
   markdownViewMode,
   markdownRichModeSizeOverridden,
   isChangesMode,
-  isMarkersMode = false,
-  canOpenWorkspaceFileBrowser
+  canOpenWorkspaceFileBrowser,
+  changeMarkersEnabled = false,
+  isChangeMarkersEligible = false
 }: EditorPanelRenderModelParams) {
   const isSingleDiff =
     activeFile.mode === 'diff' &&
@@ -117,15 +120,13 @@ export function getEditorPanelRenderModel({
     activeFile.mode === 'edit' && fileContents[activeFile.id]?.isBinary === true
   const availableEditorToggleModes =
     isBinaryEditSurface || !canUseChangesModeForFile(activeFile)
-      ? editorToggleModes.filter((mode) => mode !== 'changes' && mode !== 'markers')
+      ? editorToggleModes.filter((mode) => mode !== 'changes')
       : editorToggleModes
   const effectiveToggleValue: EditorToggleValue = isChangesMode
     ? 'changes'
-    : isMarkersMode
-      ? 'markers'
-      : hasViewModeToggle
-        ? mdViewMode
-        : 'edit'
+    : hasViewModeToggle
+      ? mdViewMode
+      : 'edit'
   const inlineMarkdownContent =
     activeFile.mode === 'edit'
       ? (editorDrafts[activeFile.id] ?? fileContents[activeFile.id]?.content ?? null)
@@ -139,7 +140,6 @@ export function getEditorPanelRenderModel({
     activeFile.mode === 'edit' &&
     inlineMarkdownContent !== null &&
     !isChangesMode &&
-    !isMarkersMode &&
     inlineFileContent !== undefined &&
     inlineFileContent.isBinary !== true &&
     !inlineFileContent.loadError &&
@@ -186,10 +186,13 @@ export function getEditorPanelRenderModel({
         fileContents[activeFile.id]?.isBinary !== true &&
         !fileContents[activeFile.id]?.loadError &&
         activeFile.conflict?.conflictStatus !== 'unresolved'))
+  const canToggleChangeMarkers =
+    isChangeMarkersEligible && !isChangesMode && (!hasViewModeToggle || mdViewMode === 'source')
   return {
     isSingleDiff,
     isDiffSurface: isSingleDiff || isChangesMode,
-    isMarkersMode,
+    canToggleChangeMarkers,
+    showChangeMarkers: canToggleChangeMarkers && changeMarkersEnabled,
     isCombinedDiff,
     worktreeEntries,
     resolvedLanguage,

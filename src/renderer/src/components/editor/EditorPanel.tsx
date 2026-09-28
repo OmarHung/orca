@@ -117,16 +117,24 @@ function EditorPanelInner({
     }
   }
 
-  const requestedViewMode =
+  const canUseChangesMode =
     !!activeFile && activeFile.mode === 'edit' && canUseChangesModeForFile(activeFile)
-      ? editorViewMode[activeFile.id]
-      : undefined
-  const requestedChangesMode = requestedViewMode === 'changes'
-  const requestedMarkersMode = requestedViewMode === 'markers'
+  const requestedChangesMode = canUseChangesMode && editorViewMode[activeFile.id] === 'changes'
+  const changeMarkersEnabled = settings?.editorChangeMarkersEnabled !== false
+  // Why: an untracked file is all new; marking every line green says nothing.
+  const isUntrackedFile =
+    !!activeFile &&
+    (gitStatusEntries ?? []).some(
+      (entry) =>
+        entry.path === activeFile.relativePath &&
+        (entry.status === 'untracked' || entry.area === 'untracked')
+    )
+  const wantsChangeMarkers =
+    canUseChangesMode && !requestedChangesMode && changeMarkersEnabled && !isUntrackedFile
   const { fileContents, diffContents, reloadContent } = useEditorPanelContentState({
     activeFile,
-    // Why: both modes read the HEAD side of the diff; only Changes renders it as one.
-    isChangesMode: requestedChangesMode || requestedMarkersMode,
+    // Why: change markers read the same HEAD side of the diff that Changes mode renders.
+    isChangesMode: requestedChangesMode || wantsChangeMarkers,
     openFiles,
     gitStatusEntries,
     editorViewMode,
@@ -137,7 +145,6 @@ function EditorPanelInner({
     !fileContents[activeFile.id]?.isBinary &&
     !fileContents[activeFile.id]?.loadError
   const isChangesMode = requestedChangesMode && isTextFileLoaded
-  const isMarkersMode = requestedMarkersMode && isTextFileLoaded
   const {
     renameDialogFile,
     renameError,
@@ -220,8 +227,9 @@ function EditorPanelInner({
     markdownViewMode,
     markdownRichModeSizeOverridden,
     isChangesMode,
-    isMarkersMode,
-    canOpenWorkspaceFileBrowser
+    canOpenWorkspaceFileBrowser,
+    changeMarkersEnabled,
+    isChangeMarkersEligible: canUseChangesMode && isTextFileLoaded && !isUntrackedFile
   })
 
   const handleOpenPreviewToSide = (): void => {
@@ -261,8 +269,8 @@ function EditorPanelInner({
       handleOpenDiffTargetFile('rich')
       return
     }
-    if (next === 'changes' || next === 'markers') {
-      setEditorViewMode(fileId, next)
+    if (next === 'changes') {
+      setEditorViewMode(fileId, 'changes')
       return
     }
     setEditorViewMode(fileId, 'edit')

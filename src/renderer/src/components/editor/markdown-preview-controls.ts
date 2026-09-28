@@ -18,12 +18,8 @@ const NO_VIEW_MODES = [] as const satisfies readonly MarkdownViewMode[]
 // modes so there is one UI control per pane, not two. Non-edit tabs (diff,
 // conflict) do NOT get Changes because they are already a diff/review surface.
 // Plain code files have no markdown-style sub-modes, so their toggle is just
-// Edit | Changes | Markers.
-const CODE_EDIT_TOGGLE_MODES = [
-  'edit',
-  'changes',
-  'markers'
-] as const satisfies readonly EditorToggleValue[]
+// Edit | Changes.
+const CODE_EDIT_TOGGLE_MODES = ['edit', 'changes'] as const satisfies readonly EditorToggleValue[]
 
 export function getEditorToggleModes(target: MarkdownPreviewTarget): readonly EditorToggleValue[] {
   if (target.mode !== 'edit') {
@@ -36,7 +32,7 @@ export function getEditorToggleModes(target: MarkdownPreviewTarget): readonly Ed
   }
   const languageModes = getMarkdownViewModes(target)
   if (languageModes.length > 0) {
-    return [...languageModes, 'changes', 'markers']
+    return [...languageModes, 'changes']
   }
   return CODE_EDIT_TOGGLE_MODES
 }
