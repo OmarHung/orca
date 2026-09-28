@@ -97,7 +97,7 @@ async function writeSetup(
       await writer.enter(routine.schema)
       await writer.statements([(await source.routine(routine)).drop])
     }
-    await writer.statements(source.dropTables(plan.order.toReversed()))
+    await writer.statements(source.dropTables(plan.order.toReversed(), schemaCount))
   }
   const seen = new Set<string>()
   for (const table of plan.order) {
