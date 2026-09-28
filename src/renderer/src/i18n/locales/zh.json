@@ -19237,7 +19237,7 @@
     "openFailed": "无法打开这个 commit。",
     "settings": {
       "title": "行内 Blame",
-      "description": "在光标所在行的行尾显示最后修改这行的人、时间与 commit。鼠标移上去可查看 commit 并打开其更改。",
+      "description": "在光标所在行的行尾显示最后修改这行的人、时间与 commit。点击它可查看 commit 并打开其更改。",
       "keywordBlame": "blame",
       "keywordAnnotate": "标注",
       "keywordAuthor": "作者"
@@ -19256,7 +19256,7 @@
     "searchBranches": "搜索分支…",
     "searchRevisions": "按消息、hash 或作者搜索…",
     "loading": "加载中…",
-    "noMatches": "没有匹配的项目。",
+    "noMatches": "没有匹配结果。",
     "binary": "无法比较二进制文件。",
     "banner": "正在与 {{label}}（{{sha}}）比较",
     "close": "关闭比较",
