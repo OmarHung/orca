@@ -20,6 +20,7 @@ import type { useMarkdownDocuments } from './useMarkdownDocuments'
 import { EditorMarkdownFileSurface } from './EditorMarkdownFileSurface'
 import type { MarkdownRenderState } from './markdown-render-mode'
 import { getChangeMarkersBaseline } from './change-markers/change-markers-baseline'
+import { canUseChangesModeForFile } from './editor-panel-file-mode'
 
 const noopEditorContentChange = (_content: string): void => {}
 const noopEditorSave = async (_content: string): Promise<boolean> => false
@@ -222,6 +223,11 @@ export function EditorEditFileSurface({
         }
         markdownDocuments={isMarkdown ? markdownDocuments.markdownDocuments : undefined}
         changeMarkersBaseline={isMarkersMode ? getChangeMarkersBaseline(diffContent) : null}
+        inlineBlameRelativePath={
+          canUseChangesModeForFile(activeFile) && activeFile.readOnly !== true
+            ? activeFile.relativePath
+            : null
+        }
       />
     </RecoverableRenderErrorBoundary>
   )

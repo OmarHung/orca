@@ -133,6 +133,10 @@ export function createGitApi(): NonNullable<Partial<PreloadApi>['git']> {
         ...(admissionTier ? { admissionTier } : {})
       })
     },
+    // Why: blame has no runtime RPC yet; the editor treats a failure as "no blame here".
+    blame: async () => {
+      throw new Error('Inline blame is not available for remote runtimes.')
+    },
     commitCompare: async ({ worktreePath, commitId }) => {
       const worktree = await resolveRuntimeWorktreeByPath(worktreePath)
       return callRuntimeResult('git.commitCompare', {
