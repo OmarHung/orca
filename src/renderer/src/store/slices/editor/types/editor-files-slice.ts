@@ -173,6 +173,8 @@ export type EditorFilesSlice = {
     compare: GitCommitCompareSummary,
     entries: GitBranchChangeEntry[],
     subject?: string,
-    message?: string
+    message?: string,
+    // Why: a compare between two arbitrary revisions gets its own tab, apart from that commit's own diff.
+    options?: { compareLabel?: string }
   ) => void
 }

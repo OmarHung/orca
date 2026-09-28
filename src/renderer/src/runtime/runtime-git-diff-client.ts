@@ -53,20 +53,26 @@ export async function getRuntimeGitBranchCompare(
 
 export async function getRuntimeGitCommitCompare(
   context: RuntimeGitContext,
-  commitId: string
+  commitId: string,
+  baseCommitId?: string
 ): Promise<GitCommitCompareResult> {
   const target = getActiveRuntimeTarget(context.settings)
   if (target.kind === 'local' || !context.worktreeId) {
     return window.api.git.commitCompare({
       worktreePath: resolveLocalWorktreePath(context),
       commitId,
+      ...(baseCommitId ? { baseCommitId } : {}),
       connectionId: context.connectionId
     })
   }
   return callRuntimeRpc<GitCommitCompareResult>(
     target,
     'git.commitCompare',
-    { worktree: toRuntimeWorktreeSelector(context.worktreeId), commitId },
+    {
+      worktree: toRuntimeWorktreeSelector(context.worktreeId),
+      commitId,
+      ...(baseCommitId ? { baseCommitId } : {})
+    },
     { timeoutMs: 15_000 }
   )
 }

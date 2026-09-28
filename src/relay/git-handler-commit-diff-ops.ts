@@ -12,8 +12,16 @@ function assertFullGitObjectId(value: string, label: string): void {
   }
 }
 
-export async function commitCompare(git: GitExec, worktreePath: string, commitId: string) {
+export async function commitCompare(
+  git: GitExec,
+  worktreePath: string,
+  commitId: string,
+  baseCommitId?: string
+) {
   assertFullGitObjectId(commitId, 'commitId')
+  if (baseCommitId !== undefined) {
+    assertFullGitObjectId(baseCommitId, 'baseCommitId')
+  }
   let commitOid = ''
   let parentOid: string | null = null
   let parentReadFailure: { error: unknown } | undefined
@@ -61,11 +69,20 @@ export async function commitCompare(git: GitExec, worktreePath: string, commitId
   }
 
   try {
-    if (parentReadFailure) {
+    // Why: an explicit base replaces the first parent, so an unreadable parent list doesn't matter.
+    if (parentReadFailure && !baseCommitId) {
       throw parentReadFailure.error
     }
-    summary.parentOid = parentOid
-    summary.baseRef = parentOid ? parentOid.slice(0, 7) : 'empty tree'
+    const baseOid = baseCommitId
+      ? (
+          await git(
+            ['rev-parse', '--verify', '--end-of-options', `${baseCommitId}^{commit}`],
+            worktreePath
+          )
+        ).stdout.trim()
+      : parentOid
+    summary.parentOid = baseOid
+    summary.baseRef = baseOid ? baseOid.slice(0, 7) : 'empty tree'
 
     const { stdout } = await git(gitChangeListArgs(summary.parentOid, commitOid), worktreePath)
     const entries = parseGitChangeList(stdout)

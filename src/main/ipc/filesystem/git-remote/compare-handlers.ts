@@ -56,15 +56,24 @@ export function registerGitRemoteCompareHandlers(context: FilesystemHandlerConte
     'git:commitCompare',
     async (
       _event,
-      args: { worktreePath: string; commitId: string; connectionId?: string }
+      args: {
+        worktreePath: string
+        commitId: string
+        baseCommitId?: string
+        connectionId?: string
+      }
     ): Promise<GitCommitCompareResult> => {
       const commitId = validateFullGitObjectId(args.commitId, 'commitId')
+      const baseCommitId =
+        args.baseCommitId === undefined
+          ? undefined
+          : validateFullGitObjectId(args.baseCommitId, 'baseCommitId')
       if (args.connectionId) {
         const provider = getSshGitProvider(args.connectionId)
         if (!provider) {
           throw new Error(SSH_GIT_PROVIDER_UNAVAILABLE_MESSAGE)
         }
-        return provider.getCommitCompare(args.worktreePath, commitId)
+        return provider.getCommitCompare(args.worktreePath, commitId, baseCommitId)
       }
       const worktreePath = await resolveRegisteredWorktreePath(args.worktreePath, store)
       const gitOptions = getLocalGitOptionsForRegisteredWorktree(
@@ -72,7 +81,7 @@ export function registerGitRemoteCompareHandlers(context: FilesystemHandlerConte
         args.worktreePath,
         worktreePath
       )
-      return getCommitCompare(worktreePath, commitId, gitOptions)
+      return getCommitCompare(worktreePath, commitId, gitOptions, baseCommitId)
     }
   )
 }

@@ -19048,6 +19048,17 @@
     "resize": "Resize bottom panel",
     "hide": "Hide bottom panel",
     "gitLog": {
+      "compare": {
+        "tabLabel": "Compare {{base}} → {{target}}",
+        "identical": "Both sides are the same commit.",
+        "hostTooOld": "Update Orca on this host to compare two revisions.",
+        "failed": "Could not compare these revisions.",
+        "select": "Select for Compare",
+        "withSelected": "Compare with “{{name}}”",
+        "versions": "Compare Versions",
+        "withCurrent": "Compare with Current Branch",
+        "withBranch": "Compare with Branch"
+      },
       "toggleLabel": "Git Log",
       "userFilter": "User",
       "allUsers": "All users",
