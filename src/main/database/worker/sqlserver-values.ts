@@ -1,5 +1,5 @@
 import type { DatabaseCell } from '../../../shared/database/database-query-types'
-import { encodeTextCell } from './database-cell-encoding'
+import { cellText } from './database-cell-encoding'
 
 /** The subset of tedious column metadata these helpers read. */
 export type SqlServerColumnMeta = {
@@ -86,10 +86,10 @@ export function encodeSqlServerValue(value: unknown, meta: SqlServerColumnMeta):
     return formatDate(value, meta.type.name)
   }
   if (Buffer.isBuffer(value)) {
-    return encodeTextCell(`0x${value.toString('hex').toUpperCase()}`)
+    return cellText(`0x${value.toString('hex').toUpperCase()}`)
   }
   if (typeof value === 'object') {
-    return encodeTextCell(JSON.stringify(value))
+    return cellText(JSON.stringify(value))
   }
-  return encodeTextCell(value)
+  return cellText(value)
 }
