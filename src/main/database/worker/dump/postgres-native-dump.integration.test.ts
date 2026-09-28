@@ -21,7 +21,8 @@ const dir = mkdtempSync(join(tmpdir(), 'orca-pg-native-dump-'))
 afterAll(() => rmSync(dir, { recursive: true, force: true }))
 
 describe.skipIf(!tool)('PostgreSQL dump with pg_dump', () => {
-  const server = serverConnectionFromUrl('postgres', url!)
+  // Skipped suites are still collected; without a URL this address is never dialed.
+  const server = serverConnectionFromUrl('postgres', url ?? 'postgres://unset@127.0.0.1:1/unset')
   const connection = server.connection.driver === 'postgres' ? server.connection : null
   const sourceDatabase = connection?.database || 'postgres'
   const restored: string[] = []
