@@ -137,10 +137,10 @@ for (const fixture of DRIVER_FIXTURES) {
       expect(relations).toEqual({
         level: 'relations',
         relations: [
-          { name: 'orders', kind: 'table' },
-          { name: 'people', kind: 'table' },
-          { name: 'people_view', kind: 'view' },
-          { name: 'user', kind: 'table' }
+          { name: 'orders', kind: 'table', comment: null },
+          { name: 'people', kind: 'table', comment: fixture.comments.people },
+          { name: 'people_view', kind: 'view', comment: fixture.comments.peopleView },
+          { name: 'user', kind: 'table', comment: null }
         ]
       })
       const columns = await expectOk(
