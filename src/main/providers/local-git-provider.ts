@@ -106,8 +106,8 @@ export function createLocalGitProvider(options: LocalGitProviderOptions = {}): L
         ...base,
         admissionTier: compareOptions?.admissionTier ?? 'interactive'
       }),
-    getCommitCompare: (worktreePath, commitId) =>
-      getCommitCompare(worktreePath, commitId, interactive),
+    getCommitCompare: (worktreePath, commitId, baseCommitId) =>
+      getCommitCompare(worktreePath, commitId, interactive, baseCommitId),
     getUpstreamStatus: (worktreePath, pushTarget) =>
       getUpstreamStatus(worktreePath, pushTarget, base),
     pushBranch: (worktreePath, publish, pushTarget, pushOptions) =>

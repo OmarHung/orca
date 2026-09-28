@@ -35,6 +35,13 @@ import { HEAD_GIT_LOG_SCOPE, isGitLogScopeHonored, type GitLogScope } from './gi
 import { useGitLogScope, useResetMissingGitLogScope } from './use-git-log-scope'
 import { ResizeHandle } from '../ResizeHandle'
 import { useGitLogColumnResize } from './use-git-log-column-resize'
+import { useGitLogSelection } from './use-git-log-selection'
+import {
+  GitLogCommitCompareItems,
+  type GitLogCompareHandler
+} from './compare/GitLogCompareMenuItems'
+import { openGitLogCompare } from './compare/open-git-log-compare'
+import { getConnectionId } from '@/lib/connection-context'
 
 const ALL_AUTHORS_VALUE = '__all__'
 const noSplitTarget = (): undefined => undefined
@@ -109,7 +116,8 @@ export function GitLogView(): React.JSX.Element {
     resolveSplitTargetGroupId: noSplitTarget
   })
   const [filter, setFilter] = useState<GitLogFilter>(EMPTY_GIT_LOG_FILTER)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selection = useGitLogSelection()
+  const selectedId = selection.selectedId
   const listRef = useRef<HTMLDivElement | null>(null)
   const gridTemplateColumns = useGitLogGridTemplate()
   const { rootRef, branchTreeResize, detailsResize } = useGitLogColumnResize()
@@ -159,12 +167,12 @@ export function GitLogView(): React.JSX.Element {
         Math.max(0, currentIndex === -1 ? 0 : currentIndex + delta)
       )
       const nextId = visibleViewModels[nextIndex]!.historyItem.id
-      setSelectedId(nextId)
+      selection.selectOnly(nextId)
       listRef.current
         ?.querySelector(`[data-commit-id="${nextId}"]`)
         ?.scrollIntoView({ block: 'nearest' })
     },
-    [selectedId, visibleViewModels]
+    [selectedId, selection, visibleViewModels]
   )
 
   const handleListKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
@@ -175,6 +183,26 @@ export function GitLogView(): React.JSX.Element {
       event.preventDefault()
       void commitActions.openHistoryCommitDiff(selectedItem)
     }
+  }
+
+  const logOrder = useMemo(
+    () => visibleViewModels.map((vm) => vm.historyItem.id),
+    [visibleViewModels]
+  )
+  const handleCompare: GitLogCompareHandler = (base, target) => {
+    if (!worktree.worktreeId || !worktree.worktreePath) {
+      return
+    }
+    void openGitLogCompare(
+      {
+        settings: worktree.repoSettings,
+        worktreeId: worktree.worktreeId,
+        worktreePath: worktree.worktreePath,
+        connectionId: getConnectionId(worktree.worktreeId) ?? undefined
+      },
+      base,
+      target
+    )
   }
 
   const loading = state.status === 'loading' || state.status === 'refreshing'
@@ -240,16 +268,24 @@ export function GitLogView(): React.JSX.Element {
                   <GitLogTableRow
                     data-commit-id={item.id}
                     viewModel={viewModel}
-                    selected={item.id === selectedId}
+                    selected={selection.isSelected(item.id)}
                     showGraph={!filterActive}
                     gridTemplateColumns={gridTemplateColumns}
-                    onSelectCommit={setSelectedId}
+                    onSelectCommit={selection.handleClick}
                     onDoubleClick={() => void commitActions.openHistoryCommitDiff(item)}
                   />
                 </ContextMenuTrigger>
                 <GitHistoryCommitContextMenu
                   item={item}
                   onAction={commitActions.handleCommitAction}
+                  extraItems={
+                    <GitLogCommitCompareItems
+                      item={item}
+                      selectedPair={selection.selectedPair}
+                      logOrder={logOrder}
+                      onCompare={handleCompare}
+                    />
+                  }
                 />
               </ContextMenu>
             )
@@ -277,7 +313,12 @@ export function GitLogView(): React.JSX.Element {
           label={translate('bottomPanel.gitLog.resizeBranches', 'Resize branch tree')}
           handleProps={branchTreeResize.handleProps}
         />
-        <GitLogBranchTree branchList={branchList} scope={scope} onScopeChange={setScope} />
+        <GitLogBranchTree
+          branchList={branchList}
+          scope={scope}
+          onScopeChange={setScope}
+          onCompare={handleCompare}
+        />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex h-8 shrink-0 items-center gap-1 border-b border-border px-2">

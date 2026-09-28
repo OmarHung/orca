@@ -14,10 +14,13 @@ export type GitHistoryCommitAction = 'open-remote' | 'copy-hash' | 'copy-message
 
 export function GitHistoryCommitContextMenu({
   item,
-  onAction
+  onAction,
+  extraItems
 }: {
   item: GitHistoryItem
   onAction: (action: GitHistoryCommitAction, item: GitHistoryItem) => void
+  // Why: surfaces like the Git Log panel add their own entries (compare) after the shared ones.
+  extraItems?: React.ReactNode
 }): React.JSX.Element {
   const managedBrowserCreationEnabled = useAppStore(
     (state) =>
@@ -57,6 +60,7 @@ export function GitHistoryCommitContextMenu({
           'Explain changes'
         )}
       </ContextMenuItem>
+      {extraItems}
     </ContextMenuContent>
   )
 }
