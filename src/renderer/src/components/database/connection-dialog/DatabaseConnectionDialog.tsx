@@ -140,7 +140,8 @@ export function DatabaseConnectionDialog({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      {/* Why: a stray click outside would discard a half-filled form; Cancel / × / Esc still close it. */}
+      <DialogContent className="sm:max-w-lg" onInteractOutside={(event) => event.preventDefault()}>
         <DialogHeader>
           <DialogTitle>
             {existing
