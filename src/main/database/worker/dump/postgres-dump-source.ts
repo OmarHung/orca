@@ -2,7 +2,12 @@ import type pg from 'pg'
 import Cursor from 'pg-cursor'
 import { qualifiedRelationName, quoteSqlName } from '../../../../shared/database/sql-identifiers'
 import { POSTGRES_RELATION_SQL, postgresDdl, postgresTableDdl } from '../postgres-ddl'
-import type { DumpSource, DumpTableInfo, DumpTableStructure } from './dump-source'
+import type {
+  DumpSource,
+  DumpStructureOptions,
+  DumpTableInfo,
+  DumpTableStructure
+} from './dump-source'
 import {
   postgresSequenceValues,
   postgresTableRequirements,
@@ -121,7 +126,7 @@ export class PostgresDumpSource implements DumpSource {
 
   async tableStructure(
     table: DumpTableInfo,
-    separateForeignKeys: boolean
+    { separateForeignKeys, dropExisting }: DumpStructureOptions
   ): Promise<DumpTableStructure> {
     const relation = await this.relation(table)
     const ddl = await postgresTableDdl(
@@ -130,10 +135,11 @@ export class PostgresDumpSource implements DumpSource {
       this.serverVersionNum,
       { separateForeignKeys }
     )
-    const needs = await postgresTableRequirements(this.client, {
-      oid: relation.oid,
-      sqlName: table.sqlName
-    })
+    const needs = await postgresTableRequirements(
+      this.client,
+      { oid: relation.oid, sqlName: table.sqlName },
+      dropExisting
+    )
     const triggers = await this.client.query<{ definition: string }>(TRIGGERS_SQL, [relation.oid])
     return {
       requires: needs.requires.map((sql) => ({ sql })),
