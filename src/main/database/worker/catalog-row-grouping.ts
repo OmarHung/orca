@@ -8,6 +8,10 @@ export type CatalogRow = Record<string, unknown>
 export const catalogText = (value: unknown): string =>
   typeof value === 'string' ? value : String(value ?? '')
 
+/** A catalog's comment, null when it has none (servers report a missing one as ''). */
+export const catalogComment = (value: unknown): string | null =>
+  value === null || value === undefined || catalogText(value) === '' ? null : catalogText(value)
+
 /** Folds one row per column into one entry per `name`, keeping first-seen order. */
 export function groupByName<T>(
   rows: readonly CatalogRow[],

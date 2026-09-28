@@ -25,6 +25,31 @@ for (const fixture of DRIVER_FIXTURES) {
       fixture.dispose?.()
     })
 
+    it('reports the comments on tables, views and columns', async () => {
+      const relations = await introspect({ level: 'relations', schema: fixture.schema })
+      expect(
+        relations.level === 'relations' &&
+          relations.relations.map((relation) => [relation.name, relation.comment])
+      ).toEqual([
+        ['orders', null],
+        ['people', fixture.comments.people],
+        ['people_view', fixture.comments.peopleView],
+        ['user', null]
+      ])
+      const columns = await introspect({
+        level: 'columns',
+        schema: fixture.schema,
+        relation: 'people'
+      })
+      expect(
+        columns.level === 'columns' &&
+          columns.columns.map((column) => [column.name, column.comment])
+      ).toEqual([
+        ['id', null],
+        ['name', fixture.comments.name]
+      ])
+    })
+
     it('lists the schema’s functions and procedures', async () => {
       const result = await introspect({ level: 'routines', schema: fixture.schema })
       const routines = result.level === 'routines' ? result.routines : []

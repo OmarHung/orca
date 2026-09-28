@@ -3,6 +3,7 @@ import type {
   DatabaseIntrospectResult,
   DatabaseIntrospectTarget
 } from '../../../shared/database/database-introspection-types'
+import { catalogComment } from './catalog-row-grouping'
 import { mysqlIndexes, mysqlKeys, mysqlRoutines } from './mysql-catalog-objects'
 import { queryMysqlRows } from './mysql-client-factory'
 
@@ -14,12 +15,13 @@ const SCHEMAS_SQL = `
   order by schema_name`
 
 const RELATIONS_SQL = `
-  select table_name as name, table_type as kind from information_schema.tables
+  select table_name as name, table_type as kind, table_comment as comment
+  from information_schema.tables
   where table_schema = ? order by table_name`
 
 const COLUMNS_SQL = `
   select column_name as name, column_type as data_type, is_nullable as nullable,
-         column_default as default_value, column_key as column_key
+         column_default as default_value, column_key as column_key, column_comment as comment
   from information_schema.columns
   where table_schema = ? and table_name = ? order by ordinal_position`
 
@@ -49,10 +51,15 @@ export async function introspectMysql(
       const rows = await queryMysqlRows(client, RELATIONS_SQL, [target.schema])
       return {
         level: 'relations',
-        relations: rows.map((row) => ({
-          name: text(row.name),
-          kind: text(row.kind).endsWith('VIEW') ? 'view' : 'table'
-        }))
+        relations: rows.map((row) => {
+          const isView = text(row.kind).endsWith('VIEW')
+          // Why: a view has no comment of its own; its TABLE_COMMENT reads 'VIEW'.
+          return {
+            name: text(row.name),
+            kind: isView ? 'view' : 'table',
+            comment: isView ? null : catalogComment(row.comment)
+          }
+        })
       }
     }
     case 'columns': {
@@ -64,7 +71,8 @@ export async function introspectMysql(
           dataType: text(row.data_type),
           nullable: row.nullable === 'YES',
           defaultValue: row.default_value === null ? null : text(row.default_value),
-          isPrimaryKey: row.column_key === 'PRI'
+          isPrimaryKey: row.column_key === 'PRI',
+          comment: catalogComment(row.comment)
         }))
       }
     }

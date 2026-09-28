@@ -28,7 +28,12 @@ export type DatabaseRelationKind =
 /** `isCurrent` marks where unqualified names resolve (search_path, current database, …). */
 export type DatabaseSchemaInfo = { name: string; isCurrent: boolean }
 
-export type DatabaseRelationInfo = { name: string; kind: DatabaseRelationKind }
+export type DatabaseRelationInfo = {
+  name: string
+  kind: DatabaseRelationKind
+  /** The server's comment on it (PostgreSQL COMMENT, MySQL COMMENT, SQL Server MS_Description). */
+  comment: string | null
+}
 
 export type DatabaseColumnInfo = {
   name: string
@@ -36,6 +41,7 @@ export type DatabaseColumnInfo = {
   nullable: boolean
   defaultValue: string | null
   isPrimaryKey: boolean
+  comment: string | null
 }
 
 export type DatabaseRoutineInfo = {

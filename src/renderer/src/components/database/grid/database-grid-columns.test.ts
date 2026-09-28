@@ -5,6 +5,7 @@ import {
   GRID_MIN_COLUMN_PX,
   fitGridColumn,
   gridCellDisplayText,
+  gridHeaderTitle,
   isNumericColumnType,
   measureGridColumns,
   scrollLeftToReveal
@@ -61,5 +62,15 @@ describe('database grid columns', () => {
     expect(scrollLeftToReveal(widths, 3, 0, 400)).toBe(456 - 400)
     expect(scrollLeftToReveal(widths, 0, 150, 400)).toBe(0)
     expect(scrollLeftToReveal([100, 900], 1, 0, 400)).toBe(100)
+  })
+})
+
+describe('gridHeaderTitle', () => {
+  it('shows the column comment under its name, and only the name without one', () => {
+    expect(gridHeaderTitle('name', 'Given and family name\nas written')).toBe(
+      'name\nGiven and family name\nas written'
+    )
+    expect(gridHeaderTitle('id', undefined)).toBe('id')
+    expect(gridHeaderTitle('id', '')).toBe('id')
   })
 })

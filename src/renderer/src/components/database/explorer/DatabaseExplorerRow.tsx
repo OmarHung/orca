@@ -25,7 +25,7 @@ import { DatabaseSessionDot } from '../DatabaseConnectionBadge'
 import { useDatabaseConnectionColor } from '../database-connection-color'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
 import { DatabaseExplorerContextMenu } from './DatabaseExplorerContextMenu'
-import { constraintLabel, folderLabel } from './database-explorer-labels'
+import { commentLine, constraintLabel, folderLabel } from './database-explorer-labels'
 import type { DatabaseExplorerRow as ExplorerRow } from './database-explorer-rows'
 import { isExpandableNode, type DatabaseExplorerNode } from './database-explorer-tree'
 
@@ -113,6 +113,15 @@ function ConnectionLabel({ connectionId }: { connectionId: string }): React.JSX.
   )
 }
 
+// Why capped: a long comment would widen the whole tree; the title keeps all of it.
+function CommentText({ comment }: { comment: string | null }): React.JSX.Element | null {
+  return comment ? (
+    <span className="max-w-80 truncate text-muted-foreground/70" title={comment}>
+      {commentLine(comment)}
+    </span>
+  ) : null
+}
+
 // Shown whole: the tree scrolls sideways rather than cut a name or type short.
 function NodeLabel({ node }: { node: DatabaseExplorerNode }): React.JSX.Element {
   switch (node.kind) {
@@ -123,7 +132,12 @@ function NodeLabel({ node }: { node: DatabaseExplorerNode }): React.JSX.Element 
     case 'schema':
       return <span>{node.schema}</span>
     case 'relation':
-      return <span>{node.relation.name}</span>
+      return (
+        <>
+          <span>{node.relation.name}</span>
+          <CommentText comment={node.relation.comment} />
+        </>
+      )
     case 'column':
       return (
         <>
@@ -132,6 +146,7 @@ function NodeLabel({ node }: { node: DatabaseExplorerNode }): React.JSX.Element 
             {node.column.dataType}
             {node.column.nullable ? '' : ` ${translate('database.explorer.notNull', 'not null')}`}
           </span>
+          <CommentText comment={node.column.comment} />
         </>
       )
     case 'folder':
