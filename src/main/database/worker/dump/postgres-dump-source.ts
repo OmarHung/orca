@@ -214,7 +214,7 @@ export class PostgresDumpSource implements DumpSource {
     )
     const kind = routine.routineKind === 'procedure' ? 'PROCEDURE' : 'FUNCTION'
     return {
-      create: { sql: definition },
+      create: [{ sql: definition }],
       drop: { sql: `DROP ${kind} IF EXISTS ${routine.identity}` }
     }
   }
