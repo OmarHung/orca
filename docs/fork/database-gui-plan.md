@@ -30,18 +30,26 @@
   - 任何位置出現就擋的詞：INSERT、UPDATE、DELETE、MERGE、DROP、ALTER、CREATE、COMMIT、ROLLBACK…，可以抓到 CTE 裡的 DELETE、`FOR UPDATE`、SQL Server 沒有分號的 batch 裡後面的語句
   - 跳出唯讀的寫法：`READ WRITE`、改 `default_transaction_read_only`／`transaction_read_only` 等設定（包括 `set_config(…)`、`@@session.x` 的寫法）、`SET GLOBAL`、`INTO OUTFILE`，以及 SQL Server 的動態 SQL（`EXEC(…)`、`sp_executesql`）
   - 寫成函式呼叫的詞不算（MySQL 的 `insert(…)`、`replace(…)`），接在 `.` 後面的欄位名稱也不算
+  - 呼叫 procedure 一律擋（2026-09-28 補上）：procedure 可以自己 COMMIT、改掉自己 session 的唯讀設定再寫入，伺服器端的唯讀擋不住（三種伺服器都實測過）。PostgreSQL 擋 `CALL`；MySQL／MariaDB 擋 `CALL` 和 `PREPARE`／`EXECUTE`（字串裡的 SQL 看不到）
+  - SQL Server 另有一組規則（`sqlserver-read-only-rules.ts`，看整個 batch）：
+    - `EXEC`／`EXECUTE` 只放行 allowlist 裡的系統 procedure：`sp_help`、`sp_helptext`、`sp_helpindex`、`sp_helpconstraint`、`sp_columns`、`sp_tables`、`sp_pkeys`、`sp_fkeys`、`sp_who`。這些是只讀 metadata、沒有會寫入的參數的目錄／說明 procedure；名稱必須完全相同的小寫、不加 schema 或加 `sys.`，因為 SQL Server 對這種名稱會先找 `sys` 裡的系統 procedure，使用者自建的同名 procedure（例如 `dbo.sp_help`）接不走（有整合測試驗證）。`dbo.sp_help`、`SP_HELP`（大小寫區分的資料庫會解析到使用者的 procedure）、`EXEC @變數`、`EXECUTE AS`、`xp_cmdshell` 都擋
+    - batch 開頭不是 SELECT、WITH、SET、DECLARE、IF、BEGIN、USE、EXEC 等語句關鍵字時，SQL Server 會把它當成 procedure 名稱執行（不用寫 EXEC），所以也照 EXEC 的規則擋（包括 `explain select 1`）
+    - `NEXT VALUE FOR`（sequence 發出的號碼 rollback 也不會還回去）、`SELECT … INTO`（`FETCH … INTO @變數` 除外）、`OPENQUERY`／`OPENROWSET`／`OPENDATASOURCE`（在別的伺服器上執行）、`ENABLE`／`DISABLE TRIGGER`、`WRITETEXT`／`UPDATETEXT`、Service Broker 的 `SEND`／`RECEIVE`／`BEGIN DIALOG`／`END CONVERSATION`、`ADD SIGNATURE`
 - **伺服器端**：
   - PostgreSQL：每條 session（包括結構資料用的）都設 `default_transaction_read_only = on`
   - MySQL／MariaDB：`SET SESSION TRANSACTION READ ONLY`
   - SQLite：一律以唯讀模式開檔
-  - SQL Server 沒有唯讀 session：console 開啟隱含交易（`IMPLICIT_TRANSACTIONS ON`），每個 batch 讀完就 `ROLLBACK`（結果還沒讀完就等讀完、放棄或關閉時），避免把鎖留在資料庫上
-- **驗證**：五種資料庫的 conformance 測試都有「送出前拒絕寫入」和「繞過檢查直接交給驅動的寫入也不會留下」兩項；逐層反向驗證過，拿掉任何一層都有測試失敗
+  - SQL Server 沒有唯讀 session：console 開啟隱含交易（`IMPLICIT_TRANSACTIONS ON`），每個 batch 讀完就 `ROLLBACK`（結果還沒讀完就等讀完、放棄或關閉時），避免把鎖留在資料庫上。這只是第二層：自己 COMMIT 的 procedure 和 sequence 的號碼 rollback 都救不回來，所以上面送出前的檢查才是主要保護
+- **驗證**：五種資料庫的 conformance 測試都有「送出前拒絕寫入」和「繞過檢查直接交給驅動的寫入也不會留下」兩項；逐層反向驗證過，拿掉任何一層都有測試失敗。`database-read-only-procedures.integration.test.ts` 對 SQL Server、PostgreSQL、MySQL、MariaDB 先證明繞過檢查時 procedure（和 SQL Server 的 sequence）真的會寫入，再證明 console 會擋、另一條 session 看不到任何變化
 
 已知限制：
 
-- SQL Server 的 stored procedure 如果自己 COMMIT，寫入會保留（外層的隱含交易被它提交掉）；要完全保證，請用唯讀登入（例如只有 `db_datareader`）
+- SQL Server 的使用者自訂函式可以呼叫 extended procedure 或 CLR，這些副作用 Orca 從 SELECT 看不出來；PostgreSQL 的 `dblink_exec` 之類的擴充函式會開自己的（可寫入）連線。要完全保證，請用唯讀登入（例如 SQL Server 只有 `db_datareader`）
+- 為了唯讀，SQL Server 的 temp table（`SELECT … INTO #t`、`INSERT INTO @t`）和其他系統 procedure 都不能用；PostgreSQL 的 `CALL` 即使 procedure 只讀也會被擋
 - 關鍵字檢查會擋掉少數其實是讀取的寫法，例如 `SELECT … FOR UPDATE`、名稱剛好沒加引號叫 `delete` 的欄位
 - 測試資料改由測試自己另開可寫入的連線建立（整合測試用 `database-test-admin.ts`，e2e 用 `helpers/database-admin.ts`），不經過 app
+
+SQL Server 登入失敗（2026-09-28）：tedious 的 `ELOGIN`、錯誤 18456、「Login failed for user」都當成要密碼（`password-required`），會開密碼視窗讓使用者重試（worker 的錯誤對應和 service 的連線判斷兩處都認）。`connectSqlServer` 會收集登入時伺服器送來的每一則錯誤，所以資料庫打不開時訊息會帶上 4060 的「Cannot open database …」，不只剩 tedious 保留的最後一則。已知限制：SQL Server 把資料庫打不開也回報成同一個登入失敗（18456，state 對用戶端一律是 1），所以這種情況也會開密碼視窗；重試密碼後視窗裡會顯示上面那段原因
 
 ## 1. 目標
 
