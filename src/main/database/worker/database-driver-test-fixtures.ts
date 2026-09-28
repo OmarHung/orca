@@ -25,6 +25,10 @@ export type DriverFixture = {
   /** `people` qualified for use in SQL. */
   table: string
   series: (count: number) => string
+  /** `count` rows of n, a text of 12,000 x's then n, and 6,000 bytes of 0xAB. */
+  longValues: (count: number) => string
+  /** How the grid writes those 6,000 bytes. */
+  longBinary: string
   /** Null where the driver can't cancel in-process (SQLite restarts the worker instead). */
   sleep: string | null
   dispose?: () => void
@@ -72,6 +76,9 @@ function mysqlFixture(label: string, env: string): DriverFixture {
     // Why digits: MySQL caps recursive CTEs at 1000 iterations by default.
     series: (count) =>
       `select a.d + 10 * b.d + 100 * c.d + 1000 * e.d + 1 as n from ${digits('a')}, ${digits('b')}, ${digits('c')}, ${digits('e')} where a.d + 10 * b.d + 100 * c.d + 1000 * e.d < ${count} order by n`,
+    longValues: (count) =>
+      `select n, concat(repeat('x', 12000), n) as body, unhex(repeat('ab', 6000)) as bin from (select a.d + 1 as n from ${digits('a')} where a.d < ${count}) s order by n`,
+    longBinary: `0x${'ab'.repeat(6000)}`,
     sleep: 'select sleep(30)'
   })
 }
@@ -106,6 +113,9 @@ function sqliteFixture(): DriverFixture {
     table: 'people',
     series: (count) =>
       `with recursive s(n) as (select 1 union all select n + 1 from s where n < ${count}) select n from s`,
+    longValues: (count) =>
+      `with recursive s(n) as (select 1 union all select n + 1 from s where n < ${count}) select n, replace(hex(zeroblob(6000)), '0', 'x') || n as body, unhex(replace(hex(zeroblob(6000)), '00', 'AB')) as bin from s`,
+    longBinary: `0x${'ab'.repeat(6000)}`,
     sleep: null,
     dispose: () => {
       if (dir) {
@@ -133,6 +143,9 @@ export const DRIVER_FIXTURES: DriverFixture[] = [
     teardown: [`drop schema ${postgresSchema} cascade`],
     table: `${postgresSchema}.people`,
     series: (count) => `select generate_series(1, ${count}) as n`,
+    longValues: (count) =>
+      `select n, repeat('x', 12000) || n as body, decode(repeat('ab', 6000), 'hex') as bin from generate_series(1, ${count}) as n`,
+    longBinary: `\\x${'ab'.repeat(6000)}`,
     sleep: 'select pg_sleep(30)'
   }),
   mysqlFixture('MySQL', 'ORCA_TEST_MYSQL_URL'),
@@ -163,6 +176,9 @@ export const DRIVER_FIXTURES: DriverFixture[] = [
     table: `${postgresSchema}.people`,
     series: (count) =>
       `select top (${count}) row_number() over (order by (select null)) as n from sys.all_objects a cross join sys.all_objects b`,
+    longValues: (count) =>
+      `select n, replicate(cast('x' as varchar(max)), 12000) + cast(n as varchar(10)) as body, cast(replicate(cast(0xAB as varchar(max)), 6000) as varbinary(max)) as bin from (select top (${count}) row_number() over (order by (select null)) as n from sys.all_objects) s order by n`,
+    longBinary: `0x${'AB'.repeat(6000)}`,
     sleep: "waitfor delay '00:00:30'"
   }),
   sqliteFixture()
