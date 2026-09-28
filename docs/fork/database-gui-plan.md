@@ -30,6 +30,7 @@
   - 任何位置出現就擋的詞：INSERT、UPDATE、DELETE、MERGE、DROP、ALTER、CREATE、COMMIT、ROLLBACK…，可以抓到 CTE 裡的 DELETE、`FOR UPDATE`、SQL Server 沒有分號的 batch 裡後面的語句
   - 跳出唯讀的寫法：`READ WRITE`、改 `default_transaction_read_only`／`transaction_read_only` 等設定（包括 `set_config(…)`、`@@session.x` 的寫法）、`SET GLOBAL`、`INTO OUTFILE`，以及 SQL Server 的動態 SQL（`EXEC(…)`、`sp_executesql`）
   - 寫成函式呼叫的詞不算（MySQL 的 `insert(…)`、`replace(…)`），接在 `.` 後面的欄位名稱也不算
+  - MySQL／MariaDB 的 executable comment（`/*!…*/`、`/*M!…*/`，可帶版本號）伺服器會當程式碼執行，所以照程式碼讀，裡面的 `;` 也算語句分隔；`/*+…*/` optimizer hint 和一般註解一樣跳過（2026-09-28 補上：之前 `/*!40101 SET SESSION TRANSACTION READ WRITE */` 可以把 session 改回可寫；MySQL／MariaDB 整合測試先證明繞過檢查時真的寫得進去）
   - 呼叫 procedure 一律擋（2026-09-28 補上）：procedure 可以自己 COMMIT、改掉自己 session 的唯讀設定再寫入，伺服器端的唯讀擋不住（三種伺服器都實測過）。PostgreSQL 擋 `CALL`；MySQL／MariaDB 擋 `CALL` 和 `PREPARE`／`EXECUTE`（字串裡的 SQL 看不到）
   - SQL Server 另有一組規則（`sqlserver-read-only-rules.ts`，看整個 batch）：
     - `EXEC`／`EXECUTE` 只放行 allowlist 裡的系統 procedure：`sp_help`、`sp_helptext`、`sp_helpindex`、`sp_helpconstraint`、`sp_columns`、`sp_tables`、`sp_pkeys`、`sp_fkeys`、`sp_who`。這些是只讀 metadata、沒有會寫入的參數的目錄／說明 procedure；名稱必須完全相同的小寫、不加 schema 或加 `sys.`，因為 SQL Server 對這種名稱會先找 `sys` 裡的系統 procedure，使用者自建的同名 procedure（例如 `dbo.sp_help`）接不走（有整合測試驗證）。`dbo.sp_help`、`SP_HELP`（大小寫區分的資料庫會解析到使用者的 procedure）、`EXEC @變數`、`EXECUTE AS`、`xp_cmdshell` 都擋
@@ -49,7 +50,7 @@
 - 關鍵字檢查會擋掉少數其實是讀取的寫法，例如 `SELECT … FOR UPDATE`、名稱剛好沒加引號叫 `delete` 的欄位
 - 測試資料改由測試自己另開可寫入的連線建立（整合測試用 `database-test-admin.ts`，e2e 用 `helpers/database-admin.ts`），不經過 app
 
-SQL Server 登入失敗（2026-09-28）：tedious 的 `ELOGIN`、錯誤 18456、「Login failed for user」都當成要密碼（`password-required`），會開密碼視窗讓使用者重試（worker 的錯誤對應和 service 的連線判斷兩處都認）。`connectSqlServer` 會收集登入時伺服器送來的每一則錯誤，所以資料庫打不開時訊息會帶上 4060 的「Cannot open database …」，不只剩 tedious 保留的最後一則。已知限制：SQL Server 把資料庫打不開也回報成同一個登入失敗（18456，state 對用戶端一律是 1），所以這種情況也會開密碼視窗；重試密碼後視窗裡會顯示上面那段原因
+SQL Server 登入失敗（2026-09-28）：tedious 的 `ELOGIN`、錯誤 18456、「Login failed for user」都當成要密碼（`password-required`），會開密碼視窗讓使用者重試（worker 的錯誤對應和 service 的連線判斷兩處都認）。`connectSqlServer` 會收集登入時伺服器送來的每一則錯誤，所以資料庫打不開時訊息會帶上 4060 的「Cannot open database …」，不只剩 tedious 保留的最後一則。資料庫打不開時伺服器先送 4060 再送 18456：只有 18456 才算密碼錯誤，前面有 4060 等其他原因時錯誤帶那個號碼（sqlState `4060`），顯示成一般連線錯誤、不開密碼視窗；service 有 sqlState 時只看它，不再用訊息文字判斷（2026-09-28 修正，之前這種情況也會開密碼視窗）
 
 ## 1. 目標
 
@@ -581,6 +582,8 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - Orca crash（或被強制結束）時，進行中 dump 的隱藏 `.partial` 暫存檔會留在目的地資料夾，需要手動刪除
 - 成功覆寫既有檔案後，新檔案用的是新建檔案的權限，不沿用原檔的權限
 - SQL Server 的 sequence：只匯結構時從起始值開始（目前值跟 identity 一樣算資料，和 pg_dump 相同）；只帶 default constraint 用到的 sequence，trigger、routine 裡用到的不會；沒有 VIEW DEFINITION 的使用者看不到 sequence 也看不到預設值原文，dump 出的表就沒有那個預設值；匯入到狀態不同的既有同名 sequence 時會 RESTART，別名型別的 sequence 會變成基底型別（SQL Server 的行為）；SQL Server 2017 以前沒有 `last_used_value`，停在起始值的 sequence 分不出用過沒有，當成用過（說明裡會註明）；目前值從起始值走不到（increment 事後改過）時從目前值重新開始，起始值會變（說明裡會註明）
+- 匯入端已有同名 sequence 但定義（型別、INCREMENT、MINVALUE／MAXVALUE、CYCLE、CACHE）不同時（2026-09-28）：PostgreSQL 和 SQL Server 在 CREATE SEQUENCE 前先檢查，不會留下定義不同的 sequence。沒勾先 DROP 就報錯停止；勾了先 DROP 且沒有其他物件使用（PostgreSQL 看 `pg_depend`，SQL Server 看 `sys.sql_expression_dependencies`）就刪掉重建；有其他物件使用就報錯停止。SQL Server 比較基底型別，因為 RESTART 會把別名型別改成基底型別
+- MySQL／MariaDB 多個資料庫的 dump 勾了先 DROP 時，`DROP TABLE` 寫成 `資料庫.表`，不會刪到匯入 session 目前資料庫裡的同名表；單一資料庫的 dump 仍不寫資料庫名，才能匯進任何資料庫（2026-09-28 修正）
 - MySQL／MariaDB：view 不記 sql_mode，欄位的中繼資料（例如 `collation()` 的可否為 NULL）依匯入時的模式推導，可能和來源不同（mysqldump 也一樣）；物件的資料庫定序和來源現在不同時，匯入後資料庫的預設定序會變成來源的；character_set_client 不是 UTF-8 又含非 ASCII 字元的物件，因為 dump 是 UTF-8，改用 utf8mb4 讀入，內容相同但記錄的 character_set_client 會是 utf8mb4（說明裡會註明）
 
 **6.3 原生工具（pg_dump／mysqldump）**
