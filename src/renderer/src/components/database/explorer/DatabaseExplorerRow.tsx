@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useLayoutEffect, useRef } from 'react'
 import {
   ChevronRight,
   Columns3,
@@ -30,6 +30,7 @@ import type { DatabaseExplorerRow as ExplorerRow } from './database-explorer-row
 import { isExpandableNode, type DatabaseExplorerNode } from './database-explorer-tree'
 
 export const EXPLORER_ROW_HEIGHT = 24
+const ROW_END_PADDING = 8
 const INDENT_PX = 12
 
 const ICON_CLASS = 'size-3.5 shrink-0 text-muted-foreground'
@@ -93,17 +94,18 @@ function ConnectionLabel({ connectionId }: { connectionId: string }): React.JSX.
   )
   return (
     <>
-      <span className="truncate">{connection?.name ?? ''}</span>
+      <span>{connection?.name ?? ''}</span>
       {sshLabel !== undefined ? (
-        <span className="truncate text-muted-foreground">
+        <span className="text-muted-foreground">
           {translate('database.explorer.viaSsh', 'via {{value0}}', {
             value0: sshLabel ?? translate('database.connectionForm.sshRemoved', 'Removed SSH host')
           })}
         </span>
       ) : null}
       <DatabaseSessionDot state={session?.state ?? 'disconnected'} />
+      {/* Why capped: a long error would widen the whole tree; the title keeps all of it. */}
       {session?.state === 'error' && session.message ? (
-        <span className="truncate text-destructive" title={session.message}>
+        <span className="max-w-80 truncate text-destructive" title={session.message}>
           {session.message}
         </span>
       ) : null}
@@ -111,50 +113,50 @@ function ConnectionLabel({ connectionId }: { connectionId: string }): React.JSX.
   )
 }
 
-// Names keep their room; the muted detail after them truncates first.
+// Shown whole: the tree scrolls sideways rather than cut a name or type short.
 function NodeLabel({ node }: { node: DatabaseExplorerNode }): React.JSX.Element {
   switch (node.kind) {
     case 'connection':
       return <ConnectionLabel connectionId={node.connectionId} />
     case 'database':
-      return <span className="truncate">{node.database}</span>
+      return <span>{node.database}</span>
     case 'schema':
-      return <span className="truncate">{node.schema}</span>
+      return <span>{node.schema}</span>
     case 'relation':
-      return <span className="truncate">{node.relation.name}</span>
+      return <span>{node.relation.name}</span>
     case 'column':
       return (
         <>
-          <span className="truncate">{node.column.name}</span>
-          <span className="truncate text-muted-foreground">
+          <span>{node.column.name}</span>
+          <span className="text-muted-foreground">
             {node.column.dataType}
             {node.column.nullable ? '' : ` ${translate('database.explorer.notNull', 'not null')}`}
           </span>
         </>
       )
     case 'folder':
-      return <span className="truncate">{folderLabel(node.folder)}</span>
+      return <span>{folderLabel(node.folder)}</span>
     case 'routine':
       return (
         <>
-          <span className="max-w-[70%] shrink-0 truncate">{node.routine.name}</span>
-          <span className="truncate text-muted-foreground">({node.routine.arguments})</span>
+          <span>{node.routine.name}</span>
+          <span className="text-muted-foreground">({node.routine.arguments})</span>
         </>
       )
     case 'constraint': {
       const label = constraintLabel(node.constraint)
       return (
         <>
-          <span className="max-w-[70%] shrink-0 truncate">{label.name}</span>
-          <span className="truncate text-muted-foreground">{label.detail}</span>
+          <span>{label.name}</span>
+          <span className="text-muted-foreground">{label.detail}</span>
         </>
       )
     }
     case 'index':
       return (
         <>
-          <span className="max-w-[70%] shrink-0 truncate">{node.index.name}</span>
-          <span className="truncate text-muted-foreground">
+          <span>{node.index.name}</span>
+          <span className="text-muted-foreground">
             ({node.index.columns.join(', ')})
             {node.index.unique && !node.index.primary
               ? ` ${translate('database.explorer.unique', 'unique')}`
@@ -163,6 +165,37 @@ function NodeLabel({ node }: { node: DatabaseExplorerNode }): React.JSX.Element 
         </>
       )
   }
+}
+
+/** The row's label at its full width, reported as the row's width whenever it changes. */
+function MeasuredLabel({
+  rowKey,
+  onMeasure,
+  children
+}: {
+  rowKey: string
+  onMeasure: (key: string, width: number) => void
+  children: React.ReactNode
+}): React.JSX.Element {
+  const ref = useRef<HTMLSpanElement>(null)
+  useLayoutEffect(() => {
+    const label = ref.current
+    if (!label) {
+      return
+    }
+    // Why offsetLeft: it counts from the row's own box, indent included.
+    const report = (): void =>
+      onMeasure(rowKey, label.offsetLeft + label.offsetWidth + ROW_END_PADDING)
+    report()
+    const observer = new ResizeObserver(report)
+    observer.observe(label)
+    return () => observer.disconnect()
+  }, [rowKey, onMeasure])
+  return (
+    <span ref={ref} className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
+      {children}
+    </span>
+  )
 }
 
 function StatusRow({ row }: { row: Extract<ExplorerRow, { type: 'status' }> }): React.JSX.Element {
@@ -192,7 +225,8 @@ export function DatabaseExplorerRow({
   selected,
   onSelect,
   onToggle,
-  onActivate
+  onActivate,
+  onMeasure
 }: {
   row: ExplorerRow
   selected: boolean
@@ -200,6 +234,8 @@ export function DatabaseExplorerRow({
   onToggle: (node: DatabaseExplorerNode) => void
   /** Double-click: opens a table's data, expands anything else. */
   onActivate: (node: DatabaseExplorerNode) => void
+  /** Reports the row's full width, so the tree can scroll sideways to it. */
+  onMeasure: (key: string, width: number) => void
 }): React.JSX.Element {
   if (row.type === 'status') {
     return <StatusRow row={row} />
@@ -218,10 +254,10 @@ export function DatabaseExplorerRow({
           onMouseDown={() => onSelect(row.key)}
           onDoubleClick={() => onActivate(node)}
           className={cn(
-            'flex h-full cursor-default items-center gap-1 pr-2 text-xs hover:bg-accent',
+            'flex h-full cursor-default items-center gap-1 text-xs hover:bg-accent',
             selected && 'bg-accent'
           )}
-          style={{ paddingLeft: row.depth * INDENT_PX + 4 }}
+          style={{ paddingLeft: row.depth * INDENT_PX + 4, paddingRight: ROW_END_PADDING }}
         >
           {/* Why aria-hidden: the row's aria-expanded already says this, and it takes no focus. */}
           <button
@@ -239,9 +275,9 @@ export function DatabaseExplorerRow({
             />
           </button>
           <NodeIcon node={node} />
-          <span className="flex min-w-0 items-center gap-1.5">
+          <MeasuredLabel rowKey={row.key} onMeasure={onMeasure}>
             <NodeLabel node={node} />
-          </span>
+          </MeasuredLabel>
         </div>
       </ContextMenuTrigger>
       <DatabaseExplorerContextMenu node={node} />
