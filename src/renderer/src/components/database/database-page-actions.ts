@@ -14,11 +14,20 @@ import {
 import { tabSessionIds } from './database-page-tabs'
 import { useDatabaseExplorerStore } from './explorer/database-explorer-store'
 
-type ConnectionEditorTarget = { mode: 'new' } | { mode: 'edit'; connectionId: string }
+/** `group` files a new connection under that explorer group. */
+type ConnectionEditorTarget =
+  | { mode: 'new'; group?: string | null }
+  | { mode: 'edit'; connectionId: string }
+
+/** Naming a group: a new one for `connectionIds`, or a new name for an existing one. */
+export type GroupNameRequest =
+  | { mode: 'new'; connectionIds: string[] }
+  | { mode: 'rename'; group: string }
 
 type DatabaseDialogsState = {
   connectionEditor: ConnectionEditorTarget | null
   deletingConnectionId: string | null
+  groupNameRequest: GroupNameRequest | null
   ddlRequest: { id: string; connectionId: string; target: DatabaseDdlTarget; title: string } | null
   propertiesRequest: {
     id: string
@@ -30,6 +39,8 @@ type DatabaseDialogsState = {
   closeConnectionEditor: () => void
   askToDeleteConnection: (connectionId: string) => void
   cancelDeleteConnection: () => void
+  askForGroupName: (request: GroupNameRequest) => void
+  closeGroupName: () => void
   showDdl: (connectionId: string, target: DatabaseDdlTarget, name: string) => void
   closeDdl: () => void
   showProperties: (connectionId: string, target: DatabasePropertiesTarget, name: string) => void
@@ -39,12 +50,15 @@ type DatabaseDialogsState = {
 export const useDatabaseDialogsStore = create<DatabaseDialogsState>((set) => ({
   connectionEditor: null,
   deletingConnectionId: null,
+  groupNameRequest: null,
   ddlRequest: null,
   propertiesRequest: null,
   openConnectionEditor: (target) => set({ connectionEditor: target }),
   closeConnectionEditor: () => set({ connectionEditor: null }),
   askToDeleteConnection: (connectionId) => set({ deletingConnectionId: connectionId }),
   cancelDeleteConnection: () => set({ deletingConnectionId: null }),
+  askForGroupName: (request) => set({ groupNameRequest: request }),
+  closeGroupName: () => set({ groupNameRequest: null }),
   showDdl: (connectionId, target, name) =>
     set({
       ddlRequest: {

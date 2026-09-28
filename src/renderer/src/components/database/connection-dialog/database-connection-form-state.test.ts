@@ -94,6 +94,25 @@ describe('database connection form', () => {
     })
   })
 
+  it('round-trips a group, saving a blank one as none', () => {
+    const inGroup = initialConnectionForm(null, true, 'prod')
+    expect(inGroup.group).toBe('prod')
+    const parsed = parseConnectionForm({ ...inGroup, group: '  staging  ' })
+    expect(parsed.ok && parsed.draft).toMatchObject({ group: 'staging' })
+    if (parsed.ok) {
+      const saved = { ...parsed.draft, id: 'conn-0001', createdAt: 0, updatedAt: 0 }
+      expect(initialConnectionForm({ ...saved, hasSavedPassword: false }, true).group).toBe(
+        'staging'
+      )
+    }
+    const sqlite = { ...changeConnectionDriver(inGroup, 'sqlite'), filePath: '/tmp/a.db' }
+    expect(parseConnectionForm(sqlite)).toMatchObject({ ok: true, draft: { group: 'prod' } })
+    expect(parseConnectionForm({ ...inGroup, group: '   ' })).toMatchObject({
+      ok: true,
+      draft: { group: null }
+    })
+  })
+
   it('keeps the saved password unless the field was edited', () => {
     const form = initialConnectionForm(null, true)
     expect(passwordToSave(form)).toBeUndefined()

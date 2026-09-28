@@ -6,6 +6,7 @@ export const databaseApi = {
   listConnections: () => ipcRenderer.invoke('database:listConnections'),
   encryptionStatus: () => ipcRenderer.invoke('database:encryptionStatus'),
   saveConnection: (request) => ipcRenderer.invoke('database:saveConnection', request),
+  setConnectionGroup: (request) => ipcRenderer.invoke('database:setConnectionGroup', request),
   deleteConnection: (connectionId) => ipcRenderer.invoke('database:deleteConnection', connectionId),
   testConnection: (request) => ipcRenderer.invoke('database:testConnection', request),
   connect: (connectionId, password) =>
