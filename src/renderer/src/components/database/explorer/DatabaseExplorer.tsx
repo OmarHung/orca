@@ -71,7 +71,7 @@ export function DatabaseExplorer(): React.JSX.Element {
 
   const activate = (node: DatabaseExplorerNode): void => {
     if (node.kind === 'relation') {
-      openDatabaseTable(node.connectionId, node.schema, node.relation.name)
+      openDatabaseTable(node.connectionId, node.schema, node.relation.name, node.database)
     } else {
       void toggle(node)
     }
