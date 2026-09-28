@@ -8379,17 +8379,17 @@
         },
         "SshPassphraseDialog": {
           "d5a234456f": "取消",
-          "c3ce71aad6": "輸入金鑰口令",
+          "c3ce71aad6": "輸入金鑰密碼",
           "abaa0dc653": "輸入密碼",
-          "ce4fdf7914": "請輸入以下金鑰的口令：",
+          "ce4fdf7914": "請輸入以下金鑰的密碼：",
           "dbf9b6f2d0": "輸入密碼",
           "c55f105262": "無法取消 SSH 憑據請求",
           "b8e88fd0de": "無法提交 SSH 憑據",
           "405066423c": "解鎖",
           "bec2c1318f": "連線",
-          "8a349e3fac": "{{value0}} 的金鑰口令",
+          "8a349e3fac": "{{value0}} 的金鑰密碼",
           "cab3d5f5a5": "{{value0}} 的密碼",
-          "1f3dde805d": "SSH 金鑰口令",
+          "1f3dde805d": "SSH 金鑰密碼",
           "106bd57f4a": "SSH 密碼",
           "a21f9e74c0": "SSH 驗證",
           "981352fb42": "完成驗證挑戰",
@@ -19124,17 +19124,17 @@
   },
   "sshSavedPassphrases": {
     "dialog": {
-      "remember": "記住口令",
+      "remember": "記住密碼",
       "rememberHint": "透過作業系統鑰匙串加密儲存，可在 SSH 設定中移除。",
-      "wrongPassphrase": "口令不正確，無法解鎖此金鑰。",
-      "notSaved": "無法儲存口令，下次連線時仍會詢問。"
+      "wrongPassphrase": "密碼不正確，無法解鎖此金鑰。",
+      "notSaved": "無法儲存密碼，下次連線時仍會詢問。"
     },
     "settings": {
-      "title": "已儲存的金鑰口令",
-      "description": "Orca 會自動解鎖這些 SSH 金鑰，不再詢問口令。口令透過作業系統鑰匙串加密儲存。",
+      "title": "已儲存的金鑰密碼",
+      "description": "Orca 會自動解鎖這些 SSH 金鑰，不再詢問密碼。密碼透過作業系統鑰匙串加密儲存。",
       "forget": "移除",
-      "forgetFailed": "無法移除口令",
-      "loadFailed": "無法載入已儲存的口令"
+      "forgetFailed": "無法移除密碼",
+      "loadFailed": "無法載入已儲存的密碼"
     }
   }
 }
