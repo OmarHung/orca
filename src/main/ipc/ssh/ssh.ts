@@ -6,6 +6,7 @@ import type { SshConnectionManager } from '../../ssh/connection/ssh-connection-m
 import { getSshTargetRegistryStore } from '../../ssh/targets/ssh-target-registry'
 import { registerSshBrowseHandler } from './ssh-browse'
 import { submitCredential } from './ssh-passphrase'
+import { registerSshSavedPassphraseHandlers } from './ssh-saved-passphrases'
 import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
 import { connectInFlight } from './ssh-connect-attempt-registry'
 import { registerPlainSshTerminalHandlers } from './plain-ssh-terminal-handlers'
@@ -47,8 +48,10 @@ export async function registerSshHandlers(
   ipcMain.removeHandler('ssh:submitCredential')
   ipcMain.handle(
     'ssh:submitCredential',
-    (_event, args: { requestId: string; value: string | null }) => submitCredential(args)
+    (_event, args: { requestId: string; value: string | null; remember?: boolean }) =>
+      submitCredential(args)
   )
+  registerSshSavedPassphraseHandlers()
   const started = startSshApplication({
     store,
     runtime,
