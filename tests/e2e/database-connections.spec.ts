@@ -130,3 +130,29 @@ test('refuses writes, refreshes the explorer and runs caret, selection or all', 
   await expect(resultTabs).toHaveCount(1, { timeout: 20_000 })
   await expect(grid.getByRole('columnheader', { name: /^second/ })).toBeVisible()
 })
+
+// Needs no SSH server: saving an SSH host only stores it.
+test('adds an SSH host from the SSH tunnel list and keeps the form through outside clicks', async ({
+  orcaPage
+}) => {
+  await openDatabasePage(orcaPage)
+  await orcaPage.getByRole('button', { name: 'New Connection' }).first().click()
+  const dialog = orcaPage.getByRole('dialog', { name: 'New Connection' })
+  await dialog.getByLabel('Name').fill('pg-via-new-host')
+
+  await orcaPage.mouse.click(5, 5)
+  await expect(dialog.getByLabel('Name')).toHaveValue('pg-via-new-host')
+
+  await dialog.getByLabel('SSH tunnel').click()
+  await orcaPage.getByRole('option', { name: 'Add SSH host…' }).click()
+  const addHost = orcaPage.getByRole('dialog', { name: 'Add SSH host' })
+  await addHost.getByLabel('Label').fill('e2e-bastion')
+  await addHost.getByLabel('Host or alias').fill('bastion.invalid')
+  await addHost.getByRole('button', { name: 'Save' }).click()
+  await expect(addHost).toBeHidden()
+
+  // The new host is picked, and the fields filled in before it stay.
+  await expect(dialog.getByLabel('SSH tunnel')).toHaveText('e2e-bastion')
+  await expect(dialog.getByLabel('Name')).toHaveValue('pg-via-new-host')
+  await expect(dialog.getByText(/^Host and port are as seen from the SSH host/)).toBeVisible()
+})
