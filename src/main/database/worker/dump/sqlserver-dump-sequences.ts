@@ -120,6 +120,43 @@ function placement(row: CatalogRow, hasLastUsed: boolean): Placement {
   }
 }
 
+/**
+ * Runs before the conditional CREATE SEQUENCE, which keeps a sequence the target already has: one
+ * defined otherwise stops the load or, with `dropExisting`, is dropped when nothing else uses it.
+ * Why the base type: RESTART turns an alias-typed sequence into its base type.
+ */
+export function sequenceGuardStatement(row: CatalogRow, dropExisting: boolean): DumpStatement {
+  const name = sequenceName(row)
+  const literal = sqlServerTextLiteral(name)
+  const { increment, minimum, maximum, cycling } = numbersOf(row)
+  const cacheSize =
+    row.cache_size === null || row.cache_size === undefined
+      ? 'cache_size IS NULL'
+      : `cache_size = ${Number(row.cache_size)}`
+  const matches = [
+    `system_type_id = TYPE_ID(${sqlServerTextLiteral(catalogText(row.type_name))})`,
+    `precision = ${Number(row.precision)}`,
+    `scale = ${Number(row.scale)}`,
+    `increment = ${increment}`,
+    `minimum_value = ${minimum}`,
+    `maximum_value = ${maximum}`,
+    `is_cycling = ${cycling ? 1 : 0}`,
+    row.is_cached === true ? `is_cached = 1 AND ${cacheSize}` : 'is_cached = 0'
+  ].join(' AND ')
+  const differs = `EXISTS (SELECT 1 FROM sys.sequences WHERE object_id = OBJECT_ID(${literal}) AND NOT (${matches}))`
+  const refuse = (why: string): string =>
+    `THROW 50000, ${sqlServerTextLiteral(`Sequence ${name} already exists with a definition other than the dumped one${why}`)}, 1`
+  if (!dropExisting) {
+    return {
+      sql: `IF ${differs} ${refuse('. Drop it, or dump again dropping existing objects first.')}`
+    }
+  }
+  const used = `EXISTS (SELECT 1 FROM sys.sql_expression_dependencies WHERE referenced_id = OBJECT_ID(${literal}))`
+  return {
+    sql: `IF ${differs}\nBEGIN\nIF ${used} ${refuse(", and other objects use it, so the dump can't replace it.")};\nDROP SEQUENCE ${name};\nEND`
+  }
+}
+
 /** CREATE SEQUENCE with the source's type, start, step, range, cycling and cache. */
 export function sequenceCreateStatement(row: CatalogRow, hasLastUsed: boolean): DumpStatement {
   const name = sequenceName(row)
@@ -182,10 +219,16 @@ export class SqlServerDumpSequences {
 
   constructor(private readonly client: Connection) {}
 
-  /** CREATE SEQUENCE for each, before the table that needs it. */
-  async creates(table: { schema: string; name: string }): Promise<DumpStatement[]> {
+  /** CREATE SEQUENCE for each, before the table that needs it, once one there is checked. */
+  async creates(
+    table: { schema: string; name: string },
+    dropExisting: boolean
+  ): Promise<DumpStatement[]> {
     const { sequences, hasLastUsed } = await this.read(table)
-    return sequences.map((row) => sequenceCreateStatement(row, hasLastUsed))
+    return sequences.flatMap((row) => [
+      sequenceGuardStatement(row, dropExisting),
+      sequenceCreateStatement(row, hasLastUsed)
+    ])
   }
 
   /**

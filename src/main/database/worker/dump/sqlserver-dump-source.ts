@@ -17,6 +17,7 @@ import {
 } from './sqlserver-dump-catalog'
 import type {
   DumpSource,
+  DumpStructureOptions,
   DumpTableInfo,
   DumpTableStructure,
   DumpViewDefinition
@@ -160,14 +161,14 @@ export class SqlServerDumpSource implements DumpSource {
 
   async tableStructure(
     table: DumpTableInfo,
-    separateForeignKeys: boolean
+    { separateForeignKeys, dropExisting }: DumpStructureOptions
   ): Promise<DumpTableStructure> {
     const parameters = parametersOf(table)
     const ddl = await sqlServerTableDdl(this.client, table.schema, table.name, {
       separateForeignKeys
     })
     const aliasTypes = await querySqlServerRows(this.client, ALIAS_TYPES_SQL, parameters)
-    const sequences = await this.sequences.creates(table)
+    const sequences = await this.sequences.creates(table, dropExisting)
     const triggers = await querySqlServerRows(this.client, TRIGGERS_SQL, parameters)
     return {
       requires: [...aliasTypes.map(aliasTypeStatement), ...sequences],
