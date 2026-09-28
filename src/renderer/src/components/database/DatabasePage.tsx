@@ -8,6 +8,7 @@ import { useDragResize } from '../bottom-panel/use-drag-resize'
 import { DatabaseConsoleView } from './console/DatabaseConsoleView'
 import { DatabaseConnectionDialog } from './connection-dialog/DatabaseConnectionDialog'
 import { DatabaseDeleteConnectionDialog } from './DatabaseDeleteConnectionDialog'
+import { DatabaseGroupNameDialog } from './DatabaseGroupNameDialog'
 import { DatabasePasswordDialog } from './DatabasePasswordDialog'
 import { DatabaseTabStrip } from './DatabaseTabStrip'
 import { useDatabaseConnectionsStore } from './database-connections-store'
@@ -112,6 +113,7 @@ function ConnectionEditorHost(): React.JSX.Element | null {
     <DatabaseConnectionDialog
       key={target.mode === 'edit' ? target.connectionId : 'new'}
       existing={existing}
+      initialGroup={target.mode === 'new' ? (target.group ?? null) : null}
       onClose={close}
     />
   )
@@ -182,6 +184,7 @@ export default function DatabasePage(): React.JSX.Element {
       <ConnectionEditorHost />
       <DatabasePasswordDialog />
       <DatabaseDeleteConnectionDialog />
+      <DatabaseGroupNameDialog />
       <DatabaseDdlDialog />
       <DatabasePropertiesDialog />
       <DatabaseDumpDialog />
