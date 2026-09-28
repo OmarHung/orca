@@ -184,6 +184,7 @@ export function buildDefaultSettings(args: {
     gitBranchStatusBarEnabled: true,
     gitAutoFetchEnabled: false,
     gitAutoFetchIntervalMinutes: 15,
+    editorChangeMarkersEnabled: true,
     showTitlebarAppName: true,
     linuxTilingWindowMode: false,
     showTasksButton: true,
