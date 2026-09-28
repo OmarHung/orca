@@ -19156,5 +19156,21 @@
       "forgetFailed": "無法移除密碼",
       "loadFailed": "無法載入已儲存的密碼"
     }
+  },
+  "changeMarkers": {
+    "toggleLabel": "變更標記",
+    "toggleTitle": "編輯檔案，並在行號旁標示未提交的變更",
+    "gutterTooltip": "點擊查看變更內容",
+    "kind": {
+      "added": "新增",
+      "modified": "修改",
+      "deleted": "刪除"
+    },
+    "rollback": "還原此變更",
+    "copyOriginal": "複製原始內容",
+    "copied": "已複製",
+    "close": "關閉",
+    "closePreview": "關閉變更預覽",
+    "originalAriaLabel": "變更前的內容"
   }
 }
