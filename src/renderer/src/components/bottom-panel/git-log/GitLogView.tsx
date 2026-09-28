@@ -41,7 +41,8 @@ import {
   type GitLogCompareHandler
 } from './compare/GitLogCompareMenuItems'
 import { openGitLogCompare } from './compare/open-git-log-compare'
-import { getConnectionId } from '@/lib/connection-context'
+import { useGitLogCompareContext } from './compare/use-git-log-compare-context'
+import { GitLogRangeDetails } from './compare/GitLogRangeDetails'
 
 const ALL_AUTHORS_VALUE = '__all__'
 const noSplitTarget = (): undefined => undefined
@@ -116,8 +117,6 @@ export function GitLogView(): React.JSX.Element {
     resolveSplitTargetGroupId: noSplitTarget
   })
   const [filter, setFilter] = useState<GitLogFilter>(EMPTY_GIT_LOG_FILTER)
-  const selection = useGitLogSelection()
-  const selectedId = selection.selectedId
   const listRef = useRef<HTMLDivElement | null>(null)
   const gridTemplateColumns = useGitLogGridTemplate()
   const { rootRef, branchTreeResize, detailsResize } = useGitLogColumnResize()
@@ -153,6 +152,16 @@ export function GitLogView(): React.JSX.Element {
     )
     return viewModels.filter((vm) => matchingIds.has(vm.historyItem.id))
   }, [filter, filterActive, viewModels])
+  const logOrder = useMemo(
+    () => visibleViewModels.map((vm) => vm.historyItem.id),
+    [visibleViewModels]
+  )
+  const selection = useGitLogSelection(logOrder)
+  const selectedId = selection.selectedId
+  const selectedItems = selection.orderedIds.flatMap(
+    (id) => visibleViewModels.find((vm) => vm.historyItem.id === id)?.historyItem ?? []
+  )
+  const compareContext = useGitLogCompareContext(worktree)
   const selectedItem =
     visibleViewModels.find((vm) => vm.historyItem.id === selectedId)?.historyItem ?? null
 
@@ -185,24 +194,10 @@ export function GitLogView(): React.JSX.Element {
     }
   }
 
-  const logOrder = useMemo(
-    () => visibleViewModels.map((vm) => vm.historyItem.id),
-    [visibleViewModels]
-  )
   const handleCompare: GitLogCompareHandler = (base, target) => {
-    if (!worktree.worktreeId || !worktree.worktreePath) {
-      return
+    if (compareContext) {
+      void openGitLogCompare(compareContext, base, target)
     }
-    void openGitLogCompare(
-      {
-        settings: worktree.repoSettings,
-        worktreeId: worktree.worktreeId,
-        worktreePath: worktree.worktreePath,
-        connectionId: getConnectionId(worktree.worktreeId) ?? undefined
-      },
-      base,
-      target
-    )
   }
 
   const loading = state.status === 'loading' || state.status === 'refreshing'
@@ -389,12 +384,16 @@ export function GitLogView(): React.JSX.Element {
               label={translate('bottomPanel.gitLog.resizeDetails', 'Resize commit details')}
               handleProps={detailsResize.handleProps}
             />
-            <GitLogCommitDetails
-              item={selectedItem}
-              loadCommitFiles={commitActions.loadCommitFiles}
-              onOpenFile={commitActions.openCommitFile}
-              onOpenAll={(item) => void commitActions.openHistoryCommitDiff(item)}
-            />
+            {selectedItems.length > 1 ? (
+              <GitLogRangeDetails items={selectedItems} context={compareContext} />
+            ) : (
+              <GitLogCommitDetails
+                item={selectedItem}
+                loadCommitFiles={commitActions.loadCommitFiles}
+                onOpenFile={commitActions.openCommitFile}
+                onOpenAll={(item) => void commitActions.openHistoryCommitDiff(item)}
+              />
+            )}
           </div>
         </div>
       </div>

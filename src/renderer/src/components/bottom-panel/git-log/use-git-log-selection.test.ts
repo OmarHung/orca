@@ -1,27 +1,50 @@
 import { describe, expect, it } from 'vitest'
-import { isToggleSelectionClick, nextGitLogSelection } from './use-git-log-selection'
+import {
+  isToggleSelectionClick,
+  nextGitLogSelection,
+  type GitLogSelection
+} from './use-git-log-selection'
 
-const NONE = { primary: null, secondary: null }
+const LOG = ['e', 'd', 'c', 'b', 'a']
+const NONE: GitLogSelection = { ids: [], primary: null, anchor: null }
+const CLICK = { toggle: false, range: false }
+const TOGGLE = { toggle: true, range: false }
+const RANGE = { toggle: false, range: true }
+
+function clicks(...steps: [string, typeof CLICK][]): GitLogSelection {
+  return steps.reduce(
+    (selection, [id, modifiers]) => nextGitLogSelection(selection, id, modifiers, LOG),
+    NONE
+  )
+}
 
 describe('nextGitLogSelection', () => {
   it('replaces the selection on a plain click', () => {
-    expect(nextGitLogSelection({ primary: 'a', secondary: 'b' }, 'c', false)).toEqual({
+    expect(clicks(['d', CLICK], ['b', CLICK])).toEqual({ ids: ['b'], primary: 'b', anchor: 'b' })
+  })
+
+  it('adds and removes commits with ⌘/Ctrl, without a limit', () => {
+    expect(clicks(['e', CLICK], ['c', TOGGLE], ['a', TOGGLE]).ids).toEqual(['e', 'c', 'a'])
+    expect(clicks(['e', CLICK], ['c', TOGGLE], ['e', TOGGLE])).toEqual({
+      ids: ['c'],
       primary: 'c',
-      secondary: null
+      anchor: 'c'
     })
   })
 
-  it('adds a second commit on a toggle click and drops the oldest after that', () => {
-    const one = nextGitLogSelection(NONE, 'a', false)
-    const two = nextGitLogSelection(one, 'b', true)
-    expect(two).toEqual({ primary: 'b', secondary: 'a' })
-    expect(nextGitLogSelection(two, 'c', true)).toEqual({ primary: 'c', secondary: 'b' })
+  it('selects a contiguous range with Shift from the last plain or ⌘ click', () => {
+    expect(clicks(['d', CLICK], ['a', RANGE]).ids).toEqual(['d', 'c', 'b', 'a'])
+    expect(clicks(['b', CLICK], ['e', RANGE]).ids).toEqual(['e', 'd', 'c', 'b'])
+    expect(clicks(['e', CLICK], ['c', TOGGLE], ['a', RANGE]).ids).toEqual(['c', 'b', 'a'])
   })
 
-  it('removes a selected commit on a toggle click', () => {
-    const two = { primary: 'b', secondary: 'a' }
-    expect(nextGitLogSelection(two, 'b', true)).toEqual({ primary: 'a', secondary: null })
-    expect(nextGitLogSelection(two, 'a', true)).toEqual({ primary: 'b', secondary: null })
+  it('adds a range to the selection with ⌘/Ctrl+Shift', () => {
+    expect(clicks(['e', CLICK], ['c', TOGGLE], ['a', { toggle: true, range: true }]).ids).toEqual([
+      'e',
+      'c',
+      'b',
+      'a'
+    ])
   })
 })
 
