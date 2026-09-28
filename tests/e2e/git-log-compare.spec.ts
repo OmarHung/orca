@@ -103,4 +103,23 @@ test('compares two commits and two branches from the Git Log context menus', asy
       commitOid: side,
       paths: ['alpha.txt', 'beta.txt', 'gamma.txt']
     })
+
+  // Several selected commits show the files changed across the span they cover.
+  const initial = git('rev-parse', `${alpha}^`)
+  await row('fix: tweak alpha').click()
+  await row('feat: add alpha').click({ modifiers: ['Shift'] })
+  const range = panel.getByTestId('git-log-range-details')
+  await expect(range).toContainText('3 commits · 2 changed files')
+  await expect(range).toContainText(`Changes from ${initial.slice(0, 7)} to ${tweak.slice(0, 7)}`)
+  await row('feat: add beta').click({ modifiers: ['ControlOrMeta'] })
+  await expect(range).toContainText('2 commits · 2 changed files')
+  await range.getByText('Open all changes together').click()
+  await expect
+    .poll(() => readCompareTabs(orcaPage))
+    .toContainEqual({
+      label: `Compare ${initial.slice(0, 7)} → ${tweak.slice(0, 7)}`,
+      parentOid: initial,
+      commitOid: tweak,
+      paths: ['alpha.txt', 'beta.txt']
+    })
 })
