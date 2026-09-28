@@ -21,6 +21,8 @@ import { EditorMarkdownFileSurface } from './EditorMarkdownFileSurface'
 import type { MarkdownRenderState } from './markdown-render-mode'
 import { getChangeMarkersBaseline } from './change-markers/change-markers-baseline'
 import { canUseChangesModeForFile } from './editor-panel-file-mode'
+import { RevisionCompareView } from './revision-compare/RevisionCompareView'
+import { useRevisionCompareStore } from './revision-compare/revision-compare-store'
 
 const noopEditorContentChange = (_content: string): void => {}
 const noopEditorSave = async (_content: string): Promise<boolean> => false
@@ -94,6 +96,8 @@ export function EditorEditFileSurface({
   handleSave: (content: string) => Promise<boolean>
   reloadContent: (file: OpenFile) => void
 }): React.JSX.Element {
+  // Why before the early returns: hooks must run on every render.
+  const revisionBaseline = useRevisionCompareStore((s) => s.baselineByFileId[activeFile.id])
   if (activeFile.conflict?.kind === 'conflict-placeholder') {
     return <ConflictPlaceholderView file={activeFile} />
   }
@@ -144,6 +148,30 @@ export function EditorEditFileSurface({
         reloadContent={reloadContent}
       />
     ) : null
+
+  if (revisionBaseline) {
+    const compareView = (
+      <RevisionCompareView
+        file={activeFile}
+        baseline={revisionBaseline}
+        modifiedContent={currentContent}
+        language={monacoLanguage}
+        sideBySide={sideBySide}
+        viewStateScopeId={viewStateScopeId}
+        diffViewStateKey={diffViewStateKey}
+        onContentChange={handleContentChange}
+        onSave={isMarkdown ? markdownDocuments.mdSave : handleSave}
+      />
+    )
+    return externalChangeBanner ? (
+      <div className="flex flex-1 min-h-0 flex-col">
+        {externalChangeBanner}
+        <div className="min-h-0 flex-1">{compareView}</div>
+      </div>
+    ) : (
+      compareView
+    )
+  }
 
   if (isChangesMode) {
     const changesView = (
@@ -223,7 +251,7 @@ export function EditorEditFileSurface({
         }
         markdownDocuments={isMarkdown ? markdownDocuments.markdownDocuments : undefined}
         changeMarkersBaseline={showChangeMarkers ? getChangeMarkersBaseline(diffContent) : null}
-        inlineBlameRelativePath={
+        gitRelativePath={
           canUseChangesModeForFile(activeFile) && activeFile.readOnly !== true
             ? activeFile.relativePath
             : null
