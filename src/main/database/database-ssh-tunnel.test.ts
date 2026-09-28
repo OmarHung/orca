@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { SshConnection } from '../ssh/ssh-connection'
 import { SshPortForwardManager } from '../ssh/ssh-port-forward'
 import type {
@@ -24,7 +24,9 @@ function fakeConnection(forwardOut: ForwardOut | null): SshConnection {
   return connection as unknown as SshConnection
 }
 
-function setup(options: { label?: string | null; forwardOut?: ForwardOut | null } = {}) {
+function setup(
+  options: { label?: string | null; forwardOut?: ForwardOut | null; closeFails?: boolean } = {}
+) {
   const started: PortForwardStartOptions[] = []
   const closed: string[] = []
   const resets: AbortController[] = []
@@ -36,7 +38,12 @@ function setup(options: { label?: string | null; forwardOut?: ForwardOut | null 
       const { id, connectionId, localPort, remoteHost, remotePort } = forward
       return {
         entry: { id, connectionId, localPort, remoteHost, remotePort },
-        close: async () => void closed.push(id),
+        close: async () => {
+          closed.push(id)
+          if (options.closeFails) {
+            throw new Error('ssh -O cancel failed')
+          }
+        },
         dispose: () => undefined
       }
     }
@@ -113,6 +120,44 @@ describe('database SSH tunnels', () => {
       { kind: 'unexpected-exit', detail: 'ssh exited with code 255' }
     )
     expect(lost).toEqual(['the SSH tunnel through bastion stopped (ssh exited with code 255).'])
+  })
+
+  it('hands the SSH connection back, and says so, when removing the forward fails', async () => {
+    const { open, released } = setup({ closeFails: true })
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    try {
+      const tunnel = await open(request, () => undefined)
+      await tunnel.close()
+      expect(released).toEqual(['ssh-1'])
+      expect(warn).toHaveBeenCalledWith(
+        '[database] closing the SSH tunnel failed',
+        expect.objectContaining({ message: 'ssh -O cancel failed' })
+      )
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('closes a reset tunnel without an unhandled rejection when removing its forward fails', async () => {
+    const { open, resets, released } = setup({ closeFails: true })
+    const unhandled: unknown[] = []
+    const onUnhandled = (reason: unknown): void => void unhandled.push(reason)
+    process.on('unhandledRejection', onUnhandled)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    try {
+      await open(request, () => undefined)
+      resets[0]?.abort()
+      await new Promise((resolve) => setImmediate(resolve))
+      expect(unhandled).toEqual([])
+      expect(released).toEqual(['ssh-1'])
+      expect(warn).toHaveBeenCalledWith(
+        '[database] closing the SSH tunnel failed',
+        expect.objectContaining({ message: 'ssh -O cancel failed' })
+      )
+    } finally {
+      process.off('unhandledRejection', onUnhandled)
+      warn.mockRestore()
+    }
   })
 
   it('refuses a connection whose SSH host was removed', async () => {
