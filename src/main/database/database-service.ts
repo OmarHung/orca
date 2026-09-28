@@ -30,12 +30,14 @@ import type { DatabaseQueryHistory } from './database-query-history'
 import { NO_SECURE_PASSWORD_STORAGE, type DatabasePasswordVault } from './database-password-vault'
 import type { DatabaseSessionManager } from './database-session-manager'
 
-// 28P01 invalid_password, 28000 invalid_authorization_specification.
-const AUTH_SQLSTATES = new Set(['28P01', '28000'])
-const MISSING_PASSWORD_MESSAGE = /password must be a string|password authentication failed/i
+// 28P01 invalid_password, 28000 invalid_authorization_specification, SQL Server's 18456.
+const AUTH_SQLSTATES = new Set(['28P01', '28000', '18456'])
+const MISSING_PASSWORD_MESSAGE =
+  /password must be a string|password authentication failed|Login failed for user/i
 
 function isPasswordRejection(error: DatabaseError): boolean {
   return (
+    error.code === 'password-required' ||
     (error.sqlState !== undefined && AUTH_SQLSTATES.has(error.sqlState)) ||
     MISSING_PASSWORD_MESSAGE.test(error.message)
   )

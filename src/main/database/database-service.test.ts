@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { DatabaseConnectionDraft } from '../../shared/database/database-connection-types'
-import type { DatabaseResult } from '../../shared/database/database-query-types'
+import type { DatabaseError, DatabaseResult } from '../../shared/database/database-query-types'
 import type { SecretStore } from '../../shared/secret-store'
 import { DatabaseConnectionStore } from './database-connection-store'
 import { DatabaseConsoleFiles } from './database-console-files'
@@ -41,12 +41,14 @@ describe('DatabaseService', () => {
   let connectPasswords: (string | null)[]
   let workerCommands: string[]
   let acceptedPassword: string
+  let rejection: DatabaseError
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'orca-db-service-'))
     connectPasswords = []
     workerCommands = []
     acceptedPassword = 'right'
+    rejection = { message: 'password authentication failed', sqlState: '28P01' }
   })
 
   afterEach(() => rmSync(dir, { recursive: true, force: true }))
@@ -59,7 +61,7 @@ describe('DatabaseService', () => {
     connectPasswords.push(command.password)
     return command.password === acceptedPassword
       ? { ok: true, value: { serverVersion: '17.0' } }
-      : { ok: false, error: { message: 'password authentication failed', sqlState: '28P01' } }
+      : { ok: false, error: rejection }
   }
 
   function createService(encryption = true): DatabaseService {
@@ -105,6 +107,55 @@ describe('DatabaseService', () => {
     expect(connectPasswords).toEqual(['wrong', 'right'])
     // The prompted password replaces the stale one for a "forever" connection.
     expect(createService().listConnections()[0]?.hasSavedPassword).toBe(true)
+  })
+
+  it('asks for a password when SQL Server refuses the login, however the refusal arrives', async () => {
+    const sqlServer: DatabaseConnectionDraft = {
+      driver: 'sqlserver',
+      name: 'Orders',
+      host: 'db',
+      port: 1433,
+      database: 'orders',
+      user: 'sa',
+      sslMode: 'disable',
+      passwordStorage: 'forever'
+    }
+    const refusals: DatabaseError[] = [
+      // What the worker sends for tedious' ELOGIN with the server's 18456.
+      { message: "Login failed for user 'sa'.", sqlState: '18456', code: 'password-required' },
+      { message: 'Login failed.', code: 'password-required' },
+      { message: 'Login failed.', sqlState: '18456' },
+      { message: "Login failed for user 'sa'." }
+    ]
+    for (const refusal of refusals) {
+      rejection = refusal
+      const service = createService()
+      const saved = await service.saveConnection({ draft: sqlServer, password: 'wrong' })
+      if (!saved.ok) {
+        throw new Error(saved.error.message)
+      }
+      expect(await service.connect(saved.value.id), JSON.stringify(refusal)).toMatchObject({
+        ok: false,
+        error: { code: 'password-required', message: refusal.message }
+      })
+      expect((await service.connect(saved.value.id, 'right')).ok).toBe(true)
+      await service.deleteConnection(saved.value.id)
+    }
+
+    // A server that can't be reached is not a password problem.
+    rejection = {
+      message: 'Failed to connect to db:1433 - connect ECONNREFUSED',
+      code: 'unavailable'
+    }
+    const service = createService()
+    const saved = await service.saveConnection({ draft: sqlServer, password: 'wrong' })
+    if (!saved.ok) {
+      throw new Error(saved.error.message)
+    }
+    expect(await service.connect(saved.value.id)).toMatchObject({
+      ok: false,
+      error: { code: 'unavailable' }
+    })
   })
 
   it('refuses a "forever" password without OS encryption and saves nothing', async () => {
