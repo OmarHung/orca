@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { translate } from '@/i18n/i18n'
 import { createBrowserUuid } from '@/lib/browser-uuid'
 import type { DatabaseDdlTarget } from '../../../../shared/database/database-ddl-types'
+import type { DatabasePropertiesTarget } from '../../../../shared/database/database-properties-types'
 import { useDatabaseConsoleRunStore } from './console/database-console-run-store'
 import { findDatabaseConnection, useDatabaseConnectionsStore } from './database-connections-store'
 import {
@@ -19,18 +20,27 @@ type DatabaseDialogsState = {
   connectionEditor: ConnectionEditorTarget | null
   deletingConnectionId: string | null
   ddlRequest: { id: string; connectionId: string; target: DatabaseDdlTarget; title: string } | null
+  propertiesRequest: {
+    id: string
+    connectionId: string
+    target: DatabasePropertiesTarget
+    title: string
+  } | null
   openConnectionEditor: (target: ConnectionEditorTarget) => void
   closeConnectionEditor: () => void
   askToDeleteConnection: (connectionId: string) => void
   cancelDeleteConnection: () => void
   showDdl: (connectionId: string, target: DatabaseDdlTarget, name: string) => void
   closeDdl: () => void
+  showProperties: (connectionId: string, target: DatabasePropertiesTarget, name: string) => void
+  closeProperties: () => void
 }
 
 export const useDatabaseDialogsStore = create<DatabaseDialogsState>((set) => ({
   connectionEditor: null,
   deletingConnectionId: null,
   ddlRequest: null,
+  propertiesRequest: null,
   openConnectionEditor: (target) => set({ connectionEditor: target }),
   closeConnectionEditor: () => set({ connectionEditor: null }),
   askToDeleteConnection: (connectionId) => set({ deletingConnectionId: connectionId }),
@@ -44,7 +54,17 @@ export const useDatabaseDialogsStore = create<DatabaseDialogsState>((set) => ({
         title: translate('database.ddl.title', 'DDL of {{value0}}', { value0: name })
       }
     }),
-  closeDdl: () => set({ ddlRequest: null })
+  closeDdl: () => set({ ddlRequest: null }),
+  showProperties: (connectionId, target, name) =>
+    set({
+      propertiesRequest: {
+        id: createBrowserUuid(),
+        connectionId,
+        target,
+        title: translate('database.properties.title', 'Properties of {{value0}}', { value0: name })
+      }
+    }),
+  closeProperties: () => set({ propertiesRequest: null })
 }))
 
 /** Opens a console; one opened from a schema (MySQL database) starts in it. */

@@ -5,6 +5,10 @@ import type {
   DatabaseIntrospectResult,
   DatabaseIntrospectTarget
 } from '../../shared/database/database-introspection-types'
+import type {
+  DatabaseObjectProperties,
+  DatabasePropertiesTarget
+} from '../../shared/database/database-properties-types'
 import type { DatabaseHistoryEntry } from '../../shared/database/database-query-history-types'
 import type {
   DatabaseExecuteResult,
@@ -52,6 +56,11 @@ export type DatabaseApi = {
   ) => Promise<DatabaseResult<DatabaseIntrospectResult>>
   /** CREATE statements for a table, view or routine. */
   ddl: (connectionId: string, target: DatabaseDdlTarget) => Promise<DatabaseResult<string>>
+  /** Settings of the server, a database, schema, table or view: engine, collation, sizes… */
+  properties: (
+    connectionId: string,
+    target: DatabasePropertiesTarget
+  ) => Promise<DatabaseResult<DatabaseObjectProperties>>
   execute: (request: DatabaseExecuteRequest) => Promise<DatabaseResult<DatabaseExecuteResult>>
   fetchMore: (request: DatabaseFetchMoreRequest) => Promise<DatabaseResult<DatabaseRowsPage>>
   /** Slices of values a result shipped only as previews, for copy and export. */

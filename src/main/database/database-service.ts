@@ -10,6 +10,10 @@ import type {
   DatabaseIntrospectTarget
 } from '../../shared/database/database-introspection-types'
 import type {
+  DatabaseObjectProperties,
+  DatabasePropertiesTarget
+} from '../../shared/database/database-properties-types'
+import type {
   DatabaseError,
   DatabaseExecuteResult,
   DatabaseLongValues,
@@ -181,6 +185,13 @@ export class DatabaseService {
   async ddl(connectionId: string, target: DatabaseDdlTarget): Promise<DatabaseResult<string>> {
     const result = await this.deps.sessions.request(connectionId, { type: 'ddl', target })
     return result.ok ? { ok: true, value: result.value.ddl } : result
+  }
+
+  properties(
+    connectionId: string,
+    target: DatabasePropertiesTarget
+  ): Promise<DatabaseResult<DatabaseObjectProperties>> {
+    return this.deps.sessions.request(connectionId, { type: 'properties', target })
   }
 
   async execute(request: DatabaseExecuteRequest): Promise<DatabaseResult<DatabaseExecuteResult>> {

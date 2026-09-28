@@ -3,6 +3,7 @@ import {
   Copy,
   FileDown,
   FileCode2,
+  Info,
   Pencil,
   Plug,
   RefreshCw,
@@ -28,11 +29,65 @@ import {
 } from '../database-page-actions'
 import { useDatabaseExplorerStore } from './database-explorer-store'
 import { useDatabaseJobsStore, type DatabaseDumpScope } from '../jobs/database-jobs-store'
+import type { DatabasePropertiesTarget } from '../../../../../shared/database/database-properties-types'
 import { qualifiedRelationName } from '../../../../../shared/database/sql-identifiers'
 import { isExpandableNode, type DatabaseExplorerNode } from './database-explorer-tree'
 
 function copy(text: string): void {
   void window.api.ui.writeClipboardText(text)
+}
+
+type PropertiesNode = Extract<
+  DatabaseExplorerNode,
+  { kind: 'connection' | 'database' | 'schema' | 'relation' }
+>
+
+function hasProperties(node: DatabaseExplorerNode): node is PropertiesNode {
+  return (
+    node.kind === 'connection' ||
+    node.kind === 'database' ||
+    node.kind === 'schema' ||
+    node.kind === 'relation'
+  )
+}
+
+/** What Properties reads for `node`, and the name its dialog shows. */
+function propertiesOf(node: PropertiesNode): { target: DatabasePropertiesTarget; name: string } {
+  const database = 'database' in node && node.database !== null ? { database: node.database } : {}
+  switch (node.kind) {
+    case 'connection':
+      return {
+        target: { kind: 'server' },
+        name: findDatabaseConnection(node.connectionId)?.name ?? ''
+      }
+    case 'database':
+      return { target: { kind: 'database', database: node.database }, name: node.database }
+    case 'schema':
+      return { target: { kind: 'schema', ...database, schema: node.schema }, name: node.schema }
+    case 'relation':
+      return {
+        target: {
+          kind: 'relation',
+          ...database,
+          schema: node.schema,
+          relation: node.relation.name
+        },
+        name: node.relation.name
+      }
+  }
+}
+
+function PropertiesItem({ node }: { node: PropertiesNode }): React.JSX.Element {
+  const open = (): void => {
+    const { target, name } = propertiesOf(node)
+    useDatabaseDialogsStore.getState().showProperties(node.connectionId, target, name)
+  }
+  return (
+    <ContextMenuItem onSelect={open}>
+      <Info />
+      {translate('database.explorer.properties', 'Properties…')}
+    </ContextMenuItem>
+  )
 }
 
 function ConnectionItems({ connectionId }: { connectionId: string }): React.JSX.Element {
@@ -47,10 +102,13 @@ function ConnectionItems({ connectionId }: { connectionId: string }): React.JSX.
         {translate('database.explorer.newConsole', 'New Console')}
       </ContextMenuItem>
       {connected ? (
-        <ContextMenuItem onSelect={() => void disconnectDatabase(connectionId)}>
-          <Unplug />
-          {translate('database.explorer.disconnect', 'Disconnect')}
-        </ContextMenuItem>
+        <>
+          <ContextMenuItem onSelect={() => void disconnectDatabase(connectionId)}>
+            <Unplug />
+            {translate('database.explorer.disconnect', 'Disconnect')}
+          </ContextMenuItem>
+          <PropertiesItem node={{ kind: 'connection', key: connectionId, connectionId }} />
+        </>
       ) : (
         <ContextMenuItem onSelect={() => void connectDatabase(connectionId)}>
           <Plug />
@@ -228,6 +286,7 @@ export function DatabaseExplorerContextMenu({
           {translate('database.explorer.showDdl', 'Show DDL')}
         </ContextMenuItem>
       ) : null}
+      {hasProperties(node) && node.kind !== 'connection' ? <PropertiesItem node={node} /> : null}
       {text !== null ? (
         <ContextMenuItem onSelect={() => copy(text)}>
           <Copy />
