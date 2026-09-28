@@ -33,7 +33,9 @@ export const databaseDumpOptionsSchema = z
     layout: z.enum(['single-file', 'file-per-table']),
     rowsPerInsert: z.number().int().min(1).max(DATABASE_DUMP_MAX_ROWS_PER_INSERT),
     /** DROP … IF EXISTS before each CREATE. */
-    dropExisting: z.boolean()
+    dropExisting: z.boolean(),
+    /** `native` runs pg_dump or mysqldump; absent is Orca's own. */
+    engine: z.enum(['builtin', 'native']).optional()
   })
   .strict()
 
@@ -44,7 +46,12 @@ export const databaseDumpRequestSchema = z
     /** The database to read (PostgreSQL, SQL Server); absent keeps the connection's. */
     database: nameSchema.optional(),
     objects: z.array(databaseDumpObjectSchema).min(1).max(10_000),
-    options: databaseDumpOptionsSchema
+    options: databaseDumpOptionsSchema,
+    /**
+     * Schemas whose every object is in `objects`. Native tools dump those whole (with their
+     * types and functions) and can only pick single tables elsewhere.
+     */
+    completeSchemas: z.array(nameSchema).max(10_000).optional()
   })
   .strict()
 
@@ -55,7 +62,8 @@ export type DatabaseDumpProgress = {
   tablesDone: number
   tableCount: number
   currentTable: string | null
-  rows: number
+  /** Null when a native tool writes the rows and doesn't report how many. */
+  rows: number | null
   bytes: number
 }
 
@@ -63,7 +71,7 @@ export type DatabaseDumpSummary = {
   cancelled: boolean
   files: string[]
   tables: number
-  rows: number
+  rows: number | null
   bytes: number
   durationMs: number
   /** Things the dump could not carry over, e.g. a column type it wrote as text. */
@@ -99,3 +107,16 @@ export type DatabaseDumpJobRequest = DatabaseJobRef & {
 }
 
 export const DATABASE_JOB_ID_PATTERN = /^[A-Za-z0-9-]{8,64}$/
+
+export type DatabaseDumpToolKind = 'pg_dump' | 'mysqldump' | 'mariadb-dump'
+
+/** The native dump tool Orca would run for a connection. */
+export type DatabaseDumpTool = {
+  kind: DatabaseDumpToolKind
+  /** Whose client it is: a `mysqldump` can come from MariaDB, which takes other SSL options. */
+  flavor: 'postgres' | 'mysql' | 'mariadb'
+  path: string
+  version: string
+  /** Why it can't dump this server (e.g. a pg_dump older than the server); null when it can. */
+  problem: string | null
+}
