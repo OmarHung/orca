@@ -136,8 +136,14 @@ export function createDatabaseTunnelOpener(
       open = false
       stopped.delete(entry.id)
       unwatch()
-      await forwards.removeForwardAndWait(entry.id)
-      release()
+      try {
+        await forwards.removeForwardAndWait(entry.id)
+      } catch (error) {
+        // Why not rethrow: the session is gone either way, and several callers close with `void`.
+        console.warn('[database] closing the SSH tunnel failed', error)
+      } finally {
+        release()
+      }
     }
     // Why "no longer available": a dropped SSH link says nothing about the server itself.
     const lose = (message: string): void => {
