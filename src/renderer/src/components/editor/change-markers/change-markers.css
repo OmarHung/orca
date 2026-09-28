@@ -1,0 +1,84 @@
+/* Change-marker gutter (JetBrains-style) and its inline HEAD preview. */
+
+.monaco-editor .margin-view-overlays .orca-change-marker {
+  cursor: pointer;
+}
+
+.monaco-editor .orca-change-marker-added::before,
+.monaco-editor .orca-change-marker-modified::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 1px;
+  width: 3px;
+}
+
+.monaco-editor .orca-change-marker-added::before {
+  background: var(--git-decoration-added);
+}
+
+.monaco-editor .orca-change-marker-modified::before {
+  background: var(--git-decoration-modified);
+}
+
+/* Removed lines sit between two buffer lines, so mark the boundary with a wedge. */
+.monaco-editor .orca-change-marker-deleted::before {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 1px;
+  z-index: 1;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid var(--git-decoration-deleted);
+}
+
+.monaco-editor .orca-change-marker-deleted-top::before {
+  top: 0;
+  bottom: auto;
+}
+
+.monaco-editor .orca-change-marker-current-line,
+.monaco-editor .orca-change-marker-current-margin {
+  background: var(--diff-added-ground);
+}
+
+.monaco-editor .orca-change-marker-current-text {
+  background: color-mix(in srgb, var(--git-decoration-added) 32%, transparent);
+}
+
+.monaco-editor .orca-change-marker-original-line {
+  background: var(--diff-removed-ground);
+}
+
+.monaco-editor .orca-change-marker-original-text {
+  background: color-mix(in srgb, var(--git-decoration-deleted) 34%, transparent);
+}
+
+.orca-change-marker-peek {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Why: Monaco's view-lines layer sits above view-zone DOM and would swallow
+   clicks on the toolbar and text selection in the HEAD lines. */
+.orca-change-marker-peek > * {
+  position: relative;
+  z-index: 1;
+}
+
+.orca-change-marker-peek-margin {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.orca-change-marker-peek-margin-lines {
+  background: var(--diff-removed-ground);
+  color: var(--muted-foreground);
+  text-align: right;
+  box-sizing: border-box;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}

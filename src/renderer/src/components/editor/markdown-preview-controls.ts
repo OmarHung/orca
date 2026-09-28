@@ -13,8 +13,12 @@ const CSV_VIEW_MODES = ['source', 'rich'] as const satisfies readonly MarkdownVi
 const NOTEBOOK_VIEW_MODES = ['source', 'rich'] as const satisfies readonly MarkdownViewMode[]
 const NO_VIEW_MODES = [] as const satisfies readonly MarkdownViewMode[]
 
-// Expose Changes alongside language modes in one control; diff/conflict tabs already provide review surfaces.
-const CODE_EDIT_TOGGLE_MODES = ['edit', 'changes'] as const satisfies readonly EditorToggleValue[]
+// Expose Changes and Markers alongside language modes in one control; diff/conflict tabs already provide review surfaces.
+const CODE_EDIT_TOGGLE_MODES = [
+  'edit',
+  'changes',
+  'markers'
+] as const satisfies readonly EditorToggleValue[]
 
 export function getEditorToggleModes(target: MarkdownPreviewTarget): readonly EditorToggleValue[] {
   if (target.mode !== 'edit') {
@@ -26,7 +30,7 @@ export function getEditorToggleModes(target: MarkdownPreviewTarget): readonly Ed
   }
   const languageModes = getMarkdownViewModes(target)
   if (languageModes.length > 0) {
-    return [...languageModes, 'changes']
+    return [...languageModes, 'changes', 'markers']
   }
   return CODE_EDIT_TOGGLE_MODES
 }

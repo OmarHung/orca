@@ -26,6 +26,7 @@ import { snapshotMonacoViewState } from './monaco-view-state-persistence'
 import { MonacoMarkdownAnnotationOverlay } from './MonacoMarkdownAnnotationOverlay'
 import { useEditorModelRekeyCarry } from './editor-model-rekey-carry'
 import { useMonacoDebugDecorations } from '../debug/use-monaco-debug-decorations'
+import { useMonacoChangeMarkers } from './change-markers/use-monaco-change-markers'
 
 type MonacoEditorProps = {
   fileId: string
@@ -50,6 +51,8 @@ type MonacoEditorProps = {
   passiveMirror?: boolean
   liveTail?: boolean
   autoHeight?: boolean
+  // Why: HEAD text for the change-marker gutter; null/undefined leaves the gutter plain.
+  changeMarkersBaseline?: string | null
 }
 
 export default function MonacoEditor({
@@ -72,7 +75,8 @@ export default function MonacoEditor({
   readOnly = false,
   passiveMirror = false,
   liveTail = false,
-  autoHeight = false
+  autoHeight = false,
+  changeMarkersBaseline = null
 }: MonacoEditorProps): React.JSX.Element {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
   const editorContainerRef = useRef<HTMLDivElement | null>(null)
@@ -184,6 +188,7 @@ export default function MonacoEditor({
   }, [editorFontFamily, editorFontSize, editorWordWrap, readOnly])
 
   useMonacoDebugDecorations(mountedEditor, filePath, language)
+  useMonacoChangeMarkers(mountedEditor, changeMarkersBaseline, language, isDark)
 
   const decorations = useMonacoEditorDecorations({
     editorRef,

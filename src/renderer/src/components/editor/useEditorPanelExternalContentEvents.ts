@@ -139,7 +139,8 @@ export function useEditorPanelExternalContentEvents({
         if (file.mode === 'edit' || file.mode === 'markdown-preview') {
           // External changes must supersede reads started before the write instead of reusing stale dedupe results.
           reloads.run(`content:${file.id}`, () => runContentReload(file.id, eventGeneration))
-          if (editorViewModeRef.current[file.id] === 'changes') {
+          const viewMode = editorViewModeRef.current[file.id]
+          if (viewMode === 'changes' || viewMode === 'markers') {
             reloads.run(`diff:${file.id}`, () => runDiffReload(file.id, eventGeneration))
           } else {
             invalidatedDiffFileIds.push(file.id)
