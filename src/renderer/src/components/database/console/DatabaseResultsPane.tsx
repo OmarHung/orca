@@ -86,7 +86,12 @@ export function DatabaseResultsPane({ tab }: { tab: DatabaseRunTarget }): React.
             exportTarget={{
               table: RESULT_INSERT_TABLE,
               driver: findDatabaseConnection(tab.connectionId)?.driver ?? 'postgres',
-              fileName: 'result'
+              fileName: 'result',
+              result: {
+                connectionId: tab.connectionId,
+                consoleId: tab.consoleId,
+                resultId: active.result.resultId
+              }
             }}
           />
         ) : (

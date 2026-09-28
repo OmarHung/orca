@@ -123,7 +123,7 @@ export function DatabaseResultGrid({
   const bounds = selection ? selectionBounds(selection) : null
   const copySelection = (format: GridCopyFormat): void => {
     if (bounds) {
-      copyGridText(gridExportSlice(columns, rows, displayOrder, bounds), format, exportTarget)
+      void copyGridText(gridExportSlice(columns, rows, displayOrder, bounds), format, exportTarget)
     }
   }
   const exportLoaded = (format: DatabaseExportFormat): void =>
