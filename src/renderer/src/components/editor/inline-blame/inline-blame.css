@@ -1,0 +1,8 @@
+/* Current-line blame annotation after the caret line's end (GitLens-style). */
+.monaco-editor .orca-inline-blame {
+  margin-left: 3em;
+  color: var(--muted-foreground);
+  opacity: 0.7;
+  font-style: italic;
+  white-space: pre;
+}

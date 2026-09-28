@@ -21,6 +21,7 @@ import {
   GitBranchStatusSettings,
   gitBranchStatusSettingsMatchSearch
 } from './GitBranchStatusSettings'
+import { GitInlineBlameSetting, gitInlineBlameSettingMatchesSearch } from './GitInlineBlameSetting'
 import {
   KEEP_LOCAL_MAIN_UP_TO_DATE_SECTION_ID,
   getKeepLocalMainUpToDateTitle
@@ -305,6 +306,13 @@ export function GitPane({
     }) ? (
       <SourceControlGroupOrderSetting
         key="source-control-group-order"
+        settings={settings}
+        updateSettings={updateSettings}
+      />
+    ) : null,
+    gitInlineBlameSettingMatchesSearch(searchQuery) ? (
+      <GitInlineBlameSetting
+        key="git-inline-blame"
         settings={settings}
         updateSettings={updateSettings}
       />
