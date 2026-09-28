@@ -13,6 +13,7 @@ import {
 } from '../hooks/usePrimarySelectionPaste'
 import { useRadixBodyPointerEventsRecovery } from '../hooks/useRadixBodyPointerEventsRecovery'
 import { useGitStatusPolling } from '../components/right-sidebar/useGitStatusPolling'
+import { useGitAutoFetch } from '../components/git-branch-status/use-git-auto-fetch'
 import { useOsc52ClipboardDefaultOnNotice } from '../components/terminal-pane/osc52-clipboard-default-on-notice'
 import { useWebSessionTabsSync } from '../runtime/web-session-tabs-sync/use-web-session-tabs-sync'
 import { useLocalStructuredSessionTabsSync } from '../runtime/local-structured-session-tabs-sync'
@@ -53,6 +54,7 @@ export function useAppShellServices(): void {
   useAutomationDispatchEvents()
   // Poll above the removable sidebar to keep rebase/merge badges fresh; wait for session readiness to protect first paint.
   useGitStatusPolling({ enabled: workspaceSessionReady })
+  useGitAutoFetch({ enabled: workspaceSessionReady })
   // Watch files above Explorer so editor changes still arrive on Source Control/Checks.
   useEditorExternalWatch()
   useReadOnScreenAttention()

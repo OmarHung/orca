@@ -2681,7 +2681,8 @@
             "ab589350e5": "Could not build launch command for {{value0}}."
           },
           "TabBarQuickCommandsButton": {
-            "c781f992e4": "destructive"
+            "c781f992e4": "destructive",
+            "a2c7a33831": "Command"
           },
           "shell": {
             "icons": {
@@ -3607,6 +3608,11 @@
       "actionPermissions": {
         "sameAsAgent": "Same as {{agent}}"
       }
+    },
+    "appearance": {
+      "language": {
+        "chineseTraditional": "中文（繁體）"
+      }
     }
   },
   "sparsePreset": {
@@ -3644,6 +3650,26 @@
     },
     "matchLabel": {
       "automation": "Run"
+    }
+  },
+  "gitBranchStatus": {
+    "aheadCount_one": "{{count}} commit to push",
+    "aheadCount_other": "{{count}} commits to push",
+    "behindCount_one": "{{count}} commit to pull",
+    "behindCount_other": "{{count}} commits to pull",
+    "changedFiles_one": "{{count}} file with uncommitted changes",
+    "changedFiles_other": "{{count}} files with uncommitted changes",
+    "conflicts_one": "{{count}} file with conflicts",
+    "conflicts_other": "{{count}} files with conflicts"
+  },
+  "run": {
+    "compound": {
+      "detected": "Detected in workspace"
+    },
+    "configurations": {
+      "add": {
+        "compound": "Add compound (start several together or in order)"
+      }
     }
   }
 }
