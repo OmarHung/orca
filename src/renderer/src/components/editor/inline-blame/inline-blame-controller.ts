@@ -14,6 +14,7 @@ import {
 import { setInlineBlameHoverEntry } from './inline-blame-hover'
 import './inline-blame.css'
 
+const ANNOTATION_CLASS = 'orca-inline-blame'
 const CURSOR_SETTLE_MS = 60
 const EDIT_SETTLE_MS = 300
 
@@ -41,6 +42,7 @@ export function createInlineBlameController(
   let renderTimer: ReturnType<typeof setTimeout> | null = null
   let editTimer: ReturnType<typeof setTimeout> | null = null
   let publishedModelUri: string | null = null
+  let detailsRequestedLine: number | null = null
 
   const clearHover = (): void => {
     if (publishedModelUri) {
@@ -98,7 +100,7 @@ export function createInlineBlameController(
           showIfCollapsed: true,
           after: {
             content: formatInlineBlameAnnotation(info, Date.now()),
-            inlineClassName: 'orca-inline-blame',
+            inlineClassName: ANNOTATION_CLASS,
             cursorStops: monaco.editor.InjectedTextCursorStops.None
           }
         }
@@ -109,7 +111,12 @@ export function createInlineBlameController(
       clearHover()
     }
     if (info) {
-      setInlineBlameHoverEntry(modelUri, { line, commit: info, openCommit })
+      setInlineBlameHoverEntry(modelUri, {
+        line,
+        commit: info,
+        detailsRequested: detailsRequestedLine === line,
+        openCommit
+      })
       publishedModelUri = modelUri
     } else {
       clearHover()
@@ -124,7 +131,29 @@ export function createInlineBlameController(
   }
 
   const listeners: IDisposable[] = [
-    host.onDidChangeCursorPosition(() => scheduleRender(CURSOR_SETTLE_MS)),
+    host.onDidChangeCursorPosition((event) => {
+      if (event.position.lineNumber !== detailsRequestedLine) {
+        detailsRequestedLine = null
+      }
+      scheduleRender(CURSOR_SETTLE_MS)
+    }),
+    host.onMouseDown((event) => {
+      const position = host.getPosition()
+      if (
+        !event.event.leftButton ||
+        !position ||
+        !event.target.element?.classList.contains(ANNOTATION_CLASS)
+      ) {
+        return
+      }
+      // Why: the click already put the caret at the line's end, where the hover provider answers.
+      detailsRequestedLine = position.lineNumber
+      if (renderTimer !== null) {
+        clearTimeout(renderTimer)
+      }
+      render()
+      host.trigger('orca.inlineBlame', 'editor.action.showHover', {})
+    }),
     host.onDidChangeModelContent(() => {
       // Why: while typing, the annotation would trail the caret with stale text; bring it back once settled.
       clear()
