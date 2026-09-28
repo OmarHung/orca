@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
@@ -14,8 +14,11 @@ function run(label: string, script: string, extra: string[] = [], tables = 1): N
   return { label, args: ['-e', script, '--', ...extra], prelude: `-- ${label}\n`, tables }
 }
 
-function plan(runs: NativeRun[], changes: Partial<NativeDumpPlan> = {}): NativeDumpPlan {
-  let cleaned = 0
+function plan(
+  runs: NativeRun[],
+  changes: Partial<NativeDumpPlan> = {},
+  onCleanup: () => void = () => undefined
+): NativeDumpPlan {
   return {
     tool: {
       kind: 'pg_dump',
@@ -28,10 +31,7 @@ function plan(runs: NativeRun[], changes: Partial<NativeDumpPlan> = {}): NativeD
     runs,
     notes: ['a note'],
     withoutTls: null,
-    cleanup: async () => {
-      cleaned += 1
-      Object.assign(changes, { cleaned })
-    },
+    cleanup: async () => onCleanup(),
     ...changes
   }
 }
@@ -75,7 +75,7 @@ describe('NativeDumpRunner', () => {
 
   it('fails with the tool’s own words, removes what it wrote, and cleans up', async () => {
     const path = join(dir, 'failed.sql')
-    const changes: Partial<NativeDumpPlan> & { cleaned?: number } = {}
+    let cleaned = 0
     const failing = plan(
       [
         run('one', PRINT('SELECT 1;\n')),
@@ -84,7 +84,8 @@ describe('NativeDumpRunner', () => {
           "process.stderr.write('pg_dump: error: server version mismatch\\n'); process.exit(1)"
         )
       ],
-      changes
+      {},
+      () => (cleaned += 1)
     )
     await expect(
       new NativeDumpRunner({
@@ -96,7 +97,7 @@ describe('NativeDumpRunner', () => {
       }).execute()
     ).rejects.toThrow('pg_dump failed: pg_dump: error: server version mismatch')
     expect(existsSync(path)).toBe(false)
-    expect(changes.cleaned).toBe(1)
+    expect(cleaned).toBe(1)
   })
 
   it('retries without TLS when the plan allows it and nothing was written yet', async () => {
@@ -147,5 +148,54 @@ describe('NativeDumpRunner', () => {
     // A kill the runner wasn't told was a cancel is a failure, not a quiet stop.
     await expect(runner.execute()).rejects.toThrow(/pg_dump failed/)
     expect(existsSync(pushed)).toBe(false)
+  })
+
+  it('cleans up the plan (MySQL’s password file) whether it finishes, fails or is cancelled', async () => {
+    const cleaned: string[] = []
+    const runner = (label: string, script: string, isCancelled: () => boolean) =>
+      new NativeDumpRunner({
+        plan: plan([run(label, script)], {}, () => cleaned.push(label)),
+        output: new DumpOutput({ kind: 'file', path: join(dir, `${label}.sql`) }, 'mysql'),
+        tableCount: 1,
+        onProgress: () => undefined,
+        isCancelled
+      }).execute()
+    await runner('finished', PRINT('SELECT 1;\n'), () => false)
+    await runner('failed', 'process.exit(3)', () => false).catch(() => undefined)
+    let bytes = 0
+    const cancelled = new NativeDumpRunner({
+      plan: plan([run('cancelled', ENDLESS)], {}, () => cleaned.push('cancelled')),
+      output: new DumpOutput({ kind: 'file', path: join(dir, 'cancelled.sql') }, 'mysql'),
+      tableCount: 1,
+      onProgress: (progress) => {
+        bytes = progress.bytes
+      },
+      isCancelled: () => bytes > 1_000_000
+    })
+    expect(await cancelled.execute()).toMatchObject({ cancelled: true })
+    expect(cleaned).toEqual(['finished', 'failed', 'cancelled'])
+  })
+
+  it('leaves the file it would replace as it was when the tool fails partway', async () => {
+    const folder = mkdtempSync(join(dir, 'replace-'))
+    const path = join(folder, 'shop.sql')
+    writeFileSync(path, 'the earlier dump\n')
+    await expect(
+      new NativeDumpRunner({
+        plan: plan([
+          run('one', PRINT('CREATE TABLE people (id int);\n')),
+          run(
+            'two',
+            `${PRINT('INSERT INTO')}; process.stderr.write('lost connection'); process.exit(2)`
+          )
+        ]),
+        output: new DumpOutput({ kind: 'file', path }, 'mysql'),
+        tableCount: 2,
+        onProgress: () => undefined,
+        isCancelled: () => false
+      }).execute()
+    ).rejects.toThrow('lost connection')
+    expect(readFileSync(path, 'utf8')).toBe('the earlier dump\n')
+    expect(readdirSync(folder)).toEqual(['shop.sql'])
   })
 })
