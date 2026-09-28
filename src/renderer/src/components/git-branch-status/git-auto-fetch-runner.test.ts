@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mocks = vi.hoisted(() => ({
-  state: {} as Record<string, unknown>,
-  fetchRuntimeGit: vi.fn(),
-  fetchUpstreamStatus: vi.fn()
-}))
+const mocks = vi.hoisted(() => {
+  const state: Record<string, unknown> = {}
+  return { state, fetchRuntimeGit: vi.fn(), fetchUpstreamStatus: vi.fn() }
+})
 
 vi.mock('@/store', () => ({ useAppStore: { getState: () => mocks.state } }))
 vi.mock('@/store/selectors', () => ({
