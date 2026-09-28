@@ -9,6 +9,8 @@ import {
 export type InlineBlameHoverEntry = {
   line: number
   commit: GitBlameCommit
+  /** Set once the annotation was clicked; the card never opens on a bare hover. */
+  detailsRequested: boolean
   openCommit: (sha: string, summary: string) => void
 }
 
@@ -27,7 +29,11 @@ function install(): void {
       const entry = entriesByModelUri.get(model.uri.toString())
       const maxColumn = entry ? model.getLineMaxColumn(entry.line) : 0
       // Why: only the annotation after the line's end is ours; the code itself keeps its hovers.
-      if (!entry || position.lineNumber !== entry.line || position.column < maxColumn) {
+      if (
+        !entry?.detailsRequested ||
+        position.lineNumber !== entry.line ||
+        position.column < maxColumn
+      ) {
         return null
       }
       return {
