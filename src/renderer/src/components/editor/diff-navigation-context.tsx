@@ -2,9 +2,18 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { editor } from 'monaco-editor'
 import { installMonacoDiffChangeNavigationShortcut } from './editor-shortcuts'
 
+// Why: the change-marker gutter drives the same header controls without a diff editor.
+export type DiffNavigationTarget = Pick<
+  editor.IStandaloneDiffEditor,
+  'getContainerDomNode' | 'goToDiff'
+> & {
+  getLineChanges: () => readonly unknown[] | null
+  onDidUpdateDiff: (listener: () => void) => { dispose: () => void }
+}
+
 export type DiffEditorRegistrationContextValue = {
-  registerDiffEditor: (editor: editor.IStandaloneDiffEditor) => void
-  unregisterDiffEditor: (editor: editor.IStandaloneDiffEditor) => void
+  registerDiffEditor: (editor: DiffNavigationTarget) => void
+  unregisterDiffEditor: (editor: DiffNavigationTarget) => void
 }
 
 export type DiffNavigationContextValue = {
@@ -28,7 +37,7 @@ const DiffNavigationContext = createContext<DiffNavigationContextValue>({
   changeCount: 0
 })
 
-function countChanges(diffEditor: editor.IStandaloneDiffEditor): number {
+function countChanges(diffEditor: DiffNavigationTarget): number {
   return diffEditor.getLineChanges()?.length ?? 0
 }
 
@@ -37,7 +46,7 @@ export function DiffNavigationProvider({
 }: {
   children: React.ReactNode
 }): React.JSX.Element {
-  const editorRef = useRef<editor.IStandaloneDiffEditor | null>(null)
+  const editorRef = useRef<DiffNavigationTarget | null>(null)
   const updateSubRef = useRef<{ dispose: () => void } | null>(null)
   // Why: F7/Shift+F7 change navigation shares the registered editor with the
   // header buttons, so the keyboard listener lives here rather than in DiffViewer.
@@ -47,7 +56,7 @@ export function DiffNavigationProvider({
   // changes on the 0 -> N flip once the diff computation lands.
   const [changeCount, setChangeCount] = useState(0)
 
-  const registerDiffEditor = useCallback((diffEditor: editor.IStandaloneDiffEditor) => {
+  const registerDiffEditor = useCallback((diffEditor: DiffNavigationTarget) => {
     editorRef.current = diffEditor
     // Hold at most one update subscription; replace any prior editor's.
     updateSubRef.current?.dispose()
@@ -64,7 +73,7 @@ export function DiffNavigationProvider({
     setChangeCount(countChanges(diffEditor))
   }, [])
 
-  const unregisterDiffEditor = useCallback((diffEditor: editor.IStandaloneDiffEditor) => {
+  const unregisterDiffEditor = useCallback((diffEditor: DiffNavigationTarget) => {
     // Why: identity guard for the fast-swap race — a stale dispose carrying the
     // old editor must not wipe a freshly-registered new one.
     if (editorRef.current !== diffEditor) {
