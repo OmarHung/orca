@@ -59,9 +59,10 @@ export type DumpSource = {
   beforeRows(table: DumpTableInfo): DumpStatement[]
   afterRows(table: DumpTableInfo): Promise<DumpStatement[]>
   view(view: { schema: string; name: string }): Promise<DumpViewDefinition>
+  /** `create` may set up the session the routine was made in around its CREATE, and put it back. */
   routine(
     routine: Extract<DatabaseDumpObject, { kind: 'routine' }>
-  ): Promise<{ create: DumpStatement; drop: DumpStatement }>
+  ): Promise<{ create: DumpStatement[]; drop: DumpStatement }>
   /** DROP statements for these tables, given in reverse creation order. */
   dropTables(tables: readonly DumpTableInfo[]): DumpStatement[]
   /** Stops a read in flight. */
