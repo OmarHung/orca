@@ -5,6 +5,8 @@ import type { DatabaseDriverSession, OpenDatabaseDriverSession } from './databas
 import { routeThroughTunnel } from './database-connection-route'
 import { toDatabaseError } from './database-error-mapping'
 import { DatabaseWorkerJobs } from './database-worker-jobs'
+import type { NativeDumpTarget } from './dump/native/native-dump-plan'
+import { findDumpTool } from './dump/native/native-dump-tools'
 import type {
   DatabaseWorkerCommand,
   DatabaseWorkerMessage,
@@ -35,6 +37,8 @@ export function createDatabaseWorkerDispatcher(
 ): (request: DatabaseWorkerRequest) => Promise<void> {
   let session: DatabaseDriverSession | null = null
   let driver: DatabaseDriver = 'postgres'
+  // What pg_dump or mysqldump connects to: the same (tunneled) address and password.
+  let nativeTarget: NativeDumpTarget | null = null
   const jobs = new DatabaseWorkerJobs(post)
 
   const requireSession = (): DatabaseDriverSession => {
@@ -53,6 +57,10 @@ export function createDatabaseWorkerDispatcher(
         session = await openSession(connection, command.password, {
           onConnectionLost: (message) => post({ kind: 'connection-lost', message })
         })
+        nativeTarget =
+          connection.driver === 'postgres' || connection.driver === 'mysql'
+            ? { connection, password: command.password, serverVersion: session.serverVersion }
+            : null
         return { serverVersion: session.serverVersion }
       }
       case 'introspect':
@@ -80,13 +88,21 @@ export function createDatabaseWorkerDispatcher(
         await session?.closeConsole(command.consoleId)
         return null
       case 'dump':
-        return jobs.dump(requireSession(), command)
+        return jobs.dump(requireSession(), command, nativeTarget)
       case 'cancelJob':
         return { cancelled: jobs.cancel(command.jobId) }
+      case 'dumpTool':
+        return nativeTarget
+          ? findDumpTool({
+              driver: nativeTarget.connection.driver,
+              serverVersion: nativeTarget.serverVersion
+            })
+          : null
       case 'close': {
         await jobs.stopAll()
         const closing = session
         session = null
+        nativeTarget = null
         await closing?.close()
         return null
       }

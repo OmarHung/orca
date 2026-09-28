@@ -24,6 +24,7 @@ import type {
   DatabaseDumpDestination,
   DatabaseDumpJobRequest,
   DatabaseDumpSummary,
+  DatabaseDumpTool,
   DatabaseJobRef,
   DatabasePickDumpDestinationRequest
 } from '../../shared/database/database-dump-types'
@@ -71,5 +72,7 @@ export type DatabaseApi = {
   /** Resolves when the whole dump ends; progress arrives as `job-progress` events. */
   dump: (request: DatabaseDumpJobRequest) => Promise<DatabaseResult<DatabaseDumpSummary>>
   cancelJob: (ref: DatabaseJobRef) => Promise<boolean>
+  /** The pg_dump or mysqldump a native dump would run; null when none is found or applies. */
+  dumpTool: (connectionId: string) => Promise<DatabaseResult<DatabaseDumpTool | null>>
   onEvent: (callback: (event: DatabasePageEvent) => void) => () => void
 }

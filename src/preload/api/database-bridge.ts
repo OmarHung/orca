@@ -27,6 +27,7 @@ export const databaseApi = {
   pickDumpDestination: (request) => ipcRenderer.invoke('database:pickDumpDestination', request),
   dump: (request) => ipcRenderer.invoke('database:dump', request),
   cancelJob: (ref) => ipcRenderer.invoke('database:cancelJob', ref),
+  dumpTool: (connectionId) => ipcRenderer.invoke('database:dumpTool', connectionId),
   onEvent: (callback) => {
     const listener = (_event: Electron.IpcRendererEvent, event: DatabasePageEvent) =>
       callback(event)
