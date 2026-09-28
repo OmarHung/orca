@@ -197,20 +197,30 @@ describe.skipIf(!SQLSERVER_URL)('SQL Server read-only boundary', () => {
         message: expect.stringMatching(/^Login failed for user/)
       }
     })
-    // SQL Server reports a database it can't open as the same failed login; the reason stays.
+    // A right password with a database SQL Server can't open: 4060 is the reason, not a prompt.
     expect(
       await harness.send({
         type: 'connect',
         connection: inDatabase(at().server.connection, 'orca_no_such_database'),
         password: at().server.password
       })
-    ).toMatchObject({
+    ).toEqual({
       ok: false,
       error: {
-        code: 'password-required',
-        message: expect.stringMatching(/Cannot open database "orca_no_such_database".*Login failed/)
+        sqlState: '4060',
+        message: expect.stringMatching(
+          /^Cannot open database "orca_no_such_database".*Login failed/
+        )
       }
     })
+    // A wrong password to that database still asks: SQL Server checks the password first.
+    expect(
+      await harness.send({
+        type: 'connect',
+        connection: inDatabase(at().server.connection, 'orca_no_such_database'),
+        password: 'nope'
+      })
+    ).toMatchObject({ ok: false, error: { code: 'password-required', sqlState: '18456' } })
   })
 })
 
