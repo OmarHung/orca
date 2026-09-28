@@ -18451,6 +18451,11 @@
     "resize": "Resize bottom panel",
     "hide": "Hide bottom panel",
     "gitLog": {
+      "range": {
+        "summary": "{{commits}} commits · {{files}} changed files",
+        "pending": "{{commits}} commits",
+        "span": "Changes from {{base}} to {{target}}"
+      },
       "compare": {
         "tabLabel": "Compare {{base}} → {{target}}",
         "identical": "Both sides are the same commit.",

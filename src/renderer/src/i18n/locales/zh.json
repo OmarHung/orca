@@ -18451,6 +18451,11 @@
     "resize": "调整底部面板大小",
     "hide": "隐藏底部面板",
     "gitLog": {
+      "range": {
+        "summary": "{{commits}} 个 commit · {{files}} 个文件更改",
+        "pending": "{{commits}} 个 commit",
+        "span": "从 {{base}} 到 {{target}} 的更改"
+      },
       "compare": {
         "tabLabel": "比较 {{base}} → {{target}}",
         "identical": "两边是同一个 commit。",
