@@ -19506,6 +19506,7 @@
     "grid": {
       "copy": "Copy",
       "copyAs": "Copy As",
+      "copyFailed": "Copy failed",
       "copyWithHeaders": "Copy with Headers",
       "exportAs": "{{value0}}…",
       "exportFailed": "Export failed",
@@ -19516,10 +19517,14 @@
       "formatSql": "SQL INSERT",
       "formatTsv": "TSV",
       "null": "NULL",
+      "readingValues": "Reading whole values…",
       "resizeColumn": "Resize column {{value0}}",
       "selectAll": "Select all",
       "showValue": "Show Value",
-      "truncated": "Showing the first {{value0}} of {{value1}} characters"
+      "tooLargeToCopy": "The copy would pass the clipboard’s {{value0}} MB limit. Select less, or export to a file.",
+      "tooLargeToExport": "The export would pass {{value0}} characters. Export fewer rows or columns.",
+      "truncated": "Showing the first {{value0}} of {{value1}} characters",
+      "valuesGone": "Orca no longer holds the whole text of {{value0}} values longer than {{value1}} characters (it keeps a limited amount, newest results first), so nothing was written. Run the query again, then try again."
     },
     "history": {
       "cancelClear": "Cancel",
