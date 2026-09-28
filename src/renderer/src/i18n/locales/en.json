@@ -19361,5 +19361,21 @@
       "forgetFailed": "Couldn't forget the passphrase",
       "loadFailed": "Couldn't load saved passphrases"
     }
+  },
+  "changeMarkers": {
+    "toggleLabel": "Change Markers",
+    "toggleTitle": "Edit with uncommitted changes marked in the gutter",
+    "gutterTooltip": "Click to show what changed",
+    "kind": {
+      "added": "Added",
+      "modified": "Modified",
+      "deleted": "Deleted"
+    },
+    "rollback": "Roll back change",
+    "copyOriginal": "Copy original lines",
+    "copied": "Copied",
+    "close": "Close",
+    "closePreview": "Close Change Preview",
+    "originalAriaLabel": "Lines before this change"
   }
 }

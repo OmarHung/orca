@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   Code,
   Eye,
+  FileDiff,
   FileText,
   GitCompareArrows,
   NotebookText,
@@ -22,7 +23,7 @@ import { translate } from '@/i18n/i18n'
 // once. 'edit' is the code-file counterpart to markdown's 'source' — it means
 // "the normal editor for this file" without implying the markdown source/raw
 // distinction. See reviews/changes-view-mode-plan.md.
-export type EditorToggleValue = MarkdownViewMode | 'edit' | 'changes'
+export type EditorToggleValue = MarkdownViewMode | 'edit' | 'changes' | 'markers'
 
 type ViewModeMetadata = { label: string; icon: LucideIcon; title?: string }
 
@@ -62,6 +63,18 @@ const DEFAULT_VIEW_MODE_METADATA: Record<EditorToggleValue, ViewModeMetadata> = 
     // hover title without repeating the button label.
     get title() {
       return translate('auto.components.editor.EditorViewToggle.167f45888c', 'Uncommitted changes')
+    }
+  },
+  markers: {
+    get label() {
+      return translate('changeMarkers.toggleLabel', 'Change Markers')
+    },
+    icon: FileDiff,
+    get title() {
+      return translate(
+        'changeMarkers.toggleTitle',
+        'Edit with uncommitted changes marked in the gutter'
+      )
     }
   }
 }
@@ -120,7 +133,7 @@ export default function EditorViewToggle({
         {modes.map((viewMode) => {
           // Why: metadataOverride is keyed by MarkdownViewMode (source/rich/preview)
           // because only those slots have language-specific presentation variants
-          // (e.g. CSV's "Table" label on the 'rich' slot). 'edit'/'changes' are
+          // (e.g. CSV's "Table" label on the 'rich' slot). 'edit'/'changes'/'markers' are
           // orthogonal toggle values and always use the default metadata.
           const override = (
             metadataOverride as Partial<Record<EditorToggleValue, ViewModeMetadata>> | undefined
