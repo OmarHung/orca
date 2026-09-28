@@ -19,6 +19,7 @@ import { qualifiedRelationName } from '../../../../../shared/database/sql-identi
 import { DatabaseResultGrid } from '../grid/DatabaseResultGrid'
 import type { GridSort } from '../grid/database-grid-sort'
 import { buildTableDataSql, orderByForSort } from '../../../../../shared/database/table-data-sql'
+import { useTableColumnComments } from './use-table-column-comments'
 import { useTableRowCount, type TableRowCount } from './use-table-row-count'
 
 type TableQuery = { where: string; orderBy: string }
@@ -138,6 +139,7 @@ export function DatabaseTableView({ tab }: { tab: DatabaseTableTab }): React.JSX
   const [draft, setDraft] = useState<TableQuery>({ where: tab.where, orderBy: tab.orderBy })
   const [headerSort, setHeaderSort] = useState<GridSort>(null)
   const { rowCount, count, reset: resetCount } = useTableRowCount(tab, driver ?? 'postgres')
+  const columnComments = useTableColumnComments(tab)
 
   // Why keep the previous result while re-running: no flash, and column widths survive.
   const current = runState.results[0] ?? null
@@ -242,6 +244,7 @@ export function DatabaseTableView({ tab }: { tab: DatabaseTableTab }): React.JSX
             }
             onLoadMore={loadMore}
             serverSort={{ sort: headerSort, onChange: changeSort }}
+            columnComments={columnComments}
             exportTarget={{
               table: qualifiedRelationName(tab.schema, tab.relation, driver),
               driver,

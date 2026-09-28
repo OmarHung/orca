@@ -51,7 +51,10 @@ describe.skipIf(!target)('PostgreSQL databases', () => {
         target: { level: 'relations', database: other, schema: 'public' }
       })
     )
-    expect(relations).toEqual({ level: 'relations', relations: [{ name: 'items', kind: 'table' }] })
+    expect(relations).toEqual({
+      level: 'relations',
+      relations: [{ name: 'items', kind: 'table', comment: null }]
+    })
     const ddl = await expectOk(
       harness.send({
         type: 'ddl',
