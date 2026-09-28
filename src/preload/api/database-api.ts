@@ -8,6 +8,7 @@ import type {
 import type { DatabaseHistoryEntry } from '../../shared/database/database-query-history-types'
 import type {
   DatabaseExecuteResult,
+  DatabaseLongValues,
   DatabaseResult,
   DatabaseRowsPage
 } from '../../shared/database/database-query-types'
@@ -17,6 +18,7 @@ import type {
   DatabaseExecuteRequest,
   DatabaseFetchMoreRequest,
   DatabasePageEvent,
+  DatabaseReadLongValuesRequest,
   DatabaseSaveConnectionRequest,
   DatabaseTestConnectionRequest
 } from '../../shared/database/database-session-types'
@@ -52,6 +54,10 @@ export type DatabaseApi = {
   ddl: (connectionId: string, target: DatabaseDdlTarget) => Promise<DatabaseResult<string>>
   execute: (request: DatabaseExecuteRequest) => Promise<DatabaseResult<DatabaseExecuteResult>>
   fetchMore: (request: DatabaseFetchMoreRequest) => Promise<DatabaseResult<DatabaseRowsPage>>
+  /** Slices of values a result shipped only as previews, for copy and export. */
+  readLongValues: (
+    request: DatabaseReadLongValuesRequest
+  ) => Promise<DatabaseResult<DatabaseLongValues>>
   /** Console statements for a connection, newest first. */
   listHistory: (connectionId: string) => Promise<DatabaseHistoryEntry[]>
   clearHistory: (connectionId: string) => Promise<void>

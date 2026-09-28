@@ -4,6 +4,9 @@
  */
 export type DatabaseTruncatedCell = { preview: string; length: number }
 
+/** Longer values ship as a preview; the grid shows the true length. */
+export const DATABASE_CELL_PREVIEW_MAX_CHARS = 10_000
+
 /** Characters `[start, end)` of the long value at `row` (from the result's first) and `column`. */
 export type DatabaseLongValueSlice = { row: number; column: number; start: number; end: number }
 
