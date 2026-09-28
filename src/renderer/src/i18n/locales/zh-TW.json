@@ -19158,8 +19158,8 @@
     }
   },
   "changeMarkers": {
-    "toggleLabel": "變更標記",
-    "toggleTitle": "編輯檔案，並在行號旁標示未提交的變更",
+    "show": "顯示變更標記",
+    "hide": "隱藏變更標記",
     "gutterTooltip": "點擊查看變更內容",
     "kind": {
       "added": "新增",
