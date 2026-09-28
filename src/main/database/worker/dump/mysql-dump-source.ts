@@ -9,75 +9,38 @@ import type {
   DumpTableStructure,
   DumpViewDefinition
 } from './dump-source'
+import {
+  commentForNoBackslashEscapes,
+  createColumn,
+  creationContext,
+  inCreationContext,
+  withoutDefiner
+} from './mysql-show-create'
+import {
+  mysqlValueKind,
+  mysqlValueLiteral,
+  mysqlValueSelect,
+  type MysqlValueKind
+} from './mysql-dump-values'
 
 const q = (name: string): string => quoteSqlName(name, 'mysql')
-
-const BINARY_TYPES = new Set([
-  'binary',
-  'varbinary',
-  'tinyblob',
-  'blob',
-  'mediumblob',
-  'longblob',
-  'geometry',
-  'point',
-  'linestring',
-  'polygon',
-  'multipoint',
-  'multilinestring',
-  'multipolygon',
-  'geometrycollection'
-])
-const NUMERIC_TYPES = new Set([
-  'tinyint',
-  'smallint',
-  'mediumint',
-  'int',
-  'integer',
-  'bigint',
-  'decimal',
-  'numeric',
-  'float',
-  'double',
-  'real',
-  'bit'
-])
-
-type ColumnKind = 'text' | 'number' | 'hex'
-
-// Why strip DEFINER: loading as another account would otherwise need SUPER to keep it.
-function withoutDefiner(sql: string): string {
-  return sql.replace(/\sDEFINER\s*=\s*(`[^`]*`|'[^']*'|\S+)@(`[^`]*`|'[^']*'|\S+)/i, '')
-}
-
-export function mysqlTextLiteral(value: string): string {
-  // Why backslashes too: MySQL's default sql_mode reads them as escapes inside strings.
-  return `'${value.replaceAll('\\', '\\\\').replaceAll("'", "''")}'`
-}
-
-function createColumn(row: Record<string, unknown> | undefined, prefix: string): string {
-  const entry = Object.entries(row ?? {}).find(([key]) => key.startsWith(prefix))
-  if (typeof entry?.[1] !== 'string') {
-    throw new Error(
-      'The server didn’t return a definition; the user may lack the privilege to see it.'
-    )
-  }
-  return entry[1]
-}
 
 /** MySQL/MariaDB reads for a dump, in one consistent snapshot, times read and written in UTC. */
 export class MysqlDumpSource implements DumpSource {
   readonly dialect = 'mysql' as const
   readonly notes: string[] = []
-  private readonly kinds = new Map<string, ColumnKind[]>()
+  private readonly kinds = new Map<string, MysqlValueKind[]>()
   private readonly selects = new Map<string, string>()
+  private readonly collations = new Map<string, string | null>()
   private current: string | null = null
   private stream: Readable | null = null
 
   constructor(private readonly client: mysql.Connection) {}
 
   async begin(): Promise<void> {
-    await queryMysqlRows(this.client, "SET time_zone = '+00:00'")
+    // Why no sql_mode: SHOW CREATE TABLE and VIEW then write the plain SQL the dump's settings
+    // read, whatever the server's mode; triggers and routines carry their own.
+    await queryMysqlRows(this.client, "SET SESSION sql_mode = '', time_zone = '+00:00'")
     await queryMysqlRows(this.client, 'SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ')
     await queryMysqlRows(this.client, 'START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY')
   }
@@ -98,6 +61,9 @@ export class MysqlDumpSource implements DumpSource {
   settings(options: { foreignKeyChecksOff: boolean }) {
     return {
       before: [
+        {
+          sql: 'SET @ORCA_OLD_CHARACTER_SET_CLIENT = @@CHARACTER_SET_CLIENT, @ORCA_OLD_CHARACTER_SET_RESULTS = @@CHARACTER_SET_RESULTS, @ORCA_OLD_COLLATION_CONNECTION = @@COLLATION_CONNECTION'
+        },
         { sql: 'SET NAMES utf8mb4' },
         { sql: "SET @ORCA_OLD_TIME_ZONE = @@TIME_ZONE, TIME_ZONE = '+00:00'" },
         // Why: a 0 in an AUTO_INCREMENT column must stay 0, not become the next value.
@@ -115,7 +81,10 @@ export class MysqlDumpSource implements DumpSource {
           ? [{ sql: 'SET FOREIGN_KEY_CHECKS = @ORCA_OLD_FOREIGN_KEY_CHECKS' }]
           : []),
         { sql: 'SET SQL_MODE = @ORCA_OLD_SQL_MODE' },
-        { sql: 'SET TIME_ZONE = @ORCA_OLD_TIME_ZONE' }
+        { sql: 'SET TIME_ZONE = @ORCA_OLD_TIME_ZONE' },
+        {
+          sql: 'SET CHARACTER_SET_CLIENT = @ORCA_OLD_CHARACTER_SET_CLIENT, CHARACTER_SET_RESULTS = @ORCA_OLD_CHARACTER_SET_RESULTS, COLLATION_CONNECTION = @ORCA_OLD_COLLATION_CONNECTION'
+        }
       ]
     }
   }
@@ -145,16 +114,11 @@ export class MysqlDumpSource implements DumpSource {
       [table.schema, table.name]
     )
     const insertable = columns.filter((column) => !/GENERATED/i.test(String(column.extra ?? '')))
-    const kinds = insertable.map((column): ColumnKind => {
-      const type = String(column.type).toLowerCase()
-      return BINARY_TYPES.has(type) ? 'hex' : NUMERIC_TYPES.has(type) ? 'number' : 'text'
-    })
+    const kinds = insertable.map((column) => mysqlValueKind(String(column.type)))
     const qualified = `${q(table.schema)}.${q(table.name)}`
-    const expressions = insertable.map((column, index) => {
-      const name = q(String(column.name))
-      const type = String(column.type).toLowerCase()
-      return kinds[index] === 'hex' ? `HEX(${name})` : type === 'bit' ? `${name} + 0` : name
-    })
+    const expressions = insertable.map((column, index) =>
+      mysqlValueSelect(q(String(column.name)), String(column.type), kinds[index] ?? 'text')
+    )
     this.kinds.set(qualified, kinds)
     this.selects.set(qualified, `SELECT ${expressions.join(', ')} FROM ${qualified}`)
     return {
@@ -178,14 +142,15 @@ export class MysqlDumpSource implements DumpSource {
     )
     const triggerStatements: DumpStatement[] = []
     for (const trigger of triggers) {
-      const [row] = await queryMysqlRows(
-        this.client,
-        `SHOW CREATE TRIGGER ${q(String(trigger.name))}`
-      )
-      triggerStatements.push({
+      const name = String(trigger.name)
+      const [row] = await queryMysqlRows(this.client, `SHOW CREATE TRIGGER ${q(name)}`)
+      const create = {
         sql: withoutDefiner(createColumn(row, 'SQL Original Statement')),
         compound: true
-      })
+      }
+      triggerStatements.push(
+        ...(await this.inCreationContext(`Trigger ${name}`, table.schema, create, row))
+      )
     }
     return {
       requires: [],
@@ -216,19 +181,7 @@ export class MysqlDumpSource implements DumpSource {
       if (!Array.isArray(values)) {
         continue
       }
-      batch.push(
-        values.map((value: unknown, index) => {
-          if (typeof value !== 'string') {
-            return 'NULL'
-          }
-          const kind = kinds[index]
-          return kind === 'hex'
-            ? `X'${value}'`
-            : kind === 'number'
-              ? value
-              : mysqlTextLiteral(value)
-        })
-      )
+      batch.push(values.map((value: unknown, index) => mysqlValueLiteral(kinds[index], value)))
       if (batch.length >= batchSize) {
         yield batch
         batch = []
@@ -254,7 +207,12 @@ export class MysqlDumpSource implements DumpSource {
     const definition = withoutDefiner(createColumn(row, 'Create View'))
     return {
       definition,
-      create: [{ sql: definition }],
+      create: await this.inCreationContext(
+        `View ${view.name}`,
+        view.schema,
+        { sql: definition },
+        row
+      ),
       drop: { sql: `DROP VIEW IF EXISTS ${q(view.name)}` }
     }
   }
@@ -263,15 +221,16 @@ export class MysqlDumpSource implements DumpSource {
     await this.use(routine.schema)
     const kind = routine.routineKind === 'procedure' ? 'PROCEDURE' : 'FUNCTION'
     const [row] = await queryMysqlRows(this.client, `SHOW CREATE ${kind} ${q(routine.name)}`)
+    const noun = kind === 'PROCEDURE' ? 'Procedure' : 'Function'
+    const label = `${noun} ${routine.name}`
+    const sql = withoutDefiner(createColumn(row, `Create ${noun}`))
     return {
-      create: [
-        {
-          sql: withoutDefiner(
-            createColumn(row, `Create ${kind === 'PROCEDURE' ? 'Procedure' : 'Function'}`)
-          ),
-          compound: true
-        }
-      ],
+      create: await this.inCreationContext(
+        label,
+        routine.schema,
+        { sql: await this.withLoadableComment(routine, kind, sql, row), compound: true },
+        row
+      ),
       drop: { sql: `DROP ${kind} IF EXISTS ${q(routine.name)}` }
     }
   }
@@ -284,6 +243,52 @@ export class MysqlDumpSource implements DumpSource {
 
   cancel(): void {
     this.stream?.destroy()
+  }
+
+  private async inCreationContext(
+    label: string,
+    schema: string,
+    create: DumpStatement,
+    row: Record<string, unknown> | undefined
+  ): Promise<DumpStatement[]> {
+    if (!this.collations.has(schema)) {
+      const [database] = await queryMysqlRows(
+        this.client,
+        'select DEFAULT_COLLATION_NAME as collation from information_schema.SCHEMATA where SCHEMA_NAME = ?',
+        [schema]
+      )
+      this.collations.set(
+        schema,
+        typeof database?.collation === 'string' ? database.collation : null
+      )
+    }
+    const collation = this.collations.get(schema) ?? null
+    return inCreationContext(label, create, creationContext(row), collation, this.notes)
+  }
+
+  // A comment SHOW CREATE escaped for a routine that reads it under NO_BACKSLASH_ESCAPES.
+  private async withLoadableComment(
+    routine: { schema: string; name: string },
+    kind: 'PROCEDURE' | 'FUNCTION',
+    sql: string,
+    row: Record<string, unknown> | undefined
+  ): Promise<string> {
+    if (!/NO_BACKSLASH_ESCAPES/.test(String(row?.sql_mode ?? ''))) {
+      return sql
+    }
+    const [comment] = await queryMysqlRows(
+      this.client,
+      `select ROUTINE_COMMENT as comment from information_schema.ROUTINES
+       where ROUTINE_SCHEMA = ? and ROUTINE_NAME = ? and ROUTINE_TYPE = ?`,
+      [routine.schema, routine.name, kind]
+    )
+    const loadable = commentForNoBackslashEscapes(sql, String(comment?.comment ?? ''))
+    if (loadable === null) {
+      this.notes.push(
+        `The comment of ${routine.name} may load with its backslashes doubled: SHOW CREATE escapes it, and the routine loads under NO_BACKSLASH_ESCAPES.`
+      )
+    }
+    return loadable ?? sql
   }
 
   // Why USE before SHOW CREATE: names in the current database come back unqualified.
