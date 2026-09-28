@@ -5,6 +5,10 @@ import type {
   DatabaseIntrospectTarget
 } from '../../../shared/database/database-introspection-types'
 import type {
+  DatabaseObjectProperties,
+  DatabasePropertiesTarget
+} from '../../../shared/database/database-properties-types'
+import type {
   DatabaseExecuteResult,
   DatabaseRowsPage
 } from '../../../shared/database/database-query-types'
@@ -25,6 +29,7 @@ import { MysqlDumpSource } from './dump/mysql-dump-source'
 import { MysqlConsole } from './mysql-console'
 import { mysqlDdl } from './mysql-ddl'
 import { introspectMysql } from './mysql-introspection'
+import { mysqlProperties } from './mysql-properties'
 
 class MysqlSession implements DatabaseDriverSession {
   private readonly consoles = new ConsolePool((_consoleId, onLost) =>
@@ -46,6 +51,10 @@ class MysqlSession implements DatabaseDriverSession {
 
   ddl(target: DatabaseDdlTarget): Promise<string> {
     return mysqlDdl(this.metaClient, target)
+  }
+
+  properties(target: DatabasePropertiesTarget): Promise<DatabaseObjectProperties> {
+    return mysqlProperties(this.metaClient, target)
   }
 
   // MySQL's databases are its schemas, so every dump object already names its own.

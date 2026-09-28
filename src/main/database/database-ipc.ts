@@ -11,6 +11,7 @@ import {
 } from '../../shared/database/database-export-types'
 import { databaseDdlTargetSchema } from '../../shared/database/database-ddl-types'
 import { databaseIntrospectTargetSchema } from '../../shared/database/database-introspection-types'
+import { databasePropertiesTargetSchema } from '../../shared/database/database-properties-types'
 import {
   DATABASE_LONG_VALUE_READ_MAX_CHARS,
   DATABASE_LONG_VALUE_READ_MAX_SLICES,
@@ -190,6 +191,12 @@ export function registerDatabaseHandlers(): void {
     const id = databaseConnectionIdSchema.safeParse(rawId)
     const target = databaseDdlTargetSchema.safeParse(rawTarget)
     return id.success && target.success ? service.ddl(id.data, target.data) : INVALID_REQUEST
+  })
+
+  ipcMain.handle('database:properties', (_event, rawId: unknown, rawTarget: unknown) => {
+    const id = databaseConnectionIdSchema.safeParse(rawId)
+    const target = databasePropertiesTargetSchema.safeParse(rawTarget)
+    return id.success && target.success ? service.properties(id.data, target.data) : INVALID_REQUEST
   })
 
   ipcMain.handle('database:execute', (_event, raw: unknown) => {
