@@ -1,4 +1,8 @@
 import { net } from 'electron'
+import {
+  FetchResponseBodyTooLargeError,
+  readFetchResponseBytesWithinLimit
+} from '../../../shared/fetch-response-body'
 
 const DOWNLOAD_TIMEOUT_MS = 120_000
 const MAX_DOWNLOAD_BYTES = 64 * 1024 * 1024
@@ -9,9 +13,13 @@ export async function downloadWithElectronNet(url: string): Promise<Buffer> {
   if (!response.ok) {
     throw new Error(`Download failed with HTTP ${response.status}: ${url}`)
   }
-  const bytes = Buffer.from(await response.arrayBuffer())
-  if (bytes.length > MAX_DOWNLOAD_BYTES) {
-    throw new Error(`Download exceeded ${MAX_DOWNLOAD_BYTES} bytes: ${url}`)
+  try {
+    // Why streamed: the limit must stop an oversized body before it is all in memory.
+    return Buffer.from(await readFetchResponseBytesWithinLimit(response, MAX_DOWNLOAD_BYTES))
+  } catch (error) {
+    if (error instanceof FetchResponseBodyTooLargeError) {
+      throw new Error(`Download exceeded ${MAX_DOWNLOAD_BYTES} bytes: ${url}`)
+    }
+    throw error
   }
-  return bytes
 }
