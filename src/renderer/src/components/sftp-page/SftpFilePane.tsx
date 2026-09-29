@@ -1,21 +1,22 @@
-import type { RefObject } from 'react'
-import { CornerLeftUp, File, FileSymlink, Folder, RefreshCw } from 'lucide-react'
+import { useMemo, type RefObject } from 'react'
+import { CornerLeftUp, RefreshCw } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { translate } from '@/i18n/i18n'
-import { formatBytes } from '../status-bar/workspace-space-format'
 import type { SftpEntry } from '../../../../shared/sftp-types'
+import { sftpListMinWidthRem, TOGGLEABLE_SFTP_COLUMNS, type SftpColumnId } from './sftp-columns'
+import { useSftpColumnsStore, type SftpPaneId } from './sftp-columns-store'
+import { sortSftpEntriesBy } from './sftp-entry-sort'
+import { SftpColumnsMenu, SftpFileListHeader } from './SftpFileListHeader'
+import { SftpFileRow, SftpParentRow } from './SftpFileRow'
 import { selectionModifiersFromEvent } from './sftp-selection'
 import type { SftpPaneState } from './use-sftp-pane'
 
-const MODIFIED_FORMAT = new Intl.DateTimeFormat(undefined, {
-  dateStyle: 'short',
-  timeStyle: 'short'
-})
 const IS_MAC = typeof navigator !== 'undefined' && navigator.userAgent.includes('Mac')
 
 type SftpFilePaneProps = {
+  paneId: SftpPaneId
   title: string
   pane: SftpPaneState
   onOpen: (entry: SftpEntry) => void
@@ -54,12 +55,31 @@ function PaneIconButton(props: {
 
 export { PaneIconButton }
 
-function EntryIcon({ kind }: { kind: SftpEntry['kind'] }): React.JSX.Element {
-  const Icon = kind === 'directory' ? Folder : kind === 'symlink' ? FileSymlink : File
-  return <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+function useDisplayedEntries(
+  paneId: SftpPaneId,
+  entries: SftpEntry[]
+): { columns: SftpColumnId[]; sorted: SftpEntry[]; orderedPaths: string[] } {
+  const sort = useSftpColumnsStore((s) => s.sortByPane[paneId])
+  const hiddenColumns = useSftpColumnsStore((s) => s.hiddenColumns)
+  return useMemo(() => {
+    const sorted = sortSftpEntriesBy(entries, sort)
+    return {
+      columns: [
+        'name',
+        ...TOGGLEABLE_SFTP_COLUMNS.filter((column) => !hiddenColumns.includes(column))
+      ],
+      sorted,
+      orderedPaths: sorted.map((entry) => entry.path)
+    }
+  }, [entries, sort, hiddenColumns])
+}
+
+function PaneMessage({ children }: { children: React.ReactNode }): React.JSX.Element {
+  return <p className="px-4 py-6 text-center text-xs text-muted-foreground">{children}</p>
 }
 
 export function SftpFilePane({
+  paneId,
   title,
   pane,
   onOpen,
@@ -69,8 +89,10 @@ export function SftpFilePane({
   isDropTarget,
   dropHint
 }: SftpFilePaneProps): React.JSX.Element {
+  const { columns, sorted, orderedPaths } = useDisplayedEntries(paneId, pane.entries)
+
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+    <div data-sftp-pane={paneId} className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center gap-1 border-b border-border px-2 py-1.5">
         {leading}
         <span className="max-w-32 shrink-0 truncate text-xs font-medium text-muted-foreground">
@@ -88,7 +110,7 @@ export function SftpFilePane({
         />
         <PaneIconButton
           label={translate('sftpPage.pane.up', 'Parent folder')}
-          disabled={pane.path === null}
+          disabled={!pane.hasParent}
           onClick={pane.goUp}
         >
           <CornerLeftUp className="size-3.5" />
@@ -99,20 +121,16 @@ export function SftpFilePane({
         >
           <RefreshCw className="size-3.5" />
         </PaneIconButton>
+        <SftpColumnsMenu />
         {actions}
       </div>
       <div
         ref={dropZoneRef}
-        role="listbox"
-        aria-multiselectable
-        aria-label={title}
         data-drop-active={isDropTarget ? 'true' : undefined}
-        className="scrollbar-sleek relative min-h-0 flex-1 overflow-y-auto py-1 data-[drop-active=true]:bg-accent"
+        className="scrollbar-sleek relative min-h-0 flex-1 overflow-auto data-[drop-active=true]:bg-accent"
       >
         {pane.status === 'loading' && pane.path === null ? (
-          <p className="px-4 py-6 text-center text-xs text-muted-foreground">
-            {translate('sftpPage.pane.connecting', 'Connecting…')}
-          </p>
+          <PaneMessage>{translate('sftpPage.pane.connecting', 'Connecting…')}</PaneMessage>
         ) : pane.status === 'error' ? (
           <div className="flex flex-col items-center gap-2 px-4 py-6 text-center">
             <p className="text-xs text-muted-foreground">{pane.error}</p>
@@ -120,36 +138,36 @@ export function SftpFilePane({
               {translate('sftpPage.pane.retry', 'Retry')}
             </Button>
           </div>
-        ) : pane.entries.length === 0 ? (
-          <p className="px-4 py-6 text-center text-xs text-muted-foreground">
-            {dropHint ?? translate('sftpPage.pane.empty', 'This folder is empty.')}
-          </p>
         ) : (
-          pane.entries.map((entry) => {
-            const isSelected = pane.selection.selected.has(entry.path)
-            return (
-              <div
-                key={entry.path}
-                role="option"
-                aria-selected={isSelected}
-                tabIndex={-1}
-                data-selected={isSelected ? 'true' : undefined}
-                data-sftp-entry={entry.path}
-                onClick={(event) => pane.select(entry, selectionModifiersFromEvent(event, IS_MAC))}
-                onDoubleClick={() => onOpen(entry)}
-                className="flex cursor-default items-center gap-2 px-3 py-1 text-[13px] select-none hover:bg-accent data-[selected=true]:bg-accent"
-              >
-                <EntryIcon kind={entry.kind} />
-                <span className="min-w-0 flex-1 truncate">{entry.name}</span>
-                <span className="w-20 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
-                  {entry.kind === 'directory' ? '' : formatBytes(entry.size)}
-                </span>
-                <span className="w-32 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
-                  {MODIFIED_FORMAT.format(entry.modifiedMs)}
-                </span>
-              </div>
-            )
-          })
+          <div style={{ minWidth: `${sftpListMinWidthRem(columns)}rem` }}>
+            <SftpFileListHeader pane={paneId} columns={columns} />
+            <div role="listbox" aria-multiselectable aria-label={title} className="py-1">
+              {pane.hasParent ? (
+                <SftpParentRow
+                  label={translate('sftpPage.pane.up', 'Parent folder')}
+                  onOpen={pane.goUp}
+                />
+              ) : null}
+              {sorted.length === 0 ? (
+                <PaneMessage>
+                  {dropHint ?? translate('sftpPage.pane.empty', 'This folder is empty.')}
+                </PaneMessage>
+              ) : (
+                sorted.map((entry) => (
+                  <SftpFileRow
+                    key={entry.path}
+                    entry={entry}
+                    columns={columns}
+                    isSelected={pane.selection.selected.has(entry.path)}
+                    onClick={(event) =>
+                      pane.select(entry, selectionModifiersFromEvent(event, IS_MAC), orderedPaths)
+                    }
+                    onDoubleClick={() => onOpen(entry)}
+                  />
+                ))
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>
