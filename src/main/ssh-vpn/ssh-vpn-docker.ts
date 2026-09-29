@@ -7,9 +7,14 @@ import {
   type ProcessResult
 } from '../../shared/child-process/run-process'
 import { resolveCommandOnLocalPath } from '../ipc/command-path-resolver'
-import { CONTAINER_PROFILE_DIR, CONTAINER_PROFILE_PATH } from './ovpn-profile-preparation'
+import {
+  CONTAINER_LOGIN_PATH,
+  CONTAINER_PROFILE_DIR,
+  CONTAINER_PROFILE_PATH
+} from './ovpn-profile-preparation'
 import {
   SSH_VPN_DNS_SCRIPT_PATH,
+  SSH_VPN_FIREWALL_SCRIPT_PATH,
   SSH_VPN_DOCKERFILE,
   SSH_VPN_IMAGE,
   SSH_VPN_LABEL
@@ -104,7 +109,8 @@ export function dockerWriteFileArgs(containerName: string, containerPath: string
   ]
 }
 
-export function dockerOpenVpnArgs(containerName: string): string[] {
+/** `withLogin`: read the username and password Orca wrote to the tmpfs, never keep them after use. */
+export function dockerOpenVpnArgs(containerName: string, withLogin = false): string[] {
   return [
     'exec',
     containerName,
@@ -116,9 +122,15 @@ export function dockerOpenVpnArgs(containerName: string): string[] {
     '2',
     '--up',
     SSH_VPN_DNS_SCRIPT_PATH,
+    ...(withLogin ? ['--auth-user-pass', CONTAINER_LOGIN_PATH, '--auth-nocache'] : []),
     '--verb',
     '3'
   ]
+}
+
+/** Installs the rules that keep per-connection traffic on the VPN; see the image's firewall script. */
+export function dockerFirewallArgs(containerName: string): string[] {
+  return ['exec', containerName, SSH_VPN_FIREWALL_SCRIPT_PATH]
 }
 
 export function dockerRemoveArgs(...containerNames: string[]): string[] {
@@ -210,6 +222,13 @@ export class SshVpnDocker {
     )
   }
 
+  async applyFirewall(containerName: string): Promise<void> {
+    await this.runChecked(
+      dockerFirewallArgs(containerName),
+      "Could not set up the VPN container's firewall"
+    )
+  }
+
   async writeFile(containerName: string, containerPath: string, content: Buffer): Promise<void> {
     await this.runChecked(
       dockerWriteFileArgs(containerName, containerPath),
@@ -220,8 +239,11 @@ export class SshVpnDocker {
     )
   }
 
-  spawnOpenVpn(containerName: string): ReturnType<typeof spawnProcess> {
-    return spawnProcess({ program: this.dockerPath, args: dockerOpenVpnArgs(containerName) })
+  spawnOpenVpn(containerName: string, withLogin: boolean): ReturnType<typeof spawnProcess> {
+    return spawnProcess({
+      program: this.dockerPath,
+      args: dockerOpenVpnArgs(containerName, withLogin)
+    })
   }
 
   /** How many connections are using the tunnel right now (one `nc` each). */

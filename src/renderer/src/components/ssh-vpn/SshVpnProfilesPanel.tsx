@@ -14,6 +14,7 @@ export function SshVpnProfilesPanel(): React.JSX.Element {
   const profiles = useSshVpnStore((state) => state.profiles)
   const states = useSshVpnStore((state) => state.states)
   const assignments = useSshVpnStore((state) => state.assignments)
+  const loadError = useSshVpnStore((state) => state.loadError)
   const [editing, setEditing] = useState<Editing>(null)
   const hostCounts = new Map<string, number>()
   for (const profileId of Object.values(assignments)) {
@@ -22,6 +23,7 @@ export function SshVpnProfilesPanel(): React.JSX.Element {
 
   return (
     <div className="space-y-3" data-ssh-vpn-panel>
+      {loadError ? <p className="text-sm break-all text-destructive">{loadError}</p> : null}
       {editing?.mode === 'new' ? (
         <SshVpnProfileForm profile={null} onDone={() => setEditing(null)} />
       ) : (

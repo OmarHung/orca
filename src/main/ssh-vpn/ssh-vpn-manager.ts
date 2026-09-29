@@ -1,57 +1,20 @@
 import type { SshVpnProfile, SshVpnProfileState, SshVpnStatus } from '../../shared/ssh-vpn-types'
-import { classifyOpenVpnLine, describeOpenVpnFailure, OpenVpnLogTail } from './openvpn-output'
-import { CONTAINER_PROFILE_PATH, prepareOvpnProfile } from './ovpn-profile-preparation'
-import { sshVpnContainerName, type SshVpnDocker } from './ssh-vpn-docker'
-import { sshVpnStartCommands } from './ssh-vpn-start-commands'
+import { describeOpenVpnFailure, OpenVpnLogTail } from './openvpn-output'
+import { waitForOpenVpnReady } from './openvpn-startup'
+import { sshVpnContainerName } from './ssh-vpn-docker'
+import {
+  SshVpnStartDeclinedError,
+  type OpenVpnProcess,
+  type SshVpnDockerPort,
+  type SshVpnManagerDeps,
+  type SshVpnRoute,
+  type SshVpnStartOptions
+} from './ssh-vpn-manager-types'
+import { prepareSshVpnContainer } from './ssh-vpn-start-sequence'
 
 const DEFAULT_READY_TIMEOUT_MS = 60_000
 const DEFAULT_POLL_INTERVAL_MS = 60_000
 const MS_PER_MINUTE = 60_000
-
-/** The parts of the `docker exec … openvpn` child the manager uses. */
-export type OpenVpnProcess = {
-  stdout: { on(event: 'data', listener: (chunk: Buffer | string) => void): unknown }
-  stderr: { on(event: 'data', listener: (chunk: Buffer | string) => void): unknown }
-  stdin: { end(): unknown }
-  kill(): boolean
-  on(event: 'error', listener: (error: Error) => void): unknown
-  on(event: 'close', listener: () => void): unknown
-}
-
-export type SshVpnDockerPort = Pick<
-  SshVpnDocker,
-  | 'dockerPath'
-  | 'assertRunning'
-  | 'hasImage'
-  | 'buildImage'
-  | 'startContainer'
-  | 'writeFile'
-  | 'countTunnels'
-  | 'remove'
-  | 'listContainers'
-> & { spawnOpenVpn(containerName: string): OpenVpnProcess }
-
-export type SshVpnManagerDeps = {
-  /** Resolves the docker CLI; rejects with a user-facing message when it is missing. */
-  docker: () => Promise<SshVpnDockerPort>
-  /** Scopes containers to this Orca profile so a dev build never removes the installed app's. */
-  instanceTag: string
-  readFile: (filePath: string) => Promise<Buffer>
-  onStateChange?: (state: SshVpnProfileState) => void
-  now?: () => number
-  readyTimeoutMs?: number
-  pollIntervalMs?: number
-}
-
-/** How a connection reaches a ready VPN: pipe through `nc` in this container. */
-export type SshVpnRoute = { dockerPath: string; containerName: string }
-
-/** Shows the user every command a start will run; false means do not start. */
-export type SshVpnStartConfirm = (commands: string[]) => Promise<boolean>
-
-export class SshVpnStartDeclinedError extends Error {
-  override name = 'SshVpnStartDeclinedError'
-}
 
 type Entry = {
   profile: SshVpnProfile
@@ -84,10 +47,7 @@ export class SshVpnManager {
    * Starts the profile's VPN if needed and returns the route once the tunnel is up. With
    * `confirm`, a start first shows the user its commands and does nothing unless they agree.
    */
-  acquire(
-    profile: SshVpnProfile,
-    options?: { confirm?: SshVpnStartConfirm }
-  ): Promise<SshVpnRoute> {
+  acquire(profile: SshVpnProfile, options?: SshVpnStartOptions): Promise<SshVpnRoute> {
     const entry = this.entryFor(profile)
     entry.profile = profile
     const declinesBefore = entry.declines
@@ -97,7 +57,7 @@ export class SshVpnManager {
         if (options?.confirm && entry.declines !== declinesBefore) {
           throw new SshVpnStartDeclinedError(`VPN "${profile.name}" was not started`)
         }
-        await this.start(entry, options?.confirm)
+        await this.start(entry, options ?? {})
       }
       // Why: gives the caller a full idle window to open its `nc` before the next poll counts.
       entry.idleSince = this.now()
@@ -202,49 +162,43 @@ export class SshVpnManager {
     this.deps.onStateChange?.(this.stateOf(entry))
   }
 
-  private async start(entry: Entry, confirm?: SshVpnStartConfirm): Promise<void> {
+  private async start(entry: Entry, options: SshVpnStartOptions): Promise<void> {
     const generation = ++entry.generation
     entry.log = new OpenVpnLogTail()
     this.setStatus(entry, 'starting')
     let docker: SshVpnDockerPort | null = null
+    let usesLogin = false
     try {
       docker = await this.deps.docker()
       entry.dockerPath = docker.dockerPath
-      const prepared = await prepareOvpnProfile(entry.profile.ovpnPath, this.deps.readFile)
-      await docker.assertRunning()
-      const buildsImage = !(await docker.hasImage())
-      if (confirm) {
-        const commands = sshVpnStartCommands({
-          dockerPath: docker.dockerPath,
-          containerName: entry.containerName,
-          instanceTag: this.deps.instanceTag,
-          profileId: entry.profile.id,
-          ovpnPath: entry.profile.ovpnPath,
-          files: prepared.files,
-          buildsImage
-        })
-        if (!(await confirm(commands))) {
+      const prepared = await prepareSshVpnContainer({
+        docker,
+        profile: entry.profile,
+        containerName: entry.containerName,
+        instanceTag: this.deps.instanceTag,
+        readFile: this.deps.readFile,
+        options,
+        onDeclined: () => {
           entry.declines += 1
-          throw new SshVpnStartDeclinedError(`VPN "${entry.profile.name}" was not started`)
         }
-      }
-      if (buildsImage) {
-        await docker.buildImage()
-      }
-      await docker.remove(entry.containerName)
-      await docker.startContainer(entry.containerName, this.deps.instanceTag, entry.profile.id)
-      const files = [
-        { containerPath: CONTAINER_PROFILE_PATH, content: Buffer.from(prepared.config) },
-        ...prepared.files
-      ]
-      for (const file of files) {
-        await docker.writeFile(entry.containerName, file.containerPath, file.content)
-      }
-      await this.runOpenVpn(entry, docker, generation)
+      })
+      usesLogin = prepared.usesLogin
+      // Why spawn here: output listeners must attach in the same tick as the spawn.
+      const child = docker.spawnOpenVpn(entry.containerName, usesLogin)
+      entry.openvpn = child
+      await waitForOpenVpnReady(
+        child,
+        entry.log,
+        this.deps.readyTimeoutMs ?? DEFAULT_READY_TIMEOUT_MS,
+        () => this.onTunnelExited(entry, generation)
+      )
     } catch (error) {
       if (error instanceof SshVpnStartDeclinedError) {
         this.setStatus(entry, 'stopped')
         throw error
+      }
+      if (usesLogin && entry.log.snapshot().some((line) => line.includes('AUTH_FAILED'))) {
+        options.onLoginRejected?.()
       }
       const message = error instanceof Error ? error.message : String(error)
       entry.openvpn?.kill()
@@ -255,56 +209,6 @@ export class SshVpnManager {
     }
     this.setStatus(entry, 'ready')
     this.startIdlePolling(entry, generation)
-  }
-
-  private runOpenVpn(entry: Entry, docker: SshVpnDockerPort, generation: number): Promise<void> {
-    const child = docker.spawnOpenVpn(entry.containerName)
-    entry.openvpn = child
-    child.stdin.end()
-    return new Promise<void>((resolve, reject) => {
-      let settled = false
-      const settle = (error?: Error): void => {
-        if (settled) {
-          return
-        }
-        settled = true
-        clearTimeout(timer)
-        if (error) {
-          reject(error)
-        } else {
-          resolve()
-        }
-      }
-      const timer = setTimeout(
-        () =>
-          settle(
-            new Error(
-              `Timed out waiting for the tunnel. Last output: ${describeOpenVpnFailure(entry.log.snapshot())}`
-            )
-          ),
-        this.deps.readyTimeoutMs ?? DEFAULT_READY_TIMEOUT_MS
-      )
-      const onOutput = (chunk: Buffer | string): void => {
-        for (const line of entry.log.push(chunk.toString())) {
-          const event = classifyOpenVpnLine(line)
-          if (event.kind === 'ready') {
-            settle()
-          } else if (event.kind === 'failed') {
-            settle(new Error(describeOpenVpnFailure(entry.log.snapshot())))
-          }
-        }
-      }
-      child.stdout.on('data', onOutput)
-      child.stderr.on('data', onOutput)
-      child.on('error', (error) => settle(error))
-      child.on('close', () => {
-        if (!settled) {
-          settle(new Error(describeOpenVpnFailure(entry.log.snapshot())))
-          return
-        }
-        this.onTunnelExited(entry, generation)
-      })
-    })
   }
 
   /** OpenVPN died after the tunnel was up; every connection through it is already gone. */

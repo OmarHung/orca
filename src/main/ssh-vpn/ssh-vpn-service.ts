@@ -1,9 +1,15 @@
 import type { SshTarget } from '../../shared/ssh-types'
 import type { SshVpnProfile, SshVpnTerminalRoute } from '../../shared/ssh-vpn-types'
-import { sshVpnProxyCommand, sshVpnTunnelArgs } from '../../shared/ssh-vpn-command-format'
+import {
+  isShellSafeSshHost,
+  sshVpnProxyCommand,
+  sshVpnTunnelArgs
+} from '../../shared/ssh-vpn-command-format'
 import type { SshResolvedConfig } from '../ssh/ssh-config-parser'
 import { resolveEffectiveProxy, type EffectiveProxy } from '../ssh/ssh-proxy-command'
-import type { SshVpnManager, SshVpnRoute } from './ssh-vpn-manager'
+import type { SshVpnLogins } from './ssh-vpn-logins'
+import type { SshVpnManager } from './ssh-vpn-manager'
+import type { SshVpnRoute, SshVpnStartOptions } from './ssh-vpn-manager-types'
 import type { SshVpnRouteProvider } from './ssh-vpn-route'
 import type { SshVpnStore } from './ssh-vpn-store'
 
@@ -18,6 +24,7 @@ type SshVpnServiceDeps = {
   store: Pick<SshVpnStore, 'profileForTarget' | 'getProfile'>
   manager: Pick<SshVpnManager, 'acquire' | 'getReadyRoute'>
   approveStart?: SshVpnStartApproval
+  logins?: Pick<SshVpnLogins, 'startOptions'>
   platform?: NodeJS.Platform
 }
 
@@ -31,6 +38,20 @@ function assertNoCompetingProxy(
   if (resolveEffectiveProxy(target, resolved) || resolved?.proxyUseFdpass) {
     throw new Error(
       `VPN "${profile.name}": this host already connects through ProxyJump or ProxyCommand (check ~/.ssh/config, including Host * blocks). Using both is not supported yet.`
+    )
+  }
+}
+
+/** OpenSSH puts %h into the ProxyCommand it runs through a shell, so the name must be inert. */
+function assertSafeHost(
+  target: SshTarget,
+  resolved: SshResolvedConfig | null,
+  profile: SshVpnProfile
+): void {
+  const host = resolved?.hostname || target.host
+  if (!isShellSafeSshHost(host)) {
+    throw new Error(
+      `VPN "${profile.name}": the host name "${host}" has characters Orca cannot pass through the VPN safely`
     )
   }
 }
@@ -69,7 +90,7 @@ export class SshVpnService implements SshVpnRouteProvider {
     if (!profile) {
       throw new Error('This VPN profile no longer exists')
     }
-    await this.deps.manager.acquire(profile, { confirm: this.confirmFor(profile, null) })
+    await this.deps.manager.acquire(profile, this.startOptions(profile, null))
   }
 
   proxyCommand(target: SshTarget): string | null {
@@ -91,6 +112,15 @@ export class SshVpnService implements SshVpnRouteProvider {
     )
   }
 
+  routeKey(target: SshTarget): string {
+    try {
+      return this.deps.store.profileForTarget(target.id)?.id ?? ''
+    } catch {
+      // Why: an unreadable assignment must not match any master opened for a direct route.
+      return 'unreadable'
+    }
+  }
+
   private async routeFor(
     target: SshTarget,
     resolved: SshResolvedConfig | null
@@ -100,14 +130,15 @@ export class SshVpnService implements SshVpnRouteProvider {
       return null
     }
     assertNoCompetingProxy(target, resolved, profile)
-    return this.deps.manager.acquire(profile, { confirm: this.confirmFor(profile, target.label) })
+    assertSafeHost(target, resolved, profile)
+    return this.deps.manager.acquire(profile, this.startOptions(profile, target.label))
   }
 
-  private confirmFor(
-    profile: SshVpnProfile,
-    hostLabel: string | null
-  ): ((commands: string[]) => Promise<boolean>) | undefined {
+  private startOptions(profile: SshVpnProfile, hostLabel: string | null): SshVpnStartOptions {
     const approve = this.deps.approveStart
-    return approve ? (commands) => approve({ profile, hostLabel, commands }) : undefined
+    return {
+      confirm: approve ? (commands) => approve({ profile, hostLabel, commands }) : undefined,
+      ...this.deps.logins?.startOptions(profile, hostLabel)
+    }
   }
 }
