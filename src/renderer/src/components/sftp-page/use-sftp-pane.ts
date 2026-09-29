@@ -11,8 +11,8 @@ import {
 
 export type SftpPaneSource = {
   initialPath: () => Promise<SftpResult<string>>
-  /** Opened instead when the first folder can't be listed, e.g. a remembered one was deleted. */
-  fallbackPath?: () => Promise<SftpResult<string>>
+  /** Tried in order when the first folder can't be listed, e.g. a remembered one was deleted. */
+  fallbackPaths?: () => Promise<string[]>
   list: (path: string) => Promise<SftpResult<SftpEntry[]>>
   parent: (path: string) => string
 }
@@ -21,14 +21,21 @@ type Listing = { path: string; result: SftpResult<SftpEntry[]> }
 
 async function listFirstFolder(source: SftpPaneSource, path: string): Promise<Listing> {
   const result = await source.list(path)
-  if (result.ok || !source.fallbackPath) {
+  if (result.ok || !source.fallbackPaths) {
     return { path, result }
   }
-  const fallback = await source.fallbackPath()
-  if (!fallback.ok || fallback.value === path) {
-    return { path, result }
+  const tried = new Set([path])
+  for (const fallback of await source.fallbackPaths()) {
+    if (tried.has(fallback)) {
+      continue
+    }
+    tried.add(fallback)
+    const fallbackResult = await source.list(fallback)
+    if (fallbackResult.ok) {
+      return { path: fallback, result: fallbackResult }
+    }
   }
-  return { path: fallback.value, result: await source.list(fallback.value) }
+  return { path, result }
 }
 
 export type SftpPaneState = {
