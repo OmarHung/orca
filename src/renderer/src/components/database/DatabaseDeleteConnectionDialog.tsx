@@ -19,6 +19,7 @@ export function DatabaseDeleteConnectionDialog(): React.JSX.Element | null {
     state.connections.find((entry) => entry.id === connectionId)
   )
   const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   if (!connection) {
     return null
@@ -26,8 +27,12 @@ export function DatabaseDeleteConnectionDialog(): React.JSX.Element | null {
 
   const confirm = async (): Promise<void> => {
     setDeleting(true)
-    await deleteDatabaseConnection(connection.id)
+    const problem = await deleteDatabaseConnection(connection.id)
     setDeleting(false)
+    if (problem) {
+      setError(problem)
+      return
+    }
     cancel()
   }
 
@@ -47,6 +52,11 @@ export function DatabaseDeleteConnectionDialog(): React.JSX.Element | null {
             )}
           </DialogDescription>
         </DialogHeader>
+        {error ? (
+          <p data-testid="database-delete-error" className="text-xs text-destructive">
+            {error}
+          </p>
+        ) : null}
         <DialogFooter>
           <Button variant="ghost" onClick={cancel}>
             {translate('database.deleteDialog.cancel', 'Cancel')}
