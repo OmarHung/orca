@@ -19510,6 +19510,19 @@
       "manual": "This VPN asks for a username and password.",
       "cancel": "Cancel",
       "connect": "Connect"
+    },
+    "hostForm": {
+      "label": "VPN",
+      "noProfiles": "Add a VPN profile in the VPN section below.",
+      "help": "Connect this host through an OpenVPN profile; the rest of this computer stays off the VPN.",
+      "addFirst": "Save the host first, then choose its VPN here or by right-clicking it on the SSH page."
+    },
+    "search": {
+      "title": "VPN for SSH hosts",
+      "description": "Route chosen SSH hosts through an OpenVPN profile.",
+      "vpn": "vpn",
+      "openvpn": "openvpn",
+      "ovpn": "ovpn"
     }
   }
 }
