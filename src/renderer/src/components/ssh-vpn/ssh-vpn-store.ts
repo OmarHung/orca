@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { create } from 'zustand'
 import type {
+  SshVpnOvpnInspection,
   SshVpnProfile,
   SshVpnProfileDraft,
   SshVpnProfileState,
@@ -14,24 +15,39 @@ type SshVpnStoreState = {
   /** SSH target id → VPN profile id. */
   assignments: Record<string, string>
   states: Record<string, SshVpnProfileState>
+  savedPasswordProfileIds: string[]
+  canStorePasswords: boolean
+  /** Why the settings could not be loaded (e.g. ssh-vpn.json is not valid JSON). */
+  loadError: string | null
 }
 
 export const useSshVpnStore = create<SshVpnStoreState>(() => ({
   loaded: false,
   profiles: [],
   assignments: {},
-  states: {}
+  states: {},
+  savedPasswordProfileIds: [],
+  canStorePasswords: true,
+  loadError: null
 }))
 
 let unsubscribe: (() => void) | null = null
 
 async function refresh(): Promise<void> {
-  const snapshot = await window.api.sshVpn.snapshot()
+  const result = await window.api.sshVpn.snapshot()
+  if (!result.ok) {
+    useSshVpnStore.setState({ loaded: true, loadError: result.error.message })
+    return
+  }
+  const snapshot = result.value
   useSshVpnStore.setState({
     loaded: true,
+    loadError: null,
     profiles: snapshot.profiles,
     assignments: snapshot.assignments,
-    states: Object.fromEntries(snapshot.states.map((state) => [state.profileId, state]))
+    states: Object.fromEntries(snapshot.states.map((state) => [state.profileId, state])),
+    savedPasswordProfileIds: snapshot.savedPasswordProfileIds,
+    canStorePasswords: snapshot.canStorePasswords
   })
 }
 
@@ -83,10 +99,22 @@ export const sshVpnActions = {
   /** Returns the saved profile, or the reason it could not be saved (shown inline by the form). */
   saveProfile: async (
     id: string | undefined,
-    draft: SshVpnProfileDraft
+    draft: SshVpnProfileDraft,
+    password: string | undefined
   ): Promise<{ profile: SshVpnProfile } | { error: string }> => {
-    const result = await window.api.sshVpn.saveProfile({ ...(id ? { id } : {}), draft })
+    const result = await window.api.sshVpn.saveProfile({
+      ...(id ? { id } : {}),
+      draft,
+      ...(password ? { password } : {})
+    })
     return result.ok ? { profile: result.value } : { error: result.error.message }
+  },
+  /** Whether the .ovpn asks for a login; the error says why Orca cannot use it. */
+  inspectOvpn: async (
+    ovpnPath: string
+  ): Promise<{ inspection: SshVpnOvpnInspection } | { error: string }> => {
+    const result = await window.api.sshVpn.inspectOvpn(ovpnPath)
+    return result.ok ? { inspection: result.value } : { error: result.error.message }
   },
   deleteProfile: (profileId: string) => run(() => window.api.sshVpn.deleteProfile(profileId)),
   setAssignment: (targetId: string, profileId: string | null) =>

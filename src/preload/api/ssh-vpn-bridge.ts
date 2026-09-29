@@ -1,5 +1,9 @@
 import { ipcRenderer } from 'electron'
-import type { SshVpnProfileState, SshVpnStartConfirmRequest } from '../../shared/ssh-vpn-types'
+import type {
+  SshVpnCredentialRequest,
+  SshVpnProfileState,
+  SshVpnStartConfirmRequest
+} from '../../shared/ssh-vpn-types'
 import type { PreloadApi } from '../api-types'
 
 function subscribe<T>(channel: string, callback: (payload: T) => void): () => void {
@@ -10,6 +14,7 @@ function subscribe<T>(channel: string, callback: (payload: T) => void): () => vo
 
 export const sshVpnApi = {
   snapshot: () => ipcRenderer.invoke('sshVpn:snapshot'),
+  inspectOvpn: (ovpnPath) => ipcRenderer.invoke('sshVpn:inspectOvpn', ovpnPath),
   saveProfile: (request) => ipcRenderer.invoke('sshVpn:saveProfile', request),
   deleteProfile: (profileId) => ipcRenderer.invoke('sshVpn:deleteProfile', profileId),
   setAssignment: (request) => ipcRenderer.invoke('sshVpn:setAssignment', request),
@@ -18,8 +23,11 @@ export const sshVpnApi = {
   prepareTerminal: (targetId) => ipcRenderer.invoke('sshVpn:prepareTerminal', targetId),
   pickOvpnFile: () => ipcRenderer.invoke('sshVpn:pickOvpnFile'),
   answerStart: (answer) => ipcRenderer.invoke('sshVpn:answerStart', answer),
+  answerCredentials: (answer) => ipcRenderer.invoke('sshVpn:answerCredentials', answer),
   onState: (callback) => subscribe<SshVpnProfileState>('sshVpn:state', callback),
   onChanged: (callback) => subscribe<undefined>('sshVpn:changed', () => callback()),
   onConfirmStart: (callback) =>
-    subscribe<SshVpnStartConfirmRequest>('sshVpn:confirm-start', callback)
+    subscribe<SshVpnStartConfirmRequest>('sshVpn:confirm-start', callback),
+  onCredentialRequest: (callback) =>
+    subscribe<SshVpnCredentialRequest>('sshVpn:credential-request', callback)
 } satisfies PreloadApi['sshVpn']

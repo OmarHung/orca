@@ -2,7 +2,8 @@ import { toast } from 'sonner'
 import { sshVpnTerminalProxyOption } from '../../../../shared/ssh-vpn-command-format'
 import type { SshTarget } from '../../../../shared/ssh-types'
 
-export type SshSessionVpn = { profileName: string; sshOption: string }
+/** `sshOptions` are already quoted for the shell. */
+export type SshSessionVpn = { profileName: string; sshOptions: string[] }
 
 function terminalPlatform(): NodeJS.Platform {
   return navigator.userAgent.includes('Windows') ? 'win32' : 'linux'
@@ -29,7 +30,8 @@ export async function prepareSshSessionVpn(
   return result.value
     ? {
         profileName: result.value.profileName,
-        sshOption: sshVpnTerminalProxyOption(result.value, terminalPlatform())
+        // Why -S none: a ControlMaster from the user's own ssh config may be a direct connection.
+        sshOptions: ['-S none', sshVpnTerminalProxyOption(result.value, terminalPlatform())]
       }
     : null
 }

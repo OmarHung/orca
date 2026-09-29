@@ -61,10 +61,22 @@ export class SshVpnStore {
     })
   }
 
-  /** The profile a host is routed through, or null (also when the profile was deleted). */
+  /**
+   * The profile a host is routed through, or null when it connects directly. Throws when the host
+   * is assigned to a profile that is missing or invalid, so it never silently connects directly.
+   */
   profileForTarget(targetId: string): SshVpnProfile | null {
     const profileId = this.state().assignments[targetId]
-    return profileId ? this.getProfile(profileId) : null
+    if (!profileId) {
+      return null
+    }
+    const profile = this.getProfile(profileId)
+    if (!profile) {
+      throw new Error(
+        'This host is set to use a VPN profile that is missing or invalid in ssh-vpn.json. Choose its VPN again, or Direct connection.'
+      )
+    }
+    return profile
   }
 
   listAssignments(): Record<string, string> {
@@ -117,11 +129,15 @@ export class SshVpnStore {
     try {
       parsed = JSON.parse(readFileSync(this.filePath, 'utf8'))
     } catch (error) {
-      // Why throw: reading "empty" here would let the next save drop every saved profile.
+      // Why throw either way: reading "empty" would send every assigned host out directly and
+      // let the next save drop every saved profile.
       if (isUnreadableError(error)) {
         throw error
       }
-      return { profiles: [], assignments: {} }
+      const reason = error instanceof Error ? error.message : String(error)
+      throw new Error(
+        `The VPN settings file ${this.filePath} is not valid JSON (${reason}). Fix or delete it; until then Orca will not open SSH connections.`
+      )
     }
     const raw = typeof parsed === 'object' && parsed !== null ? parsed : {}
     const profiles: unknown = Reflect.get(raw, 'profiles')

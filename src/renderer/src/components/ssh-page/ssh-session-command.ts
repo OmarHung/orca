@@ -1,10 +1,9 @@
 import type { SshTarget } from '../../../../shared/ssh-types'
+import { isShellSafeSshHost } from '../../../../shared/ssh-vpn-command-format'
 
 const DEFAULT_SSH_PORT = 22
 const MAX_PORT = 65_535
-// Why: the command is typed into the user's shell (bash, zsh, PowerShell, cmd), so only allow
-// characters none of them expand, and no leading "-" that ssh would read as an option.
-const SAFE_HOST = /^[A-Za-z0-9._:%][A-Za-z0-9._:%-]*$/
+// Why: the command is typed into the user's shell (bash, zsh, PowerShell, cmd).
 const SAFE_USER = /^[A-Za-z0-9._][A-Za-z0-9._-]*$/
 
 type SshSessionEndpoint = Pick<SshTarget, 'configHost' | 'host' | 'port' | 'username'>
@@ -19,9 +18,9 @@ export function buildSshSessionCommand(
 ): string | null {
   const ssh = ['ssh', ...options].join(' ')
   if (target.configHost) {
-    return SAFE_HOST.test(target.configHost) ? `${ssh} ${target.configHost}` : null
+    return isShellSafeSshHost(target.configHost) ? `${ssh} ${target.configHost}` : null
   }
-  if (!SAFE_HOST.test(target.host) || (target.username && !SAFE_USER.test(target.username))) {
+  if (!isShellSafeSshHost(target.host) || (target.username && !SAFE_USER.test(target.username))) {
     return null
   }
   if (!Number.isInteger(target.port) || target.port < 1 || target.port > MAX_PORT) {

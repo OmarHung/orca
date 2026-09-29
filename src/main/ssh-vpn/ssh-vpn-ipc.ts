@@ -1,18 +1,22 @@
-import { readFile } from 'node:fs/promises'
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import {
+  isAbsoluteOvpnPath,
   sshVpnAssignmentSchema,
   sshVpnConfirmAnswerSchema,
+  sshVpnCredentialAnswerSchema,
   sshVpnProfileIdSchema,
   sshVpnSaveProfileSchema,
+  type SshVpnOvpnInspection,
   type SshVpnResult,
   type SshVpnSnapshot
 } from '../../shared/ssh-vpn-types'
+import { getSecretStore } from '../../shared/secret-store'
 import { getCurrentMainWindow } from '../ipc/ssh-ipc-context'
 import { resolveWithSshG } from '../ssh/ssh-config-parser'
 import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
+import { readOvpnProfileFile } from './ovpn-profile-files'
 import { prepareOvpnProfile } from './ovpn-profile-preparation'
-import { SshVpnStartDeclinedError } from './ssh-vpn-manager'
+import { SshVpnStartDeclinedError } from './ssh-vpn-manager-types'
 import { createSshVpnRuntime, type SshVpnRuntime } from './ssh-vpn-runtime'
 
 const INVALID_REQUEST = { ok: false, error: { message: 'Invalid VPN request' } } as const
@@ -23,6 +27,15 @@ function broadcast(channel: string, payload?: unknown): void {
       window.webContents.send(channel, payload)
     }
   }
+}
+
+function sendToMainWindow(channel: string, payload: unknown): boolean {
+  const window = getCurrentMainWindow()
+  if (!window || window.isDestroyed()) {
+    return false
+  }
+  window.webContents.send(channel, payload)
+  return true
 }
 
 async function respond<T>(run: () => Promise<T> | T): Promise<SshVpnResult<T>> {
@@ -40,24 +53,50 @@ function snapshot(runtime: SshVpnRuntime): SshVpnSnapshot {
   return {
     profiles: runtime.store.listProfiles(),
     assignments: runtime.store.listAssignments(),
-    states: runtime.manager.listStates()
+    states: runtime.manager.listStates(),
+    savedPasswordProfileIds: runtime.vault.savedProfileIds(),
+    canStorePasswords: runtime.vault.canStorePasswords()
   }
 }
 
+async function inspectOvpn(ovpnPath: string): Promise<SshVpnOvpnInspection> {
+  const prepared = await prepareOvpnProfile(ovpnPath, readOvpnProfileFile)
+  return { needsCredentials: prepared.needsCredentials }
+}
+
 function registerProfileHandlers(runtime: SshVpnRuntime): void {
-  const { store, manager } = runtime
-  ipcMain.handle('sshVpn:snapshot', () => snapshot(runtime))
+  const { store, manager, vault } = runtime
+  ipcMain.handle('sshVpn:snapshot', () => respond(() => snapshot(runtime)))
+  ipcMain.handle('sshVpn:inspectOvpn', (_event, raw: unknown) =>
+    typeof raw === 'string' && isAbsoluteOvpnPath(raw)
+      ? respond(() => inspectOvpn(raw))
+      : INVALID_REQUEST
+  )
   ipcMain.handle('sshVpn:saveProfile', (_event, raw: unknown) => {
     const request = sshVpnSaveProfileSchema.safeParse(raw)
     if (!request.success) {
       return INVALID_REQUEST
     }
     return respond(async () => {
-      const { id, draft } = request.data
+      const { id, draft, password } = request.data
       // Why before saving: a profile that cannot connect should fail here, not on first use.
-      await prepareOvpnProfile(draft.ovpnPath, (filePath) => readFile(filePath))
+      const { needsCredentials } = await inspectOvpn(draft.ovpnPath)
+      if (needsCredentials && !draft.username) {
+        throw new Error('This profile asks for a username and password. Enter the username.')
+      }
+      if (draft.passwordStorage === 'forever' && !vault.canStorePasswords()) {
+        throw new Error(
+          'This system has no secure password storage. Choose "Until Orca quits" or "Ask every time" instead.'
+        )
+      }
       const previous = id ? store.getProfile(id) : null
       const saved = store.saveProfile(id, draft)
+      const storage = saved.passwordStorage ?? 'session'
+      // Why: a changed save setting moves the password already kept to where it now belongs.
+      const passwordToKeep = password ?? vault.get(saved.id)
+      if (passwordToKeep) {
+        vault.remember(saved.id, storage, passwordToKeep)
+      }
       if (previous && previous.ovpnPath !== saved.ovpnPath) {
         await manager.stop(saved.id)
       }
@@ -74,6 +113,7 @@ function registerProfileHandlers(runtime: SshVpnRuntime): void {
     return respond(async () => {
       await manager.stop(id.data)
       store.deleteProfile(id.data)
+      vault.forget(id.data)
       broadcast('sshVpn:changed')
     })
   })
@@ -105,7 +145,7 @@ function registerProfileHandlers(runtime: SshVpnRuntime): void {
 }
 
 function registerConnectionHandlers(runtime: SshVpnRuntime): void {
-  const { manager, service, approvals } = runtime
+  const { manager, service, approvals, logins } = runtime
   ipcMain.handle('sshVpn:connect', (_event, raw: unknown) => {
     const id = sshVpnProfileIdSchema.safeParse(raw)
     return id.success ? respond(() => service.connect(id.data)) : INVALID_REQUEST
@@ -133,20 +173,22 @@ function registerConnectionHandlers(runtime: SshVpnRuntime): void {
       approvals.answer(answer.data.requestId, answer.data.approved)
     }
   })
+  ipcMain.handle('sshVpn:answerCredentials', (_event, raw: unknown) => {
+    const answer = sshVpnCredentialAnswerSchema.safeParse(raw)
+    if (answer.success) {
+      logins.answer(answer.data.requestId, answer.data.credentials)
+    }
+  })
 }
 
 export function registerSshVpnHandlers(): void {
   const runtime = createSshVpnRuntime({
     userDataPath: app.getPath('userData'),
+    secretStore: getSecretStore,
     onStateChange: (state) => broadcast('sshVpn:state', state),
-    sendStartConfirm: (request) => {
-      const window = getCurrentMainWindow()
-      if (!window || window.isDestroyed()) {
-        return false
-      }
-      window.webContents.send('sshVpn:confirm-start', request)
-      return true
-    }
+    onProfilesChanged: () => broadcast('sshVpn:changed'),
+    sendStartConfirm: (request) => sendToMainWindow('sshVpn:confirm-start', request),
+    sendCredentialRequest: (request) => sendToMainWindow('sshVpn:credential-request', request)
   })
   registerProfileHandlers(runtime)
   registerConnectionHandlers(runtime)
