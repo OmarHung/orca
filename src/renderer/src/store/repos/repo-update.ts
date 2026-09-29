@@ -4,6 +4,7 @@ import type { Repo } from '../../../../shared/repo-types'
 import { sanitizeRepoIcon } from '../../../../shared/repo-icon'
 import { normalizeRepoBadgeColor } from '../../../../shared/repo-badge-color'
 import { normalizeGhAccountBinding } from '../../../../shared/github/account-binding'
+import { isRepoInitialTab } from '../../../../shared/repo-initial-tab'
 import {
   findRepoForHost,
   getRepoHostIdentityForParts,
@@ -50,6 +51,9 @@ export function sanitizeRepoUpdate(updates: RepoUpdate): RepoUpdate {
     sanitized.forkSyncMode !== 'off'
   ) {
     delete sanitized.forkSyncMode
+  }
+  if ('initialTab' in sanitized && !isRepoInitialTab(sanitized.initialTab)) {
+    delete sanitized.initialTab
   }
   if ('ghAccount' in sanitized && sanitized.ghAccount != null) {
     const normalized = normalizeGhAccountBinding(sanitized.ghAccount)

@@ -76,6 +76,29 @@ export function getRepositoryPaneSearchEntries(
         )
       ]
     },
+    {
+      title: translate('auto.components.settings.repository.search.initialTab', 'Initial Tab'),
+      description: translate(
+        'auto.components.settings.repository.search.initialTabDescription',
+        'What opens when a workspace of this project has no tabs.'
+      ),
+      keywords: [
+        repo.displayName,
+        ...translateSearchKeyword(
+          'auto.components.settings.repository.search.initialTabDefaultTab',
+          'default tab'
+        ),
+        ...translateSearchKeyword(
+          'auto.components.settings.repository.search.initialTabAgent',
+          'agent'
+        ),
+        ...translateSearchKeyword(
+          'auto.components.settings.repository.search.initialTabClaude',
+          'claude',
+          { englishOnly: true }
+        )
+      ]
+    },
     ...(!isFolder
       ? [
           {

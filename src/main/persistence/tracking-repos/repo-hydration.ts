@@ -3,6 +3,7 @@ import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { getDefaultRepoHookSettings } from '../../../shared/constants'
 import { isFolderRepo } from '../../../shared/repo-kind'
 import { sanitizeRepoIcon } from '../../../shared/repo-icon'
+import { isRepoInitialTab } from '../../../shared/repo-initial-tab'
 import { normalizeGhAccountBinding } from '../../../shared/github/account-binding'
 import { normalizeRepoSourceControlAiOverrides } from '../../../shared/source-control-ai'
 import {
@@ -36,6 +37,7 @@ export function hydrateRepo(repo: Repo, gitUsernameCache: ReadonlyMap<string, st
     sourceControlAi: rawSourceControlAi,
     projectHostSetupMethod: rawProjectHostSetupMethod,
     forkSyncMode: rawForkSyncMode,
+    initialTab: rawInitialTab,
     ghAccount: rawGhAccount,
     customWorktreeVisibilitySources: rawCustomWorktreeVisibilitySources,
     worktreeVisibilitySourcePreferences: rawWorktreeVisibilitySourcePreferences,
@@ -70,6 +72,7 @@ export function hydrateRepo(repo: Repo, gitUsernameCache: ReadonlyMap<string, st
     ...(sourceControlAi !== undefined ? { sourceControlAi } : {}),
     ...(projectHostSetupMethod !== undefined ? { projectHostSetupMethod } : {}),
     ...(forkSyncMode !== undefined ? { forkSyncMode } : {}),
+    ...(isRepoInitialTab(rawInitialTab) ? { initialTab: rawInitialTab } : {}),
     ...(ghAccount ? { ghAccount } : {}),
     ...(customWorktreeVisibilitySources !== undefined ? { customWorktreeVisibilitySources } : {}),
     ...(worktreeVisibilitySourcePreferences !== undefined

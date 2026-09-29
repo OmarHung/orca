@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { normalizeRepoSourceControlAiOverrides } from '../source-control-ai'
 import { normalizeRepoBadgeColor } from '../repo-badge-color'
 import { sanitizeRepoIcon } from '../repo-icon'
+import { isRepoInitialTab } from '../repo-initial-tab'
 import { normalizeGhAccountBinding } from '../github/account-binding'
 import {
   normalizeCustomWorktreeVisibilitySources,
@@ -71,6 +72,10 @@ export function createRepoUpdateSchema<T extends Readonly<Record<string, z.ZodTy
           return normalizeGhAccountBinding(value) ?? undefined
         }),
       forkSyncMode: z.enum(['ask', 'safe-auto', 'off']).optional(),
+      initialTab: z
+        .unknown()
+        .optional()
+        .transform((value) => (isRepoInitialTab(value) ? value : undefined)),
       externalWorktreeVisibility: z.enum(['hide', 'show']).nullable().optional(),
       externalWorktreeVisibilityPromptDismissedAt: z.number().finite().optional(),
       externalWorktreeInboxBaselinePaths: z.array(z.string()).optional(),

@@ -264,11 +264,13 @@ export function activateAndRevealWorktree(
     // session's tab first, so the seeding below doesn't add a bare shell next to it.
     resumeSleepingAgentSessionsForWorktree(worktreeId)
   }
+  const blankTerminalSelected = opts?.agent === null
   if (shouldGateAgentActivation) {
     gateAndReseedEmptyWorkspace(worktreeId, {
       callerProvidesSurface: opts?.providesInitialSurface === true,
       seedUserDefaultSurface,
-      ...(opts?.executionHostId ? { executionHostId: opts.executionHostId } : {})
+      ...(opts?.executionHostId ? { executionHostId: opts.executionHostId } : {}),
+      ...(blankTerminalSelected ? { blankTerminalSelected } : {})
     })
   }
 
@@ -289,6 +291,7 @@ export function activateAndRevealWorktree(
             ...(opts?.createNewTerminalForStartup ? { createNewTerminalForStartup: true } : {}),
             ...(providesInitialSurface ? { callerProvidesSurface: true } : {}),
             ...(seedUserDefaultSurface ? { seedUserDefaultSurface: true } : {}),
+            ...(blankTerminalSelected ? { blankTerminalSelected: true } : {}),
             reseedEmptiedWorkspace: !providesInitialSurface
           }
         )

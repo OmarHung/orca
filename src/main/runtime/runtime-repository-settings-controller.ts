@@ -28,6 +28,7 @@ type RepositoryUpdates = Partial<
     | 'kind'
     | 'symlinkPaths'
     | 'issueSourcePreference'
+    | 'initialTab'
     | 'externalWorktreeVisibility'
     | 'externalWorktreeVisibilityPromptDismissedAt'
     | 'externalWorktreeInboxBaselinePaths'

@@ -80,4 +80,6 @@ export type InitialTerminalOptions = {
   /** The user deliberately opened this workspace with no surface choice, so it may open their
    *  default agent chat instead of a bare shell. */
   seedUserDefaultSurface?: boolean
+  /** The create picker chose Blank Terminal, so the project's initial agent must not replace it. */
+  blankTerminalSelected?: boolean
 }
