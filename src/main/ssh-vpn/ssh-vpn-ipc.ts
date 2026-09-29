@@ -118,8 +118,9 @@ function registerProfileHandlers(runtime: SshVpnRuntime): void {
     }
     return respond(async () => {
       await manager.stop(id.data)
-      store.deleteProfile(id.data)
+      // Why first: a profile deleted before its password would leave that password with nothing to remove it from.
       vault.forget(id.data)
+      store.deleteProfile(id.data)
       broadcast('sshVpn:changed')
     })
   })
