@@ -288,3 +288,38 @@ test('resizes table columns by dragging and auto-fits them on double-click', asy
   await expect.poll(isTruncated(subjectText)).toBe(false)
   await orcaPage.screenshot({ path: testInfo.outputPath('git-log-columns-fitted.png') })
 })
+
+test('picks up branches and tags made outside Orca without a manual refresh', async ({
+  orcaPage,
+  testRepoPath,
+  registerPostElectronShutdownCleanup
+}, testInfo) => {
+  const fixture = createGoldenWorktree(testRepoPath, 'git-log-auto-refresh')
+  registerPostElectronShutdownCleanup(async () => cleanupGoldenWorktree(testRepoPath, fixture))
+  const git = (...args: string[]): void => {
+    execFileSync('git', args, { cwd: fixture.worktreePath, stdio: 'pipe' })
+  }
+  const newBranch = `${fixture.branchName}-made-outside`
+  const newTag = `${fixture.branchName}-tag`
+  git('commit', '--allow-empty', '-m', 'feat: before the outside refs')
+
+  await waitForSessionReady(orcaPage)
+  await activateGoldenWorktree(orcaPage, testRepoPath, fixture.worktreePath)
+  await orcaPage.getByTestId('git-log-status-toggle').click()
+  const panel = orcaPage.getByTestId('bottom-panel')
+  const headRow = panel.getByTestId('git-log-row').filter({ hasText: 'before the outside refs' })
+  await expect(headRow).toBeVisible({ timeout: 20_000 })
+  await expect(headRow).not.toContainText(newBranch)
+
+  // Why: refs-only writes move no HEAD and no file Orca's git watcher reads.
+  git('branch', newBranch)
+  git('tag', newTag)
+  await orcaPage.evaluate(() => window.dispatchEvent(new Event('focus')))
+
+  await expect(headRow).toContainText(newBranch)
+  await expect(headRow).toContainText(newTag)
+  await expect(
+    panel.getByTestId('git-log-branch-tree').getByRole('button', { name: newBranch })
+  ).toBeVisible()
+  await orcaPage.screenshot({ path: testInfo.outputPath('git-log-auto-refreshed.png') })
+})
