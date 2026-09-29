@@ -1,0 +1,262 @@
+# SSH／SFTP 自動走 OpenVPN：實作計畫（fork 專屬）
+
+> 狀態：Phase 0 完成（2026-09-29），紀錄見 §9；下一步 Phase 1
+> 分支：`feat/ssh-vpn`（worktree `/Users/omar/myprojects/orca-worktrees/feat-ssh-vpn`），每個 Phase 完成後合回 `omar/custom`
+> 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
+
+## 1. 目標
+
+某些 SSH 主機只能透過公司的 OpenVPN 連到。現在的做法是整台 Mac 連上 OpenVPN Connect，所有流量都會跟著走 VPN。
+
+目標：**在 Orca 裡把主機指定給某個 VPN 設定檔（.ovpn），之後連這台主機時，Orca 自動把 VPN 連上，而且只有這條連線走 VPN。Mac 本身的網路維持不走 VPN。**
+
+要涵蓋的連線：
+
+| 功能 | 連線方式 | 走 VPN 的方法 |
+|---|---|---|
+| SSH 頁的終端機分頁 | 本機 PTY 執行系統 `ssh <別名>` | 指令加上 `-o ProxyCommand=…` |
+| SFTP 頁 | main process 的 ssh2（`SshConnection`） | 把 ssh2 的 `config.sock` 換成 VPN 通道 |
+| 資料庫的 SSH 通道 | 同上（`DatabaseSshConnections`） | 同上 |
+| 設定頁「連線」（relay 工作區、port forward） | 同上 | 同上 |
+| 必須走系統 ssh 的主機（FIDO2 金鑰、GSSAPI） | `buildSshArgs` 產生的系統 ssh | 參數加上 `-o ProxyCommand=…` |
+
+## 2. 已確定的決策（使用者，2026-09-29）
+
+| # | 決策 | 內容 |
+|---|---|---|
+| D1 | 做法 | 方案 C：做進 Orca，連線時自動啟動 VPN |
+| D2 | VPN 登入方式 | **只支援憑證**（.ovpn 已內含或引用憑證與金鑰，不用輸入帳密）。帳密、MFA、SSO 不在第一版範圍 |
+| D3 | 設定位置 | **SSH 頁和設定頁兩邊都能設定**：兩邊都能管理 VPN 設定檔，也都能指定主機要用哪個 VPN |
+| D4 | 斷線時機 | **閒置 10 分鐘自動斷**：沒有任何連線在用這個 VPN 時開始計時。分鐘數可以依設定檔調整，設成 0 代表不自動斷。關閉 Orca 時一定會斷 |
+| D5 | 降低 upstream 衝突 | 新程式碼放在新目錄；對 upstream 檔案只加掛載點。i18n 用 fork 自己的 namespace `sshVpn.*` |
+
+## 3. 現有架構（2026-09-29 調查結果）
+
+路徑都相對於 `src/`。
+
+### 3.1 為什麼不能直接用「Proxy Command」欄位
+
+主機設定已經有 Proxy Command 欄位，但只要設了 ProxyCommand 或 ProxyJump，`shouldUseSystemSshTransport()`（`main/ssh/ssh-transport-selection.ts:71`）就會讓連線改走系統 `ssh`。SFTP 頁遇到走系統 ssh 的主機會直接拒絕（`main/sftp/sftp-session-manager.ts:45` 的 `SYSTEM_TRANSPORT_MESSAGE`）。
+
+所以 VPN **不能**做成 ProxyCommand 字串塞進主機設定，而是要另外處理：ssh2 路徑直接換 `config.sock`，不影響選擇哪種連線方式。
+
+### 3.2 可重用的東西
+
+- `main/ssh/ssh-proxy-command.ts` 的 `spawnProxyCommand()`：把子程序的 stdin／stdout 包成 ssh2 可用的 `Duplex`，已經處理 backpressure、stderr 排空和錯誤。`jump-host` 分支示範了怎麼用 `spawnProcess` 直接執行、不經 shell。VPN 通道新增一種 `EffectiveProxy`（argv 形式），沿用同一套包裝。
+- `main/ssh/ssh-connection.ts:830` 附近：ssh2 路徑設定 `config.sock` 的位置，就是 VPN 的掛載點。
+- `main/ssh/system-ssh-args.ts` 的 `buildSshArgs()`：所有系統 ssh 的呼叫都經過它（`system-ssh-command.ts`、`system-ssh-forward-process.ts`、`system-ssh-dynamic-forward-process.ts`、`system-ssh-file-transfer.ts`、`system-ssh-sftp-transfer.ts`），第 98 行已經有注入 `-o ProxyCommand=` 的寫法。
+- `renderer/.../ssh-page/ssh-session-command.ts` 的 `buildSshSessionCommand()` 和 `ssh-session-actions.ts` 的 `openSshSession()`：SSH 頁開分頁前會跳出確認對話框，列出確切的指令（commit `81aec0bf04`）。
+- `shared/child-process/` 的 `spawnProcess`：Windows 上必須用它來啟動子程序（AGENTS.md 規定）。
+
+### 3.3 可行性實測（2026-09-29，這台 Mac，Docker 29.8.1 linux/arm64）
+
+- `alpine:3.22` 加上 `--cap-add NET_ADMIN --device /dev/net/tun` 後，可以 `apk add openvpn` 裝到 **OpenVPN 2.6.20**，容器裡也有 `/dev/net/tun`。
+- Alpine 內建 BusyBox 的 `nc`。`docker exec -i <容器> nc github.com 22` 可以收到 `SSH-2.0-…` banner，證明 `docker exec … nc` 可以當 SSH 的傳輸通道。
+
+## 4. 設計
+
+### 4.1 整體架構
+
+```
+Mac 本機網路（不變）
+│
+├─ Orca main ──ssh2 sock──► docker exec -i <容器> nc <host> <port> ─┐
+├─ SSH 頁 PTY: ssh -o ProxyCommand="docker exec -i <容器> nc %h %p" ─┤
+│                                                                   ▼
+│                                  Docker VM 內的容器：OpenVPN（tun0）──► 公司內網主機
+└─ 其他所有程式 ──► 一般網路
+```
+
+- 一個 VPN 設定檔對應一個容器，多台主機可以共用同一個 VPN。
+- **不開任何 port**：通道是 `docker exec` 的 stdin／stdout，本機其他程式和區網上的人都用不到這條 VPN。
+- DNS 在容器裡解析，所以只有 VPN 內部 DNS 認得的主機名稱也能連。
+
+### 4.2 映像檔
+
+- 第一次使用時，用 `docker build -t orca-ssh-vpn:<內容雜湊> -` 在本機建置。Dockerfile 從 stdin 傳入，**不用第三方映像檔**。
+- 內容：`FROM alpine:3.22@sha256:<固定 digest>`，`apk add --no-cache openvpn`，再加一支 DNS 用的 up script（見 4.4）。
+- 建置需要連網一次（抓 alpine 和 apk 套件）。之後就算離線，只要映像檔還在就能用。Dockerfile 內容一變，雜湊標籤就會跟著變，自動重建。
+
+### 4.3 容器生命週期
+
+由 main 的 `SshVpnManager` 管理。狀態：`stopped` → `starting` → `ready` → `stopping`，另外有 `error`（保留最後幾行日誌）。
+
+**啟動**（多條連線同時要求時，只啟動一次）：
+
+1. 解析 docker 的絕對路徑，執行 `docker info` 確認 Docker 在跑。沒安裝或沒啟動時，直接顯示明確的錯誤訊息。
+2. 確認映像檔存在，不存在就建置。
+3. 執行：
+   ```
+   docker run -d --rm --name orca-ssh-vpn-<instance>-<profile8>
+     --label dev.orca.ssh-vpn.instance=<instance> --label dev.orca.ssh-vpn.profile=<id>
+     --cap-add NET_ADMIN --device /dev/net/tun
+     --tmpfs /run/orca:rw,mode=0700
+     orca-ssh-vpn:<hash> <常駐的空閒程序>
+   ```
+   `<instance>` 是 userData 路徑的雜湊，讓 dev 版和正式版的 Orca 各自管理自己的容器，不會互相刪除。
+4. 用 `docker exec -i <容器> sh -c 'cat > /run/orca/<檔名>'` 把 .ovpn 和它引用的檔案寫進容器內的 tmpfs（記憶體檔案系統，不落地）。`docker cp` 不能寫進 tmpfs，所以不用它。
+5. `docker exec -i <容器> openvpn --config /run/orca/profile.ovpn --cd /run/orca --script-security 2 --up <dns script> --verb 3`，main 持續讀取它的輸出：
+   - 看到 `Initialization Sequence Completed` → `ready`
+   - `AUTH_FAILED`、`Exiting due to fatal error`、程序結束，或 60 秒逾時 → `error`，並移除容器
+
+**閒置斷線（D4）**：狀態是 `ready` 時，每 60 秒執行一次 `docker exec <容器> pgrep -x nc`。每條走 VPN 的連線都是容器裡的一個 `nc`，所以這個數量就是使用中的連線數，不管連線來自 ssh2、SSH 頁終端機還是系統 ssh 都算得到。數量連續為 0 超過設定的分鐘數（預設 10，0 代表不自動斷）就執行 `docker rm -f`。
+
+**清理**：
+- Orca 關閉前：對自己 instance 的所有容器執行 `docker rm -f`（最多等 3 秒）。
+- Orca 啟動時：清掉上次當機留下、同一個 instance 的容器。
+
+### 4.4 DNS
+
+容器裡的 OpenVPN 預設不會改 `/etc/resolv.conf`。映像檔內建一支 up script，讀取 OpenVPN 傳入的 `foreign_option_*` 環境變數，把推送下來的 `dhcp-option DNS` 和 `DOMAIN` 寫進容器的 `/etc/resolv.conf`。命令列的 `--up` 放在 `--config` 之後，所以會取代 .ovpn 自己的 `up` 設定。
+
+### 4.5 .ovpn 解析
+
+新增設定檔時和每次連線前都會解析：
+
+- **引用外部檔案**的指令（`ca`、`cert`、`key`、`tls-auth`、`tls-crypt`、`tls-crypt-v2`、`pkcs12`、`crl-verify`、`extra-certs`、`secret`，不含 `[inline]`）：把相對於 .ovpn 所在目錄的檔案一起寫進容器。找不到檔案就在連線前報錯。
+- **第一版不支援、要明確報錯**的指令：`auth-user-pass`（D2）、`static-challenge`（MFA）、加密的私鑰（需要 askpass）。
+- 其他指令原封不動交給 OpenVPN。OpenVPN Connect 專用的指令如果 2.6 版不認得，錯誤會出現在日誌裡。
+
+設定檔只存 .ovpn 的**路徑**，每次連線時才讀取，跟 SSH 的 identityFile 一樣。.ovpn 通常內含私鑰，這樣做可以避免 Orca 再多存一份秘密。
+
+### 4.6 儲存
+
+fork 自己的檔案 `<userData>/ssh-vpn.json`：
+
+```ts
+type SshVpnProfile = { id: string; name: string; ovpnPath: string; idleMinutes: number }
+type SshVpnState = { profiles: SshVpnProfile[]; assignments: Record<string /* SshTarget.id */, string /* profile id */> }
+```
+
+- 不在 upstream 的 `SshTarget` 型別加欄位。這樣從 `~/.ssh/config` 重新匯入主機時不會洗掉指派，upstream 的 IPC schema 也不用改。
+- 主機被刪除後，下次載入時自動清掉失效的指派。
+- 沒有任何 RPC 或 wire 變更（見 AGENTS.md「Remote Wire Compatibility」）。
+
+### 4.7 連線掛載點（upstream 檔案，都只是幾行）
+
+1. **`ssh-proxy-command.ts`**：`EffectiveProxy` 新增 `{ kind: 'argv'; program; args }`，用 `spawnProcess` 執行，沿用既有的 Duplex 包裝。
+2. **`ssh-connection.ts`**：`doConnect` 一開始就呼叫 fork 的 `prepareSshVpnRoute(target, resolved)`：
+   - 主機沒有指定 VPN → 回傳 `null`，行為完全不變。
+   - 有指定 → 等 VPN `ready`，再回傳 argv proxy：`docker exec -i <容器> nc <host> <port>`，ssh2 路徑就用它取代 `resolveEffectiveProxy`。
+3. **`system-ssh-args.ts`**：`buildSshArgs` 呼叫 fork 的 `getSshVpnProxyCommand(target)`，有值就加上 `-o ProxyCommand=<docker 絕對路徑> exec -i <容器> nc %h %p`。
+4. **失敗時一律不連線（fail closed）**：主機指定了 VPN，但 VPN 沒有 `ready` 時，一律報錯，**絕不**直接連線。否則連線可能不經 VPN 就從一般網路出去。
+5. **衝突**：主機（或它的 `~/.ssh/config`）已經有 ProxyCommand 或 ProxyJump 時，第一版直接報錯，說明兩者不能並用。原因：OpenSSH 的 `-o ProxyCommand` 會蓋掉 ProxyJump，連線路線會在使用者不知情的情況下改變。
+
+### 4.8 UI
+
+**SSH 頁**（fork 檔案）：
+- 主機清單上方加一個「VPN」按鈕，用顏色標示狀態（未連線／連線中／已連線／錯誤）。點下去打開 VPN 面板：列出設定檔和狀態，可以新增、編輯、刪除、手動連線和斷線，也可以看最近的日誌。
+- 主機清單加右鍵選單「VPN」，子選單列出「不使用」和各個設定檔。有指定 VPN 的主機顯示一個小標記。
+- 開 SSH 分頁時，確認對話框的指令清單會加上 VPN 的 `docker …` 指令（VPN 還沒連上時才列），ssh 指令則顯示含 `-o ProxyCommand=…` 的完整版本。按下「連線」後，**先等 VPN `ready`，才把 ssh 指令送進終端機**。
+
+**設定頁**（掛載 fork 元件到 upstream 檔案）：
+- `SshPane.tsx`：加入「VPN 設定檔」區塊，跟 SSH 頁的 VPN 面板共用同一套管理元件。
+- `SshHostAdvancedFields.tsx`：主機表單加上「VPN」下拉選單。按「儲存」時一起寫入；新增主機時，拿到新主機的 id 之後才寫入指派。
+
+**確認對話框**：沿用 `81aec0bf04`「每個 SSH／SFTP 動作都先列出確切指令」的原則。
+- SSH 頁由 renderer 發起連線，確認對話框本來就有，把 VPN 指令併進去即可。
+- SFTP、資料庫、relay 由 main 發起連線。要啟動 VPN 時，main 請 renderer 跳出確認對話框，列出 docker 指令。使用者拒絕的話，連線失敗並顯示「VPN 未啟動」。
+- 確認只在 VPN **啟動**時跳出，VPN 已經連上時，新的連線不會再問。
+
+### 4.9 跨平台
+
+- macOS（Docker Desktop、OrbStack、Colima）和 Windows（Docker Desktop／WSL2）：容器跑在 Docker 的 VM 裡。Linux 的 Docker Engine 直接跑在主機上，但容器有自己的網路 namespace，主機網路一樣不受影響。
+- docker 一律用解析好的絕對路徑，因為從 GUI 啟動的 Orca，PATH 可能找不到它。
+- SSH 頁送進終端機的 `-o "ProxyCommand=…"` 要依 shell 處理引號：POSIX shell、fish、PowerShell、cmd.exe 各不相同。另外要處理 Windows 的 docker 路徑含空白（`C:\Program Files\…`）的情況。
+- 開發和驗證只在這台 Mac 上做，Windows 和 Linux 只有單元測試覆蓋。
+
+## 5. 安全性
+
+- VPN 通道不開 port，只有 Orca 透過 `docker exec` 能用。
+- .ovpn 和引用的金鑰只存在容器內的 tmpfs，容器移除後就消失，不會出現在 `docker inspect`、指令參數或環境變數裡。
+- .ovpn 裡的 `up`／`down` 等 script 只會在容器裡執行，碰不到 Mac。
+- 映像檔在本機建置，alpine 用 digest 固定版本，不依賴第三方映像檔。
+- fail closed（4.7 第 4 點）：指定了 VPN 的主機，絕不在沒有 VPN 的情況下連線。
+
+## 6. 第一版不做
+
+- 帳密、MFA／動態驗證碼、SSO／SAML 登入（D2）。解析到相關指令時明確報錯。
+- VPN 和 ProxyJump／ProxyCommand 並用（4.7 第 5 點）。之後可以做成「先走 VPN，再跳板」。
+- Podman 和 rootless Docker。
+- 手機版和 web 客戶端。VPN 跑在發起 SSH 連線的那台桌機上。
+
+## 7. 分階段
+
+每個 Phase 完成都要跑 `tc`、單元測試和 `check:code-quality:changed`，合回 `omar/custom` 前先給使用者確認。
+
+### Phase 0：核心和測試環境（只有 main，沒有 UI）——已完成
+
+- `src/main/ssh-vpn/`：docker 指令產生與執行、映像檔建置、`SshVpnManager`（狀態機、同時啟動只跑一次、就緒判斷、閒置斷線、清理）、.ovpn 解析、`ssh-vpn.json` 存取。
+- 連線掛載點：4.7 的 1～4 點，以及第 5 點的衝突檢查。
+- **測試環境**：用 Docker 建一個只有 VPN 才進得去的內網。一個 OpenVPN server 容器（測試用 PKI 在測試開始時產生），加上一個只接在 `--internal` 網路上的 sshd。用 `ORCA_TEST_SSH_VPN_DOCKER=1` 開關。
+- 驗收：
+  - 整合測試：`SshConnection` 和 `SftpSessionManager` 在 VPN 下可以連到內網 sshd，不走 VPN 時連不到。
+  - Mac 的網卡和路由表在測試前後沒有變化。
+  - VPN 啟動失敗時，連線一定失敗（fail closed）。
+  - 單元測試：指令產生、日誌判斷、.ovpn 解析、閒置計時、同時啟動。
+
+### Phase 1：SSH 頁、SFTP 頁與確認流程
+
+- SSH 頁的 VPN 按鈕和面板、主機右鍵選單、主機標記。
+- SSH 分頁：確認對話框加入 VPN 指令，等 VPN 就緒後才送出含 ProxyCommand 的 ssh 指令。
+- main 發起 VPN 啟動時的確認流程（SFTP、資料庫、relay）。
+- Docker 沒安裝或沒啟動時的提示。
+- i18n：只加 `en.json` 和 `zh.json`，再跑 `generate-zh-tw-locale.mjs` 產生 zh-TW。
+- 驗收：e2e 測試用 SSH 頁開分頁到內網 sshd、用 SFTP 頁列出內網主機的目錄。另外給使用者在 `pnpm dev` 用自己的 .ovpn 實際試用。
+
+### Phase 2：設定頁
+
+- `SshPane` 加入「VPN 設定檔」區塊。
+- 主機表單加入 VPN 下拉選單，包含新增主機時的寫入流程。
+- 驗收：兩邊設定的結果一致（在一邊改，另一邊馬上看得到）。
+
+### Phase 3：收尾
+
+- 設定檔可以調整閒置分鐘數，並驗證關閉 Orca 時和當機後重開的清理。
+- 在 `docs/fork/` 補上使用說明與已知限制，用 fork build script 打包給使用者安裝。
+
+## 8. 風險
+
+| 風險 | 影響 | 處理 |
+|---|---|---|
+| Docker 沒啟動 | VPN 連不上 | 明確提示；macOS 可以提供「啟動 Docker」按鈕 |
+| 第一次連線比較慢 | 建置映像檔約數十秒（只有一次）；容器啟動加 VPN 握手約 3～10 秒 | 顯示進度；閒置 10 分鐘才斷，同一段時間內的連線都不用重新等 |
+| 每條連線多一次 `docker exec` | 建立連線時多約 0.1～0.3 秒 | 可以接受，連上之後的傳輸不受影響 |
+| OpenVPN Connect 專用的指令 | OpenVPN 2.6 可能不認得 | 把日誌給使用者看；必要時在解析階段忽略已知無害的指令 |
+| Docker Desktop 的商業授權 | 公司規定可能不能用 | OrbStack 和 Colima 都相容 docker CLI |
+
+## 9. 進度紀錄
+
+### Phase 0（2026-09-29，分支 `feat/ssh-vpn`）
+
+**新檔案**（`src/main/ssh-vpn/`，另有 `src/shared/ssh-vpn-types.ts`）：
+
+| 檔案 | 內容 |
+|---|---|
+| `ovpn-profile-preparation.ts` | 解析 .ovpn：複製引用的檔案並改寫路徑、拿掉 `daemon`／`log`／`up` 等指令、拒絕帳密／MFA／加密私鑰（4.5） |
+| `openvpn-output.ts` | 判斷 OpenVPN 輸出（就緒、失敗）、取失敗原因、保留最後 40 行日誌 |
+| `ssh-vpn-image.ts` | 內建 Dockerfile（alpine digest 固定）與 DNS up script，標籤是內容雜湊 |
+| `ssh-vpn-docker.ts` | docker 路徑解析、所有 argv 產生器、`SshVpnDocker`（只用 argv，不經 shell）、系統 ssh 的 ProxyCommand 字串 |
+| `ssh-vpn-manager.ts` | 每個設定檔一個容器的狀態機：同時啟動只跑一次、60 秒就緒逾時、OpenVPN 掉線、閒置斷線、清理 |
+| `ssh-vpn-store.ts` | `userData/ssh-vpn.json`（設定檔＋主機指派） |
+| `ssh-vpn-route.ts` | upstream 掛載點用的 seam（沒有 runtime import，避免循環相依） |
+| `ssh-vpn-service.ts` | 查主機的 VPN、衝突檢查、回傳 argv proxy／ProxyCommand、fail closed |
+| `ssh-vpn-ipc.ts` | 啟動註冊：設定 provider、有設定檔時清理殘留容器、`will-quit` 時同步 `docker rm -f` |
+| `ssh-vpn-test-network.ts` | 測試專用：只有 VPN 進得去的 Docker 內網 |
+
+**upstream 掛載點**（共約 30 行）：`ssh-proxy-command.ts`（新增 `argv` 類型）、`ssh-connection.ts`（`attemptConnect` 一開始呼叫 `prepareSshVpnRoute`）、`system-ssh-args.ts`（`buildSshArgs` 注入 ProxyCommand）、`register-core-handlers.ts`（註冊）及其測試的 mock。
+
+**驗證**：
+- 單元測試 48 個（含 upstream 掛載點：argv proxy 不經 shell、ssh2 拿到 VPN 的 sock、VPN 起不來時不建立 ssh2 連線、`buildSshArgs` 在 VPN 沒連上時丟錯）。
+- 既有的 SSH／SFTP／資料庫 SSH／core handler 測試 2512 個全過。
+- Docker 整合測試（`ORCA_TEST_SSH_VPN_DOCKER=1`，約 6 秒）5 個全過：沒 VPN 連不到內網 sshd；ssh2 經由 VPN 執行指令和 SFTP，而且是用**只有 VPN 內部 DNS 才認得的名稱**連線；系統 `ssh` 用 Orca 產生的 ProxyCommand 連得上；Mac 的網路介面前後一樣；停止後容器消失、系統 ssh 拒絕連線。刪掉映像檔重跑，驗證了第一次使用時自動建置。
+
+```
+ORCA_TEST_SSH_VPN_DOCKER=1 node_modules/.bin/vitest run --config config/vitest.config.ts src/main/ssh-vpn/ssh-vpn-docker.integration.test.ts
+```
+
+**實作時發現／決定**：
+- VPN 服務在 `registerCoreHandlers` 註冊，比 SSH 啟動時的自動重連早。`orca serve`（沒有視窗的模式）不會註冊，所以該模式下主機的 VPN 指派不生效：只能經 VPN 連到的主機會連不上，而本來就能直連的主機會直接連線、不經 VPN。**Phase 3 要補上**：serve 模式也要註冊，或在沒註冊時對有指派的主機一律拒絕連線。
+- 系統 ssh 的 ControlMaster（`ControlPersist=300`）：如果主機在指派 VPN 之前已經有一條 master 連線，接下來 5 分鐘內的指令可能沿用那條舊連線。影響很小（那條連線本來就能直連），先記錄不處理。
+- 測試伺服器用 dnsmasq 的 `--address=` 時，AAAA 查詢會回 REFUSED，musl 的解析器就會整個失敗；改用 `--host-record` 加 `--local` 就正常。真實的公司 DNS 通常不會這樣回應，但如果使用者遇到「用 IP 可以、用名稱不行」，可以往這個方向查。
+
