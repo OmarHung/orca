@@ -19629,7 +19629,7 @@
       "renameConflict": "“{{name}}” already exists in this folder.",
       "replaceWarning": "Already in the destination — files are replaced, folders merged: {{names}}",
       "legend": "Written as OpenSSH sftp batch commands. A leading “-” keeps a folder that already exists.",
-      "partialNote": "Each file is saved in a hidden temporary folder beside it first and moved into place when complete, so a failed download never damages an existing file.",
+      "partialNote": "Each file is written to a hidden temporary file beside it first and renamed when complete, so a failed download never damages an existing file.",
       "nothingToDo": "Nothing to transfer: no regular files or folders were selected.",
       "moveTitle": "Move on {{host}}?"
     },

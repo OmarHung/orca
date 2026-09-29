@@ -1,6 +1,9 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { currentWorkerEntryLayout } from '../worker-thread-entry-path'
+import {
+  currentWorkerEntryLayout,
+  resolveForkedProcessEntryPath
+} from '../worker-thread-entry-path'
 
 const ENTRY_FILENAME = 'database-worker-entry.js'
 
@@ -10,9 +13,11 @@ const ENTRY_FILENAME = 'database-worker-entry.js'
  */
 export function resolveDatabaseWorkerEntryPath(options: { unpacked: boolean }): string {
   const layout = currentWorkerEntryLayout(__dirname)
+  if (options.unpacked) {
+    return resolveForkedProcessEntryPath(layout, ENTRY_FILENAME)
+  }
   if (layout.isPackaged && layout.resourcesPath) {
-    const archive = options.unpacked ? 'app.asar.unpacked' : 'app.asar'
-    return join(layout.resourcesPath, archive, 'out', 'main', ENTRY_FILENAME)
+    return join(layout.resourcesPath, 'app.asar', 'out', 'main', ENTRY_FILENAME)
   }
   const adjacent = join(__dirname, ENTRY_FILENAME)
   // Rollup can factor the caller into out/main/chunks; worker entries stay in out/main.

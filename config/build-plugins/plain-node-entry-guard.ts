@@ -40,6 +40,7 @@ export const CLI_MAIN_ENTRY_NAMES = [
 const PLAIN_NODE_ENTRY_NAMES = [
   'daemon-entry',
   'parcel-watcher-process-entry',
+  'sftp-local-writer-entry',
   'computer-sidecar',
   'wsl-transcript-fs-process-entry',
   ...CLI_MAIN_ENTRY_NAMES

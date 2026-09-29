@@ -303,6 +303,8 @@ module.exports = {
     'out/main/parcel-watcher-process-entry.js',
     // SQLite sessions fork this entry as a child process so a stuck statement can be killed.
     'out/main/database-worker-entry.js',
+    // SFTP downloads fork this entry so writes stay inside the confirmed folder.
+    'out/main/sftp-local-writer-entry.js',
     'out/main/chunks/**',
     'resources/**',
     'node_modules/ws/**',

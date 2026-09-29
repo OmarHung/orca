@@ -262,6 +262,10 @@ export const electronViteConfig: UserConfig = {
           // Why: node:sqlite is synchronous and big result pages parse on the CPU; each
           // connected data source gets its own worker so neither blocks the UI thread.
           'database-worker-entry': resolve('src/main/database/worker/database-worker-entry.ts'),
+          // Why a process: its working directory pins the confirmed download folder (no openat in Node).
+          'sftp-local-writer-entry': resolve(
+            'src/main/sftp/local-writer/sftp-local-writer-entry.ts'
+          ),
           'profile-state-backup-worker-entry': resolve(
             'src/main/persistence/profile-state/profile-state-backup-worker-entry.ts'
           ),

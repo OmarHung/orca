@@ -29,6 +29,8 @@ export type ForkSpec = {
   stdio?: NodeSpawnOptions['stdio']
   /** Run a different Node/Electron binary — e.g. a relocated executable image. */
   execPath?: string
+  /** `advanced` sends Buffers over IPC as bytes rather than JSON arrays. */
+  serialization?: 'json' | 'advanced'
 }
 
 export function forkProcess(spec: ForkSpec): SpawnedProcess {
@@ -37,6 +39,7 @@ export function forkProcess(spec: ForkSpec): SpawnedProcess {
     env: spec.env,
     detached: spec.detached,
     stdio: spec.stdio,
+    ...(spec.serialization ? { serialization: spec.serialization } : {}),
     // Why conditional rather than `execPath: spec.execPath`: an explicit `undefined` is not the
     // same as absent to Node, which reads the key to decide whether to override its own binary.
     ...(spec.execPath ? { execPath: spec.execPath } : {})
