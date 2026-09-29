@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SshTarget } from '../../shared/ssh-types'
+import { formatSftpOperation } from '../../shared/sftp-operation-format'
 import type { SftpTransferProgress } from '../../shared/sftp-types'
 import { FakeSftp } from './sftp-test-support'
 import { SftpSessionManager, type SftpConnection } from './sftp-session-manager'
@@ -91,52 +92,74 @@ describe('SftpSessionManager', () => {
     expect(connection.disconnected).toBe(true)
   })
 
-  it('reports name clashes instead of overwriting unless asked to', async () => {
+  it('plans an upload without touching the remote, then runs exactly that plan', async () => {
     writeFileSync(path.join(localRoot, 'a.txt'), 'new')
-    const request = {
-      transferId: 't1',
+    const plan = await manager.plan({
+      kind: 'upload',
       targetId: 'web',
       sources: [path.join(localRoot, 'a.txt')],
-      destinationDir: '/srv',
-      overwrite: false
-    }
-
-    expect(await manager.transfer('upload', request)).toEqual({
-      status: 'conflict',
-      conflicts: ['a.txt']
+      destinationDir: '/srv'
     })
+
+    expect(plan.conflicts).toEqual(['a.txt'])
+    expect(plan.operations.map(formatSftpOperation)).toEqual([
+      `put ${JSON.stringify(path.join(localRoot, 'a.txt'))} "/srv/a.txt"`
+    ])
     expect(remote.readText('/srv/a.txt')).toBe('abc')
 
-    expect(await manager.transfer('upload', { ...request, overwrite: true })).toEqual({
+    expect(await manager.execute({ planId: plan.planId, transferId: 't1' })).toEqual({
       status: 'done'
     })
     expect(remote.readText('/srv/a.txt')).toBe('new')
     expect(progress.at(-1)).toMatchObject({ transferId: 't1', transferredBytes: 3, totalBytes: 3 })
   })
 
+  it('runs a plan at most once and never after it is discarded', async () => {
+    const plan = await manager.plan({ kind: 'mkdir', targetId: 'web', path: '/srv/new' })
+    await manager.execute({ planId: plan.planId, transferId: 'm1' })
+
+    await expect(manager.execute({ planId: plan.planId, transferId: 'm2' })).rejects.toThrow(
+      /expired or was already used/
+    )
+
+    const discarded = await manager.plan({ kind: 'mkdir', targetId: 'web', path: '/srv/other' })
+    manager.discardPlan(discarded.planId)
+    await expect(manager.execute({ planId: discarded.planId, transferId: 'm3' })).rejects.toThrow(
+      /expired/
+    )
+    expect(remote.nodes.has('/srv/other')).toBe(false)
+  })
+
+  it('deletes only what was listed: a file added after confirming stops the delete', async () => {
+    remote.addDir('/srv/keep').addFile('/srv/keep/data.txt', 'x')
+    remote.addDir('/srv/old').addLink('/srv/old/to-keep', '/srv/keep')
+    const plan = await manager.plan({ kind: 'remove', targetId: 'web', paths: ['/srv/old'] })
+
+    expect(plan.operations.map(formatSftpOperation)).toEqual([
+      'rm "/srv/old/to-keep"',
+      'rmdir "/srv/old"'
+    ])
+
+    remote.addFile('/srv/old/late.txt', 'late')
+    await expect(manager.execute({ planId: plan.planId, transferId: 'r1' })).rejects.toThrow()
+    expect(remote.readText('/srv/old/late.txt')).toBe('late')
+    expect(remote.readText('/srv/keep/data.txt')).toBe('x')
+  })
+
   it('cancels a running transfer by ending its own channel', async () => {
     connection.onChannel = (channel) => {
       channel.beforeTransfer = () => manager.cancel('t2')
     }
-    const outcome = await manager.transfer('download', {
-      transferId: 't2',
+    const plan = await manager.plan({
+      kind: 'download',
       targetId: 'web',
       sources: ['/srv/a.txt'],
-      destinationDir: localRoot,
-      overwrite: false
+      destinationDir: localRoot
     })
 
-    expect(outcome).toEqual({ status: 'cancelled' })
-  })
-
-  it('deletes a folder without following links out of it', async () => {
-    remote.addDir('/srv/keep').addFile('/srv/keep/data.txt', 'x')
-    remote.addDir('/srv/old').addLink('/srv/old/to-keep', '/srv/keep')
-
-    await manager.remove('web', ['/srv/old'])
-
-    expect(remote.nodes.has('/srv/old')).toBe(false)
-    expect(remote.readText('/srv/keep/data.txt')).toBe('x')
+    expect(await manager.execute({ planId: plan.planId, transferId: 't2' })).toEqual({
+      status: 'cancelled'
+    })
   })
 
   it('disconnects a host after it sits idle', async () => {

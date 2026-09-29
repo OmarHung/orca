@@ -41,10 +41,19 @@ async function readTerminalText(page: Page, tabId: string): Promise<string> {
   }, tabId)
 }
 
+/** Every session asks first and shows the exact ssh command it will type. */
+async function confirmSshCommand(page: Page): Promise<void> {
+  const dialog = page.locator('[data-command-confirm]')
+  await expect(dialog.locator('[data-command-list]')).toContainText('ssh ')
+  await dialog.getByRole('button', { name: 'Connect' }).click()
+  await expect(dialog).toBeHidden()
+}
+
 async function openRefusedSession(page: Page): Promise<SshTabSummary> {
   await page.getByRole('button', { name: 'SSH', exact: true }).click()
   const sshPage = page.locator('[data-ssh-page]')
   await sshPage.locator('[data-ssh-host-row]').filter({ hasText: REFUSED_TARGET.label }).click()
+  await confirmSshCommand(page)
   await expect
     .poll(async () => (await readSshTabs(page)).map((tab) => tab.label))
     .toEqual([REFUSED_TARGET.label])
@@ -79,6 +88,7 @@ test('runs ssh in an SSH page tab that survives leaving the page', async ({
   await sshPage.getByRole('button', { name: 'New tab' }).click()
   const picker = orcaPage.getByRole('dialog', { name: 'Open an SSH session' })
   await picker.locator('[data-ssh-host-row]').filter({ hasText: REFUSED_TARGET.label }).click()
+  await confirmSshCommand(orcaPage)
   await expect(picker).toBeHidden()
   await expect.poll(async () => (await readSshTabs(orcaPage)).length).toBe(2)
   await orcaPage.screenshot({ path: testInfo.outputPath('ssh-page-two-sessions.png') })

@@ -195,3 +195,20 @@ Database 頁是範本（commit `d820e61fa2`）。它的導航狀態放在 fork �
 ### 7.6 SFTP 頁常駐（2026-09-29，使用者回報）
 
 使用者回報連上 SFTP 後切到 SSH 再切回來，狀態就被清空了。SSH 頁原本的「第一次開啟後常駐、切走只用 CSS 隱藏」做法抽成 `ssh-page/KeptMountedPage.tsx`，`SshPageHost`、`SftpPageHost` 都改用它。`AppWorkspaceShell` 不再從 `ActivePage` 渲染 SFTP 頁。常駐之後，離開頁面期間進度事件也照樣會收到。Docker E2E 加上一段：進入 `/root/.ssh` → 切到 SSH → 切回 SFTP，路徑和清單都還在。
+
+## Confirm-with-exact-commands (plan → confirm → execute)
+
+Requirement: every action asks first and shows the exact commands the app will run.
+
+- **SFTP**: `sftp:plan` makes main read what the action touches and build the ordered operation
+  list (`SftpOperation[]`), stored under a random `planId` (single use, 10-minute TTL, max 20).
+  The renderer shows those operations as OpenSSH sftp batch lines (`put`, `get`, `-mkdir`,
+  `-lmkdir`, `rename`, `rm`, `rmdir`; JSON-quoted paths so a name cannot fake another line).
+  `sftp:execute` runs only the stored plan by id; the renderer never sends operations back.
+  The old direct channels (`upload`, `download`, `mkdir`, `rename`, `remove`) are gone.
+- A change made on the server after confirming is not silently absorbed: e.g. a file added to
+  a folder being deleted makes `rmdir` fail instead of deleting the new file.
+- **SSH**: opening a session shows the exact `ssh …` string that will be typed into the new tab.
+- Dialog: `CommandConfirmProvider` (per page). Long lists show the first 200 numbered lines,
+  wrap long paths with a hanging indent, and offer "Copy all" for the full list.
+- Not prompted: read-only browsing (list/stat/realpath), refresh, and closing tabs.
