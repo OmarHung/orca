@@ -42,12 +42,13 @@ export class SshVpnPasswordVault {
       return
     }
     const sealed = this.sealed.seal(profileId, password)
-    if (sealed !== 'sealed') {
+    if (sealed === 'no-encryption') {
       throw new Error(
-        sealed === 'no-encryption'
-          ? 'This system has no secure password storage. Choose "Until Orca quits" or "Ask every time" instead.'
-          : 'The saved-password file exists but could not be read; refusing to overwrite it.'
+        'This system has no secure password storage. Choose "Until Orca quits" or "Ask every time" instead.'
       )
+    }
+    if (sealed !== 'sealed') {
+      throw new Error(this.sealed.describeProblem(sealed))
     }
     this.sessionPasswords.delete(profileId)
   }
