@@ -19895,8 +19895,54 @@
     },
     "page": {
       "desktopOnly": "File transfers are available in the desktop app only.",
-      "pickHost": "Pick a host to browse its files.",
-      "comingSoon": "File transfer is coming in the next update."
+      "pickHost": "Pick a host to browse its files."
+    },
+    "pane": {
+      "path": "Path",
+      "up": "Parent folder",
+      "refresh": "Refresh",
+      "connecting": "Connecting…",
+      "retry": "Retry",
+      "empty": "This folder is empty."
+    },
+    "delete": {
+      "title": "Delete from {{host}}?",
+      "description": "{{names}}{{more}} will be deleted permanently, including everything inside folders. This cannot be undone.",
+      "confirm": "Delete"
+    },
+    "conflict": {
+      "more": " (+{{count}} more)",
+      "title": "Replace existing items?",
+      "description": "These already exist in {{dir}}: {{names}}{{more}}. Files are replaced and folders are merged.",
+      "replace": "Replace"
+    },
+    "transfers": {
+      "preparing": "Preparing…",
+      "done": "Done",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "cancel": "Cancel transfer",
+      "title": "Transfers",
+      "clear": "Clear finished"
+    },
+    "transfer": {
+      "labelMany": "{{name}} and {{count}} more"
+    },
+    "remote": {
+      "newFolder": "New folder",
+      "create": "Create",
+      "rename": "Rename",
+      "download": "Download",
+      "dropHint": "Empty folder. Drop files here to upload.",
+      "delete": "Delete"
+    },
+    "local": {
+      "upload": "Upload",
+      "title": "Local"
+    },
+    "nameDialog": {
+      "label": "Name",
+      "cancel": "Cancel"
     }
   }
 }

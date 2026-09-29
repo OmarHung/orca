@@ -19827,8 +19827,54 @@
     },
     "page": {
       "desktopOnly": "文件传输仅在桌面版中可用。",
-      "pickHost": "选择一台主机以浏览其中的文件。",
-      "comingSoon": "文件传输功能将在下一次更新中推出。"
+      "pickHost": "选择一台主机以浏览其中的文件。"
+    },
+    "pane": {
+      "path": "路径",
+      "up": "上一层文件夹",
+      "refresh": "刷新",
+      "connecting": "正在连接…",
+      "retry": "重试",
+      "empty": "此文件夹是空的。"
+    },
+    "delete": {
+      "title": "要从 {{host}} 删除吗？",
+      "description": "{{names}}{{more}} 将被永久删除，文件夹内的所有内容也会一并删除。此操作无法撤销。",
+      "confirm": "删除"
+    },
+    "conflict": {
+      "more": "（另有 {{count}} 个）",
+      "title": "要替换已有的内容吗？",
+      "description": "{{dir}} 中已有同名的：{{names}}{{more}}。文件会被替换，文件夹会合并。",
+      "replace": "替换"
+    },
+    "transfers": {
+      "preparing": "准备中…",
+      "done": "完成",
+      "cancelled": "已取消",
+      "failed": "失败",
+      "cancel": "取消传输",
+      "title": "传输",
+      "clear": "清除已完成"
+    },
+    "transfer": {
+      "labelMany": "{{name}} 及另外 {{count}} 个"
+    },
+    "remote": {
+      "newFolder": "新建文件夹",
+      "create": "创建",
+      "rename": "重命名",
+      "download": "下载",
+      "dropHint": "空文件夹。将文件拖到这里即可上传。",
+      "delete": "删除"
+    },
+    "local": {
+      "upload": "上传",
+      "title": "本机"
+    },
+    "nameDialog": {
+      "label": "名称",
+      "cancel": "取消"
     }
   }
 }
