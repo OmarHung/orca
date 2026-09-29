@@ -42,6 +42,14 @@ export const SftpPlanRequestSchema = z.discriminatedUnion('kind', [
     .strict(),
   z
     .object({
+      kind: z.literal('move'),
+      targetId: TargetId,
+      sources: z.array(RemotePath).min(1).max(MAX_SOURCES),
+      destinationDir: RemotePath
+    })
+    .strict(),
+  z
+    .object({
       kind: z.literal('remove'),
       targetId: TargetId,
       paths: z.array(RemotePath).min(1).max(MAX_SOURCES)
