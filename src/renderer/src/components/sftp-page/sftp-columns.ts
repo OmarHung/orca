@@ -31,7 +31,7 @@ export function clampSftpColumnWidth(width: number): number {
 }
 
 // Why: row padding (px-3) plus the icon and its margin; keeps header and rows the same width.
-const ROW_CHROME_PX = 24 + 14 + 8
+const ROW_CHROME_PX = 24 + 16 + 8
 
 /** Full row width, so a narrow pane scrolls sideways instead of squeezing columns. */
 export function sftpRowWidthPx(columns: readonly SftpColumnId[], widths: SftpColumnWidths): number {
@@ -58,7 +58,8 @@ export function sftpColumnLabel(column: SftpColumnId): string {
   }
 }
 
-function extensionOf(name: string): string | null {
+/** A file's extension in capitals, as the Type column and the file icon show it. */
+export function sftpFileExtension(name: string): string | null {
   const dot = name.lastIndexOf('.')
   // Why: ".bashrc" is a hidden name, not an extension.
   return dot > 0 && dot < name.length - 1 ? name.slice(dot + 1).toUpperCase() : null
@@ -73,7 +74,7 @@ export function sftpEntryTypeLabel(entry: SftpEntry): string {
     case 'other':
       return translate('sftpPage.type.other', 'Special file')
     case 'file': {
-      const extension = extensionOf(entry.name)
+      const extension = sftpFileExtension(entry.name)
       return extension
         ? translate('sftpPage.type.fileWithExtension', '{{ext}} file', { ext: extension })
         : translate('sftpPage.type.file', 'File')
