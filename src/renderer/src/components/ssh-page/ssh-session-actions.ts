@@ -9,17 +9,26 @@ import type { Tab } from '../../../../shared/tab-types'
 import { SSH_SESSIONS_WORKTREE_ID } from '../../../../shared/local-synthetic-workspace'
 import type { CommandConfirm } from '../command-confirm/command-confirm-context'
 import { buildSshSessionCommand } from './ssh-session-command'
+import { prepareSshSessionVpn } from './ssh-session-vpn'
 
 /** After the user confirms the exact command, opens an SSH page tab that types it into a local shell. */
 export async function openSshSession(target: SshTarget, confirm: CommandConfirm): Promise<void> {
-  const command = buildSshSessionCommand(target)
-  if (!command) {
+  // Why first: a host that cannot be typed safely must not start a VPN it will never use.
+  if (!buildSshSessionCommand(target)) {
     toast.error(
       translate(
         'sshPage.session.unsafeTarget',
         'This host has characters Orca cannot pass to ssh safely. Rename it in ~/.ssh/config.'
       )
     )
+    return
+  }
+  const vpn = await prepareSshSessionVpn(target)
+  if (vpn === 'cancelled') {
+    return
+  }
+  const command = buildSshSessionCommand(target, vpn ? [vpn.sshOption] : [])
+  if (!command) {
     return
   }
   const isConfirmed = await confirm({
@@ -29,7 +38,14 @@ export async function openSshSession(target: SshTarget, confirm: CommandConfirm)
     details: [
       translate('sshPage.session.confirmTarget', 'Target: {{endpoint}}', {
         endpoint: `${target.username ? `${target.username}@` : ''}${target.host}:${target.port}`
-      })
+      }),
+      ...(vpn
+        ? [
+            translate('sshPage.session.confirmVpn', 'Through VPN: {{name}} (already connected)', {
+              name: vpn.profileName
+            })
+          ]
+        : [])
     ],
     commands: [command],
     notes: [

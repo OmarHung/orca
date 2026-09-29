@@ -19316,7 +19316,8 @@
       "confirmTitle": "Connect to {{host}}?",
       "confirmTarget": "Target: {{endpoint}}",
       "confirmNote": "Opens a new tab running your login shell and types this command into it, as if you typed it.",
-      "connect": "Connect"
+      "connect": "Connect",
+      "confirmVpn": "Through VPN: {{name}} (already connected)"
     },
     "picker": {
       "title": "Open an SSH session",
@@ -19433,5 +19434,64 @@
     "count": "{{count}} commands, run top to bottom",
     "listLabel": "Commands",
     "truncated": "Showing the first {{shown}} of {{total}}. Use “Copy all” to review every line."
+  },
+  "sshVpn": {
+    "status": {
+      "ready": "Connected",
+      "starting": "Connecting…",
+      "stopping": "Disconnecting…",
+      "error": "Failed",
+      "stopped": "Not connected"
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Office VPN",
+      "ovpnPath": "OpenVPN profile (.ovpn)",
+      "browse": "Choose…",
+      "ovpnHelp": "Certificate-only profiles are supported. Orca reads the file each time it connects and never copies it.",
+      "idle": "Disconnect when idle (minutes)",
+      "idleHelp": "Counted from when the last connection through this VPN closes. 0 keeps it connected until Orca quits.",
+      "cancel": "Cancel",
+      "checking": "Checking…",
+      "save": "Save",
+      "pathPlaceholder": "/path/to/office.ovpn"
+    },
+    "row": {
+      "idleNever": "Stays connected until Orca quits",
+      "idleMinutes": "Disconnects after {{minutes}} min idle",
+      "hosts": "{{count}} hosts",
+      "disconnect": "Disconnect",
+      "connect": "Connect",
+      "edit": "Edit",
+      "cancelDelete": "Keep",
+      "confirmDelete": "Delete",
+      "delete": "Delete…",
+      "deleteNote": "Hosts using this VPN go back to connecting directly.",
+      "hideLog": "Hide OpenVPN log",
+      "showLog": "Show OpenVPN log"
+    },
+    "panel": {
+      "add": "Add VPN profile",
+      "empty": "No VPN profiles yet. Add an .ovpn file, then right-click a host to route it through the VPN."
+    },
+    "dialog": {
+      "title": "VPN for SSH hosts",
+      "description": "Hosts you assign connect through an OpenVPN profile running in Docker, so the rest of this computer stays off the VPN."
+    },
+    "menu": {
+      "label": "Connect through",
+      "direct": "Direct connection (no VPN)",
+      "profile": "VPN: {{name}}",
+      "manage": "Manage VPN profiles…"
+    },
+    "confirm": {
+      "forHost": "Connecting to {{host}} needs this VPN.",
+      "manual": "You asked to connect this VPN.",
+      "isolated": "It runs in a Docker container; the rest of this computer stays off the VPN.",
+      "title": "Start VPN \"{{name}}\"?",
+      "tunnelNote": "Each SSH connection then runs `docker exec -i <container> nc -w 30 <host> <port>` to reach the host through the VPN.",
+      "start": "Start VPN"
+    },
+    "button": "VPN"
   }
 }
