@@ -3670,7 +3670,8 @@
             "floatingTerminalNewActivity": "{{label}}，有新活動",
             "codexSignInSuccess": "已登入 Codex",
             "codexSignInError": "Codex 登入失敗，請重試。",
-            "cursorUsageMenu": "Cursor 用量"
+            "cursorUsageMenu": "Cursor 用量",
+            "hiddenUsageProviders": "另有：{{value0}}"
           },
           "StatusBarUsageEmptyCta": {
             "828c764a79": "連線帳戶",
