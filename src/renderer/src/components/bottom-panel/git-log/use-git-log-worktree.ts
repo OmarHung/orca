@@ -6,6 +6,7 @@ import { isFolderRepo } from '../../../../../shared/repo-kind'
 import type { RuntimeGitContext } from '@/runtime/runtime-git-client'
 
 export type GitLogWorktree = {
+  repoId: string | null
   worktreeId: string | null
   worktreePath: string | null
   isFolder: boolean
@@ -43,6 +44,7 @@ export function useGitLogWorktree(): GitLogWorktree {
   )
 
   return {
+    repoId,
     worktreeId,
     worktreePath: activeWorktree?.path ?? null,
     isFolder: repo ? isFolderRepo(repo) : false,
