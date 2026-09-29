@@ -19319,7 +19319,8 @@
       "created": "创建日期",
       "modified": "修改日期",
       "type": "文件类型",
-      "owner": "拥有者"
+      "owner": "拥有者",
+      "resize": "调整“{{column}}”栏宽"
     },
     "type": {
       "folder": "文件夹",
@@ -19377,6 +19378,14 @@
       "legend": "以 OpenSSH sftp 批次指令格式表示。开头的“-”表示保留已存在的文件夹。",
       "partialNote": "每个文件会先保存为“<名称>.orca-download”，完成后再改名，因此下载失败不会损坏已有的文件。",
       "nothingToDo": "没有可传输的内容：所选内容中没有普通文件或文件夹。"
+    },
+    "tabs": {
+      "label": "SFTP 标签页",
+      "new": "新建标签页",
+      "close": "关闭标签页 {{name}}",
+      "missingHost": "“{{name}}”已不在你的 SSH 主机中，请关闭此标签页。",
+      "pickerTitle": "打开 SFTP 标签页",
+      "pickerDescription": "选择要浏览的主机。"
     }
   },
   "commandConfirm": {

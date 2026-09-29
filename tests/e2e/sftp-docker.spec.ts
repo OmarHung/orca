@@ -170,15 +170,21 @@ test.describe('SFTP page against a Docker sshd', () => {
       })
       await orcaPage.screenshot({ path: testInfo.outputPath('sftp-page.png') })
 
+      // Why: hidden tabs stay mounted, so every UI lookup is scoped to the tab on screen.
+      const activeTab = orcaPage.locator('[data-sftp-tab-panel][data-active="true"]')
+      const localPane = activeTab.locator('[data-sftp-pane="local"]')
+      const remotePane = activeTab.locator('[data-sftp-pane="remote"]')
+
       // The UI only downloads after showing the exact command and getting a yes.
-      const localPath = orcaPage.locator('[data-sftp-pane="local"] input[aria-label="Path"]')
+      const localPath = localPane.locator('input[aria-label="Path"]')
       await localPath.fill(inbox)
       await localPath.press('Enter')
       await expect(
-        orcaPage.locator(`[data-sftp-entry="${path.join(inbox, 'hello.txt')}"]`)
+        localPane.locator(`[data-sftp-entry="${path.join(inbox, 'hello.txt')}"]`)
       ).toBeVisible()
-      await orcaPage.locator('[data-sftp-entry="/root/orca-sftp-visible.txt"]').click()
-      await orcaPage.getByRole('button', { name: 'Download', exact: true }).click()
+      await remotePane.locator('[data-sftp-entry="/root/orca-sftp-visible.txt"]').click()
+      const downloadButton = remotePane.getByRole('button', { name: 'Download', exact: true })
+      await downloadButton.click()
       const confirmDialog = orcaPage.locator('[data-command-confirm]')
       await expect(confirmDialog.locator('[data-command-list]')).toContainText(
         `get "/root/orca-sftp-visible.txt" ${JSON.stringify(path.join(inbox, 'orca-sftp-visible.txt'))}`
@@ -187,20 +193,66 @@ test.describe('SFTP page against a Docker sshd', () => {
       await confirmDialog.getByRole('button', { name: 'Cancel' }).click()
       await expect(confirmDialog).toBeHidden()
       expect(existsSync(path.join(inbox, 'orca-sftp-visible.txt'))).toBe(false)
-      await orcaPage.getByRole('button', { name: 'Download', exact: true }).click()
+      await downloadButton.click()
       await confirmDialog.getByRole('button', { name: 'Download', exact: true }).click()
       await expect.poll(() => existsSync(path.join(inbox, 'orca-sftp-visible.txt'))).toBe(true)
+      await expect(orcaPage.locator('[data-slot="dialog-overlay"]')).toHaveCount(0)
 
-      // Leaving the page and coming back keeps the host, folder and listing.
-      const sftpPage = orcaPage.locator('[data-sftp-page]')
-      await sftpPage.locator('[data-sftp-entry="/root/.ssh"]').dblclick()
-      const remotePath = sftpPage.locator('input[aria-label="Path"]').nth(1)
+      // Dragging a header divider resizes that column in both panes.
+      const nameHeader = remotePane.locator('[data-sftp-column="name"]')
+      const widthBefore = (await nameHeader.boundingBox())?.width ?? 0
+      const divider = await remotePane.locator('[data-sftp-resize="name"]').boundingBox()
+      if (!divider) {
+        throw new Error('name column divider not rendered')
+      }
+      const dividerY = divider.y + divider.height / 2
+      await orcaPage.mouse.move(divider.x + divider.width / 2, dividerY)
+      await orcaPage.mouse.down()
+      await orcaPage.mouse.move(divider.x + divider.width / 2 + 60, dividerY, { steps: 5 })
+      await orcaPage.mouse.up()
+      await expect
+        .poll(async () => Math.round((await nameHeader.boundingBox())?.width ?? 0))
+        .toBe(Math.round(widthBefore + 60))
+      const localNameWidth = (await localPane.locator('[data-sftp-column="name"]').boundingBox())
+        ?.width
+      expect(Math.round(localNameWidth ?? 0)).toBe(Math.round(widthBefore + 60))
+
+      // A second tab on the same host browses on its own; each tab keeps its folder.
+      await remotePane.locator('[data-sftp-entry="/root/.ssh"]').dblclick()
+      const remotePath = remotePane.locator('input[aria-label="Path"]')
       await expect(remotePath).toHaveValue('/root/.ssh')
+      const sftpPage = orcaPage.locator('[data-sftp-page]')
+      await sftpPage.getByRole('button', { name: 'New tab' }).click()
+      const picker = orcaPage.getByRole('dialog', { name: 'Open an SFTP tab' })
+      await picker.locator('[data-ssh-host-row]').filter({ hasText: 'Docker SFTP E2E' }).click()
+      await expect(picker).toBeHidden()
+      const sftpTabs = sftpPage.locator('[role="tab"]')
+      await expect(sftpTabs).toHaveCount(2)
+      await expect(remotePath).toHaveValue('/root', { timeout: 30_000 })
+      await expect(sftpTabs.first().locator('[data-tab-folder]')).toHaveText('.ssh')
+      await expect(sftpTabs.nth(1).locator('[data-tab-folder]')).toHaveText('root')
+      await orcaPage.screenshot({ path: testInfo.outputPath('sftp-two-tabs.png') })
+      await sftpTabs.first().click()
+      await expect(remotePath).toHaveValue('/root/.ssh')
+
+      // Leaving the page and coming back keeps the tabs, folders and listings.
       await orcaPage.getByRole('button', { name: 'SSH', exact: true }).click()
       await expect(sftpPage).toBeHidden()
       await orcaPage.getByRole('button', { name: 'SFTP', exact: true }).click()
+      await expect(sftpTabs).toHaveCount(2)
       await expect(remotePath).toHaveValue('/root/.ssh')
-      await expect(sftpPage.locator('[data-sftp-entry="/root/.ssh/authorized_keys"]')).toBeVisible()
+      await expect(
+        remotePane.locator('[data-sftp-entry="/root/.ssh/authorized_keys"]')
+      ).toBeVisible()
+
+      // Closing the active tab moves to its neighbour.
+      await sftpTabs.first().hover()
+      await sftpTabs
+        .first()
+        .getByRole('button', { name: /^Close tab/ })
+        .click()
+      await expect(sftpTabs).toHaveCount(1)
+      await expect(remotePath).toHaveValue('/root')
     } finally {
       cleanupDockerSshRelayTarget(target)
       rmSync(localRoot, { recursive: true, force: true })
