@@ -33,7 +33,13 @@ const plan: SftpPlan = {
   kind: 'upload',
   targetId: 'web',
   operations: [
-    { op: 'put', local: '/Users/dev/report.csv', remote: '/srv/app/report.csv', size: 2048 },
+    {
+      op: 'put',
+      local: '/Users/dev/report.csv',
+      remote: '/srv/app/report.csv',
+      size: 2048,
+      source: { dev: '1', ino: '2' }
+    },
     { op: 'mkdir', path: '/srv/app/logs', keepExisting: true }
   ],
   totalBytes: 2048,
