@@ -27,7 +27,7 @@ export async function openSshSession(target: SshTarget, confirm: CommandConfirm)
   if (vpn === 'cancelled') {
     return
   }
-  const command = buildSshSessionCommand(target, vpn ? [vpn.sshOption] : [])
+  const command = buildSshSessionCommand(target, vpn?.sshOptions ?? [])
   if (!command) {
     return
   }

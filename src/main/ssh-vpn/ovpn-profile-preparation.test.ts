@@ -85,12 +85,46 @@ describe('prepareOvpnProfile', () => {
     )
   })
 
-  it('refuses username/password and MFA profiles with the reasons', async () => {
-    const source = ['auth-user-pass', 'static-challenge "Enter OTP" 1'].join('\n')
+  it('asks Orca for a login when auth-user-pass names no file, and drops the line', async () => {
+    const source = ['client', 'auth-user-pass', 'auth-retry interact'].join('\n')
+
+    const prepared = await prepareOvpnProfile(PROFILE_PATH, reader({ [PROFILE_PATH]: source }))
+
+    expect(prepared.needsCredentials).toBe(true)
+    expect(prepared.config).toBe('client\n')
+  })
+
+  it('copies an auth-user-pass file instead of asking', async () => {
+    const loginPath = path.resolve('/vpn/office/login.txt')
+
+    const prepared = await prepareOvpnProfile(
+      PROFILE_PATH,
+      reader({ [PROFILE_PATH]: 'auth-user-pass login.txt', [loginPath]: 'me\nsecret\n' })
+    )
+
+    expect(prepared.needsCredentials).toBe(false)
+    expect(prepared.config).toBe('auth-user-pass /run/orca/f0-login.txt\n')
+  })
+
+  it('refuses MFA and hardware-token profiles with the reasons, even behind setenv opt', async () => {
+    const source = ['static-challenge "Enter OTP" 1', 'setenv opt pkcs11-id foo'].join('\n')
 
     await expect(
       prepareOvpnProfile(PROFILE_PATH, reader({ [PROFILE_PATH]: source }))
-    ).rejects.toThrow(/username\/password login, one-time codes \(MFA\)/)
+    ).rejects.toThrow(/one-time codes \(MFA\), hardware tokens/)
+  })
+
+  it('drops plugins and setenv-opt spellings of dropped directives', async () => {
+    const source = [
+      'client',
+      'plugin /usr/lib/openvpn/plugins/openvpn-plugin-down-root.so "sh -c id"',
+      'setenv opt log /tmp/hidden.log',
+      'setenv opt block-outside-dns'
+    ].join('\n')
+
+    const prepared = await prepareOvpnProfile(PROFILE_PATH, reader({ [PROFILE_PATH]: source }))
+
+    expect(prepared.config).toBe('client\nsetenv opt block-outside-dns\n')
   })
 
   it('refuses password-protected keys, inline or referenced', async () => {
