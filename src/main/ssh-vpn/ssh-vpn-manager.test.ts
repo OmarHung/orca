@@ -24,7 +24,8 @@ function createFakeDocker(script: string[][] = [[READY]]) {
   const docker = {
     dockerPath: '/usr/local/bin/docker',
     assertRunning: vi.fn(async () => undefined),
-    ensureImage: vi.fn(async () => undefined),
+    hasImage: vi.fn(async () => true),
+    buildImage: vi.fn(async () => undefined),
     startContainer: vi.fn(async () => undefined),
     writeFile: vi.fn(async () => undefined),
     countTunnels: vi.fn(async () => 0),
@@ -215,6 +216,63 @@ describe('SshVpnManager', () => {
       'stopped'
     ])
     expect(manager.runningContainers()).toEqual([])
+  })
+
+  it('shows every command before starting and builds the image only when missing', async () => {
+    const { docker } = createFakeDocker()
+    docker.hasImage.mockResolvedValue(false)
+    const { manager } = createManager(docker)
+    const confirm = vi.fn(async (_commands: string[]) => true)
+
+    await manager.acquire(PROFILE, { confirm })
+
+    const [commands] = confirm.mock.calls[0]
+    expect(commands[0]).toBe('/usr/local/bin/docker info --format ' + "'{{.ServerVersion}}'")
+    expect(commands.some((line) => line.includes(' build --tag '))).toBe(true)
+    expect(commands.at(-1)).toContain(' openvpn --config /run/orca/profile.ovpn')
+    expect(docker.buildImage).toHaveBeenCalledTimes(1)
+    expect(confirm.mock.invocationCallOrder[0]).toBeLessThan(
+      docker.buildImage.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('starts nothing when the user declines, and does not ask queued requests again', async () => {
+    const { docker } = createFakeDocker()
+    const { manager, states } = createManager(docker)
+    let answer: (approved: boolean) => void = () => undefined
+    const confirm = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          answer = resolve
+        })
+    )
+
+    const first = manager.acquire(PROFILE, { confirm })
+    const second = manager.acquire(PROFILE, { confirm })
+    await vi.waitFor(() => expect(confirm).toHaveBeenCalledTimes(1))
+    answer(false)
+
+    await expect(first).rejects.toThrow('VPN "Office" was not started')
+    await expect(second).rejects.toThrow('VPN "Office" was not started')
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(docker.startContainer).not.toHaveBeenCalled()
+    expect(states.at(-1)?.status).toBe('stopped')
+
+    confirm.mockResolvedValueOnce(true)
+    await expect(manager.acquire(PROFILE, { confirm })).resolves.toMatchObject({
+      containerName: CONTAINER
+    })
+  })
+
+  it('does not ask again while the VPN is already up', async () => {
+    const { docker } = createFakeDocker()
+    const { manager } = createManager(docker)
+    const confirm = vi.fn(async () => true)
+
+    await manager.acquire(PROFILE, { confirm })
+    await manager.acquire(PROFILE, { confirm })
+
+    expect(confirm).toHaveBeenCalledTimes(1)
   })
 
   it('removes containers a previous run left behind', async () => {
