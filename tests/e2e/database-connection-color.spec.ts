@@ -27,6 +27,8 @@ test('colors a connection’s explorer icon, tabs and toolbars without reconnect
 
   const tree = orcaPage.getByRole('tree', { name: 'Database objects' })
   const row = tree.getByRole('treeitem', { name: /^shop\.db/ })
+  const icon = row.locator('svg[data-driver="sqlite"]')
+  await expect(icon).toBeVisible()
   await explorerMenu(orcaPage, row, 'Edit Connection…')
   const dialog = orcaPage.getByRole('dialog', { name: 'Edit Connection' })
   const colors = dialog.getByRole('group', { name: 'Color' })
@@ -43,7 +45,7 @@ test('colors a connection’s explorer icon, tabs and toolbars without reconnect
 
   const consoleTab = orcaPage.getByRole('tab', { name: 'shop.db' })
   await expect(consoleTab).toHaveCSS('box-shadow', /rgb\(239, 68, 68\)/)
-  await expect(row.locator('svg').nth(1)).toHaveCSS('color', 'rgb(239, 68, 68)')
+  await expect(icon).toHaveCSS('color', 'rgb(239, 68, 68)')
   await expect(toolbar).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
   // Color is cosmetic: the session and its results stay.
   await expect(grid.getByRole('gridcell', { name: '42' })).toBeVisible()
