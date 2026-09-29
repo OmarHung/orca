@@ -47,6 +47,7 @@ import type { SshConnectionCallbacks, SshCredentialKind } from './ssh-connection
 import { collectKeyboardInteractiveResponses } from '../authentication/ssh-keyboard-interactive'
 import { resolveEffectiveProxy, spawnProxyCommand } from '../system-transport/ssh-proxy-command'
 import { resolveWithSshG, type SshResolvedConfig } from '../config/ssh-g-config-resolution'
+import { prepareSshVpnRoute } from '../../ssh-vpn/ssh-vpn-route'
 import {
   createCancelledConnectAttemptError,
   isCancelledConnectAttemptError
@@ -436,6 +437,11 @@ export class SshConnection {
       () => null
     )
     this.hostKeyResolvedConfig = resolved
+    // Why before transport selection: whichever transport runs below must leave through the host's VPN.
+    const vpnProxy = await prepareSshVpnRoute(this.target, resolved)
+    if (!this.isCurrentConnectAttempt(connectGeneration)) {
+      throw createCancelledConnectAttemptError()
+    }
     const usesConfiguredSystemTransport = shouldUseSystemSshTransport(this.target, resolved)
     const requiresSecurityKeyTransport = usesConfiguredSystemTransport
       ? false
@@ -469,7 +475,7 @@ export class SshConnection {
     const config = buildConnectConfig(this.target, resolved, { skippedIdentityFiles })
 
     // ssh2 needs resolved ProxyCommand/ProxyJump spawned as config.sock.
-    const effectiveProxy = resolveEffectiveProxy(this.target, resolved)
+    const effectiveProxy = vpnProxy ?? resolveEffectiveProxy(this.target, resolved)
     if (effectiveProxy) {
       const proxy = spawnProxyCommand(effectiveProxy, config.host!, config.port!, config.username!)
       this.proxyProcess = proxy.process
