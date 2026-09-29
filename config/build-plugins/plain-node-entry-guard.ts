@@ -43,6 +43,7 @@ const PLAIN_NODE_ENTRY_NAMES = [
   'daemon-entry',
   'parcel-watcher-process-entry',
   'session-scanner-service-entry',
+  'sftp-local-writer-entry',
   'computer-sidecar',
   'wsl-transcript-fs-process-entry',
   'orcad/orcad-local-serve-selection-entry',
