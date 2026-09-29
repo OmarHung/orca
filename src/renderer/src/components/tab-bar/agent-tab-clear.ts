@@ -1,18 +1,27 @@
-import type { TerminalLayoutSnapshot } from '../../../../shared/terminal-tab-types'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import { useAppStore } from '@/store'
+import type { AppState } from '@/store/types'
 import { getSettingsForAgentTabRuntimeOwner } from '@/lib/agent-paste-draft'
 import {
   sendNativeChatMessage,
   sendNativeChatTypedCommand
 } from '../native-chat/native-chat-runtime-send'
+import {
+  isTerminalTabActivityLive,
+  resolveTerminalTabActivityStatus
+} from './terminal-tab-activity-status'
 
 export const AGENT_CLEAR_COMMAND = '/clear'
 
-type AgentTabPtyState = {
-  ptyIdsByTabId: Record<string, readonly string[] | undefined>
-  terminalLayoutsByTabId: Record<string, TerminalLayoutSnapshot | undefined>
-}
+type AgentTabPtyState = Pick<AppState, 'ptyIdsByTabId' | 'terminalLayoutsByTabId'>
+
+type AgentTabClearState = AgentTabPtyState &
+  Pick<
+    AppState,
+    'tabsByWorktree' | 'agentStatusByPaneKey' | 'agentStatusEpoch' | 'runtimePaneTitlesByTabId'
+  >
+
+export type AgentTabClearOutcome = 'sent' | 'busy' | 'changed'
 
 /** Live PTY of the focused pane — the pane useTabAgent resolves the tab's agent from. */
 export function resolveAgentTabFocusedPtyId(state: AgentTabPtyState, tabId: string): string | null {
@@ -26,11 +35,45 @@ export function resolveAgentTabFocusedPtyId(state: AgentTabPtyState, tabId: stri
   return livePtyIds.length === 1 ? (livePtyIds[0] ?? null) : null
 }
 
-/** Sends /clear to the tab's agent; false when the tab has no live PTY to receive it. */
-export function clearAgentTabConversation(tabId: string, agent: TuiAgent): boolean {
-  const ptyId = resolveAgentTabFocusedPtyId(useAppStore.getState(), tabId)
-  if (!ptyId) {
-    return false
+/** The PTY a clear would go to right now; null when the tab has none safe to type into. */
+export function resolveAgentTabClearTarget(tabId: string): string | null {
+  return resolveAgentTabFocusedPtyId(useAppStore.getState(), tabId)
+}
+
+/** Mid-turn or on a prompt, where the submit Enter could answer the prompt instead. */
+export function isAgentTabBusy(state: AgentTabClearState, tabId: string): boolean {
+  const tab = Object.values(state.tabsByWorktree)
+    .flat()
+    .find((candidate) => candidate.id === tabId)
+  if (!tab) {
+    return true
+  }
+  const status = resolveTerminalTabActivityStatus({
+    tab,
+    agentStatusByPaneKey: state.agentStatusByPaneKey,
+    agentStatusEpoch: state.agentStatusEpoch,
+    runtimePaneTitlesByTabId: state.runtimePaneTitlesByTabId,
+    ptyIdsByTabId: state.ptyIdsByTabId,
+    terminalLayout: state.terminalLayoutsByTabId[tabId]
+  })
+  return isTerminalTabActivityLive(status)
+}
+
+/**
+ * Sends /clear to `ptyId` only while it is still the tab's focused live PTY and the agent is idle,
+ * read from the store at send time rather than from what was rendered when the user clicked.
+ */
+export function clearAgentTabConversation(
+  tabId: string,
+  agent: TuiAgent,
+  ptyId: string
+): AgentTabClearOutcome {
+  const state = useAppStore.getState()
+  if (resolveAgentTabFocusedPtyId(state, tabId) !== ptyId) {
+    return 'changed'
+  }
+  if (isAgentTabBusy(state, tabId)) {
+    return 'busy'
   }
   const settings = getSettingsForAgentTabRuntimeOwner(tabId)
   // Why: same routing as the native chat composer — Codex only runs slash commands typed key by key.
@@ -39,5 +82,5 @@ export function clearAgentTabConversation(tabId: string, agent: TuiAgent): boole
   } else {
     sendNativeChatMessage(settings, ptyId, AGENT_CLEAR_COMMAND)
   }
-  return true
+  return 'sent'
 }
