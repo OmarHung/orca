@@ -35,6 +35,7 @@ import { DatabaseQueryHistory } from './database-query-history'
 import { DatabaseService } from './database-service'
 import { DatabaseSessionManager } from './database-session-manager'
 import { createDatabaseTunnelOpener } from './database-ssh-tunnel'
+import { createDatabaseVpnTunnelOpener } from './database-vpn-tunnel'
 import { spawnDatabaseProcess } from './database-process-spawn'
 import { spawnDatabaseWorker } from './database-worker-client'
 
@@ -136,7 +137,8 @@ function createDatabaseServices(): {
     spawnWorker: (driver) => (driver === 'sqlite' ? spawnDatabaseProcess() : spawnDatabaseWorker()),
     emit: broadcast,
     emitJobProgress: broadcast,
-    openTunnel: createDatabaseTunnelOpener()
+    openTunnel: createDatabaseTunnelOpener(),
+    openVpnTunnel: createDatabaseVpnTunnelOpener()
   })
   const service = new DatabaseService({
     connections: new DatabaseConnectionStore(join(rootDir, 'connections.json')),
