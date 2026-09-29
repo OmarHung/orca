@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils'
 import { DatabaseSessionDot } from '../DatabaseConnectionBadge'
 import { useDatabaseConnectionColor } from '../database-connection-color'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
+import { DatabaseDriverIcon } from '../database-driver-icon'
 import { DatabaseExplorerContextMenu } from './DatabaseExplorerContextMenu'
 import { DatabaseExplorerGroupContextMenu } from './DatabaseExplorerGroupMenus'
 import { commentLine, constraintLabel, folderLabel } from './database-explorer-labels'
@@ -38,7 +39,15 @@ const ICON_CLASS = 'size-3.5 shrink-0 text-muted-foreground'
 
 function ConnectionIcon({ connectionId }: { connectionId: string }): React.JSX.Element {
   const color = useDatabaseConnectionColor(connectionId)
-  return <Database className={ICON_CLASS} style={color ? { color } : undefined} />
+  const driver = useDatabaseConnectionsStore(
+    (state) => state.connections.find((entry) => entry.id === connectionId)?.driver
+  )
+  const style = color ? { color } : undefined
+  return driver ? (
+    <DatabaseDriverIcon driver={driver} className={ICON_CLASS} style={style} />
+  ) : (
+    <Database className={ICON_CLASS} style={style} />
+  )
 }
 
 function NodeIcon({ node }: { node: DatabaseExplorerNode }): React.JSX.Element {
