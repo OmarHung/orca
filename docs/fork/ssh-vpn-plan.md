@@ -1,6 +1,6 @@
 # SSH／SFTP 自動走 OpenVPN：實作計畫（fork 專屬）
 
-> 狀態：Phase 0 完成（2026-09-29），紀錄見 §9；下一步 Phase 1
+> 狀態：Phase 0、Phase 1 完成（2026-09-29），紀錄見 §9；下一步 Phase 2（設定頁）
 > 分支：`feat/ssh-vpn`（worktree `/Users/omar/myprojects/orca-worktrees/feat-ssh-vpn`），每個 Phase 完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -195,7 +195,7 @@ type SshVpnState = { profiles: SshVpnProfile[]; assignments: Record<string /* Ss
   - VPN 啟動失敗時，連線一定失敗（fail closed）。
   - 單元測試：指令產生、日誌判斷、.ovpn 解析、閒置計時、同時啟動。
 
-### Phase 1：SSH 頁、SFTP 頁與確認流程
+### Phase 1：SSH 頁、SFTP 頁與確認流程——已完成
 
 - SSH 頁的 VPN 按鈕和面板、主機右鍵選單、主機標記。
 - SSH 分頁：確認對話框加入 VPN 指令，等 VPN 就緒後才送出含 ProxyCommand 的 ssh 指令。
@@ -260,3 +260,33 @@ ORCA_TEST_SSH_VPN_DOCKER=1 node_modules/.bin/vitest run --config config/vitest.c
 - 系統 ssh 的 ControlMaster（`ControlPersist=300`）：如果主機在指派 VPN 之前已經有一條 master 連線，接下來 5 分鐘內的指令可能沿用那條舊連線。影響很小（那條連線本來就能直連），先記錄不處理。
 - 測試伺服器用 dnsmasq 的 `--address=` 時，AAAA 查詢會回 REFUSED，musl 的解析器就會整個失敗；改用 `--host-record` 加 `--local` 就正常。真實的公司 DNS 通常不會這樣回應，但如果使用者遇到「用 IP 可以、用名稱不行」，可以往這個方向查。
 
+### Phase 0 之後的修正（2026-09-29）
+
+用使用者的 `taipei.ovpn` 在 dev 實測時發現：
+- **容器裡的 `nc` 殘留**：`docker exec` 的 client 被殺掉時，容器裡的 `nc` 不會跟著結束。連不到的主機每次重試都會留下一個卡在 connect 的 `nc`，閒置計數永遠不會歸零。改成 `nc -w 30`（只限制建立連線；已實測，已連上的閒置連線不受影響）。修正後，閒置 10 分鐘自動中斷連線在 dev 實際生效。
+- 實測結果：taipei VPN 本身正常（容器出口 IP 跟 Mac 不同，Mac 的網路不變），但 FC-Beta 的防火牆沒有放行 taipei 的出口 IP，所以連不上。使用者的其他 .ovpn（例如「豐田固定ip」、asuscomm）都需要帳密，第一版不支援。
+- `ssh-vpn.json` 改成檔案 mtime 變了就重新讀取，手動編輯不用重開。
+
+### Phase 1（2026-09-29）
+
+**確認流程（跟 §4.8 的差異）**：改成「**每次啟動 VPN 都由 main 請 renderer 確認**」，SSH 頁、SFTP 頁、資料庫、relay、手動連線都走同一套，不再由 SSH 頁自己組 VPN 指令。
+- main：`SshVpnManager.acquire(profile, { confirm })` 在實際動作前，先用 `sshVpnStartCommands()` 列出每一條 docker 指令（跟實際執行的 argv 同一來源）。使用者拒絕、沒有視窗、5 分鐘沒回應都不啟動；排在同一個「拒絕」後面的請求不會再問一次（用拒絕次數判斷，不用時間戳，避免同一毫秒的誤判）。
+- renderer：`SshVpnStartConfirmHost` 掛在 `AppRootSurfaces`（跟 `DotnetPublishDialogHost` 同一區），用既有的 `CommandConfirmProvider` 顯示。
+- 拒絕不算錯誤：IPC 結果帶 `declined: true`，UI 不跳錯誤訊息。
+- SSH 頁：先檢查主機名稱能不能安全輸入，再啟動 VPN（會先跳 VPN 確認），然後才跳原本的 ssh 指令確認，指令是 `ssh -o 'ProxyCommand=<docker> exec -i <容器> nc -w 30 %h %p' <主機>`。Windows 的終端機可能是 cmd 或 PowerShell，所以用 PATH 上的 `docker` 加雙引號。
+
+**新檔案**：`src/shared/ssh-vpn-command-format.ts`（POSIX 引號、通道 argv、ProxyCommand、終端機選項，main 和 renderer 共用）；`src/main/ssh-vpn/` 的 `ssh-vpn-start-commands.ts`、`ssh-vpn-start-approvals.ts`、`ssh-vpn-runtime.ts`、`ssh-vpn-ipc.ts`（`sshVpn:*`）；`src/preload/api/ssh-vpn-{api,bridge}.ts`；`src/renderer/src/components/ssh-vpn/`（store、狀態點、設定檔表單／列／面板、VPN 按鈕與對話框、主機右鍵選單與 badge、啟動確認）；`ssh-page/ssh-session-vpn.ts`。
+
+**upstream 掛載點（新增）**：`preload/api-types.ts`、`preload/index.ts`（各 2 行）、`AppRootSurfaces.tsx`（2 行）。fork 檔案：`SshHostList.tsx`（VPN 按鈕、右鍵選單、badge）、`ssh-session-{actions,command}.ts`、`CommandConfirmProvider.tsx`（確定按鈕加 `data-command-confirm-accept`）。
+
+**UI**：主機欄（SSH 頁和 SFTP 頁共用）搜尋框旁的「VPN」按鈕，有整體狀態點；對話框可以新增、編輯、刪除設定檔（刪除要按兩次），連線／中斷連線，也能看失敗原因和 OpenVPN 日誌。主機右鍵選單可以選「直接連線」或某個 VPN。有指定 VPN 的主機顯示 badge（狀態點＋設定檔名稱）。存檔前會先解析 .ovpn，帳密或 MFA 設定檔在存檔時就會被擋下。
+
+**i18n**：en／zh 共 44 個 key，zh-TW 用 generator 產生。「證書」「斷開」改寫 zh 原文，產生出「憑證」「中斷連線」。
+
+**測試**：
+- 單元／整合：ssh-vpn 相關加上 SSH／SFTP／core handler，共 2601 個全過；Docker 整合測試 5 個（`ORCA_TEST_SSH_VPN_DOCKER=1`）也全過。
+- e2e：`ORCA_E2E_SSH_VPN_DOCKER=1 node_modules/.bin/playwright test --config tests/playwright.config.ts tests/e2e/ssh-vpn-docker.spec.ts`（約 20 秒）。驗證：SFTP 經由 VPN 取得 home（先按啟動確認）、主機清單的 badge 和綠色狀態點、SSH 頁分頁打出含 ProxyCommand 的 ssh 並連到只有 VPN 進得去的 sshd。
+- 測試內網移到 `tests/e2e/helpers/docker-ssh-vpn-network.ts`（fixture 在 `tests/e2e/fixtures/ssh-vpn/`），因為 e2e spec 不 import src；vitest 整合測試反過來 import 它。
+- 注意：在 worktree 跑 e2e 會觸發 `pnpm install`，經由 symlink 重建主 checkout 的 `node_modules` 原生模組（跟 `pnpm dev` 一樣，主 checkout 的 git 狀態不受影響）。
+
+**還沒做**：刪除主機時清掉它的 VPN 指派（`pruneAssignments` 已寫好但沒有呼叫）、`orca serve` 模式（見 Phase 0 紀錄）、帳密登入。
