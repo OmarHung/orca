@@ -3,6 +3,7 @@ import { ChevronRight, CircleSlash, Folder, FolderOpen, Link, Loader2 } from 'lu
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { cn } from '@/lib/utils'
 import { getFileTypeIcon } from '@/lib/file-type-icons'
+import { getFolderTypeIcon } from '@/lib/folder-type-icons'
 import {
   encodeWorkspaceFilePaths,
   WORKSPACE_FILE_PATH_MIME,
@@ -112,7 +113,9 @@ export function FileExplorerRow({
   onNativeDragTargetChange,
   onNativeDragExpandDir
 }: FileExplorerRowProps): React.JSX.Element {
-  const FileIcon = getFileTypeIcon(node.relativePath || node.name)
+  const RowIcon = node.isDirectory
+    ? (getFolderTypeIcon(node.name) ?? (isExpanded ? FolderOpen : Folder))
+    : getFileTypeIcon(node.relativePath || node.name)
   const rowDropDir = node.isDirectory ? node.path : targetDir
   const { setRowDragNode, handleDragOver, handleDragEnter, handleDragLeave, handleDrop } =
     useFileExplorerRowDrag({
@@ -199,10 +202,10 @@ export function FileExplorerRow({
               />
               {isLoading ? (
                 <Loader2 className="size-3 shrink-0 animate-spin text-muted-foreground" />
-              ) : isExpanded ? (
-                <FolderOpen className="size-3 shrink-0 text-muted-foreground" />
               ) : (
-                <Folder className="size-3 shrink-0 text-muted-foreground" />
+                React.createElement(RowIcon, {
+                  className: 'size-3 shrink-0 text-muted-foreground'
+                })
               )}
             </>
           ) : (
@@ -211,7 +214,7 @@ export function FileExplorerRow({
               {node.isSymlink ? (
                 <Link className="size-3 shrink-0 text-muted-foreground" />
               ) : (
-                React.createElement(FileIcon, {
+                React.createElement(RowIcon, {
                   className: 'size-3 shrink-0 text-muted-foreground'
                 })
               )}
