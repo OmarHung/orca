@@ -9,7 +9,11 @@ import { CommandConfirmProvider } from '../command-confirm/CommandConfirmProvide
 import { TooltipProvider } from '../ui/tooltip'
 import { SftpWorkbench } from './SftpWorkbench'
 import { useSftpColumnsStore } from './sftp-columns-store'
-import { saveLastLocalPath } from './sftp-last-local-path'
+import {
+  readHostLocalFolder,
+  saveHostLocalFolder,
+  useSftpDefaultLocalFolder
+} from './sftp-local-folder-memory'
 import { DEFAULT_SFTP_COLUMN_WIDTHS } from './sftp-columns'
 import { DEFAULT_SFTP_SORT } from './sftp-entry-sort'
 import { useSftpTransfersStore } from './sftp-transfers-store'
@@ -21,6 +25,8 @@ const target: SshTarget = {
   port: 22,
   username: 'deploy'
 }
+
+const otherTarget: SshTarget = { ...target, id: 'db', label: 'db-prod', host: '203.0.113.11' }
 
 function entry(path: string, kind: SftpEntry['kind'], size = 10): SftpEntry {
   return {
@@ -88,13 +94,13 @@ const api = {
 let container: HTMLDivElement
 let root: Root
 
-async function renderWorkbench(): Promise<void> {
+async function renderWorkbench(shownTarget: SshTarget = target): Promise<void> {
   root = createRoot(container)
   await act(async () => {
     root.render(
       <TooltipProvider>
         <CommandConfirmProvider>
-          <SftpWorkbench target={target} />
+          <SftpWorkbench target={shownTarget} />
         </CommandConfirmProvider>
       </TooltipProvider>
     )
@@ -105,6 +111,7 @@ async function renderWorkbench(): Promise<void> {
 beforeEach(async () => {
   vi.clearAllMocks()
   window.localStorage.clear()
+  useSftpDefaultLocalFolder.setState({ defaultFolder: null })
   useSftpTransfersStore.setState({ transfers: [] })
   useSftpColumnsStore.setState({
     hiddenColumns: [],
@@ -301,17 +308,21 @@ describe('SftpWorkbench', () => {
   })
 
   describe('local folder memory', () => {
-    async function remount(): Promise<void> {
+    async function remount(shownTarget: SshTarget = target): Promise<void> {
       await act(async () => root.unmount())
       vi.clearAllMocks()
-      await renderWorkbench()
+      await renderWorkbench(shownTarget)
     }
 
-    it('reopens the local pane in the last local folder it showed', async () => {
+    async function openLocalFolder(path: string, firstChild: string): Promise<void> {
       await act(async () => {
-        row('/Users/dev/notes')?.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+        row(path)?.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
       })
-      await vi.waitFor(() => expect(row('/Users/dev/notes/todo.md')).not.toBeNull())
+      await vi.waitFor(() => expect(row(firstChild)).not.toBeNull())
+    }
+
+    it('reopens the local pane in the last local folder the host showed', async () => {
+      await openLocalFolder('/Users/dev/notes', '/Users/dev/notes/todo.md')
 
       await remount()
 
@@ -320,14 +331,56 @@ describe('SftpWorkbench', () => {
       expect(api.localList).toHaveBeenCalledWith('/Users/dev/notes')
     })
 
-    it('falls back to the home folder when the remembered one is gone', async () => {
-      saveLastLocalPath('/Users/dev/deleted')
+    it('keeps a separate local folder for each host', async () => {
+      await openLocalFolder('/Users/dev/notes', '/Users/dev/notes/todo.md')
+
+      await remount(otherTarget)
+      await vi.waitFor(() => expect(row('/Users/dev/report.csv')).not.toBeNull())
+      expect(api.localList).toHaveBeenCalledWith('/Users/dev')
+
+      await remount(target)
+      await vi.waitFor(() => expect(row('/Users/dev/notes/todo.md')).not.toBeNull())
+    })
+
+    it('opens the default local folder for a host without one of its own', async () => {
+      saveHostLocalFolder('web', '/Users/dev')
+      useSftpDefaultLocalFolder.getState().setDefaultFolder('/Users/dev/notes')
+
+      await remount(otherTarget)
+
+      await vi.waitFor(() => expect(row('/Users/dev/notes/todo.md')).not.toBeNull())
+      expect(api.localList).toHaveBeenCalledTimes(1)
+      // Opening a host without browsing must not tie it to today's default.
+      expect(readHostLocalFolder('db')).toBeNull()
+      await remount(target)
+      await vi.waitFor(() => expect(row('/Users/dev/report.csv')).not.toBeNull())
+    })
+
+    it('falls back to the default folder, then home, when the remembered one is gone', async () => {
+      saveHostLocalFolder('web', '/Users/dev/deleted')
+      useSftpDefaultLocalFolder.getState().setDefaultFolder('/Users/dev/notes')
 
       await remount()
 
-      await vi.waitFor(() => expect(row('/Users/dev/report.csv')).not.toBeNull())
+      await vi.waitFor(() => expect(row('/Users/dev/notes/todo.md')).not.toBeNull())
       expect(api.localList).toHaveBeenNthCalledWith(1, '/Users/dev/deleted')
+
+      useSftpDefaultLocalFolder.getState().setDefaultFolder('/Users/dev/also-deleted')
+      await remount()
+
+      await vi.waitFor(() => expect(row('/Users/dev/report.csv')).not.toBeNull())
       expect(document.body.textContent).not.toContain('ENOENT')
+    })
+
+    it('sets and clears the shown local folder as the default for all hosts', async () => {
+      await click(button('Set as default local folder for all hosts'))
+
+      expect(useSftpDefaultLocalFolder.getState().defaultFolder).toBe('/Users/dev')
+      expect(button('Remove as default local folder').getAttribute('aria-pressed')).toBe('true')
+
+      await click(button('Remove as default local folder'))
+
+      expect(useSftpDefaultLocalFolder.getState().defaultFolder).toBeNull()
     })
   })
 

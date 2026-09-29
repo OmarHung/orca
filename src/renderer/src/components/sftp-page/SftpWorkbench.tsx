@@ -17,7 +17,12 @@ import { SftpFilePane } from './SftpFilePane'
 import { SftpNameDialog, type SftpNameRequest } from './SftpNameDialog'
 import { SftpRemoteMenuItems, SftpRemoteToolbar, type SftpRemoteAction } from './SftpRemoteActions'
 import { SftpTransfersPanel } from './SftpTransfersPanel'
-import { readLastLocalPath, saveLastLocalPath } from './sftp-last-local-path'
+import { SftpDefaultLocalFolderButton } from './SftpDefaultLocalFolderButton'
+import {
+  readHostLocalFolder,
+  saveHostLocalFolder,
+  useSftpDefaultLocalFolder
+} from './sftp-local-folder-memory'
 import {
   isRemotePathWithin,
   localParent,
@@ -34,14 +39,22 @@ async function localHome(): Promise<SftpResult<string>> {
   return { ok: true, value: await window.api.sftp.localHome() }
 }
 
-const LOCAL_SOURCE: SftpPaneSource = {
-  initialPath: async () => {
-    const lastPath = readLastLocalPath()
-    return lastPath ? { ok: true, value: lastPath } : localHome()
-  },
-  fallbackPath: localHome,
-  list: (path) => window.api.sftp.localList(path),
-  parent: localParent
+/** Opens where this host was last, else the default folder, else home. */
+function localSourceFor(targetId: string): SftpPaneSource {
+  return {
+    initialPath: async () => {
+      const folder =
+        readHostLocalFolder(targetId) ?? useSftpDefaultLocalFolder.getState().defaultFolder
+      return folder ? { ok: true, value: folder } : localHome()
+    },
+    fallbackPaths: async () => {
+      const home = await window.api.sftp.localHome()
+      const defaultFolder = useSftpDefaultLocalFolder.getState().defaultFolder
+      return defaultFolder ? [defaultFolder, home] : [home]
+    },
+    list: (path) => window.api.sftp.localList(path),
+    parent: localParent
+  }
 }
 
 function isBrowsable(entry: SftpEntry): boolean {
@@ -70,7 +83,8 @@ export function SftpWorkbench({
     }),
     [target.id]
   )
-  const local = useSftpPane(LOCAL_SOURCE)
+  const localSource = useMemo(() => localSourceFor(target.id), [target.id])
+  const local = useSftpPane(localSource)
   const remote = useSftpPane(remoteSource)
   const [nameRequest, setNameRequest] = useState<SftpNameRequest | null>(null)
   const dropZoneRef = useRef<HTMLDivElement>(null)
@@ -103,11 +117,17 @@ export function SftpWorkbench({
   }
 
   const localPath = local.path
+  const hasShownLocalRef = useRef(false)
   useEffect(() => {
-    if (localPath) {
-      saveLastLocalPath(localPath)
+    if (!localPath) {
+      return
     }
-  }, [localPath])
+    // Why: only folders the user went to are remembered, so an untouched host keeps following the default.
+    if (hasShownLocalRef.current) {
+      saveHostLocalFolder(target.id, localPath)
+    }
+    hasShownLocalRef.current = true
+  }, [localPath, target.id])
   const remotePath = remote.path
   useEffect(() => {
     if (remotePath) {
@@ -270,21 +290,24 @@ export function SftpWorkbench({
               : transfer('upload', [entry.path], remotePath)
           }
           actions={
-            <Button
-              variant="outline"
-              size="xs"
-              disabled={local.selectedEntries.length === 0 || remotePath === null}
-              onClick={() =>
-                transfer(
-                  'upload',
-                  local.selectedEntries.map((entry) => entry.path),
-                  remotePath
-                )
-              }
-            >
-              <ArrowUpFromLine className="size-3" />
-              {uploadLabel}
-            </Button>
+            <>
+              <SftpDefaultLocalFolderButton path={local.path} />
+              <Button
+                variant="outline"
+                size="xs"
+                disabled={local.selectedEntries.length === 0 || remotePath === null}
+                onClick={() =>
+                  transfer(
+                    'upload',
+                    local.selectedEntries.map((entry) => entry.path),
+                    remotePath
+                  )
+                }
+              >
+                <ArrowUpFromLine className="size-3" />
+                {uploadLabel}
+              </Button>
+            </>
           }
         />
         <div className="w-px shrink-0 bg-border" />

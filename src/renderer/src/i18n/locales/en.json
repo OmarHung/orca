@@ -19991,7 +19991,9 @@
     },
     "local": {
       "upload": "Upload",
-      "title": "Local"
+      "title": "Local",
+      "setDefaultFolder": "Set as default local folder for all hosts",
+      "clearDefaultFolder": "Remove as default local folder"
     },
     "nameDialog": {
       "label": "Name",
@@ -20126,6 +20128,22 @@
       "vpn": "vpn",
       "openvpn": "openvpn",
       "ovpn": "ovpn"
+    }
+  },
+  "sftpSettings": {
+    "defaultLocalFolder": {
+      "label": "SFTP default local folder",
+      "description": "Where the local pane opens for hosts that have not been browsed yet. Each host reopens the local folder it showed last.",
+      "home": "Home folder",
+      "choose": "Choose default local folder",
+      "clear": "Use the home folder"
+    },
+    "search": {
+      "description": "Choose where the SFTP local pane opens.",
+      "sftp": "sftp",
+      "local": "local",
+      "folder": "folder",
+      "transfer": "transfer"
     }
   }
 }

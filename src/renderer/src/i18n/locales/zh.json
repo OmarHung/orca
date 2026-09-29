@@ -19923,7 +19923,9 @@
     },
     "local": {
       "upload": "上传",
-      "title": "本机"
+      "title": "本机",
+      "setDefaultFolder": "设为所有主机的默认本机文件夹",
+      "clearDefaultFolder": "取消默认本机文件夹"
     },
     "nameDialog": {
       "label": "名称",
@@ -20058,6 +20060,22 @@
       "vpn": "vpn",
       "openvpn": "openvpn",
       "ovpn": "ovpn"
+    }
+  },
+  "sftpSettings": {
+    "defaultLocalFolder": {
+      "label": "SFTP 默认本机文件夹",
+      "description": "尚未浏览过的主机，本机窗格会从这里打开。每台主机会重新打开自己上次显示的本机文件夹。",
+      "home": "主文件夹",
+      "choose": "选择默认本机文件夹",
+      "clear": "改用主文件夹"
+    },
+    "search": {
+      "description": "选择 SFTP 本机窗格打开的位置。",
+      "sftp": "sftp",
+      "local": "本机",
+      "folder": "文件夹",
+      "transfer": "传输"
     }
   }
 }
