@@ -1,7 +1,6 @@
 import { useMemo, type RefObject } from 'react'
 import { CornerLeftUp, RefreshCw } from 'lucide-react'
 import { Button } from '../ui/button'
-import { Input } from '../ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { translate } from '@/i18n/i18n'
 import type { SftpEntry } from '../../../../shared/sftp-types'
@@ -96,16 +95,22 @@ export function SftpFilePane({
         <span className="max-w-32 shrink-0 truncate text-xs font-medium text-muted-foreground">
           {title}
         </span>
-        <Input
-          key={pane.path ?? ''}
-          defaultValue={pane.path ?? ''}
-          aria-label={translate('sftpPage.pane.path', 'Path')}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && event.currentTarget.value.trim()) {
-              pane.navigate(event.currentTarget.value.trim())
-            }
-          }}
-        />
+        {/* Why: the Input primitive is h-9/text-sm; this matches the h-6 xs toolbar buttons, like Git Log's filter. */}
+        <div className="flex h-6 min-w-0 flex-1 items-center rounded-md border border-input px-2 focus-within:border-ring">
+          <input
+            key={pane.path ?? ''}
+            type="text"
+            defaultValue={pane.path ?? ''}
+            aria-label={translate('sftpPage.pane.path', 'Path')}
+            spellCheck={false}
+            className="min-w-0 flex-1 bg-transparent text-xs outline-none"
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && event.currentTarget.value.trim()) {
+                pane.navigate(event.currentTarget.value.trim())
+              }
+            }}
+          />
+        </div>
         <PaneIconButton
           label={translate('sftpPage.pane.up', 'Parent folder')}
           disabled={!pane.hasParent}
