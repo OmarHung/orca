@@ -38,3 +38,23 @@ export function isValidEntryName(name: string): boolean {
   const trimmed = name.trim()
   return trimmed !== '' && trimmed !== '.' && trimmed !== '..' && !trimmed.includes('/')
 }
+
+/** Resolves a typed remote path, absolute or relative to `base`, collapsing "." and "..". */
+export function resolveRemotePath(base: string, input: string): string {
+  const trimmed = input.trim()
+  const joined = trimmed.startsWith('/') ? trimmed : `${base}/${trimmed}`
+  const segments: string[] = []
+  for (const segment of joined.split('/')) {
+    if (segment === '..') {
+      segments.pop()
+    } else if (segment !== '' && segment !== '.') {
+      segments.push(segment)
+    }
+  }
+  return `/${segments.join('/')}`
+}
+
+/** True when `candidate` is `folder` itself or anywhere below it. */
+export function isRemotePathWithin(candidate: string, folder: string): boolean {
+  return candidate === folder || candidate.startsWith(folder === '/' ? '/' : `${folder}/`)
+}

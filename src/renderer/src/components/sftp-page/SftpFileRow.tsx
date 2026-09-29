@@ -12,7 +12,10 @@ const CELL_CLASS: Record<SftpColumnId, string> = {
 }
 
 const ROW_CLASS =
-  'flex cursor-default items-center px-3 py-1 text-[13px] select-none hover:bg-accent data-[selected=true]:bg-accent'
+  'flex cursor-default items-center px-3 py-1 text-[13px] select-none hover:bg-accent data-[drop-target=true]:bg-accent data-[drop-target=true]:ring-1 data-[drop-target=true]:ring-ring data-[drop-target=true]:ring-inset data-[selected=true]:bg-accent'
+
+/** Where a moved row lands; only rows with a `dropDir` accept a drop. */
+type RowDropProps = { dropDir?: string; isDropTarget?: boolean }
 
 function EntryIcon({ kind }: { kind: SftpEntry['kind'] }): React.JSX.Element {
   const Icon = kind === 'directory' ? Folder : kind === 'symlink' ? FileSymlink : File
@@ -24,25 +27,35 @@ export function SftpFileRow({
   columns,
   widths,
   isSelected,
+  isDraggable,
+  dropDir,
+  isDropTarget,
   onClick,
-  onDoubleClick
-}: {
+  onDoubleClick,
+  onContextMenu
+}: RowDropProps & {
   entry: SftpEntry
   columns: readonly SftpColumnId[]
   widths: SftpColumnWidths
   isSelected: boolean
+  isDraggable?: boolean
   onClick: (event: React.MouseEvent) => void
   onDoubleClick: () => void
+  onContextMenu?: () => void
 }): React.JSX.Element {
   return (
     <div
       role="option"
       aria-selected={isSelected}
       tabIndex={-1}
+      draggable={isDraggable}
       data-selected={isSelected ? 'true' : undefined}
       data-sftp-entry={entry.path}
+      data-sftp-drop-dir={dropDir}
+      data-drop-target={isDropTarget ? 'true' : undefined}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
+      onContextMenu={onContextMenu}
       className={ROW_CLASS}
     >
       <EntryIcon kind={entry.kind} />
@@ -67,8 +80,10 @@ export function SftpFileRow({
 /** The ".." row: double-click goes to the parent folder. Never selectable. */
 export function SftpParentRow({
   label,
+  dropDir,
+  isDropTarget,
   onOpen
-}: {
+}: RowDropProps & {
   label: string
   onOpen: () => void
 }): React.JSX.Element {
@@ -79,6 +94,8 @@ export function SftpParentRow({
       aria-label={label}
       tabIndex={-1}
       data-sftp-parent
+      data-sftp-drop-dir={dropDir}
+      data-drop-target={isDropTarget ? 'true' : undefined}
       onDoubleClick={onOpen}
       className={ROW_CLASS}
     >

@@ -9,10 +9,13 @@ export type SftpNameRequest = {
   title: string
   confirmLabel: string
   initialName: string
+  /** Defaults to "Name", checked as a single path segment. */
+  inputLabel?: string
+  isValid?: (value: string) => boolean
   onSubmit: (name: string) => void
 }
 
-/** Asks for one remote file or folder name (new folder, rename). */
+/** Asks for one remote name (new folder, rename) or path (move to). */
 export function SftpNameDialog({
   request,
   onClose
@@ -37,7 +40,7 @@ function SftpNameForm({
   onClose: () => void
 }): React.JSX.Element {
   const [name, setName] = useState(request.initialName)
-  const isValid = isValidEntryName(name)
+  const isValid = (request.isValid ?? isValidEntryName)(name)
   const submit = (): void => {
     if (isValid) {
       onClose()
@@ -58,7 +61,7 @@ function SftpNameForm({
       <Input
         autoFocus
         value={name}
-        aria-label={translate('sftpPage.nameDialog.label', 'Name')}
+        aria-label={request.inputLabel ?? translate('sftpPage.nameDialog.label', 'Name')}
         aria-invalid={!isValid || undefined}
         onChange={(event) => setName(event.target.value)}
       />

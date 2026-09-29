@@ -23,8 +23,8 @@ export type SftpPaneState = {
   error: string | null
   selection: PaneSelection
   selectedEntries: SftpEntry[]
-  /** False at the filesystem root, where the ".." row is hidden. */
-  hasParent: boolean
+  /** Null at the filesystem root, where the ".." row is hidden. */
+  parentPath: string | null
   navigate: (path: string) => void
   goUp: () => void
   refresh: () => void
@@ -128,7 +128,7 @@ export function useSftpPane(source: SftpPaneSource): SftpPaneState {
     error,
     selection,
     selectedEntries,
-    hasParent: path !== null && source.parent(path) !== path,
+    parentPath: path !== null && source.parent(path) !== path ? source.parent(path) : null,
     navigate,
     goUp,
     refresh,

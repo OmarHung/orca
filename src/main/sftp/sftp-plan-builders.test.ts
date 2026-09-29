@@ -116,6 +116,58 @@ describe('draftSftpPlan', () => {
   })
 })
 
+describe('draftSftpPlan move', () => {
+  function move(sources: string[], destinationDir: string): SftpPlanRequest {
+    return { kind: 'move', targetId: 'web', sources, destinationDir }
+  }
+
+  it('renames each item into the folder and skips items already there', async () => {
+    const sftp = remoteApp()
+    const plan = await draftSftpPlan(
+      sftp,
+      move(['/srv/app/a.txt', '/srv/app/sub/b.txt'], '/srv/app/sub/')
+    )
+
+    expect(plan.operations.map(formatSftpOperation)).toEqual([
+      'rename "/srv/app/a.txt" "/srv/app/sub/a.txt"'
+    ])
+    await runSftpOperations(sftp, plan.operations, () => undefined)
+    expect(sftp.readText('/srv/app/sub/a.txt')).toBe('abc')
+    expect(sftp.readText('/srv/app/a.txt')).toBeNull()
+  })
+
+  it('moves a folder with its contents up to the parent folder', async () => {
+    const sftp = remoteApp()
+    const plan = await draftSftpPlan(sftp, move(['/srv/app/sub'], '/srv'))
+
+    await runSftpOperations(sftp, plan.operations, () => undefined)
+
+    expect(sftp.readText('/srv/sub/b.txt')).toBe('hello')
+  })
+
+  it('reports names already taken in the folder, including dangling links', async () => {
+    const sftp = remoteApp().addFile('/srv/a.txt', 'other').addLink('/srv/sub', '/srv/missing')
+
+    const plan = await draftSftpPlan(sftp, move(['/srv/app/a.txt', '/srv/app/sub'], '/srv'))
+
+    expect(plan.conflicts).toEqual(['a.txt', 'sub'])
+  })
+
+  it('refuses a folder moved into itself or a destination that is not a folder', async () => {
+    const sftp = remoteApp()
+
+    await expect(draftSftpPlan(sftp, move(['/srv/app'], '/srv/app/sub'))).rejects.toThrow(
+      'Cannot move "app" into itself.'
+    )
+    await expect(draftSftpPlan(sftp, move(['/srv/app/sub'], '/srv/app/a.txt'))).rejects.toThrow(
+      '"/srv/app/a.txt" is not a folder.'
+    )
+    await expect(draftSftpPlan(sftp, move(['/srv/app/sub'], '/srv/nope'))).rejects.toThrow(
+      '"/srv/nope" is not a folder.'
+    )
+  })
+})
+
 describe('runSftpOperations', () => {
   it('downloads a folder and reports monotonic progress up to the total', async () => {
     const sftp = remoteApp()
