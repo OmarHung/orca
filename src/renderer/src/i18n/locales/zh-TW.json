@@ -19510,6 +19510,19 @@
       "manual": "這個 VPN 需要帳號和密碼。",
       "cancel": "取消",
       "connect": "連線"
+    },
+    "hostForm": {
+      "label": "VPN",
+      "noProfiles": "請先在下方的 VPN 區塊新增 VPN 設定檔。",
+      "help": "讓這台主機經由 OpenVPN 連線，這台電腦的其他網路流量不會改走 VPN。",
+      "addFirst": "請先儲存主機，再到這裡或在 SSH 頁面的主機上按右鍵選擇 VPN。"
+    },
+    "search": {
+      "title": "SSH 主機的 VPN",
+      "description": "讓指定的 SSH 主機經由 OpenVPN 連線。",
+      "vpn": "vpn",
+      "openvpn": "openvpn",
+      "ovpn": "ovpn"
     }
   }
 }

@@ -51,5 +51,18 @@ export const getSshPaneSearchEntries = createLocalizedCatalog(() => [
       ...translateSearchKeyword('auto.components.settings.ssh.search.237b391f7c', 'connection'),
       ...translateSearchKeyword('auto.components.settings.ssh.search.d41f296f64', 'ping')
     ]
+  },
+  {
+    title: translate('sshVpn.search.title', 'VPN for SSH hosts'),
+    description: translate(
+      'sshVpn.search.description',
+      'Route chosen SSH hosts through an OpenVPN profile.'
+    ),
+    keywords: [
+      ...translateSearchKeyword('sshVpn.search.vpn', 'vpn'),
+      ...translateSearchKeyword('sshVpn.search.openvpn', 'openvpn'),
+      ...translateSearchKeyword('sshVpn.search.ovpn', 'ovpn'),
+      ...translateSearchKeyword('auto.components.settings.ssh.search.7efd17e816', 'ssh')
+    ]
   }
 ])

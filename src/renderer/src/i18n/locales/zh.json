@@ -19632,6 +19632,19 @@
       "manual": "这个 VPN 需要账号和密码。",
       "cancel": "取消",
       "connect": "连接"
+    },
+    "hostForm": {
+      "label": "VPN",
+      "noProfiles": "请先在下方的 VPN 区块新增 VPN 配置文件。",
+      "help": "让这台主机经由 OpenVPN 连接，这台电脑的其他网络流量不会改走 VPN。",
+      "addFirst": "请先保存主机，再到这里或在 SSH 页面的主机上按右键选择 VPN。"
+    },
+    "search": {
+      "title": "SSH 主机的 VPN",
+      "description": "让指定的 SSH 主机经由 OpenVPN 连接。",
+      "vpn": "vpn",
+      "openvpn": "openvpn",
+      "ovpn": "ovpn"
     }
   }
 }
