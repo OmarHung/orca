@@ -64,5 +64,18 @@ export const getSshPaneSearchEntries = createLocalizedCatalog(() => [
       ...translateSearchKeyword('sshVpn.search.ovpn', 'ovpn'),
       ...translateSearchKeyword('auto.components.settings.ssh.search.7efd17e816', 'ssh')
     ]
+  },
+  {
+    title: translate('sftpSettings.defaultLocalFolder.label', 'SFTP default local folder'),
+    description: translate(
+      'sftpSettings.search.description',
+      'Choose where the SFTP local pane opens.'
+    ),
+    keywords: [
+      ...translateSearchKeyword('sftpSettings.search.sftp', 'sftp'),
+      ...translateSearchKeyword('sftpSettings.search.local', 'local'),
+      ...translateSearchKeyword('sftpSettings.search.folder', 'folder'),
+      ...translateSearchKeyword('sftpSettings.search.transfer', 'transfer')
+    ]
   }
 ])
