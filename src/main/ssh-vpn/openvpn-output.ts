@@ -3,7 +3,9 @@ const LOG_TAIL_LINES = 40
 export type OpenVpnOutputEvent = { kind: 'ready' } | { kind: 'failed' } | { kind: 'line' }
 
 const READY_MARKER = 'Initialization Sequence Completed'
-const FATAL_MARKERS = ['AUTH_FAILED', 'Exiting due to fatal error', 'Options error:']
+// Why not "Options error:": OpenVPN also logs it for pushed options it merely ignores (e.g. the
+// Windows-only block-outside-dns); a real config error ends the process, which is caught anyway.
+const FATAL_MARKERS = ['AUTH_FAILED', 'Exiting due to fatal error']
 
 /** Classifies one line of `openvpn --verb 3` output. */
 export function classifyOpenVpnLine(line: string): OpenVpnOutputEvent {

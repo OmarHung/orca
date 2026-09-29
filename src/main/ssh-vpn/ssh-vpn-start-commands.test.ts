@@ -27,7 +27,7 @@ describe('sshVpnStartCommands', () => {
       '/usr/local/bin/docker exec orca-ssh-vpn-tag-p /usr/local/bin/orca-vpn-firewall',
       `/usr/local/bin/docker exec -i orca-ssh-vpn-tag-p sh -c 'umask 077 && base64 -d > "$1"' sh /run/orca/profile.ovpn   # stdin: /Users/o/Downloads/taipei.ovpn (paths rewritten for the container), base64`,
       `/usr/local/bin/docker exec -i orca-ssh-vpn-tag-p sh -c 'umask 077 && base64 -d > "$1"' sh /run/orca/f0-ca.crt   # stdin: /Users/o/vpn/ca.crt, base64`,
-      '/usr/local/bin/docker exec orca-ssh-vpn-tag-p openvpn --config /run/orca/profile.ovpn --script-security 2 --up /usr/local/bin/orca-vpn-dns --verb 3'
+      '/usr/local/bin/docker exec orca-ssh-vpn-tag-p openvpn --config /run/orca/profile.ovpn --script-security 2 --up /usr/local/bin/orca-vpn-dns --pull-filter ignore block-outside-dns --verb 3'
     ])
   })
 
