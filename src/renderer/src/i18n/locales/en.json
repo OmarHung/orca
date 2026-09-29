@@ -19487,6 +19487,13 @@
       "loadFailed": "Couldn't load your SSH hosts.",
       "retry": "Retry",
       "empty": "No SSH hosts yet. Add them to ~/.ssh/config or in Settings → SSH."
+    },
+    "session": {
+      "unsafeTarget": "This host has characters Orca cannot pass to ssh safely. Rename it in ~/.ssh/config."
+    },
+    "picker": {
+      "title": "Open an SSH session",
+      "description": "Pick the host to connect to."
     }
   },
   "sftpPage": {

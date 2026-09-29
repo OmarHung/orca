@@ -1,9 +1,9 @@
+import { isLocalSyntheticWorkspaceId } from '../../../shared/local-synthetic-workspace'
 import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
 import type { ExecutionHostId } from '../../../shared/execution-host'
 import type { GlobalSettings } from '../../../shared/global-settings-types'
 import type { Worktree } from '../../../shared/worktree/types'
 import { parseWorkspaceKey } from '../../../shared/workspace-scope'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
 import { getRepoIdFromWorktreeId } from '@/store/slices/worktree-helpers'
 import {
   findIndexedRepoOwner as findRepoRecord,
@@ -63,7 +63,7 @@ export function getRuntimeEnvironmentIdForWorktree(
   if (!worktreeId) {
     return null
   }
-  if (worktreeId === FLOATING_TERMINAL_WORKTREE_ID) {
+  if (isLocalSyntheticWorkspaceId(worktreeId)) {
     return null
   }
   const activeRoute = resolveActiveWorkspaceRoute(state, worktreeId)
@@ -181,7 +181,7 @@ export function getKnownExecutionHostIdForWorktree(
   if (!worktreeId) {
     return 'local'
   }
-  if (worktreeId === FLOATING_TERMINAL_WORKTREE_ID) {
+  if (isLocalSyntheticWorkspaceId(worktreeId)) {
     return 'local'
   }
   const activeHostId = getActiveWorkspaceExecutionHostId(state, worktreeId)

@@ -19283,6 +19283,13 @@
       "loadFailed": "無法載入 SSH 主機。",
       "retry": "重試",
       "empty": "還沒有 SSH 主機。請在 ~/.ssh/config 或「設定 → SSH」中新增。"
+    },
+    "session": {
+      "unsafeTarget": "這台主機的名稱包含 Orca 無法安全傳給 ssh 的字元。請在 ~/.ssh/config 中重新命名。"
+    },
+    "picker": {
+      "title": "開啟 SSH 連線",
+      "description": "選擇要連線的主機。"
     }
   },
   "sftpPage": {

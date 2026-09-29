@@ -1,4 +1,4 @@
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
+import { isLocalSyntheticWorkspaceId } from '../../../shared/local-synthetic-workspace'
 import { isEphemeralSetupTerminalWorktreeId } from '../../../shared/ephemeral-setup-terminal-worktree-id'
 import { parseExecutionHostId } from '../../../shared/execution-host'
 import { parseWorkspaceKey } from '../../../shared/workspace-scope'
@@ -58,10 +58,7 @@ export function resolveTerminalHostOwnership(
     // Why: a tab with no owning row proves nothing about its host, so teardown cannot claim its PTY.
     return purpose === 'teardown' ? UNRESOLVED_TERMINAL_HOST : LOCAL_OR_SSH_TERMINAL_HOST
   }
-  if (
-    worktreeId === FLOATING_TERMINAL_WORKTREE_ID ||
-    parseWorkspaceKey(worktreeId)?.type === 'folder'
-  ) {
+  if (isLocalSyntheticWorkspaceId(worktreeId) || parseWorkspaceKey(worktreeId)?.type === 'folder') {
     return resolveFloatingScopeOwnership(
       state,
       worktreeId,

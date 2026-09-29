@@ -2,19 +2,21 @@ import type { SshTarget } from '../../../../shared/ssh-types'
 import { Button } from '../ui/button'
 import { translate } from '@/i18n/i18n'
 import { SshHostList } from './SshHostList'
-import { useSshTargetList } from './use-ssh-target-list'
+import type { SshTargetList } from './use-ssh-target-list'
 
 type SshHostListPanelProps = {
+  list: SshTargetList
   currentTargetId?: string | null
   onSelect: (target: SshTarget) => void
 }
 
 /** The host column of the SSH and SFTP pages, including its loading and empty states. */
 export function SshHostListPanel({
+  list,
   currentTargetId,
   onSelect
 }: SshHostListPanelProps): React.JSX.Element {
-  const { status, targets, reload } = useSshTargetList()
+  const { status, targets, reload } = list
 
   return (
     <div className="flex w-72 shrink-0 flex-col border-r border-border">

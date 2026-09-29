@@ -11,13 +11,16 @@ import { useTabDragSplit, type HoveredTabInsertion } from '../tab-group/useTabDr
  *  same-group reorder — the pane-column split branches find no panel geometry. */
 export function FloatingWorkspaceTabDragContext({
   enabled,
+  worktreeId = FLOATING_TERMINAL_WORKTREE_ID,
   children
 }: {
   /** False while the panel is hidden: a closed panel must not register sensors that compete with the workspace DndContext. */
   enabled: boolean
+  /** Single-group synthetic workspace whose strip this hosts (the SSH page reuses it). */
+  worktreeId?: string
   children: React.ReactElement<{ hoveredTabInsertion?: HoveredTabInsertion | null }>
 }): React.JSX.Element {
-  const dragSplit = useTabDragSplit({ worktreeId: FLOATING_TERMINAL_WORKTREE_ID, enabled })
+  const dragSplit = useTabDragSplit({ worktreeId, enabled })
 
   return (
     <TabDragProvider

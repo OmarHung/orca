@@ -331,3 +331,29 @@ describe('shared tab navigation routing', () => {
     expect(handleSwitchTabAcrossAllTypes).not.toHaveBeenCalled()
   })
 })
+
+describe('the SSH page', () => {
+  const pressCmdT = (): KeyboardEvent => {
+    const event = new KeyboardEvent('keydown', { key: 't', metaKey: true, cancelable: true })
+    handleTerminalWorkspaceKeyDown(event, controller, 'darwin')
+    return event
+  }
+
+  beforeEach(() => {
+    mocks.floatingFocused = false
+    mocks.targetInsideFloatingPanel = false
+    vi.mocked(controller.handleNewTab).mockClear()
+  })
+
+  it('opens a project tab for Cmd+T on the workspace view', () => {
+    mocks.state = { activeView: 'terminal' }
+    expect(pressCmdT().defaultPrevented).toBe(true)
+    expect(controller.handleNewTab).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves Cmd+T to the SSH page instead of the hidden project workspace', () => {
+    mocks.state = { activeView: 'ssh' }
+    expect(pressCmdT().defaultPrevented).toBe(false)
+    expect(controller.handleNewTab).not.toHaveBeenCalled()
+  })
+})

@@ -1,4 +1,4 @@
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../../shared/constants'
+import { addLocalSyntheticWorkspaceIds } from '../../../../../shared/local-synthetic-workspace'
 import { folderWorkspaceKey } from '../../../../../shared/workspace-scope'
 import type { TabsSlice, TabsSliceGet, TabsSliceSet } from './tabs-slice-contract'
 import { addAdditionalValidWorkspaceKeys } from '@/lib/workspace-session-hydration-keys'
@@ -80,7 +80,7 @@ export function createTabsSessionActions(
       const state = get()
       const persistedWorktreeIds = collectPersistedWorktreeIdsForSessionHydration(session)
       const validWorktreeIds = buildValidWorktreeIdsForSessionHydration(state, persistedWorktreeIds)
-      validWorktreeIds.add(FLOATING_TERMINAL_WORKTREE_ID)
+      addLocalSyntheticWorkspaceIds(validWorktreeIds)
       for (const workspace of state.folderWorkspaces) {
         validWorktreeIds.add(folderWorkspaceKey(workspace.id))
       }
