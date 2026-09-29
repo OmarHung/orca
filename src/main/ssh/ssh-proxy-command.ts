@@ -8,9 +8,11 @@ import { quotePosixShell } from '../../shared/shell-argument-quoting'
 import { isOpenSshConfigBackedTarget } from './system-transport/system-ssh-args'
 
 // Normalize ProxyJump/jumpHost to the ProxyCommand equivalent so ssh2 has one proxy transport path.
-type EffectiveProxy =
+export type EffectiveProxy =
   | { kind: 'proxy-command'; command: string }
   | { kind: 'jump-host'; jumpHost: string }
+  /** A program run without a shell; `%h`/`%p` arguments become the host and port. */
+  | { kind: 'argv'; program: string; args: readonly string[] }
 
 export function resolveEffectiveProxy(
   target: SshTarget,
@@ -93,20 +95,25 @@ export function spawnProxyCommand(
           program: 'ssh',
           args: jumpHostSpawnArgs(proxy.jumpHost, host, port)
         })
-      : (() => {
-          const escape = process.platform === 'win32' ? cmdEscape : quotePosixShell
-          const expanded = proxy.command
-            .replace(/%h/g, escape(host))
-            .replace(/%p/g, escape(String(port)))
-            .replace(/%r/g, escape(user))
-          const shell = getShellSpawnConfig(expanded)
-          // User-authored ProxyCommand needs verbatim shell semantics; hide its Windows console to avoid focus theft (#10488).
-          return spawn(shell.file, shell.args, {
-            stdio: ['pipe', 'pipe', 'pipe'],
-            windowsHide: true,
-            windowsVerbatimArguments: shell.windowsVerbatimArguments
+      : proxy.kind === 'argv'
+        ? spawnProcess({
+            program: proxy.program,
+            args: proxy.args.map((arg) => (arg === '%h' ? host : arg === '%p' ? String(port) : arg))
           })
-        })()
+        : (() => {
+            const escape = process.platform === 'win32' ? cmdEscape : quotePosixShell
+            const expanded = proxy.command
+              .replace(/%h/g, escape(host))
+              .replace(/%p/g, escape(String(port)))
+              .replace(/%r/g, escape(user))
+            const shell = getShellSpawnConfig(expanded)
+            // User-authored ProxyCommand needs verbatim shell semantics; hide its Windows console to avoid focus theft (#10488).
+            return spawn(shell.file, shell.args, {
+              stdio: ['pipe', 'pipe', 'pipe'],
+              windowsHide: true,
+              windowsVerbatimArguments: shell.windowsVerbatimArguments
+            })
+          })()
 
   // Keep proxy stdout/stdin separate; a bidirectional PassThrough would feed output back as input.
   let cleanedUp = false
