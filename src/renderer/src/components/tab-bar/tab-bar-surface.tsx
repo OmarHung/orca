@@ -199,8 +199,15 @@ export function renderTabBarSurface({
         </Tooltip>
       ) : null}
       <DropdownMenu
-        open={newTabMenuOpen}
-        onOpenChange={setNewTabMenuOpen}
+        open={props.onNewTabClick ? false : newTabMenuOpen}
+        onOpenChange={(open) => {
+          // Why: pages with their own "+" flow (the SSH host picker) skip the create menu.
+          if (!props.onNewTabClick) {
+            setNewTabMenuOpen(open)
+          } else if (open) {
+            props.onNewTabClick()
+          }
+        }}
         // Why: modal would disable body pointer events, making the Mobile Emulator "Hide" re-enable toast unclickable.
         modal={false}
       >

@@ -1,6 +1,6 @@
 # SSH 與 SFTP 頁面：實作計畫（fork 專屬）
 
-> 狀態：Phase 1（側欄入口、兩個頁面、主機清單）已完成（2026-09-29），紀錄見 §7。Phase 2 尚未開工
+> 狀態：Phase 1（側欄入口、兩個頁面、主機清單）和 Phase 2（SSH 分頁工作區）已完成（2026-09-29），紀錄見 §7。Phase 3 尚未開工
 > 分支：從 `omar/custom` 開 `feat/ssh-sftp-pages`，每個 Phase 完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -143,3 +143,17 @@ Database 頁是範本（commit `d820e61fa2`）。它的導航狀態放在 fork �
 - 上游修改：§3.1 表格裡的 6 個檔案，加上 `SidebarNav.tsx`。
 - 目前點主機只會標示為選取；SSH 分頁是 Phase 2 的範圍，SFTP 頁顯示「下一次更新推出」。
 - i18n：`sshPage.*`、`sftpPage.*`，放在 en.json 和 zh.json 的最上層，zh-TW 由產生器轉出。
+
+### 7.2 Phase 2（2026-09-29）
+
+- **Synthetic workspace**：`shared/local-synthetic-workspace.ts` 定義 `SSH_SESSIONS_WORKTREE_ID = 'global-ssh-sessions'`、`isLocalSyntheticWorkspaceId()`、`addLocalSyntheticWorkspaceIds()`。
+- **上游一行修改（19 個檔案）**：本機路由（`terminal-worktree-route`、`worktree-runtime-owner` ×2、`resolved-worktree-execution-host`、`connection-owner-resolution`、`workspace-terminal-host-authority`、`client-creation-action-policy`、`local-preflight-context` ×2、`agent-idle-working-handlers`、`worktree-activation-pty-inventory`）；保存還原（`workspace-terminal-hydration`、`tabs-session-actions`、`fetch-all-worktrees`、`worktree-slice-lookups`、`terminal-parked-watcher-registry`）；排除手機/web 同步（`visibility-types`、`tracking-decisions`、`apply-snapshot`）；`workspace-launch-kind`；`http-link-routing`（不改的話在 SSH 終端機點網址會把 SSH 工作區設成 active worktree）。
+- **刻意不改的特例**：`terminal-startup-cwd`（不認識的 workspace 會退回 provider 預設 cwd，也就是家目錄，SSH 正好需要這個）、editor／browser 的 hydration（SSH 工作區沒有這兩種分頁）、quick commands、agent 偵測、codex、session fork、`retainHiddenWebgl`（對不存在的 repo 查詢本來就回傳 null）、main process 的 runtime（桌面版專用，不同步）。
+- **其他上游修改**：
+  - `tab-bar-props.ts`／`tab-bar-surface.tsx`：選填的 `onNewTabClick`，設定後「＋」不開選單，直接呼叫它。
+  - `FloatingWorkspaceTabDragContext.tsx`：選填的 `worktreeId`，讓 SSH 頁重用分頁拖曳。
+  - `terminal-workspace-keydown.ts`：`activeView === 'ssh'` 時直接返回，讓背景的專案不會接到 Cmd+T、Cmd+W。
+- **UI**：`SshPageHost`（掛在 `AppWorkspaceShell`，第一次開啟後常駐、切走時只用 CSS 隱藏）→ `SshPage`（主機清單 + `SshSessionsSurface` + `SshHostPickerDialog`）。`use-ssh-session-items.ts` 是浮動面板 items hook 的純終端機版本。`use-ssh-page-shortcuts.ts` 處理 Cmd+T（開主機選擇）和 Cmd+W（關目前分頁）。
+- **啟動指令**：`ssh-session-command.ts` 只接受安全字元，而且不能以 `-` 開頭（防止 `-oProxyCommand=…` 注入）。有別名時用別名，否則用 `ssh -p <port> <user>@<host>`。
+- **跟 §4.1 不同的地方**：沒有做獨立的「重新連線」按鈕。目前沒有 API 可以把文字寫進已經存在的終端機，所以重新連線的方式是在左邊清單再點一次主機（開一個新分頁，舊分頁保留斷線前的輸出）。
+- **驗證**：單元測試（指令組合、開啟/關閉動作、Cmd+T 在 SSH 頁不作用到專案、主機清單、判斷函式）；回歸測試（lib、store、runtime、terminal-pane、floating-terminal、tab-bar，約 2600 個測試檔）；E2E `tests/e2e/ssh-page-sessions.spec.ts`：連到 `127.0.0.1:9`（Connection refused，不會對外連線），驗證 PTY id 帶 `global-ssh-sessions@@` 前綴、離開頁面再回來 PTY 不變、「＋」選主機開第二個分頁、重啟後分頁還原。
