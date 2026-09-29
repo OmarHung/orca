@@ -31,7 +31,8 @@ describe('listLocalDirectory', () => {
     ])
     expect(entries.find((entry) => entry.name === 'file10.txt')).toMatchObject({
       path: path.join(root, 'file10.txt'),
-      size: 4
+      size: 4,
+      owner: os.userInfo().username
     })
   })
 
