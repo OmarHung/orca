@@ -1,4 +1,4 @@
-import { useContext, useRef } from 'react'
+import { useContext, useEffect, useRef } from 'react'
 import { Eraser } from 'lucide-react'
 import { toast } from 'sonner'
 import type { TuiAgent } from '../../../../shared/tui-agent'
@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { getAgentLabel } from '@/lib/agent-catalog'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
-import { clearAgentTabConversation } from './agent-tab-clear'
+import { clearAgentTabConversation, resolveAgentTabClearTarget } from './agent-tab-clear'
 
 type AgentTabClearButtonProps = {
   tabId: string
@@ -27,9 +27,16 @@ export function AgentTabClearButton({
 }: AgentTabClearButtonProps): React.JSX.Element | null {
   // Why: clearing must never skip confirmation, so without a dialog host there is no button.
   const confirm = useContext(ConfirmationDialogContext)
-  // Why: the agent can start a turn or raise a prompt while the dialog is open.
-  const isBusyRef = useRef(isBusy)
-  isBusyRef.current = isBusy
+  // Why: the agent can exit (unmounting this button) or change while the dialog is open.
+  const isMountedRef = useRef(true)
+  const agentRef = useRef(agent)
+  agentRef.current = agent
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
   const label = isBusy
     ? translate('agentTabClear.busy', 'Wait for the agent to finish before clearing')
     : translate('agentTabClear.button', 'Clear conversation')
@@ -39,7 +46,12 @@ export function AgentTabClearButton({
   }
 
   const clearConversation = async (): Promise<void> => {
-    if (isBusyRef.current) {
+    if (isBusy) {
+      return
+    }
+    const ptyId = resolveAgentTabClearTarget(tabId)
+    if (!ptyId) {
+      toast.error(translate('agentTabClear.noTerminal', 'This tab has no running agent to clear.'))
       return
     }
     const confirmed = await confirm({
@@ -53,11 +65,22 @@ export function AgentTabClearButton({
       confirmVariant: 'destructive',
       icon: Eraser
     })
-    if (!confirmed || isBusyRef.current) {
+    if (!confirmed) {
       return
     }
-    if (!clearAgentTabConversation(tabId, agent)) {
-      toast.error(translate('agentTabClear.noTerminal', 'This tab has no running agent to clear.'))
+    const outcome =
+      isMountedRef.current && agentRef.current === agent
+        ? clearAgentTabConversation(tabId, agent, ptyId)
+        : 'changed'
+    if (outcome === 'busy') {
+      toast.error(translate('agentTabClear.busy', 'Wait for the agent to finish before clearing'))
+    } else if (outcome === 'changed') {
+      toast.error(
+        translate(
+          'agentTabClear.changed',
+          'The agent in this tab changed while you were confirming, so nothing was cleared.'
+        )
+      )
     }
   }
 
