@@ -8,6 +8,7 @@ type SshHostListPanelProps = {
   list: SshTargetList
   currentTargetId?: string | null
   onSelect: (target: SshTarget) => void
+  hostMenuItems?: (target: SshTarget) => React.ReactNode
 }
 
 function StatusMessage({ children }: { children: React.ReactNode }): React.JSX.Element {
@@ -18,14 +19,20 @@ function StatusMessage({ children }: { children: React.ReactNode }): React.JSX.E
 export function SshHostListPanel({
   list,
   currentTargetId,
-  onSelect
+  onSelect,
+  hostMenuItems
 }: SshHostListPanelProps): React.JSX.Element {
   const { status, targets, reload } = list
 
   if (status === 'ready' && targets.length > 0) {
     return (
       <div className="flex w-72 shrink-0 flex-col border-r border-border">
-        <SshHostList targets={targets} currentTargetId={currentTargetId} onSelect={onSelect} />
+        <SshHostList
+          targets={targets}
+          currentTargetId={currentTargetId}
+          onSelect={onSelect}
+          hostMenuItems={hostMenuItems}
+        />
       </div>
     )
   }

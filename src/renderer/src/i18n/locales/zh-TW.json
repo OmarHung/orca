@@ -19424,7 +19424,9 @@
       "close": "關閉分頁 {{name}}",
       "missingHost": "“{{name}}”已不在你的 SSH 主機中，請關閉此分頁。",
       "pickerTitle": "開啟 SFTP 分頁",
-      "pickerDescription": "選擇要瀏覽的主機。"
+      "pickerDescription": "選擇要瀏覽的主機。",
+      "openInNewTab": "在新分頁中開啟",
+      "newTabOnHost": "在此主機新增分頁"
     },
     "move": {
       "titleOne": "將“{{name}}”移動到…",

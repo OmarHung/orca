@@ -38,9 +38,12 @@ export function SshHostVpnBadge({ targetId }: { targetId: string }): React.JSX.E
 /** Right-click on a host row: pick the VPN it connects through. */
 export function SshHostVpnMenu({
   targetId,
+  leadingItems,
   children
 }: {
   targetId: string
+  /** Page-specific actions for the host, listed above the VPN choice. */
+  leadingItems?: React.ReactNode
   children: React.ReactNode
 }): React.JSX.Element {
   const profiles = useSshVpnStore((state) => state.profiles)
@@ -50,6 +53,12 @@ export function SshHostVpnMenu({
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent className="min-w-56">
+        {leadingItems ? (
+          <>
+            {leadingItems}
+            <ContextMenuSeparator />
+          </>
+        ) : null}
         <ContextMenuLabel>{translate('sshVpn.menu.label', 'Connect through')}</ContextMenuLabel>
         <ContextMenuRadioGroup
           value={assigned}
