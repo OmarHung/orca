@@ -44,7 +44,8 @@ export type DatabaseApi = {
   ) => Promise<DatabaseResult<DatabaseConnectionSummary>>
   /** Moves connections into an explorer group, or back to the top level. */
   setConnectionGroup: (request: DatabaseSetConnectionGroupRequest) => Promise<DatabaseResult<null>>
-  deleteConnection: (connectionId: string) => Promise<void>
+  /** Fails, keeping the connection, when its saved password cannot be removed. */
+  deleteConnection: (connectionId: string) => Promise<DatabaseResult<null>>
   testConnection: (
     request: DatabaseTestConnectionRequest
   ) => Promise<DatabaseResult<{ serverVersion: string }>>

@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -47,6 +47,33 @@ describe('SshVpnPasswordVault', () => {
     vault.remember('p1', 'never', 'ignored')
     expect(vault.get('p1')).toBeNull()
     expect(vault.savedProfileIds()).toEqual([])
+  })
+
+  it.each([
+    ['damaged', '{"version": 1,'],
+    [
+      'written by a newer Orca',
+      JSON.stringify({ version: 2, format: 'orca-secret-store-v2', ciphertexts: {} })
+    ]
+  ])('never reports a password forgotten when the file is %s', (_case, contents) => {
+    writeFileSync(file, contents)
+    const vault = new SshVpnPasswordVault(file, () => fakeSecretStore(true))
+
+    expect(() => vault.forget('p1')).toThrow(file)
+    expect(() => vault.remember('p1', 'never', 'x')).toThrow(file)
+    expect(() => vault.remember('p1', 'session', 'x')).toThrow(file)
+    expect(vault.get('p1')).toBeNull()
+    expect(readFileSync(file, 'utf8')).toBe(contents)
+  })
+
+  it('keeps a password until quit without touching the file', () => {
+    writeFileSync(file, '{"version": 1,')
+    const vault = new SshVpnPasswordVault(file, () => fakeSecretStore(true))
+
+    vault.rememberForSession('p1', 'typed')
+
+    expect(vault.get('p1')).toBe('typed')
+    expect(readFileSync(file, 'utf8')).toBe('{"version": 1,')
   })
 
   it('refuses "forever" without a keychain', () => {

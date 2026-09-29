@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -208,6 +208,25 @@ describe('DatabaseService', () => {
     await service.saveConnection({ id, draft: { ...draft, name: 'Renamed', port: 5433 } })
     expect((await service.connect(id)).ok).toBe(true)
     expect(connectPasswords).toHaveLength(2)
+  })
+
+  it('keeps a connection whose saved password cannot be removed', async () => {
+    const service = createService()
+    const saved = await service.saveConnection({ draft, password: 'right' })
+    if (!saved.ok) {
+      throw new Error(saved.error.message)
+    }
+    const damaged = '{"version": 1,'
+    writeFileSync(join(dir, 'passwords.json'), damaged)
+
+    const deleted = await service.deleteConnection(saved.value.id)
+
+    expect(deleted).toMatchObject({
+      ok: false,
+      error: { message: expect.stringContaining('damaged') }
+    })
+    expect(service.listConnections().map((connection) => connection.id)).toEqual([saved.value.id])
+    expect(readFileSync(join(dir, 'passwords.json'), 'utf8')).toBe(damaged)
   })
 
   it('round-trips console text', async () => {
