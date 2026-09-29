@@ -39,15 +39,28 @@ exit 0
  * Fail closed inside the container: the tunnel user (every per-connection `nc`) may only leave
  * through the VPN's tun device. If OpenVPN never installs a route to the host, or drops its routes
  * while reconnecting, connections are refused instead of leaving through Docker's own network.
- * DNS stays allowed so names still resolve when the VPN pushes no DNS server.
+ * DNS stays allowed so names still resolve when the VPN pushes no DNS server, but only to the
+ * resolvers Docker gave the container: an open port 53 would let a host on port 53 skip the VPN.
+ * Runs before OpenVPN starts, so resolv.conf still lists Docker's resolvers.
  */
 const FIREWALL_SCRIPT = `#!/bin/sh
 set -e
 for ipt in iptables ip6tables; do
   $ipt -A OUTPUT -o lo -j ACCEPT
   $ipt -A OUTPUT -m owner --uid-owner ${SSH_VPN_TUNNEL_USER} -o tun+ -j ACCEPT
-  $ipt -A OUTPUT -m owner --uid-owner ${SSH_VPN_TUNNEL_USER} -p udp --dport 53 -j ACCEPT
-  $ipt -A OUTPUT -m owner --uid-owner ${SSH_VPN_TUNNEL_USER} -p tcp --dport 53 -j ACCEPT
+done
+while read -r key server _ || [ -n "$key" ]; do
+  [ "$key" = nameserver ] && [ -n "$server" ] || continue
+  server="\${server%%%*}"
+  case "$server" in
+    *:*) ipt=ip6tables ;;
+    *) ipt=iptables ;;
+  esac
+  for proto in udp tcp; do
+    $ipt -A OUTPUT -m owner --uid-owner ${SSH_VPN_TUNNEL_USER} -d "$server" -p "$proto" --dport 53 -j ACCEPT
+  done
+done < /etc/resolv.conf
+for ipt in iptables ip6tables; do
   $ipt -A OUTPUT -m owner --uid-owner ${SSH_VPN_TUNNEL_USER} -j REJECT
 done
 `
