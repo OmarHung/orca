@@ -1,6 +1,6 @@
 # SSH／SFTP 自動走 OpenVPN：實作計畫（fork 專屬）
 
-> 狀態：Phase 0、Phase 1 完成（2026-09-29），紀錄見 §9；下一步 Phase 2（設定頁）
+> 狀態：Phase 0、1、2 完成，另外加做帳密登入（2026-09-29），紀錄見 §9；下一步 Phase 3（收尾）
 > 分支：`feat/ssh-vpn`（worktree `/Users/omar/myprojects/orca-worktrees/feat-ssh-vpn`），每個 Phase 完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -25,7 +25,7 @@
 | # | 決策 | 內容 |
 |---|---|---|
 | D1 | 做法 | 方案 C：做進 Orca，連線時自動啟動 VPN |
-| D2 | VPN 登入方式 | **只支援憑證**（.ovpn 已內含或引用憑證與金鑰，不用輸入帳密）。帳密、MFA、SSO 不在第一版範圍 |
+| D2 | VPN 登入方式 | 原本只支援憑證。**2026-09-29 使用者要求加做帳密登入**（見 §9）；MFA、SSO 仍不在範圍 |
 | D3 | 設定位置 | **SSH 頁和設定頁兩邊都能設定**：兩邊都能管理 VPN 設定檔，也都能指定主機要用哪個 VPN |
 | D4 | 斷線時機 | **閒置 10 分鐘自動斷**：沒有任何連線在用這個 VPN 時開始計時。分鐘數可以依設定檔調整，設成 0 代表不自動斷。關閉 Orca 時一定會斷 |
 | D5 | 降低 upstream 衝突 | 新程式碼放在新目錄；對 upstream 檔案只加掛載點。i18n 用 fork 自己的 namespace `sshVpn.*` |
@@ -204,7 +204,7 @@ type SshVpnState = { profiles: SshVpnProfile[]; assignments: Record<string /* Ss
 - i18n：只加 `en.json` 和 `zh.json`，再跑 `generate-zh-tw-locale.mjs` 產生 zh-TW。
 - 驗收：e2e 測試用 SSH 頁開分頁到內網 sshd、用 SFTP 頁列出內網主機的目錄。另外給使用者在 `pnpm dev` 用自己的 .ovpn 實際試用。
 
-### Phase 2：設定頁
+### Phase 2：設定頁——已完成
 
 - `SshPane` 加入「VPN 設定檔」區塊。
 - 主機表單加入 VPN 下拉選單，包含新增主機時的寫入流程。
@@ -289,4 +289,42 @@ ORCA_TEST_SSH_VPN_DOCKER=1 node_modules/.bin/vitest run --config config/vitest.c
 - 測試內網移到 `tests/e2e/helpers/docker-ssh-vpn-network.ts`（fixture 在 `tests/e2e/fixtures/ssh-vpn/`），因為 e2e spec 不 import src；vitest 整合測試反過來 import 它。
 - 注意：在 worktree 跑 e2e 會觸發 `pnpm install`，經由 symlink 重建主 checkout 的 `node_modules` 原生模組（跟 `pnpm dev` 一樣，主 checkout 的 git 狀態不受影響）。
 
-**還沒做**：刪除主機時清掉它的 VPN 指派（`pruneAssignments` 已寫好但沒有呼叫）、`orca serve` 模式（見 Phase 0 紀錄）、帳密登入。
+**還沒做**：刪除主機時清掉它的 VPN 指派（`pruneAssignments` 已寫好但沒有呼叫）、`orca serve` 模式（見 Phase 0 紀錄）。
+
+### 程式碼審查的修正（2026-09-29）
+
+Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以下都已修正並有測試：
+
+| 嚴重度 | 問題 | 修正 |
+|---|---|---|
+| High | 容器本身接在 Docker 的網路上，VPN 沒推送路由（split tunnel）、路由安裝失敗或 OpenVPN 重新連線時，`nc` 會經由 Docker NAT 直接連出去，UI 卻顯示「經由 VPN」 | 映像檔加入 iptables 和 `tunnel` 使用者。每條連線的 `nc` 用 `docker exec --user tunnel` 執行，防火牆（`orca-vpn-firewall`，啟動流程的一步，確認框也會列出）只允許它從 `tun+` 出去，外加 DNS。`Initialization Sequence Completed With Errors` 視為啟動失敗 |
+| Medium | `ssh-vpn.json` 不是合法 JSON 時會被當成空的（全部主機改成直連，下次存檔還會蓋掉檔案）；指派到無效設定檔的主機也會直連 | 兩種情況都改成拒絕連線並說明原因；檔案不會被覆寫 |
+| Medium | ControlMaster 的 socket key 不含 VPN，指派 VPN 前留下的直連 master 可能被沿用 | key 加入主機的 VPN（沒有 VPN 的主機 key 不變）；SSH 頁的指令加 `-S none`，避免沿用使用者自己設定的 ControlMaster |
+| Medium-low | 啟動時讀不到 `ssh-vpn.json`，錯誤會中斷 core handler 註冊，整個 app 壞掉 | 啟動時的讀取包在 try/catch 裡，只記錄錯誤 |
+| Low | `setenv opt X` 可以繞過指令過濾；`plugin` 沒有被拿掉 | `setenv opt X` 以 X 檢查；`plugin` 一律拿掉 |
+| Low | 引用的檔案沒有先檢查就整個讀進來（`/dev/zero`、FIFO、Windows UNC 路徑） | 先 `stat`：只接受 1MB 以內的一般檔案，拒絕 UNC 路徑 |
+| Low | 系統 ssh 的 ProxyCommand 由 shell 執行，主機名稱沒有驗證 | 主機名稱（含 `~/.ssh/config` 的 HostName）必須是 shell 不會展開的字元 |
+
+### 帳密登入（2026-09-29，使用者要求，原本不在第一版範圍）
+
+使用者手上大部分 .ovpn（ASUS 路由器、「豐田固定ip」）都用 `auth-user-pass`。
+- **解析**：`auth-user-pass` 沒有帶檔案時標記「需要帳密」並拿掉這行；帶檔案時跟憑證一樣複製進容器；拿掉 `auth-retry`（`interact` 會停在沒人能回答的提示）。MFA（`static-challenge`）仍然不支援。
+- **表單**：選擇 .ovpn 後由 main 解析（`sshVpn:inspectOvpn`）。需要帳密時才顯示帳號、密碼（可留空，連線時再問）和保存方式（系統鑰匙串／到 Orca 關閉／每次都問，沒有鑰匙串時不提供第一種）。
+- **保存**：`SshVpnPasswordVault` 用既有的 `SealedSecretFile`（系統鑰匙串加密，不存明文）或記憶體；`ssh-vpn.json` 只存帳號。
+- **啟動**：確認框多列一行「寫入帳密（不顯示）」；帳密寫到容器 tmpfs 的 `/run/orca/login`（只有 root 能讀），OpenVPN 用 `--auth-user-pass /run/orca/login --auth-nocache`。
+- **詢問**：沒有保存密碼，或上次被伺服器拒絕（`AUTH_FAILED`，會先清掉保存的密碼）時，main 請 renderer 跳出登入框（`SshVpnLoginPromptHost`，掛在同一個全域 host），會附上上次被拒絕的原因。取消等同不啟動，不跳錯誤。
+- main 向 renderer 詢問的機制抽成 `SshVpnRendererRequests<請求, 答案>`，啟動確認和登入共用。
+
+### Phase 2：設定頁（2026-09-29）——已完成
+
+- 設定 → SSH 的「已儲存的密碼」下方加上 VPN 區塊（跟 SSH 頁對話框同一個面板）；主機卡片顯示 VPN badge。
+- 主機編輯表單加上 VPN 下拉選單，按儲存時寫入。**新增主機時停用**，並提示存檔後再選（或在 SSH 頁按右鍵）。原因：新主機要等 `addTarget` 回傳才有 id，要支援就得改 `SshPane.tsx`，而它的有效行數已經在上限（399／400），又不能停用 max-lines。
+- 設定頁搜尋可以用「vpn」「openvpn」「ovpn」找到這個區塊。
+- upstream 掛載點：`settings-remote-security-section-renderers.tsx`（2 行）、`SshTargetForm.tsx`（5 行）、`SshTargetCard.tsx`（2 行）、`ssh-search.ts`（1 個搜尋項目）。
+
+### 驗證（截至 2026-09-29 最新）
+
+- 單元：ssh-vpn、SSH／SFTP、設定頁、core handler、child-process 邊界等全部通過。
+- Docker 整合測試 7 個：原本 5 個，加上「防火牆對照（root 連得到外網，`tunnel` 連不到）」和「帳密登入（錯誤密碼得到 `AUTH_FAILED` 並清掉；正確密碼經由 VPN 連到 sshd；帳密檔是 `600 root`）」。測試伺服器多開一個需要帳密的 OpenVPN（udp/1195）。
+- e2e 2 個：原本的憑證流程，加上「沒有保存密碼時跳出登入框，輸入後 SFTP 經由 VPN 連線，密碼依設定保存」。
+- 測試內網的 helper 放回 `src/main/ssh-vpn/ssh-vpn-test-network.ts`（改用 `runProcess`），e2e spec 從 src import（已有前例），fixture 仍在 `tests/e2e/fixtures/ssh-vpn/`。
