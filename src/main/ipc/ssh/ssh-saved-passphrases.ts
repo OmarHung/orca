@@ -63,8 +63,9 @@ export function registerSshSavedPassphraseHandlers(): void {
     if (typeof args?.keyPath !== 'string') {
       throw new Error('keyPath must be a string')
     }
-    if (!getStore().forget(args.keyPath)) {
-      throw new Error('The saved-passphrase file could not be read.')
+    const problem = getStore().forget(args.keyPath)
+    if (problem) {
+      throw new Error(problem)
     }
   })
 }
