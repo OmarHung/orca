@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import {
   sshVpnProfileSchema,
   type SshVpnProfile,
@@ -25,9 +25,9 @@ function parseAssignments(value: unknown): Record<string, string> {
   )
 }
 
-/** VPN profiles and host assignments in `userData/ssh-vpn.json`, cached after the first read. */
+/** VPN profiles and host assignments in `userData/ssh-vpn.json`, cached until the file changes. */
 export class SshVpnStore {
-  private cache: StoreState | null = null
+  private cache: { state: StoreState; mtimeMs: number | null } | null = null
 
   constructor(private readonly filePath: string) {}
 
@@ -93,8 +93,20 @@ export class SshVpnStore {
   }
 
   private state(): StoreState {
-    this.cache ??= this.read()
-    return this.cache
+    // Why mtime: a hand edit (or another Orca window) must take effect without a restart.
+    const mtimeMs = this.mtimeMs()
+    if (!this.cache || this.cache.mtimeMs !== mtimeMs) {
+      this.cache = { state: this.read(), mtimeMs }
+    }
+    return this.cache.state
+  }
+
+  private mtimeMs(): number | null {
+    try {
+      return statSync(this.filePath).mtimeMs
+    } catch {
+      return null
+    }
   }
 
   private read(): StoreState {
@@ -126,6 +138,6 @@ export class SshVpnStore {
   private write(state: StoreState): void {
     const file: StoreFile = { version: 1, ...state }
     writeDurableSecureJsonFile(this.filePath, file)
-    this.cache = state
+    this.cache = { state, mtimeMs: this.mtimeMs() }
   }
 }
