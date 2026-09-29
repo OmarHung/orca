@@ -12,16 +12,9 @@ import { translate } from '@/i18n/i18n'
 import { sftpColumnLabel, TOGGLEABLE_SFTP_COLUMNS, type SftpColumnId } from './sftp-columns'
 import { useSftpColumnsStore, type SftpPaneId } from './sftp-columns-store'
 import { nextSftpSort } from './sftp-entry-sort'
+import { SftpColumnResizeHandle } from './SftpColumnResizeHandle'
 
-// Widths match the row cells in SftpFileRow.
-const HEADER_CELL_CLASS: Record<SftpColumnId, string> = {
-  name: 'flex min-w-40 flex-1 items-center gap-1 text-left hover:text-foreground',
-  size: 'flex w-20 shrink-0 items-center justify-end gap-1 hover:text-foreground',
-  created: 'flex w-32 shrink-0 items-center justify-end gap-1 hover:text-foreground',
-  modified: 'flex w-32 shrink-0 items-center justify-end gap-1 hover:text-foreground',
-  type: 'flex w-24 shrink-0 items-center gap-1 text-left hover:text-foreground',
-  owner: 'flex w-20 shrink-0 items-center gap-1 text-left hover:text-foreground'
-}
+const RIGHT_ALIGNED: ReadonlySet<SftpColumnId> = new Set(['size', 'created', 'modified'])
 
 /** Sortable column titles; sticky so they stay put while scrolling either way. */
 export function SftpFileListHeader({
@@ -33,25 +26,29 @@ export function SftpFileListHeader({
 }): React.JSX.Element {
   const sort = useSftpColumnsStore((s) => s.sortByPane[pane])
   const setSort = useSftpColumnsStore((s) => s.setSort)
+  const widths = useSftpColumnsStore((s) => s.columnWidths)
   const SortIcon = sort.direction === 'asc' ? ChevronUp : ChevronDown
 
   return (
-    <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-background px-3 py-1 text-xs text-muted-foreground select-none">
-      <span className="w-3.5 shrink-0" />
+    <div className="sticky top-0 z-10 flex items-center border-b border-border bg-background px-3 py-1 text-xs text-muted-foreground select-none">
+      <span className="mr-2 w-3.5 shrink-0" />
       {columns.map((column) => {
         const isSorted = sort.column === column
         return (
-          <button
-            key={column}
-            type="button"
-            data-sftp-column={column}
-            data-sort={isSorted ? sort.direction : undefined}
-            className={HEADER_CELL_CLASS[column]}
-            onClick={() => setSort(pane, nextSftpSort(sort, column))}
-          >
-            <span className="truncate">{sftpColumnLabel(column)}</span>
-            {isSorted ? <SortIcon className="size-3 shrink-0" /> : null}
-          </button>
+          <div key={column} className="relative shrink-0" style={{ width: widths[column] }}>
+            <button
+              type="button"
+              data-sftp-column={column}
+              data-sort={isSorted ? sort.direction : undefined}
+              data-align={RIGHT_ALIGNED.has(column) ? 'end' : 'start'}
+              className="flex w-full items-center gap-1 px-1.5 hover:text-foreground data-[align=end]:justify-end"
+              onClick={() => setSort(pane, nextSftpSort(sort, column))}
+            >
+              <span className="truncate">{sftpColumnLabel(column)}</span>
+              {isSorted ? <SortIcon className="size-3 shrink-0" /> : null}
+            </button>
+            <SftpColumnResizeHandle column={column} />
+          </div>
         )
       })}
     </div>
