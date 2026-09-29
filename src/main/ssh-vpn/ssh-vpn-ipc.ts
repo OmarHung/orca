@@ -1,75 +1,150 @@
-import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
-import { app, BrowserWindow } from 'electron'
-import type { SshVpnProfileState } from '../../shared/ssh-vpn-types'
-import { runProcessSync } from '../../shared/child-process/run-process'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import {
-  resolveDockerPath,
-  SshVpnDocker,
-  SshVpnDockerError,
-  dockerRemoveArgs
-} from './ssh-vpn-docker'
-import { SshVpnManager, type SshVpnDockerPort } from './ssh-vpn-manager'
-import { setSshVpnRouteProvider } from './ssh-vpn-route'
-import { SshVpnService } from './ssh-vpn-service'
-import { SshVpnStore } from './ssh-vpn-store'
+  sshVpnAssignmentSchema,
+  sshVpnConfirmAnswerSchema,
+  sshVpnProfileIdSchema,
+  sshVpnSaveProfileSchema,
+  type SshVpnResult,
+  type SshVpnSnapshot
+} from '../../shared/ssh-vpn-types'
+import { getCurrentMainWindow } from '../ipc/ssh-ipc-context'
+import { resolveWithSshG } from '../ssh/ssh-config-parser'
+import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
+import { prepareOvpnProfile } from './ovpn-profile-preparation'
+import { createSshVpnRuntime, type SshVpnRuntime } from './ssh-vpn-runtime'
 
-const QUIT_REMOVE_TIMEOUT_MS = 5_000
+const INVALID_REQUEST = { ok: false, error: { message: 'Invalid VPN request' } } as const
 
-function broadcastState(state: SshVpnProfileState): void {
+function broadcast(channel: string, payload?: unknown): void {
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) {
-      window.webContents.send('sshVpn:state', state)
+      window.webContents.send(channel, payload)
     }
   }
 }
 
-/** Resolves docker once it is found; a miss is retried so installing Docker later just works. */
-function createDockerResolver(): () => Promise<SshVpnDockerPort> {
-  let docker: SshVpnDocker | null = null
-  return async () => {
-    if (docker) {
-      return docker
-    }
-    const dockerPath = await resolveDockerPath()
-    if (!dockerPath) {
-      throw new SshVpnDockerError(
-        'Docker was not found. Install Docker Desktop, OrbStack or Colima to use a VPN for SSH hosts'
-      )
-    }
-    docker = new SshVpnDocker(dockerPath)
-    return docker
+async function respond<T>(run: () => Promise<T> | T): Promise<SshVpnResult<T>> {
+  try {
+    return { ok: true, value: await run() }
+  } catch (err) {
+    return { ok: false, error: { message: err instanceof Error ? err.message : String(err) } }
   }
+}
+
+function snapshot(runtime: SshVpnRuntime): SshVpnSnapshot {
+  return {
+    profiles: runtime.store.listProfiles(),
+    assignments: runtime.store.listAssignments(),
+    states: runtime.manager.listStates()
+  }
+}
+
+function registerProfileHandlers(runtime: SshVpnRuntime): void {
+  const { store, manager } = runtime
+  ipcMain.handle('sshVpn:snapshot', () => snapshot(runtime))
+  ipcMain.handle('sshVpn:saveProfile', (_event, raw: unknown) => {
+    const request = sshVpnSaveProfileSchema.safeParse(raw)
+    if (!request.success) {
+      return INVALID_REQUEST
+    }
+    return respond(async () => {
+      const { id, draft } = request.data
+      // Why before saving: a profile that cannot connect should fail here, not on first use.
+      await prepareOvpnProfile(draft.ovpnPath, (filePath) => readFile(filePath))
+      const previous = id ? store.getProfile(id) : null
+      const saved = store.saveProfile(id, draft)
+      if (previous && previous.ovpnPath !== saved.ovpnPath) {
+        await manager.stop(saved.id)
+      }
+      manager.updateProfile(saved)
+      broadcast('sshVpn:changed')
+      return saved
+    })
+  })
+  ipcMain.handle('sshVpn:deleteProfile', (_event, raw: unknown) => {
+    const id = sshVpnProfileIdSchema.safeParse(raw)
+    if (!id.success) {
+      return INVALID_REQUEST
+    }
+    return respond(async () => {
+      await manager.stop(id.data)
+      store.deleteProfile(id.data)
+      broadcast('sshVpn:changed')
+    })
+  })
+  ipcMain.handle('sshVpn:setAssignment', (_event, raw: unknown) => {
+    const request = sshVpnAssignmentSchema.safeParse(raw)
+    if (!request.success) {
+      return INVALID_REQUEST
+    }
+    return respond(() => {
+      const { targetId, profileId } = request.data
+      if (profileId && !store.getProfile(profileId)) {
+        throw new Error('This VPN profile no longer exists')
+      }
+      store.setAssignment(targetId, profileId)
+      broadcast('sshVpn:changed')
+    })
+  })
+  ipcMain.handle('sshVpn:pickOvpnFile', async () => {
+    const window = getCurrentMainWindow()
+    const options: Electron.OpenDialogOptions = {
+      properties: ['openFile'],
+      filters: [{ name: 'OpenVPN', extensions: ['ovpn', 'conf'] }]
+    }
+    const result = window
+      ? await dialog.showOpenDialog(window, options)
+      : await dialog.showOpenDialog(options)
+    return result.canceled ? null : (result.filePaths[0] ?? null)
+  })
+}
+
+function registerConnectionHandlers(runtime: SshVpnRuntime): void {
+  const { manager, service, approvals } = runtime
+  ipcMain.handle('sshVpn:connect', (_event, raw: unknown) => {
+    const id = sshVpnProfileIdSchema.safeParse(raw)
+    return id.success ? respond(() => service.connect(id.data)) : INVALID_REQUEST
+  })
+  ipcMain.handle('sshVpn:disconnect', (_event, raw: unknown) => {
+    const id = sshVpnProfileIdSchema.safeParse(raw)
+    return id.success ? respond(() => manager.stop(id.data)) : INVALID_REQUEST
+  })
+  ipcMain.handle('sshVpn:prepareTerminal', (_event, raw: unknown) => {
+    if (typeof raw !== 'string' || raw.length === 0) {
+      return INVALID_REQUEST
+    }
+    return respond(async () => {
+      const target = getSshTargetRegistryStore()?.getTarget(raw)
+      if (!target) {
+        throw new Error('SSH host not found')
+      }
+      const resolved = await resolveWithSshG(target.configHost || target.label).catch(() => null)
+      return service.prepareTerminal(target, resolved)
+    })
+  })
+  ipcMain.handle('sshVpn:answerStart', (_event, raw: unknown) => {
+    const answer = sshVpnConfirmAnswerSchema.safeParse(raw)
+    if (answer.success) {
+      approvals.answer(answer.data.requestId, answer.data.approved)
+    }
+  })
 }
 
 export function registerSshVpnHandlers(): void {
-  const userData = app.getPath('userData')
-  const store = new SshVpnStore(join(userData, 'ssh-vpn.json'))
-  const docker = createDockerResolver()
-  const manager = new SshVpnManager({
-    docker,
-    instanceTag: createHash('sha256').update(userData).digest('hex').slice(0, 8),
-    readFile: (filePath) => readFile(filePath),
-    onStateChange: broadcastState
-  })
-  setSshVpnRouteProvider(new SshVpnService(store, manager))
-
-  // Why only with profiles: users who never set up a VPN should not have Orca poke Docker.
-  if (store.listProfiles().length > 0) {
-    void manager.removeStaleContainers().catch(() => undefined)
-  }
-
-  app.on('will-quit', () => {
-    const running = manager.runningContainers()
-    if (running.length === 0) {
-      return
+  const runtime = createSshVpnRuntime({
+    userDataPath: app.getPath('userData'),
+    onStateChange: (state) => broadcast('sshVpn:state', state),
+    sendStartConfirm: (request) => {
+      const window = getCurrentMainWindow()
+      if (!window || window.isDestroyed()) {
+        return false
+      }
+      window.webContents.send('sshVpn:confirm-start', request)
+      return true
     }
-    // Why sync: an async `docker rm` can be cut off by process exit, leaving the tunnel up.
-    runProcessSync({
-      program: running[0].dockerPath,
-      args: dockerRemoveArgs(...running.map((route) => route.containerName)),
-      timeoutMs: QUIT_REMOVE_TIMEOUT_MS
-    })
   })
+  registerProfileHandlers(runtime)
+  registerConnectionHandlers(runtime)
+  app.on('will-quit', runtime.removeAllSync)
 }

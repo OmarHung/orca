@@ -3,11 +3,9 @@ import type { ProcessResult } from '../../shared/child-process/run-process'
 import {
   dockerOpenVpnArgs,
   dockerRunArgs,
-  dockerTunnelArgs,
   dockerWriteFileArgs,
   SshVpnDocker,
-  sshVpnContainerName,
-  sshVpnProxyCommand
+  sshVpnContainerName
 } from './ssh-vpn-docker'
 import { SSH_VPN_DOCKERFILE, SSH_VPN_IMAGE } from './ssh-vpn-image'
 
@@ -47,16 +45,6 @@ describe('docker argv builders', () => {
       'sh',
       '/run/orca/f0-ca.crt'
     ])
-    expect(dockerTunnelArgs('c', 'db.internal', '22')).toEqual([
-      'exec',
-      '-i',
-      'c',
-      'nc',
-      '-w',
-      '30',
-      'db.internal',
-      '22'
-    ])
   })
 
   it('puts Orca options after --config so the profile cannot override them', () => {
@@ -66,35 +54,16 @@ describe('docker argv builders', () => {
   })
 })
 
-describe('sshVpnProxyCommand', () => {
-  it('leaves plain paths bare and quotes the rest for the platform', () => {
-    expect(sshVpnProxyCommand('/usr/local/bin/docker', 'c', 'darwin')).toBe(
-      '/usr/local/bin/docker exec -i c nc -w 30 %h %p'
-    )
-    expect(sshVpnProxyCommand('/Users/o b/docker', 'c', 'darwin')).toBe(
-      "'/Users/o b/docker' exec -i c nc -w 30 %h %p"
-    )
-    expect(
-      sshVpnProxyCommand(
-        'C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe',
-        'c',
-        'win32'
-      )
-    ).toBe(
-      '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" exec -i c nc -w 30 %h %p'
-    )
-  })
-})
-
 describe('SshVpnDocker', () => {
-  it('builds the image from the embedded Dockerfile only when it is missing', async () => {
+  it('checks for the image and builds it from the embedded Dockerfile', async () => {
     const run = vi
       .fn()
       .mockResolvedValueOnce(result({ code: 1, stderr: 'No such image' }))
       .mockResolvedValueOnce(result({}))
     const docker = new SshVpnDocker('/usr/local/bin/docker', run)
 
-    await docker.ensureImage()
+    await expect(docker.hasImage()).resolves.toBe(false)
+    await docker.buildImage()
 
     expect(run).toHaveBeenNthCalledWith(1, ['image', 'inspect', SSH_VPN_IMAGE])
     expect(run).toHaveBeenNthCalledWith(2, ['build', '--tag', SSH_VPN_IMAGE, '-'], {
