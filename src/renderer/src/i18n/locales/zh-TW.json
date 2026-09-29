@@ -18638,6 +18638,10 @@
       "description": "將執行：{{value0}}",
       "confirm": "釋出"
     },
+    "publishDialog": {
+      "title": "釋出到資料夾",
+      "description": "會儲存為此儲存庫的執行設定，之後可在執行工具欄用相同設定再次釋出。"
+    },
     "configurations": {
       "cancel": "取消",
       "debugNamed": "除錯 '{{value0}}'",
@@ -18714,7 +18718,30 @@
       "add": {
         "command": "新增命令設定",
         "debug": "新增除錯設定",
-        "compound": "新增組合（同時或依序啟動多個）"
+        "compound": "新增組合（同時或依序啟動多個）",
+        "dotnetPublish": "新增 .NET 釋出到資料夾"
+      },
+      "publish": {
+        "targetLocation": "目標位置",
+        "targetLocationHint": "相對於工作區根目錄，也可以是絕對路徑。留空則使用 bin/<configuration>/<framework>/publish。",
+        "browse": "瀏覽…",
+        "runtime": "目標執行階段",
+        "portable": "可移植",
+        "deploymentMode": "部署模式",
+        "frameworkDependent": "依賴框架",
+        "selfContained": "獨立部署",
+        "projectFileHint": "相對於工作區根目錄，也可以是絕對路徑。",
+        "configuration": "編譯設定",
+        "framework": "目標框架",
+        "projectDefault": "專案預設值",
+        "fileOptions": "檔案釋出選項",
+        "fileOptionsHint": "這些選項需要目標執行階段；裁剪還需要獨立部署。",
+        "singleFile": "產生單一檔案",
+        "readyToRun": "啟用 ReadyToRun 編譯",
+        "trimmed": "裁剪未使用的程式碼",
+        "extraArgs": "附加引數",
+        "extraArgsHint": "按原樣附加到命令末尾，例如 -p:Version=1.2.3",
+        "command": "在工作區根目錄執行"
       }
     },
     "widget": {

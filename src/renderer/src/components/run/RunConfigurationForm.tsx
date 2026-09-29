@@ -7,10 +7,12 @@ import type {
   DebugRunConfiguration,
   RunConfigurationDefinition
 } from '../../../../shared/run-configurations/run-configuration-definition'
+import type { DotnetPublishRunConfiguration } from '../../../../shared/run-configurations/dotnet-publish-configuration'
 import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
 import { CompoundMembersEditor } from './CompoundMembersEditor'
 import { ConfigurationReferenceList } from './ConfigurationReferenceList'
 import { DebugTargetFields } from './DebugTargetFields'
+import { DotnetPublishFields } from './DotnetPublishFields'
 import { FormField } from './RunConfigurationFormField'
 import {
   formatArgs,
@@ -55,7 +57,9 @@ function BeforeLaunchField({
   all,
   readOnly,
   onChange
-}: FormProps<CommandRunConfiguration | DebugRunConfiguration>): React.JSX.Element {
+}: FormProps<
+  CommandRunConfiguration | DebugRunConfiguration | DotnetPublishRunConfiguration
+>): React.JSX.Element {
   return (
     <FormField
       label={translate('run.configurations.form.beforeLaunch', 'Before launch')}
@@ -67,7 +71,7 @@ function BeforeLaunchField({
       <ConfigurationReferenceList
         testId="run-configuration-before-launch"
         references={configuration.beforeLaunch ?? []}
-        candidates={referenceCandidates(all, configuration.id, ['command'])}
+        candidates={referenceCandidates(all, configuration.id, ['command', 'dotnet-publish'])}
         all={all}
         disabled={readOnly}
         onChange={(beforeLaunch) => onChange({ ...configuration, beforeLaunch })}
@@ -154,6 +158,8 @@ export function RunConfigurationForm(
   props: FormProps<RunConfigurationDefinition> & {
     detected: readonly DetectedRunConfiguration[] | null
     worktreePath: string
+    /** The workspace root when its folders are on this machine, so a folder can be browsed for. */
+    browseRoot: string | null
     onPickDetected: (detected: DetectedRunConfiguration) => string
   }
 ): React.JSX.Element {
@@ -172,6 +178,16 @@ export function RunConfigurationForm(
         <CommandFields {...props} configuration={configuration} />
       ) : configuration.type === 'debug' ? (
         <DebugFields {...props} configuration={configuration} />
+      ) : configuration.type === 'dotnet-publish' ? (
+        <>
+          <DotnetPublishFields
+            configuration={configuration}
+            disabled={readOnly}
+            browseRoot={props.browseRoot}
+            onChange={onChange}
+          />
+          <BeforeLaunchField {...props} configuration={configuration} />
+        </>
       ) : (
         <FormField
           label={translate('run.configurations.form.members', 'Configurations to start')}

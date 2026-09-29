@@ -24,10 +24,16 @@ import {
   detectProjectRunConfigurations,
   mayContainRunConfigurations
 } from './project-run-detection'
+import { openDotnetPublishDialog } from './dotnet-publish-dialog-store'
 import { RUN_KIND_ICONS } from './run-configuration-icon'
 
 /** Build, Run, Test and Publish shown directly; everything else lives in the submenu. */
 const PRIMARY_KINDS: RunConfigurationKind[] = ['build', 'run', 'test', 'publish']
+
+/** .NET's primary Publish opens the folder publish settings instead of running a profile. */
+function opensPublishDialog(configuration: DetectedRunConfiguration): boolean {
+  return configuration.kind === 'publish' && configuration.ecosystem === 'dotnet'
+}
 
 function primaryLabel(configuration: DetectedRunConfiguration): string {
   const label = detectedConfigurationLabel(configuration)
@@ -124,6 +130,13 @@ export function ProjectRunContextMenuItems({
     }
     await runDetectedConfiguration(configuration, worktreeId, groupId, confirm)
   }
+  const runPrimary = (configuration: DetectedRunConfiguration): void => {
+    if (opensPublishDialog(configuration)) {
+      void openDotnetPublishDialog(configuration, worktreeId, groupId)
+      return
+    }
+    void run(configuration)
+  }
   const debug = (configuration: DetectedRunConfiguration): void => {
     void debugDetectedConfiguration(configuration, worktreeId, groupId, confirm)
   }
@@ -132,6 +145,8 @@ export function ProjectRunContextMenuItems({
     const first = configurations.find((configuration) => configuration.kind === kind)
     return first ? [first] : []
   })
+  // Why: a .NET publish profile is only reachable from More Run/Debug.
+  const runDirectly = primary.filter((configuration) => !opensPublishDialog(configuration))
   return (
     <>
       {primary.map((configuration) => (
@@ -139,7 +154,7 @@ export function ProjectRunContextMenuItems({
           key={configuration.id}
           configuration={configuration}
           label={primaryLabel(configuration)}
-          onRun={(target) => void run(target)}
+          onRun={runPrimary}
         />
       ))}
       {primaryDebug ? (
@@ -152,7 +167,7 @@ export function ProjectRunContextMenuItems({
           </span>
         </ContextMenuItem>
       ) : null}
-      {configurations.length > primary.length ||
+      {configurations.length > runDirectly.length ||
       configurations.filter((configuration) => configuration.debug).length > 1 ? (
         <ContextMenuSub>
           <ContextMenuSubTrigger>

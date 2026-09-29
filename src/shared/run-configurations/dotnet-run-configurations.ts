@@ -6,10 +6,20 @@ export const DOTNET_PROJECT_EXTENSIONS = ['.csproj', '.fsproj', '.vbproj']
 const RUNNABLE_SDK = /Sdk\s*=\s*"Microsoft\.NET\.Sdk\.(Web|Worker|BlazorWebAssembly|Razor)/i
 const EXE_OUTPUT = /<OutputType>\s*(Exe|WinExe)\s*<\/OutputType>/i
 const TEST_PROJECT = /Microsoft\.NET\.Test\.Sdk|<IsTestProject>\s*true\s*<\/IsTestProject>/i
+const TARGET_FRAMEWORKS = /<TargetFrameworks?>([^<]*)<\/TargetFrameworks?>/i
 
 export function isDotnetProjectFile(fileName: string): boolean {
   const lower = fileName.toLowerCase()
   return DOTNET_PROJECT_EXTENSIONS.some((extension) => lower.endsWith(extension))
+}
+
+/** The project's own target frameworks; MSBuild properties like `$(Tfm)` are skipped. */
+export function readTargetFrameworks(projectXml: string): string[] {
+  const value = TARGET_FRAMEWORKS.exec(projectXml)?.[1] ?? ''
+  return value
+    .split(';')
+    .map((framework) => framework.trim())
+    .filter((framework) => framework && !framework.includes('$('))
 }
 
 /** `dotnet run` profiles; only `Project` profiles launch the app itself (not IIS/Docker). */
@@ -101,7 +111,8 @@ export function detectDotnetRunConfigurations(options: {
   const projectName = projectFileName.replace(/\.[^.]+$/, '')
   const project = quoteShellArgument(projectFileName)
   const idBase = `dotnet:${projectDir}:${projectFileName}`
-  const base = { ecosystem: 'dotnet' as const, projectName, projectDir }
+  const projectFile = joinProjectPath(projectDir, projectFileName)
+  const base = { ecosystem: 'dotnet' as const, projectName, projectDir, projectFile }
   const configurations: DetectedRunConfiguration[] = [
     {
       ...base,
@@ -135,7 +146,7 @@ export function detectDotnetRunConfigurations(options: {
           command: `dotnet run --project ${project} --launch-profile ${quoteShellArgument(profile)}`,
           debug: {
             kind: 'dotnet-project' as const,
-            projectFile: joinProjectPath(projectDir, projectFileName),
+            projectFile,
             launchProfile: profile
           }
         }))
@@ -148,7 +159,7 @@ export function detectDotnetRunConfigurations(options: {
             command: `dotnet run --project ${project}`,
             debug: {
               kind: 'dotnet-project' as const,
-              projectFile: joinProjectPath(projectDir, projectFileName)
+              projectFile
             }
           }
         ]
