@@ -11,12 +11,13 @@ import { toast } from 'sonner'
 import { Button } from '../ui/button'
 import { translate } from '@/i18n/i18n'
 import { useCommandConfirm } from '../command-confirm/command-confirm-context'
-import type { SftpEntry, SftpTransferDirection } from '../../../../shared/sftp-types'
+import type { SftpEntry, SftpResult, SftpTransferDirection } from '../../../../shared/sftp-types'
 import type { SshTarget } from '../../../../shared/ssh-types'
 import { SftpFilePane } from './SftpFilePane'
 import { SftpNameDialog, type SftpNameRequest } from './SftpNameDialog'
 import { SftpRemoteMenuItems, SftpRemoteToolbar, type SftpRemoteAction } from './SftpRemoteActions'
 import { SftpTransfersPanel } from './SftpTransfersPanel'
+import { readLastLocalPath, saveLastLocalPath } from './sftp-last-local-path'
 import {
   isRemotePathWithin,
   localParent,
@@ -29,8 +30,16 @@ import { useSftpFileDrop } from './use-sftp-file-drop'
 import { useSftpPaneDrag, type SftpPaneDropHandler } from './use-sftp-pane-drag'
 import { useSftpPane, type SftpPaneSource } from './use-sftp-pane'
 
+async function localHome(): Promise<SftpResult<string>> {
+  return { ok: true, value: await window.api.sftp.localHome() }
+}
+
 const LOCAL_SOURCE: SftpPaneSource = {
-  initialPath: async () => ({ ok: true, value: await window.api.sftp.localHome() }),
+  initialPath: async () => {
+    const lastPath = readLastLocalPath()
+    return lastPath ? { ok: true, value: lastPath } : localHome()
+  },
+  fallbackPath: localHome,
   list: (path) => window.api.sftp.localList(path),
   parent: localParent
 }
@@ -93,6 +102,12 @@ export function SftpWorkbench({
     void runSftpAction(request, actionContext).then((isDone) => isDone && reloadRemote())
   }
 
+  const localPath = local.path
+  useEffect(() => {
+    if (localPath) {
+      saveLastLocalPath(localPath)
+    }
+  }, [localPath])
   const remotePath = remote.path
   useEffect(() => {
     if (remotePath) {
