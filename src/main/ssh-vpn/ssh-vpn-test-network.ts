@@ -24,6 +24,8 @@ export type SshVpnTestNetwork = {
   privateKeyPath: string
   /** Whether an ordinary container (no VPN) can reach the sshd; must stay false. */
   canReachWithoutVpn: () => Promise<boolean>
+  /** Runs `docker run <args>` on the VPN-only network (e.g. a database). */
+  startBehindVpn: (args: string[]) => Promise<{ containerName: string; address: string }>
   dispose: () => Promise<void>
 }
 
@@ -92,8 +94,9 @@ export async function startSshVpnTestNetwork(): Promise<SshVpnTestNetwork> {
   const server = `orca-vpn-it-server-${suffix}`
   const sshd = `orca-vpn-it-sshd-${suffix}`
   const profileDir = mkdtempSync(path.join(os.tmpdir(), 'orca-ssh-vpn-it-'))
+  const extras: string[] = []
   const dispose = async (): Promise<void> => {
-    await runProcess({ program: 'docker', args: ['rm', '--force', server, sshd] })
+    await runProcess({ program: 'docker', args: ['rm', '--force', server, sshd, ...extras] })
     await runProcess({ program: 'docker', args: ['network', 'rm', network] })
     rmSync(profileDir, { recursive: true, force: true })
   }
@@ -189,6 +192,18 @@ export async function startSshVpnTestNetwork(): Promise<SshVpnTestNetwork> {
           timeoutMs: 60_000
         })
         return probe.stdout.includes('SSH-2.0')
+      },
+      startBehindVpn: async (args) => {
+        const name = `orca-vpn-it-extra-${suffix}-${extras.length}`
+        extras.push(name)
+        await docker(['run', '--detach', '--name', name, '--network', network, ...args])
+        const address = await docker([
+          'inspect',
+          '--format',
+          `{{(index .NetworkSettings.Networks "${network}").IPAddress}}`,
+          name
+        ])
+        return { containerName: name, address }
       },
       dispose
     }

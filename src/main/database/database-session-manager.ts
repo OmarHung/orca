@@ -3,7 +3,8 @@ import {
   isServerConnection,
   type DatabaseConnection,
   type DatabaseConnectionDraft,
-  type DatabaseDriver
+  type DatabaseDriver,
+  type DatabaseServerConnectionDraft
 } from '../../shared/database/database-connection-types'
 import type { DatabaseError, DatabaseResult } from '../../shared/database/database-query-types'
 import type { DatabaseSessionEvent } from '../../shared/database/database-session-types'
@@ -25,6 +26,12 @@ export type DatabaseTunnel = { localPort: number; close: () => Promise<void> }
 export type OpenDatabaseTunnel = (
   request: { key: string; targetId: string; remoteHost: string; remotePort: number },
   /** Called at most once if the tunnel goes away on its own. */
+  onLost: (message: string) => void
+) => Promise<DatabaseTunnel>
+
+/** Like `OpenDatabaseTunnel`, through one of Orca's VPN profiles instead of an SSH host. */
+export type OpenDatabaseVpnTunnel = (
+  request: { profileId: string; connectionLabel: string; remoteHost: string; remotePort: number },
   onLost: (message: string) => void
 ) => Promise<DatabaseTunnel>
 
@@ -61,6 +68,8 @@ export class DatabaseSessionManager {
       emitJobProgress?: (event: DatabaseJobEvent) => void
       /** Absent where Orca has no SSH stack (e.g. tests): tunneled connections then fail. */
       openTunnel?: OpenDatabaseTunnel
+      /** Absent where Orca has no VPN runtime: connections with a VPN then fail. */
+      openVpnTunnel?: OpenDatabaseVpnTunnel
     }
   ) {}
 
@@ -182,13 +191,19 @@ export class DatabaseSessionManager {
     return true
   }
 
-  /** Opens the connection's SSH tunnel, if it has one, before the worker dials it. */
+  /** Opens the connection's SSH tunnel or VPN, if it has one, before the worker dials it. */
   private async openRoute(
     draft: DatabaseConnectionDraft,
     key: string,
     onLost: (message: string) => void
   ): Promise<Route> {
-    if (!isServerConnection(draft) || !draft.sshTunnel) {
+    if (!isServerConnection(draft)) {
+      return { ok: true, tunnel: null }
+    }
+    if (draft.vpnProfileId) {
+      return this.openVpnRoute(draft, draft.vpnProfileId, onLost)
+    }
+    if (!draft.sshTunnel) {
       return { ok: true, tunnel: null }
     }
     const { sshTunnel } = draft
@@ -207,6 +222,38 @@ export class DatabaseSessionManager {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       return { ok: false, error: { message: `SSH tunnel: ${message}` } }
+    }
+  }
+
+  private async openVpnRoute(
+    draft: DatabaseServerConnectionDraft,
+    profileId: string,
+    onLost: (message: string) => void
+  ): Promise<Route> {
+    // Why refuse: the SSH host's own VPN setting routes a tunnel, so both would be ambiguous.
+    if (draft.sshTunnel) {
+      return {
+        ok: false,
+        error: { message: 'A connection can use an SSH tunnel or a VPN, not both.' }
+      }
+    }
+    if (!this.deps.openVpnTunnel) {
+      return { ok: false, error: { message: 'VPNs are not available here.', code: 'unavailable' } }
+    }
+    try {
+      const tunnel = await this.deps.openVpnTunnel(
+        {
+          profileId,
+          connectionLabel: draft.name,
+          remoteHost: draft.host,
+          remotePort: draft.port
+        },
+        onLost
+      )
+      return { ok: true, tunnel }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      return { ok: false, error: { message: `VPN: ${message}` } }
     }
   }
 
