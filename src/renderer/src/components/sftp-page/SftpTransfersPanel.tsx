@@ -3,7 +3,7 @@ import { Button } from '../ui/button'
 import { Progress } from '../ui/progress'
 import { translate } from '@/i18n/i18n'
 import { formatBytes } from '../status-bar/workspace-space-format'
-import { cancelSftpTransfer } from './sftp-transfer-actions'
+import { cancelSftpTransfer } from './sftp-plan-actions'
 import { useSftpTransfersStore, type SftpTransfer } from './sftp-transfers-store'
 
 function statusText(transfer: SftpTransfer): string {

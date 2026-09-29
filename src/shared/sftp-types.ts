@@ -15,21 +15,48 @@ export type SftpResult<T> = { ok: true; value: T } | { ok: false; error: { messa
 
 export type SftpTransferDirection = 'upload' | 'download'
 
-export type SftpTransferRequest = {
-  transferId: string
+/**
+ * One step the app will run, in order. Plans are built and stored by main; the renderer only
+ * displays them, and main executes the stored copy, so what is shown is exactly what runs.
+ */
+export type SftpOperation =
+  /** Remote mkdir; `keepExisting` merges into a folder that is already there. */
+  | { op: 'mkdir'; path: string; keepExisting: boolean }
+  /** Local mkdir that keeps an existing folder. */
+  | { op: 'lmkdir'; path: string }
+  | { op: 'put'; local: string; remote: string; size: number }
+  /** Written to `<local>.orca-download`, then renamed over `local` once complete. */
+  | { op: 'get'; remote: string; local: string; size: number }
+  | { op: 'rename'; from: string; to: string }
+  | { op: 'rm'; path: string }
+  | { op: 'rmdir'; path: string }
+
+export type SftpPlanKind = 'upload' | 'download' | 'mkdir' | 'rename' | 'remove'
+
+export type SftpPlanRequest =
+  | { kind: 'upload'; targetId: string; sources: string[]; destinationDir: string }
+  | { kind: 'download'; targetId: string; sources: string[]; destinationDir: string }
+  | { kind: 'mkdir'; targetId: string; path: string }
+  | { kind: 'rename'; targetId: string; from: string; to: string }
+  | { kind: 'remove'; targetId: string; paths: string[] }
+
+export type SftpPlan = {
+  planId: string
+  kind: SftpPlanKind
   targetId: string
-  /** Absolute paths on the sending side: local for uploads, remote for downloads. */
-  sources: string[]
-  /** Absolute directory on the receiving side. */
-  destinationDir: string
-  /** False reports top-level name clashes instead of replacing them. */
-  overwrite: boolean
+  operations: SftpOperation[]
+  totalBytes: number
+  /** Top-level names that already exist where a transfer would put them. */
+  conflicts: string[]
 }
 
-export type SftpTransferOutcome =
-  | { status: 'done' }
-  | { status: 'cancelled' }
-  | { status: 'conflict'; conflicts: string[] }
+export type SftpExecuteRequest = {
+  planId: string
+  /** Progress and cancel handle; only transfers report progress. */
+  transferId: string
+}
+
+export type SftpExecuteOutcome = { status: 'done' } | { status: 'cancelled' }
 
 export type SftpTransferProgress = {
   transferId: string

@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { z } from 'zod'
 
-const MAX_TRANSFER_SOURCES = 1000
+const MAX_SOURCES = 1000
 
 const TargetId = z.string().min(1)
 const RemotePath = z
@@ -15,31 +15,40 @@ const LocalPath = z
 
 export const SftpTargetSchema = TargetId
 export const SftpLocalPathSchema = LocalPath
+export const SftpPlanIdSchema = z.string().min(1)
 
 export const SftpPathRequestSchema = z.object({ targetId: TargetId, path: RemotePath }).strict()
 
-export const SftpRenameRequestSchema = z
-  .object({ targetId: TargetId, from: RemotePath, to: RemotePath })
-  .strict()
-
-export const SftpRemoveRequestSchema = z
-  .object({ targetId: TargetId, paths: z.array(RemotePath).min(1).max(MAX_TRANSFER_SOURCES) })
-  .strict()
-
-function transferRequestSchema<S extends z.ZodTypeAny, D extends z.ZodTypeAny>(
-  source: S,
-  destination: D
-) {
-  return z
+export const SftpPlanRequestSchema = z.discriminatedUnion('kind', [
+  z
     .object({
-      transferId: z.string().min(1),
+      kind: z.literal('upload'),
       targetId: TargetId,
-      sources: z.array(source).min(1).max(MAX_TRANSFER_SOURCES),
-      destinationDir: destination,
-      overwrite: z.boolean()
+      sources: z.array(LocalPath).min(1).max(MAX_SOURCES),
+      destinationDir: RemotePath
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('download'),
+      targetId: TargetId,
+      sources: z.array(RemotePath).min(1).max(MAX_SOURCES),
+      destinationDir: LocalPath
+    })
+    .strict(),
+  z.object({ kind: z.literal('mkdir'), targetId: TargetId, path: RemotePath }).strict(),
+  z
+    .object({ kind: z.literal('rename'), targetId: TargetId, from: RemotePath, to: RemotePath })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('remove'),
+      targetId: TargetId,
+      paths: z.array(RemotePath).min(1).max(MAX_SOURCES)
     })
     .strict()
-}
+])
 
-export const SftpUploadRequestSchema = transferRequestSchema(LocalPath, RemotePath)
-export const SftpDownloadRequestSchema = transferRequestSchema(RemotePath, LocalPath)
+export const SftpExecuteRequestSchema = z
+  .object({ planId: SftpPlanIdSchema, transferId: z.string().min(1) })
+  .strict()
