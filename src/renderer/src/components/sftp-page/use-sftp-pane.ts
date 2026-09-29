@@ -11,8 +11,24 @@ import {
 
 export type SftpPaneSource = {
   initialPath: () => Promise<SftpResult<string>>
+  /** Opened instead when the first folder can't be listed, e.g. a remembered one was deleted. */
+  fallbackPath?: () => Promise<SftpResult<string>>
   list: (path: string) => Promise<SftpResult<SftpEntry[]>>
   parent: (path: string) => string
+}
+
+type Listing = { path: string; result: SftpResult<SftpEntry[]> }
+
+async function listFirstFolder(source: SftpPaneSource, path: string): Promise<Listing> {
+  const result = await source.list(path)
+  if (result.ok || !source.fallbackPath) {
+    return { path, result }
+  }
+  const fallback = await source.fallbackPath()
+  if (!fallback.ok || fallback.value === path) {
+    return { path, result }
+  }
+  return { path: fallback.value, result: await source.list(fallback.value) }
 }
 
 export type SftpPaneState = {
@@ -46,7 +62,10 @@ export function useSftpPane(source: SftpPaneSource): SftpPaneState {
   const load = useCallback(
     async (nextPath: string, keepSelection: boolean) => {
       const request = ++requestRef.current
-      const result = await source.list(nextPath)
+      const { path: shownPath, result } =
+        pathRef.current === null
+          ? await listFirstFolder(source, nextPath)
+          : { path: nextPath, result: await source.list(nextPath) }
       // Why: a slower answer for an earlier folder must not replace the one the user opened last.
       if (request !== requestRef.current) {
         return
@@ -60,8 +79,8 @@ export function useSftpPane(source: SftpPaneSource): SftpPaneState {
         }
         return
       }
-      pathRef.current = nextPath
-      setPath(nextPath)
+      pathRef.current = shownPath
+      setPath(shownPath)
       setEntries(result.value)
       setStatus('ready')
       setError(null)
