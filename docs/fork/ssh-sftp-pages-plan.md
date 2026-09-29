@@ -1,6 +1,6 @@
 # SSH 與 SFTP 頁面：實作計畫（fork 專屬）
 
-> 狀態：Phase 1（側欄入口、兩個頁面、主機清單）和 Phase 2（SSH 分頁工作區）已完成（2026-09-29），紀錄見 §7。Phase 3 尚未開工
+> 狀態：Phase 1～3（側欄入口與主機清單、SSH 分頁工作區、SFTP 後端）已完成（2026-09-29），紀錄見 §7。Phase 4（SFTP 雙欄 UI）進行中
 > 分支：從 `omar/custom` 開 `feat/ssh-sftp-pages`，每個 Phase 完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -157,3 +157,21 @@ Database 頁是範本（commit `d820e61fa2`）。它的導航狀態放在 fork �
 - **啟動指令**：`ssh-session-command.ts` 只接受安全字元，而且不能以 `-` 開頭（防止 `-oProxyCommand=…` 注入）。有別名時用別名，否則用 `ssh -p <port> <user>@<host>`。
 - **跟 §4.1 不同的地方**：沒有做獨立的「重新連線」按鈕。目前沒有 API 可以把文字寫進已經存在的終端機，所以重新連線的方式是在左邊清單再點一次主機（開一個新分頁，舊分頁保留斷線前的輸出）。
 - **驗證**：單元測試（指令組合、開啟/關閉動作、Cmd+T 在 SSH 頁不作用到專案、主機清單、判斷函式）；回歸測試（lib、store、runtime、terminal-pane、floating-terminal、tab-bar，約 2600 個測試檔）；E2E `tests/e2e/ssh-page-sessions.spec.ts`：連到 `127.0.0.1:9`（Connection refused，不會對外連線），驗證 PTY id 帶 `global-ssh-sessions@@` 前綴、離開頁面再回來 PTY 不變、「＋」選主機開第二個分頁、重啟後分頁還原。
+
+### 7.3 Phase 2 之後的版面調整（2026-09-29，使用者在 dev 版試用後提出）
+
+- 拿掉兩個頁面的標題區（`RemoteHostsPageFrame` 只剩「僅限桌面版」的判斷），頁面名稱由側欄入口表示。
+- 主機清單可以收合，狀態依頁面分別存在 localStorage（`remote-hosts-layout-store.ts`，key `orca.remoteHostsLayout`）。
+- SSH 頁的分頁列移到最上方當標題列：`AppWorkspaceShell` 的 stacked titlebar 對 `'ssh'` 不顯示（跟 automations、artifacts 一樣）；分頁列加上 `data-terminal-focus-release-surface`（可以拖曳視窗）和 `window-controls-titlebar-spacer`。主機清單移到分頁列下方，收合鈕固定在分頁列最左邊。側欄收合時仍然會出現完整的標題列（跟 Tasks 頁一樣），要做到跟專案完全一樣需要改 `use-app-chrome-layout`，這次沒有做。
+
+### 7.4 Phase 3：SFTP 後端（2026-09-29）
+
+- `main/sftp/`：
+  - `sftp-ops.ts`：窄介面 `SftpOps`（ssh2 的 `SFTPWrapper` 直接符合），加上 promise 版的呼叫。測試用 `sftp-test-support.ts` 的記憶體版 `FakeSftp`。
+  - `sftp-transfer.ts`：規劃和執行傳輸。下載時跟隨指向檔案的連結、跳過指向資料夾的連結（避免迴圈）；上傳用 `lstat`，不跟隨任何本機連結（避免把沒選到的檔案傳出去）；遠端名稱含 `/` 或是 `.`、`..` 時略過。**下載先寫到 `<name>.orca-download` 再改名**，所以失敗時不會截斷使用者原本的檔案。上傳失敗時不刪遠端檔案，避免誤刪原檔。
+  - `sftp-session-manager.ts`：每台主機一條**獨立的** `SshConnection`（`onStateChange` 不廣播，避免設定頁的連線狀態誤判），瀏覽共用一個 SFTP 通道，每次傳輸開自己的通道（取消就是關掉它），閒置 5 分鐘斷線，系統 SSH transport 的主機回報不支援。重名衝突在 `overwrite: false` 時只回報、不覆蓋。進度每 100ms 最多推送一次。
+  - `sftp-remote-entries.ts`：列目錄（資料夾在前、自然排序）和遞迴刪除（`lstat`，連結只刪連結本身）。
+  - `sftp-local-fs.ts`：本機窗格的唯讀列目錄。
+  - `sftp-ipc.ts`／`sftp-ipc-schemas.ts`：`sftp:*` IPC，用 zod 驗證（遠端路徑必須以 `/` 開頭、本機路徑必須是絕對路徑、不接受多餘欄位），進度用 `sftp:progress` 廣播。
+- Preload：`preload/api/sftp-api.ts`、`sftp-bridge.ts`（含 `webUtils.getPathForFile`，給從 Finder 拖放用）。web 版由 `withFallback` 補上，不需要 stub。
+- 上游修改：`preload/index.ts`、`preload/api-types.ts`、`register-core-handlers.ts`（各加一行），以及它的測試補上 mock。

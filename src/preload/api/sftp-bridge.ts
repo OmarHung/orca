@@ -1,0 +1,24 @@
+import { ipcRenderer, webUtils } from 'electron'
+import type { SftpTransferProgress } from '../../shared/sftp-types'
+import type { PreloadApi } from '../api-types'
+
+export const sftpApi = {
+  home: (targetId) => ipcRenderer.invoke('sftp:home', targetId),
+  list: (request) => ipcRenderer.invoke('sftp:list', request),
+  mkdir: (request) => ipcRenderer.invoke('sftp:mkdir', request),
+  rename: (request) => ipcRenderer.invoke('sftp:rename', request),
+  remove: (request) => ipcRenderer.invoke('sftp:remove', request),
+  upload: (request) => ipcRenderer.invoke('sftp:upload', request),
+  download: (request) => ipcRenderer.invoke('sftp:download', request),
+  cancel: (transferId) => ipcRenderer.invoke('sftp:cancel', transferId),
+  disconnect: (targetId) => ipcRenderer.invoke('sftp:disconnect', targetId),
+  localHome: () => ipcRenderer.invoke('sftp:localHome'),
+  localList: (path) => ipcRenderer.invoke('sftp:localList', path),
+  getPathForFile: (file) => webUtils.getPathForFile(file),
+  onProgress: (callback) => {
+    const listener = (_event: Electron.IpcRendererEvent, progress: SftpTransferProgress) =>
+      callback(progress)
+    ipcRenderer.on('sftp:progress', listener)
+    return () => ipcRenderer.removeListener('sftp:progress', listener)
+  }
+} satisfies PreloadApi['sftp']
