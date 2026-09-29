@@ -18,6 +18,9 @@ export type SftpTransferDirection = 'upload' | 'download'
 /** A local file's device and inode numbers (as decimal strings), from lstat at planning time. */
 export type SftpLocalFileIdentity = { dev: string; ino: string }
 
+/** The local folder a download was confirmed into, and which folder that path meant then. */
+export type SftpLocalRoot = SftpLocalFileIdentity & { path: string }
+
 /**
  * One step the app will run, in order. Plans are built and stored by main; the renderer only
  * displays them, and main executes the stored copy, so what is shown is exactly what runs.
@@ -29,7 +32,7 @@ export type SftpOperation =
   | { op: 'lmkdir'; path: string }
   /** Refused at run time unless `local` is still the file `source` identified at planning. */
   | { op: 'put'; local: string; remote: string; size: number; source: SftpLocalFileIdentity }
-  /** Written inside a fresh hidden folder beside `local`, then renamed over it once complete. */
+  /** Written to a fresh hidden file beside `local`, then renamed over it once complete. */
   | { op: 'get'; remote: string; local: string; size: number }
   | { op: 'rename'; from: string; to: string }
   | { op: 'rm'; path: string }
@@ -53,6 +56,8 @@ export type SftpPlan = {
   totalBytes: number
   /** Top-level names that already exist where a transfer, rename or move would put them. */
   conflicts: string[]
+  /** Downloads only: every local write happens inside this folder, or not at all. */
+  localRoot?: SftpLocalRoot
 }
 
 export type SftpExecuteRequest = {

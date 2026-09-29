@@ -1,10 +1,15 @@
 import { lstat, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
-import type { SftpOperation, SftpPlanRequest } from '../../shared/sftp-types'
+import type { SftpLocalRoot, SftpOperation, SftpPlanRequest } from '../../shared/sftp-types'
 import { sftpLstat, sftpReaddir, sftpStat, type SftpOps } from './sftp-ops'
 import { localFileIdentity } from './sftp-planned-upload'
 
-export type SftpPlanDraft = { operations: SftpOperation[]; totalBytes: number; conflicts: string[] }
+export type SftpPlanDraft = {
+  operations: SftpOperation[]
+  totalBytes: number
+  conflicts: string[]
+  localRoot?: SftpLocalRoot
+}
 
 // Why: the whole list is sent to the confirm dialog; past this, ask for a smaller selection.
 export const MAX_PLAN_OPERATIONS = 50_000
@@ -141,6 +146,12 @@ async function draftDownload(
   sources: readonly string[],
   localDir: string
 ): Promise<SftpPlanDraft> {
+  // Why: the run writes only inside the folder this path means now, even if the path changes.
+  const rootStats = await stat(localDir, { bigint: true })
+  if (!rootStats.isDirectory()) {
+    throw new Error(`"${localDir}" is not a folder.`)
+  }
+  const localRoot: SftpLocalRoot = { path: localDir, ...localFileIdentity(rootStats) }
   const list = new OperationList()
   const conflicts: string[] = []
   for (const source of sources) {
@@ -159,7 +170,7 @@ async function draftDownload(
       list.add({ op: 'get', remote: source, local: destination, size: stats.size })
     }
   }
-  return { operations: list.operations, totalBytes: list.totalBytes, conflicts }
+  return { operations: list.operations, totalBytes: list.totalBytes, conflicts, localRoot }
 }
 
 function normalizeRemote(target: string): string {

@@ -21,6 +21,7 @@ const PLAIN_NODE_ENTRY_NAMES = [
   // Utility process on desktop, forked child in orcad.
   'stt-worker',
   'session-scanner-service-entry',
+  'sftp-local-writer-entry',
   'computer-sidecar',
   'wsl-transcript-fs-process-entry',
   'orcad/orcad-local-serve-selection-entry',
