@@ -19,7 +19,6 @@ import { UsagePercentageDisplayChangeNotice } from './UsagePercentageDisplayChan
 import { UpdateStatusSegment } from './UpdateStatusSegment'
 import { GitLogStatusSegment } from '../bottom-panel/GitLogStatusSegment'
 import { DebugStatusSegment } from '../debug/DebugStatusSegment'
-import { DatabaseStatusSegment } from '../database/DatabaseStatusSegment'
 import { GitBranchStatusSegment } from '../git-branch-status/GitBranchStatusSegment'
 import { SkillUpdateStatusSegment } from './SkillUpdateStatusSegment'
 import { NativeChatResumeStatusSegment } from './NativeChatResumeStatusSegment'
@@ -293,7 +292,6 @@ export function StatusBarSurface({
           <GitBranchStatusSegment iconOnly={segmentsIconOnly} />
           <GitLogStatusSegment />
           <DebugStatusSegment />
-          <DatabaseStatusSegment />
           {showFloatingTerminalToggle && (
             <FloatingTerminalIconContextMenu currentLocation="status-bar" className="relative">
               <Tooltip>
