@@ -18858,7 +18858,12 @@
       "storeNever": "Never",
       "storeSession": "Until Orca quits",
       "useColor": "Use color {{value0}}",
-      "user": "User"
+      "user": "User",
+      "vpn": "VPN",
+      "vpnEmpty": "No VPN profiles yet. Add one in Settings → SSH.",
+      "vpnHint": "Host and port are as seen from inside the VPN. The rest of this computer stays off it.",
+      "vpnRemoved": "Removed VPN profile",
+      "vpnViaSsh": "With an SSH tunnel, the SSH host’s own VPN setting applies."
     },
     "console": {
       "cancel": "Cancel running statement",
@@ -18957,7 +18962,8 @@
       "showDdl": "Show DDL",
       "unique": "unique",
       "uniqueKey": "Unique key",
-      "viaSsh": "via {{value0}}"
+      "viaSsh": "via {{value0}}",
+      "viaVpn": "via VPN {{value0}}"
     },
     "grid": {
       "copy": "Copy",

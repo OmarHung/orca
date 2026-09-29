@@ -18858,7 +18858,12 @@
       "storeNever": "不保存",
       "storeSession": "保存到 Orca 退出",
       "useColor": "使用颜色 {{value0}}",
-      "user": "用户"
+      "user": "用户",
+      "vpn": "VPN",
+      "vpnEmpty": "还没有 VPN 配置文件，请到设置 → SSH 新增。",
+      "vpnHint": "主机和端口以 VPN 内部看到的为准。这台电脑的其他连接不会走 VPN。",
+      "vpnRemoved": "已删除的 VPN 配置文件",
+      "vpnViaSsh": "使用 SSH 隧道时，以该 SSH 主机自己的 VPN 设置为准。"
     },
     "console": {
       "cancel": "取消正在执行的语句",
@@ -18957,7 +18962,8 @@
       "showDdl": "查看 DDL",
       "unique": "唯一",
       "uniqueKey": "唯一键",
-      "viaSsh": "经由 {{value0}}"
+      "viaSsh": "经由 {{value0}}",
+      "viaVpn": "经由 VPN {{value0}}"
     },
     "grid": {
       "copy": "复制",
