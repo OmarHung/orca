@@ -2,8 +2,23 @@ import { describe, expect, it } from 'vitest'
 import type { SshTarget } from '../../../../shared/ssh-types'
 import {
   filterSshTargetsBySearchQuery,
+  formatSshTargetEndpoint,
   SSH_TARGET_SEARCH_QUERY_MAX_BYTES
 } from './ssh-target-search'
+
+describe('formatSshTargetEndpoint', () => {
+  it('shows user@host:port like the target card', () => {
+    expect(formatSshTargetEndpoint({ username: 'deploy', host: '203.0.113.10', port: 22 })).toBe(
+      'deploy@203.0.113.10:22'
+    )
+  })
+
+  it('omits the user when none is set', () => {
+    expect(formatSshTargetEndpoint({ username: '', host: 'build.internal', port: 2222 })).toBe(
+      'build.internal:2222'
+    )
+  })
+})
 
 function target(overrides: Partial<SshTarget> & Pick<SshTarget, 'id' | 'label'>): SshTarget {
   return { host: '192.0.2.1', port: 22, username: 'dev', ...overrides }
