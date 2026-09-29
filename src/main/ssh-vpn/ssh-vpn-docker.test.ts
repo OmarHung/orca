@@ -52,6 +52,8 @@ describe('docker argv builders', () => {
       '-i',
       'c',
       'nc',
+      '-w',
+      '30',
       'db.internal',
       '22'
     ])
@@ -67,10 +69,10 @@ describe('docker argv builders', () => {
 describe('sshVpnProxyCommand', () => {
   it('leaves plain paths bare and quotes the rest for the platform', () => {
     expect(sshVpnProxyCommand('/usr/local/bin/docker', 'c', 'darwin')).toBe(
-      '/usr/local/bin/docker exec -i c nc %h %p'
+      '/usr/local/bin/docker exec -i c nc -w 30 %h %p'
     )
     expect(sshVpnProxyCommand('/Users/o b/docker', 'c', 'darwin')).toBe(
-      "'/Users/o b/docker' exec -i c nc %h %p"
+      "'/Users/o b/docker' exec -i c nc -w 30 %h %p"
     )
     expect(
       sshVpnProxyCommand(
@@ -78,7 +80,9 @@ describe('sshVpnProxyCommand', () => {
         'c',
         'win32'
       )
-    ).toBe('"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" exec -i c nc %h %p')
+    ).toBe(
+      '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" exec -i c nc -w 30 %h %p'
+    )
   })
 })
 
