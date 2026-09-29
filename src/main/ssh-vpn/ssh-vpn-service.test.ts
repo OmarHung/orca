@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SshTarget } from '../../shared/ssh-types'
 import type { SshVpnProfile } from '../../shared/ssh-vpn-types'
 import { createResolvedConfig } from '../ssh/ssh-connection-test-fixtures'
-import type { SshVpnStartConfirm } from './ssh-vpn-manager'
+import type { SshVpnStartConfirm } from './ssh-vpn-manager-types'
 import { SshVpnService } from './ssh-vpn-service'
 
 const PROFILE: SshVpnProfile = {
@@ -57,7 +57,7 @@ describe('SshVpnService', () => {
     await expect(service.prepare(target(), null)).resolves.toEqual({
       kind: 'argv',
       program: '/usr/local/bin/docker',
-      args: ['exec', '-i', 'orca-ssh-vpn-t-p', 'nc', '-w', '30', '%h', '%p']
+      args: ['exec', '-i', '--user', 'tunnel', 'orca-ssh-vpn-t-p', 'nc', '-w', '30', '%h', '%p']
     })
     expect(approveStart).toHaveBeenCalledWith({
       profile: PROFILE,
@@ -65,7 +65,7 @@ describe('SshVpnService', () => {
       commands: ['docker run …']
     })
     expect(service.proxyCommand(target())).toBe(
-      '/usr/local/bin/docker exec -i orca-ssh-vpn-t-p nc -w 30 %h %p'
+      '/usr/local/bin/docker exec -i --user tunnel orca-ssh-vpn-t-p nc -w 30 %h %p'
     )
   })
 
@@ -97,6 +97,30 @@ describe('SshVpnService', () => {
       service.prepareTerminal(target({ source: 'ssh-config', configHost: 'db' }), resolved)
     ).rejects.toThrow(/already connects through ProxyJump or ProxyCommand/)
     expect(manager.acquire).not.toHaveBeenCalled()
+  })
+
+  it('refuses host names a shell would expand, since OpenSSH puts %h into a shell command', async () => {
+    const { service, manager } = createService(PROFILE)
+
+    await expect(service.prepare(target({ host: '$(touch /tmp/x)' }), null)).rejects.toThrow(
+      /cannot pass through the VPN safely/
+    )
+    expect(manager.acquire).not.toHaveBeenCalled()
+  })
+
+  it("keys connection reuse by the host's VPN, and never matches a direct route when unreadable", () => {
+    expect(createService(PROFILE).service.routeKey(target())).toBe(PROFILE.id)
+    expect(createService(null).service.routeKey(target())).toBe('')
+    const unreadable = new SshVpnService({
+      store: {
+        profileForTarget: () => {
+          throw new Error('not valid JSON')
+        },
+        getProfile: () => null
+      },
+      manager: createService(PROFILE).manager
+    })
+    expect(unreadable.routeKey(target())).toBe('unreadable')
   })
 
   it('fails closed for system ssh when the host has a VPN that is not up', () => {

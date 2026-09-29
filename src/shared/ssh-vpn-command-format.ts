@@ -1,6 +1,16 @@
 // Shared by main (runs and previews the commands) and the renderer (types them into a terminal).
 
 const POSIX_SAFE = /^[A-Za-z0-9_@%+=:,./-]+$/
+// Why: host names reach shells (a typed command, OpenSSH's `$SHELL -c` ProxyCommand), so only
+// characters no shell expands, and no leading "-" that ssh would read as an option.
+const SAFE_SSH_HOST = /^[A-Za-z0-9._:%][A-Za-z0-9._:%-]*$/
+
+export function isShellSafeSshHost(host: string): boolean {
+  return SAFE_SSH_HOST.test(host)
+}
+
+/** The container user every per-connection `nc` runs as; its firewall only allows the VPN. */
+export const SSH_VPN_TUNNEL_USER = 'tunnel'
 
 // Matches ssh2's CONNECT_TIMEOUT_MS so the tunnel never outlives the attempt it serves.
 const TUNNEL_CONNECT_TIMEOUT_SECONDS = '30'
@@ -18,7 +28,18 @@ export function formatPosixCommand(argv: readonly string[]): string {
 export function sshVpnTunnelArgs(containerName: string, host: string, port: string): string[] {
   // Why -w: killing the `docker exec` client does not kill `nc`, so a connect to a filtered port
   // would hang in the container and count as a live connection forever. -w bounds only the connect.
-  return ['exec', '-i', containerName, 'nc', '-w', TUNNEL_CONNECT_TIMEOUT_SECONDS, host, port]
+  return [
+    'exec',
+    '-i',
+    '--user',
+    SSH_VPN_TUNNEL_USER,
+    containerName,
+    'nc',
+    '-w',
+    TUNNEL_CONNECT_TIMEOUT_SECONDS,
+    host,
+    port
+  ]
 }
 
 /**
