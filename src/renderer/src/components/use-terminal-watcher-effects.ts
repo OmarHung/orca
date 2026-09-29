@@ -12,6 +12,7 @@ import {
 import { useAppStore } from '@/store'
 import { isTerminalWorkspaceEmptiedOnPurpose } from '../../../shared/closed-terminal-tab-tombstones'
 import { gateWorktreeAgentActivation } from '@/lib/worktree-agent-activation-gate'
+import { seedProjectInitialAgentTab } from '@/lib/project-initial-agent-tab-seeding'
 import { createWorkspaceTerminalHostAuthoritySelector } from '@/lib/workspace-terminal-host-authority'
 import { getStructuredAgentLaunchStatus } from '@/lib/structured-agent-session-launch'
 import { isEmptyWorkspaceDefaultSurfacePending } from '@/lib/empty-workspace-default-surface-claims'
@@ -251,7 +252,10 @@ export function useTerminalWatcherEffects(controller: TerminalWatcherController)
         useAppStore.getState(),
         activeWorktreeId
       )
-      if (shouldAutoCreateInitialTerminal(renderableTabCount, activeWorktreeHasTerminalState)) {
+      if (
+        shouldAutoCreateInitialTerminal(renderableTabCount, activeWorktreeHasTerminalState) &&
+        !seedProjectInitialAgentTab(activeWorktreeId)
+      ) {
         // Why: tag this never-visited-worktree tab so its PTY spawn doesn't count as activity and reshuffle the sidebar (explicit New Tab still bumps).
         createTab(activeWorktreeId, undefined, undefined, { pendingActivationSpawn: true })
       }

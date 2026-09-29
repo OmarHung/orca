@@ -20,6 +20,7 @@ import { matchesSettingsSearch } from './settings-search'
 import { useAppStore } from '../../store'
 import { getRepositoryIconSectionId } from './repository-settings-targets'
 import { RepositoryIconPicker } from './RepositoryIconPicker'
+import { RepositoryInitialTabSetting } from './RepositoryInitialTabSetting'
 import { getRepositoryPaneSearchEntries } from './repository-search'
 import { RepositoryHostSetupsSection } from './RepositoryHostSetupsSection'
 import { RepoSettingsDraftInput } from './RepositorySettingsDraftInput'
@@ -176,6 +177,7 @@ export function RepositoryPane({
   const identityEntryTitles = new Set([
     translate('auto.components.settings.repository.search.7e1e456a95', 'Display Name'),
     translate('auto.components.settings.repository.search.b24f00294a', 'Project Icon'),
+    translate('auto.components.settings.repository.search.initialTab', 'Initial Tab'),
     translate('auto.components.settings.repository.search.githubAccount', 'GitHub Account'),
     translate(
       'auto.components.settings.repository.search.keepForkUpToDate',
@@ -304,6 +306,12 @@ export function RepositoryPane({
         >
           <RepositoryIconPicker repo={repo} updateRepo={updateSelectedRepo} />
         </SearchableSetting>
+
+        <RepositoryInitialTabSetting
+          repo={repo}
+          updateRepo={updateSelectedRepo}
+          forceVisible={forceFullPaneForRepoMatch}
+        />
 
         {!isFolder ? (
           <>

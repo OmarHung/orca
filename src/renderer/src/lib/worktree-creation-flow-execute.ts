@@ -186,7 +186,12 @@ export async function executeWorktreeCreation(
         ...(result.defaultTabs ? { defaultTabs: result.defaultTabs } : {}),
         ...(startupOpt ? { startup: startupOpt } : {}),
         ...(preparedRequest.issueCommand ? { issueCommand: preparedRequest.issueCommand } : {}),
-        ...(backendSpawned ? { backendStartupTerminalSpawned: true } : {})
+        // Why: a renderer-seeded Blank Terminal stays a shell instead of the project's initial agent.
+        ...(backendSpawned
+          ? { backendStartupTerminalSpawned: true }
+          : preparedRequest.agent === null
+            ? { agent: null }
+            : {})
       })
       primaryTabId = activation === false ? null : activation.primaryTabId
     } catch (error) {
@@ -214,7 +219,11 @@ export async function executeWorktreeCreation(
             preparedRequest.issueCommand,
             result.defaultTabs,
             // Activation failed before providing its promised surface, so recovery must seed one.
-            backendSpawned ? { backendStartupTerminalSpawned: true } : undefined
+            backendSpawned
+              ? { backendStartupTerminalSpawned: true }
+              : preparedRequest.agent === null
+                ? { blankTerminalSelected: true }
+                : undefined
           )
         } catch (recoveryError) {
           console.error(

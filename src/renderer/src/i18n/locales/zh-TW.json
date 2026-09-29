@@ -7935,7 +7935,11 @@
           "externalWorktreesGlobal": "全域性預設值：{{value0}}",
           "useGlobal": "使用全域性設定",
           "hostStateWorkspaceWindowClosed": "工作區視窗已關閉",
-          "hostWorkspaceWindowClosedHelp": "伺服器可以訪問，但其 Orca 視窗已關閉。在 {{value0}} 上開啟 Orca 以使用此設定。"
+          "hostWorkspaceWindowClosedHelp": "伺服器可以訪問，但其 Orca 視窗已關閉。在 {{value0}} 上開啟 Orca 以使用此設定。",
+          "initialTab": "初始分頁",
+          "initialTabDescription": "此專案的工作區沒有任何分頁時要開啟的內容。",
+          "initialTabHelp": "此專案的工作區沒有任何分頁時開啟。若選擇的代理已停用，則改為開啟終端機。",
+          "initialTabTerminal": "終端機"
         },
         "RepositorySourceControlAiActionRows": {
           "548a6e1281": "提示詞範本",
@@ -10248,7 +10252,12 @@
             "wsl": "wsl",
             "distro": "發行版",
             "agentRuntime": "代理執行時",
-            "skillRuntime": "技能執行時間"
+            "skillRuntime": "技能執行時間",
+            "initialTab": "初始分頁",
+            "initialTabDescription": "此專案的工作區沒有任何分頁時要開啟的內容。",
+            "initialTabDefaultTab": "預設分頁",
+            "initialTabAgent": "代理",
+            "initialTabClaude": "claude"
           }
         },
         "runtime": {

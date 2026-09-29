@@ -6,6 +6,7 @@ import type { ExecutionHostId } from '../../../shared/execution-host'
 import { normalizeExecutionHostId } from '../../../shared/execution-host'
 import { normalizeRepoBadgeColor } from '../../../shared/repo-badge-color'
 import { sanitizeRepoIcon } from '../../../shared/repo-icon'
+import { isRepoInitialTab } from '../../../shared/repo-initial-tab'
 import { normalizeGhAccountBinding } from '../../../shared/github/account-binding'
 import type { GhAccountBinding } from '../../../shared/github/account-binding'
 import { normalizeRepoSourceControlAiOverrides } from '../../../shared/source-control-ai'
@@ -39,6 +40,7 @@ export function registerRepoUpdateHandler(mainWindow: BrowserWindow, store: Stor
             | 'symlinkPaths'
             | 'issueSourcePreference'
             | 'forkSyncMode'
+            | 'initialTab'
             | 'externalWorktreeVisibilityPromptDismissedAt'
             | 'externalWorktreeInboxBaselinePaths'
             | 'importedExternalWorktreePaths'
@@ -77,6 +79,9 @@ export function registerRepoUpdateHandler(mainWindow: BrowserWindow, store: Stor
         updates.forkSyncMode !== 'off'
       ) {
         delete updates.forkSyncMode
+      }
+      if ('initialTab' in updates && !isRepoInitialTab(updates.initialTab)) {
+        delete updates.initialTab
       }
       // Why: null is the transport sentinel for clearing the binding; malformed shapes are dropped, never coerced.
       if ('ghAccount' in updates) {

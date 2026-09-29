@@ -38,7 +38,9 @@ function baseSeedState(worktree: Worktree, worktrees: Worktree[]): Partial<Store
         path: path.join(path.sep, 'workspace', 'repo'),
         displayName: 'repo',
         badgeColor: '#000000',
-        addedAt: 0
+        addedAt: 0,
+        // Why: isolates the creation-agent relaunch rule from the project's initial agent tab.
+        initialTab: 'terminal'
       }
     ],
     worktreesByRepo: { [worktree.repoId]: worktrees },
