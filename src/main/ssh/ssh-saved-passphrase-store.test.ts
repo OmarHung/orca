@@ -107,7 +107,7 @@ describe('SshSavedPassphraseStore', () => {
   it('forgets a saved passphrase', () => {
     const store = new SshSavedPassphraseStore(vaultPath, () => fakeSecretStore())
     store.remember(keyPath, 'right')
-    expect(store.forget(keyPath)).toBe(true)
+    expect(store.forget(keyPath)).toBeNull()
     expect(store.lookup(keyPath)).toBeNull()
     expect(store.list()).toEqual([])
   })
