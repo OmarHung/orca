@@ -19954,7 +19954,7 @@
       "renameConflict": "此文件夹中已有“{{name}}”。",
       "replaceWarning": "目标位置已存在，文件会被替换、文件夹会合并：{{names}}",
       "legend": "以 OpenSSH sftp 批次指令格式表示。开头的“-”表示保留已存在的文件夹。",
-      "partialNote": "每个文件会先保存为“<名称>.orca-download”，完成后再改名，因此下载失败不会损坏已有的文件。",
+      "partialNote": "每个文件会先保存到旁边的隐藏临时文件夹，完成后再移到目标位置，因此下载失败不会损坏已有的文件。",
       "nothingToDo": "没有可传输的内容：所选内容中没有普通文件或文件夹。",
       "moveTitle": "要在 {{host}} 上移动吗？"
     },
