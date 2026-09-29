@@ -179,14 +179,17 @@ describe.skipIf(!ENABLED)('SSH through a per-host OpenVPN container (Docker)', (
     const container = `orca-ssh-vpn-${instanceTag}-${state.profileId}`
     // Why 1.1.1.1: reachable through Docker's own network, never through this split-tunnel VPN.
     // Root (OpenVPN's user) can reach it, so a refusal for the tunnel user is the firewall.
-    const reach = (user: string) =>
+    const reach = (user: string, port: string) =>
       runProcess({
         program: 'docker',
-        args: ['exec', '--user', user, container, 'nc', '-z', '-w', '5', '1.1.1.1', '443'],
+        args: ['exec', '--user', user, container, 'nc', '-z', '-w', '5', '1.1.1.1', port],
         timeoutMs: 30_000
       })
-    expect((await reach('root')).code).toBe(0)
-    expect((await reach('tunnel')).code).not.toBe(0)
+    expect((await reach('root', '443')).code).toBe(0)
+    expect((await reach('tunnel', '443')).code).not.toBe(0)
+    // Why 53 too: DNS is allowed only to Docker's resolvers, not to any host on the DNS port.
+    expect((await reach('root', '53')).code).toBe(0)
+    expect((await reach('tunnel', '53')).code).not.toBe(0)
   }, 60_000)
 
   it('logs in with a username and password, and forgets a rejected one', async () => {
