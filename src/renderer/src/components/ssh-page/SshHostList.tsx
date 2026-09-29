@@ -14,12 +14,15 @@ type SshHostListProps = {
   targets: readonly SshTarget[]
   currentTargetId?: string | null
   onSelect: (target: SshTarget) => void
+  /** Extra right-click actions for a host row. */
+  hostMenuItems?: (target: SshTarget) => React.ReactNode
 }
 
 export function SshHostList({
   targets,
   currentTargetId,
-  onSelect
+  onSelect,
+  hostMenuItems
 }: SshHostListProps): React.JSX.Element {
   const [query, setQuery] = useState('')
   const visibleTargets = filterSshTargetsBySearchQuery(targets, query)
@@ -49,7 +52,11 @@ export function SshHostList({
           visibleTargets.map((target) => {
             const isCurrent = target.id === currentTargetId
             return (
-              <SshHostVpnMenu key={target.id} targetId={target.id}>
+              <SshHostVpnMenu
+                key={target.id}
+                targetId={target.id}
+                leadingItems={hostMenuItems?.(target)}
+              >
                 <button
                   type="button"
                   data-ssh-host-row={target.id}
