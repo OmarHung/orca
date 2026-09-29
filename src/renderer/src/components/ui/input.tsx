@@ -13,7 +13,10 @@ const inputVariants = cva('', {
       code: 'font-mono text-xs md:text-xs',
       // A large centered name with an underline, for a dialog whose first job is naming something.
       heading:
-        'h-auto rounded-none border-0 border-b bg-transparent px-9 pt-1 pb-2 text-center text-2xl font-semibold shadow-none placeholder:font-medium hover:border-ring focus-visible:border-foreground focus-visible:ring-0 md:text-2xl dark:bg-transparent'
+        'h-auto rounded-none border-0 border-b bg-transparent px-9 pt-1 pb-2 text-center text-2xl font-semibold shadow-none placeholder:font-medium hover:border-ring focus-visible:border-foreground focus-visible:ring-0 md:text-2xl dark:bg-transparent',
+      // Flat list search: no elevation or focus halo; pl-8 leaves room for a leading icon.
+      search:
+        'h-8 border-border bg-background pr-3 pl-8 text-xs shadow-none focus-visible:border-ring/70 focus-visible:ring-0 md:text-xs dark:bg-background'
     },
     surface: {
       default: '',
