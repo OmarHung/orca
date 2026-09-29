@@ -1,5 +1,6 @@
 import type { SshTarget } from '../../shared/ssh-types'
 import { getControlSocketPath, type SystemSshResolvedConfig } from './ssh-control-socket'
+import { getSshVpnProxyCommand } from '../ssh-vpn/ssh-vpn-route'
 
 export type SystemSshBuildArgsOptions = {
   configFile?: string
@@ -96,6 +97,12 @@ export function buildSshArgs(target: SshTarget, options?: SystemSshBuildArgsOpti
 
   if (!useConfigHost && target.proxyCommand) {
     args.push('-o', `ProxyCommand=${target.proxyCommand}`)
+  }
+
+  // Why also for config-backed hosts: a host assigned to a VPN must never dial out directly.
+  const vpnProxyCommand = getSshVpnProxyCommand(target)
+  if (vpnProxyCommand) {
+    args.push('-o', `ProxyCommand=${vpnProxyCommand}`)
   }
 
   const host = target.configHost || target.host

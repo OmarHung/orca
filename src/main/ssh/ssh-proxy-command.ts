@@ -14,6 +14,8 @@ import { isOpenSshConfigBackedTarget } from './system-ssh-args'
 export type EffectiveProxy =
   | { kind: 'proxy-command'; command: string }
   | { kind: 'jump-host'; jumpHost: string }
+  /** A program run without a shell; `%h`/`%p` arguments become the host and port. */
+  | { kind: 'argv'; program: string; args: readonly string[] }
 
 export function resolveEffectiveProxy(
   target: SshTarget,
@@ -107,23 +109,28 @@ export function spawnProxyCommand(
           program: 'ssh',
           args: jumpHostSpawnArgs(proxy.jumpHost, host, port)
         })
-      : (() => {
-          const escape = process.platform === 'win32' ? cmdEscape : shellEscape
-          const expanded = proxy.command
-            .replace(/%h/g, escape(host))
-            .replace(/%p/g, escape(String(port)))
-            .replace(/%r/g, escape(user))
-          const shell = getShellSpawnConfig(expanded)
-          // Why not spawnProcess here: a ProxyCommand is a user-authored shell
-          // snippet, so it keeps its own verbatim command line. The console
-          // still has to be hidden -- a cmd.exe spawn from a GUI process always
-          // flashes and steals foreground otherwise (#10488).
-          return spawn(shell.file, shell.args, {
-            stdio: ['pipe', 'pipe', 'pipe'],
-            windowsHide: true,
-            windowsVerbatimArguments: shell.windowsVerbatimArguments
+      : proxy.kind === 'argv'
+        ? spawnProcess({
+            program: proxy.program,
+            args: proxy.args.map((arg) => (arg === '%h' ? host : arg === '%p' ? String(port) : arg))
           })
-        })()
+        : (() => {
+            const escape = process.platform === 'win32' ? cmdEscape : shellEscape
+            const expanded = proxy.command
+              .replace(/%h/g, escape(host))
+              .replace(/%p/g, escape(String(port)))
+              .replace(/%r/g, escape(user))
+            const shell = getShellSpawnConfig(expanded)
+            // Why not spawnProcess here: a ProxyCommand is a user-authored shell
+            // snippet, so it keeps its own verbatim command line. The console
+            // still has to be hidden -- a cmd.exe spawn from a GUI process always
+            // flashes and steals foreground otherwise (#10488).
+            return spawn(shell.file, shell.args, {
+              stdio: ['pipe', 'pipe', 'pipe'],
+              windowsHide: true,
+              windowsVerbatimArguments: shell.windowsVerbatimArguments
+            })
+          })()
 
   // Why: a single PassThrough for both directions creates a feedback loop.
   // Reads come from the proxy's stdout; writes go to its stdin.
