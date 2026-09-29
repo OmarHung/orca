@@ -13,9 +13,9 @@ import { SshVpnService } from './ssh-vpn-service'
 import { SshVpnStore } from './ssh-vpn-store'
 import {
   startSshVpnTestNetwork,
-  TEST_SSHD_NAME,
+  VPN_TEST_SSHD_NAME,
   type SshVpnTestNetwork
-} from './ssh-vpn-test-network'
+} from '../../../tests/e2e/helpers/docker-ssh-vpn-network'
 
 // Real Docker, real OpenVPN, real sshd. Opt in with ORCA_TEST_SSH_VPN_DOCKER=1.
 const ENABLED = process.env.ORCA_TEST_SSH_VPN_DOCKER === '1'
@@ -23,7 +23,7 @@ const ENABLED = process.env.ORCA_TEST_SSH_VPN_DOCKER === '1'
 const TARGET: SshTarget = {
   id: 'target-behind-vpn',
   label: 'behind-vpn',
-  host: TEST_SSHD_NAME,
+  host: VPN_TEST_SSHD_NAME,
   port: 22,
   username: 'root'
 }
@@ -84,7 +84,7 @@ describe.skipIf(!ENABLED)('SSH through a per-host OpenVPN container (Docker)', (
 
   beforeAll(async () => {
     interfacesBefore = interfaceNames()
-    network = await startSshVpnTestNetwork()
+    network = startSshVpnTestNetwork()
     const dockerPath = await resolveDockerPath()
     if (!dockerPath) {
       throw new Error('docker not found')
@@ -107,11 +107,11 @@ describe.skipIf(!ENABLED)('SSH through a per-host OpenVPN container (Docker)', (
 
   afterAll(async () => {
     await manager?.stopAll()
-    await network?.dispose()
+    network?.dispose()
   }, 120_000)
 
   it('cannot reach the host without the VPN', async () => {
-    await expect(network.canReachWithoutVpn()).resolves.toBe(false)
+    expect(network.canReachWithoutVpn()).toBe(false)
   }, 60_000)
 
   it('runs commands and SFTP over ssh2 through the tunnel, resolving the VPN-only DNS name', async () => {
@@ -128,7 +128,7 @@ describe.skipIf(!ENABLED)('SSH through a per-host OpenVPN container (Docker)', (
     const client = await connectSsh2({
       sock,
       username: 'root',
-      privateKey: network.privateKey,
+      privateKey: await readFile(network.privateKeyPath),
       readyTimeout: 20_000
     })
     try {
@@ -165,7 +165,7 @@ describe.skipIf(!ENABLED)('SSH through a per-host OpenVPN container (Docker)', (
         'IdentitiesOnly=yes',
         '-i',
         network.privateKeyPath,
-        `root@${TEST_SSHD_NAME}`,
+        `root@${VPN_TEST_SSHD_NAME}`,
         'echo system-ok'
       ],
       timeoutMs: 60_000
