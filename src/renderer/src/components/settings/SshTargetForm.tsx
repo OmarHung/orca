@@ -12,6 +12,7 @@ import {
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { SshHostAdvancedFields } from './SshHostAdvancedFields'
+import { saveSshHostVpnDraft, SshTargetVpnField } from '../ssh-vpn/SshTargetVpnField'
 import {
   applyParsedSshHostInput,
   hasAdvancedConnectionValues,
@@ -111,6 +112,9 @@ export function SshTargetForm({
             // Why: Enter still submits while the button is disabled, so gate here too.
             if (saving) {
               return
+            }
+            if (editingId) {
+              void saveSshHostVpnDraft(editingId)
             }
             onSave()
           }}
@@ -236,6 +240,7 @@ export function SshTargetForm({
                   )}
                 </p>
               </div>
+              <SshTargetVpnField open={open} targetId={editingId} />
               <SshHostAdvancedFields
                 open={advancedOpen}
                 onOpenChange={setAdvancedOpen}
