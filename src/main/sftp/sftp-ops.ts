@@ -16,7 +16,16 @@ export type SftpOps = {
   unlink(path: string, callback: Done): void
   rename(srcPath: string, destPath: string, callback: Done): void
   fastGet(remotePath: string, localPath: string, options: TransferOptions, callback: Done): void
-  fastPut(localPath: string, remotePath: string, options: TransferOptions, callback: Done): void
+  open(path: string, mode: 'w', callback: (err: Error | undefined, handle: Buffer) => void): void
+  write(
+    handle: Buffer,
+    buffer: Buffer,
+    offset: number,
+    length: number,
+    position: number,
+    callback: Done
+  ): void
+  close(handle: Buffer, callback: Done): void
   end(): void
 }
 
@@ -68,15 +77,20 @@ export const sftpFastGet = (
     sftp.fastGet(remotePath, localPath, { step: (total) => onStep(total) }, callback)
   )
 
-export const sftpFastPut = (
+/** Creates or truncates the remote file for writing. */
+export const sftpOpenForWrite = (sftp: SftpOps, path: string): Promise<Buffer> =>
+  settle((callback) => sftp.open(path, 'w', callback))
+
+export const sftpWrite = (
   sftp: SftpOps,
-  localPath: string,
-  remotePath: string,
-  onStep: (transferred: number) => void
+  handle: Buffer,
+  buffer: Buffer,
+  position: number
 ): Promise<void> =>
-  settleVoid((callback) =>
-    sftp.fastPut(localPath, remotePath, { step: (total) => onStep(total) }, callback)
-  )
+  settleVoid((callback) => sftp.write(handle, buffer, 0, buffer.length, position, callback))
+
+export const sftpClose = (sftp: SftpOps, handle: Buffer): Promise<void> =>
+  settleVoid((callback) => sftp.close(handle, callback))
 
 function sftpStatusCode(err: unknown): unknown {
   return typeof err === 'object' && err !== null && 'code' in err ? err.code : undefined

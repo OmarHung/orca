@@ -124,7 +124,7 @@ function notes(plan: SftpPlan): string[] {
     result.push(
       translate(
         'sftpPage.confirm.partialNote',
-        'Each file is saved as “<name>.orca-download” first and renamed when complete, so a failed download never damages an existing file.'
+        'Each file is saved in a hidden temporary folder beside it first and moved into place when complete, so a failed download never damages an existing file.'
       )
     )
   }
