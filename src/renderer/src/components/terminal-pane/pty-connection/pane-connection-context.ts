@@ -1,8 +1,8 @@
 import { resolveTerminalPaneOwnerContext } from '../host-state/terminal-pane-owner-context'
+import { isLocalSyntheticWorkspaceId } from '../../../../../shared/local-synthetic-workspace'
 import { useAppStore } from '@/store'
 import { resolveTerminalWorktreeRoute } from '@/lib/workspace/ownership/terminal-worktree-route'
 import { parseWorkspaceKey } from '../../../../../shared/workspace-scope'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../../shared/constants'
 import { isEphemeralSetupTerminalWorktreeId } from '../../../../../shared/ephemeral-setup-terminal-worktree-id'
 import { isLocalExecutionHost } from '../../../../../shared/execution-host'
 import { settleTerminalPaneRecovery } from '../render-health/recovery/terminal-pane-recovery'
@@ -60,7 +60,7 @@ export function initializePaneConnectionContext(session: ConnectPanePtySession):
   // `undefined` mean the repo hasn't merged yet; coalescing that to null would fail-open a
   // remote cwd onto the local daemon (ENOENT on Docker SSH paths).
   session.hostAgnosticTerminalWorktree =
-    session.deps.worktreeId === FLOATING_TERMINAL_WORKTREE_ID ||
+    isLocalSyntheticWorkspaceId(session.deps.worktreeId) ||
     isEphemeralSetupTerminalWorktreeId(session.deps.worktreeId)
   session.worktreeProvesLocalHost =
     isLocalExecutionHost(session.worktree?.hostId) ||

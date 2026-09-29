@@ -1,7 +1,7 @@
 import { agentSenderPublicationPatch } from '../native-chat/agent-senders/agent-sender-publication-patch'
 import { isWebSessionTabsWorktreeRemovalFrame } from './session-tabs-inventory-absence'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
 import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../shared/layout-owner-switch'
+import { isLocalSyntheticWorkspaceId } from '../../../../shared/local-synthetic-workspace'
 import type { RuntimeMobileSessionTabsResult } from '../../../../shared/runtime-types'
 import { LOCAL_STRUCTURED_SESSION_OWNER } from '../native-chat/local-sessions/local-structured-session-owner'
 import type {
@@ -36,7 +36,7 @@ export function applyWebSessionTabsSnapshotWithContext(
     environmentId === LOCAL_STRUCTURED_SESSION_OWNER && options?.contentScope === 'agent-session'
   if (
     suppressE2eWebRuntimeBrowserSnapshot(rawSnapshot) ||
-    (rawSnapshot.worktree === FLOATING_TERMINAL_WORKTREE_ID && !isLocalChatInventory)
+    (isLocalSyntheticWorkspaceId(rawSnapshot.worktree) && !isLocalChatInventory)
   ) {
     return state
   }

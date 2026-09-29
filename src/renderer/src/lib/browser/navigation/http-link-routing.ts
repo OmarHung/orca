@@ -13,7 +13,7 @@ import {
 } from '../../links/placement/link-open-intent'
 import type { LinkOpenIntent, LinkSourceState } from '../../links/placement/link-open-intent'
 import { translate } from '@/i18n/i18n'
-import { isFloatingWorkspaceId } from '../../../../../shared/floating-workspace-worktree'
+import { isLocalSyntheticWorkspaceId } from '../../../../../shared/local-synthetic-workspace'
 import { toast } from 'sonner'
 import { reselectWorkspaceKeepingHost } from '../../workspace/ownership/active-workspace-host'
 import { captureBrowserLinkReveal } from './browser-link-reveal'
@@ -266,7 +266,7 @@ function executeHttpLink(
       }
       const activate = !isHttpLinkBackgroundOpen(state) && reveal.canReveal()
       reveal.dispose()
-      if (activate && !isFloatingWorkspaceId(worktreeId)) {
+      if (activate && !isLocalSyntheticWorkspaceId(worktreeId)) {
         reselectWorkspaceKeepingHost(state, worktreeId)
       }
       openLocalHttpLinkTab(getState(), worktreeId, chosenUrl, undefined, activate)

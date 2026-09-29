@@ -3,8 +3,10 @@ import { FolderSync } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
 import { RemoteHostsPageFrame } from '../ssh-page/RemoteHostsPageFrame'
 import { SshHostListPanel } from '../ssh-page/SshHostListPanel'
+import { useSshTargetList } from '../ssh-page/use-ssh-target-list'
 
 export default function SftpPage(): React.JSX.Element {
+  const list = useSshTargetList()
   const [currentTargetId, setCurrentTargetId] = useState<string | null>(null)
 
   return (
@@ -22,6 +24,7 @@ export default function SftpPage(): React.JSX.Element {
     >
       <div className="flex min-h-0 flex-1">
         <SshHostListPanel
+          list={list}
           currentTargetId={currentTargetId}
           onSelect={(target) => setCurrentTargetId(target.id)}
         />
