@@ -29,7 +29,7 @@ function echoPipe(): VpnPipeProcess & { stdinEnded: () => boolean } {
     stdout,
     stderr: new PassThrough(),
     kill: () => true,
-    once: (event: string, listener: (...args: never[]) => void) => events.once(event, listener),
+    once: (event: string, listener: (error: Error) => void) => events.once(event, listener),
     stdinEnded: () => ended
   }
 }
