@@ -10,6 +10,8 @@ import {
 } from '@/components/ui/dialog'
 import { translate } from '@/i18n/i18n'
 import { createBrowserUuid } from '@/lib/browser-uuid'
+import { useAppStore } from '@/store'
+import { getTabEntryAllowAbsolutePaths } from '../tab-bar/tab-create-entry-local-path'
 import type { RunConfigurationDefinition } from '../../../../shared/run-configurations/run-configuration-definition'
 import {
   mergeLaunchJsonImport,
@@ -49,6 +51,9 @@ export function EditRunConfigurationsDialog({
   const [importRevision, setImportRevision] = useState(0)
   const hasLaunchJson = useWorkspaceHasLaunchJson(worktreeId, null)
   const detected = useWorkspaceDetectedRuns(worktreeId)
+  const [browseRoot] = useState(() =>
+    getTabEntryAllowAbsolutePaths(useAppStore.getState(), worktreeId) ? data.worktreePath : null
+  )
   const localIds = new Set(drafts.map((draft) => draft.id))
   const shared = (data.shared?.configurations ?? []).filter((entry) => !localIds.has(entry.id))
   const all = [...drafts, ...shared]
@@ -157,6 +162,7 @@ export function EditRunConfigurationsDialog({
                   readOnly={selectedLocal === null}
                   detected={unsavedDetectedRuns(detected, all, data.worktreePath)}
                   worktreePath={data.worktreePath}
+                  browseRoot={browseRoot}
                   onChange={update}
                   onPickDetected={pickDetected}
                 />

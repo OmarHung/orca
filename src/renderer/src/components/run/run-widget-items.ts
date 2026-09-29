@@ -1,5 +1,6 @@
 import type { HostedTerminalQuickCommand } from '@/hooks/use-terminal-quick-command-hosts'
 import type { RunConfigurationDefinition } from '../../../../shared/run-configurations/run-configuration-definition'
+import { commandConfigurationOf } from '../../../../shared/run-configurations/run-configuration-plan'
 import type { RunTarget } from './run-configuration-control'
 import type { ListedRunConfiguration, RunConfigurationSource } from './run-configuration-store'
 
@@ -84,7 +85,7 @@ function runCommandKey(item: RunWidgetItem): string | null {
     case 'recent':
       return item.target.commandKey
     case 'configuration':
-      return item.configuration.type === 'command'
+      return commandConfigurationOf(item.configuration)
         ? configurationCommandKey(item.configuration.id)
         : null
     case 'quick-command':

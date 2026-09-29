@@ -1,6 +1,7 @@
 import type { ConfirmationDialogContextValue } from '@/components/confirmation-dialog-context'
 import { useAppStore } from '@/store'
 import { runQuickCommandInNewTab } from '@/lib/run-quick-command-in-new-tab'
+import { commandConfigurationOf } from '../../../../shared/run-configurations/run-configuration-plan'
 import { resolveCommandLaunch } from '../../../../shared/run-configurations/run-configuration-resolve'
 import { debugLaunchTarget } from '../debug/debug-launch'
 import { stopDebugSession } from '../debug/debug-session-controller'
@@ -43,14 +44,13 @@ export function runWidgetSessionTarget(
     case 'quick-command':
       return toRunTarget(item.entry, scope.worktreeId, scope.groupId)
     case 'configuration': {
-      if (item.configuration.type !== 'command') {
+      const command = commandConfigurationOf(item.configuration)
+      if (!command) {
         return null
       }
-      const launch = resolveCommandLaunch(item.configuration, {
-        workspaceFolder: scope.worktreePath
-      })
+      const launch = resolveCommandLaunch(command, { workspaceFolder: scope.worktreePath })
       return launch.ok
-        ? configurationRunTarget(item.configuration, launch.value, scope.worktreeId, scope.groupId)
+        ? configurationRunTarget(command, launch.value, scope.worktreeId, scope.groupId)
         : null
     }
   }

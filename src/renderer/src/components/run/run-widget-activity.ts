@@ -72,6 +72,7 @@ export function runWidgetFootprint(
     case 'configuration':
       switch (item.configuration.type) {
         case 'command':
+        case 'dotnet-publish':
           return {
             commandKeys: [configurationCommandKey(item.configuration.id)],
             debugSourceKeys: []

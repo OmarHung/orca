@@ -25,6 +25,8 @@ export function runConfigurationIcon(configuration: RunConfigurationDefinition):
       return SquareTerminal
     case 'debug':
       return Bug
+    case 'dotnet-publish':
+      return Upload
     case 'compound':
       return Layers
   }
