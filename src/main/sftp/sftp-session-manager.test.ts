@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SshTarget } from '../../shared/ssh-types'
 import { formatSftpOperation } from '../../shared/sftp-operation-format'
 import type { SftpTransferProgress } from '../../shared/sftp-types'
-import { FakeSftp } from './sftp-test-support'
+import { FakeSftp, spawnLocalWriterFromSource } from './sftp-test-support'
 import { SftpSessionManager, type SftpConnection } from './sftp-session-manager'
 
 const target: SshTarget = {
@@ -54,7 +54,8 @@ function createManager(idleMs = 60_000): SftpSessionManager {
     getTarget: (id) => (id === target.id ? target : undefined),
     createConnection: () => connection,
     onProgress: (event) => progress.push(event),
-    idleMs
+    idleMs,
+    spawnLocalWriter: spawnLocalWriterFromSource
   })
 }
 
