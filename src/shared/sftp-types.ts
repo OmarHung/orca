@@ -31,13 +31,14 @@ export type SftpOperation =
   | { op: 'rm'; path: string }
   | { op: 'rmdir'; path: string }
 
-export type SftpPlanKind = 'upload' | 'download' | 'mkdir' | 'rename' | 'remove'
+export type SftpPlanKind = 'upload' | 'download' | 'mkdir' | 'rename' | 'move' | 'remove'
 
 export type SftpPlanRequest =
   | { kind: 'upload'; targetId: string; sources: string[]; destinationDir: string }
   | { kind: 'download'; targetId: string; sources: string[]; destinationDir: string }
   | { kind: 'mkdir'; targetId: string; path: string }
   | { kind: 'rename'; targetId: string; from: string; to: string }
+  | { kind: 'move'; targetId: string; sources: string[]; destinationDir: string }
   | { kind: 'remove'; targetId: string; paths: string[] }
 
 export type SftpPlan = {
@@ -46,7 +47,7 @@ export type SftpPlan = {
   targetId: string
   operations: SftpOperation[]
   totalBytes: number
-  /** Top-level names that already exist where a transfer would put them. */
+  /** Top-level names that already exist where a transfer, rename or move would put them. */
   conflicts: string[]
 }
 
