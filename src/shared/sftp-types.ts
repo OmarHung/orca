@@ -15,6 +15,9 @@ export type SftpResult<T> = { ok: true; value: T } | { ok: false; error: { messa
 
 export type SftpTransferDirection = 'upload' | 'download'
 
+/** A local file's device and inode numbers (as decimal strings), from lstat at planning time. */
+export type SftpLocalFileIdentity = { dev: string; ino: string }
+
 /**
  * One step the app will run, in order. Plans are built and stored by main; the renderer only
  * displays them, and main executes the stored copy, so what is shown is exactly what runs.
@@ -24,8 +27,9 @@ export type SftpOperation =
   | { op: 'mkdir'; path: string; keepExisting: boolean }
   /** Local mkdir that keeps an existing folder. */
   | { op: 'lmkdir'; path: string }
-  | { op: 'put'; local: string; remote: string; size: number }
-  /** Written to `<local>.orca-download`, then renamed over `local` once complete. */
+  /** Refused at run time unless `local` is still the file `source` identified at planning. */
+  | { op: 'put'; local: string; remote: string; size: number; source: SftpLocalFileIdentity }
+  /** Written inside a fresh hidden folder beside `local`, then renamed over it once complete. */
   | { op: 'get'; remote: string; local: string; size: number }
   | { op: 'rename'; from: string; to: string }
   | { op: 'rm'; path: string }
