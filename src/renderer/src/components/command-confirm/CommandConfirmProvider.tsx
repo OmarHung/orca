@@ -95,6 +95,7 @@ export function CommandConfirmProvider({
             </Button>
             <Button
               ref={confirmRef}
+              data-command-confirm-accept
               variant={options?.isDestructive ? 'destructive' : 'default'}
               onClick={() => settle(true)}
             >
