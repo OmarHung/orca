@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { networkInterfaces } from 'node:os'
 import path from 'node:path'
 import { Client, type ConnectConfig } from 'ssh2'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { SshTarget } from '../../shared/ssh-types'
 import { runProcess } from '../../shared/child-process/run-process'
 import { spawnProxyCommand } from '../ssh/ssh-proxy-command'
@@ -13,9 +13,10 @@ import { SshVpnService } from './ssh-vpn-service'
 import { SshVpnStore } from './ssh-vpn-store'
 import {
   startSshVpnTestNetwork,
+  VPN_TEST_LOGIN,
   VPN_TEST_SSHD_NAME,
   type SshVpnTestNetwork
-} from '../../../tests/e2e/helpers/docker-ssh-vpn-network'
+} from './ssh-vpn-test-network'
 
 // Real Docker, real OpenVPN, real sshd. Opt in with ORCA_TEST_SSH_VPN_DOCKER=1.
 const ENABLED = process.env.ORCA_TEST_SSH_VPN_DOCKER === '1'
@@ -84,7 +85,7 @@ describe.skipIf(!ENABLED)('SSH through a per-host OpenVPN container (Docker)', (
 
   beforeAll(async () => {
     interfacesBefore = interfaceNames()
-    network = startSshVpnTestNetwork()
+    network = await startSshVpnTestNetwork()
     const dockerPath = await resolveDockerPath()
     if (!dockerPath) {
       throw new Error('docker not found')
@@ -107,11 +108,11 @@ describe.skipIf(!ENABLED)('SSH through a per-host OpenVPN container (Docker)', (
 
   afterAll(async () => {
     await manager?.stopAll()
-    network?.dispose()
+    await network?.dispose()
   }, 120_000)
 
   it('cannot reach the host without the VPN', async () => {
-    expect(network.canReachWithoutVpn()).toBe(false)
+    await expect(network.canReachWithoutVpn()).resolves.toBe(false)
   }, 60_000)
 
   it('runs commands and SFTP over ssh2 through the tunnel, resolving the VPN-only DNS name', async () => {
@@ -172,6 +173,75 @@ describe.skipIf(!ENABLED)('SSH through a per-host OpenVPN container (Docker)', (
     })
     expect(result.stdout.trim()).toBe('system-ok')
   }, 120_000)
+
+  it('keeps tunnels on the VPN: the tunnel user cannot reach anything outside it', async () => {
+    const [state] = manager.listStates()
+    const container = `orca-ssh-vpn-${instanceTag}-${state.profileId}`
+    // Why 1.1.1.1: reachable through Docker's own network, never through this split-tunnel VPN.
+    // Root (OpenVPN's user) can reach it, so a refusal for the tunnel user is the firewall.
+    const reach = (user: string) =>
+      runProcess({
+        program: 'docker',
+        args: ['exec', '--user', user, container, 'nc', '-z', '-w', '5', '1.1.1.1', '443'],
+        timeoutMs: 30_000
+      })
+    expect((await reach('root')).code).toBe(0)
+    expect((await reach('tunnel')).code).not.toBe(0)
+  }, 60_000)
+
+  it('logs in with a username and password, and forgets a rejected one', async () => {
+    const loginManager = new SshVpnManager({
+      docker: async () => docker,
+      instanceTag: `${instanceTag}l`,
+      readFile: (filePath) => readFile(filePath)
+    })
+    const profile = {
+      id: 'login-profile-0001',
+      name: 'Login VPN',
+      ovpnPath: network.loginOvpnPath,
+      idleMinutes: 10
+    }
+    try {
+      const onLoginRejected = vi.fn()
+      await expect(
+        loginManager.acquire(profile, {
+          credentials: async () => ({ username: 'orca', password: 'wrong' }),
+          onLoginRejected
+        })
+      ).rejects.toThrow('The VPN server rejected the login (AUTH_FAILED)')
+      expect(onLoginRejected).toHaveBeenCalledTimes(1)
+
+      const route = await loginManager.acquire(profile, {
+        credentials: async () => VPN_TEST_LOGIN
+      })
+      const banner = await runProcess({
+        program: 'docker',
+        args: [
+          'exec',
+          '-i',
+          '--user',
+          'tunnel',
+          route.containerName,
+          'nc',
+          '-w',
+          '10',
+          VPN_TEST_SSHD_NAME,
+          '22'
+        ],
+        input: '',
+        timeoutMs: 30_000
+      })
+      expect(banner.stdout).toContain('SSH-2.0-OpenSSH')
+      // The login lives only in the container's tmpfs, readable by root alone.
+      const mode = await runProcess({
+        program: 'docker',
+        args: ['exec', route.containerName, 'stat', '-c', '%a %U', '/run/orca/login']
+      })
+      expect(mode.stdout.trim()).toBe('600 root')
+    } finally {
+      await loginManager.stopAll()
+    }
+  }, 180_000)
 
   it('leaves the host network untouched', () => {
     expect(interfaceNames()).toEqual(interfacesBefore)

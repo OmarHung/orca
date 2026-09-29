@@ -19448,7 +19448,7 @@
       "namePlaceholder": "公司 VPN",
       "ovpnPath": "OpenVPN 設定檔 (.ovpn)",
       "browse": "選擇…",
-      "ovpnHelp": "支援只用憑證登入的設定檔。Orca 每次連線時讀取這個檔案，不會另存副本。",
+      "ovpnHelp": "Orca 每次連線時讀取這個檔案，不會另存副本。目前還不支援需要一次性驗證碼（MFA）的設定檔。",
       "idle": "閒置多久後中斷連線（分鐘）",
       "idleHelp": "從最後一條經由這個 VPN 的連線關閉時開始計算。設為 0 會保持連線到 Orca 關閉為止。",
       "cancel": "取消",
@@ -19492,6 +19492,24 @@
       "tunnelNote": "之後每條 SSH 連線都會執行 `docker exec -i <容器> nc -w 30 <主機> <埠>`，經由 VPN 連到主機。",
       "start": "啟動 VPN"
     },
-    "button": "VPN"
+    "button": "VPN",
+    "login": {
+      "username": "VPN 帳號",
+      "password": "VPN 密碼",
+      "passwordSaved": "已儲存，輸入新密碼即可取代",
+      "passwordAsk": "留空的話，連線時再詢問",
+      "storage": "密碼儲存方式",
+      "storageForever": "儲存在系統鑰匙串",
+      "storageSession": "儲存到 Orca 關閉為止",
+      "storageNever": "每次都詢問",
+      "noKeychain": "這個系統沒有安全的密碼儲存，所以密碼只會儲存到 Orca 關閉為止。"
+    },
+    "prompt": {
+      "title": "登入 VPN「{{name}}」",
+      "forHost": "連線到 {{host}} 需要這個 VPN。",
+      "manual": "這個 VPN 需要帳號和密碼。",
+      "cancel": "取消",
+      "connect": "連線"
+    }
   }
 }

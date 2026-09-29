@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { isAbsolute, join as pathJoin } from 'node:path'
 import type { SshTarget } from '../../shared/ssh-types'
 import type { SshResolvedConfig } from './ssh-config-parser'
+import { getSshVpnRouteKey } from '../ssh-vpn/ssh-vpn-route'
 
 export type SystemSshResolvedConfig = Pick<
   SshResolvedConfig,
@@ -46,6 +47,7 @@ export function getControlSocketPath(
 
   // Why: include both persisted target fields and fresh ssh -G output so a
   // live ControlPersist master is not reused after config-backed routes change.
+  const vpnRoute = getSshVpnRouteKey(target)
   const key = JSON.stringify({
     target: {
       id: target.id,
@@ -61,7 +63,9 @@ export function getControlSocketPath(
     },
     resolved: normalizeResolvedConfig(resolvedConfig),
     // Why: a Kerberos-only session must not reuse a master authenticated by a key.
-    gssapiOnly
+    gssapiOnly,
+    // Why: a master opened before the host was assigned a VPN connects directly; never reuse it.
+    ...(vpnRoute ? { vpnRoute } : {})
   })
   const hash = createHash('sha256').update(key).digest('hex').slice(0, 16)
   const socketPath = pathJoin(dir, hash)
