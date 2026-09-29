@@ -28,6 +28,7 @@ import {
 import { translate } from '@/i18n/i18n'
 import { useTranslate } from '@/i18n/use-translate'
 import { cn } from '@/lib/class-names'
+import { SshHostVpnBadge } from '../ssh-vpn/SshHostVpnMenu'
 
 export const STATUS_LABELS: Record<SshConnectionStatus, string> = {
   get disconnected() {
@@ -224,6 +225,7 @@ export function SshTargetCard({
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-baseline gap-2">
           <span className="truncate text-sm font-medium">{target.label}</span>
+          <SshHostVpnBadge targetId={target.id} />
           {servedByOrcaServer ? (
             <Badge variant="hostContext" className="self-center">
               {t('auto.components.settings.SshTargetCard.orcaServer', 'Orca server')}
