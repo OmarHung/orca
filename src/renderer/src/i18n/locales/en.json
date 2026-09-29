@@ -8787,6 +8787,10 @@
           "addDescription": "Add a persistent machine you can log into over SSH.",
           "editingPrefix": "Editing"
         },
+        "SshTargetList": {
+          "noMatches": "No SSH targets match your search.",
+          "searchLabel": "Search targets"
+        },
         "TasksPane": {
           "f71d8a9dd3": "Task Providers",
           "6b23a34f6d": "Jira",
