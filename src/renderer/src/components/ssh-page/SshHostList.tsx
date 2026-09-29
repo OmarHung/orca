@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Search } from 'lucide-react'
 import type { SshTarget } from '../../../../shared/ssh-types'
 import { Input } from '../ui/input'
 import { translate } from '@/i18n/i18n'
@@ -27,12 +28,16 @@ export function SshHostList({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center gap-1 p-2">
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={searchLabel}
-          aria-label={searchLabel}
-        />
+        <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={searchLabel}
+            aria-label={searchLabel}
+            variant="search"
+          />
+        </div>
         <SshVpnButton />
       </div>
       <div className="scrollbar-sleek min-h-0 flex-1 overflow-y-auto px-2 pb-2">
