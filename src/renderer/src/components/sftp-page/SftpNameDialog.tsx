@@ -22,7 +22,7 @@ export function SftpNameDialog({
 }): React.JSX.Element {
   return (
     <Dialog open={request !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-sm sm:max-w-sm">
         {request ? <SftpNameForm key={request.title} request={request} onClose={onClose} /> : null}
       </DialogContent>
     </Dialog>
@@ -46,6 +46,7 @@ function SftpNameForm({
   }
   return (
     <form
+      className="space-y-4"
       onSubmit={(event) => {
         event.preventDefault()
         submit()
@@ -62,10 +63,10 @@ function SftpNameForm({
         onChange={(event) => setName(event.target.value)}
       />
       <DialogFooter>
-        <Button type="button" variant="ghost" onClick={onClose}>
+        <Button type="button" variant="outline" size="sm" onClick={onClose}>
           {translate('sftpPage.nameDialog.cancel', 'Cancel')}
         </Button>
-        <Button type="submit" disabled={!isValid}>
+        <Button type="submit" size="sm" disabled={!isValid}>
           {request.confirmLabel}
         </Button>
       </DialogFooter>
