@@ -212,3 +212,15 @@ Requirement: every action asks first and shows the exact commands the app will r
 - Dialog: `CommandConfirmProvider` (per page). Long lists show the first 200 numbered lines,
   wrap long paths with a hanging indent, and offer "Copy all" for the full list.
 - Not prompted: read-only browsing (list/stat/realpath), refresh, and closing tabs.
+
+## SFTP tabs and column widths
+
+- **Tabs**: the SFTP page has its own titlebar tab strip (it skips the stacked titlebar, as the
+  SSH page does). Clicking a host or "+" (host picker) opens a new tab; several tabs may browse
+  the same host and share its connection. A tab mounts on first show and stays mounted while
+  hidden, so folders, selection and listings survive switching. Open tabs persist in
+  localStorage (`orca.sftpTabs`) and reopen at the host's home; each tab label shows its current
+  remote folder. ⌘T / ⌘W open and close tabs on the page.
+- **Column widths**: every column has a pixel width (persisted in `orca.sftpColumns`, shared by
+  both panes). Drag a header divider to resize, double-click to reset, ←/→ on a focused divider
+  for 16px steps. Rows are as wide as the columns; a narrow pane scrolls sideways.

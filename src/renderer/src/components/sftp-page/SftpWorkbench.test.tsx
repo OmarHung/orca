@@ -9,6 +9,7 @@ import { CommandConfirmProvider } from '../command-confirm/CommandConfirmProvide
 import { TooltipProvider } from '../ui/tooltip'
 import { SftpWorkbench } from './SftpWorkbench'
 import { useSftpColumnsStore } from './sftp-columns-store'
+import { DEFAULT_SFTP_COLUMN_WIDTHS } from './sftp-columns'
 import { DEFAULT_SFTP_SORT } from './sftp-entry-sort'
 import { useSftpTransfersStore } from './sftp-transfers-store'
 
@@ -76,7 +77,8 @@ beforeEach(async () => {
   useSftpTransfersStore.setState({ transfers: [] })
   useSftpColumnsStore.setState({
     hiddenColumns: [],
-    sortByPane: { local: DEFAULT_SFTP_SORT, remote: DEFAULT_SFTP_SORT }
+    sortByPane: { local: DEFAULT_SFTP_SORT, remote: DEFAULT_SFTP_SORT },
+    columnWidths: { ...DEFAULT_SFTP_COLUMN_WIDTHS }
   })
   Reflect.set(window, 'api', { sftp: api })
   container = document.createElement('div')
@@ -244,5 +246,19 @@ describe('SftpWorkbench', () => {
 
     expect(document.querySelector('[data-sftp-column="owner"]')).toBeNull()
     expect(document.querySelector('[data-sftp-column="name"]')).not.toBeNull()
+  })
+
+  it('resizes a column in both panes from its header divider', async () => {
+    const sizeCell = (): HTMLElement | null =>
+      row('/Users/dev/report.csv')?.querySelectorAll<HTMLElement>('span[title]')[1] ?? null
+    expect(sizeCell()?.style.width).toBe(`${DEFAULT_SFTP_COLUMN_WIDTHS.size}px`)
+
+    await act(async () => {
+      remotePane()
+        .querySelector('[data-sftp-resize="size"]')
+        ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    })
+
+    expect(sizeCell()?.style.width).toBe(`${DEFAULT_SFTP_COLUMN_WIDTHS.size + 16}px`)
   })
 })
