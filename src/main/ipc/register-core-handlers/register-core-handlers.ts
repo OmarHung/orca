@@ -51,6 +51,7 @@ import { registerShellHandlers } from '../shell'
 import { registerPetHandlers } from '../pet'
 import { registerDebugHandlers } from '../../debug/debug-ipc'
 import { registerDatabaseHandlers } from '../../database/database-ipc'
+import { registerSftpHandlers } from '../../sftp/sftp-ipc'
 import { registerPluginHandlers } from '../plugins'
 import { registerUIHandlers, setTrustedUIRendererWebContentsId } from '../ui'
 import { registerEmulatorFrameStreamHandlers } from '../emulator-frame-stream'
@@ -207,6 +208,7 @@ export function registerCoreHandlers(
   registerPetHandlers()
   registerDebugHandlers()
   registerDatabaseHandlers()
+  registerSftpHandlers()
   registerSessionHandlers(store, runtime)
   registerUIHandlers(store, { isDashboardPopoutRenderer })
   registerEmulatorFrameStreamHandlers()
