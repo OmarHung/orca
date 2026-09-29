@@ -15,6 +15,8 @@ type SshSessionsSurfaceProps = {
   isVisible: boolean
   items: SshSessionItems
   onNewSession: () => void
+  /** Shown before the tabs, e.g. the button that reopens a collapsed host list. */
+  leadingControl?: React.ReactNode
 }
 
 function tabsBeside(order: readonly string[], tabId: string, side: 'left' | 'right'): string[] {
@@ -28,7 +30,8 @@ function tabsBeside(order: readonly string[], tabId: string, side: 'left' | 'rig
 export function SshSessionsSurface({
   isVisible,
   items,
-  onNewSession
+  onNewSession,
+  leadingControl
 }: SshSessionsSurfaceProps): React.JSX.Element {
   const cwd = useSshSessionCwd()
   const setTabCustomTitle = useAppStore((s) => s.setTabCustomTitle)
@@ -40,6 +43,9 @@ export function SshSessionsSurface({
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       <div className="flex h-9 shrink-0 items-center border-b border-border">
+        {leadingControl ? (
+          <div className="flex shrink-0 items-center pl-1">{leadingControl}</div>
+        ) : null}
         <FloatingWorkspaceTabDragContext enabled={isVisible} worktreeId={SSH_SESSIONS_WORKTREE_ID}>
           <TabBar
             tabs={terminalItems}
