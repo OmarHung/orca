@@ -17,8 +17,6 @@ import {
 
 const DOCKER_COMMAND_TIMEOUT_MS = 30_000
 const DOCKER_BUILD_TIMEOUT_MS = 10 * 60_000
-// Matches ssh2's CONNECT_TIMEOUT_MS so the tunnel never outlives the attempt it serves.
-const TUNNEL_CONNECT_TIMEOUT_SECONDS = '30'
 
 export class SshVpnDockerError extends Error {
   override name = 'SshVpnDockerError'
@@ -123,13 +121,6 @@ export function dockerOpenVpnArgs(containerName: string): string[] {
   ]
 }
 
-/** The per-connection pipe: `nc` inside the container, so the TCP connection leaves through tun0. */
-export function dockerTunnelArgs(containerName: string, host: string, port: string): string[] {
-  // Why -w: killing the `docker exec` client does not kill `nc`, so a connect to a filtered port
-  // would hang in the container and count as a live connection forever. -w bounds only the connect.
-  return ['exec', '-i', containerName, 'nc', '-w', TUNNEL_CONNECT_TIMEOUT_SECONDS, host, port]
-}
-
 export function dockerRemoveArgs(...containerNames: string[]): string[] {
   return ['rm', '--force', ...containerNames]
 }
@@ -138,21 +129,12 @@ export function dockerBuildArgs(): string[] {
   return ['build', '--tag', SSH_VPN_IMAGE, '-']
 }
 
-/**
- * The ProxyCommand OpenSSH runs for a host routed through the VPN. OpenSSH hands it to
- * `$SHELL -c` on POSIX and to CreateProcess on Windows, so the docker path is quoted for that.
- */
-export function sshVpnProxyCommand(
-  dockerPath: string,
-  containerName: string,
-  platform: NodeJS.Platform = process.platform
-): string {
-  const program = !/[\s"'\\$`]/.test(dockerPath)
-    ? dockerPath
-    : platform === 'win32'
-      ? `"${dockerPath}"`
-      : `'${dockerPath.replaceAll("'", "'\\''")}'`
-  return `${program} ${dockerTunnelArgs(containerName, '%h', '%p').join(' ')}`
+export function dockerInfoArgs(): string[] {
+  return ['info', '--format', '{{.ServerVersion}}']
+}
+
+export function dockerImageInspectArgs(): string[] {
+  return ['image', 'inspect', SSH_VPN_IMAGE]
 }
 
 type Runner = (
@@ -201,16 +183,16 @@ export class SshVpnDocker {
 
   async assertRunning(): Promise<void> {
     await this.runChecked(
-      ['info', '--format', '{{.ServerVersion}}'],
+      dockerInfoArgs(),
       'Docker is not running. Start Docker Desktop (or OrbStack/Colima) and try again'
     )
   }
 
-  async ensureImage(): Promise<void> {
-    const inspect = await this.run(['image', 'inspect', SSH_VPN_IMAGE])
-    if (inspect.code === 0) {
-      return
-    }
+  async hasImage(): Promise<boolean> {
+    return (await this.run(dockerImageInspectArgs())).code === 0
+  }
+
+  async buildImage(): Promise<void> {
     await this.runChecked(dockerBuildArgs(), 'Could not build the VPN image', {
       input: SSH_VPN_DOCKERFILE,
       timeoutMs: DOCKER_BUILD_TIMEOUT_MS

@@ -75,8 +75,8 @@ describe('prepareOvpnProfile', () => {
     )
 
     expect(prepared.files).toEqual([
-      { containerPath: '/run/orca/f0-ca.crt', content: Buffer.from('CA') },
-      { containerPath: '/run/orca/f1-ta_key.pem', content: Buffer.from('TA') }
+      { hostPath: caPath, containerPath: '/run/orca/f0-ca.crt', content: Buffer.from('CA') },
+      { hostPath: taPath, containerPath: '/run/orca/f1-ta_key.pem', content: Buffer.from('TA') }
     ])
     expect(prepared.config).toBe(
       ['ca /run/orca/f0-ca.crt', 'tls-auth /run/orca/f1-ta_key.pem 1', 'cert [inline]', ''].join(

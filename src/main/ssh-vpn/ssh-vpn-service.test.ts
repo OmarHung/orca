@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SshTarget } from '../../shared/ssh-types'
 import type { SshVpnProfile } from '../../shared/ssh-vpn-types'
 import { createResolvedConfig } from '../ssh/ssh-connection-test-fixtures'
+import type { SshVpnStartConfirm } from './ssh-vpn-manager'
 import { SshVpnService } from './ssh-vpn-service'
 
 const PROFILE: SshVpnProfile = {
@@ -24,13 +25,20 @@ function target(overrides: Partial<SshTarget> = {}): SshTarget {
 }
 
 function createService(profile: SshVpnProfile | null, ready = true) {
-  const store = { profileForTarget: vi.fn(() => profile) }
+  const store = {
+    profileForTarget: vi.fn(() => profile),
+    getProfile: vi.fn(() => profile)
+  }
   const manager = {
-    acquire: vi.fn(async () => ROUTE),
+    acquire: vi.fn(async (_profile: SshVpnProfile, options?: { confirm?: SshVpnStartConfirm }) => {
+      await options?.confirm?.(['docker run …'])
+      return ROUTE
+    }),
     getReadyRoute: vi.fn(() => (ready ? ROUTE : null))
   }
-  const service = new SshVpnService(store, manager)
-  return { service, manager }
+  const approveStart = vi.fn(async () => true)
+  const service = new SshVpnService({ store, manager, approveStart, platform: 'darwin' })
+  return { service, manager, approveStart }
 }
 
 describe('SshVpnService', () => {
@@ -38,22 +46,44 @@ describe('SshVpnService', () => {
     const { service, manager } = createService(null)
 
     await expect(service.prepare(target(), null)).resolves.toBeNull()
+    await expect(service.prepareTerminal(target(), null)).resolves.toBeNull()
     expect(service.proxyCommand(target())).toBeNull()
     expect(manager.acquire).not.toHaveBeenCalled()
   })
 
-  it('starts the VPN and connects through nc in its container', async () => {
-    const { service, manager } = createService(PROFILE)
+  it('asks the user naming the host, then connects through nc in the container', async () => {
+    const { service, approveStart } = createService(PROFILE)
 
     await expect(service.prepare(target(), null)).resolves.toEqual({
       kind: 'argv',
       program: '/usr/local/bin/docker',
       args: ['exec', '-i', 'orca-ssh-vpn-t-p', 'nc', '-w', '30', '%h', '%p']
     })
-    expect(manager.acquire).toHaveBeenCalledWith(PROFILE)
+    expect(approveStart).toHaveBeenCalledWith({
+      profile: PROFILE,
+      hostLabel: 'db',
+      commands: ['docker run …']
+    })
     expect(service.proxyCommand(target())).toBe(
       '/usr/local/bin/docker exec -i orca-ssh-vpn-t-p nc -w 30 %h %p'
     )
+  })
+
+  it('gives the SSH page the route and profile name for its terminal command', async () => {
+    const { service } = createService(PROFILE)
+
+    await expect(service.prepareTerminal(target(), null)).resolves.toEqual({
+      profileName: 'Office',
+      ...ROUTE
+    })
+  })
+
+  it('asks without a host for a manual connect', async () => {
+    const { service, approveStart } = createService(PROFILE)
+
+    await service.connect(PROFILE.id)
+
+    expect(approveStart).toHaveBeenCalledWith(expect.objectContaining({ hostLabel: null }))
   })
 
   it('refuses hosts that already use ProxyJump or ProxyCommand, including from ~/.ssh/config', async () => {
@@ -64,7 +94,7 @@ describe('SshVpnService', () => {
       /already connects through ProxyJump or ProxyCommand/
     )
     await expect(
-      service.prepare(target({ source: 'ssh-config', configHost: 'db' }), resolved)
+      service.prepareTerminal(target({ source: 'ssh-config', configHost: 'db' }), resolved)
     ).rejects.toThrow(/already connects through ProxyJump or ProxyCommand/)
     expect(manager.acquire).not.toHaveBeenCalled()
   })

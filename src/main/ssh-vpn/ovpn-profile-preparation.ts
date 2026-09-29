@@ -57,7 +57,7 @@ const DROPPED_DIRECTIVES = new Set([
 
 const ENCRYPTED_PEM = /BEGIN ENCRYPTED PRIVATE KEY|Proc-Type:\s*4,ENCRYPTED/
 
-export type PreparedOvpnFile = { containerPath: string; content: Buffer }
+export type PreparedOvpnFile = { hostPath: string; containerPath: string; content: Buffer }
 
 export type PreparedOvpnProfile = {
   /** The profile as written into the container: host paths rewritten, dropped lines removed. */
@@ -233,7 +233,7 @@ export async function prepareOvpnProfile(
       assertKeyNotEncrypted(content.toString('utf8'), hostPath)
     }
     const containerPath = containerFileName(files.length, hostPath)
-    files.push({ containerPath, content })
+    files.push({ hostPath, containerPath, content })
     output.push([directive, containerPath, ...args.slice(1)].map(quoteOvpnArg).join(' '))
   }
 
