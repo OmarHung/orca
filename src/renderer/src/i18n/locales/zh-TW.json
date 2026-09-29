@@ -19567,6 +19567,7 @@
     "confirmTitle": "清除此對話？",
     "confirmDescription": "將向“{{title}}”中的 {{agent}} 傳送 /clear。代理會重新開始，不再保留目前對話的上下文。",
     "confirm": "清除",
-    "noTerminal": "此分頁沒有正在執行的代理可清除。"
+    "noTerminal": "此分頁沒有正在執行的代理可清除。",
+    "changed": "確認期間此分頁中的代理已變更，因此未清除任何內容。"
   }
 }

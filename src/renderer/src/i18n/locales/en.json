@@ -19771,6 +19771,7 @@
     "confirmTitle": "Clear this conversation?",
     "confirmDescription": "Sends /clear to {{agent}} in “{{title}}”. The agent starts over without the current conversation’s context.",
     "confirm": "Clear",
-    "noTerminal": "This tab has no running agent to clear."
+    "noTerminal": "This tab has no running agent to clear.",
+    "changed": "The agent in this tab changed while you were confirming, so nothing was cleared."
   }
 }
