@@ -27,12 +27,23 @@ export function filterSshTargetsBySearchQuery<T extends SearchableSshTarget>(
   })
 }
 
-function getSshTargetSearchText(target: SearchableSshTarget): string {
-  const endpoint = target.username
+/** The `user@host:port` line shown under a target's label. */
+export function formatSshTargetEndpoint(
+  target: Pick<SshTarget, 'host' | 'port' | 'username'>
+): string {
+  return target.username
     ? `${target.username}@${target.host}:${target.port}`
     : `${target.host}:${target.port}`
+}
+
+function getSshTargetSearchText(target: SearchableSshTarget): string {
   // Why: newline-joined so a single term cannot match across two fields.
-  return [target.label, target.configHost ?? '', endpoint, target.identityFile ?? '']
+  return [
+    target.label,
+    target.configHost ?? '',
+    formatSshTargetEndpoint(target),
+    target.identityFile ?? ''
+  ]
     .join('\n')
     .toLowerCase()
 }
