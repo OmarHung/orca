@@ -75,10 +75,7 @@ export function useAppChromeLayout() {
   const hasTabBar = tabCount >= 2
   // Activity/Space own full pages and hide the workspace sidebar.
   const showSidebar =
-    activeView !== 'settings' &&
-    activeView !== 'activity' &&
-    activeView !== 'space' &&
-    activeView !== 'database'
+    activeView !== 'settings' && activeView !== 'activity' && activeView !== 'space'
   // Tasks/Landing keep sidebar-width chrome when open; creation suppresses stacked chrome.
   const stackedSidebarOpen =
     !workspaceChromeActive && !creationLayoutActive && showSidebar && sidebarOpen
