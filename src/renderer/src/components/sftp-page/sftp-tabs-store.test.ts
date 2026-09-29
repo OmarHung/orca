@@ -50,6 +50,46 @@ describe('useSftpTabsStore', () => {
     expect(useSftpTabsStore.getState().activeTabId).toBe(b)
   })
 
+  it('opens a new tab right after the one it was asked for from', () => {
+    const { openTab } = useSftpTabsStore.getState()
+    const a = openTab(web)
+    const b = openTab(db)
+
+    const copy = openTab(web, a)
+
+    expect(useSftpTabsStore.getState().tabs.map((tab) => tab.id)).toEqual([a, copy, b])
+    expect(useSftpTabsStore.getState().activeTabId).toBe(copy)
+  })
+
+  it('shows the host in a tab it already has instead of opening another', () => {
+    const { openTab, showHost } = useSftpTabsStore.getState()
+    const first = openTab(web)
+    const dbTab = openTab(db)
+
+    expect(showHost(web)).toBe(first)
+    expect(useSftpTabsStore.getState()).toMatchObject({ activeTabId: first })
+    expect(useSftpTabsStore.getState().tabs.map((tab) => tab.id)).toEqual([first, dbTab])
+  })
+
+  it('stays on the active tab when it is already on the host', () => {
+    const { openTab, showHost } = useSftpTabsStore.getState()
+    openTab(web)
+    const second = openTab(web)
+
+    expect(showHost(web)).toBe(second)
+    expect(useSftpTabsStore.getState().tabs).toHaveLength(2)
+  })
+
+  it('opens a tab when the host has none', () => {
+    const { openTab, showHost } = useSftpTabsStore.getState()
+    openTab(db)
+
+    const webTab = showHost(web)
+
+    expect(useSftpTabsStore.getState().tabs.map((tab) => tab.targetId)).toEqual(['db', 'web'])
+    expect(useSftpTabsStore.getState().activeTabId).toBe(webTab)
+  })
+
   it('saves the open tabs for the next launch', () => {
     const tabId = useSftpTabsStore.getState().openTab(web)
 

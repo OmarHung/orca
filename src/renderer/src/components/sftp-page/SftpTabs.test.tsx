@@ -25,7 +25,7 @@ function Harness(): React.JSX.Element {
   const tabs = useSftpTabsStore((s) => s.tabs)
   const activeTabId = useSftpTabsStore((s) => s.activeTabId)
   const remotePathByTab = useSftpTabsStore((s) => s.remotePathByTab)
-  const { activateTab, closeTab } = useSftpTabsStore.getState()
+  const { activateTab, closeTab, openTab } = useSftpTabsStore.getState()
   return (
     <TooltipProvider>
       <SftpTabStrip
@@ -36,6 +36,7 @@ function Harness(): React.JSX.Element {
         onActivate={activateTab}
         onClose={closeTab}
         onNewTab={() => undefined}
+        onNewTabOnHost={(tab) => openTab({ id: tab.targetId, label: tab.label }, tab.id)}
       />
       <SftpTabPanels
         tabs={tabs}
@@ -126,6 +127,26 @@ describe('SFTP tabs', () => {
       tabs()[0].dispatchEvent(new MouseEvent('auxclick', { bubbles: true, button: 1 }))
     })
     expect(tabs()).toEqual([])
+  })
+
+  it('opens another tab on the same host, next to it, from the tab menu', async () => {
+    await open(targets[0])
+    await open(targets[1])
+
+    await act(async () => {
+      tabs()[0].dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))
+    })
+    const item = [
+      ...document.querySelectorAll<HTMLElement>('[data-slot="context-menu-item"]')
+    ].find((candidate) => candidate.textContent === 'New tab on this host')
+    await act(async () => item?.click())
+
+    expect(tabs().map((tab) => tab.textContent)).toEqual(['web-prod', 'web-prod', 'db-prod'])
+    expect(tabs().map((tab) => tab.getAttribute('aria-selected'))).toEqual([
+      'false',
+      'true',
+      'false'
+    ])
   })
 
   it('names the folder after the host, so tabs on one host can be told apart', async () => {
