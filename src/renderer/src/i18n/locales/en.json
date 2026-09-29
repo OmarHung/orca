@@ -19381,7 +19381,9 @@
       "rename": "Rename",
       "download": "Download",
       "dropHint": "Empty folder. Drop files here to upload.",
-      "delete": "Delete"
+      "delete": "Delete",
+      "move": "Move",
+      "moveTo": "Move to…"
     },
     "local": {
       "upload": "Upload",
@@ -19404,7 +19406,8 @@
       "replaceWarning": "Already in the destination — files are replaced, folders merged: {{names}}",
       "legend": "Written as OpenSSH sftp batch commands. A leading “-” keeps a folder that already exists.",
       "partialNote": "Each file is saved as “<name>.orca-download” first and renamed when complete, so a failed download never damages an existing file.",
-      "nothingToDo": "Nothing to transfer: no regular files or folders were selected."
+      "nothingToDo": "Nothing to transfer: no regular files or folders were selected.",
+      "moveTitle": "Move on {{host}}?"
     },
     "tabs": {
       "label": "SFTP tabs",
@@ -19413,6 +19416,14 @@
       "missingHost": "“{{name}}” is no longer in your SSH hosts. Close this tab.",
       "pickerTitle": "Open an SFTP tab",
       "pickerDescription": "Pick the host to browse."
+    },
+    "move": {
+      "titleOne": "Move “{{name}}” to…",
+      "titleMany": "Move {{count}} items to…",
+      "destination": "Destination folder",
+      "conflict": "Already in the destination folder: {{names}}. Rename or delete those first.",
+      "nothingToDo": "Already in that folder.",
+      "intoItself": "A folder cannot be moved into itself."
     }
   },
   "commandConfirm": {

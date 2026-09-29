@@ -35,6 +35,8 @@ function title(plan: SftpPlan, host: string): string {
       return translate('sftpPage.confirm.mkdirTitle', 'Create a folder on {{host}}?', { host })
     case 'rename':
       return translate('sftpPage.confirm.renameTitle', 'Rename on {{host}}?', { host })
+    case 'move':
+      return translate('sftpPage.confirm.moveTitle', 'Move on {{host}}?', { host })
     case 'remove':
       return translate('sftpPage.delete.title', 'Delete from {{host}}?', { host })
   }
@@ -50,6 +52,8 @@ function confirmLabel(plan: SftpPlan): string {
       return translate('sftpPage.remote.create', 'Create')
     case 'rename':
       return translate('sftpPage.remote.rename', 'Rename')
+    case 'move':
+      return translate('sftpPage.remote.move', 'Move')
     case 'remove':
       return translate('sftpPage.delete.confirm', 'Delete')
   }
@@ -125,6 +129,15 @@ function notes(plan: SftpPlan): string[] {
     )
   }
   return result
+}
+
+/** Why a move was refused: OpenSSH's rename never replaces an entry that is already there. */
+export function sftpMoveConflictMessage(plan: SftpPlan): string {
+  return translate(
+    'sftpPage.move.conflict',
+    'Already in the destination folder: {{names}}. Rename or delete those first.',
+    { names: listNames(plan.conflicts) }
+  )
 }
 
 /** The confirm dialog for a plan; its commands are the stored plan, line for line. */
