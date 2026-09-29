@@ -39,22 +39,21 @@ export default function SshPage({ isVisible }: { isVisible: boolean }): React.JS
         'SSH sessions are available in the desktop app only.'
       )}
     >
-      <div className="flex min-h-0 flex-1">
-        {isHostListCollapsed ? null : (
-          <SshHostListPanel
-            page="ssh"
-            list={list}
-            currentTargetId={currentTargetId}
-            onSelect={openSshSession}
-          />
-        )}
-        <SshSessionsSurface
-          isVisible={isVisible}
-          items={items}
-          onNewSession={openPicker}
-          leadingControl={isHostListCollapsed ? <HostListToggleButton page="ssh" /> : null}
-        />
-      </div>
+      <SshSessionsSurface
+        isVisible={isVisible}
+        items={items}
+        onNewSession={openPicker}
+        leadingControl={<HostListToggleButton page="ssh" />}
+        sidePanel={
+          isHostListCollapsed ? null : (
+            <SshHostListPanel
+              list={list}
+              currentTargetId={currentTargetId}
+              onSelect={openSshSession}
+            />
+          )
+        }
+      />
       <SshHostPickerDialog
         open={pickerOpen}
         onOpenChange={setPickerOpen}

@@ -21,8 +21,8 @@ export default function SftpPage(): React.JSX.Element {
       <div className="flex min-h-0 flex-1">
         {isHostListCollapsed ? null : (
           <SshHostListPanel
-            page="sftp"
             list={list}
+            toggle={<HostListToggleButton page="sftp" />}
             currentTargetId={currentTargetId}
             onSelect={(target) => setCurrentTargetId(target.id)}
           />
