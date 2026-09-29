@@ -19235,6 +19235,10 @@
       "description": "This runs: {{value0}}",
       "confirm": "Publish"
     },
+    "publishDialog": {
+      "title": "Publish to folder",
+      "description": "Saved as a run configuration for this repository, so the Run widget can publish again with the same settings."
+    },
     "configurations": {
       "import": {
         "notFound": "This workspace has no .vscode/launch.json",
@@ -19311,7 +19315,30 @@
       "add": {
         "command": "Add command configuration",
         "debug": "Add debug configuration",
-        "compound": "Add compound (start several together or in order)"
+        "compound": "Add compound (start several together or in order)",
+        "dotnetPublish": "Add .NET publish to folder"
+      },
+      "publish": {
+        "targetLocation": "Target location",
+        "targetLocationHint": "Relative to the workspace root, or absolute. Empty uses bin/<configuration>/<framework>/publish.",
+        "browse": "Browse…",
+        "runtime": "Target runtime",
+        "portable": "Portable",
+        "deploymentMode": "Deployment mode",
+        "frameworkDependent": "Framework-dependent",
+        "selfContained": "Self-contained",
+        "projectFileHint": "Relative to the workspace root, or absolute.",
+        "configuration": "Configuration",
+        "framework": "Target framework",
+        "projectDefault": "Project default",
+        "fileOptions": "File publish options",
+        "fileOptionsHint": "These need a target runtime; trimming also needs a self-contained app.",
+        "singleFile": "Produce single file",
+        "readyToRun": "Enable ReadyToRun compilation",
+        "trimmed": "Trim unused code",
+        "extraArgs": "Additional arguments",
+        "extraArgsHint": "Appended to the command as written, e.g. -p:Version=1.2.3",
+        "command": "Runs from the workspace root"
       }
     },
     "widget": {

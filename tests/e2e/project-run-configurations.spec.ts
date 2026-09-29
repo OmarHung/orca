@@ -58,7 +58,10 @@ test('offers Build/Run/Publish for .NET and Node projects in the file tree and r
 
   const dotnet = path.join(root, 'Project2')
   mkdirSync(path.join(dotnet, 'Properties', 'PublishProfiles'), { recursive: true })
-  writeFileSync(path.join(dotnet, 'Project2.csproj'), '<Project Sdk="Microsoft.NET.Sdk.Web" />')
+  writeFileSync(
+    path.join(dotnet, 'Project2.csproj'),
+    '<Project Sdk="Microsoft.NET.Sdk.Web"><PropertyGroup><TargetFramework>net8.0</TargetFramework></PropertyGroup></Project>'
+  )
   writeFileSync(path.join(dotnet, 'Properties', 'launchSettings.json'), LAUNCH_SETTINGS)
   writeFileSync(
     path.join(dotnet, 'Properties', 'PublishProfiles', 'FolderProfile.pubxml'),
@@ -79,13 +82,26 @@ test('offers Build/Run/Publish for .NET and Node projects in the file tree and r
   await expect(publish).toBeVisible()
   await orcaPage.screenshot({ path: testInfo.outputPath('dotnet-context-menu.png') })
   await publish.click()
-  // Publishing asks first and shows the exact command.
+  // Publish opens Rider's "Publish to folder" settings with the exact command.
+  const publishDialog = orcaPage.getByTestId('dotnet-publish-dialog')
+  await expect(publishDialog.getByTestId('dotnet-publish-output-dir')).toHaveValue(
+    'Project2/bin/Release/net8.0/publish'
+  )
+  await expect(publishDialog.getByTestId('dotnet-publish-command')).toHaveText(
+    'dotnet publish Project2/Project2.csproj -c Release -o Project2/bin/Release/net8.0/publish'
+  )
+  await publishDialog.getByRole('button', { name: 'Cancel' }).click()
+  await expect(orcaPage.getByTestId('run-configurations-trigger')).not.toContainText('Project2')
+
+  // Publish profiles stay under More Run/Debug and ask first.
+  await explorerRow(orcaPage, 'Project2').click({ button: 'right' })
+  await orcaPage.getByRole('menuitem', { name: 'More Run/Debug' }).hover()
+  await orcaPage.getByRole('menuitem', { name: 'Publish (FolderProfile)' }).click()
   const dialog = orcaPage.getByRole('dialog').filter({ hasText: "Publish 'Project2'?" })
   await expect(dialog).toContainText(
     'dotnet publish Project2.csproj -p:PublishProfile=FolderProfile'
   )
   await dialog.getByRole('button', { name: 'Cancel' }).click()
-  await expect(orcaPage.getByTestId('run-configurations-trigger')).not.toContainText('Project2')
 
   // Node: the script runs with the project's package manager, inside the project folder.
   await explorerRow(orcaPage, 'web').click({ button: 'right' })

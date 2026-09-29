@@ -19167,6 +19167,10 @@
       "description": "将执行：{{value0}}",
       "confirm": "发布"
     },
+    "publishDialog": {
+      "title": "发布到文件夹",
+      "description": "会保存为此仓库的运行配置，之后可在运行工具栏用相同设置再次发布。"
+    },
     "configurations": {
       "cancel": "取消",
       "debugNamed": "调试 '{{value0}}'",
@@ -19243,7 +19247,30 @@
       "add": {
         "command": "添加命令配置",
         "debug": "添加调试配置",
-        "compound": "添加组合（同时或依序启动多个）"
+        "compound": "添加组合（同时或依序启动多个）",
+        "dotnetPublish": "添加 .NET 发布到文件夹"
+      },
+      "publish": {
+        "targetLocation": "目标位置",
+        "targetLocationHint": "相对于工作区根目录，也可以是绝对路径。留空则使用 bin/<configuration>/<framework>/publish。",
+        "browse": "浏览…",
+        "runtime": "目标运行时",
+        "portable": "可移植",
+        "deploymentMode": "部署模式",
+        "frameworkDependent": "依赖框架",
+        "selfContained": "独立部署",
+        "projectFileHint": "相对于工作区根目录，也可以是绝对路径。",
+        "configuration": "编译配置",
+        "framework": "目标框架",
+        "projectDefault": "项目默认值",
+        "fileOptions": "文件发布选项",
+        "fileOptionsHint": "这些选项需要目标运行时；裁剪还需要独立部署。",
+        "singleFile": "产生单一文件",
+        "readyToRun": "启用 ReadyToRun 编译",
+        "trimmed": "裁剪未使用的代码",
+        "extraArgs": "附加参数",
+        "extraArgsHint": "按原样附加到命令末尾，例如 -p:Version=1.2.3",
+        "command": "在工作区根目录执行"
       }
     },
     "widget": {
