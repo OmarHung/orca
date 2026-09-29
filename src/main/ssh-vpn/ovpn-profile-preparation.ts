@@ -3,11 +3,14 @@ import path from 'node:path'
 /** Where the profile and its files live inside the VPN container (a tmpfs, never on disk). */
 export const CONTAINER_PROFILE_DIR = '/run/orca'
 export const CONTAINER_PROFILE_PATH = `${CONTAINER_PROFILE_DIR}/profile.ovpn`
+/** Username and password lines for `--auth-user-pass`, when the profile asks for a login. */
+export const CONTAINER_LOGIN_PATH = `${CONTAINER_PROFILE_DIR}/login`
 
-const MAX_PROFILE_FILE_BYTES = 1024 * 1024
+export const MAX_PROFILE_FILE_BYTES = 1024 * 1024
 
 /** Directives whose first argument is a file OpenVPN reads, unless it is `[inline]`. */
 const FILE_DIRECTIVES = new Set([
+  'auth-user-pass',
   'ca',
   'cert',
   'key',
@@ -23,7 +26,6 @@ const FILE_DIRECTIVES = new Set([
 
 /** Directives this version cannot honour; each maps to the reason shown to the user. */
 const UNSUPPORTED_DIRECTIVES = new Map([
-  ['auth-user-pass', 'username/password login'],
   ['static-challenge', 'one-time codes (MFA)'],
   ['askpass', 'password-protected private keys'],
   ['pkcs11-providers', 'hardware tokens'],
@@ -50,9 +52,13 @@ const DROPPED_DIRECTIVES = new Set([
   'down',
   'down-pre',
   'up-restart',
+  // Why: `auth-retry interact` would wait on a console prompt nobody can answer.
+  'auth-retry',
   'route-up',
   'route-pre-down',
-  'ipchange'
+  'ipchange',
+  // Why: a plugin (e.g. down-root) can run arbitrary commands with the container's privileges.
+  'plugin'
 ])
 
 const ENCRYPTED_PEM = /BEGIN ENCRYPTED PRIVATE KEY|Proc-Type:\s*4,ENCRYPTED/
@@ -64,6 +70,8 @@ export type PreparedOvpnProfile = {
   config: string
   /** Files the profile references, to write next to it. */
   files: PreparedOvpnFile[]
+  /** The profile asks for a username and password that Orca must supply (`auth-user-pass` with no file). */
+  needsCredentials: boolean
 }
 
 export class OvpnProfileError extends Error {
@@ -181,6 +189,7 @@ export async function prepareOvpnProfile(
   const files: PreparedOvpnFile[] = []
   const unsupported = new Set<string>()
   let inlineTag: string | null = null
+  let needsCredentials = false
   let inlineBody = ''
 
   for (const line of source.split(/\r?\n/)) {
@@ -208,15 +217,23 @@ export async function prepareOvpnProfile(
       output.push(line)
       continue
     }
-    const [rawDirective, ...args] = tokenizeOvpnLine(trimmed)
+    const tokens = tokenizeOvpnLine(trimmed)
+    // Why: `setenv opt X …` is X, ignored only if unknown, so it must pass the same checks as X.
+    const isOptional = tokens[0]?.toLowerCase() === 'setenv' && tokens[1]?.toLowerCase() === 'opt'
+    const [rawDirective, ...args] = isOptional ? tokens.slice(2) : tokens
     // Why: OpenVPN accepts the command-line spelling (`--ca`) in config files too.
-    const directive = rawDirective.replace(/^--/, '').toLowerCase()
+    const directive = (rawDirective ?? '').replace(/^--/, '').toLowerCase()
     const unsupportedReason = UNSUPPORTED_DIRECTIVES.get(directive)
     if (unsupportedReason) {
       unsupported.add(unsupportedReason)
       continue
     }
     if (DROPPED_DIRECTIVES.has(directive)) {
+      continue
+    }
+    // Why: with no file, OpenVPN would prompt on a console; Orca supplies --auth-user-pass instead.
+    if (directive === 'auth-user-pass' && args.length === 0) {
+      needsCredentials = true
       continue
     }
     if (!FILE_DIRECTIVES.has(directive) || args.length === 0 || args[0] === '[inline]') {
@@ -239,12 +256,12 @@ export async function prepareOvpnProfile(
 
   if (unsupported.size > 0) {
     throw new OvpnProfileError(
-      `This profile needs ${[...unsupported].join(', ')}, which Orca's VPN connection does not support yet. Use a certificate-only profile.`
+      `This profile needs ${[...unsupported].join(', ')}, which Orca's VPN connection does not support yet.`
     )
   }
   if (inlineTag) {
     throw new OvpnProfileError(`The profile's <${inlineTag}> block is never closed`)
   }
   const config = output.join('\n')
-  return { config: config.endsWith('\n') ? config : `${config}\n`, files }
+  return { config: config.endsWith('\n') ? config : `${config}\n`, files, needsCredentials }
 }

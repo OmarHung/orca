@@ -3,6 +3,7 @@ import { translate } from '@/i18n/i18n'
 import type { SshVpnStartConfirmRequest } from '../../../../shared/ssh-vpn-types'
 import { useCommandConfirm } from '../command-confirm/command-confirm-context'
 import { CommandConfirmProvider } from '../command-confirm/CommandConfirmProvider'
+import { SshVpnLoginPromptHost } from './SshVpnLoginPromptHost'
 
 function describeRequest(request: SshVpnStartConfirmRequest): string[] {
   return [
@@ -45,11 +46,15 @@ function StartConfirmListener(): null {
   return null
 }
 
-/** Mounted once at the app root: main asks here before any VPN starts, whichever page needs it. */
+/**
+ * Mounted once at the app root: main asks here before any VPN starts, and for its login when one
+ * is needed, whichever page needs it.
+ */
 export function SshVpnStartConfirmHost(): React.JSX.Element {
   return (
     <CommandConfirmProvider>
       <StartConfirmListener />
+      <SshVpnLoginPromptHost />
     </CommandConfirmProvider>
   )
 }
