@@ -102,7 +102,7 @@ describe.skipIf(!ENABLED)('SSH through a per-host OpenVPN container (Docker)', (
       instanceTag,
       readFile: (filePath) => readFile(filePath)
     })
-    service = new SshVpnService(store, manager)
+    service = new SshVpnService({ store, manager })
   }, 600_000)
 
   afterAll(async () => {
