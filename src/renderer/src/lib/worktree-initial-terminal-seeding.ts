@@ -27,6 +27,10 @@ import {
 import { applyDefaultTerminalTabs } from '@/lib/worktree-default-terminal-tabs'
 import { openDefaultAgentChatInEmptyWorkspace } from '@/lib/empty-workspace-default-agent-chat'
 import { isEmptyWorkspaceDefaultSurfacePending } from '@/lib/empty-workspace-default-surface-claims'
+import {
+  buildProjectInitialTabStartup,
+  projectOpensPlainTerminal
+} from '@/lib/project-initial-tab-startup'
 
 function getSetupRunnerCommandPlatformForLaunch(setup: WorktreeSetupLaunch): 'windows' | 'posix' {
   return getSetupRunnerCommandPlatformForPath(
@@ -39,6 +43,7 @@ export type GatedEmptyWorkspaceReseedIntent = {
   callerProvidesSurface: boolean
   seedUserDefaultSurface: boolean
   executionHostId?: ExecutionHostId
+  blankTerminalSelected?: boolean
 }
 
 /** Re-seed after an empty gate unless its activation owns the surface or no longer owns the host. */
@@ -46,7 +51,8 @@ export function reseedGatedEmptyWorkspace(
   workspaceKey: string,
   intent: GatedEmptyWorkspaceReseedIntent
 ): void {
-  const { callerProvidesSurface, seedUserDefaultSurface, executionHostId } = intent
+  const { callerProvidesSurface, seedUserDefaultSurface, executionHostId, blankTerminalSelected } =
+    intent
   const state = useAppStore.getState()
   if (
     callerProvidesSurface === true ||
@@ -65,7 +71,8 @@ export function reseedGatedEmptyWorkspace(
     undefined,
     {
       reseedEmptiedWorkspace: true,
-      ...(seedUserDefaultSurface ? { seedUserDefaultSurface: true } : {})
+      ...(seedUserDefaultSurface ? { seedUserDefaultSurface: true } : {}),
+      ...(blankTerminalSelected ? { blankTerminalSelected: true } : {})
     }
   )
 }
@@ -230,6 +237,17 @@ export function ensureWorktreeHasInitialTerminal(
     }
     return null
   }
+  // Why: only opening the workspace passively gets the project's initial tab; launch work,
+  // background creates and a Blank Terminal pick keep a shell.
+  if (
+    shouldAutoCreate &&
+    !hasExplicitLaunchWork &&
+    defaultTabs === undefined &&
+    opts?.activateCreatedTabs !== false &&
+    opts?.blankTerminalSelected !== true
+  ) {
+    sequencedStartup = buildProjectInitialTabStartup(useAppStore.getState(), worktreeId)
+  }
 
   const templatedTabId = applyDefaultTerminalTabs(
     store,
@@ -247,6 +265,9 @@ export function ensureWorktreeHasInitialTerminal(
   if (
     opts?.seedUserDefaultSurface === true &&
     !hasExplicitLaunchWork &&
+    // Fork: the project's initial agent wins, and a project set to Terminal keeps its shell.
+    sequencedStartup === undefined &&
+    !projectOpensPlainTerminal(useAppStore.getState(), worktreeId) &&
     opts.activateCreatedTabs !== false
   ) {
     // A host's "no" to the chat seeds what this same call would have without the default chat.

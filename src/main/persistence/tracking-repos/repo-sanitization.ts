@@ -3,6 +3,7 @@ import type { Repo } from '../../../shared/repo-types'
 import type { GitRemoteIdentity } from '../../../shared/git-remote-identity'
 import { normalizeRepoBadgeColor } from '../../../shared/repo-badge-color'
 import { sanitizeRepoIcon } from '../../../shared/repo-icon'
+import { isRepoInitialTab } from '../../../shared/repo-initial-tab'
 import { normalizeGhAccountBinding } from '../../../shared/github/account-binding'
 import { normalizeJiraProjectReference } from '../../../shared/jira-project-reference'
 import type { GhAccountBinding } from '../../../shared/github/account-binding'
@@ -80,6 +81,7 @@ export function sanitizeRepoUpdatesForPersistence<
       | 'projectHostSetupMethod'
       | 'forkSyncMode'
       | 'defaultJiraProject'
+      | 'initialTab'
       | 'customWorktreeVisibilitySources'
       | 'worktreeVisibilitySourcePreferences'
     >
@@ -151,6 +153,9 @@ export function sanitizeRepoUpdatesForPersistence<
     } else {
       sanitized.forkSyncMode = forkSyncMode
     }
+  }
+  if ('initialTab' in sanitized && !isRepoInitialTab(sanitized.initialTab)) {
+    delete sanitized.initialTab
   }
   // Why: `null` is the clear sentinel for updateRepo; only malformed shapes are dropped.
   if ('ghAccount' in sanitized && sanitized.ghAccount != null) {
