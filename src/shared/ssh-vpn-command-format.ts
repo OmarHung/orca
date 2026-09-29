@@ -42,6 +42,26 @@ export function sshVpnTunnelArgs(containerName: string, host: string, port: stri
   ]
 }
 
+/** Checks that the VPN reaches host:port (`nc -z`: connect, send nothing, exit 0 on success). */
+export function sshVpnReachabilityArgs(
+  containerName: string,
+  host: string,
+  port: string
+): string[] {
+  return [
+    'exec',
+    '--user',
+    SSH_VPN_TUNNEL_USER,
+    containerName,
+    'nc',
+    '-z',
+    '-w',
+    TUNNEL_CONNECT_TIMEOUT_SECONDS,
+    host,
+    port
+  ]
+}
+
 /**
  * The ProxyCommand OpenSSH runs for a host routed through the VPN. OpenSSH hands it to
  * `$SHELL -c` on POSIX and to CreateProcess on Windows, so the docker path is quoted for that.

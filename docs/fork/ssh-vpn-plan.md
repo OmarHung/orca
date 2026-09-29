@@ -335,6 +335,18 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 - 刪除主機後殘留的指派：VPN UI 每次載入時，依 SSH 主機清單清掉（不必掛在 upstream 的刪除流程上；重新加入的主機會拿到新的 id）。
 - **更正 Phase 0 對 `orca serve` 的推測**：main 的 SSH 連線都由 `registerSshHandlers` 建立，它只在有視窗的模式執行，而且在 `registerCoreHandlers`（VPN 服務註冊的地方）之後（`desktop-startup-ordering.test.ts` 保證這個順序）。沒有視窗時 main 不建立 SSH 連線，所以不存在繞過 VPN 的路徑，不需要另外處理。
 
+### 資料庫連線走 VPN（2026-09-29，使用者要求）
+
+- 資料庫的伺服器連線（PostgreSQL、MySQL／MariaDB、SQL Server）多一個「VPN」欄位，選的是設定 → SSH 裡同一批 VPN 設定檔。存在資料庫連線自己的 `vpnProfileId`（fork 自己的型別，不必像 SSH 主機那樣另存到 `ssh-vpn.json`）。
+- 做法沿用資料庫 SSH 通道的形狀：main 開一個 `127.0.0.1` 的本機 port，每條進來的連線各跑一個 `docker exec -i --user tunnel <容器> nc -w 30 <主機> <埠>`（`database-vpn-tunnel.ts`）。driver 和原生 pg_dump／mysqldump 都連這個 port，所以不用各自支援自訂 socket。
+- 連線前先用 `nc -z` 探測一次，連不到時直接說「VPN X could not reach host:port（nc 的原因）」，不會開出一個死的 port。
+- 一樣 fail closed：VPN 起不來、被拒絕、設定檔被刪掉，或連線途中 VPN 斷掉（監聽 manager 的狀態），連線就失敗或結束，不會改成直接連線。VPN 沒有 `ready` 時進來的連線直接關掉，不會 spawn。
+- 啟動 VPN 用同一個確認框和登入框，說明文字是「Connecting to <連線名稱> needs this VPN.」。
+- 關閉時只關掉 `nc` 的 stdin（`nc -w 30` 會在 30 秒內結束），不直接 kill `docker exec`，否則 `nc` 會留在容器裡，被閒置檢查當成使用中。
+- 跟 SSH 通道擇一：選了 SSH 通道時 VPN 欄位停用，因為 SSH 通道本來就會套用那台 SSH 主機自己的 VPN 設定；兩者同時存在的舊資料會被 main 拒絕。
+- 掛載點：`ssh-vpn-database-route.ts`（跟 `ssh-vpn-route.ts` 一樣的 seam，VPN runtime 在資料庫 handler 之後註冊）。`SshVpnService.connect` 多收一個連線名稱並回傳設定檔名稱。
+- 測試：單元（tunnel 7、session manager 4、表單 1、對話框 1）；Docker 整合 4 個（VPN 外連不到、經 VPN 的 DNS 名稱連到並在關閉後容器內沒有殘留 `nc`、連不到時的錯誤、VPN 停掉時結束連線）；e2e 1 個（MariaDB 10.5 放在只有 VPN 連得到的網路，走對話框選 VPN、測試、存檔、開 console 查詢）。測試內網多了 `startBehindVpn`。
+
 ## 10. 使用說明與已知限制
 
 **需求**：Docker Desktop、OrbStack 或 Colima 正在執行。第一次連線會在本機建置 `orca-ssh-vpn:<雜湊>` 映像檔（需要連網，約數十秒）。
@@ -349,6 +361,8 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 - 沒有連線使用時，閒置設定的分鐘數（預設 10）後自動斷線；關閉 Orca 時一定移除容器。當機留下的容器會在下次啟動時清掉。
 - VPN 起不來、設定檔壞掉、或主機的 VPN 設定檔不見時，一律拒絕連線，不會改成直接連線。
 
+**資料庫連線**：新增或編輯資料庫連線時，在「VPN」欄位選設定檔即可（SQLite 沒有這個欄位）。主機和埠要填 VPN 內部看到的位址。連線期間 main 會開一個 `127.0.0.1` 的本機 port 接到 VPN，本機其他程式在這段時間也能連到它（跟資料庫的 SSH 通道一樣）。
+
 **已知限制**：
 - 不支援：一次性驗證碼（MFA，`static-challenge`）、SSO／SAML、硬體權杖、密碼保護的私鑰。
 - 主機若已經設定 ProxyJump／ProxyCommand（包含 `~/.ssh/config` 的 `Host *`），不能再指定 VPN。
@@ -358,6 +372,6 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 **測試**：
 ```
 node_modules/.bin/vitest run --config config/vitest.config.ts src/main/ssh-vpn src/shared/ssh-vpn-command-format.test.ts src/renderer/src/components/ssh-vpn src/renderer/src/components/ssh-page
-ORCA_TEST_SSH_VPN_DOCKER=1 node_modules/.bin/vitest run --config config/vitest.config.ts src/main/ssh-vpn/ssh-vpn-docker.integration.test.ts
-ORCA_E2E_SSH_VPN_DOCKER=1 node_modules/.bin/playwright test --config tests/playwright.config.ts tests/e2e/ssh-vpn-docker.spec.ts
+ORCA_TEST_SSH_VPN_DOCKER=1 node_modules/.bin/vitest run --config config/vitest.config.ts src/main/ssh-vpn/ssh-vpn-docker.integration.test.ts src/main/database/database-vpn-tunnel.integration.test.ts
+ORCA_E2E_SSH_VPN_DOCKER=1 node_modules/.bin/playwright test --config tests/playwright.config.ts tests/e2e/ssh-vpn-docker.spec.ts tests/e2e/database-vpn-docker.spec.ts
 ```
