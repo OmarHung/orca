@@ -233,8 +233,8 @@ export function AppWorkspaceShell(props: {
               list={<WorktreeSidebar layout={layout} scrollRefs={sidebarScrollRefs} />}
             />
             <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
-              {/* Every page sits under the top bar; window controls and board sheets rely on it. */}
-              {layout.stackedSidebarOpen ? (
+              {/* Every page sits under the top bar; window controls and board sheets rely on it. Fork: the SSH page's tab strip is its titlebar. */}
+              {layout.stackedSidebarOpen && layout.activeView !== 'ssh' ? (
                 <div className="titlebar">{titlebarMainStrip}</div>
               ) : null}
               <div className="relative flex flex-1 min-w-0 min-h-0 overflow-hidden">

@@ -1,14 +1,13 @@
 import type { SshTarget } from '../../../../shared/ssh-types'
 import { Button } from '../ui/button'
 import { translate } from '@/i18n/i18n'
-import { HostListToggleButton } from './HostListToggleButton'
-import type { RemoteHostsPageId } from './remote-hosts-layout-store'
 import { SshHostList } from './SshHostList'
 import type { SshTargetList } from './use-ssh-target-list'
 
 type SshHostListPanelProps = {
-  page: RemoteHostsPageId
   list: SshTargetList
+  /** Collapse button for pages that don't host it in their own chrome. */
+  toggle?: React.ReactNode
   currentTargetId?: string | null
   onSelect: (target: SshTarget) => void
 }
@@ -19,13 +18,12 @@ function StatusMessage({ children }: { children: React.ReactNode }): React.JSX.E
 
 /** The host column of the SSH and SFTP pages, including its loading and empty states. */
 export function SshHostListPanel({
-  page,
   list,
+  toggle,
   currentTargetId,
   onSelect
 }: SshHostListPanelProps): React.JSX.Element {
   const { status, targets, reload } = list
-  const toggle = <HostListToggleButton page={page} />
 
   if (status === 'ready' && targets.length > 0) {
     return (
@@ -42,7 +40,7 @@ export function SshHostListPanel({
 
   return (
     <div className="flex w-72 shrink-0 flex-col border-r border-border">
-      <div className="flex shrink-0 justify-end p-2">{toggle}</div>
+      {toggle ? <div className="flex shrink-0 justify-end p-2">{toggle}</div> : null}
       {status === 'loading' ? (
         <StatusMessage>{translate('sshPage.hostList.loading', 'Loading hosts…')}</StatusMessage>
       ) : status === 'error' ? (
