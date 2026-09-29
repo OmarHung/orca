@@ -19308,6 +19308,22 @@
       "retry": "Retry",
       "empty": "This folder is empty."
     },
+    "column": {
+      "menu": "Show columns",
+      "name": "Name",
+      "size": "Size",
+      "created": "Created",
+      "modified": "Modified",
+      "type": "Type",
+      "owner": "Owner"
+    },
+    "type": {
+      "folder": "Folder",
+      "link": "Link",
+      "other": "Special file",
+      "file": "File",
+      "fileWithExtension": "{{ext}} file"
+    },
     "delete": {
       "title": "Delete from {{host}}?",
       "description": "{{names}}{{more}} will be deleted permanently, including everything inside folders. This cannot be undone.",
