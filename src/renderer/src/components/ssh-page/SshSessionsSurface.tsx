@@ -15,8 +15,10 @@ type SshSessionsSurfaceProps = {
   isVisible: boolean
   items: SshSessionItems
   onNewSession: () => void
-  /** Shown before the tabs, e.g. the button that reopens a collapsed host list. */
+  /** Shown before the tabs, e.g. the host list toggle. */
   leadingControl?: React.ReactNode
+  /** Column left of the terminals, under the tab strip (the host list). */
+  sidePanel?: React.ReactNode
 }
 
 function tabsBeside(order: readonly string[], tabId: string, side: 'left' | 'right'): string[] {
@@ -31,7 +33,8 @@ export function SshSessionsSurface({
   isVisible,
   items,
   onNewSession,
-  leadingControl
+  leadingControl,
+  sidePanel
 }: SshSessionsSurfaceProps): React.JSX.Element {
   const cwd = useSshSessionCwd()
   const setTabCustomTitle = useAppStore((s) => s.setTabCustomTitle)
@@ -41,10 +44,20 @@ export function SshSessionsSurface({
   const order = items.tabBarOrder.length > 0 ? items.tabBarOrder : terminalItems.map((t) => t.id)
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
-      <div className="flex h-9 shrink-0 items-center border-b border-border">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      {/* Why: this strip is the page's titlebar (the stacked one is skipped for 'ssh'), so it
+          drags the window like a workspace tab row and lines up with the sidebar header. */}
+      <div
+        className="flex h-9 shrink-0 items-center border-b border-border bg-card"
+        data-terminal-focus-release-surface="true"
+      >
         {leadingControl ? (
-          <div className="flex shrink-0 items-center pl-1">{leadingControl}</div>
+          <div
+            className="flex shrink-0 items-center pl-1"
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          >
+            {leadingControl}
+          </div>
         ) : null}
         <FloatingWorkspaceTabDragContext enabled={isVisible} worktreeId={SSH_SESSIONS_WORKTREE_ID}>
           <TabBar
@@ -71,46 +84,50 @@ export function SshSessionsSurface({
             }
           />
         </FloatingWorkspaceTabDragContext>
+        <div className="window-controls-titlebar-spacer" />
       </div>
-      <div className="relative min-h-0 flex-1 overflow-hidden bg-background">
-        {cwd
-          ? tabs
-              .filter((tab) => !parkedTerminalTabIds.has(tab.id))
-              .map((tab) => {
-                const isActive = tab.id === activeTerminalId
-                return (
-                  <div
-                    key={`${tab.id}-${tab.generation ?? 0}`}
-                    className={isActive ? 'absolute inset-0' : 'absolute inset-0 hidden'}
-                    aria-hidden={!isActive}
-                  >
-                    <TerminalPane
-                      tabId={tab.id}
-                      worktreeId={SSH_SESSIONS_WORKTREE_ID}
-                      cwd={cwd}
-                      isActive={isActive}
-                      isVisible={isActive && isVisible}
-                      onPtyExit={(ptyId, exitCode) => {
-                        if (exitCode !== undefined && !isProvenProcessExit(exitCode)) {
-                          useAppStore.getState().markUnverifiedPtyLoss(tab.id)
-                          return
-                        }
-                        if (shouldDeferParkedPtyExitTabClose(tab.id, ptyId)) {
-                          return
-                        }
-                        closeTerminalTab(tab.id, { reason: 'pty-exit', lifecyclePtyId: ptyId })
-                      }}
-                      onCloseTab={() => closeSshSession(tab.id)}
-                    />
-                  </div>
-                )
-              })
-          : null}
-        {terminalItems.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-            {translate('sshPage.page.pickHost', 'Pick a host to open an SSH session.')}
-          </div>
-        ) : null}
+      <div className="flex min-h-0 flex-1">
+        {sidePanel}
+        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden bg-background">
+          {cwd
+            ? tabs
+                .filter((tab) => !parkedTerminalTabIds.has(tab.id))
+                .map((tab) => {
+                  const isActive = tab.id === activeTerminalId
+                  return (
+                    <div
+                      key={`${tab.id}-${tab.generation ?? 0}`}
+                      className={isActive ? 'absolute inset-0' : 'absolute inset-0 hidden'}
+                      aria-hidden={!isActive}
+                    >
+                      <TerminalPane
+                        tabId={tab.id}
+                        worktreeId={SSH_SESSIONS_WORKTREE_ID}
+                        cwd={cwd}
+                        isActive={isActive}
+                        isVisible={isActive && isVisible}
+                        onPtyExit={(ptyId, exitCode) => {
+                          if (exitCode !== undefined && !isProvenProcessExit(exitCode)) {
+                            useAppStore.getState().markUnverifiedPtyLoss(tab.id)
+                            return
+                          }
+                          if (shouldDeferParkedPtyExitTabClose(tab.id, ptyId)) {
+                            return
+                          }
+                          closeTerminalTab(tab.id, { reason: 'pty-exit', lifecyclePtyId: ptyId })
+                        }}
+                        onCloseTab={() => closeSshSession(tab.id)}
+                      />
+                    </div>
+                  )
+                })
+            : null}
+          {terminalItems.length === 0 ? (
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+              {translate('sshPage.page.pickHost', 'Pick a host to open an SSH session.')}
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   )
