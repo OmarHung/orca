@@ -129,3 +129,5 @@ export type TopLevelView =
   | 'artifacts'
   | 'mobile'
   | 'database'
+  | 'ssh'
+  | 'sftp'

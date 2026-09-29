@@ -13,6 +13,7 @@ import { SetupGuideSidebarEntry } from './SetupGuideSidebarEntry'
 import { SidebarTaskNavButton } from './SidebarTaskNavButton'
 import { HideSidebarMenu } from './sidebar-nav-controls'
 import { useTranslate } from '@/i18n/use-translate'
+import { SshSidebarNavEntries } from '../ssh-page/SshSidebarNavEntries'
 import { lazyWithRetry } from '@/app-shell/startup/lazy-with-retry'
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
 
@@ -206,6 +207,7 @@ const SidebarNav = React.memo(function SidebarNav() {
           <HideSidebarMenu onHide={hideAutomationsButton} />
         </ContextMenu>
       ) : null}
+      <SshSidebarNavEntries />
       {showAgentDashboardButton ? (
         <React.Suspense fallback={null}>
           <AgentDashboardSidebarEntry />
