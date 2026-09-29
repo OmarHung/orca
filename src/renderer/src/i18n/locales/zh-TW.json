@@ -18750,7 +18750,8 @@
         "trimmed": "裁剪未使用的程式碼",
         "extraArgs": "附加引數",
         "extraArgsHint": "按原樣附加到命令末尾，例如 -p:Version=1.2.3",
-        "command": "在工作區根目錄執行"
+        "command": "在工作區根目錄執行",
+        "unsafePath": "專案檔案或輸出資料夾包含無法安全傳給 shell 的字元，例如 \" $ ` % 或 !。"
       }
     },
     "widget": {
@@ -18802,7 +18803,8 @@
       "addedEverything": "找到的 run 都已加入",
       "search": "篩選 run",
       "noMatch": "沒有符合的 run"
-    }
+    },
+    "unsafeShellPath": "此檔案的路徑包含無法安全傳給 shell 的字元，例如 \" $ ` % 或 !。"
   },
   "python": {
     "interpreter": {
