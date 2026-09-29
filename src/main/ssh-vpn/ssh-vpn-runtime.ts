@@ -4,7 +4,8 @@ import type {
   SshVpnCredentialRequest,
   SshVpnCredentials,
   SshVpnProfileState,
-  SshVpnStartConfirmRequest
+  SshVpnStartConfirmRequest,
+  SshVpnStatus
 } from '../../shared/ssh-vpn-types'
 import { runProcessSync } from '../../shared/child-process/run-process'
 import type { SecretStore } from '../../shared/secret-store'
@@ -19,6 +20,7 @@ import { SshVpnLogins } from './ssh-vpn-logins'
 import { SshVpnManager } from './ssh-vpn-manager'
 import type { SshVpnDockerPort } from './ssh-vpn-manager-types'
 import { SshVpnPasswordVault } from './ssh-vpn-password-vault'
+import { setSshVpnDatabaseRoutes } from './ssh-vpn-database-route'
 import { SshVpnRendererRequests } from './ssh-vpn-renderer-requests'
 import { setSshVpnRouteProvider } from './ssh-vpn-route'
 import { SshVpnService } from './ssh-vpn-service'
@@ -72,12 +74,18 @@ export function createSshVpnRuntime(options: SshVpnRuntimeOptions): SshVpnRuntim
     join(options.userDataPath, 'ssh-vpn-passwords.json'),
     options.secretStore
   )
+  const stateWatchers = new Set<(state: SshVpnProfileState) => void>()
   const manager = new SshVpnManager({
     docker: createDockerResolver(),
     // Why: scopes containers to this profile directory, so a dev build never removes the app's.
     instanceTag: createHash('sha256').update(options.userDataPath).digest('hex').slice(0, 8),
     readFile: readOvpnProfileFile,
-    onStateChange: options.onStateChange
+    onStateChange: (state) => {
+      options.onStateChange(state)
+      for (const watcher of stateWatchers) {
+        watcher(state)
+      }
+    }
   })
   const approvals = new SshVpnRendererRequests<SshVpnStartConfirmRequest, boolean>(
     options.sendStartConfirm,
@@ -107,6 +115,23 @@ export function createSshVpnRuntime(options: SshVpnRuntimeOptions): SshVpnRuntim
     })
   })
   setSshVpnRouteProvider(service)
+  setSshVpnDatabaseRoutes({
+    prepare: async (profileId, connectionLabel) => ({
+      profileName: await service.connect(profileId, connectionLabel)
+    }),
+    readyRoute: (profileId) => manager.getReadyRoute(profileId),
+    watch: (profileId, listener: (status: SshVpnStatus) => void) => {
+      const watcher = (state: SshVpnProfileState): void => {
+        if (state.profileId === profileId) {
+          listener(state.status)
+        }
+      }
+      stateWatchers.add(watcher)
+      return () => {
+        stateWatchers.delete(watcher)
+      }
+    }
+  })
 
   try {
     // Why only with profiles: users who never set up a VPN should not have Orca poke Docker.
