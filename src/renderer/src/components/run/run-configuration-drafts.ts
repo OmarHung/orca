@@ -1,4 +1,5 @@
 import type { DebugLaunchTarget } from '../../../../shared/debug/debug-session-types'
+import { DEFAULT_PUBLISH_BUILD_CONFIGURATION } from '../../../../shared/run-configurations/dotnet-publish-configuration'
 import {
   normalizeRunConfigurationDefinitions,
   type RunConfigurationDefinition
@@ -56,6 +57,13 @@ export function newConfiguration(
       return { type, ...base, command: '' }
     case 'debug':
       return { type, ...base, target: emptyDebugTarget('python-file') }
+    case 'dotnet-publish':
+      return {
+        type,
+        ...base,
+        projectFile: '',
+        buildConfiguration: DEFAULT_PUBLISH_BUILD_CONFIGURATION
+      }
     case 'compound':
       return { type, ...base, configurations: [] }
   }
