@@ -1,14 +1,17 @@
 import type { SshTarget } from '../../shared/ssh-types'
 import type {
   SftpEntry,
-  SftpTransferDirection,
-  SftpTransferOutcome,
-  SftpTransferProgress,
-  SftpTransferRequest
+  SftpExecuteOutcome,
+  SftpExecuteRequest,
+  SftpPlan,
+  SftpPlanRequest,
+  SftpTransferProgress
 } from '../../shared/sftp-types'
-import { isSftpStatusError, sftpMkdir, sftpRealpath, sftpRename, type SftpOps } from './sftp-ops'
-import { listRemoteDirectory, removeRemotePath } from './sftp-remote-entries'
-import { findConflicts, planDownload, planUpload, runTransfer } from './sftp-transfer'
+import { runSftpOperations } from './sftp-operation-runner'
+import { isSftpStatusError, sftpRealpath, type SftpOps } from './sftp-ops'
+import { draftSftpPlan } from './sftp-plan-builders'
+import { SftpPlanStore } from './sftp-plan-store'
+import { listRemoteDirectory } from './sftp-remote-entries'
 
 /** The slice of SshConnection the SFTP page needs; its own connection, never the relay's. */
 export type SftpConnection = {
@@ -23,6 +26,7 @@ type SftpSessionManagerDeps = {
   createConnection: (target: SshTarget) => SftpConnection
   onProgress: (progress: SftpTransferProgress) => void
   idleMs?: number
+  plans?: SftpPlanStore
 }
 
 type Session = {
@@ -37,6 +41,7 @@ type TransferRecord = { cancelled: boolean; channel: SftpOps | null }
 
 const DEFAULT_IDLE_MS = 5 * 60_000
 const PROGRESS_INTERVAL_MS = 100
+const PLAN_EXPIRED_MESSAGE = 'This confirmation expired or was already used. Try the action again.'
 const SYSTEM_TRANSPORT_MESSAGE =
   'This host connects through the system ssh (ProxyJump, ProxyCommand or a hardware key), which SFTP does not support yet.'
 
@@ -68,8 +73,11 @@ function createProgressReporter(emit: (progress: SftpTransferProgress) => void):
 export class SftpSessionManager {
   private readonly sessions = new Map<string, Session>()
   private readonly transfers = new Map<string, TransferRecord>()
+  private readonly plans: SftpPlanStore
 
-  constructor(private readonly deps: SftpSessionManagerDeps) {}
+  constructor(private readonly deps: SftpSessionManagerDeps) {
+    this.plans = deps.plans ?? new SftpPlanStore()
+  }
 
   home(targetId: string): Promise<string> {
     return this.withBrowseChannel(targetId, (sftp) => sftpRealpath(sftp, '.'))
@@ -79,29 +87,37 @@ export class SftpSessionManager {
     return this.withBrowseChannel(targetId, (sftp) => listRemoteDirectory(sftp, dir))
   }
 
-  mkdir(targetId: string, dir: string): Promise<void> {
-    return this.withBrowseChannel(targetId, (sftp) => sftpMkdir(sftp, dir))
+  /** Lists every step an action would run; nothing changes until `execute`. */
+  async plan(request: SftpPlanRequest): Promise<SftpPlan> {
+    const draft = await this.withBrowseChannel(request.targetId, (sftp) =>
+      draftSftpPlan(sftp, request)
+    )
+    return this.plans.save({ ...draft, kind: request.kind, targetId: request.targetId })
   }
 
-  rename(targetId: string, from: string, to: string): Promise<void> {
-    return this.withBrowseChannel(targetId, (sftp) => sftpRename(sftp, from, to))
+  discardPlan(planId: string): void {
+    this.plans.discard(planId)
   }
 
-  remove(targetId: string, paths: readonly string[]): Promise<void> {
-    return this.withBrowseChannel(targetId, async (sftp) => {
-      for (const target of paths) {
-        await removeRemotePath(sftp, target)
-      }
-    })
+  /** Runs the stored plan the user confirmed, exactly as it was shown. */
+  async execute(request: SftpExecuteRequest): Promise<SftpExecuteOutcome> {
+    const plan = this.plans.take(request.planId)
+    if (!plan) {
+      throw new Error(PLAN_EXPIRED_MESSAGE)
+    }
+    if (plan.kind === 'upload' || plan.kind === 'download') {
+      return this.executeTransfer(plan, request.transferId)
+    }
+    await this.withBrowseChannel(plan.targetId, (sftp) =>
+      runSftpOperations(sftp, plan.operations, () => undefined)
+    )
+    return { status: 'done' }
   }
 
-  async transfer(
-    direction: SftpTransferDirection,
-    request: SftpTransferRequest
-  ): Promise<SftpTransferOutcome> {
-    const session = await this.ensureSession(request.targetId)
+  private async executeTransfer(plan: SftpPlan, transferId: string): Promise<SftpExecuteOutcome> {
+    const session = await this.ensureSession(plan.targetId)
     const record: TransferRecord = { cancelled: false, channel: null }
-    this.transfers.set(request.transferId, record)
+    this.transfers.set(transferId, record)
     session.activeTransfers += 1
     this.clearIdleTimer(session)
     try {
@@ -110,7 +126,12 @@ export class SftpSessionManager {
       if (record.cancelled) {
         return { status: 'cancelled' }
       }
-      return await this.runTransfer(direction, request, record.channel)
+      const reporter = createProgressReporter(this.deps.onProgress)
+      await runSftpOperations(record.channel, plan.operations, (progress) =>
+        reporter.report({ transferId, totalBytes: plan.totalBytes, ...progress })
+      )
+      reporter.flush()
+      return { status: 'done' }
     } catch (err) {
       if (record.cancelled) {
         return { status: 'cancelled' }
@@ -118,9 +139,9 @@ export class SftpSessionManager {
       throw err
     } finally {
       record.channel?.end()
-      this.transfers.delete(request.transferId)
+      this.transfers.delete(transferId)
       session.activeTransfers -= 1
-      this.touch(request.targetId)
+      this.touch(plan.targetId)
     }
   }
 
@@ -144,34 +165,6 @@ export class SftpSessionManager {
 
   async dispose(): Promise<void> {
     await Promise.all([...this.sessions.keys()].map((targetId) => this.disconnect(targetId)))
-  }
-
-  private async runTransfer(
-    direction: SftpTransferDirection,
-    request: SftpTransferRequest,
-    channel: SftpOps
-  ): Promise<SftpTransferOutcome> {
-    const { sources, destinationDir } = request
-    if (!request.overwrite) {
-      const conflicts = await findConflicts(direction, channel, sources, destinationDir)
-      if (conflicts.length > 0) {
-        return { status: 'conflict', conflicts }
-      }
-    }
-    const plan =
-      direction === 'upload'
-        ? await planUpload(sources, destinationDir)
-        : await planDownload(channel, sources, destinationDir)
-    const reporter = createProgressReporter(this.deps.onProgress)
-    await runTransfer(direction, channel, plan, (progress) =>
-      reporter.report({
-        transferId: request.transferId,
-        totalBytes: plan.totalBytes,
-        ...progress
-      })
-    )
-    reporter.flush()
-    return { status: 'done' }
   }
 
   private async ensureSession(targetId: string): Promise<Session> {
