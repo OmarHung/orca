@@ -1,5 +1,14 @@
 import React from 'react'
-import { Bug, Copy, Layers, Plus, SquareTerminal, Trash2, type LucideIcon } from 'lucide-react'
+import {
+  Bug,
+  Copy,
+  Layers,
+  Plus,
+  SquareTerminal,
+  Trash2,
+  Upload,
+  type LucideIcon
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -14,6 +23,7 @@ import type { RunConfigurationType } from './run-configuration-drafts'
 const TYPE_ICONS: Record<RunConfigurationType, LucideIcon> = {
   command: SquareTerminal,
   debug: Bug,
+  'dotnet-publish': Upload,
   compound: Layers
 }
 
@@ -23,6 +33,8 @@ function addLabel(type: RunConfigurationType): string {
       return translate('run.configurations.add.command', 'Add command configuration')
     case 'debug':
       return translate('run.configurations.add.debug', 'Add debug configuration')
+    case 'dotnet-publish':
+      return translate('run.configurations.add.dotnetPublish', 'Add .NET publish to folder')
     case 'compound':
       return translate('run.configurations.add.compound', 'Add compound (start several together)')
   }
@@ -92,7 +104,7 @@ export function RunConfigurationListPane({
   onDuplicate: () => void
   onDelete: () => void
 }): React.JSX.Element {
-  const types: RunConfigurationType[] = ['command', 'debug', 'compound']
+  const types: RunConfigurationType[] = ['command', 'debug', 'dotnet-publish', 'compound']
   return (
     <div className="flex w-60 shrink-0 flex-col border-r border-border">
       <div className="flex items-center gap-0.5 border-b border-border px-2 py-1">

@@ -1,4 +1,10 @@
 import type { DebugLaunchTarget } from '../debug/debug-session-types'
+import {
+  DOTNET_PROJECT_FILE_PATTERN,
+  normalizeDotnetPublish,
+  type DotnetPublishRunConfiguration
+} from './dotnet-publish-configuration'
+import { asArgs, asEnv, asRecord, asText, asTextList } from './run-configuration-values'
 
 /**
  * A saved run configuration. Paths may be relative to the workspace root and may use
@@ -42,6 +48,7 @@ export type CompoundRunConfiguration = {
 export type RunConfigurationDefinition =
   | CommandRunConfiguration
   | DebugRunConfiguration
+  | DotnetPublishRunConfiguration
   | CompoundRunConfiguration
 
 export type RunConfigurationProblem = { index: number; message: string }
@@ -49,62 +56,10 @@ export type RunConfigurationProblem = { index: number; message: string }
 // Why: bound what one file (possibly from a cloned repo) can make the UI and launcher handle.
 const MAX_CONFIGURATIONS = 100
 const MAX_NAME_LENGTH = 200
-const MAX_TEXT_LENGTH = 16_000
-const MAX_LIST_ENTRIES = 200
 const NODE_SCRIPT_PATTERN = /^[\w:.@/ -]{1,200}$/
 const PYTHON_MODULE_PATTERN = /^[A-Za-z_][\w.]{0,199}$/
-const ENV_NAME_PATTERN = /^[A-Za-z_][\w.]{0,199}$/
 const PACKAGE_MANAGERS = ['npm', 'pnpm', 'yarn', 'bun'] as const
 export const MAX_COMPOUND_DELAY_SECONDS = 600
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === 'object' && value !== null && !Array.isArray(value) ? { ...value } : null
-}
-
-function asText(value: unknown, maxLength = MAX_TEXT_LENGTH): string | undefined {
-  if (typeof value !== 'string') {
-    return undefined
-  }
-  const trimmed = value.trim()
-  return trimmed && trimmed.length <= maxLength ? trimmed : undefined
-}
-
-function asTextList(value: unknown): string[] | undefined {
-  if (!Array.isArray(value) || value.length > MAX_LIST_ENTRIES) {
-    return undefined
-  }
-  const items = value
-    .map((item) => (typeof item === 'number' ? String(item) : asText(item)))
-    .filter((item): item is string => item !== undefined)
-  const unique = [...new Set(items)]
-  return unique.length > 0 ? unique : undefined
-}
-
-/** Program args keep empty strings and surrounding spaces; they are passed verbatim. */
-function asArgs(value: unknown): string[] | undefined {
-  if (!Array.isArray(value) || value.length > MAX_LIST_ENTRIES) {
-    return undefined
-  }
-  const args = value
-    .map((item) => (typeof item === 'number' ? String(item) : item))
-    .filter((item): item is string => typeof item === 'string' && item.length <= MAX_TEXT_LENGTH)
-  return args.length > 0 ? args : undefined
-}
-
-function asEnv(value: unknown): Record<string, string> | undefined {
-  const record = asRecord(value)
-  if (!record) {
-    return undefined
-  }
-  const env: Record<string, string> = {}
-  for (const [name, raw] of Object.entries(record).slice(0, MAX_LIST_ENTRIES)) {
-    const text = typeof raw === 'number' || typeof raw === 'boolean' ? String(raw) : raw
-    if (ENV_NAME_PATTERN.test(name) && typeof text === 'string' && text.length <= MAX_TEXT_LENGTH) {
-      env[name] = text
-    }
-  }
-  return Object.keys(env).length > 0 ? env : undefined
-}
 
 function optionalPythonPath(record: Record<string, unknown>): {
   pythonPath?: string
@@ -143,7 +98,7 @@ export function normalizeDebugLaunchTarget(value: unknown): DebugLaunchTarget | 
     case 'dotnet-project': {
       const projectFile = asText(record.projectFile)
       const launchProfile = asText(record.launchProfile, MAX_NAME_LENGTH)
-      return projectFile && /\.(cs|fs|vb)proj$/i.test(projectFile)
+      return projectFile && DOTNET_PROJECT_FILE_PATTERN.test(projectFile)
         ? {
             kind: 'dotnet-project',
             projectFile,
@@ -194,7 +149,12 @@ function asWaitAfter(
 }
 
 function inferType(record: Record<string, unknown>): RunConfigurationDefinition['type'] | null {
-  if (record.type === 'command' || record.type === 'debug' || record.type === 'compound') {
+  if (
+    record.type === 'command' ||
+    record.type === 'debug' ||
+    record.type === 'dotnet-publish' ||
+    record.type === 'compound'
+  ) {
     return record.type
   }
   if ('target' in record) {
@@ -251,6 +211,8 @@ function normalizeOne(value: unknown): RunConfigurationDefinition | string {
         ...(beforeLaunch ? { beforeLaunch } : {})
       }
     }
+    case 'dotnet-publish':
+      return normalizeDotnetPublish(record, { id, name, ...(beforeLaunch ? { beforeLaunch } : {}) })
     case 'compound': {
       const configurations = asTextList(record.configurations)
       if (!configurations) {

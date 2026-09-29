@@ -214,7 +214,7 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - **偵測器**是純函式（`src/shared/run-configurations/`），只吃檔案內容，所以本機、SSH、remote runtime 都能用。讀檔走 `readRuntimeDirectory`／`readRuntimeFileContent`，檔案操作的 context 用 `getTabEntryFileOperationContext`
   - Node：每個 script 產生一個設定；套件管理器依 `packageManager` 欄位或 lockfile 判斷；依 script 名稱分類成 build、run、test、publish；非 private 的套件額外加上 `<pm> publish`
   - .NET：`.csproj`、`.fsproj`、`.vbproj` 都有 Build；可執行的專案（Web、Worker SDK 或 `OutputType` 是 Exe）依 `launchSettings.json` 的 `Project` profile 產生 Run，依 `.pubxml` 產生 Publish（沒有 pubxml 就用 `-c Release`）；測試專案改成 Test；類別庫只有 Build。**沒有加 XML 解析的依賴**，目前用 regex 就夠
-- **右鍵選單**：在資料夾、`package.json` 或 `.csproj` 上按右鍵，選單一打開就開始偵測。直接顯示 Build、Run、Test、Publish，其他的放在「More Run/Debug」子選單，依專案分組。Publish 一定要先確認，確認視窗會顯示完整的指令
+- **右鍵選單**：在資料夾、`package.json` 或 `.csproj` 上按右鍵，選單一打開就開始偵測。直接顯示 Build、Run、Test、Publish，其他的放在「More Run/Debug」子選單，依專案分組。Publish 一定要先確認，確認視窗會顯示完整的指令（.NET 的 Publish 之後改成開「Publish to folder」對話框，見後面的後續段落）
 - 指令在**專案所在的目錄**執行：`RunTarget.cwd` 會一路傳到 `runQuickCommandInNewTab` 的 `startupCwd`，跟「Open in Terminal」用的是同一個機制
 - **tab bar**：最近一次從右鍵執行的設定會出現在 tab bar（`RecentRunControls`），可以一鍵重跑，也有 ● ↻ ■。fork 在 `TabGroupPanel` 只掛一個 `RunToolbar`
 - **目前還沒做**：Python 專案層級的偵測（Django 的 `manage.py`、`pyproject.toml` 的 scripts）、`.sln`、快捷鍵、.NET／Node 的 🐞 Debug（Phase 3）
@@ -307,6 +307,18 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - 匯入 `.vscode/launch.json` 是使用者主動操作，匯入的設定變成本機設定，**不會再詢問信任**（跟 VS Code 一樣直接執行 launch.json）。匯入前請先看過檔案內容，特別是 `env` 和 `python`
 - 本機設定只存在這台電腦；要共用請放 orca.yaml
 - 命令設定還沒有 env 欄位（各種 shell 設定環境變數的語法不同），需要的話寫在指令裡
+
+### 後續：.NET「Publish to folder」可設定輸出路徑（2026-09-29）
+
+使用者要求 .NET 的 Publish 能像 Rider 一樣設定輸出路徑。做法跟 Rider 一樣，Publish 變成一種可以存起來的執行設定。
+
+- **新的設定類型 `dotnet-publish`**（`dotnet-publish-configuration.ts`）：專案檔、Target location（輸出資料夾）、Configuration、Target framework、Target runtime（Portable 或 RID）、Deployment mode（framework-dependent／self-contained）、Produce single file、ReadyToRun、Trim unused code、附加參數、beforeLaunch。指令由欄位組出來，**從 workspace 根目錄執行**，路徑存成相對於根目錄，所以同一個 repo 的每個 worktree 都能用。需要 runtime 的選項在沒選 runtime 時不會加進指令（表單上也是停用），trim 另外需要 self-contained
+- **執行**：`planRunConfiguration` 一開始就把 `dotnet-publish` 轉成等價的 `command` 設定，所以 launcher、beforeLaunch、compound、Run 元件的狀態和 ■ 都不用另外處理。Run 元件只有三個地方改用 `commandConfigurationOf`
+- **右鍵 Publish**：.NET 專案的「Publish 'X'…」改開「Publish to folder」對話框（`DotnetPublishDialog`，掛在 `AppRootSurfaces`，因為右鍵選單關掉時會卸載）。第一次會預填 `<專案>/bin/Release/<tfm>/publish`（從 csproj 讀 `TargetFramework(s)`；多目標專案預選第一個 framework），之後會打開已存的設定。按 Publish 會存檔、選中並執行；按 Save 只存檔。對話框會顯示完整指令，所以不再另外確認
+- `.pubxml` publish profile 和沒有 profile 時的 `-c Release` 還是偵測設定，移到「More Run/Debug」子選單，一樣要先確認
+- **orca.yaml** 也能寫：`type: dotnet-publish`（這個類型必須寫明，不會從欄位推斷）；configuration、framework、runtime 只允許一般名稱字元，因為它們不加引號放進指令
+- 由 `tests/e2e/dotnet-publish-folder.spec.ts`（本機有 dotnet 才跑：實際發佈到含空白的資料夾並檢查 dll）和 `project-run-configurations.spec.ts` 驗證
+- **沒做**：Rider 的「Delete existing files」（各 shell 刪資料夾的語法不同）；Browse 按鈕只在本機 workspace 出現
 
 ## 7. 必須遵守的專案規則（摘自 AGENTS.md）
 
