@@ -9,10 +9,17 @@ const SAFE_USER = /^[A-Za-z0-9._][A-Za-z0-9._-]*$/
 
 type SshSessionEndpoint = Pick<SshTarget, 'configHost' | 'host' | 'port' | 'username'>
 
-/** The `ssh` command that opens an interactive session, or null when it can't be typed safely. */
-export function buildSshSessionCommand(target: SshSessionEndpoint): string | null {
+/**
+ * The `ssh` command that opens an interactive session, or null when it can't be typed safely.
+ * `options` are already quoted for the shell (the VPN's `-o ProxyCommand=…`).
+ */
+export function buildSshSessionCommand(
+  target: SshSessionEndpoint,
+  options: readonly string[] = []
+): string | null {
+  const ssh = ['ssh', ...options].join(' ')
   if (target.configHost) {
-    return SAFE_HOST.test(target.configHost) ? `ssh ${target.configHost}` : null
+    return SAFE_HOST.test(target.configHost) ? `${ssh} ${target.configHost}` : null
   }
   if (!SAFE_HOST.test(target.host) || (target.username && !SAFE_USER.test(target.username))) {
     return null
@@ -22,5 +29,5 @@ export function buildSshSessionCommand(target: SshSessionEndpoint): string | nul
   }
   const port = target.port === DEFAULT_SSH_PORT ? '' : ` -p ${target.port}`
   const user = target.username ? `${target.username}@` : ''
-  return `ssh${port} ${user}${target.host}`
+  return `${ssh}${port} ${user}${target.host}`
 }
