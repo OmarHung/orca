@@ -188,6 +188,10 @@ Database 頁是範本（commit `d820e61fa2`）。它的導航狀態放在 fork �
 - i18n：`sftpPage.*`。`zh-tw-term-overrides.json` 新增「合並 → 合併」（OpenCC 的錯誤，同時修正了上游 6 個字串）。
 - 驗證：單元測試（路徑、選取、傳輸流程、store、雙欄互動：下載的參數、雙擊進入資料夾、刪除必須先確認）；**Docker E2E** `tests/e2e/sftp-docker.spec.ts`（`ORCA_E2E_SSH_DOCKER=1`）：對真實 sshd 容器跑 home、mkdir、上傳資料夾、重名衝突、列目錄、下載（不留 `.orca-download`）、刪除，並確認 relay 的連線狀態沒有被標成 connected，最後打開 SFTP 頁看到遠端清單。
 - 已知限制：
-  - SFTP 頁放在 `ActivePage`，切到別的頁面再回來，窗格路徑和選取會重設（傳輸本身會繼續，完成狀態也會更新；但離開頁面期間收不到進度）。
+  - ~~SFTP 頁放在 `ActivePage`，切走再回來會重設~~：已修正，見 §7.6。
   - SFTP 頁仍然有 stacked titlebar（SSH 頁已經拿掉）。
   - 上傳的進度以 ssh2 `fastPut` 的 step 回報；系統 SSH transport 的主機（ProxyJump 等）不支援。
+
+### 7.6 SFTP 頁常駐（2026-09-29，使用者回報）
+
+使用者回報連上 SFTP 後切到 SSH 再切回來，狀態就被清空了。SSH 頁原本的「第一次開啟後常駐、切走只用 CSS 隱藏」做法抽成 `ssh-page/KeptMountedPage.tsx`，`SshPageHost`、`SftpPageHost` 都改用它。`AppWorkspaceShell` 不再從 `ActivePage` 渲染 SFTP 頁。常駐之後，離開頁面期間進度事件也照樣會收到。Docker E2E 加上一段：進入 `/root/.ssh` → 切到 SSH → 切回 SFTP，路徑和清單都還在。
