@@ -28,7 +28,7 @@ export function SshHostVpnBadge({ targetId }: { targetId: string }): React.JSX.E
     return null
   }
   return (
-    <Badge variant="hostContext" className="max-w-28" data-ssh-host-vpn={profile.id}>
+    <Badge variant="hostContext" className="max-w-28 self-center" data-ssh-host-vpn={profile.id}>
       <SshVpnStatusDot status={status} />
       <span className="truncate">{profile.name}</span>
     </Badge>
