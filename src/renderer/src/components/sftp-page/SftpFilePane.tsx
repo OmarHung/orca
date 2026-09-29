@@ -5,7 +5,7 @@ import { Input } from '../ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { translate } from '@/i18n/i18n'
 import type { SftpEntry } from '../../../../shared/sftp-types'
-import { sftpListMinWidthRem, TOGGLEABLE_SFTP_COLUMNS, type SftpColumnId } from './sftp-columns'
+import { sftpRowWidthPx, TOGGLEABLE_SFTP_COLUMNS, type SftpColumnId } from './sftp-columns'
 import { useSftpColumnsStore, type SftpPaneId } from './sftp-columns-store'
 import { sortSftpEntriesBy } from './sftp-entry-sort'
 import { SftpColumnsMenu, SftpFileListHeader } from './SftpFileListHeader'
@@ -20,7 +20,6 @@ type SftpFilePaneProps = {
   title: string
   pane: SftpPaneState
   onOpen: (entry: SftpEntry) => void
-  leading?: React.ReactNode
   actions?: React.ReactNode
   dropZoneRef?: RefObject<HTMLDivElement | null>
   isDropTarget?: boolean
@@ -83,18 +82,17 @@ export function SftpFilePane({
   title,
   pane,
   onOpen,
-  leading,
   actions,
   dropZoneRef,
   isDropTarget,
   dropHint
 }: SftpFilePaneProps): React.JSX.Element {
   const { columns, sorted, orderedPaths } = useDisplayedEntries(paneId, pane.entries)
+  const widths = useSftpColumnsStore((s) => s.columnWidths)
 
   return (
     <div data-sftp-pane={paneId} className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center gap-1 border-b border-border px-2 py-1.5">
-        {leading}
         <span className="max-w-32 shrink-0 truncate text-xs font-medium text-muted-foreground">
           {title}
         </span>
@@ -139,7 +137,7 @@ export function SftpFilePane({
             </Button>
           </div>
         ) : (
-          <div style={{ minWidth: `${sftpListMinWidthRem(columns)}rem` }}>
+          <div style={{ minWidth: sftpRowWidthPx(columns, widths) }}>
             <SftpFileListHeader pane={paneId} columns={columns} />
             <div role="listbox" aria-multiselectable aria-label={title} className="py-1">
               {pane.hasParent ? (
@@ -158,6 +156,7 @@ export function SftpFilePane({
                     key={entry.path}
                     entry={entry}
                     columns={columns}
+                    widths={widths}
                     isSelected={pane.selection.selected.has(entry.path)}
                     onClick={(event) =>
                       pane.select(entry, selectionModifiersFromEvent(event, IS_MAC), orderedPaths)

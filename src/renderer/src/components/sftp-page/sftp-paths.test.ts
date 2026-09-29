@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { baseName, isValidEntryName, localParent, remoteJoin, remoteParent } from './sftp-paths'
+import {
+  baseName,
+  isValidEntryName,
+  localParent,
+  remoteJoin,
+  remoteParent,
+  remoteFolderName
+} from './sftp-paths'
 
 describe('sftp paths', () => {
   it('walks up remote paths and stops at the root', () => {
@@ -31,5 +38,11 @@ describe('sftp paths', () => {
     expect(isValidEntryName('  ')).toBe(false)
     expect(isValidEntryName('..')).toBe(false)
     expect(isValidEntryName('a/b')).toBe(false)
+  })
+
+  it('names a remote folder by its last segment, keeping backslashes in names', () => {
+    expect(remoteFolderName('/root/.ssh/')).toBe('.ssh')
+    expect(remoteFolderName('/')).toBe('/')
+    expect(remoteFolderName('/srv/a\\b')).toBe('a\\b')
   })
 })

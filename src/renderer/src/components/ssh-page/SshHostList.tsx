@@ -11,15 +11,12 @@ type SshHostListProps = {
   targets: readonly SshTarget[]
   currentTargetId?: string | null
   onSelect: (target: SshTarget) => void
-  /** Rendered beside the search box, e.g. the page's collapse button. */
-  searchAccessory?: React.ReactNode
 }
 
 export function SshHostList({
   targets,
   currentTargetId,
-  onSelect,
-  searchAccessory
+  onSelect
 }: SshHostListProps): React.JSX.Element {
   const [query, setQuery] = useState('')
   const visibleTargets = filterSshTargetsBySearchQuery(targets, query)
@@ -34,7 +31,6 @@ export function SshHostList({
           placeholder={searchLabel}
           aria-label={searchLabel}
         />
-        {searchAccessory}
       </div>
       <div className="scrollbar-sleek min-h-0 flex-1 overflow-y-auto px-2 pb-2">
         {visibleTargets.length === 0 ? (
