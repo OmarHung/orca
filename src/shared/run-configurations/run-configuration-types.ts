@@ -12,6 +12,8 @@ export type DetectedRunConfiguration = {
   projectName: string
   /** Absolute directory the command runs in. */
   projectDir: string
+  /** Absolute path of the .NET project file (.csproj etc.) the configuration came from. */
+  projectFile?: string
   kind: RunConfigurationKind
   /** Short name within the project, e.g. "dev" or "MvcWeb". */
   name: string
