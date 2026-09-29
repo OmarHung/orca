@@ -6,6 +6,8 @@ import {
   filterSshTargetsBySearchQuery,
   formatSshTargetEndpoint
 } from '../settings/ssh-target-search'
+import { SshVpnButton } from '../ssh-vpn/SshVpnButton'
+import { SshHostVpnBadge, SshHostVpnMenu } from '../ssh-vpn/SshHostVpnMenu'
 
 type SshHostListProps = {
   targets: readonly SshTarget[]
@@ -31,6 +33,7 @@ export function SshHostList({
           placeholder={searchLabel}
           aria-label={searchLabel}
         />
+        <SshVpnButton />
       </div>
       <div className="scrollbar-sleek min-h-0 flex-1 overflow-y-auto px-2 pb-2">
         {visibleTargets.length === 0 ? (
@@ -41,22 +44,26 @@ export function SshHostList({
           visibleTargets.map((target) => {
             const isCurrent = target.id === currentTargetId
             return (
-              <button
-                key={target.id}
-                type="button"
-                data-ssh-host-row={target.id}
-                data-current={isCurrent ? 'true' : undefined}
-                aria-current={isCurrent ? 'true' : undefined}
-                onClick={() => onSelect(target)}
-                className="flex w-full flex-col items-start gap-0.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-accent data-[current=true]:bg-accent"
-              >
-                <span className="w-full truncate text-[13px] font-medium text-foreground">
-                  {target.label}
-                </span>
-                <span className="w-full truncate text-xs text-muted-foreground">
-                  {formatSshTargetEndpoint(target)}
-                </span>
-              </button>
+              <SshHostVpnMenu key={target.id} targetId={target.id}>
+                <button
+                  type="button"
+                  data-ssh-host-row={target.id}
+                  data-current={isCurrent ? 'true' : undefined}
+                  aria-current={isCurrent ? 'true' : undefined}
+                  onClick={() => onSelect(target)}
+                  className="flex w-full flex-col items-start gap-0.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-accent data-[current=true]:bg-accent"
+                >
+                  <span className="flex w-full items-center gap-1.5">
+                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
+                      {target.label}
+                    </span>
+                    <SshHostVpnBadge targetId={target.id} />
+                  </span>
+                  <span className="w-full truncate text-xs text-muted-foreground">
+                    {formatSshTargetEndpoint(target)}
+                  </span>
+                </button>
+              </SshHostVpnMenu>
             )
           })
         )}

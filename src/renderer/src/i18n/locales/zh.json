@@ -19845,7 +19845,8 @@
       "confirmTitle": "要连接到 {{host}} 吗？",
       "confirmTarget": "目标：{{endpoint}}",
       "confirmNote": "会打开新的标签页，在你的登录 shell 中输入这条指令，如同你亲自输入。",
-      "connect": "连接"
+      "connect": "连接",
+      "confirmVpn": "经由 VPN：{{name}}（已连接）"
     },
     "picker": {
       "title": "开启 SSH 连接",
@@ -19962,5 +19963,64 @@
     "count": "共 {{count}} 条指令，由上而下执行",
     "listLabel": "指令",
     "truncated": "仅显示前 {{shown}} 条，共 {{total}} 条。请用“全部复制”查看每一行。"
+  },
+  "sshVpn": {
+    "status": {
+      "ready": "已连接",
+      "starting": "连接中…",
+      "stopping": "正在中断连接…",
+      "error": "失败",
+      "stopped": "未连接"
+    },
+    "form": {
+      "name": "名称",
+      "namePlaceholder": "公司 VPN",
+      "ovpnPath": "OpenVPN 配置文件 (.ovpn)",
+      "browse": "选择…",
+      "ovpnHelp": "支持只用凭证登录的配置文件。Orca 每次连接时读取这个文件，不会另存副本。",
+      "idle": "闲置多久后中断连接（分钟）",
+      "idleHelp": "从最后一条经由这个 VPN 的连接关闭时开始计算。设为 0 会保持连接到 Orca 关闭为止。",
+      "cancel": "取消",
+      "checking": "检查中…",
+      "save": "保存",
+      "pathPlaceholder": "/路径/office.ovpn"
+    },
+    "row": {
+      "idleNever": "保持连接到 Orca 关闭",
+      "idleMinutes": "闲置 {{minutes}} 分钟后中断连接",
+      "hosts": "{{count}} 台主机",
+      "disconnect": "中断连接",
+      "connect": "连接",
+      "edit": "编辑",
+      "cancelDelete": "保留",
+      "confirmDelete": "删除",
+      "delete": "删除…",
+      "deleteNote": "使用这个 VPN 的主机会改回直接连接。",
+      "hideLog": "隐藏 OpenVPN 日志",
+      "showLog": "显示 OpenVPN 日志"
+    },
+    "panel": {
+      "add": "新增 VPN 配置文件",
+      "empty": "还没有 VPN 配置文件。先加入 .ovpn 文件，再在主机上按右键，让它经由 VPN 连接。"
+    },
+    "dialog": {
+      "title": "SSH 主机的 VPN",
+      "description": "指定的主机会经由在 Docker 中运行的 OpenVPN 连接，这台电脑的其他网络流量不会改走 VPN。"
+    },
+    "menu": {
+      "label": "连接方式",
+      "direct": "直接连接（不使用 VPN）",
+      "profile": "VPN：{{name}}",
+      "manage": "管理 VPN 配置文件…"
+    },
+    "confirm": {
+      "forHost": "连接到 {{host}} 需要这个 VPN。",
+      "manual": "你要求连接这个 VPN。",
+      "isolated": "VPN 在 Docker 容器中运行，这台电脑的其他网络流量不会改走 VPN。",
+      "title": "要启动 VPN「{{name}}」吗？",
+      "tunnelNote": "之后每条 SSH 连接都会运行 `docker exec -i <容器> nc -w 30 <主机> <端口>`，经由 VPN 连到主机。",
+      "start": "启动 VPN"
+    },
+    "button": "VPN"
   }
 }
