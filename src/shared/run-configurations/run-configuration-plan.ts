@@ -1,10 +1,38 @@
+import { dotnetPublishAsCommand } from './dotnet-publish-configuration'
 import {
   findRunConfiguration,
   type CommandRunConfiguration,
   type CompoundMemberWait,
+  type CompoundRunConfiguration,
   type DebugRunConfiguration,
   type RunConfigurationDefinition
 } from './run-configuration-definition'
+
+/** The terminal command a configuration runs; null for debug sessions and compounds. */
+export function commandConfigurationOf(
+  configuration: RunConfigurationDefinition
+): CommandRunConfiguration | null {
+  switch (configuration.type) {
+    case 'command':
+      return configuration
+    case 'dotnet-publish':
+      return dotnetPublishAsCommand(configuration)
+    case 'debug':
+    case 'compound':
+      return null
+  }
+}
+
+type LaunchableConfiguration =
+  | CommandRunConfiguration
+  | DebugRunConfiguration
+  | CompoundRunConfiguration
+
+function launchable(configuration: RunConfigurationDefinition): LaunchableConfiguration {
+  return configuration.type === 'dotnet-publish'
+    ? dotnetPublishAsCommand(configuration)
+    : configuration
+}
 
 export type RunLaunchPlan = {
   /** Commands that must each exit 0, in this order, before anything launches. */
@@ -34,9 +62,9 @@ class RunPlanError extends Error {
 }
 
 function lookup(
-  all: readonly RunConfigurationDefinition[],
+  all: readonly LaunchableConfiguration[],
   reference: string
-): RunConfigurationDefinition {
+): LaunchableConfiguration {
   const found = findRunConfiguration(all, reference)
   if (!found) {
     throw new RunPlanError('missing', reference)
@@ -45,7 +73,7 @@ function lookup(
 }
 
 function collectSteps(
-  all: readonly RunConfigurationDefinition[],
+  all: readonly LaunchableConfiguration[],
   owner: CommandRunConfiguration | DebugRunConfiguration,
   steps: CommandRunConfiguration[],
   visiting: Set<string>
@@ -69,8 +97,8 @@ function collectSteps(
 }
 
 function collectLaunches(
-  all: readonly RunConfigurationDefinition[],
-  configuration: RunConfigurationDefinition,
+  all: readonly LaunchableConfiguration[],
+  configuration: LaunchableConfiguration,
   launches: RunLaunchPlan['launches'],
   visiting: Set<string>,
   expanded: Set<string>
@@ -98,9 +126,10 @@ function collectLaunches(
 
 /** Resolves references into what to run first and what to start, or why it cannot run. */
 export function planRunConfiguration(
-  all: readonly RunConfigurationDefinition[],
+  configurations: readonly RunConfigurationDefinition[],
   reference: string
 ): RunPlanResult {
+  const all = configurations.map(launchable)
   try {
     const launches: RunLaunchPlan['launches'] = []
     const top = lookup(all, reference)

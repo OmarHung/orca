@@ -7,6 +7,7 @@ import NewWorkspaceComposerModal from '../components/NewWorkspaceComposerModal'
 import { CrashReportDialog } from '../components/crash-report/CrashReportDialog'
 import { MarkdownTemplatePicker } from '../components/editor/MarkdownTemplatePicker'
 import { RevisionComparePicker } from '../components/editor/revision-compare/RevisionComparePicker'
+import { DotnetPublishDialogHost } from '../components/run/DotnetPublishDialog'
 import RecentTabSwitcher from '../components/tab-bar/RecentTabSwitcher'
 import { SkillFreshnessUpdateDialog } from '../components/skills/SkillFreshnessUpdateDialog'
 import { StarNagCard } from '../components/StarNagCard'
@@ -334,6 +335,7 @@ export function AppRootSurfaces(props: {
       <ModalBoundary boundaryId="modal.markdown-template-picker" resetKey={activeModal}>
         <MarkdownTemplatePicker />
         <RevisionComparePicker />
+        <DotnetPublishDialogHost />
       </ModalBoundary>
       <RecoverableRenderErrorBoundary
         boundaryId="modal.crash-report"
