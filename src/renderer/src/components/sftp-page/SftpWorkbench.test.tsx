@@ -59,7 +59,13 @@ const api = {
       operations:
         request.kind === 'download'
           ? [{ op: 'get', remote: '/srv/log.txt', local: '/Users/dev/log.txt', size: 10 }]
-          : [{ op: 'rm', path: '/srv/log.txt' }],
+          : request.kind === 'move'
+            ? request.sources.map((from) => ({
+                op: 'rename',
+                from,
+                to: `${request.destinationDir}/${from.split('/').pop()}`
+              }))
+            : [{ op: 'rm', path: '/srv/log.txt' }],
       totalBytes: 10,
       conflicts: []
     }
@@ -145,6 +151,23 @@ function dialogButton(name: string): HTMLButtonElement | null {
 async function click(element: HTMLElement | null, init: MouseEventInit = {}): Promise<void> {
   await act(async () => {
     element?.dispatchEvent(new MouseEvent('click', { bubbles: true, ...init }))
+  })
+}
+
+function drag(type: string, element: HTMLElement | null, dataTransfer: DataTransfer): void {
+  const event = new DragEvent(type, { bubbles: true, cancelable: true })
+  // Why: happy-dom's DragEvent ignores `dataTransfer` in its init dict.
+  Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+  element?.dispatchEvent(event)
+}
+
+/** Drags `from` over `over` and drops it there. */
+async function dragAndDrop(from: HTMLElement | null, over: HTMLElement | null): Promise<void> {
+  const dataTransfer = new DataTransfer()
+  await act(async () => {
+    drag('dragstart', from, dataTransfer)
+    drag('dragover', over, dataTransfer)
+    drag('drop', over, dataTransfer)
   })
 }
 
@@ -260,5 +283,140 @@ describe('SftpWorkbench', () => {
     })
 
     expect(sizeCell()?.style.width).toBe(`${DEFAULT_SFTP_COLUMN_WIDTHS.size + 16}px`)
+  })
+
+  describe('move', () => {
+    async function confirmMove(sources: string[], destinationDir: string): Promise<void> {
+      await vi.waitFor(() => expect(dialogButton('Move')).not.toBeNull())
+      expect(api.plan).toHaveBeenLastCalledWith({
+        kind: 'move',
+        targetId: 'web',
+        sources,
+        destinationDir
+      })
+      await click(dialogButton('Move'))
+      await vi.waitFor(() => expect(api.execute).toHaveBeenCalled())
+    }
+
+    it('moves the selection to a typed folder, relative to the one shown', async () => {
+      await click(row('/srv/log.txt'))
+      await click(button('Move to…'))
+
+      const input = document.querySelector<HTMLInputElement>(
+        'input[aria-label="Destination folder"]'
+      )
+      expect(input?.value).toBe('/srv')
+      await act(async () => {
+        const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+        setValue?.call(input, 'app')
+        input?.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+      await act(async () => input?.form?.requestSubmit())
+
+      await confirmMove(['/srv/log.txt'], '/srv/app')
+    })
+
+    it('moves the dragged selection onto a folder row', async () => {
+      await click(row('/srv/log.txt'))
+      await click(row('/srv/big.bin'), { metaKey: true, ctrlKey: true })
+      const dataTransfer = new DataTransfer()
+
+      await act(async () => {
+        drag('dragstart', row('/srv/big.bin'), dataTransfer)
+        drag('dragover', row('/srv/app'), dataTransfer)
+      })
+      expect(row('/srv/app')?.dataset.dropTarget).toBe('true')
+      await act(async () => drag('drop', row('/srv/app'), dataTransfer))
+
+      await confirmMove(['/srv/log.txt', '/srv/big.bin'], '/srv/app')
+    })
+
+    it('never offers a dragged folder as its own drop target', async () => {
+      const dataTransfer = new DataTransfer()
+
+      await act(async () => {
+        drag('dragstart', row('/srv/app'), dataTransfer)
+        drag('dragover', row('/srv/app'), dataTransfer)
+        drag('drop', row('/srv/app'), dataTransfer)
+      })
+
+      expect(row('/srv/app')?.dataset.dropTarget).toBeUndefined()
+      expect(api.plan).not.toHaveBeenCalled()
+    })
+
+    it('selects the right-clicked row and offers the remote actions for it', async () => {
+      await click(row('/srv/big.bin'))
+
+      await act(async () => {
+        row('/srv/log.txt')?.dispatchEvent(
+          new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
+        )
+      })
+
+      expect(row('/srv/log.txt')?.dataset.selected).toBe('true')
+      expect(row('/srv/big.bin')?.dataset.selected).toBeUndefined()
+      const items = [...document.querySelectorAll('[data-slot="context-menu-item"]')].map(
+        (item) => item.textContent
+      )
+      expect(items).toEqual(['Download', 'New folder', 'Rename', 'Move to…', 'Delete'])
+    })
+  })
+
+  describe('drag between panes', () => {
+    function paneDropZone(pane: 'local' | 'remote'): HTMLElement | null {
+      return document.querySelector<HTMLElement>(`[data-sftp-pane="${pane}"] [data-sftp-drop-zone]`)
+    }
+
+    async function confirmPlan(label: string, request: SftpPlanRequest): Promise<void> {
+      await vi.waitFor(() => expect(dialogButton(label)).not.toBeNull())
+      expect(api.plan).toHaveBeenLastCalledWith(request)
+      await click(dialogButton(label))
+      await vi.waitFor(() => expect(api.execute).toHaveBeenCalled())
+    }
+
+    it('uploads a local row dropped on the remote pane into the folder it shows', async () => {
+      const dataTransfer = new DataTransfer()
+      await act(async () => {
+        drag('dragstart', row('/Users/dev/report.csv'), dataTransfer)
+        drag('dragover', row('/srv/log.txt'), dataTransfer)
+      })
+      expect(paneDropZone('remote')?.dataset.dropActive).toBe('true')
+      await act(async () => drag('drop', row('/srv/log.txt'), dataTransfer))
+
+      await confirmPlan('Upload', {
+        kind: 'upload',
+        targetId: 'web',
+        sources: ['/Users/dev/report.csv'],
+        destinationDir: '/srv'
+      })
+    })
+
+    it('uploads into the remote folder row it is dropped on', async () => {
+      await dragAndDrop(row('/Users/dev/report.csv'), row('/srv/app'))
+
+      await confirmPlan('Upload', {
+        kind: 'upload',
+        targetId: 'web',
+        sources: ['/Users/dev/report.csv'],
+        destinationDir: '/srv/app'
+      })
+    })
+
+    it('downloads a remote row dropped on the local pane', async () => {
+      await dragAndDrop(row('/srv/log.txt'), row('/Users/dev/report.csv'))
+
+      await confirmPlan('Download', {
+        kind: 'download',
+        targetId: 'web',
+        sources: ['/srv/log.txt'],
+        destinationDir: '/Users/dev'
+      })
+    })
+
+    it('does nothing when a local row is dropped back on the local pane', async () => {
+      await dragAndDrop(row('/Users/dev/report.csv'), row('/Users/dev/report.csv'))
+
+      expect(api.plan).not.toHaveBeenCalled()
+    })
   })
 })

@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   baseName,
+  isRemotePathWithin,
   isValidEntryName,
   localParent,
   remoteJoin,
   remoteParent,
-  remoteFolderName
+  remoteFolderName,
+  resolveRemotePath
 } from './sftp-paths'
 
 describe('sftp paths', () => {
@@ -44,5 +46,19 @@ describe('sftp paths', () => {
     expect(remoteFolderName('/root/.ssh/')).toBe('.ssh')
     expect(remoteFolderName('/')).toBe('/')
     expect(remoteFolderName('/srv/a\\b')).toBe('a\\b')
+  })
+
+  it('resolves typed remote paths against the current folder', () => {
+    expect(resolveRemotePath('/srv/app', 'logs')).toBe('/srv/app/logs')
+    expect(resolveRemotePath('/srv/app', '../backup/')).toBe('/srv/backup')
+    expect(resolveRemotePath('/srv/app', ' /var//www/. ')).toBe('/var/www')
+    expect(resolveRemotePath('/srv', '../../..')).toBe('/')
+  })
+
+  it('tells whether a remote path is a folder or inside it', () => {
+    expect(isRemotePathWithin('/srv/app/sub', '/srv/app')).toBe(true)
+    expect(isRemotePathWithin('/srv/app', '/srv/app')).toBe(true)
+    expect(isRemotePathWithin('/srv/apps', '/srv/app')).toBe(false)
+    expect(isRemotePathWithin('/srv', '/')).toBe(true)
   })
 })

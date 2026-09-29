@@ -5,7 +5,7 @@ import type { CommandConfirm } from '../command-confirm/command-confirm-context'
 import type { SftpPlan, SftpPlanRequest } from '../../../../shared/sftp-types'
 import type { SshTarget } from '../../../../shared/ssh-types'
 import { baseName } from './sftp-paths'
-import { sftpPlanConfirmOptions } from './sftp-plan-confirm'
+import { sftpMoveConflictMessage, sftpPlanConfirmOptions } from './sftp-plan-confirm'
 import { useSftpTransfersStore } from './sftp-transfers-store'
 
 export type SftpActionContext = {
@@ -59,13 +59,20 @@ export async function runSftpAction(
     return false
   }
   const plan = planned.value
+  if (request.kind === 'move' && plan.conflicts.length > 0) {
+    void window.api.sftp.discardPlan(plan.planId)
+    toast.error(sftpMoveConflictMessage(plan))
+    return false
+  }
   if (plan.operations.length === 0) {
     void window.api.sftp.discardPlan(plan.planId)
     toast.info(
-      translate(
-        'sftpPage.confirm.nothingToDo',
-        'Nothing to transfer: no regular files or folders were selected.'
-      )
+      request.kind === 'move'
+        ? translate('sftpPage.move.nothingToDo', 'Already in that folder.')
+        : translate(
+            'sftpPage.confirm.nothingToDo',
+            'Nothing to transfer: no regular files or folders were selected.'
+          )
     )
     return false
   }
