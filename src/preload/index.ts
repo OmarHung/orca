@@ -58,6 +58,7 @@ import { browserPasswordsApi } from './api/browser-passwords-bridge'
 import { debugApi } from './api/debug-bridge'
 import { databaseApi } from './api/database-bridge'
 import { sftpApi } from './api/sftp-bridge'
+import { sshVpnApi } from './api/ssh-vpn-bridge'
 import { pythonApi } from './api/python-bridge'
 import { browserApi } from './api/browser/browser-bridge'
 import { emulatorApi } from './api/emulator-bridge'
@@ -166,6 +167,7 @@ const api = {
   debug: debugApi,
   database: databaseApi,
   sftp: sftpApi,
+  sshVpn: sshVpnApi,
   python: pythonApi,
   browser: browserApi,
   browserPasswords: browserPasswordsApi,

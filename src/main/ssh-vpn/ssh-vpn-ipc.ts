@@ -12,6 +12,7 @@ import { getCurrentMainWindow } from '../ipc/ssh-ipc-context'
 import { resolveWithSshG } from '../ssh/ssh-config-parser'
 import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
 import { prepareOvpnProfile } from './ovpn-profile-preparation'
+import { SshVpnStartDeclinedError } from './ssh-vpn-manager'
 import { createSshVpnRuntime, type SshVpnRuntime } from './ssh-vpn-runtime'
 
 const INVALID_REQUEST = { ok: false, error: { message: 'Invalid VPN request' } } as const
@@ -28,7 +29,10 @@ async function respond<T>(run: () => Promise<T> | T): Promise<SshVpnResult<T>> {
   try {
     return { ok: true, value: await run() }
   } catch (err) {
-    return { ok: false, error: { message: err instanceof Error ? err.message : String(err) } }
+    const message = err instanceof Error ? err.message : String(err)
+    return err instanceof SshVpnStartDeclinedError
+      ? { ok: false, error: { message, declined: true } }
+      : { ok: false, error: { message } }
   }
 }
 

@@ -40,7 +40,10 @@ export type SshVpnProfileState = {
   logTail: string[]
 }
 
-export type SshVpnResult<T> = { ok: true; value: T } | { ok: false; error: { message: string } }
+export type SshVpnResult<T> =
+  | { ok: true; value: T }
+  /** `declined`: the user said no to starting the VPN, which is not an error to report. */
+  | { ok: false; error: { message: string; declined?: boolean } }
 
 /** Everything the VPN UI shows; refetched whenever main broadcasts `sshVpn:changed`. */
 export type SshVpnSnapshot = {
