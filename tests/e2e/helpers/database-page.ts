@@ -15,11 +15,11 @@ export async function openDatabasePage(
   await page.evaluate(async (uiLanguage) => {
     await window.__store!.getState().updateSettings({ uiLanguage })
   }, language)
-  await page.getByTestId('database-status-toggle').click()
+  await page.getByTestId('database-sidebar-nav').click()
   await expect(page.getByRole('heading', { name: PAGE_TITLES[language] })).toBeVisible()
 }
 
-/** Same as `openDatabasePage`, through the Mod+Alt+D shortcut instead of the status bar. */
+/** Same as `openDatabasePage`, through the Mod+Alt+D shortcut instead of the sidebar entry. */
 export async function openDatabasePageWithShortcut(page: Page): Promise<void> {
   await waitForSessionReady(page)
   await page.evaluate(async () => {

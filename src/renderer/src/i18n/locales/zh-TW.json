@@ -19033,6 +19033,9 @@
       "starting": "正在開始…",
       "withTool": "{{value0}}（使用 {{value1}}）"
     },
+    "nav": {
+      "label": "資料庫"
+    },
     "output": {
       "cancelled": "已取消",
       "command": "{{value0}} 完成，耗時 {{value1}} 毫秒",
@@ -19162,9 +19165,6 @@
       "connecting": "正在連線…",
       "disconnected": "未連線",
       "error": "連線失敗"
-    },
-    "statusBar": {
-      "label": "資料庫"
     },
     "table": {
       "countMissing": "計數查詢沒有傳回任何列。",
