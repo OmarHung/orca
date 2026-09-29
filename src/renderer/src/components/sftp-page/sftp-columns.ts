@@ -13,22 +13,29 @@ export const TOGGLEABLE_SFTP_COLUMNS: readonly SftpColumnId[] = [
   'owner'
 ]
 
-// Why: mirrors the width classes in SftpFileRow so a narrow pane scrolls instead of hiding names.
-const COLUMN_WIDTH_REM: Record<SftpColumnId, number> = {
-  name: 10,
-  size: 5,
-  created: 8,
-  modified: 8,
-  type: 6,
-  owner: 5
-}
-const ROW_PADDING_REM = 1.5
-const ICON_REM = 0.875
-const GAP_REM = 0.75
+export type SftpColumnWidths = Record<SftpColumnId, number>
 
-export function sftpListMinWidthRem(columns: readonly SftpColumnId[]): number {
-  const cells = columns.reduce((total, column) => total + COLUMN_WIDTH_REM[column], 0)
-  return ROW_PADDING_REM + ICON_REM + cells + GAP_REM * columns.length
+export const DEFAULT_SFTP_COLUMN_WIDTHS: SftpColumnWidths = {
+  name: 240,
+  size: 80,
+  created: 136,
+  modified: 136,
+  type: 104,
+  owner: 88
+}
+export const MIN_SFTP_COLUMN_WIDTH = 48
+export const MAX_SFTP_COLUMN_WIDTH = 1200
+
+export function clampSftpColumnWidth(width: number): number {
+  return Math.round(Math.min(MAX_SFTP_COLUMN_WIDTH, Math.max(MIN_SFTP_COLUMN_WIDTH, width)))
+}
+
+// Why: row padding (px-3) plus the icon and its margin; keeps header and rows the same width.
+const ROW_CHROME_PX = 24 + 14 + 8
+
+/** Full row width, so a narrow pane scrolls sideways instead of squeezing columns. */
+export function sftpRowWidthPx(columns: readonly SftpColumnId[], widths: SftpColumnWidths): number {
+  return columns.reduce((total, column) => total + widths[column], ROW_CHROME_PX)
 }
 
 const DATE_FORMAT = new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' })

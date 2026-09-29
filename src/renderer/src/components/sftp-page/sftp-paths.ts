@@ -6,6 +6,12 @@ export function remoteParent(remotePath: string): string {
   return index <= 0 ? '/' : trimmed.slice(0, index)
 }
 
+/** Last segment of a remote folder, "/" for the root. Splits on "/" only: a POSIX name may contain a backslash. */
+export function remoteFolderName(remotePath: string): string {
+  const trimmed = remotePath.replace(/\/+$/, '')
+  return trimmed.slice(trimmed.lastIndexOf('/') + 1) || '/'
+}
+
 export function remoteJoin(dir: string, name: string): string {
   return dir.endsWith('/') ? `${dir}${name}` : `${dir}/${name}`
 }

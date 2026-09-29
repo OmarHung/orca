@@ -1,5 +1,11 @@
 import { create } from 'zustand'
-import { TOGGLEABLE_SFTP_COLUMNS, type SftpColumnId } from './sftp-columns'
+import {
+  clampSftpColumnWidth,
+  DEFAULT_SFTP_COLUMN_WIDTHS,
+  TOGGLEABLE_SFTP_COLUMNS,
+  type SftpColumnId,
+  type SftpColumnWidths
+} from './sftp-columns'
 import { DEFAULT_SFTP_SORT, type SftpSort } from './sftp-entry-sort'
 
 export type SftpPaneId = 'local' | 'remote'
@@ -7,11 +13,15 @@ export type SftpPaneId = 'local' | 'remote'
 type PersistedColumns = {
   hiddenColumns: SftpColumnId[]
   sortByPane: Record<SftpPaneId, SftpSort>
+  columnWidths: SftpColumnWidths
 }
 
 type SftpColumnsState = PersistedColumns & {
   toggleColumn: (column: SftpColumnId) => void
   setSort: (pane: SftpPaneId, sort: SftpSort) => void
+  /** `shouldPersist` false while dragging; the final width is saved on release. */
+  setColumnWidth: (column: SftpColumnId, width: number, shouldPersist?: boolean) => void
+  resetColumnWidth: (column: SftpColumnId) => void
 }
 
 // Why localStorage: a per-viewer layout preference, like the host list's collapse state.
@@ -30,6 +40,19 @@ function readSort(value: unknown): SftpSort {
     }
   }
   return DEFAULT_SFTP_SORT
+}
+
+function readWidths(value: unknown): SftpColumnWidths {
+  const stored: Record<string, unknown> =
+    typeof value === 'object' && value !== null ? { ...value } : {}
+  const widths = { ...DEFAULT_SFTP_COLUMN_WIDTHS }
+  for (const column of COLUMN_IDS) {
+    const width = stored[column]
+    if (isColumnId(column) && typeof width === 'number' && Number.isFinite(width)) {
+      widths[column] = clampSftpColumnWidth(width)
+    }
+  }
+  return widths
 }
 
 function readPersisted(): PersistedColumns {
@@ -52,7 +75,8 @@ function readPersisted(): PersistedColumns {
     hiddenColumns: hidden.filter(
       (column): column is SftpColumnId => isColumnId(column) && column !== 'name'
     ),
-    sortByPane: { local: readSort(sortByPane.local), remote: readSort(sortByPane.remote) }
+    sortByPane: { local: readSort(sortByPane.local), remote: readSort(sortByPane.remote) },
+    columnWidths: readWidths(stored.columnWidths)
   }
 }
 
@@ -64,23 +88,41 @@ function writePersisted(value: PersistedColumns): void {
   }
 }
 
+function persistedFrom(state: PersistedColumns): PersistedColumns {
+  return {
+    hiddenColumns: state.hiddenColumns,
+    sortByPane: state.sortByPane,
+    columnWidths: state.columnWidths
+  }
+}
+
 export const useSftpColumnsStore = create<SftpColumnsState>((set, get) => ({
   ...readPersisted(),
   toggleColumn: (column) => {
     if (column === 'name') {
       return
     }
-    const { hiddenColumns, sortByPane } = get()
+    const { hiddenColumns } = get()
     const next = hiddenColumns.includes(column)
       ? hiddenColumns.filter((hidden) => hidden !== column)
       : [...hiddenColumns, column]
-    writePersisted({ hiddenColumns: next, sortByPane })
     set({ hiddenColumns: next })
+    writePersisted(persistedFrom(get()))
   },
   setSort: (pane, sort) => {
-    const { hiddenColumns, sortByPane } = get()
-    const next = { ...sortByPane, [pane]: sort }
-    writePersisted({ hiddenColumns, sortByPane: next })
-    set({ sortByPane: next })
+    set({ sortByPane: { ...get().sortByPane, [pane]: sort } })
+    writePersisted(persistedFrom(get()))
+  },
+  setColumnWidth: (column, width, shouldPersist = true) => {
+    set({ columnWidths: { ...get().columnWidths, [column]: clampSftpColumnWidth(width) } })
+    if (shouldPersist) {
+      writePersisted(persistedFrom(get()))
+    }
+  },
+  resetColumnWidth: (column) => {
+    set({
+      columnWidths: { ...get().columnWidths, [column]: DEFAULT_SFTP_COLUMN_WIDTHS[column] }
+    })
+    writePersisted(persistedFrom(get()))
   }
 }))
