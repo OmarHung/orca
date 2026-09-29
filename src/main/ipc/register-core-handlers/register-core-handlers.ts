@@ -52,6 +52,7 @@ import { registerPetHandlers } from '../pet'
 import { registerDebugHandlers } from '../../debug/debug-ipc'
 import { registerDatabaseHandlers } from '../../database/database-ipc'
 import { registerSftpHandlers } from '../../sftp/sftp-ipc'
+import { registerSshVpnHandlers } from '../../ssh-vpn/ssh-vpn-ipc'
 import { registerPluginHandlers } from '../plugins'
 import { registerUIHandlers, setTrustedUIRendererWebContentsId } from '../ui'
 import { registerEmulatorFrameStreamHandlers } from '../emulator-frame-stream'
@@ -210,6 +211,7 @@ export function registerCoreHandlers(
   registerDebugHandlers()
   registerDatabaseHandlers()
   registerSftpHandlers()
+  registerSshVpnHandlers()
   registerSessionHandlers(store)
   registerUIHandlers(store, { isDashboardPopoutRenderer })
   registerEmulatorFrameStreamHandlers()
