@@ -113,8 +113,10 @@ export class SshSavedPassphraseStore {
     return (this.sealed.ids() ?? []).toSorted()
   }
 
-  forget(keyPath: string): boolean {
+  /** `null` once removed; otherwise why the file was left untouched. */
+  forget(keyPath: string): string | null {
     this.verified.delete(keyPath)
-    return this.sealed.delete(keyPath)
+    const deleted = this.sealed.delete(keyPath)
+    return deleted === 'deleted' ? null : this.sealed.describeProblem(deleted)
   }
 }

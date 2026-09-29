@@ -4,9 +4,6 @@ import type { DatabaseEncryptionStatus } from '../../shared/database/database-se
 import type { SecretStore } from '../../shared/secret-store'
 import { SealedSecretFile } from '../sealed-secret-file'
 
-const UNREADABLE_VAULT =
-  'The saved-password file exists but could not be read; refusing to overwrite it.'
-
 export const NO_SECURE_PASSWORD_STORAGE =
   'This system has no secure password storage. Choose "Until Orca quits" or "Never" instead.'
 
@@ -58,8 +55,11 @@ export class DatabasePasswordVault {
     if (sealed === 'no-encryption') {
       return { ok: false, error: { message: NO_SECURE_PASSWORD_STORAGE, code: 'unavailable' } }
     }
-    if (sealed === 'unreadable') {
-      return { ok: false, error: { message: UNREADABLE_VAULT, code: 'unavailable' } }
+    if (sealed !== 'sealed') {
+      return {
+        ok: false,
+        error: { message: this.sealed.describeProblem(sealed), code: 'unavailable' }
+      }
     }
     this.sessionPasswords.delete(connectionId)
     return { ok: true, value: null }
@@ -76,8 +76,9 @@ export class DatabasePasswordVault {
   }
 
   private deleteSealed(connectionId: string): DatabaseResult<null> {
-    return this.sealed.delete(connectionId)
+    const deleted = this.sealed.delete(connectionId)
+    return deleted === 'deleted'
       ? { ok: true, value: null }
-      : { ok: false, error: { message: UNREADABLE_VAULT, code: 'unavailable' } }
+      : { ok: false, error: { message: this.sealed.describeProblem(deleted), code: 'unavailable' } }
   }
 }
