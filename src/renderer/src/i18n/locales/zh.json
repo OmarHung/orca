@@ -19800,8 +19800,6 @@
       "ssh": "SSH"
     },
     "page": {
-      "title": "SSH",
-      "description": "在 SSH 主机上开启终端连接。",
       "desktopOnly": "SSH 连接仅在桌面版中可用。",
       "pickHost": "选择一台主机以开启 SSH 连接。"
     },
@@ -19811,7 +19809,9 @@
       "loading": "正在加载主机…",
       "loadFailed": "无法加载 SSH 主机。",
       "retry": "重试",
-      "empty": "还没有 SSH 主机。请在 ~/.ssh/config 或「设置 → SSH」中添加。"
+      "empty": "还没有 SSH 主机。请在 ~/.ssh/config 或「设置 → SSH」中添加。",
+      "hide": "隐藏主机列表",
+      "show": "显示主机列表"
     },
     "session": {
       "unsafeTarget": "这台主机的名称包含 Orca 无法安全传给 ssh 的字符。请在 ~/.ssh/config 中重新命名。"
@@ -19826,8 +19826,6 @@
       "sftp": "SFTP"
     },
     "page": {
-      "title": "SFTP",
-      "description": "在 SSH 主机上上传和下载文件。",
       "desktopOnly": "文件传输仅在桌面版中可用。",
       "pickHost": "选择一台主机以浏览其中的文件。",
       "comingSoon": "文件传输功能将在下一次更新中推出。"

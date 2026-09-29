@@ -19868,8 +19868,6 @@
       "ssh": "SSH"
     },
     "page": {
-      "title": "SSH",
-      "description": "Open terminal sessions on your SSH hosts.",
       "desktopOnly": "SSH sessions are available in the desktop app only.",
       "pickHost": "Pick a host to open an SSH session."
     },
@@ -19879,7 +19877,9 @@
       "loading": "Loading hosts…",
       "loadFailed": "Couldn't load your SSH hosts.",
       "retry": "Retry",
-      "empty": "No SSH hosts yet. Add them to ~/.ssh/config or in Settings → SSH."
+      "empty": "No SSH hosts yet. Add them to ~/.ssh/config or in Settings → SSH.",
+      "hide": "Hide host list",
+      "show": "Show host list"
     },
     "session": {
       "unsafeTarget": "This host has characters Orca cannot pass to ssh safely. Rename it in ~/.ssh/config."
@@ -19894,8 +19894,6 @@
       "sftp": "SFTP"
     },
     "page": {
-      "title": "SFTP",
-      "description": "Upload and download files on your SSH hosts.",
       "desktopOnly": "File transfers are available in the desktop app only.",
       "pickHost": "Pick a host to browse its files.",
       "comingSoon": "File transfer is coming in the next update."
