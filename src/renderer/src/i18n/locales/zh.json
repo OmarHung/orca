@@ -19681,5 +19681,14 @@
       "folder": "文件夹",
       "transfer": "传输"
     }
+  },
+  "agentTabClear": {
+    "button": "清除对话",
+    "busy": "等待智能体完成后再清除",
+    "ariaLabel": "清除 {{title}} 中的对话",
+    "confirmTitle": "清除此对话？",
+    "confirmDescription": "将向“{{title}}”中的 {{agent}} 发送 /clear。智能体会重新开始，不再保留当前对话的上下文。",
+    "confirm": "清除",
+    "noTerminal": "此选项卡没有正在运行的智能体可清除。"
   }
 }
