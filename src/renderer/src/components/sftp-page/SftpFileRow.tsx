@@ -3,7 +3,13 @@ import { File, FileSymlink, Folder, FolderUp, type LucideIcon } from 'lucide-rea
 import { getFileTypeIcon } from '@/lib/file-type-icons'
 import { getFolderTypeIcon } from '@/lib/folder-type-icons'
 import type { SftpEntry } from '../../../../shared/sftp-types'
-import { sftpCellText, type SftpColumnId, type SftpColumnWidths } from './sftp-columns'
+import {
+  sftpCellText,
+  sftpFileExtension,
+  type SftpColumnId,
+  type SftpColumnWidths
+} from './sftp-columns'
+import { MAX_SFTP_EXTENSION_LABEL_LENGTH, SftpExtensionIcon } from './SftpExtensionIcon'
 
 const CELL_CLASS: Record<SftpColumnId, string> = {
   name: 'shrink-0 truncate px-1.5',
@@ -14,13 +20,15 @@ const CELL_CLASS: Record<SftpColumnId, string> = {
   owner: 'shrink-0 truncate px-1.5 text-xs text-muted-foreground'
 }
 
+const ICON_CLASS = 'mr-2 size-4 shrink-0 text-muted-foreground'
+
 const ROW_CLASS =
   'flex cursor-default items-center px-3 py-1 text-[13px] select-none hover:bg-accent data-[drop-target=true]:bg-accent data-[drop-target=true]:ring-1 data-[drop-target=true]:ring-ring data-[drop-target=true]:ring-inset data-[selected=true]:bg-accent'
 
 /** Where a moved row lands; only rows with a `dropDir` accept a drop. */
 type RowDropProps = { dropDir?: string; isDropTarget?: boolean }
 
-function entryIcon({ kind, name }: SftpEntry): LucideIcon {
+function typeIcon({ kind, name }: SftpEntry): LucideIcon {
   switch (kind) {
     case 'directory':
       return getFolderTypeIcon(name) ?? Folder
@@ -31,6 +39,14 @@ function entryIcon({ kind, name }: SftpEntry): LucideIcon {
     case 'other':
       return File
   }
+}
+
+function EntryIcon({ entry }: { entry: SftpEntry }): React.JSX.Element {
+  const extension = entry.kind === 'file' ? sftpFileExtension(entry.name) : null
+  if (extension && extension.length <= MAX_SFTP_EXTENSION_LABEL_LENGTH) {
+    return <SftpExtensionIcon extension={extension} className={ICON_CLASS} />
+  }
+  return createElement(typeIcon(entry), { className: ICON_CLASS })
 }
 
 export function SftpFileRow({
@@ -69,9 +85,7 @@ export function SftpFileRow({
       onContextMenu={onContextMenu}
       className={ROW_CLASS}
     >
-      {createElement(entryIcon(entry), {
-        className: 'mr-2 size-3.5 shrink-0 text-muted-foreground'
-      })}
+      <EntryIcon entry={entry} />
       {columns.map((column) => {
         const text = sftpCellText(column, entry)
         return (
@@ -112,7 +126,7 @@ export function SftpParentRow({
       onDoubleClick={onOpen}
       className={ROW_CLASS}
     >
-      <FolderUp className="mr-2 size-3.5 shrink-0 text-muted-foreground" />
+      <FolderUp className={ICON_CLASS} />
       <span className="truncate px-1.5">..</span>
     </div>
   )

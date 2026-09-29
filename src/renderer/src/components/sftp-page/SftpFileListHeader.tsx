@@ -31,7 +31,7 @@ export function SftpFileListHeader({
 
   return (
     <div className="sticky top-0 z-10 flex items-center border-b border-border bg-background px-3 py-1 text-xs text-muted-foreground select-none">
-      <span className="mr-2 w-3.5 shrink-0" />
+      <span className="mr-2 w-4 shrink-0" />
       {columns.map((column) => {
         const isSorted = sort.column === column
         return (
