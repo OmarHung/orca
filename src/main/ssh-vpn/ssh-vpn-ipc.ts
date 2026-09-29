@@ -50,6 +50,12 @@ async function respond<T>(run: () => Promise<T> | T): Promise<SshVpnResult<T>> {
 }
 
 function snapshot(runtime: SshVpnRuntime): SshVpnSnapshot {
+  const registry = getSshTargetRegistryStore()
+  // Why here: hosts are removed through upstream code; dropping their assignments whenever the
+  // VPN UI loads keeps host counts right without hooking removal. A new host gets a new id.
+  if (registry) {
+    runtime.store.pruneAssignments(new Set(registry.listTargets().map((target) => target.id)))
+  }
   return {
     profiles: runtime.store.listProfiles(),
     assignments: runtime.store.listAssignments(),
