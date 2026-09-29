@@ -1,6 +1,6 @@
 # SSH／SFTP 自動走 OpenVPN：實作計畫（fork 專屬）
 
-> 狀態：Phase 0、1、2 完成，另外加做帳密登入（2026-09-29），紀錄見 §9；下一步 Phase 3（收尾）
+> 狀態：全部完成（2026-09-29），含帳密登入；紀錄見 §9，使用說明與已知限制見 §10
 > 分支：`feat/ssh-vpn`（worktree `/Users/omar/myprojects/orca-worktrees/feat-ssh-vpn`），每個 Phase 完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -210,7 +210,7 @@ type SshVpnState = { profiles: SshVpnProfile[]; assignments: Record<string /* Ss
 - 主機表單加入 VPN 下拉選單，包含新增主機時的寫入流程。
 - 驗收：兩邊設定的結果一致（在一邊改，另一邊馬上看得到）。
 
-### Phase 3：收尾
+### Phase 3：收尾——已完成
 
 - 設定檔可以調整閒置分鐘數，並驗證關閉 Orca 時和當機後重開的清理。
 - 在 `docs/fork/` 補上使用說明與已知限制，用 fork build script 打包給使用者安裝。
@@ -328,3 +328,36 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 - Docker 整合測試 7 個：原本 5 個，加上「防火牆對照（root 連得到外網，`tunnel` 連不到）」和「帳密登入（錯誤密碼得到 `AUTH_FAILED` 並清掉；正確密碼經由 VPN 連到 sshd；帳密檔是 `600 root`）」。測試伺服器多開一個需要帳密的 OpenVPN（udp/1195）。
 - e2e 2 個：原本的憑證流程，加上「沒有保存密碼時跳出登入框，輸入後 SFTP 經由 VPN 連線，密碼依設定保存」。
 - 測試內網的 helper 放回 `src/main/ssh-vpn/ssh-vpn-test-network.ts`（改用 `runProcess`），e2e spec 從 src import（已有前例），fixture 仍在 `tests/e2e/fixtures/ssh-vpn/`。
+
+### Phase 3：收尾（2026-09-29）——已完成
+
+- 使用者用自己的「豐田固定ip.ovpn」（ASUS RT-AC86U，憑證加帳密）實測成功。過程中發現並修正：ASUS 會推送 Windows 專用的 `block-outside-dns`，OpenVPN 在 Linux 上只記一行「Options error」警告就繼續，但 manager 把所有「Options error」都當成致命錯誤。現在只有 `AUTH_FAILED` 和「Exiting due to fatal error」會讓啟動失敗，另外加上 `--pull-filter ignore block-outside-dns`；測試伺服器也改成會推送這個選項。
+- 刪除主機後殘留的指派：VPN UI 每次載入時，依 SSH 主機清單清掉（不必掛在 upstream 的刪除流程上；重新加入的主機會拿到新的 id）。
+- **更正 Phase 0 對 `orca serve` 的推測**：main 的 SSH 連線都由 `registerSshHandlers` 建立，它只在有視窗的模式執行，而且在 `registerCoreHandlers`（VPN 服務註冊的地方）之後（`desktop-startup-ordering.test.ts` 保證這個順序）。沒有視窗時 main 不建立 SSH 連線，所以不存在繞過 VPN 的路徑，不需要另外處理。
+
+## 10. 使用說明與已知限制
+
+**需求**：Docker Desktop、OrbStack 或 Colima 正在執行。第一次連線會在本機建置 `orca-ssh-vpn:<雜湊>` 映像檔（需要連網，約數十秒）。
+
+**設定**：
+1. 在 SSH 頁或 SFTP 頁主機欄的「VPN」按鈕，或設定 → SSH 的 VPN 區塊，新增 .ovpn。需要帳密的設定檔會多出帳號、密碼和保存方式。
+2. 在主機上按右鍵選 VPN，或在設定 → SSH 編輯主機時選。新增主機時要先存檔才能選。
+3. 連線時會先跳出確認框，列出每一條 docker 指令；沒有保存密碼時會再跳登入框。
+
+**行為**：
+- 每個設定檔一個容器（`orca-ssh-vpn-<實例>-<設定檔 id>`），不開任何 port；每條連線是一個 `docker exec -i --user tunnel <容器> nc -w 30 <主機> <埠>`，防火牆只允許它從 VPN 出去。
+- 沒有連線使用時，閒置設定的分鐘數（預設 10）後自動斷線；關閉 Orca 時一定移除容器。當機留下的容器會在下次啟動時清掉。
+- VPN 起不來、設定檔壞掉、或主機的 VPN 設定檔不見時，一律拒絕連線，不會改成直接連線。
+
+**已知限制**：
+- 不支援：一次性驗證碼（MFA，`static-challenge`）、SSO／SAML、硬體權杖、密碼保護的私鑰。
+- 主機若已經設定 ProxyJump／ProxyCommand（包含 `~/.ssh/config` 的 `Host *`），不能再指定 VPN。
+- VPN 沒有推送到目標主機的路由時（split tunnel），連線會被防火牆拒絕，而不是直接連出去。錯誤訊息目前只顯示 SSH 層的連線失敗，沒有特別說明是「VPN 沒有這台主機的路由」。
+- Windows 和 Linux 只有單元測試覆蓋；Windows 的 SSH 頁指令依賴 PATH 上的 `docker`。
+
+**測試**：
+```
+node_modules/.bin/vitest run --config config/vitest.config.ts src/main/ssh-vpn src/shared/ssh-vpn-command-format.test.ts src/renderer/src/components/ssh-vpn src/renderer/src/components/ssh-page
+ORCA_TEST_SSH_VPN_DOCKER=1 node_modules/.bin/vitest run --config config/vitest.config.ts src/main/ssh-vpn/ssh-vpn-docker.integration.test.ts
+ORCA_E2E_SSH_VPN_DOCKER=1 node_modules/.bin/playwright test --config tests/playwright.config.ts tests/e2e/ssh-vpn-docker.spec.ts
+```
