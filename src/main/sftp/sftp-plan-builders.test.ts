@@ -1,8 +1,11 @@
+import { randomBytes } from 'node:crypto'
 import {
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
+  renameSync,
   rmSync,
   symlinkSync,
   writeFileSync
@@ -13,6 +16,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { formatSftpOperation } from '../../shared/sftp-operation-format'
 import type { SftpPlanRequest } from '../../shared/sftp-types'
 import { runSftpOperations } from './sftp-operation-runner'
+import { localFileIdentity } from './sftp-planned-upload'
 import { draftSftpPlan } from './sftp-plan-builders'
 import { FakeSftp } from './sftp-test-support'
 
@@ -204,7 +208,8 @@ describe('runSftpOperations', () => {
           op: 'put',
           local: path.join(localRoot, 'new.txt'),
           remote: '/srv/project/new.txt',
-          size: 1
+          size: 1,
+          source: localFileIdentity(lstatSync(path.join(localRoot, 'new.txt'), { bigint: true }))
         }
       ],
       () => undefined
@@ -247,4 +252,90 @@ describe('runSftpOperations', () => {
     expect(readFileSync(path.join(localRoot, 'a.txt'), 'utf8')).toBe('abc')
     expect(readdirSync(localRoot)).toEqual(['a.txt'])
   })
+
+  it('uploads a file larger than one write in order, reporting progress up to its size', async () => {
+    const content = randomBytes(200 * 1024 + 7)
+    writeFileSync(path.join(localRoot, 'big.bin'), content)
+    const sftp = new FakeSftp().addDir('/srv')
+    const plan = await draftSftpPlan(sftp, upload(['big.bin']))
+    const reported: number[] = []
+
+    await runSftpOperations(sftp, plan.operations, (progress) =>
+      reported.push(progress.transferredBytes)
+    )
+
+    const node = sftp.nodes.get('/srv/big.bin')
+    expect(node?.kind === 'file' && node.content.equals(content)).toBe(true)
+    expect(reported).toEqual([...reported].sort((a, b) => a - b))
+    expect(reported.at(-1)).toBe(content.length)
+  })
+
+  it('refuses a planned upload whose file became a link after confirmation', async () => {
+    writeFileSync(path.join(localRoot, 'secret.txt'), 'do not send')
+    writeFileSync(path.join(localRoot, 'a.txt'), 'planned')
+    const sftp = new FakeSftp().addDir('/srv')
+    const plan = await draftSftpPlan(sftp, upload(['a.txt']))
+    rmSync(path.join(localRoot, 'a.txt'))
+    symlinkSync(path.join(localRoot, 'secret.txt'), path.join(localRoot, 'a.txt'))
+
+    await expect(runSftpOperations(sftp, plan.operations, () => undefined)).rejects.toThrow(
+      'was replaced after the upload was confirmed'
+    )
+    expect(sftp.nodes.has('/srv/a.txt')).toBe(false)
+  })
+
+  it('refuses a planned upload whose path now holds a different file', async () => {
+    writeFileSync(path.join(localRoot, 'a.txt'), 'planned')
+    const sftp = new FakeSftp().addDir('/srv')
+    const plan = await draftSftpPlan(sftp, upload(['a.txt']))
+    // Why write then rename: the old file still exists while the new one is created, so it gets another inode.
+    writeFileSync(path.join(localRoot, 'next.txt'), 'swapped in')
+    renameSync(path.join(localRoot, 'next.txt'), path.join(localRoot, 'a.txt'))
+
+    await expect(runSftpOperations(sftp, plan.operations, () => undefined)).rejects.toThrow(
+      'was replaced after the upload was confirmed'
+    )
+    expect(sftp.nodes.has('/srv/a.txt')).toBe(false)
+  })
+
+  it('refuses a planned upload whose folder became a link after confirmation', async () => {
+    mkdirSync(path.join(localRoot, 'project', 'keys'), { recursive: true })
+    writeFileSync(path.join(localRoot, 'project', 'keys', 'id'), 'public')
+    mkdirSync(path.join(localRoot, 'private'))
+    writeFileSync(path.join(localRoot, 'private', 'id'), 'private key')
+    const sftp = new FakeSftp().addDir('/srv')
+    const plan = await draftSftpPlan(sftp, upload(['project']))
+    renameSync(path.join(localRoot, 'project', 'keys'), path.join(localRoot, 'project', 'old'))
+    symlinkSync(path.join(localRoot, 'private'), path.join(localRoot, 'project', 'keys'))
+
+    await expect(runSftpOperations(sftp, plan.operations, () => undefined)).rejects.toThrow(
+      'was replaced after the upload was confirmed'
+    )
+    expect(sftp.readText('/srv/project/keys/id')).toBeNull()
+  })
+
+  it('never writes a download through a link planted beside the target', async () => {
+    const sftp = remoteApp()
+    writeFileSync(path.join(localRoot, 'victim.txt'), 'keep me')
+    symlinkSync(path.join(localRoot, 'victim.txt'), path.join(localRoot, 'a.txt.orca-download'))
+
+    await runSftpOperations(
+      sftp,
+      [{ op: 'get', remote: '/srv/app/a.txt', local: path.join(localRoot, 'a.txt'), size: 3 }],
+      () => undefined
+    )
+
+    expect(readFileSync(path.join(localRoot, 'victim.txt'), 'utf8')).toBe('keep me')
+    expect(readFileSync(path.join(localRoot, 'a.txt'), 'utf8')).toBe('abc')
+    expect(readdirSync(localRoot).sort()).toEqual(['a.txt', 'a.txt.orca-download', 'victim.txt'])
+  })
 })
+
+function upload(names: string[]): SftpPlanRequest {
+  return {
+    kind: 'upload',
+    targetId: 'web',
+    sources: names.map((name) => path.join(localRoot, name)),
+    destinationDir: '/srv'
+  }
+}

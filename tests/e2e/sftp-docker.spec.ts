@@ -1,4 +1,12 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import type { Page } from '@stablyai/playwright-test'
@@ -106,19 +114,22 @@ test.describe('SFTP page against a Docker sshd', () => {
       expect(result.home).toEqual({ ok: true, value: '/root' })
       expect(result.mkdir.executed).toEqual(done)
       expect(result.upload.executed).toEqual(done)
+      const plannedFile = { dev: expect.any(String), ino: expect.any(String) }
       expect(result.upload.planned.ok && result.upload.planned.value.operations).toEqual([
         {
           op: 'put',
           local: path.join(outbox, 'hello.txt'),
           remote: `${REMOTE_DIR}/hello.txt`,
-          size: 10
+          size: 10,
+          source: plannedFile
         },
         { op: 'mkdir', path: `${REMOTE_DIR}/nested`, keepExisting: true },
         {
           op: 'put',
           local: path.join(outbox, 'nested', 'deep.txt'),
           remote: `${REMOTE_DIR}/nested/deep.txt`,
-          size: 4
+          size: 4,
+          source: plannedFile
         }
       ])
       // A plan runs once; a plan id main never issued runs nothing.
@@ -135,7 +146,7 @@ test.describe('SFTP page against a Docker sshd', () => {
       expect(result.download.executed).toEqual(done)
       expect(readFileSync(path.join(inbox, 'hello.txt'), 'utf8')).toBe('hello sftp')
       expect(readFileSync(path.join(inbox, 'nested', 'deep.txt'), 'utf8')).toBe('deep')
-      expect(existsSync(path.join(inbox, 'hello.txt.orca-download'))).toBe(false)
+      expect(readdirSync(inbox).sort()).toEqual(['hello.txt', 'nested'])
 
       // Why: SFTP runs on its own connection; the relay's per-host status must not claim one.
       const relayStatus = await orcaPage.evaluate(

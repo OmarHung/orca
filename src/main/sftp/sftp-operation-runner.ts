@@ -1,9 +1,9 @@
-import { lstat, mkdir, rename, rm } from 'node:fs/promises'
+import { lstat, mkdir, mkdtemp, rename, rm } from 'node:fs/promises'
+import path from 'node:path'
 import type { SftpOperation } from '../../shared/sftp-types'
 import {
   isSftpFailureStatus,
   sftpFastGet,
-  sftpFastPut,
   sftpMkdir,
   sftpRename,
   sftpRmdir,
@@ -11,10 +11,11 @@ import {
   sftpUnlink,
   type SftpOps
 } from './sftp-ops'
+import { uploadPlannedFile } from './sftp-planned-upload'
 
 export type OperationProgress = { transferredBytes: number; currentFile: string | null }
 
-const PARTIAL_DOWNLOAD_SUFFIX = '.orca-download'
+const PARTIAL_DOWNLOAD_PREFIX = '.orca-download-'
 
 async function remoteMkdir(sftp: SftpOps, dir: string, keepExisting: boolean): Promise<void> {
   try {
@@ -49,20 +50,21 @@ async function localMkdir(dir: string): Promise<void> {
 }
 
 // Why: download beside the target and rename on success, so a failed transfer never
-// truncates a file the user already had.
+// truncates a file the user already had. The partial file goes in a folder mkdtemp just made:
+// fastGet follows links, and a fixed partial name could already be a link to another file.
 async function download(
   sftp: SftpOps,
   remote: string,
   local: string,
   onStep: (transferred: number) => void
 ): Promise<void> {
-  const partial = `${local}${PARTIAL_DOWNLOAD_SUFFIX}`
+  const partialDir = await mkdtemp(path.join(path.dirname(local), PARTIAL_DOWNLOAD_PREFIX))
   try {
+    const partial = path.join(partialDir, path.basename(local))
     await sftpFastGet(sftp, remote, partial, onStep)
     await rename(partial, local)
-  } catch (err) {
-    await rm(partial, { force: true })
-    throw err
+  } finally {
+    await rm(partialDir, { recursive: true, force: true })
   }
 }
 
@@ -88,7 +90,7 @@ export async function runSftpOperations(
           onProgress({ transferredBytes: completed + transferred, currentFile: current })
         onProgress({ transferredBytes: completed, currentFile: current })
         await (operation.op === 'put'
-          ? sftpFastPut(sftp, operation.local, operation.remote, onStep)
+          ? uploadPlannedFile(sftp, operation, onStep)
           : download(sftp, operation.remote, operation.local, onStep))
         completed += operation.size
         break

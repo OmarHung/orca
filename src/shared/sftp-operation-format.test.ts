@@ -14,7 +14,8 @@ describe('formatSftpOperation', () => {
         op: 'put',
         local: '/Users/me/a b.txt',
         remote: '/srv/a b.txt',
-        size: 1
+        size: 1,
+        source: { dev: '1', ino: '2' }
       })
     ).toBe('put "/Users/me/a b.txt" "/srv/a b.txt"')
     expect(formatSftpOperation({ op: 'rm', path: '/srv/報告.txt' })).toBe('rm "/srv/報告.txt"')
