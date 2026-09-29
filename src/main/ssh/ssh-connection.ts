@@ -49,6 +49,7 @@ import {
 } from './ssh-connection-utils'
 import { collectKeyboardInteractiveResponses } from './ssh-keyboard-interactive'
 import { resolveEffectiveProxy, spawnProxyCommand } from './ssh-proxy-command'
+import { prepareSshVpnRoute } from '../ssh-vpn/ssh-vpn-route'
 import {
   createHostKeyVerifier,
   DEFAULT_SERVER_HOST_KEY_ALGORITHMS,
@@ -831,6 +832,11 @@ export class SshConnection {
       () => null
     )
     this.hostKeyResolvedConfig = resolved
+    // Why before transport selection: whichever transport runs below must leave through the host's VPN.
+    const vpnProxy = await prepareSshVpnRoute(this.target, resolved)
+    if (!this.isCurrentConnectAttempt(connectGeneration)) {
+      throw this.createCancelledConnectAttemptError()
+    }
     const usesConfiguredSystemTransport = shouldUseSystemSshTransport(this.target, resolved)
     const requiresSecurityKeyTransport = usesConfiguredSystemTransport
       ? false
@@ -866,7 +872,7 @@ export class SshConnection {
     const config = buildConnectConfig(this.target, resolved)
 
     // Why: ssh2 doesn't support ProxyCommand/ProxyJump natively; spawn the resolved proxy and pipe its stdin/stdout as config.sock.
-    const effectiveProxy = resolveEffectiveProxy(this.target, resolved)
+    const effectiveProxy = vpnProxy ?? resolveEffectiveProxy(this.target, resolved)
     if (effectiveProxy) {
       const proxy = spawnProxyCommand(effectiveProxy, config.host!, config.port!, config.username!)
       this.proxyProcess = proxy.process
