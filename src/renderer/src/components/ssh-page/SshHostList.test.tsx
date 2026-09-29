@@ -4,6 +4,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SshTarget } from '../../../../shared/ssh-types'
+import { ContextMenuItem } from '../ui/context-menu'
 import { SshHostList } from './SshHostList'
 
 const targets: SshTarget[] = [
@@ -28,6 +29,7 @@ afterEach(async () => {
 async function renderList(props: {
   currentTargetId?: string | null
   onSelect?: (target: SshTarget) => void
+  hostMenuItems?: (target: SshTarget) => React.ReactNode
 }): Promise<void> {
   await act(async () => {
     root.render(
@@ -35,6 +37,7 @@ async function renderList(props: {
         targets={targets}
         currentTargetId={props.currentTargetId}
         onSelect={props.onSelect ?? vi.fn()}
+        hostMenuItems={props.hostMenuItems}
       />
     )
   })
@@ -78,6 +81,24 @@ describe('SshHostList', () => {
     await renderList({ currentTargetId: 'ci' })
 
     expect(rows().map((row) => row.dataset.current ?? null)).toEqual([null, 'true'])
+  })
+
+  it('puts the page actions for a host above the VPN choice in its right-click menu', async () => {
+    const onOpen = vi.fn()
+    await renderList({
+      hostMenuItems: (target) => (
+        <ContextMenuItem onSelect={() => onOpen(target.id)}>Open in new tab</ContextMenuItem>
+      )
+    })
+
+    await act(async () => {
+      rows()[1].dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))
+    })
+    const items = [...document.querySelectorAll<HTMLElement>('[data-slot="context-menu-item"]')]
+    expect(items[0]?.textContent).toBe('Open in new tab')
+    await act(async () => items[0]?.click())
+
+    expect(onOpen).toHaveBeenCalledWith('ci')
   })
 
   it('filters by the search box and says when nothing matches', async () => {
