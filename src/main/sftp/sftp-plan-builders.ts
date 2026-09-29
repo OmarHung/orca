@@ -96,6 +96,14 @@ async function remoteExists(sftp: SftpOps, target: string): Promise<boolean> {
   )
 }
 
+// Why: lstat, so a dangling link at the destination still counts as taken.
+async function remoteEntryExists(sftp: SftpOps, target: string): Promise<boolean> {
+  return sftpLstat(sftp, target).then(
+    () => true,
+    () => false
+  )
+}
+
 async function localExists(target: string): Promise<boolean> {
   return stat(target).then(
     () => true,
@@ -147,6 +155,48 @@ async function draftDownload(
   return { operations: list.operations, totalBytes: list.totalBytes, conflicts }
 }
 
+function normalizeRemote(target: string): string {
+  const normalized = remotePath.normalize(target)
+  return normalized.length > 1 ? normalized.replace(/\/+$/, '') : normalized
+}
+
+/**
+ * One rename per item. Items already in the folder are skipped; names taken there are reported
+ * as conflicts because OpenSSH's rename never replaces an existing entry.
+ */
+async function draftMove(
+  sftp: SftpOps,
+  sources: readonly string[],
+  destinationDir: string
+): Promise<SftpPlanDraft> {
+  const destination = normalizeRemote(destinationDir)
+  const isFolder = await sftpStat(sftp, destination).then(
+    (stats) => stats.isDirectory(),
+    () => false
+  )
+  if (!isFolder) {
+    throw new Error(`"${destination}" is not a folder.`)
+  }
+  const list = new OperationList()
+  const conflicts: string[] = []
+  for (const source of sources) {
+    const from = normalizeRemote(source)
+    const name = remotePath.basename(from)
+    if (!isPlainName(name) || remotePath.dirname(from) === destination) {
+      continue
+    }
+    if (destination === from || destination.startsWith(`${from}/`)) {
+      throw new Error(`Cannot move "${name}" into itself.`)
+    }
+    const to = remotePath.join(destination, name)
+    if (await remoteEntryExists(sftp, to)) {
+      conflicts.push(name)
+    }
+    list.add({ op: 'rename', from, to })
+  }
+  return { operations: list.operations, totalBytes: 0, conflicts }
+}
+
 async function draftRemoval(sftp: SftpOps, paths: readonly string[]): Promise<SftpPlanDraft> {
   const list = new OperationList()
   for (const target of paths) {
@@ -167,6 +217,8 @@ export async function draftSftpPlan(
       return draftDownload(sftp, request.sources, request.destinationDir)
     case 'remove':
       return draftRemoval(sftp, request.paths)
+    case 'move':
+      return draftMove(sftp, request.sources, request.destinationDir)
     case 'mkdir':
       return {
         operations: [{ op: 'mkdir', path: request.path, keepExisting: false }],

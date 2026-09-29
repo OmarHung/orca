@@ -19381,7 +19381,9 @@
       "rename": "重新命名",
       "download": "下載",
       "dropHint": "空資料夾。將檔案拖到這裡即可上傳。",
-      "delete": "刪除"
+      "delete": "刪除",
+      "move": "移動",
+      "moveTo": "移動到…"
     },
     "local": {
       "upload": "上傳",
@@ -19404,7 +19406,8 @@
       "replaceWarning": "目標位置已存在，檔案會被替換、資料夾會合併：{{names}}",
       "legend": "以 OpenSSH sftp 批次指令格式表示。開頭的“-”表示保留已存在的資料夾。",
       "partialNote": "每個檔案會先儲存為“<名稱>.orca-download”，完成後再改名，因此下載失敗不會損壞已有的檔案。",
-      "nothingToDo": "沒有可傳輸的內容：所選內容中沒有普通檔案或資料夾。"
+      "nothingToDo": "沒有可傳輸的內容：所選內容中沒有普通檔案或資料夾。",
+      "moveTitle": "要在 {{host}} 上移動嗎？"
     },
     "tabs": {
       "label": "SFTP 分頁",
@@ -19413,6 +19416,14 @@
       "missingHost": "“{{name}}”已不在你的 SSH 主機中，請關閉此分頁。",
       "pickerTitle": "開啟 SFTP 分頁",
       "pickerDescription": "選擇要瀏覽的主機。"
+    },
+    "move": {
+      "titleOne": "將“{{name}}”移動到…",
+      "titleMany": "將所選的 {{count}} 項移動到…",
+      "destination": "目標資料夾",
+      "conflict": "目標資料夾中已有：{{names}}。請先重新命名或刪除它們。",
+      "nothingToDo": "已經在該資料夾中。",
+      "intoItself": "無法將資料夾移動到它自己裡面。"
     }
   },
   "commandConfirm": {
