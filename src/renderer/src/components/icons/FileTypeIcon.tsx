@@ -5,6 +5,7 @@ import {
   getPluginFileTypeIconIndex,
   getPluginFolderIconIndex
 } from '@/lib/file-icons/file-type-icons'
+import { getFolderTypeIcon } from '@/lib/folder-type-icons'
 import {
   PLUGIN_ICON_ATTRIBUTE,
   useActivePluginIconTheme
@@ -53,7 +54,11 @@ export function FolderIcon({
     open
   )
   return index === null ? (
-    createElement(open ? FolderOpen : Folder, { 'aria-hidden': true, className, style })
+    createElement(getFolderTypeIcon(folderPath) ?? (open ? FolderOpen : Folder), {
+      'aria-hidden': true,
+      className,
+      style
+    })
   ) : (
     <PluginIcon index={index} className={className} style={style} />
   )

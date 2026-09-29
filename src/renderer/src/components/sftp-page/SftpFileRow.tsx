@@ -1,4 +1,7 @@
-import { File, FileSymlink, Folder, FolderUp } from 'lucide-react'
+import { createElement } from 'react'
+import { File, FileSymlink, Folder, FolderUp, type LucideIcon } from 'lucide-react'
+import { getFileTypeIcon } from '@/lib/file-type-icons'
+import { getFolderTypeIcon } from '@/lib/folder-type-icons'
 import type { SftpEntry } from '../../../../shared/sftp-types'
 import { sftpCellText, type SftpColumnId, type SftpColumnWidths } from './sftp-columns'
 
@@ -17,9 +20,17 @@ const ROW_CLASS =
 /** Where a moved row lands; only rows with a `dropDir` accept a drop. */
 type RowDropProps = { dropDir?: string; isDropTarget?: boolean }
 
-function EntryIcon({ kind }: { kind: SftpEntry['kind'] }): React.JSX.Element {
-  const Icon = kind === 'directory' ? Folder : kind === 'symlink' ? FileSymlink : File
-  return <Icon className="mr-2 size-3.5 shrink-0 text-muted-foreground" />
+function entryIcon({ kind, name }: SftpEntry): LucideIcon {
+  switch (kind) {
+    case 'directory':
+      return getFolderTypeIcon(name) ?? Folder
+    case 'symlink':
+      return FileSymlink
+    case 'file':
+      return getFileTypeIcon(name)
+    case 'other':
+      return File
+  }
 }
 
 export function SftpFileRow({
@@ -58,7 +69,9 @@ export function SftpFileRow({
       onContextMenu={onContextMenu}
       className={ROW_CLASS}
     >
-      <EntryIcon kind={entry.kind} />
+      {createElement(entryIcon(entry), {
+        className: 'mr-2 size-3.5 shrink-0 text-muted-foreground'
+      })}
       {columns.map((column) => {
         const text = sftpCellText(column, entry)
         return (
