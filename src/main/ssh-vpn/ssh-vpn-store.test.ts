@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -55,6 +55,20 @@ describe('SshVpnStore', () => {
     store.pruneAssignments(new Set(['kept']))
 
     expect(store.listAssignments()).toEqual({ kept: profile.id })
+  })
+
+  it('picks up edits made to the file by someone else', () => {
+    const store = new SshVpnStore(filePath)
+    const profile = store.saveProfile(undefined, DRAFT)
+    expect(store.profileForTarget('target-a')).toBeNull()
+
+    const edited = JSON.parse(readFileSync(filePath, 'utf8'))
+    edited.assignments = { 'target-a': profile.id }
+    writeFileSync(filePath, JSON.stringify(edited))
+    // Why: same-millisecond writes would share an mtime; move it so the change is observable.
+    utimesSync(filePath, new Date(), new Date(Date.now() + 5_000))
+
+    expect(store.profileForTarget('target-a')).toEqual(profile)
   })
 
   it('skips malformed records instead of dropping the whole file', () => {

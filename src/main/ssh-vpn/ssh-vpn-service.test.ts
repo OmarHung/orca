@@ -48,11 +48,11 @@ describe('SshVpnService', () => {
     await expect(service.prepare(target(), null)).resolves.toEqual({
       kind: 'argv',
       program: '/usr/local/bin/docker',
-      args: ['exec', '-i', 'orca-ssh-vpn-t-p', 'nc', '%h', '%p']
+      args: ['exec', '-i', 'orca-ssh-vpn-t-p', 'nc', '-w', '30', '%h', '%p']
     })
     expect(manager.acquire).toHaveBeenCalledWith(PROFILE)
     expect(service.proxyCommand(target())).toBe(
-      '/usr/local/bin/docker exec -i orca-ssh-vpn-t-p nc %h %p'
+      '/usr/local/bin/docker exec -i orca-ssh-vpn-t-p nc -w 30 %h %p'
     )
   })
 
