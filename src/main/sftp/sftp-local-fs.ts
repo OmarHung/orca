@@ -8,6 +8,17 @@ export function localHomeDirectory(): string {
   return os.homedir()
 }
 
+let currentUser: { uid: number; name: string } | null = null
+
+// Why: only the signed-in user's name is cheap to know; other owners show their uid.
+function ownerName(uid: number): string {
+  if (currentUser === null) {
+    const info = os.userInfo()
+    currentUser = { uid: info.uid, name: info.username }
+  }
+  return uid === currentUser.uid ? currentUser.name : String(uid)
+}
+
 /** The local pane's listing. Read-only: nothing here writes to the local disk. */
 export async function listLocalDirectory(dir: string): Promise<SftpEntry[]> {
   const names = await readdir(dir)
@@ -27,7 +38,9 @@ export async function listLocalDirectory(dir: string): Promise<SftpEntry[]> {
                 ? 'file'
                 : 'other',
           size: stats.size,
-          modifiedMs: stats.mtimeMs
+          modifiedMs: stats.mtimeMs,
+          createdMs: stats.birthtimeMs > 0 ? stats.birthtimeMs : null,
+          owner: ownerName(stats.uid)
         }
       } catch {
         // Why: an entry can vanish or be unreadable between readdir and lstat; skip it.

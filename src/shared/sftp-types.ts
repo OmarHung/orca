@@ -5,6 +5,10 @@ export type SftpEntry = {
   kind: 'file' | 'directory' | 'symlink' | 'other'
   size: number
   modifiedMs: number
+  /** Null for remote entries: SFTP v3 (OpenSSH) does not report a creation time. */
+  createdMs: number | null
+  /** User name when known, else the numeric uid. */
+  owner: string | null
 }
 
 export type SftpResult<T> = { ok: true; value: T } | { ok: false; error: { message: string } }
