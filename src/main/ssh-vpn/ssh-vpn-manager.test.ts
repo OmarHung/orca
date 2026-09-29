@@ -1,7 +1,8 @@
 import { EventEmitter } from 'node:events'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SshVpnProfile, SshVpnProfileState } from '../../shared/ssh-vpn-types'
-import { SshVpnManager, type SshVpnDockerPort } from './ssh-vpn-manager'
+import { SshVpnManager } from './ssh-vpn-manager'
+import type { SshVpnDockerPort } from './ssh-vpn-manager-types'
 
 const PROFILE: SshVpnProfile = {
   id: 'profile-0001',
@@ -27,6 +28,7 @@ function createFakeDocker(script: string[][] = [[READY]]) {
     hasImage: vi.fn(async () => true),
     buildImage: vi.fn(async () => undefined),
     startContainer: vi.fn(async () => undefined),
+    applyFirewall: vi.fn(async () => undefined),
     writeFile: vi.fn(async () => undefined),
     countTunnels: vi.fn(async () => 0),
     remove: vi.fn(async () => undefined),
@@ -123,10 +125,10 @@ describe('SshVpnManager', () => {
   it('refuses unsupported profiles before touching Docker', async () => {
     const { docker } = createFakeDocker()
     const { manager } = createManager(docker, {
-      readFile: async () => Buffer.from('auth-user-pass\n')
+      readFile: async () => Buffer.from('static-challenge "OTP" 1\n')
     })
 
-    await expect(manager.acquire(PROFILE)).rejects.toThrow(/username\/password login/)
+    await expect(manager.acquire(PROFILE)).rejects.toThrow(/one-time codes/)
     expect(docker.startContainer).not.toHaveBeenCalled()
   })
 
@@ -273,6 +275,50 @@ describe('SshVpnManager', () => {
     await manager.acquire(PROFILE, { confirm })
 
     expect(confirm).toHaveBeenCalledTimes(1)
+  })
+
+  it('writes the login into the container and tells OpenVPN to read it', async () => {
+    const { docker } = createFakeDocker()
+    const { manager } = createManager(docker, {
+      readFile: async () => Buffer.from('client\nauth-user-pass\n')
+    })
+
+    await manager.acquire(PROFILE, {
+      credentials: async () => ({ username: 'omar', password: 'secret' })
+    })
+
+    expect(docker.writeFile).toHaveBeenCalledWith(
+      CONTAINER,
+      '/run/orca/login',
+      Buffer.from('omar\nsecret\n')
+    )
+    expect(docker.spawnOpenVpn).toHaveBeenCalledWith(CONTAINER, true)
+  })
+
+  it('treats a cancelled login as not starting, and reports a rejected one', async () => {
+    const { docker } = createFakeDocker([
+      [
+        '2026-09-29 10:00:00 AUTH: Received control message: AUTH_FAILED\n',
+        '2026-09-29 10:00:00 Exiting due to fatal error\n'
+      ]
+    ])
+    const { manager } = createManager(docker, {
+      readFile: async () => Buffer.from('client\nauth-user-pass\n')
+    })
+
+    await expect(manager.acquire(PROFILE, { credentials: async () => null })).rejects.toThrow(
+      'VPN "Office" was not started'
+    )
+    expect(docker.startContainer).not.toHaveBeenCalled()
+
+    const onLoginRejected = vi.fn()
+    await expect(
+      manager.acquire(PROFILE, {
+        credentials: async () => ({ username: 'omar', password: 'wrong' }),
+        onLoginRejected
+      })
+    ).rejects.toThrow('VPN "Office": The VPN server rejected the login (AUTH_FAILED)')
+    expect(onLoginRejected).toHaveBeenCalledTimes(1)
   })
 
   it('removes containers a previous run left behind', async () => {

@@ -20045,7 +20045,7 @@
       "namePlaceholder": "Office VPN",
       "ovpnPath": "OpenVPN profile (.ovpn)",
       "browse": "Choose…",
-      "ovpnHelp": "Certificate-only profiles are supported. Orca reads the file each time it connects and never copies it.",
+      "ovpnHelp": "Orca reads the file each time it connects and never copies it. Profiles that need one-time codes (MFA) are not supported yet.",
       "idle": "Disconnect when idle (minutes)",
       "idleHelp": "Counted from when the last connection through this VPN closes. 0 keeps it connected until Orca quits.",
       "cancel": "Cancel",
@@ -20089,6 +20089,24 @@
       "tunnelNote": "Each SSH connection then runs `docker exec -i <container> nc -w 30 <host> <port>` to reach the host through the VPN.",
       "start": "Start VPN"
     },
-    "button": "VPN"
+    "button": "VPN",
+    "login": {
+      "username": "VPN username",
+      "password": "VPN password",
+      "passwordSaved": "Saved — type to replace",
+      "passwordAsk": "Leave empty to be asked",
+      "storage": "Keep the password",
+      "storageForever": "In the system keychain",
+      "storageSession": "Until Orca quits",
+      "storageNever": "Ask every time",
+      "noKeychain": "This system has no secure password storage, so passwords are kept only until Orca quits."
+    },
+    "prompt": {
+      "title": "Log in to VPN \"{{name}}\"",
+      "forHost": "Connecting to {{host}} needs this VPN.",
+      "manual": "This VPN asks for a username and password.",
+      "cancel": "Cancel",
+      "connect": "Connect"
+    }
   }
 }

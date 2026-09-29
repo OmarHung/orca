@@ -3,8 +3,13 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SshVpnProfile, SshVpnSnapshot } from '../../../../shared/ssh-vpn-types'
+import type {
+  SshVpnCredentialRequest,
+  SshVpnProfile,
+  SshVpnSnapshot
+} from '../../../../shared/ssh-vpn-types'
 import { SshHostVpnBadge } from './SshHostVpnMenu'
+import { SshVpnLoginPromptHost } from './SshVpnLoginPromptHost'
 import { SshVpnProfilesPanel } from './SshVpnProfilesPanel'
 import { useSshVpnStore } from './ssh-vpn-store'
 
@@ -25,14 +30,21 @@ const SNAPSHOT: SshVpnSnapshot = {
       error: 'TLS Error: TLS handshake failed',
       logTail: ['2026-09-29 10:00:00 TLS Error: TLS handshake failed']
     }
-  ]
+  ],
+  savedPasswordProfileIds: [],
+  canStorePasswords: true
 }
 
 const api = {
-  snapshot: vi.fn(async () => SNAPSHOT),
+  snapshot: vi.fn(async () => ({ ok: true as const, value: SNAPSHOT })),
+  inspectOvpn: vi.fn(async () => ({ ok: true as const, value: { needsCredentials: false } })),
   saveProfile: vi.fn(),
   onState: vi.fn(() => () => undefined),
-  onChanged: vi.fn(() => () => undefined)
+  onChanged: vi.fn(() => () => undefined),
+  answerCredentials: vi.fn(async () => undefined),
+  onCredentialRequest: vi.fn(
+    (_callback: (request: SshVpnCredentialRequest) => void) => () => undefined
+  )
 }
 
 let container: HTMLDivElement
@@ -53,6 +65,20 @@ afterEach(async () => {
 
 async function render(node: React.ReactNode): Promise<void> {
   await act(async () => root.render(node))
+}
+
+function setInputValue(id: string, value: string): void {
+  const input = document.querySelector<HTMLInputElement>(`#${id}`)
+  if (!input) {
+    throw new Error(`missing ${id}`)
+  }
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+  setter?.call(input, value)
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+function buttonNamed(name: string): HTMLButtonElement | undefined {
+  return [...document.querySelectorAll('button')].find((button) => button.textContent === name)
 }
 
 describe('SshHostVpnBadge', () => {
@@ -123,5 +149,80 @@ describe('SshVpnProfilesPanel', () => {
       draft: { name: 'Office', ovpnPath: '/vpn/office.ovpn', idleMinutes: 10 }
     })
     expect(form?.textContent).toContain('This profile needs username/password login')
+  })
+})
+
+describe('VPN logins', () => {
+  it('asks for a username and keeps the password as chosen when the .ovpn needs a login', async () => {
+    api.inspectOvpn.mockResolvedValue({ ok: true, value: { needsCredentials: true } })
+    api.saveProfile.mockResolvedValue({ ok: true, value: PROFILE })
+    await render(<SshVpnProfilesPanel />)
+    await act(async () => buttonNamed('Add VPN profile')?.click())
+    await act(async () => {
+      setInputValue('ssh-vpn-profile-name', 'Toyota')
+      setInputValue('ssh-vpn-profile-path', '/vpn/toyota.ovpn')
+    })
+    await act(async () => {
+      document
+        .querySelector('#ssh-vpn-profile-path')
+        ?.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+
+    expect(container.querySelector('[data-ssh-vpn-login-fields]')).not.toBeNull()
+    await act(async () => {
+      setInputValue('ssh-vpn-login-username', 'omar')
+      setInputValue('ssh-vpn-login-password', 'hunter2')
+    })
+    await act(async () => {
+      container
+        .querySelector('[data-ssh-vpn-profile-form]')
+        ?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+
+    expect(api.saveProfile).toHaveBeenLastCalledWith({
+      draft: {
+        name: 'Toyota',
+        ovpnPath: '/vpn/toyota.ovpn',
+        idleMinutes: 10,
+        username: 'omar',
+        passwordStorage: 'forever'
+      },
+      password: 'hunter2'
+    })
+  })
+
+  it('answers a login request with what was typed, and a dismissal with null', async () => {
+    let deliver: (request: SshVpnCredentialRequest) => void = () => undefined
+    api.onCredentialRequest.mockImplementation((callback) => {
+      deliver = callback
+      return () => undefined
+    })
+    await render(<SshVpnLoginPromptHost />)
+    const request: SshVpnCredentialRequest = {
+      requestId: 'r1',
+      profileName: 'Toyota',
+      username: 'omar',
+      hostLabel: 'FC-Beta',
+      error: 'The VPN server rejected the last username or password.'
+    }
+
+    await act(async () => deliver(request))
+    expect(document.body.textContent).toContain(
+      'The VPN server rejected the last username or password.'
+    )
+    await act(async () => setInputValue('ssh-vpn-prompt-password', 'fixed'))
+    await act(async () => {
+      document
+        .querySelector('[data-ssh-vpn-login-prompt] form')
+        ?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    expect(api.answerCredentials).toHaveBeenLastCalledWith({
+      requestId: 'r1',
+      credentials: { username: 'omar', password: 'fixed' }
+    })
+
+    await act(async () => deliver({ ...request, requestId: 'r2' }))
+    await act(async () => buttonNamed('Cancel')?.click())
+    expect(api.answerCredentials).toHaveBeenLastCalledWith({ requestId: 'r2', credentials: null })
   })
 })

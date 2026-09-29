@@ -11,6 +11,8 @@ export type SshVpnRouteProvider = {
   prepare(target: SshTarget, resolved: SshResolvedConfig | null): Promise<EffectiveProxy | null>
   /** ProxyCommand for system ssh; throws when the host has a VPN that is not up. */
   proxyCommand(target: SshTarget): string | null
+  /** Identifies the host's route (its VPN profile, or '' when direct) for connection reuse keys. */
+  routeKey(target: SshTarget): string
 }
 
 let provider: SshVpnRouteProvider | null = null
@@ -28,4 +30,8 @@ export function prepareSshVpnRoute(
 
 export function getSshVpnProxyCommand(target: SshTarget): string | null {
   return provider?.proxyCommand(target) ?? null
+}
+
+export function getSshVpnRouteKey(target: SshTarget): string {
+  return provider?.routeKey(target) ?? ''
 }
