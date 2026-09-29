@@ -1,7 +1,7 @@
+import { isLocalSyntheticWorkspaceId } from '../../../../../shared/local-synthetic-workspace'
 import { useAppStore } from '@/store'
 import { getWorktreeMapFromState } from '@/store/selectors'
 import { parseWorkspaceKey } from '../../../../../shared/workspace-scope'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../../shared/constants'
 import { isEphemeralSetupTerminalWorktreeId } from '../../../../../shared/ephemeral-setup-terminal-worktree-id'
 import { isLocalExecutionHost } from '../../../../../shared/execution-host'
 import { resolveTerminalWorktreeRoute } from '@/lib/terminal-worktree-route'
@@ -116,7 +116,7 @@ export function installAgentIdleWorkingHandlers(session: ConnectPanePtySession):
   // `undefined` mean the repo hasn't merged yet; coalescing that to null would fail-open a
   // remote cwd onto the local daemon (ENOENT on Docker SSH paths).
   session.hostAgnosticTerminalWorktree =
-    session.deps.worktreeId === FLOATING_TERMINAL_WORKTREE_ID ||
+    isLocalSyntheticWorkspaceId(session.deps.worktreeId) ||
     isEphemeralSetupTerminalWorktreeId(session.deps.worktreeId)
   session.worktreeProvesLocalHost = isLocalExecutionHost(session.worktree?.hostId)
   session.connectionOwnerHydrating =

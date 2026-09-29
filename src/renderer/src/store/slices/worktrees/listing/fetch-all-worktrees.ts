@@ -1,8 +1,8 @@
 import { runAsAutomaticDeselection } from '@/store/active-worktree-deselection-intent'
+import { addLocalSyntheticWorkspaceIds } from '../../../../../../shared/local-synthetic-workspace'
 import type { WorktreeSlice } from '../../worktree-helpers'
 import { isStaleWorktreeCatalogPublication } from './worktree-catalog-version-state'
 import type { WorktreeSliceGet, WorktreeSliceSet } from './worktree-slice-types'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../../../shared/constants'
 import {
   getRepoExecutionHostId,
   parseExecutionHostId,
@@ -184,8 +184,8 @@ export function createFetchAllWorktrees(
       return
     }
     const validIds = new Set<string>()
-    // Why: floating is persisted renderer state, not a repo worktree an authoritative scan returns.
-    validIds.add(FLOATING_TERMINAL_WORKTREE_ID)
+    // Why: synthetic workspaces are persisted renderer state, not repo worktrees an authoritative scan returns.
+    addLocalSyntheticWorkspaceIds(validIds)
     // Why: folder workspaces persist tabs under `folder:<id>` keys that authoritative repo scans never return.
     for (const workspace of get().folderWorkspaces ?? []) {
       validIds.add(folderWorkspaceKey(workspace.id))

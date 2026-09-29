@@ -1,5 +1,5 @@
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
 import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../shared/layout-owner-switch'
+import { isLocalSyntheticWorkspaceId } from '../../../../shared/local-synthetic-workspace'
 import type { RuntimeMobileSessionTabsResult } from '../../../../shared/runtime-types'
 import type {
   WebSessionTabsBatchContext,
@@ -31,7 +31,7 @@ export function applyWebSessionTabsSnapshotWithContext(
 ): WebSessionTabsSyncState | Partial<WebSessionTabsSyncState> {
   if (
     suppressE2eWebRuntimeBrowserSnapshot(rawSnapshot) ||
-    rawSnapshot.worktree === FLOATING_TERMINAL_WORKTREE_ID
+    isLocalSyntheticWorkspaceId(rawSnapshot.worktree)
   ) {
     return state
   }
