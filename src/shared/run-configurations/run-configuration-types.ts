@@ -22,9 +22,31 @@ export type DetectedRunConfiguration = {
   debug?: DebugLaunchTarget
 }
 
-const SHELL_SAFE = /^[A-Za-z0-9_.:@%+=,/\\-]+$/
+// Literal unquoted in POSIX shells, fish, PowerShell and cmd alike.
+const SHELL_SAFE = /^[A-Za-z0-9_.:+=/-]+$/
+// Why: inside double quotes these still act in at least one of those shells — $ and ` expand in
+// POSIX, fish and PowerShell; % and ! in cmd (and ! in interactive bash/zsh); “ ” „ end a
+// PowerShell string; POSIX shells collapse \\, and a trailing \ escapes the closing quote.
+const UNQUOTABLE = /["$`%!\u201C\u201D\u201E]|\\\\|\\$/
 
-/** Double quotes work the same in POSIX shells, cmd and PowerShell for plain arguments. */
-export function quoteShellArgument(value: string): string {
-  return SHELL_SAFE.test(value) ? value : `"${value.replace(/"/g, '\\"')}"`
+function hasControlCharacter(value: string): boolean {
+  for (const char of value) {
+    const code = char.codePointAt(0) ?? 0
+    // Why: typed into a terminal, a control character is a keystroke (Enter, Ctrl-C, escapes).
+    if (code < 0x20 || (code >= 0x7f && code <= 0x9f)) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * Commands are typed into whichever shell the terminal runs, so no one escaping scheme fits every
+ * shell; null when double quotes cannot keep `value` literal in all of them.
+ */
+export function quoteShellArgument(value: string): string | null {
+  if (SHELL_SAFE.test(value)) {
+    return value
+  }
+  return UNQUOTABLE.test(value) || hasControlCharacter(value) ? null : `"${value}"`
 }

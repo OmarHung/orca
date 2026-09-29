@@ -94,6 +94,18 @@ export function readLaunchProfileDetails(
   }
 }
 
+/** Each name with its shell-quoted form, dropping names no shell can take literally. */
+function withQuotedNames(names: readonly string[]): [string, string][] {
+  const quoted: [string, string][] = []
+  for (const name of names) {
+    const quotedName = quoteShellArgument(name)
+    if (quotedName !== null) {
+      quoted.push([name, quotedName])
+    }
+  }
+  return quoted
+}
+
 function joinProjectPath(dir: string, fileName: string): string {
   const separator = dir.includes('\\') && !dir.includes('/') ? '\\' : '/'
   return `${dir.replace(/[\\/]+$/, '')}${separator}${fileName}`
@@ -110,6 +122,10 @@ export function detectDotnetRunConfigurations(options: {
   const { projectDir, projectFileName, projectXml } = options
   const projectName = projectFileName.replace(/\.[^.]+$/, '')
   const project = quoteShellArgument(projectFileName)
+  // Why: file and profile names come from the repository; ones no shell can take literally are skipped.
+  if (project === null) {
+    return []
+  }
   const idBase = `dotnet:${projectDir}:${projectFileName}`
   const projectFile = joinProjectPath(projectDir, projectFileName)
   const base = { ecosystem: 'dotnet' as const, projectName, projectDir, projectFile }
@@ -138,12 +154,12 @@ export function detectDotnetRunConfigurations(options: {
   const profiles = readLaunchProfiles(options.launchSettingsText)
   const runs =
     profiles.length > 0
-      ? profiles.map((profile) => ({
+      ? withQuotedNames(profiles).map(([profile, quotedProfile]) => ({
           ...base,
           id: `${idBase}:run:${profile}`,
           kind: 'run' as const,
           name: profile,
-          command: `dotnet run --project ${project} --launch-profile ${quoteShellArgument(profile)}`,
+          command: `dotnet run --project ${project} --launch-profile ${quotedProfile}`,
           debug: {
             kind: 'dotnet-project' as const,
             projectFile,
@@ -165,12 +181,12 @@ export function detectDotnetRunConfigurations(options: {
         ]
   const publishes =
     options.publishProfileNames.length > 0
-      ? options.publishProfileNames.map((profile) => ({
+      ? withQuotedNames(options.publishProfileNames).map(([profile, quotedProfile]) => ({
           ...base,
           id: `${idBase}:publish:${profile}`,
           kind: 'publish' as const,
           name: `Publish (${profile})`,
-          command: `dotnet publish ${project} -p:PublishProfile=${quoteShellArgument(profile)}`
+          command: `dotnet publish ${project} -p:PublishProfile=${quotedProfile}`
         }))
       : [
           {

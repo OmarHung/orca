@@ -28,7 +28,8 @@ type LaunchableConfiguration =
   | DebugRunConfiguration
   | CompoundRunConfiguration
 
-function launchable(configuration: RunConfigurationDefinition): LaunchableConfiguration {
+/** Null for a publish whose paths cannot be quoted safely; it is left out, so it reads as missing. */
+function launchable(configuration: RunConfigurationDefinition): LaunchableConfiguration | null {
   return configuration.type === 'dotnet-publish'
     ? dotnetPublishAsCommand(configuration)
     : configuration
@@ -129,7 +130,9 @@ export function planRunConfiguration(
   configurations: readonly RunConfigurationDefinition[],
   reference: string
 ): RunPlanResult {
-  const all = configurations.map(launchable)
+  const all = configurations
+    .map(launchable)
+    .filter((configuration): configuration is LaunchableConfiguration => configuration !== null)
   try {
     const launches: RunLaunchPlan['launches'] = []
     const top = lookup(all, reference)
