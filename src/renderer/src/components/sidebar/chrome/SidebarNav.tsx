@@ -14,6 +14,7 @@ import { SidebarTaskNavButton } from './SidebarTaskNavButton'
 import { HideSidebarMenu } from './sidebar-nav-controls'
 import { useTranslate } from '@/i18n/use-translate'
 import { SshSidebarNavEntries } from '../ssh-page/SshSidebarNavEntries'
+import { DatabaseSidebarNavEntry } from '../database/DatabaseSidebarNavEntry'
 import { lazyWithRetry } from '@/app-shell/startup/lazy-with-retry'
 import type { GlobalSettings } from '../../../../../shared/settings/global-settings-types'
 import { useBotsEnabled } from '@/lib/bot-catalog'
@@ -220,6 +221,7 @@ const SidebarNav = React.memo(function SidebarNav() {
         </ContextMenu>
       ) : null}
       <SshSidebarNavEntries />
+      <DatabaseSidebarNavEntry />
       {showAgentDashboardButton ? (
         <React.Suspense fallback={null}>
           <AgentDashboardSidebarEntry />
