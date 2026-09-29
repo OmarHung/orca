@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { writeFileSync } from 'node:fs'
 import path from 'node:path'
 import type { FileEntryWithStats, Stats, TransferOptions } from 'ssh2'
 import type { SftpOps } from './sftp-ops'
@@ -44,8 +44,10 @@ export class FakeSftp implements SftpOps {
   openChannel(): FakeSftp {
     return new FakeSftp(this.nodes)
   }
-  /** Called before each fastGet/fastPut so a test can end the channel mid-transfer. */
+  /** Called before each download and each upload's open, so a test can end the channel mid-transfer. */
   beforeTransfer: (() => void) | null = null
+  private readonly openFiles = new Map<string, string>()
+  private nextHandle = 0
 
   addDir(dir: string): this {
     this.nodes.set(dir, { kind: 'dir' })
@@ -169,20 +171,45 @@ export class FakeSftp implements SftpOps {
     callback()
   }
 
-  fastPut(
-    local: string,
-    remote: string,
-    options: TransferOptions,
-    callback: (err?: Error | null) => void
+  open(
+    target: string,
+    _mode: 'w',
+    callback: (err: Error | undefined, handle: Buffer) => void
   ): void {
     this.beforeTransfer?.()
     if (this.ended) {
-      callback(new Error('Channel ended'))
+      callback(new Error('Channel ended'), Buffer.alloc(0))
       return
     }
-    const content = readFileSync(local)
-    this.nodes.set(remote, { kind: 'file', content })
-    options.step?.(content.length, content.length, content.length)
+    this.nodes.set(target, { kind: 'file', content: Buffer.alloc(0) })
+    const handle = Buffer.from(String(this.nextHandle++))
+    this.openFiles.set(handle.toString(), target)
+    callback(undefined, handle)
+  }
+
+  write(
+    handle: Buffer,
+    buffer: Buffer,
+    offset: number,
+    length: number,
+    position: number,
+    callback: (err?: Error | null) => void
+  ): void {
+    const target = this.openFiles.get(handle.toString())
+    const node = target === undefined ? undefined : this.nodes.get(target)
+    if (this.ended || target === undefined || node?.kind !== 'file') {
+      callback(new Error(this.ended ? 'Channel ended' : 'Invalid handle'))
+      return
+    }
+    const content = Buffer.alloc(Math.max(node.content.length, position + length))
+    node.content.copy(content)
+    buffer.copy(content, position, offset, offset + length)
+    this.nodes.set(target, { kind: 'file', content })
+    callback()
+  }
+
+  close(handle: Buffer, callback: (err?: Error | null) => void): void {
+    this.openFiles.delete(handle.toString())
     callback()
   }
 
