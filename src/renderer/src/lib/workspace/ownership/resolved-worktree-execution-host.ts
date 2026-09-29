@@ -4,11 +4,11 @@ import {
   toSshExecutionHostId,
   type ExecutionHostId
 } from '../../../../../shared/execution-host/execution-host'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../../shared/workspace/identity/floating-workspace-id'
 import {
   folderWorkspaceKey,
   parseWorkspaceKey
 } from '../../../../../shared/workspace/identity/workspace-scope'
+import { isLocalSyntheticWorkspaceId } from '../../../../../shared/local-synthetic-workspace'
 import {
   findIndexedFolderWorkspaceOwner,
   findIndexedProjectGroupOwner
@@ -60,7 +60,7 @@ export function getResolvedExecutionHostIdForWorktree(
   if (!worktreeId) {
     return null
   }
-  if (worktreeId === FLOATING_TERMINAL_WORKTREE_ID) {
+  if (isLocalSyntheticWorkspaceId(worktreeId)) {
     return LOCAL_EXECUTION_HOST_ID
   }
   const scope = parseWorkspaceKey(worktreeId)

@@ -1,5 +1,5 @@
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../../shared/workspace/identity/floating-workspace-id'
 import type { RuntimeMobileSessionTabsResult } from '../../../../../shared/remote-runtime/session-graph/runtime-session-contracts'
+import { isLocalSyntheticWorkspaceId } from '../../../../../shared/local-synthetic-workspace'
 import {
   latestSessionTabsSnapshotByWorktree,
   replayableSessionTabsSnapshotByWorktree,
@@ -44,7 +44,7 @@ const WEB_SESSION_TABS_FRAME_UNMIRRORED = {
 } as const satisfies WebSessionTabsSnapshotDecision
 
 function isHostMirroredWorktree(worktreeId: string): boolean {
-  return worktreeId !== FLOATING_TERMINAL_WORKTREE_ID
+  return !isLocalSyntheticWorkspaceId(worktreeId)
 }
 
 export function shouldApplyWebSessionTabsSnapshot(

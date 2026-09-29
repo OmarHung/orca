@@ -4,14 +4,17 @@ import { useAppStore } from '@/store'
 
 type SshTargetListStatus = 'loading' | 'ready' | 'error'
 
-type SshTargetList = {
+export type SshTargetList = {
   status: SshTargetListStatus
   targets: SshTarget[]
   reload: () => void
 }
 
-/** Orca's SSH targets, refreshed from ~/.ssh/config on mount like the SSH settings pane. */
-export function useSshTargetList(): SshTargetList {
+/**
+ * Orca's SSH targets, refreshed from ~/.ssh/config like the SSH settings pane. A page that stays
+ * mounted passes `isActive` so each return to it refreshes quietly instead of on mount only.
+ */
+export function useSshTargetList(isActive = true): SshTargetList {
   const [status, setStatus] = useState<SshTargetListStatus>('loading')
   const [targets, setTargets] = useState<SshTarget[]>([])
 
@@ -38,10 +41,13 @@ export function useSshTargetList(): SshTargetList {
   }, [])
 
   useEffect(() => {
+    if (!isActive) {
+      return
+    }
     const controller = new AbortController()
     void load(controller.signal)
     return () => controller.abort()
-  }, [load])
+  }, [isActive, load])
 
   const reload = useCallback(() => {
     setStatus('loading')
