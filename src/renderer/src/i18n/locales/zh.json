@@ -19279,7 +19279,8 @@
         "trimmed": "裁剪未使用的代码",
         "extraArgs": "附加参数",
         "extraArgsHint": "按原样附加到命令末尾，例如 -p:Version=1.2.3",
-        "command": "在工作区根目录执行"
+        "command": "在工作区根目录执行",
+        "unsafePath": "项目文件或输出文件夹包含无法安全传给 shell 的字符，例如 \" $ ` % 或 !。"
       }
     },
     "widget": {
@@ -19331,7 +19332,8 @@
       "addedEverything": "找到的 run 都已加入",
       "search": "筛选 run",
       "noMatch": "没有符合的 run"
-    }
+    },
+    "unsafeShellPath": "此文件的路径包含无法安全传给 shell 的字符，例如 \" $ ` % 或 !。"
   },
   "python": {
     "interpreter": {

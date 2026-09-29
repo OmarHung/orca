@@ -60,6 +60,19 @@ describe('detectNodeRunConfigurations', () => {
     expect(configurations[1].debug).toBeUndefined()
   })
 
+  it('skips scripts whose names no shell can take literally', () => {
+    const configurations = detectNodeRunConfigurations({
+      projectDir: '/w/web',
+      fileNames: ['package.json'],
+      packageJsonText: JSON.stringify({
+        private: true,
+        scripts: { dev: 'vite', '$(touch pwned)': 'x', 'a%PATH%': 'x' }
+      })
+    })
+
+    expect(configurations.map((configuration) => configuration.command)).toEqual(['npm run dev'])
+  })
+
   it('adds publish for a public package without a publish script', () => {
     const configurations = detectNodeRunConfigurations({
       projectDir: '/w/lib',

@@ -111,6 +111,24 @@ describe('detectDotnetRunConfigurations', () => {
     )
   })
 
+  it('skips launch and publish profiles no shell can take literally', () => {
+    const configurations = detect(WEB_PROJECT, {
+      launchSettingsText:
+        '{"profiles":{"Web":{"commandName":"Project"},"$(touch pwned)":{"commandName":"Project"}}}',
+      publishProfileNames: ['Folder', 'x`id`']
+    })
+
+    expect(configurations.map((configuration) => configuration.command)).toEqual([
+      'dotnet build Project2.csproj',
+      'dotnet run --project Project2.csproj --launch-profile Web',
+      'dotnet publish Project2.csproj -p:PublishProfile=Folder'
+    ])
+  })
+
+  it('offers nothing for a project file no shell can take literally', () => {
+    expect(detect(WEB_PROJECT, { projectFileName: '$(touch pwned).csproj' })).toEqual([])
+  })
+
   it('attaches a debug target to each run, naming the project file and profile', () => {
     const configurations = detect(WEB_PROJECT, { launchSettingsText: LAUNCH_SETTINGS })
 
