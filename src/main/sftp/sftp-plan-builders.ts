@@ -2,6 +2,7 @@ import { lstat, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import type { SftpOperation, SftpPlanRequest } from '../../shared/sftp-types'
 import { sftpLstat, sftpReaddir, sftpStat, type SftpOps } from './sftp-ops'
+import { localFileIdentity } from './sftp-planned-upload'
 
 export type SftpPlanDraft = { operations: SftpOperation[]; totalBytes: number; conflicts: string[] }
 
@@ -36,14 +37,20 @@ function isPlainName(name: string): boolean {
 
 async function addLocalEntry(source: string, remote: string, list: OperationList): Promise<void> {
   // Why: lstat, never following links, so nothing outside what the user picked gets uploaded.
-  const stats = await lstat(source)
+  const stats = await lstat(source, { bigint: true })
   if (stats.isDirectory()) {
     list.add({ op: 'mkdir', path: remote, keepExisting: true })
     for (const name of await readdir(source)) {
       await addLocalEntry(path.join(source, name), remotePath.join(remote, name), list)
     }
   } else if (stats.isFile()) {
-    list.add({ op: 'put', local: source, remote, size: stats.size })
+    list.add({
+      op: 'put',
+      local: source,
+      remote,
+      size: Number(stats.size),
+      source: localFileIdentity(stats)
+    })
   }
 }
 
