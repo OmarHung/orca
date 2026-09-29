@@ -19425,7 +19425,7 @@
       "renameConflict": "此資料夾中已有“{{name}}”。",
       "replaceWarning": "目標位置已存在，檔案會被替換、資料夾會合併：{{names}}",
       "legend": "以 OpenSSH sftp 批次指令格式表示。開頭的“-”表示保留已存在的資料夾。",
-      "partialNote": "每個檔案會先儲存為“<名稱>.orca-download”，完成後再改名，因此下載失敗不會損壞已有的檔案。",
+      "partialNote": "每個檔案會先儲存到旁邊的隱藏臨時資料夾，完成後再移到目標位置，因此下載失敗不會損壞已有的檔案。",
       "nothingToDo": "沒有可傳輸的內容：所選內容中沒有普通檔案或資料夾。",
       "moveTitle": "要在 {{host}} 上移動嗎？"
     },
