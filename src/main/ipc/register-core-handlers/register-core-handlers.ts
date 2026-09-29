@@ -60,6 +60,7 @@ import { registerPluginHandlers } from '../plugins/plugins'
 import { registerDebugHandlers } from '../../debug/debug-ipc'
 import { registerDatabaseHandlers } from '../../database/database-ipc'
 import { registerSftpHandlers } from '../../sftp/sftp-ipc'
+import { registerSshVpnHandlers } from '../../ssh-vpn/ssh-vpn-ipc'
 import { registerUIHandlers, setTrustedUIRendererWebContentsId } from '../ui'
 import { registerEmulatorFrameStreamHandlers } from '../emulator/emulator-frame-stream'
 import { registerEmulatorVideoStreamHandlers } from '../emulator/emulator-video-stream'
@@ -210,6 +211,7 @@ export async function registerCoreHandlers(
     registerDebugHandlers()
     registerDatabaseHandlers()
     registerSftpHandlers()
+    registerSshVpnHandlers()
     registerSessionHandlers(store, runtime)
     registerUIHandlers(store, { isDashboardPopoutRenderer })
     registerEmulatorFrameStreamHandlers()
