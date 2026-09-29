@@ -12690,7 +12690,7 @@
                 "df137989b3": "顯示前 20 個註釋",
                 "1f2b980522": "正在載入檢查詳細資訊...",
                 "0c96cd25e5": "解決",
-                "3a71a6ed0b": "在檢查和合並完成之前解決衝突。",
+                "3a71a6ed0b": "在檢查和合併完成之前解決衝突。",
                 "60186d8498": "衝突阻礙了這一點",
                 "c16762ac8c": "下面的檢查和註釋顯示目前取得的上下文。",
                 "9d0e7bcefc": "沒有阻塞 PR 操作",
@@ -13049,7 +13049,7 @@
                   "226b85a3a7": "fetch",
                   "323bb614aa": "提交併同步",
                   "2b8e6595fd": "提交",
-                  "04d709801d": "從遠端取得但不合並"
+                  "04d709801d": "從遠端取得但不合併"
                 }
               },
               "primary": {
@@ -13498,8 +13498,8 @@
                   "92ca033e72": "佇列 {{count}} PR",
                   "478a527b15": "佇列 {{count}} PR",
                   "1feef35ca4": "透過#{{pr}} 合併？",
-                  "c3e036c99f": "{{included}}GitHub 將使用 {{method}} 以原子方式合併 {{count}} 拉取請求。如果無法合併，則不會合並任何內容。",
-                  "369aba4b32": "{{included}}GitHub 將使用 {{method}} 以原子方式合併 {{count}} 拉取請求。如果有一個無法合併，那麼就沒有一個會合並。",
+                  "c3e036c99f": "{{included}}GitHub 將使用 {{method}} 以原子方式合併 {{count}} 拉取請求。如果無法合併，則不會合併任何內容。",
+                  "369aba4b32": "{{included}}GitHub 將使用 {{method}} 以原子方式合併 {{count}} 拉取請求。如果有一個無法合併，那麼就沒有一個會合併。",
                   "493c78f521": "合併 {{count}} PR",
                   "eb7051d268": "合併 {{count}} PR"
                 },
@@ -14330,7 +14330,7 @@
             "8ed213397c": "執行中",
             "d340c052fb": "核實",
             "9a097cae12": "1 待定",
-            "2f37142229": "壓縮合並",
+            "2f37142229": "壓縮合併",
             "0aab7ab84a": "新增本地診斷錯誤跟蹤",
             "dfe313e0c9": "開啟",
             "6e3f5223c5": "資源管理器",
@@ -17988,7 +17988,7 @@
           "startWorkspaceFromIssue": "從任何 GitHub 議題或拉取請求啟動工作區，並預先填充其標題和上下文",
           "browseIssues": "無需離開 Orca，即可在任務檢視中瀏覽 GitHub 議題並拉取請求",
           "reviewStatus": "檢視每個工作樹上的問題狀態、稽核狀態和 CI 檢查",
-          "managePullRequests": "無需離開 Orca 即可閱讀、評論和合並拉取請求"
+          "managePullRequests": "無需離開 Orca 即可閱讀、評論和合併拉取請求"
         }
       }
     },
@@ -19298,8 +19298,54 @@
     },
     "page": {
       "desktopOnly": "檔案傳輸僅在桌面版中可用。",
-      "pickHost": "選擇一台主機以瀏覽其中的檔案。",
-      "comingSoon": "檔案傳輸功能將在下一次更新中推出。"
+      "pickHost": "選擇一台主機以瀏覽其中的檔案。"
+    },
+    "pane": {
+      "path": "路徑",
+      "up": "上一層資料夾",
+      "refresh": "重新整理",
+      "connecting": "正在連線…",
+      "retry": "重試",
+      "empty": "此資料夾是空的。"
+    },
+    "delete": {
+      "title": "要從 {{host}} 刪除嗎？",
+      "description": "{{names}}{{more}} 將被永久刪除，資料夾內的所有內容也會一併刪除。此操作無法復原。",
+      "confirm": "刪除"
+    },
+    "conflict": {
+      "more": "（另有 {{count}} 個）",
+      "title": "要替換已有的內容嗎？",
+      "description": "{{dir}} 中已有同名的：{{names}}{{more}}。檔案會被替換，資料夾會合併。",
+      "replace": "替換"
+    },
+    "transfers": {
+      "preparing": "準備中…",
+      "done": "完成",
+      "cancelled": "已取消",
+      "failed": "失敗",
+      "cancel": "取消傳輸",
+      "title": "傳輸",
+      "clear": "清除已完成"
+    },
+    "transfer": {
+      "labelMany": "{{name}} 及另外 {{count}} 個"
+    },
+    "remote": {
+      "newFolder": "新增資料夾",
+      "create": "建立",
+      "rename": "重新命名",
+      "download": "下載",
+      "dropHint": "空資料夾。將檔案拖到這裡即可上傳。",
+      "delete": "刪除"
+    },
+    "local": {
+      "upload": "上傳",
+      "title": "本機"
+    },
+    "nameDialog": {
+      "label": "名稱",
+      "cancel": "取消"
     }
   }
 }

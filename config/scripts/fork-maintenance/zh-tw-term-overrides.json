@@ -418,5 +418,10 @@
     "from": "^在後台對目前工作區的儲存庫",
     "to": "在背景對目前工作區的儲存庫",
     "why": "Auto fetch setting: \"in the background\"; Taiwan says 背景."
+  },
+  {
+    "from": "合並",
+    "to": "合併",
+    "why": "\"Merge\"; OpenCC turns 合并 into 合並, but Taiwan UI copy (125 other strings here) writes 合併."
   }
 ]
