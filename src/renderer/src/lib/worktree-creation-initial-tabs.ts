@@ -26,6 +26,8 @@ export function prepareCreatedWorktreeActivation({
   executionHostId?: ExecutionHostId
 }): { primaryTabId: string | null; options: WorktreeActivationOptions } {
   const onCreationHost = executionHostId ? { executionHostId } : {}
+  // A renderer-seeded Blank Terminal stays a shell instead of the project's initial agent.
+  const blankTerminalSelected = result.startupTerminal?.spawned !== true && request.agent === null
   let primaryTabId: string | null = null
   if (isInstantFolderWorktreeCreation(useAppStore.getState(), request)) {
     // Metadata is not a destination surface; build the selected ordinary tabs before navigation.
@@ -40,7 +42,8 @@ export function prepareCreatedWorktreeActivation({
         activateCreatedTabs: false,
         ...onCreationHost,
         ...windowStartup.terminalOptions,
-        ...(request.agent !== null || setupIsOnlySurface ? { callerProvidesSurface: true } : {})
+        ...(request.agent !== null || setupIsOnlySurface ? { callerProvidesSurface: true } : {}),
+        ...(blankTerminalSelected ? { blankTerminalSelected: true } : {})
       }
     )
   }
@@ -58,6 +61,7 @@ export function prepareCreatedWorktreeActivation({
             ...(windowStartup.startup ? { startup: windowStartup.startup } : {}),
             ...(request.issueCommand ? { issueCommand: request.issueCommand } : {}),
             ...windowStartup.terminalOptions,
+            ...(blankTerminalSelected ? { agent: null } : {}),
             ...(setupIsOnlySurface ? { providesInitialSurface: true } : {})
           })
     }

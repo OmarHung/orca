@@ -72,4 +72,6 @@ export type InitialTerminalOptions = {
   initialCwd?: string
   /** The host a create targeted: a same-path twin on another host cannot make the owner ambiguous. */
   executionHostId?: ExecutionHostId
+  /** The create picker chose Blank Terminal, so the project's initial agent must not replace it. */
+  blankTerminalSelected?: boolean
 }
