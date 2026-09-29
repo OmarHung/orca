@@ -19430,6 +19430,22 @@
       "retry": "重试",
       "empty": "此文件夹是空的。"
     },
+    "column": {
+      "menu": "显示栏位",
+      "name": "名称",
+      "size": "大小",
+      "created": "创建日期",
+      "modified": "修改日期",
+      "type": "文件类型",
+      "owner": "拥有者"
+    },
+    "type": {
+      "folder": "文件夹",
+      "link": "链接",
+      "other": "特殊文件",
+      "file": "文件",
+      "fileWithExtension": "{{ext}} 文件"
+    },
     "delete": {
       "title": "要从 {{host}} 删除吗？",
       "description": "{{names}}{{more}} 将被永久删除，文件夹内的所有内容也会一并删除。此操作无法撤销。",

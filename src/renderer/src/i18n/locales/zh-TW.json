@@ -19308,6 +19308,22 @@
       "retry": "重試",
       "empty": "此資料夾是空的。"
     },
+    "column": {
+      "menu": "顯示欄位",
+      "name": "名稱",
+      "size": "大小",
+      "created": "建立日期",
+      "modified": "修改日期",
+      "type": "檔案類型",
+      "owner": "擁有者"
+    },
+    "type": {
+      "folder": "資料夾",
+      "link": "連結",
+      "other": "特殊檔案",
+      "file": "檔案",
+      "fileWithExtension": "{{ext}} 檔案"
+    },
     "delete": {
       "title": "要從 {{host}} 刪除嗎？",
       "description": "{{names}}{{more}} 將被永久刪除，資料夾內的所有內容也會一併刪除。此操作無法復原。",
