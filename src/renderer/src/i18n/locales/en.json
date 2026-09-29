@@ -19628,7 +19628,9 @@
       "close": "Close tab {{name}}",
       "missingHost": "“{{name}}” is no longer in your SSH hosts. Close this tab.",
       "pickerTitle": "Open an SFTP tab",
-      "pickerDescription": "Pick the host to browse."
+      "pickerDescription": "Pick the host to browse.",
+      "openInNewTab": "Open in new tab",
+      "newTabOnHost": "New tab on this host"
     },
     "move": {
       "titleOne": "Move “{{name}}” to…",

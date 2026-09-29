@@ -19546,7 +19546,9 @@
       "close": "关闭标签页 {{name}}",
       "missingHost": "“{{name}}”已不在你的 SSH 主机中，请关闭此标签页。",
       "pickerTitle": "打开 SFTP 标签页",
-      "pickerDescription": "选择要浏览的主机。"
+      "pickerDescription": "选择要浏览的主机。",
+      "openInNewTab": "在新标签页中打开",
+      "newTabOnHost": "在此主机新建标签页"
     },
     "move": {
       "titleOne": "将“{{name}}”移动到…",

@@ -3,12 +3,17 @@ import { createBrowserUuid } from '@/lib/browser-uuid'
 
 export type SftpTab = { id: string; targetId: string; label: string }
 
+type SftpTabTarget = { id: string; label: string }
+
 type PersistedTabs = { tabs: SftpTab[]; activeTabId: string | null }
 
 type SftpTabsState = PersistedTabs & {
   /** Remote folder each tab shows; not saved, since a tab reopens at the host's home. */
   remotePathByTab: Readonly<Record<string, string>>
-  openTab: (target: { id: string; label: string }) => string
+  /** Opens a new tab at the end, or right after `afterTabId`. */
+  openTab: (target: SftpTabTarget, afterTabId?: string) => string
+  /** Goes to a tab already on this host (the active one first), opening one only if none is. */
+  showHost: (target: SftpTabTarget) => string
   activateTab: (tabId: string) => void
   closeTab: (tabId: string) => void
   setTabRemotePath: (tabId: string, path: string) => void
@@ -68,10 +73,26 @@ export const useSftpTabsStore = create<SftpTabsState>((set, get) => {
   return {
     ...readPersisted(),
     remotePathByTab: {},
-    openTab: (target) => {
+    openTab: (target, afterTabId) => {
       const tab: SftpTab = { id: createBrowserUuid(), targetId: target.id, label: target.label }
-      update({ tabs: [...get().tabs, tab], activeTabId: tab.id })
+      const { tabs } = get()
+      const afterIndex = tabs.findIndex((existing) => existing.id === afterTabId)
+      const insertAt = afterIndex === -1 ? tabs.length : afterIndex + 1
+      update({
+        tabs: [...tabs.slice(0, insertAt), tab, ...tabs.slice(insertAt)],
+        activeTabId: tab.id
+      })
       return tab.id
+    },
+    showHost: (target) => {
+      const { tabs, activeTabId, openTab, activateTab } = get()
+      const onHost = tabs.filter((tab) => tab.targetId === target.id)
+      const shown = onHost.find((tab) => tab.id === activeTabId) ?? onHost[0]
+      if (!shown) {
+        return openTab(target)
+      }
+      activateTab(shown.id)
+      return shown.id
     },
     activateTab: (tabId) => {
       if (get().tabs.some((tab) => tab.id === tabId)) {
