@@ -8,6 +8,7 @@ import {
   normalizeGhAccountBinding,
   type GhAccountBinding
 } from '../../../shared/github/accounts/account-binding'
+import { isRepoInitialTab } from '../../../shared/repo-initial-tab'
 import { normalizeJiraProjectReference } from '../../../shared/jira/jira-project-reference'
 
 import { sanitizeAgentWorkspaceTrustDecision } from '../../../shared/agent-launch/permissions/agent-workspace-trust-decision'
@@ -83,6 +84,7 @@ export function sanitizeRepoUpdatesForPersistence<
       | 'forkSyncMode'
       | 'agentWorkspaceTrust'
       | 'defaultJiraProject'
+      | 'initialTab'
       | 'customWorktreeVisibilitySources'
       | 'worktreeVisibilitySourcePreferences'
     >
@@ -173,6 +175,9 @@ export function sanitizeRepoUpdatesForPersistence<
     (typeof sanitized.browserProfileId !== 'string' || !sanitized.browserProfileId.trim())
   ) {
     delete sanitized.browserProfileId
+  }
+  if ('initialTab' in sanitized && !isRepoInitialTab(sanitized.initialTab)) {
+    delete sanitized.initialTab
   }
   // Null explicitly clears ghAccount; only malformed shapes are discarded.
   if ('ghAccount' in sanitized && sanitized.ghAccount != null) {

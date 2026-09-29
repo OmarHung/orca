@@ -260,7 +260,10 @@ export const test = base.extend<OrcaTestFixtures, OrcaWorkerFixtures>({
               return false
             }
             // Show the fixture’s external Git worktrees, which newly added repos hide by default.
-            await store.getState().updateRepo(repo.id, { externalWorktreeVisibility: 'show' })
+            // Fork: suites expect a plain shell, not the default Claude initial tab.
+            await store
+              .getState()
+              .updateRepo(repo.id, { externalWorktreeVisibility: 'show', initialTab: 'terminal' })
             return true
           }, seededRepoId),
         {

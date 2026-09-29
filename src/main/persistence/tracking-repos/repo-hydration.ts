@@ -4,6 +4,7 @@ import { getDefaultRepoHookSettings } from '../../../shared/workspace-setup/repo
 import { isFolderRepo } from '../../../shared/repository/repo-kind'
 import { sanitizeRepoIcon } from '../../../shared/repository/appearance/repo-icon'
 import { normalizeGhAccountBinding } from '../../../shared/github/accounts/account-binding'
+import { isRepoInitialTab } from '../../../shared/repo-initial-tab'
 import { normalizeJiraProjectReference } from '../../../shared/jira/jira-project-reference'
 import { normalizeRepoSourceControlAiOverrides } from '../../../shared/source-control/ai/settings/source-control-ai-repo-settings'
 import { normalizeOrcadRetainedMarker } from '../../../shared/remote-runtime/orcad-lifecycle/orcad-retained-marker'
@@ -38,6 +39,7 @@ export function hydrateRepo(repo: Repo, gitUsernameCache: ReadonlyMap<string, st
     projectHostSetupMethod: rawProjectHostSetupMethod,
     forkSyncMode: rawForkSyncMode,
     agentWorkspaceTrust: rawAgentWorkspaceTrust,
+    initialTab: rawInitialTab,
     ghAccount: rawGhAccount,
     defaultJiraProject: rawDefaultJiraProject,
     customWorktreeVisibilitySources: rawCustomWorktreeVisibilitySources,
@@ -80,6 +82,7 @@ export function hydrateRepo(repo: Repo, gitUsernameCache: ReadonlyMap<string, st
     ...(projectHostSetupMethod !== undefined ? { projectHostSetupMethod } : {}),
     ...(forkSyncMode !== undefined ? { forkSyncMode } : {}),
     ...(agentWorkspaceTrust !== undefined ? { agentWorkspaceTrust } : {}),
+    ...(isRepoInitialTab(rawInitialTab) ? { initialTab: rawInitialTab } : {}),
     ...(ghAccount ? { ghAccount } : {}),
     ...(defaultJiraProject !== undefined ? { defaultJiraProject } : {}),
     ...(customWorktreeVisibilitySources !== undefined ? { customWorktreeVisibilitySources } : {}),
