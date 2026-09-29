@@ -13,6 +13,7 @@ import { MarkdownTemplatePicker } from '../components/editor/markdown/documents/
 import RecentTabSwitcher from '../components/tab-bar/recent-switcher/RecentTabSwitcher'
 import { RevisionComparePicker } from '../components/editor/revision-compare/RevisionComparePicker'
 import { DotnetPublishDialogHost } from '../components/run/DotnetPublishDialog'
+import { SshVpnStartConfirmHost } from '../components/ssh-vpn/SshVpnStartConfirmHost'
 import { SkillFreshnessUpdateDialog } from '../components/skills/freshness/SkillFreshnessUpdateDialog'
 import { StarNagAgentValueMomentObserver } from '../components/star-nag/StarNagAgentValueMomentObserver'
 import { NativeChatResumeToasts } from '../components/native-chat-recovery/toast/NativeChatResumeToastHost'
@@ -347,6 +348,7 @@ export const AppRootSurfaces = memo(function AppRootSurfaces(props: {
         <MarkdownTemplatePicker />
         <RevisionComparePicker />
         <DotnetPublishDialogHost />
+        <SshVpnStartConfirmHost />
       </ModalBoundary>
       <RecoverableRenderErrorBoundary
         boundaryId="modal.crash-report"
