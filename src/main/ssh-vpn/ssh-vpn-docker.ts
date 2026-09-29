@@ -17,6 +17,8 @@ import {
 
 const DOCKER_COMMAND_TIMEOUT_MS = 30_000
 const DOCKER_BUILD_TIMEOUT_MS = 10 * 60_000
+// Matches ssh2's CONNECT_TIMEOUT_MS so the tunnel never outlives the attempt it serves.
+const TUNNEL_CONNECT_TIMEOUT_SECONDS = '30'
 
 export class SshVpnDockerError extends Error {
   override name = 'SshVpnDockerError'
@@ -123,7 +125,9 @@ export function dockerOpenVpnArgs(containerName: string): string[] {
 
 /** The per-connection pipe: `nc` inside the container, so the TCP connection leaves through tun0. */
 export function dockerTunnelArgs(containerName: string, host: string, port: string): string[] {
-  return ['exec', '-i', containerName, 'nc', host, port]
+  // Why -w: killing the `docker exec` client does not kill `nc`, so a connect to a filtered port
+  // would hang in the container and count as a live connection forever. -w bounds only the connect.
+  return ['exec', '-i', containerName, 'nc', '-w', TUNNEL_CONNECT_TIMEOUT_SECONDS, host, port]
 }
 
 export function dockerRemoveArgs(...containerNames: string[]): string[] {
