@@ -1,4 +1,4 @@
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
+import { isLocalSyntheticWorkspaceId } from '../../../shared/local-synthetic-workspace'
 import { parseExecutionHostId } from '../../../shared/execution-host'
 import { normalizeRuntimePathForComparison } from '../../../shared/cross-platform-path'
 import { parseWorkspaceKey } from '../../../shared/workspace-scope'
@@ -104,7 +104,7 @@ export function resolveWorkspaceTerminalHostAuthority(
   state: WorkspaceTerminalHostAuthorityState,
   worktreeId: string | null | undefined
 ): WorkspaceTerminalHostAuthority {
-  if (!worktreeId || worktreeId === FLOATING_TERMINAL_WORKTREE_ID) {
+  if (!worktreeId || isLocalSyntheticWorkspaceId(worktreeId)) {
     return 'none'
   }
   if (isWebRuntimeSessionActive(getRuntimeEnvironmentIdForWorktree(state, worktreeId))) {

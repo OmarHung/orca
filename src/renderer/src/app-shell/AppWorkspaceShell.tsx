@@ -6,6 +6,7 @@ import RightSidebar from '../components/right-sidebar'
 import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/RecoverableRenderErrorBoundary'
 import { FloatingTerminalToggleButton } from '../components/floating-terminal/FloatingTerminalToggleButton'
 import { TerminalWorkbenchContainer } from '../components/TerminalWorkbenchContainer'
+import { SshPageHost } from '../components/ssh-page/SshPageHost'
 import { useBottomPanelLayout } from '../components/bottom-panel/bottom-panel-layout-store'
 import type { VirtualizedScrollAnchor } from '../hooks/useVirtualizedScrollAnchor'
 import { TitlebarLeftControls } from './TitlebarLeftControls'
@@ -26,7 +27,6 @@ const ArtifactsPage = lazy(() => import('../components/artifacts/ArtifactsPage')
 const WorkspaceSpacePage = lazy(() => import('../components/workspace-space/WorkspaceSpacePage'))
 const MobilePage = lazy(() => import('../components/mobile/MobilePage'))
 const DatabasePage = lazy(() => import('../components/database/DatabasePage'))
-const SshPage = lazy(() => import('../components/ssh-page/SshPage'))
 const SftpPage = lazy(() => import('../components/sftp-page/SftpPage'))
 const Terminal = lazy(() => import('../components/Terminal'))
 const BottomPanel = lazy(() =>
@@ -86,7 +86,6 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
       {activeView === 'space' ? <WorkspaceSpacePage /> : null}
       {activeView === 'mobile' ? <MobilePage /> : null}
       {activeView === 'database' ? <DatabasePage /> : null}
-      {activeView === 'ssh' ? <SshPage /> : null}
       {activeView === 'sftp' ? <SftpPage /> : null}
       {activeView === 'terminal' && creationLayoutActive && activePendingCreationId ? (
         <WorktreeCreationPanel
@@ -226,6 +225,7 @@ export function AppWorkspaceShell(props: {
                       <ActivePage layout={layout} />
                     </RecoverableRenderErrorBoundary>
                   </Suspense>
+                  <SshPageHost />
                 </div>
                 {floatingWorkspace.showToggleButton ? (
                   <FloatingTerminalToggleButton

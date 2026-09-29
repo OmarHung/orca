@@ -1,3 +1,4 @@
+import { isLocalSyntheticWorkspaceId } from '../../../shared/local-synthetic-workspace'
 import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
 import type { ExecutionHostId } from '../../../shared/execution-host'
 import type { GlobalSettings } from '../../../shared/global-settings-types'
@@ -66,6 +67,9 @@ export function getRuntimeEnvironmentIdForWorktree(
   const floatingRoute = getFloatingWorkspaceOperationRoute(worktreeId)
   if (floatingRoute) {
     return floatingRoute.runtimeEnvironmentId
+  }
+  if (isLocalSyntheticWorkspaceId(worktreeId)) {
+    return null
   }
   const activeRoute = resolveActiveWorkspaceRoute(state, worktreeId)
   if (activeRoute) {
@@ -185,6 +189,9 @@ export function getKnownExecutionHostIdForWorktree(
   const floatingRoute = getFloatingWorkspaceOperationRoute(worktreeId)
   if (floatingRoute) {
     return floatingRoute.executionHostId
+  }
+  if (isLocalSyntheticWorkspaceId(worktreeId)) {
+    return 'local'
   }
   const activeHostId = getActiveWorkspaceExecutionHostId(state, worktreeId)
   if (activeHostId) {

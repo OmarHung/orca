@@ -11,13 +11,13 @@
  */
 
 import type { AgentLaunchTarget } from './agent-launch-intent'
-import { FLOATING_TERMINAL_WORKTREE_ID } from './constants'
+import { isLocalSyntheticWorkspaceId } from './local-synthetic-workspace'
 import { parseWorkspaceKey } from './workspace-scope'
 
 export type WorkspaceLaunchKind = 'git-worktree' | 'folder' | 'floating'
 
 export function workspaceKindForWorktreeId(worktreeId: string): WorkspaceLaunchKind {
-  if (worktreeId === FLOATING_TERMINAL_WORKTREE_ID) {
+  if (isLocalSyntheticWorkspaceId(worktreeId)) {
     return 'floating'
   }
   return parseWorkspaceKey(worktreeId)?.type === 'folder' ? 'folder' : 'git-worktree'
