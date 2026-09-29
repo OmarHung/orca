@@ -11,6 +11,12 @@ describe('classifyOpenVpnLine', () => {
     })
     expect(classifyOpenVpnLine('Exiting due to fatal error')).toEqual({ kind: 'failed' })
     expect(classifyOpenVpnLine('TUN/TAP device tun0 opened')).toEqual({ kind: 'line' })
+    // A pushed option this platform ignores is a warning; the tunnel still comes up.
+    expect(
+      classifyOpenVpnLine(
+        'Options error: Unrecognized option or missing or extra parameter(s) in [PUSH-OPTIONS]:5: block-outside-dns (2.6.20)'
+      )
+    ).toEqual({ kind: 'line' })
   })
 })
 

@@ -122,6 +122,10 @@ export function dockerOpenVpnArgs(containerName: string, withLogin = false): str
     '2',
     '--up',
     SSH_VPN_DNS_SCRIPT_PATH,
+    // Why: servers (e.g. ASUS routers) push this Windows-only option; Linux OpenVPN only warns.
+    '--pull-filter',
+    'ignore',
+    'block-outside-dns',
     ...(withLogin ? ['--auth-user-pass', CONTAINER_LOGIN_PATH, '--auth-nocache'] : []),
     '--verb',
     '3'
