@@ -23,11 +23,14 @@ export type SftpPaneState = {
   error: string | null
   selection: PaneSelection
   selectedEntries: SftpEntry[]
+  /** False at the filesystem root, where the ".." row is hidden. */
+  hasParent: boolean
   navigate: (path: string) => void
   goUp: () => void
   refresh: () => void
   refreshIfShowing: (path: string) => void
-  select: (entry: SftpEntry, modifiers: SelectionModifiers) => void
+  /** `orderedPaths` is the listing as displayed, so Shift-ranges follow the current sort. */
+  select: (entry: SftpEntry, modifiers: SelectionModifiers, orderedPaths: readonly string[]) => void
 }
 
 /** One side of the SFTP page: where it is, what it lists, and what is selected. */
@@ -108,16 +111,9 @@ export function useSftpPane(source: SftpPaneSource): SftpPaneState {
     }
   }, [load, source])
   const select = useCallback(
-    (entry: SftpEntry, modifiers: SelectionModifiers) =>
-      setSelection((current) =>
-        applySelectionClick(
-          current,
-          entries.map((candidate) => candidate.path),
-          entry.path,
-          modifiers
-        )
-      ),
-    [entries]
+    (entry: SftpEntry, modifiers: SelectionModifiers, orderedPaths: readonly string[]) =>
+      setSelection((current) => applySelectionClick(current, orderedPaths, entry.path, modifiers)),
+    []
   )
 
   const selectedEntries = useMemo(
@@ -132,6 +128,7 @@ export function useSftpPane(source: SftpPaneSource): SftpPaneState {
     error,
     selection,
     selectedEntries,
+    hasParent: path !== null && source.parent(path) !== path,
     navigate,
     goUp,
     refresh,
