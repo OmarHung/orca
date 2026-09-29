@@ -122,11 +122,21 @@ export class FakeSftp implements SftpOps {
   }
 
   rmdir(dir: string, callback: (err?: Error | null) => void): void {
+    const hasChildren = Array.from(this.nodes.keys()).some((entry) => entry.startsWith(`${dir}/`))
+    if (this.nodes.get(dir)?.kind !== 'dir' || hasChildren) {
+      callback(Object.assign(new Error('Failure'), { code: 4 }))
+      return
+    }
     this.nodes.delete(dir)
     callback()
   }
 
   unlink(file: string, callback: (err?: Error | null) => void): void {
+    const node = this.nodes.get(file)
+    if (!node || node.kind === 'dir') {
+      callback(Object.assign(new Error('Failure'), { code: 4 }))
+      return
+    }
     this.nodes.delete(file)
     callback()
   }

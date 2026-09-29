@@ -1,7 +1,7 @@
 import path from 'node:path'
 import type { FileEntryWithStats, Stats } from 'ssh2'
 import type { SftpEntry } from '../../shared/sftp-types'
-import { sftpLstat, sftpReaddir, sftpRmdir, sftpUnlink, type SftpOps } from './sftp-ops'
+import { sftpReaddir, type SftpOps } from './sftp-ops'
 
 const remotePath = path.posix
 
@@ -49,19 +49,4 @@ export async function listRemoteDirectory(sftp: SftpOps, dir: string): Promise<S
       owner: ownerFromLongname(entry.longname, entry.attrs.uid)
     }))
   return sortSftpEntries(entries)
-}
-
-/** Deletes a file, link or folder tree. Links are removed, never followed into. */
-export async function removeRemotePath(sftp: SftpOps, target: string): Promise<void> {
-  const stats = await sftpLstat(sftp, target)
-  if (!stats.isDirectory()) {
-    await sftpUnlink(sftp, target)
-    return
-  }
-  for (const entry of await sftpReaddir(sftp, target)) {
-    if (entry.filename !== '.' && entry.filename !== '..') {
-      await removeRemotePath(sftp, remotePath.join(target, entry.filename))
-    }
-  }
-  await sftpRmdir(sftp, target)
 }
