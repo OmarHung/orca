@@ -7,6 +7,7 @@ import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/R
 import { FloatingTerminalToggleButton } from '../components/floating-terminal/FloatingTerminalToggleButton'
 import { TerminalWorkbenchContainer } from '../components/TerminalWorkbenchContainer'
 import { SshPageHost } from '../components/ssh-page/SshPageHost'
+import { SftpPageHost } from '../components/sftp-page/SftpPageHost'
 import { useBottomPanelLayout } from '../components/bottom-panel/bottom-panel-layout-store'
 import type { VirtualizedScrollAnchor } from '../hooks/useVirtualizedScrollAnchor'
 import { TitlebarLeftControls } from './TitlebarLeftControls'
@@ -27,7 +28,6 @@ const ArtifactsPage = lazy(() => import('../components/artifacts/ArtifactsPage')
 const WorkspaceSpacePage = lazy(() => import('../components/workspace-space/WorkspaceSpacePage'))
 const MobilePage = lazy(() => import('../components/mobile/MobilePage'))
 const DatabasePage = lazy(() => import('../components/database/DatabasePage'))
-const SftpPage = lazy(() => import('../components/sftp-page/SftpPage'))
 const Terminal = lazy(() => import('../components/Terminal'))
 const BottomPanel = lazy(() =>
   import('../components/bottom-panel/BottomPanel').then((module) => ({
@@ -86,7 +86,6 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
       {activeView === 'space' ? <WorkspaceSpacePage /> : null}
       {activeView === 'mobile' ? <MobilePage /> : null}
       {activeView === 'database' ? <DatabasePage /> : null}
-      {activeView === 'sftp' ? <SftpPage /> : null}
       {activeView === 'terminal' && creationLayoutActive && activePendingCreationId ? (
         <WorktreeCreationPanel
           creationId={activePendingCreationId}
@@ -227,6 +226,7 @@ export function AppWorkspaceShell(props: {
                     </RecoverableRenderErrorBoundary>
                   </Suspense>
                   <SshPageHost />
+                  <SftpPageHost />
                 </div>
                 {floatingWorkspace.showToggleButton ? (
                   <FloatingTerminalToggleButton
