@@ -7,6 +7,10 @@ const FATAL_MARKERS = ['AUTH_FAILED', 'Exiting due to fatal error', 'Options err
 
 /** Classifies one line of `openvpn --verb 3` output. */
 export function classifyOpenVpnLine(line: string): OpenVpnOutputEvent {
+  // Why first: "… Completed With Errors" means routes failed to install, so the tunnel is unusable.
+  if (line.includes(`${READY_MARKER} With Errors`)) {
+    return { kind: 'failed' }
+  }
   if (line.includes(READY_MARKER)) {
     return { kind: 'ready' }
   }
@@ -25,6 +29,9 @@ export function stripOpenVpnTimestamp(line: string): string {
  * by itself; the line before it names the cause.
  */
 export function describeOpenVpnFailure(lines: readonly string[]): string {
+  if (lines.some((line) => line.includes('AUTH_FAILED'))) {
+    return 'The VPN server rejected the login (AUTH_FAILED)'
+  }
   const meaningful = lines
     .map(stripOpenVpnTimestamp)
     .filter((line) => line && !line.includes('Exiting due to fatal error'))

@@ -7,6 +7,7 @@ const { spawnMock } = vi.hoisted(() => ({ spawnMock: vi.fn() }))
 vi.mock('child_process', () => ({ spawn: spawnMock }))
 
 import { spawnProxyCommand } from '../ssh/ssh-proxy-command'
+import { getControlSocketPath } from '../ssh/ssh-control-socket'
 import { buildSshArgs } from '../ssh/system-ssh-args'
 import { setSshVpnRouteProvider } from './ssh-vpn-route'
 
@@ -63,6 +64,7 @@ describe('buildSshArgs with a VPN route provider', () => {
   it('adds the VPN ProxyCommand before the destination, even for config-backed hosts', () => {
     setSshVpnRouteProvider({
       prepare: vi.fn(),
+      routeKey: () => '',
       proxyCommand: () => '/usr/local/bin/docker exec -i c nc %h %p'
     })
 
@@ -76,6 +78,7 @@ describe('buildSshArgs with a VPN route provider', () => {
   it('fails closed instead of dialling the host directly when the VPN is down', () => {
     setSshVpnRouteProvider({
       prepare: vi.fn(),
+      routeKey: () => '',
       proxyCommand: () => {
         throw new Error('VPN "Office" is not connected, so Orca will not connect to this host')
       }
@@ -86,9 +89,37 @@ describe('buildSshArgs with a VPN route provider', () => {
 
   it('leaves the arguments untouched without a provider or an assignment', () => {
     const withoutProvider = buildSshArgs(TARGET)
-    setSshVpnRouteProvider({ prepare: vi.fn(), proxyCommand: () => null })
+    setSshVpnRouteProvider({ prepare: vi.fn(), proxyCommand: () => null, routeKey: () => '' })
 
     expect(buildSshArgs(TARGET)).toEqual(withoutProvider)
     expect(withoutProvider.some((arg) => arg.startsWith('ProxyCommand='))).toBe(false)
+  })
+})
+
+describe('ControlMaster reuse', () => {
+  afterEach(() => {
+    setSshVpnRouteProvider(null)
+  })
+
+  it('never reuses a master opened for another route to the same host', () => {
+    const direct = getControlSocketPath(TARGET)
+    setSshVpnRouteProvider({
+      prepare: vi.fn(),
+      proxyCommand: () => null,
+      routeKey: () => 'profile-0001'
+    })
+    const throughVpn = getControlSocketPath(TARGET)
+
+    if (direct === null || throughVpn === null) {
+      return // No usable control-socket directory on this machine (e.g. Windows).
+    }
+    expect(throughVpn).not.toBe(direct)
+  })
+
+  it('keeps the key unchanged for hosts without a VPN', () => {
+    const withoutProvider = getControlSocketPath(TARGET)
+    setSshVpnRouteProvider({ prepare: vi.fn(), proxyCommand: () => null, routeKey: () => '' })
+
+    expect(getControlSocketPath(TARGET)).toBe(withoutProvider)
   })
 })
