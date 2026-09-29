@@ -20156,5 +20156,14 @@
       "folder": "folder",
       "transfer": "transfer"
     }
+  },
+  "agentTabClear": {
+    "button": "Clear conversation",
+    "busy": "Wait for the agent to finish before clearing",
+    "ariaLabel": "Clear conversation in {{title}}",
+    "confirmTitle": "Clear this conversation?",
+    "confirmDescription": "Sends /clear to {{agent}} in “{{title}}”. The agent starts over without the current conversation’s context.",
+    "confirm": "Clear",
+    "noTerminal": "This tab has no running agent to clear."
   }
 }
