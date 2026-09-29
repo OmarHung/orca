@@ -121,6 +121,17 @@ test.describe('SFTP page against a Docker sshd', () => {
         timeout: 30_000
       })
       await orcaPage.screenshot({ path: testInfo.outputPath('sftp-page.png') })
+
+      // Leaving the page and coming back keeps the host, folder and listing.
+      const sftpPage = orcaPage.locator('[data-sftp-page]')
+      await sftpPage.locator('[data-sftp-entry="/root/.ssh"]').dblclick()
+      const remotePath = sftpPage.locator('input[aria-label="Path"]').nth(1)
+      await expect(remotePath).toHaveValue('/root/.ssh')
+      await orcaPage.getByRole('button', { name: 'SSH', exact: true }).click()
+      await expect(sftpPage).toBeHidden()
+      await orcaPage.getByRole('button', { name: 'SFTP', exact: true }).click()
+      await expect(remotePath).toHaveValue('/root/.ssh')
+      await expect(sftpPage.locator('[data-sftp-entry="/root/.ssh/authorized_keys"]')).toBeVisible()
     } finally {
       cleanupDockerSshRelayTarget(target)
       rmSync(localRoot, { recursive: true, force: true })
