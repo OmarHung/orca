@@ -8,8 +8,8 @@ import { useSshTargetList } from '../ssh-page/use-ssh-target-list'
 import { SftpWorkbench } from './SftpWorkbench'
 import { useSftpProgressEvents } from './use-sftp-progress-events'
 
-export default function SftpPage(): React.JSX.Element {
-  const list = useSshTargetList()
+export default function SftpPage({ isVisible }: { isVisible: boolean }): React.JSX.Element {
+  const list = useSshTargetList(isVisible)
   const isHostListCollapsed = useRemoteHostsLayout((s) => s.hostListCollapsed.sftp)
   const [currentTargetId, setCurrentTargetId] = useState<string | null>(null)
   useSftpProgressEvents()

@@ -11,6 +11,7 @@ import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/R
 import { FloatingTerminalToggleButton } from '../components/floating-terminal/trigger/FloatingTerminalToggleButton'
 import { TerminalWorkbenchContainer } from '../components/terminal/workbench/TerminalWorkbenchContainer'
 import { SshPageHost } from '../components/ssh-page/SshPageHost'
+import { SftpPageHost } from '../components/sftp-page/SftpPageHost'
 import { useBottomPanelLayout } from '../components/bottom-panel/bottom-panel-layout-store'
 import type { VirtualizedScrollAnchor } from '../lib/list-interaction/virtualized-scrolling/useVirtualizedScrollAnchor'
 import { TitlebarLeftControls } from './chrome/TitlebarLeftControls'
@@ -38,7 +39,6 @@ const WorkspaceSpacePage = lazy(() => import('../components/workspace-space/Work
 const MobilePage = lazy(() => import('../components/mobile/MobilePage'))
 const Terminal = lazy(() => import('../components/terminal/workbench/Terminal'))
 const DatabasePage = lazy(() => import('../components/database/DatabasePage'))
-const SftpPage = lazy(() => import('../components/sftp-page/SftpPage'))
 const BottomPanel = lazy(() =>
   import('../components/bottom-panel/BottomPanel').then((module) => ({
     default: module.BottomPanel
@@ -109,7 +109,6 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
       {activeView === 'space' ? <WorkspaceSpacePage /> : null}
       {activeView === 'mobile' ? <MobilePage /> : null}
       {activeView === 'database' ? <DatabasePage /> : null}
-      {activeView === 'sftp' ? <SftpPage /> : null}
       {activeView === 'terminal' && creationLayoutActive && activePendingCreationId ? (
         <PendingCreationSurface
           creationId={activePendingCreationId}
@@ -256,6 +255,7 @@ export function AppWorkspaceShell(props: {
                     </RecoverableRenderErrorBoundary>
                   </Suspense>
                   <SshPageHost />
+                  <SftpPageHost />
                 </div>
                 {floatingWorkspace.showToggleButton && !capturingPluginShot ? (
                   <MemoFloatingTerminalToggleButton
