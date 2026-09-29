@@ -24,6 +24,7 @@ const {
   registerPetHandlersMock,
   registerDebugHandlersMock,
   registerDatabaseHandlersMock,
+  registerSftpHandlersMock,
   registerSessionHandlersMock,
   registerUIHandlersMock,
   setTrustedUIRendererWebContentsIdMock,
@@ -95,6 +96,7 @@ const {
   registerPetHandlersMock: vi.fn(),
   registerDebugHandlersMock: vi.fn(),
   registerDatabaseHandlersMock: vi.fn(),
+  registerSftpHandlersMock: vi.fn(),
   registerSessionHandlersMock: vi.fn(),
   registerUIHandlersMock: vi.fn(),
   setTrustedUIRendererWebContentsIdMock: vi.fn(),
@@ -279,6 +281,10 @@ vi.mock('../../database/database-ipc', () => ({
   registerDatabaseHandlers: registerDatabaseHandlersMock
 }))
 
+vi.mock('../../sftp/sftp-ipc', () => ({
+  registerSftpHandlers: registerSftpHandlersMock
+}))
+
 vi.mock('../pet', () => ({
   registerPetHandlers: registerPetHandlersMock
 }))
@@ -454,6 +460,7 @@ describe('registerCoreHandlers', () => {
     registerPetHandlersMock.mockReset()
     registerDebugHandlersMock.mockReset()
     registerDatabaseHandlersMock.mockReset()
+    registerSftpHandlersMock.mockReset()
     registerSessionHandlersMock.mockReset()
     registerUIHandlersMock.mockReset()
     setTrustedUIRendererWebContentsIdMock.mockReset()
@@ -568,6 +575,7 @@ describe('registerCoreHandlers', () => {
     expect(registerPetHandlersMock).toHaveBeenCalled()
     expect(registerDebugHandlersMock).toHaveBeenCalled()
     expect(registerDatabaseHandlersMock).toHaveBeenCalled()
+    expect(registerSftpHandlersMock).toHaveBeenCalled()
     expect(registerClaudeAccountHandlersMock).toHaveBeenCalledWith(claudeAccounts)
     expect(registerOpenCodeGoCredentialsHandlersMock).toHaveBeenCalledWith(rateLimits)
     expect(registerMiniMaxCredentialsHandlersMock).toHaveBeenCalledWith(rateLimits)
