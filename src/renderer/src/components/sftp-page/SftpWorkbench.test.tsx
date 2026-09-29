@@ -9,6 +9,7 @@ import { CommandConfirmProvider } from '../command-confirm/CommandConfirmProvide
 import { TooltipProvider } from '../ui/tooltip'
 import { SftpWorkbench } from './SftpWorkbench'
 import { useSftpColumnsStore } from './sftp-columns-store'
+import { saveLastLocalPath } from './sftp-last-local-path'
 import { DEFAULT_SFTP_COLUMN_WIDTHS } from './sftp-columns'
 import { DEFAULT_SFTP_SORT } from './sftp-entry-sort'
 import { useSftpTransfersStore } from './sftp-transfers-store'
@@ -42,9 +43,18 @@ const remoteListings: Record<string, SftpEntry[]> = {
   '/srv/app': [entry('/srv/app/index.js', 'file')]
 }
 
+const localListings: Record<string, SftpEntry[]> = {
+  '/Users/dev': [entry('/Users/dev/report.csv', 'file'), entry('/Users/dev/notes', 'directory')],
+  '/Users/dev/notes': [entry('/Users/dev/notes/todo.md', 'file')]
+}
+
 const api = {
   localHome: vi.fn(async () => '/Users/dev'),
-  localList: vi.fn(async () => ({ ok: true, value: [entry('/Users/dev/report.csv', 'file')] })),
+  localList: vi.fn(async (path: string) =>
+    localListings[path]
+      ? { ok: true, value: localListings[path] }
+      : { ok: false, error: { message: `ENOENT: ${path}` } }
+  ),
   home: vi.fn(async () => ({ ok: true, value: '/srv' })),
   list: vi.fn(async ({ path }: { path: string }) => ({
     ok: true,
@@ -78,17 +88,7 @@ const api = {
 let container: HTMLDivElement
 let root: Root
 
-beforeEach(async () => {
-  vi.clearAllMocks()
-  useSftpTransfersStore.setState({ transfers: [] })
-  useSftpColumnsStore.setState({
-    hiddenColumns: [],
-    sortByPane: { local: DEFAULT_SFTP_SORT, remote: DEFAULT_SFTP_SORT },
-    columnWidths: { ...DEFAULT_SFTP_COLUMN_WIDTHS }
-  })
-  Reflect.set(window, 'api', { sftp: api })
-  container = document.createElement('div')
-  document.body.appendChild(container)
+async function renderWorkbench(): Promise<void> {
   root = createRoot(container)
   await act(async () => {
     root.render(
@@ -100,6 +100,21 @@ beforeEach(async () => {
     )
   })
   await vi.waitFor(() => expect(row('/srv/log.txt')).not.toBeNull())
+}
+
+beforeEach(async () => {
+  vi.clearAllMocks()
+  window.localStorage.clear()
+  useSftpTransfersStore.setState({ transfers: [] })
+  useSftpColumnsStore.setState({
+    hiddenColumns: [],
+    sortByPane: { local: DEFAULT_SFTP_SORT, remote: DEFAULT_SFTP_SORT },
+    columnWidths: { ...DEFAULT_SFTP_COLUMN_WIDTHS }
+  })
+  Reflect.set(window, 'api', { sftp: api })
+  container = document.createElement('div')
+  document.body.appendChild(container)
+  await renderWorkbench()
 })
 
 afterEach(async () => {
@@ -283,6 +298,37 @@ describe('SftpWorkbench', () => {
     })
 
     expect(sizeCell()?.style.width).toBe(`${DEFAULT_SFTP_COLUMN_WIDTHS.size + 16}px`)
+  })
+
+  describe('local folder memory', () => {
+    async function remount(): Promise<void> {
+      await act(async () => root.unmount())
+      vi.clearAllMocks()
+      await renderWorkbench()
+    }
+
+    it('reopens the local pane in the last local folder it showed', async () => {
+      await act(async () => {
+        row('/Users/dev/notes')?.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+      })
+      await vi.waitFor(() => expect(row('/Users/dev/notes/todo.md')).not.toBeNull())
+
+      await remount()
+
+      await vi.waitFor(() => expect(row('/Users/dev/notes/todo.md')).not.toBeNull())
+      expect(api.localList).toHaveBeenCalledTimes(1)
+      expect(api.localList).toHaveBeenCalledWith('/Users/dev/notes')
+    })
+
+    it('falls back to the home folder when the remembered one is gone', async () => {
+      saveLastLocalPath('/Users/dev/deleted')
+
+      await remount()
+
+      await vi.waitFor(() => expect(row('/Users/dev/report.csv')).not.toBeNull())
+      expect(api.localList).toHaveBeenNthCalledWith(1, '/Users/dev/deleted')
+      expect(document.body.textContent).not.toContain('ENOENT')
+    })
   })
 
   describe('move', () => {
