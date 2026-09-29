@@ -15,6 +15,7 @@ function createLogins(saved: string | null, prompt?: SshVpnLoginPrompt) {
   const vault = {
     get: vi.fn(() => saved),
     remember: vi.fn(),
+    rememberForSession: vi.fn(),
     forget: vi.fn()
   }
   const store = { saveProfile: vi.fn() }
@@ -80,7 +81,7 @@ describe('SshVpnLogins', () => {
     await expect(cancelled.logins.startOptions(PROFILE, null).credentials?.()).resolves.toBeNull()
   })
 
-  it('falls back to keeping the password until quit when the keychain is unavailable', async () => {
+  it('falls back to keeping the password until quit when it cannot be saved', async () => {
     const { logins, vault } = createLogins(
       null,
       vi.fn(async () => ({ username: 'omar', password: 'p' }))
@@ -89,8 +90,25 @@ describe('SshVpnLogins', () => {
       throw new Error('no keychain')
     })
 
-    await logins.startOptions(PROFILE, null).credentials?.()
+    await expect(logins.startOptions(PROFILE, null).credentials?.()).resolves.toEqual({
+      username: 'omar',
+      password: 'p'
+    })
 
-    expect(vault.remember).toHaveBeenLastCalledWith(PROFILE.id, 'session', 'p')
+    expect(vault.rememberForSession).toHaveBeenCalledWith(PROFILE.id, 'p')
+  })
+
+  it('still asks again after a rejected login when the saved password cannot be removed', async () => {
+    const prompt = vi.fn(async () => ({ username: 'omar', password: 'fixed' }))
+    const { logins, vault } = createLogins('stale', prompt)
+    vault.forget.mockImplementationOnce(() => {
+      throw new Error('damaged')
+    })
+    const options = logins.startOptions(PROFILE, null)
+
+    expect(() => options.onLoginRejected?.()).not.toThrow()
+    await options.credentials?.()
+
+    expect(prompt).toHaveBeenCalled()
   })
 })

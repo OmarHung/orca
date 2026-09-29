@@ -11,7 +11,7 @@ export type SshVpnLoginPrompt = (request: {
 }) => Promise<SshVpnCredentials | null>
 
 type SshVpnLoginsDeps = {
-  vault: Pick<SshVpnPasswordVault, 'get' | 'remember' | 'forget'>
+  vault: Pick<SshVpnPasswordVault, 'get' | 'remember' | 'rememberForSession' | 'forget'>
   store: Pick<SshVpnStore, 'saveProfile'>
   prompt?: SshVpnLoginPrompt
   /** The username typed in the prompt was saved to the profile. */
@@ -35,7 +35,11 @@ export class SshVpnLogins {
       credentials: () => this.credentialsFor(profile, hostLabel),
       onLoginRejected: () => {
         this.rejected.add(profile.id)
-        this.deps.vault.forget(profile.id)
+        try {
+          this.deps.vault.forget(profile.id)
+        } catch {
+          // Why: `rejected` already keeps this run from offering it; the file's problem is shown when the user saves or forgets.
+        }
       }
     }
   }
@@ -64,8 +68,8 @@ export class SshVpnLogins {
     try {
       this.deps.vault.remember(profile.id, profile.passwordStorage ?? 'session', answer.password)
     } catch {
-      // Why: no keychain must not block connecting; keep it until Orca quits instead.
-      this.deps.vault.remember(profile.id, 'session', answer.password)
+      // Why: no keychain or an unusable saved-password file must not block connecting.
+      this.deps.vault.rememberForSession(profile.id, answer.password)
     }
     return answer
   }
