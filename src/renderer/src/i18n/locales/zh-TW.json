@@ -19319,7 +19319,8 @@
       "created": "建立日期",
       "modified": "修改日期",
       "type": "檔案類型",
-      "owner": "擁有者"
+      "owner": "擁有者",
+      "resize": "調整“{{column}}”欄寬"
     },
     "type": {
       "folder": "資料夾",
@@ -19377,6 +19378,14 @@
       "legend": "以 OpenSSH sftp 批次指令格式表示。開頭的“-”表示保留已存在的資料夾。",
       "partialNote": "每個檔案會先儲存為“<名稱>.orca-download”，完成後再改名，因此下載失敗不會損壞已有的檔案。",
       "nothingToDo": "沒有可傳輸的內容：所選內容中沒有普通檔案或資料夾。"
+    },
+    "tabs": {
+      "label": "SFTP 分頁",
+      "new": "新增分頁",
+      "close": "關閉分頁 {{name}}",
+      "missingHost": "“{{name}}”已不在你的 SSH 主機中，請關閉此分頁。",
+      "pickerTitle": "開啟 SFTP 分頁",
+      "pickerDescription": "選擇要瀏覽的主機。"
     }
   },
   "commandConfirm": {

@@ -19523,7 +19523,8 @@
       "created": "Created",
       "modified": "Modified",
       "type": "Type",
-      "owner": "Owner"
+      "owner": "Owner",
+      "resize": "Resize {{column}}"
     },
     "type": {
       "folder": "Folder",
@@ -19581,6 +19582,14 @@
       "legend": "Written as OpenSSH sftp batch commands. A leading “-” keeps a folder that already exists.",
       "partialNote": "Each file is saved as “<name>.orca-download” first and renamed when complete, so a failed download never damages an existing file.",
       "nothingToDo": "Nothing to transfer: no regular files or folders were selected."
+    },
+    "tabs": {
+      "label": "SFTP tabs",
+      "new": "New tab",
+      "close": "Close tab {{name}}",
+      "missingHost": "“{{name}}” is no longer in your SSH hosts. Close this tab.",
+      "pickerTitle": "Open an SFTP tab",
+      "pickerDescription": "Pick the host to browse."
     }
   },
   "commandConfirm": {

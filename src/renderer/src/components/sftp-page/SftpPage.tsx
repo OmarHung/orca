@@ -1,12 +1,18 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { translate } from '@/i18n/i18n'
 import { CommandConfirmProvider } from '../command-confirm/CommandConfirmProvider'
 import { HostListToggleButton } from '../ssh-page/HostListToggleButton'
 import { useRemoteHostsLayout } from '../ssh-page/remote-hosts-layout-store'
 import { RemoteHostsPageFrame } from '../ssh-page/RemoteHostsPageFrame'
 import { SshHostListPanel } from '../ssh-page/SshHostListPanel'
+import { SshHostPickerDialog } from '../ssh-page/SshHostPickerDialog'
+import { useSshPageShortcuts } from '../ssh-page/use-ssh-page-shortcuts'
 import { useSshTargetList } from '../ssh-page/use-ssh-target-list'
-import { SftpWorkbench } from './SftpWorkbench'
+import { remoteFolderName } from './sftp-paths'
+import { sftpHostLine } from './sftp-plan-confirm'
+import { useSftpTabsStore, type SftpTab } from './sftp-tabs-store'
+import { SftpTabPanels } from './SftpTabPanels'
+import { SftpTabStrip } from './SftpTabStrip'
 import { useSftpProgressEvents } from './use-sftp-progress-events'
 
 export default function SftpPage({ isVisible }: { isVisible: boolean }): React.JSX.Element {
@@ -20,11 +26,45 @@ export default function SftpPage({ isVisible }: { isVisible: boolean }): React.J
 function SftpPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Element {
   const list = useSshTargetList(isVisible)
   const isHostListCollapsed = useRemoteHostsLayout((s) => s.hostListCollapsed.sftp)
-  const [currentTargetId, setCurrentTargetId] = useState<string | null>(null)
+  const tabs = useSftpTabsStore((s) => s.tabs)
+  const activeTabId = useSftpTabsStore((s) => s.activeTabId)
+  const openTab = useSftpTabsStore((s) => s.openTab)
+  const activateTab = useSftpTabsStore((s) => s.activateTab)
+  const closeTab = useSftpTabsStore((s) => s.closeTab)
+  const remotePathByTab = useSftpTabsStore((s) => s.remotePathByTab)
+  const [pickerOpen, setPickerOpen] = useState(false)
   useSftpProgressEvents()
 
-  const target = list.targets.find((candidate) => candidate.id === currentTargetId) ?? null
-  const collapsedToggle = isHostListCollapsed ? <HostListToggleButton page="sftp" /> : undefined
+  const openPicker = useCallback(() => setPickerOpen(true), [])
+  const closeActiveTab = useCallback(() => {
+    if (activeTabId) {
+      closeTab(activeTabId)
+    }
+  }, [activeTabId, closeTab])
+  useSshPageShortcuts({
+    isVisible,
+    onNewSession: openPicker,
+    onCloseActiveSession: closeActiveTab
+  })
+
+  const targetsById = useMemo(
+    () => new Map(list.targets.map((target) => [target.id, target])),
+    [list.targets]
+  )
+  const folderByTab = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(remotePathByTab).map(([tabId, path]) => [tabId, remoteFolderName(path)])
+      ),
+    [remotePathByTab]
+  )
+  const describeTab = (tab: SftpTab): string => {
+    const target = targetsById.get(tab.targetId)
+    const host = target ? sftpHostLine(target) : tab.label
+    const path = remotePathByTab[tab.id]
+    return path ? `${host} — ${path}` : host
+  }
+  const activeTargetId = tabs.find((tab) => tab.id === activeTabId)?.targetId ?? null
 
   return (
     <RemoteHostsPageFrame
@@ -33,26 +73,38 @@ function SftpPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Eleme
         'File transfers are available in the desktop app only.'
       )}
     >
-      <div className="flex min-h-0 flex-1">
-        {isHostListCollapsed ? null : (
-          <SshHostListPanel
-            list={list}
-            toggle={<HostListToggleButton page="sftp" />}
-            currentTargetId={currentTargetId}
-            onSelect={(picked) => setCurrentTargetId(picked.id)}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <SftpTabStrip
+          tabs={tabs}
+          activeTabId={activeTabId}
+          folderByTab={folderByTab}
+          describeTab={describeTab}
+          onActivate={activateTab}
+          onClose={closeTab}
+          onNewTab={openPicker}
+          leadingControl={<HostListToggleButton page="sftp" />}
+        />
+        <div className="flex min-h-0 flex-1">
+          {isHostListCollapsed ? null : (
+            <SshHostListPanel list={list} currentTargetId={activeTargetId} onSelect={openTab} />
+          )}
+          <SftpTabPanels
+            tabs={tabs}
+            activeTabId={activeTabId}
+            isPageVisible={isVisible}
+            targetsById={targetsById}
+            targetsStatus={list.status}
           />
-        )}
-        {target ? (
-          <SftpWorkbench key={target.id} target={target} hostToggle={collapsedToggle} />
-        ) : (
-          <div className="relative flex min-w-0 flex-1 items-center justify-center text-sm text-muted-foreground">
-            {collapsedToggle ? (
-              <div className="absolute top-1 left-1">{collapsedToggle}</div>
-            ) : null}
-            {translate('sftpPage.page.pickHost', 'Pick a host to browse its files.')}
-          </div>
-        )}
+        </div>
       </div>
+      <SshHostPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        targets={list.targets}
+        onSelect={openTab}
+        title={translate('sftpPage.tabs.pickerTitle', 'Open an SFTP tab')}
+        description={translate('sftpPage.tabs.pickerDescription', 'Pick the host to browse.')}
+      />
     </RemoteHostsPageFrame>
   )
 }
