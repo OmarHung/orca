@@ -14,6 +14,7 @@ import { SshTargetCard } from './SshTargetCard'
 import { SshTargetServerStatus } from './SshTargetServerStatus'
 import { SshTargetsEmptyState } from './SshTargetsEmptyState'
 import { SshTargetDestructiveActions } from './SshTargetDestructiveActions'
+import { SshTargetList } from './SshTargetList'
 import { SshTargetForm, EMPTY_FORM, type EditingTarget } from './SshTargetForm'
 import { getEditingTargetForSshTarget } from './ssh-target-draft'
 import { buildSshTargetSavePayload } from './ssh-target-save-payload'
@@ -379,9 +380,10 @@ export function SshPane({ addTargetIntentSignal }: SshPaneProps): React.JSX.Elem
             {targets.length === 0 ? (
               <SshTargetsEmptyState />
             ) : (
-              <div className="space-y-2">
-                {targets.map((target) => (
-                  <div key={target.id} className="space-y-1">
+              <SshTargetList
+                targets={targets}
+                renderTarget={(target) => (
+                  <div className="space-y-1">
                     <SshTargetCard
                       target={target}
                       state={sshConnectionStates.get(target.id)}
@@ -401,8 +403,8 @@ export function SshPane({ addTargetIntentSignal }: SshPaneProps): React.JSX.Elem
                     />
                     <SshTargetServerStatus target={target} onChanged={() => void loadTargets()} />
                   </div>
-                ))}
-              </div>
+                )}
+              />
             )}
           </>
         )}
