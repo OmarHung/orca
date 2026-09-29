@@ -84,13 +84,17 @@ export class SshVpnService implements SshVpnRouteProvider {
     return route && profile ? { profileName: profile.name, ...route } : null
   }
 
-  /** A start the user asked for directly, e.g. the Connect button. */
-  async connect(profileId: string): Promise<void> {
+  /**
+   * Brings a profile up by id: the Connect button (no label), or a connection that names its
+   * VPN itself, e.g. a database connection. Returns the profile's name.
+   */
+  async connect(profileId: string, connectionLabel: string | null = null): Promise<string> {
     const profile = this.deps.store.getProfile(profileId)
     if (!profile) {
       throw new Error('This VPN profile no longer exists')
     }
-    await this.deps.manager.acquire(profile, this.startOptions(profile, null))
+    await this.deps.manager.acquire(profile, this.startOptions(profile, connectionLabel))
+    return profile.name
   }
 
   proxyCommand(target: SshTarget): string | null {

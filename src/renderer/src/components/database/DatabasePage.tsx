@@ -22,6 +22,7 @@ import { DatabaseDumpDialog } from './jobs/DatabaseDumpDialog'
 import { DatabaseJobsButton } from './jobs/DatabaseJobsButton'
 import { DatabaseTableView } from './table/DatabaseTableView'
 import { useDatabaseSessionEvents } from './use-database-session-events'
+import { useSshVpnSync } from '../ssh-vpn/ssh-vpn-store'
 
 const MIN_MAIN_WIDTH = 320
 
@@ -167,6 +168,8 @@ function DatabaseWorkbench(): React.JSX.Element {
 
 export default function DatabasePage(): React.JSX.Element {
   useDatabaseSessionEvents()
+  // Why here: the explorer names each connection's VPN profile.
+  useSshVpnSync()
   const isWebClient = isWebClientLocation()
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">

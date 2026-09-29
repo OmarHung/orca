@@ -51,6 +51,8 @@ export type ServerConnectionForm = {
   sslMode?: 'disable' | 'prefer' | 'require' | 'verify-full'
   /** Label of a saved SSH host to tunnel through. */
   sshHost?: string
+  /** Name of a VPN profile to connect through; its start is approved when Test asks. */
+  vpn?: string
 }
 
 /** Fills the New Connection dialog for a server database, tests it and saves it. */
@@ -68,6 +70,10 @@ export async function addServerConnection(page: Page, form: ServerConnectionForm
     await dialog.getByLabel('SSH tunnel').click()
     await page.getByRole('option', { name: form.sshHost, exact: true }).click()
   }
+  if (form.vpn) {
+    await dialog.getByLabel('VPN', { exact: true }).click()
+    await page.getByRole('option', { name: form.vpn, exact: true }).click()
+  }
   await dialog.getByLabel('Host').fill(form.url.hostname)
   await dialog.getByLabel('Port').fill(form.url.port)
   await dialog.getByLabel('Database', { exact: true }).fill(form.url.pathname.slice(1))
@@ -82,9 +88,12 @@ export async function addServerConnection(page: Page, form: ServerConnectionForm
   await dialog.getByLabel('SSL mode').click()
   await page.getByRole('option', { name: form.sslMode ?? 'disable', exact: true }).click()
   await dialog.getByRole('button', { name: 'Test Connection' }).click()
-  // Why longer through SSH: the first connect also opens the SSH session.
+  if (form.vpn) {
+    await page.locator('[data-command-confirm] [data-command-confirm-accept]').click()
+  }
+  // Why longer through SSH or a VPN: the first connect also opens that session.
   await expect(dialog.getByText(/^Connected to /)).toBeVisible({
-    timeout: form.sshHost ? 90_000 : 30_000
+    timeout: form.sshHost || form.vpn ? 90_000 : 30_000
   })
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(dialog).toBeHidden()
