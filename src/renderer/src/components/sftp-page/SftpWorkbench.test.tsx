@@ -3,9 +3,9 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SftpEntry } from '../../../../shared/sftp-types'
+import type { SftpEntry, SftpPlanRequest } from '../../../../shared/sftp-types'
 import type { SshTarget } from '../../../../shared/ssh-types'
-import { ConfirmationDialogProvider } from '../confirmation-dialog'
+import { CommandConfirmProvider } from '../command-confirm/CommandConfirmProvider'
 import { TooltipProvider } from '../ui/tooltip'
 import { SftpWorkbench } from './SftpWorkbench'
 import { useSftpColumnsStore } from './sftp-columns-store'
@@ -49,9 +49,22 @@ const api = {
     ok: true,
     value: remoteListings[path] ?? []
   })),
-  download: vi.fn(async () => ({ ok: true, value: { status: 'done' } })),
-  upload: vi.fn(),
-  remove: vi.fn(async () => ({ ok: true, value: undefined })),
+  plan: vi.fn(async (request: SftpPlanRequest) => ({
+    ok: true,
+    value: {
+      planId: `plan-${request.kind}`,
+      kind: request.kind,
+      targetId: request.targetId,
+      operations:
+        request.kind === 'download'
+          ? [{ op: 'get', remote: '/srv/log.txt', local: '/Users/dev/log.txt', size: 10 }]
+          : [{ op: 'rm', path: '/srv/log.txt' }],
+      totalBytes: 10,
+      conflicts: []
+    }
+  })),
+  execute: vi.fn(async () => ({ ok: true, value: { status: 'done' } })),
+  discardPlan: vi.fn(async () => undefined),
   getPathForFile: vi.fn(() => '')
 }
 
@@ -72,9 +85,9 @@ beforeEach(async () => {
   await act(async () => {
     root.render(
       <TooltipProvider>
-        <ConfirmationDialogProvider>
+        <CommandConfirmProvider>
           <SftpWorkbench target={target} />
-        </ConfirmationDialogProvider>
+        </CommandConfirmProvider>
       </TooltipProvider>
     )
   })
@@ -115,6 +128,18 @@ function remoteRowPaths(): string[] {
   )
 }
 
+function dialog(): HTMLElement | null {
+  return document.querySelector<HTMLElement>('[data-command-confirm]')
+}
+
+function dialogButton(name: string): HTMLButtonElement | null {
+  return (
+    [...(dialog()?.querySelectorAll<HTMLButtonElement>('button') ?? [])].find(
+      (candidate) => candidate.textContent === name
+    ) ?? null
+  )
+}
+
 async function click(element: HTMLElement | null, init: MouseEventInit = {}): Promise<void> {
   await act(async () => {
     element?.dispatchEvent(new MouseEvent('click', { bubbles: true, ...init }))
@@ -122,19 +147,29 @@ async function click(element: HTMLElement | null, init: MouseEventInit = {}): Pr
 }
 
 describe('SftpWorkbench', () => {
-  it('downloads the selected remote file into the local folder, never overwriting by default', async () => {
+  it('downloads only after confirming the exact commands', async () => {
     await click(row('/srv/log.txt'))
     await click(button('Download'))
 
+    await vi.waitFor(() => expect(dialog()).not.toBeNull())
+    expect(api.plan).toHaveBeenCalledWith({
+      kind: 'download',
+      targetId: 'web',
+      sources: ['/srv/log.txt'],
+      destinationDir: '/Users/dev'
+    })
+    expect(dialog()?.querySelector('[data-command-list]')?.textContent).toContain(
+      'get "/srv/log.txt" "/Users/dev/log.txt"'
+    )
+    expect(api.execute).not.toHaveBeenCalled()
+
+    await click(dialogButton('Download'))
+
     await vi.waitFor(() =>
-      expect(api.download).toHaveBeenCalledWith(
-        expect.objectContaining({
-          targetId: 'web',
-          sources: ['/srv/log.txt'],
-          destinationDir: '/Users/dev',
-          overwrite: false
-        })
-      )
+      expect(api.execute).toHaveBeenCalledWith({
+        planId: 'plan-download',
+        transferId: expect.any(String)
+      })
     )
   })
 
@@ -147,28 +182,25 @@ describe('SftpWorkbench', () => {
     expect(api.list).toHaveBeenLastCalledWith({ targetId: 'web', path: '/srv/app' })
   })
 
-  it('deletes only after the user confirms', async () => {
+  it('deletes only after the user confirms, and drops the plan on cancel', async () => {
     await click(row('/srv/log.txt'))
 
     await click(button('Delete'))
-    await vi.waitFor(() =>
-      expect(document.querySelector('[role="alertdialog"], [role="dialog"]')).not.toBeNull()
-    )
-    await click(button('Cancel'))
-    expect(api.remove).not.toHaveBeenCalled()
+    await vi.waitFor(() => expect(dialog()).not.toBeNull())
+    await click(dialogButton('Cancel'))
+    expect(api.execute).not.toHaveBeenCalled()
+    expect(api.discardPlan).toHaveBeenCalledWith('plan-remove')
 
     await click(button('Delete'))
-    await vi.waitFor(() =>
-      expect(document.querySelector('[role="alertdialog"], [role="dialog"]')).not.toBeNull()
-    )
-    const dialog = document.querySelector('[role="alertdialog"], [role="dialog"]')
-    const confirm = [...(dialog?.querySelectorAll('button') ?? [])].find(
-      (candidate) => candidate.textContent === 'Delete'
-    )
-    await click(confirm ?? null)
+    await vi.waitFor(() => expect(dialogButton('Delete')).not.toBeNull())
+    expect(dialog()?.textContent).toContain('rm "/srv/log.txt"')
+    await click(dialogButton('Delete'))
 
     await vi.waitFor(() =>
-      expect(api.remove).toHaveBeenCalledWith({ targetId: 'web', paths: ['/srv/log.txt'] })
+      expect(api.execute).toHaveBeenCalledWith({
+        planId: 'plan-remove',
+        transferId: expect.any(String)
+      })
     )
   })
 

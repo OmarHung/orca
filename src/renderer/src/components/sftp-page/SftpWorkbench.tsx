@@ -2,15 +2,14 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { ArrowDownToLine, ArrowUpFromLine, FolderPlus, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { translate } from '@/i18n/i18n'
-import { useConfirmationDialog } from '../confirmation-dialog-context'
+import { useCommandConfirm } from '../command-confirm/command-confirm-context'
 import type { SftpEntry, SftpTransferDirection } from '../../../../shared/sftp-types'
 import type { SshTarget } from '../../../../shared/ssh-types'
 import { PaneIconButton, SftpFilePane } from './SftpFilePane'
 import { SftpNameDialog, type SftpNameRequest } from './SftpNameDialog'
 import { SftpTransfersPanel } from './SftpTransfersPanel'
-import { localParent, remoteParent } from './sftp-paths'
-import { createRemoteFolder, deleteRemoteEntries, renameRemoteEntry } from './sftp-remote-actions'
-import { startSftpTransfer } from './sftp-transfer-actions'
+import { localParent, remoteJoin, remoteParent } from './sftp-paths'
+import { runSftpAction, type SftpActionContext } from './sftp-plan-actions'
 import { useSftpFileDrop } from './use-sftp-file-drop'
 import { useSftpPane, type SftpPaneSource } from './use-sftp-pane'
 
@@ -32,7 +31,8 @@ export function SftpWorkbench({
   target: SshTarget
   hostToggle?: React.ReactNode
 }): React.JSX.Element {
-  const confirm = useConfirmationDialog()
+  const confirm = useCommandConfirm()
+  const actionContext = useMemo<SftpActionContext>(() => ({ target, confirm }), [target, confirm])
   const remoteSource = useMemo<SftpPaneSource>(
     () => ({
       initialPath: () => window.api.sftp.home(target.id),
@@ -53,17 +53,24 @@ export function SftpWorkbench({
       if (!destinationDir || sources.length === 0) {
         return
       }
-      void startSftpTransfer(
-        { direction, targetId: target.id, sources, destinationDir },
-        {
-          confirm,
-          onFinished: (finished, dir) =>
-            finished === 'upload' ? refreshRemoteIfShowing(dir) : refreshLocalIfShowing(dir)
+      void runSftpAction(
+        { kind: direction, targetId: target.id, sources, destinationDir },
+        actionContext
+      ).then((isDone) => {
+        if (isDone) {
+          if (direction === 'upload') {
+            refreshRemoteIfShowing(destinationDir)
+          } else {
+            refreshLocalIfShowing(destinationDir)
+          }
         }
-      )
+      })
     },
-    [confirm, refreshLocalIfShowing, refreshRemoteIfShowing, target.id]
+    [actionContext, refreshLocalIfShowing, refreshRemoteIfShowing, target.id]
   )
+  const runRemoteChange = (request: Parameters<typeof runSftpAction>[0]): void => {
+    void runSftpAction(request, actionContext).then((isDone) => isDone && reloadRemote())
+  }
 
   const remotePath = remote.path
   const onDropPaths = useCallback(
@@ -82,7 +89,7 @@ export function SftpWorkbench({
       confirmLabel: translate('sftpPage.remote.create', 'Create'),
       initialName: '',
       onSubmit: (name) =>
-        void createRemoteFolder(target.id, remotePath, name).then((ok) => ok && reloadRemote())
+        runRemoteChange({ kind: 'mkdir', targetId: target.id, path: remoteJoin(remotePath, name) })
     })
   }
   const requestRename = (): void => {
@@ -95,13 +102,22 @@ export function SftpWorkbench({
       confirmLabel: translate('sftpPage.remote.rename', 'Rename'),
       initialName: entry.name,
       onSubmit: (name) =>
-        void renameRemoteEntry(target.id, entry, name).then((ok) => ok && reloadRemote())
+        runRemoteChange({
+          kind: 'rename',
+          targetId: target.id,
+          from: entry.path,
+          to: remoteJoin(remoteParent(entry.path), name)
+        })
     })
   }
   const requestDelete = (): void => {
-    void deleteRemoteEntries(target.id, target.label, selectedRemote, confirm).then(
-      (ok) => ok && reloadRemote()
-    )
+    if (selectedRemote.length > 0) {
+      runRemoteChange({
+        kind: 'remove',
+        targetId: target.id,
+        paths: selectedRemote.map((entry) => entry.path)
+      })
+    }
   }
 
   const uploadLabel = translate('sftpPage.local.upload', 'Upload')
