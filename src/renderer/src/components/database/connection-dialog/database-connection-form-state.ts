@@ -29,10 +29,13 @@ export type DatabaseConnectionFormState = {
   filePath: string
   /** Saved SSH host to tunnel through, or `NO_SSH_TUNNEL`. */
   sshTargetId: string
+  /** VPN profile to connect through, or `NO_VPN`; ignored while an SSH tunnel is picked. */
+  vpnProfileId: string
 }
 
 // Why not '': the select primitive reserves the empty value.
 export const NO_SSH_TUNNEL = 'none'
+export const NO_VPN = 'none'
 
 type ServerDriver = Exclude<DatabaseDriver, 'sqlite'>
 
@@ -67,7 +70,8 @@ export function initialConnectionForm(
     passwordStorage: canStorePasswords ? 'forever' : 'session',
     sslMode: 'prefer',
     filePath: '',
-    sshTargetId: NO_SSH_TUNNEL
+    sshTargetId: NO_SSH_TUNNEL,
+    vpnProfileId: NO_VPN
   }
   if (!existing) {
     return base
@@ -94,7 +98,8 @@ export function initialConnectionForm(
     user: existing.user,
     passwordStorage: existing.passwordStorage,
     sslMode: existing.sslMode,
-    sshTargetId: existing.sshTunnel?.targetId ?? NO_SSH_TUNNEL
+    sshTargetId: existing.sshTunnel?.targetId ?? NO_SSH_TUNNEL,
+    vpnProfileId: existing.vpnProfileId ?? NO_VPN
   }
 }
 
@@ -154,7 +159,9 @@ function candidateDraft(form: DatabaseConnectionFormState): unknown {
     user: form.user,
     sslMode: form.sslMode,
     passwordStorage: form.passwordStorage,
-    sshTunnel: form.sshTargetId === NO_SSH_TUNNEL ? null : { targetId: form.sshTargetId }
+    sshTunnel: form.sshTargetId === NO_SSH_TUNNEL ? null : { targetId: form.sshTargetId },
+    vpnProfileId:
+      form.sshTargetId === NO_SSH_TUNNEL && form.vpnProfileId !== NO_VPN ? form.vpnProfileId : null
   }
 }
 
