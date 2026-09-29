@@ -10,6 +10,7 @@ import RightSidebar from '../components/right-sidebar/RightSidebar'
 import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/RecoverableRenderErrorBoundary'
 import { FloatingTerminalToggleButton } from '../components/floating-terminal/trigger/FloatingTerminalToggleButton'
 import { TerminalWorkbenchContainer } from '../components/terminal/workbench/TerminalWorkbenchContainer'
+import { SshPageHost } from '../components/ssh-page/SshPageHost'
 import { useBottomPanelLayout } from '../components/bottom-panel/bottom-panel-layout-store'
 import type { VirtualizedScrollAnchor } from '../lib/list-interaction/virtualized-scrolling/useVirtualizedScrollAnchor'
 import { TitlebarLeftControls } from './chrome/TitlebarLeftControls'
@@ -37,7 +38,6 @@ const WorkspaceSpacePage = lazy(() => import('../components/workspace-space/Work
 const MobilePage = lazy(() => import('../components/mobile/MobilePage'))
 const Terminal = lazy(() => import('../components/terminal/workbench/Terminal'))
 const DatabasePage = lazy(() => import('../components/database/DatabasePage'))
-const SshPage = lazy(() => import('../components/ssh-page/SshPage'))
 const SftpPage = lazy(() => import('../components/sftp-page/SftpPage'))
 const BottomPanel = lazy(() =>
   import('../components/bottom-panel/BottomPanel').then((module) => ({
@@ -109,7 +109,6 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
       {activeView === 'space' ? <WorkspaceSpacePage /> : null}
       {activeView === 'mobile' ? <MobilePage /> : null}
       {activeView === 'database' ? <DatabasePage /> : null}
-      {activeView === 'ssh' ? <SshPage /> : null}
       {activeView === 'sftp' ? <SftpPage /> : null}
       {activeView === 'terminal' && creationLayoutActive && activePendingCreationId ? (
         <PendingCreationSurface
@@ -255,6 +254,7 @@ export function AppWorkspaceShell(props: {
                       <ActivePage layout={layout} />
                     </RecoverableRenderErrorBoundary>
                   </Suspense>
+                  <SshPageHost />
                 </div>
                 {floatingWorkspace.showToggleButton && !capturingPluginShot ? (
                   <MemoFloatingTerminalToggleButton

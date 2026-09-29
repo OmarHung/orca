@@ -2,6 +2,7 @@ import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../../shared/workspace/i
 import { isEphemeralSetupTerminalWorktreeId } from '../../../../../shared/workspace-setup/ephemeral-setup-terminal-worktree-id'
 import { parseExecutionHostId } from '../../../../../shared/execution-host/execution-host'
 import { parseWorkspaceKey } from '../../../../../shared/workspace/identity/workspace-scope'
+import { isLocalSyntheticWorkspaceId } from '../../../../../shared/local-synthetic-workspace'
 import type { AppState } from '@/store/types'
 import { resolveOwnerOrLocal } from './worktree-runtime-owner'
 import { namedHostForOwnerRef, runtimeEnvironmentIdUnlessTwin } from './resolve-owner'
@@ -56,6 +57,10 @@ export function resolveTerminalHostOwnership(
   if (!worktreeId) {
     // Why: a tab with no owning row proves nothing about its host, so teardown cannot claim its PTY.
     return purpose === 'teardown' ? UNRESOLVED_TERMINAL_HOST : LOCAL_OR_SSH_TERMINAL_HOST
+  }
+  // Why: the fork's other synthetic workspaces (SSH page sessions) run in a local shell, never a runtime.
+  if (worktreeId !== FLOATING_TERMINAL_WORKTREE_ID && isLocalSyntheticWorkspaceId(worktreeId)) {
+    return LOCAL_OR_SSH_TERMINAL_HOST
   }
   if (
     worktreeId === FLOATING_TERMINAL_WORKTREE_ID ||

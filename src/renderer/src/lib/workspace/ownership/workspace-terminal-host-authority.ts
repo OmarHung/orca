@@ -1,9 +1,9 @@
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../../shared/workspace/identity/floating-workspace-id'
 import {
   parseExecutionHostId,
   type ExecutionHostId
 } from '../../../../../shared/execution-host/execution-host'
 import { parseWorkspaceKey } from '../../../../../shared/workspace/identity/workspace-scope'
+import { isLocalSyntheticWorkspaceId } from '../../../../../shared/local-synthetic-workspace'
 import type { HostLiveTerminalProbeVerdict } from '@/runtime/hosted-terminals/inventory/host-live-terminal-probe'
 import type { SshConnectionState } from '../../../../../shared/remote-runtime/ssh/ssh-types'
 import { isWebRuntimeSessionActive } from '@/runtime/web-session-tabs-sync/identity/web-runtime-session-environment'
@@ -40,7 +40,7 @@ export function resolveWorkspaceTerminalHostAuthority(
   /** The host the caller knows owns the workspace (a create's target), over the active selection. */
   executionHostId?: ExecutionHostId
 ): HostLiveTerminalProbeVerdict {
-  if (!worktreeId || worktreeId === FLOATING_TERMINAL_WORKTREE_ID) {
+  if (!worktreeId || isLocalSyntheticWorkspaceId(worktreeId)) {
     return 'none'
   }
   const selectedHost = executionHostId

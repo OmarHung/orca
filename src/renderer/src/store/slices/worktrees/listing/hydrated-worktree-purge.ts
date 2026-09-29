@@ -1,10 +1,10 @@
 import { runAsAutomaticDeselection } from '@/store/workspaces/selection/active-worktree-deselection-intent'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../../../shared/workspace/identity/floating-workspace-id'
 import { getRepoExecutionHostId } from '../../../../../../shared/execution-host/execution-host'
 import {
   folderWorkspaceKey,
   parseWorkspaceKey
 } from '../../../../../../shared/workspace/identity/workspace-scope'
+import { addLocalSyntheticWorkspaceIds } from '../../../../../../shared/local-synthetic-workspace'
 import { getRepoIdFromWorktreeId } from '../../../../../../shared/worktree/id'
 import { findWslMovedProjectForWorkspace } from '../../../repos/wsl-moved-projects'
 import {
@@ -64,7 +64,9 @@ export function purgeHydratedWorktrees(
       return
     }
   }
-  const validIds = new Set<string>([FLOATING_TERMINAL_WORKTREE_ID])
+  const validIds = new Set<string>()
+  // Synthetic workspaces are persisted renderer state, not repo worktrees an authoritative scan returns.
+  addLocalSyntheticWorkspaceIds(validIds)
   for (const workspace of selectFolderWorkspaces(state) ?? []) {
     validIds.add(folderWorkspaceKey(workspace.id))
   }
