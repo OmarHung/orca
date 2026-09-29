@@ -30,14 +30,17 @@ export class SshVpnPasswordVault {
     return [...new Set([...this.sessionPasswords.keys(), ...(this.sealed.ids() ?? [])])]
   }
 
-  /** Throws with a user-facing reason when `forever` cannot be honoured. */
+  /**
+   * Throws with a user-facing reason when `forever` cannot be honoured, or when a password saved
+   * earlier cannot be removed for `session` or `never`.
+   */
   remember(profileId: string, storage: SshVpnPasswordStorage, password: string): void {
     if (storage === 'never') {
       this.forget(profileId)
       return
     }
     if (storage === 'session') {
-      this.sealed.delete(profileId)
+      this.deleteSealed(profileId)
       this.sessionPasswords.set(profileId, password)
       return
     }
@@ -53,8 +56,21 @@ export class SshVpnPasswordVault {
     this.sessionPasswords.delete(profileId)
   }
 
+  /** Keeps a password until Orca quits without touching the saved-password file. */
+  rememberForSession(profileId: string, password: string): void {
+    this.sessionPasswords.set(profileId, password)
+  }
+
+  /** Throws when the saved-password file cannot be changed, so a saved password may remain. */
   forget(profileId: string): void {
     this.sessionPasswords.delete(profileId)
-    this.sealed.delete(profileId)
+    this.deleteSealed(profileId)
+  }
+
+  private deleteSealed(profileId: string): void {
+    const deleted = this.sealed.delete(profileId)
+    if (deleted !== 'deleted') {
+      throw new Error(this.sealed.describeProblem(deleted))
+    }
   }
 }

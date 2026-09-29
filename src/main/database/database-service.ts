@@ -134,12 +134,17 @@ export class DatabaseService {
     this.deps.connections.setGroup(request.connectionIds, request.group)
   }
 
-  async deleteConnection(connectionId: string): Promise<void> {
+  async deleteConnection(connectionId: string): Promise<DatabaseResult<null>> {
     await this.deps.sessions.disconnect(connectionId)
-    this.deps.passwords.forget(connectionId)
+    // Why first: a connection deleted before its password would leave that password with nothing to remove it from.
+    const forgotten = this.deps.passwords.forget(connectionId)
+    if (!forgotten.ok) {
+      return forgotten
+    }
     this.deps.connections.delete(connectionId)
     await this.deps.consoles.deleteConnection(connectionId)
     await this.deps.history.clear(connectionId)
+    return { ok: true, value: null }
   }
 
   testConnection(
