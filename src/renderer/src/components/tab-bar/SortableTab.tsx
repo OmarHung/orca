@@ -27,6 +27,7 @@ import { useTabStripSlotProps } from './use-tab-strip-slot-props'
 import { useTabStripPointerActivation } from './tab-strip-pointer-activation'
 import { TabCloseTooltip } from './TabCloseTooltip'
 import { TerminalTabLeadingIcon } from './TerminalTabLeadingIcon'
+import { AgentTabClearButton } from './AgentTabClearButton'
 import {
   isTerminalTabActivityLive,
   resolveTerminalTabActivityStatus,
@@ -317,6 +318,15 @@ export default function SortableTab({
         >
           <Minimize2 className="w-3 h-3" />
         </button>
+      )}
+      {tabAgent && !isEditing && (
+        <AgentTabClearButton
+          tabId={tab.id}
+          tabTitle={tabTitle}
+          agent={tabAgent}
+          isActive={isActive}
+          isBusy={isTerminalTabActivityLive(activityStatus)}
+        />
       )}
       {!isEditing && !isPinned && (
         <TabCloseTooltip>

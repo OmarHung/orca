@@ -19559,5 +19559,14 @@
       "folder": "資料夾",
       "transfer": "傳輸"
     }
+  },
+  "agentTabClear": {
+    "button": "清除對話",
+    "busy": "等待代理完成後再清除",
+    "ariaLabel": "清除 {{title}} 中的對話",
+    "confirmTitle": "清除此對話？",
+    "confirmDescription": "將向“{{title}}”中的 {{agent}} 傳送 /clear。代理會重新開始，不再保留目前對話的上下文。",
+    "confirm": "清除",
+    "noTerminal": "此分頁沒有正在執行的代理可清除。"
   }
 }
