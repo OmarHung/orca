@@ -5,11 +5,17 @@ import { useRemoteHostsLayout } from '../ssh-page/remote-hosts-layout-store'
 import { RemoteHostsPageFrame } from '../ssh-page/RemoteHostsPageFrame'
 import { SshHostListPanel } from '../ssh-page/SshHostListPanel'
 import { useSshTargetList } from '../ssh-page/use-ssh-target-list'
+import { SftpWorkbench } from './SftpWorkbench'
+import { useSftpProgressEvents } from './use-sftp-progress-events'
 
 export default function SftpPage(): React.JSX.Element {
   const list = useSshTargetList()
   const isHostListCollapsed = useRemoteHostsLayout((s) => s.hostListCollapsed.sftp)
   const [currentTargetId, setCurrentTargetId] = useState<string | null>(null)
+  useSftpProgressEvents()
+
+  const target = list.targets.find((candidate) => candidate.id === currentTargetId) ?? null
+  const collapsedToggle = isHostListCollapsed ? <HostListToggleButton page="sftp" /> : undefined
 
   return (
     <RemoteHostsPageFrame
@@ -24,19 +30,19 @@ export default function SftpPage(): React.JSX.Element {
             list={list}
             toggle={<HostListToggleButton page="sftp" />}
             currentTargetId={currentTargetId}
-            onSelect={(target) => setCurrentTargetId(target.id)}
+            onSelect={(picked) => setCurrentTargetId(picked.id)}
           />
         )}
-        <div className="relative flex min-w-0 flex-1 items-center justify-center text-sm text-muted-foreground">
-          {isHostListCollapsed ? (
-            <div className="absolute top-1 left-1">
-              <HostListToggleButton page="sftp" />
-            </div>
-          ) : null}
-          {currentTargetId
-            ? translate('sftpPage.page.comingSoon', 'File transfer is coming in the next update.')
-            : translate('sftpPage.page.pickHost', 'Pick a host to browse its files.')}
-        </div>
+        {target ? (
+          <SftpWorkbench key={target.id} target={target} hostToggle={collapsedToggle} />
+        ) : (
+          <div className="relative flex min-w-0 flex-1 items-center justify-center text-sm text-muted-foreground">
+            {collapsedToggle ? (
+              <div className="absolute top-1 left-1">{collapsedToggle}</div>
+            ) : null}
+            {translate('sftpPage.page.pickHost', 'Pick a host to browse its files.')}
+          </div>
+        )}
       </div>
     </RemoteHostsPageFrame>
   )

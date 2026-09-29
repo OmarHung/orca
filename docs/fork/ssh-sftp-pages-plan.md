@@ -1,6 +1,6 @@
 # SSH 與 SFTP 頁面：實作計畫（fork 專屬）
 
-> 狀態：Phase 1～3（側欄入口與主機清單、SSH 分頁工作區、SFTP 後端）已完成（2026-09-29），紀錄見 §7。Phase 4（SFTP 雙欄 UI）進行中
+> 狀態：Phase 1～4 全部完成（2026-09-29），紀錄見 §7
 > 分支：從 `omar/custom` 開 `feat/ssh-sftp-pages`，每個 Phase 完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -175,3 +175,19 @@ Database 頁是範本（commit `d820e61fa2`）。它的導航狀態放在 fork �
   - `sftp-ipc.ts`／`sftp-ipc-schemas.ts`：`sftp:*` IPC，用 zod 驗證（遠端路徑必須以 `/` 開頭、本機路徑必須是絕對路徑、不接受多餘欄位），進度用 `sftp:progress` 廣播。
 - Preload：`preload/api/sftp-api.ts`、`sftp-bridge.ts`（含 `webUtils.getPathForFile`，給從 Finder 拖放用）。web 版由 `withFallback` 補上，不需要 stub。
 - 上游修改：`preload/index.ts`、`preload/api-types.ts`、`register-core-handlers.ts`（各加一行），以及它的測試補上 mock。
+
+### 7.5 Phase 4：SFTP 雙欄 UI（2026-09-29）
+
+- `components/sftp-page/`：
+  - `SftpWorkbench`：左本機、右遠端（`SftpFilePane` ×2）、下方 `SftpTransfersPanel`、`SftpNameDialog`（新增資料夾、重新命名）。雙擊資料夾進入；雙擊檔案就傳到另一邊目前的資料夾（本機檔案上傳、遠端檔案下載）。
+  - `use-sftp-pane.ts`：一個窗格的路徑、清單、選取；忽略過時的回應；只有第一次載入失敗會讓整個窗格顯示錯誤，之後的導覽失敗用 toast 顯示並保留原本的清單。
+  - `sftp-selection.ts`：點一下單選、Cmd／Ctrl 加選、Shift 範圍選（平台判斷：Mac 用 metaKey，其他用 ctrlKey）。
+  - `sftp-transfer-actions.ts`：發起傳輸；遇到重名就用 `useConfirmationDialog` 詢問（destructive），同意才用 `overwrite: true` 重送。`sftp-transfers-store.ts`（zustand，fork 自己的 store）記錄進度。
+  - `sftp-remote-actions.ts`：新增資料夾、重新命名、刪除（一定先確認，確認框寫出主機名稱和項目，註明無法復原）。
+  - `use-sftp-file-drop.ts`：**從 Finder 拖放上傳**。preload 在 document capture 階段會攔截所有原生檔案拖放，轉給終端機或編輯器，所以這裡改在 **window capture** 監聽（比 document 早），只接落在遠端窗格內的拖放並 `stopImmediatePropagation`，不需要修改 `shared/native-file-drop.ts` 的共用路由。
+- i18n：`sftpPage.*`。`zh-tw-term-overrides.json` 新增「合並 → 合併」（OpenCC 的錯誤，同時修正了上游 6 個字串）。
+- 驗證：單元測試（路徑、選取、傳輸流程、store、雙欄互動：下載的參數、雙擊進入資料夾、刪除必須先確認）；**Docker E2E** `tests/e2e/sftp-docker.spec.ts`（`ORCA_E2E_SSH_DOCKER=1`）：對真實 sshd 容器跑 home、mkdir、上傳資料夾、重名衝突、列目錄、下載（不留 `.orca-download`）、刪除，並確認 relay 的連線狀態沒有被標成 connected，最後打開 SFTP 頁看到遠端清單。
+- 已知限制：
+  - SFTP 頁放在 `ActivePage`，切到別的頁面再回來，窗格路徑和選取會重設（傳輸本身會繼續，完成狀態也會更新；但離開頁面期間收不到進度）。
+  - SFTP 頁仍然有 stacked titlebar（SSH 頁已經拿掉）。
+  - 上傳的進度以 ssh2 `fastPut` 的 step 回報；系統 SSH transport 的主機（ProxyJump 等）不支援。
