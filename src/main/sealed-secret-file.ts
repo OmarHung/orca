@@ -1,15 +1,67 @@
-import { existsSync, readFileSync } from 'node:fs'
-import { isUnreadableError, writeDurableSecureJsonFile } from '../shared/secure-file'
+import { readFileSync } from 'node:fs'
+import { writeDurableSecureJsonFile } from '../shared/secure-file'
 import type { SecretStore } from '../shared/secret-store'
 
+const FILE_VERSION = 1
+const FILE_FORMAT = 'orca-secret-store-v1'
+
 type SealedSecretFileContents = {
-  version: 1
-  format: 'orca-secret-store-v1'
+  version: typeof FILE_VERSION
+  format: typeof FILE_FORMAT
   /** id → base64 ciphertext. */
   ciphertexts: Record<string, string>
 }
 
-export type SealResult = 'sealed' | 'no-encryption' | 'unreadable'
+/** Why an existing file cannot be used. Each one leaves the file untouched for the user to handle. */
+export type SecretFileProblem = 'unreadable' | 'damaged' | 'newer-format'
+
+export type SealResult = 'sealed' | 'no-encryption' | SecretFileProblem
+
+export type DeleteResult = 'deleted' | SecretFileProblem
+
+type ReadResult = { contents: SealedSecretFileContents } | { problem: SecretFileProblem }
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isMissingFileError(error: unknown): boolean {
+  return isObject(error) && error.code === 'ENOENT'
+}
+
+function parseContents(text: string): ReadResult {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(text)
+  } catch {
+    return { problem: 'damaged' }
+  }
+  if (!isObject(parsed)) {
+    return { problem: 'damaged' }
+  }
+  if (typeof parsed.version === 'number' && parsed.version > FILE_VERSION) {
+    return { problem: 'newer-format' }
+  }
+  const { ciphertexts } = parsed
+  if (parsed.version !== FILE_VERSION || parsed.format !== FILE_FORMAT || !isObject(ciphertexts)) {
+    return { problem: 'damaged' }
+  }
+  const entries: [string, string][] = []
+  for (const [id, ciphertext] of Object.entries(ciphertexts)) {
+    // Why: dropping one bad entry here would erase it on the next write.
+    if (typeof ciphertext !== 'string') {
+      return { problem: 'damaged' }
+    }
+    entries.push([id, ciphertext])
+  }
+  return {
+    contents: {
+      version: FILE_VERSION,
+      format: FILE_FORMAT,
+      ciphertexts: Object.fromEntries(entries)
+    }
+  }
+}
 
 /** A JSON file of id → secret, each sealed with the OS keychain. Never holds plaintext. */
 export class SealedSecretFile {
@@ -18,19 +70,20 @@ export class SealedSecretFile {
     private readonly secretStore: () => SecretStore
   ) {}
 
-  /** `null` when the file exists but could not be read. */
+  /** `null` when the file exists but cannot be used. */
   ids(): string[] | null {
-    const file = this.read()
-    return file ? Object.keys(file.ciphertexts) : null
+    const read = this.read()
+    return 'contents' in read ? Object.keys(read.contents.ciphertexts) : null
   }
 
   has(id: string): boolean {
-    const file = this.read()
-    return file !== null && Object.hasOwn(file.ciphertexts, id)
+    const read = this.read()
+    return 'contents' in read && Object.hasOwn(read.contents.ciphertexts, id)
   }
 
   get(id: string): string | null {
-    const ciphertext = this.read()?.ciphertexts[id]
+    const read = this.read()
+    const ciphertext = 'contents' in read ? read.contents.ciphertexts[id] : undefined
     if (typeof ciphertext !== 'string') {
       return null
     }
@@ -51,52 +104,55 @@ export class SealedSecretFile {
     if (!store.isEncryptionAvailable()) {
       return 'no-encryption'
     }
-    const file = this.read()
-    if (!file) {
-      return 'unreadable'
+    const read = this.read()
+    if ('problem' in read) {
+      return read.problem
     }
     const ciphertext = store.encryptString(secret).toString('base64')
-    this.write({ ...file, ciphertexts: { ...file.ciphertexts, [id]: ciphertext } })
+    this.write({
+      ...read.contents,
+      ciphertexts: { ...read.contents.ciphertexts, [id]: ciphertext }
+    })
     return 'sealed'
   }
 
-  /** False when the file exists but could not be read, so nothing was removed. */
-  delete(id: string): boolean {
-    const file = this.read()
-    if (!file) {
-      return false
+  /** A problem means the file exists but cannot be used, so nothing was removed. */
+  delete(id: string): DeleteResult {
+    const read = this.read()
+    if ('problem' in read) {
+      return read.problem
     }
-    if (Object.hasOwn(file.ciphertexts, id)) {
-      const { [id]: _removed, ...rest } = file.ciphertexts
-      this.write({ ...file, ciphertexts: rest })
+    if (Object.hasOwn(read.contents.ciphertexts, id)) {
+      const { [id]: _removed, ...rest } = read.contents.ciphertexts
+      this.write({ ...read.contents, ciphertexts: rest })
     }
-    return true
+    return 'deleted'
   }
 
-  /** `null` means the file exists but could not be read — never treat that as empty. */
-  private read(): SealedSecretFileContents | null {
-    const empty: SealedSecretFileContents = {
-      version: 1,
-      format: 'orca-secret-store-v1',
-      ciphertexts: {}
+  /** User-facing reason nothing was saved or removed. */
+  describeProblem(problem: SecretFileProblem): string {
+    switch (problem) {
+      case 'unreadable':
+        return `Orca's saved-credentials file (${this.filePath}) exists but could not be read; refusing to overwrite it.`
+      case 'damaged':
+        return `Orca's saved-credentials file (${this.filePath}) is damaged, so Orca will not overwrite it. Repair it, or move it away to start a new one.`
+      case 'newer-format':
+        return `Orca's saved-credentials file (${this.filePath}) was written by a newer version of Orca. Update Orca to change saved passwords.`
     }
-    if (!existsSync(this.filePath)) {
-      return empty
-    }
+  }
+
+  /** Only a missing file counts as empty; any other file that fails to parse is never overwritten. */
+  private read(): ReadResult {
+    let text: string
     try {
-      const parsed: unknown = JSON.parse(readFileSync(this.filePath, 'utf8'))
-      const ciphertexts: unknown =
-        typeof parsed === 'object' && parsed !== null ? Reflect.get(parsed, 'ciphertexts') : null
-      if (typeof ciphertexts !== 'object' || ciphertexts === null || Array.isArray(ciphertexts)) {
-        return empty
-      }
-      const entries = Object.entries(ciphertexts).filter(
-        (entry): entry is [string, string] => typeof entry[1] === 'string'
-      )
-      return { ...empty, ciphertexts: Object.fromEntries(entries) }
+      text = readFileSync(this.filePath, 'utf8')
     } catch (error) {
-      return isUnreadableError(error) ? null : empty
+      if (isMissingFileError(error)) {
+        return { contents: { version: FILE_VERSION, format: FILE_FORMAT, ciphertexts: {} } }
+      }
+      return { problem: 'unreadable' }
     }
+    return parseContents(text)
   }
 
   private write(file: SealedSecretFileContents): void {
