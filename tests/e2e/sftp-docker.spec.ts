@@ -263,6 +263,22 @@ test.describe('SFTP page against a Docker sshd', () => {
         .click()
       await expect(sftpTabs).toHaveCount(1)
       await expect(remotePath).toHaveValue('/root')
+
+      // Clicking a host that already has a tab goes to that tab instead of opening another.
+      const hostRow = orcaPage.locator('[data-ssh-host-row]').filter({ hasText: 'Docker SFTP E2E' })
+      await hostRow.click()
+      await expect(sftpTabs).toHaveCount(1)
+
+      // Another tab comes from the host's or the tab's right-click menu.
+      await hostRow.click({ button: 'right' })
+      await orcaPage.getByRole('menuitem', { name: 'Open in new tab' }).click()
+      await expect(sftpTabs).toHaveCount(2)
+      await expect(sftpTabs.nth(1)).toHaveAttribute('aria-selected', 'true')
+      await sftpTabs.first().click({ button: 'right' })
+      await orcaPage.getByRole('menuitem', { name: 'New tab on this host' }).click()
+      await expect(sftpTabs).toHaveCount(3)
+      await expect(sftpTabs.nth(1)).toHaveAttribute('aria-selected', 'true')
+      await orcaPage.screenshot({ path: testInfo.outputPath('sftp-three-tabs.png') })
     } finally {
       cleanupDockerSshRelayTarget(target)
       rmSync(localRoot, { recursive: true, force: true })
