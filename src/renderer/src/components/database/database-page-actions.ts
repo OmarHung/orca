@@ -133,10 +133,12 @@ export async function disconnectDatabase(connectionId: string): Promise<void> {
   useDatabaseExplorerStore.getState().resetConnection(connectionId)
 }
 
-export async function deleteDatabaseConnection(connectionId: string): Promise<void> {
+/** The reason the connection was kept, or null once it is deleted. */
+export async function deleteDatabaseConnection(connectionId: string): Promise<string | null> {
   const closed = useDatabasePageStore.getState().closeTabsForConnection(connectionId)
   closed.forEach((tab) => useDatabaseConsoleRunStore.getState().dispose(tab.id))
-  await window.api.database.deleteConnection(connectionId)
+  const deleted = await window.api.database.deleteConnection(connectionId)
   useDatabaseExplorerStore.getState().resetConnection(connectionId)
   await useDatabaseConnectionsStore.getState().refresh()
+  return deleted.ok ? null : deleted.error.message
 }
