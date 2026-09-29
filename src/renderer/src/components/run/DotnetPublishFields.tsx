@@ -290,7 +290,11 @@ export function DotnetPublishFields(props: Props): React.JSX.Element {
           data-testid="dotnet-publish-command"
           className="rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-xs leading-5 break-all select-text"
         >
-          {dotnetPublishCommand(configuration)}
+          {dotnetPublishCommand(configuration) ??
+            translate(
+              'run.configurations.publish.unsafePath',
+              'The project file or output folder contains characters that cannot be passed safely to a shell, such as " $ ` % or !.'
+            )}
         </p>
       </FormField>
     </>
