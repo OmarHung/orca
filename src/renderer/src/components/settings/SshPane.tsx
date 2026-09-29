@@ -12,6 +12,7 @@ import {
 } from './ssh-session-termination'
 import { SshTargetCard } from './SshTargetCard'
 import { SshTargetDestructiveActions } from './SshTargetDestructiveActions'
+import { SshTargetList } from './SshTargetList'
 import { SshTargetForm, EMPTY_FORM, type EditingTarget } from './SshTargetForm'
 import { getEditingTargetForSshTarget } from './ssh-target-draft'
 import { buildSshTargetSavePayload } from './ssh-target-save-payload'
@@ -382,10 +383,10 @@ export function SshPane({ addTargetIntentSignal }: SshPaneProps): React.JSX.Elem
                 )}
               </div>
             ) : (
-              <div className="space-y-2">
-                {targets.map((target) => (
+              <SshTargetList
+                targets={targets}
+                renderTarget={(target) => (
                   <SshTargetCard
-                    key={target.id}
                     target={target}
                     state={sshConnectionStates.get(target.id)}
                     testing={testingIds.has(target.id)}
@@ -402,8 +403,8 @@ export function SshPane({ addTargetIntentSignal }: SshPaneProps): React.JSX.Elem
                       requestRemoveTarget({ id, label: target.label }, requestRemove)
                     }
                   />
-                ))}
-              </div>
+                )}
+              />
             )}
           </>
         )}
