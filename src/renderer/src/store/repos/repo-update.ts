@@ -10,6 +10,7 @@ import { findRepoForHost, repoMatchesHostIdentity } from './repo-host-identity'
 import { getRepoHostIdentityForParts } from '../../../../shared/repository/repo-host-identity'
 import { callRuntimeRpc } from '../../runtime/rpc/calls/runtime-rpc-call'
 import { getRepoExecutionHostId } from '../../../../shared/execution-host/execution-host'
+import { isRepoInitialTab } from '../../../../shared/repo-initial-tab'
 import {
   normalizeCustomWorktreeVisibilitySources,
   normalizeWorktreeVisibilitySourcePreferences
@@ -62,6 +63,9 @@ export function sanitizeRepoUpdate(updates: RepoUpdate): RepoUpdate {
     sanitizeAgentWorkspaceTrustDecision(sanitized.agentWorkspaceTrust) === undefined
   ) {
     delete sanitized.agentWorkspaceTrust
+  }
+  if ('initialTab' in sanitized && !isRepoInitialTab(sanitized.initialTab)) {
+    delete sanitized.initialTab
   }
   if ('ghAccount' in sanitized && sanitized.ghAccount != null) {
     const normalized = normalizeGhAccountBinding(sanitized.ghAccount)

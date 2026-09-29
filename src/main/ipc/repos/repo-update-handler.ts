@@ -15,6 +15,7 @@ import {
   normalizeGhAccountBinding,
   type GhAccountBinding
 } from '../../../shared/github/accounts/account-binding'
+import { isRepoInitialTab } from '../../../shared/repo-initial-tab'
 
 import { normalizeRepoSourceControlAiOverrides } from '../../../shared/source-control/ai/settings/source-control-ai-repo-settings'
 import {
@@ -56,6 +57,7 @@ export function registerRepoUpdateHandler(mainWindow: BrowserWindow, store: Stor
             | 'issueSourcePreference'
             | 'forkSyncMode'
             | 'agentWorkspaceTrust'
+            | 'initialTab'
             | 'externalWorktreeVisibilityPromptDismissedAt'
             | 'externalWorktreeInboxBaselinePaths'
             | 'importedExternalWorktreePaths'
@@ -100,6 +102,9 @@ export function registerRepoUpdateHandler(mainWindow: BrowserWindow, store: Stor
         updates.forkSyncMode !== 'off'
       ) {
         delete updates.forkSyncMode
+      }
+      if ('initialTab' in updates && !isRepoInitialTab(updates.initialTab)) {
+        delete updates.initialTab
       }
       // Null clears the binding; malformed values must not become account selections.
       if ('ghAccount' in updates) {

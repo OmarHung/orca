@@ -4,6 +4,7 @@ import { normalizeRepoBadgeColor } from '../../repository/appearance/repo-badge-
 import { sanitizeRepoIcon } from '../../repository/appearance/repo-icon'
 import { normalizeGhAccountBinding } from '../../github/accounts/account-binding'
 import { normalizeJiraProjectReference } from '../../jira/jira-project-reference'
+import { isRepoInitialTab } from '../../repo-initial-tab'
 import {
   normalizeCustomWorktreeVisibilitySources,
   normalizeWorktreeVisibilitySourcePreferences
@@ -77,6 +78,10 @@ export function createRepoUpdateSchema<T extends Readonly<Record<string, z.ZodTy
         }),
       forkSyncMode: z.enum(['ask', 'safe-auto', 'off']).optional(),
       agentWorkspaceTrust: z.enum(['pre-trust', 'agent-asks']).optional(),
+      initialTab: z
+        .unknown()
+        .optional()
+        .transform((value) => (isRepoInitialTab(value) ? value : undefined)),
       externalWorktreeVisibility: z.enum(['hide', 'show']).nullable().optional(),
       externalWorktreeVisibilityPromptDismissedAt: z.number().finite().optional(),
       externalWorktreeInboxBaselinePaths: z.array(z.string()).optional(),

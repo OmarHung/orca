@@ -12,6 +12,7 @@ import type { OrcadRetainedMarker } from '../remote-runtime/orcad-lifecycle/orca
 import type { EditorFormatter } from '../editor/formatting/editor-formatter'
 import type { AgentWorkspaceTrustDecision } from '../agent-launch/permissions/agent-workspace-trust-decision'
 import type { RepoWorkspaceCleanupPolicy } from '../workspace-cleanup/workspace-cleanup-policy'
+import type { RepoInitialTab } from '../repo-initial-tab'
 
 export type RepoKind = 'git' | 'folder'
 
@@ -73,6 +74,8 @@ export type Repo = {
   forkSyncMode?: ForkSyncMode
   /** Whether Orca pre-trusts this repo's worktrees for agents. Absent means undecided: desktop launches ask once. */
   agentWorkspaceTrust?: AgentWorkspaceTrustDecision
+  /** Tab an empty workspace opens with; absent means DEFAULT_REPO_INITIAL_TAB. */
+  initialTab?: RepoInitialTab
   /** Canonical identity for the repo remote Orca should use for provider-level grouping. */
   gitRemoteIdentity?: GitRemoteIdentity | null
   /** Controls whether worktrees Orca did not create appear in the sidebar. */
