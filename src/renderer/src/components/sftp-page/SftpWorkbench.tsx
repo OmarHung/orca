@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDownToLine, ArrowUpFromLine, FolderPlus, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { translate } from '@/i18n/i18n'
@@ -26,10 +26,14 @@ function isBrowsable(entry: SftpEntry): boolean {
 /** Local and remote panes for one host, with the transfers they start. */
 export function SftpWorkbench({
   target,
-  hostToggle
+  isActive = true,
+  onRemotePathChange
 }: {
   target: SshTarget
-  hostToggle?: React.ReactNode
+  /** False while its tab is hidden, so Finder drops only reach the tab on screen. */
+  isActive?: boolean
+  /** Lets the tab strip name the folder this workbench shows. */
+  onRemotePathChange?: (path: string) => void
 }): React.JSX.Element {
   const confirm = useCommandConfirm()
   const actionContext = useMemo<SftpActionContext>(() => ({ target, confirm }), [target, confirm])
@@ -73,11 +77,16 @@ export function SftpWorkbench({
   }
 
   const remotePath = remote.path
+  useEffect(() => {
+    if (remotePath) {
+      onRemotePathChange?.(remotePath)
+    }
+  }, [onRemotePathChange, remotePath])
   const onDropPaths = useCallback(
     (paths: string[]) => transfer('upload', paths, remotePath),
     [remotePath, transfer]
   )
-  const isDropTarget = useSftpFileDrop(dropZoneRef, onDropPaths, remotePath !== null)
+  const isDropTarget = useSftpFileDrop(dropZoneRef, onDropPaths, isActive && remotePath !== null)
 
   const selectedRemote = remote.selectedEntries
   const requestNewFolder = (): void => {
@@ -130,7 +139,6 @@ export function SftpWorkbench({
           paneId="local"
           title={translate('sftpPage.local.title', 'Local')}
           pane={local}
-          leading={hostToggle}
           onOpen={(entry) =>
             isBrowsable(entry)
               ? local.navigate(entry.path)
