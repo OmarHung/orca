@@ -121,8 +121,8 @@ SQL Server 登入失敗（2026-09-28）：tedious 的 `ELOGIN`、錯誤 18456、
 | `src/renderer/src/store/slices/ui/ui-slice-contract-core.ts` | view history 型別和 `previousViewBeforeDatabase` |
 | `src/renderer/src/store/slices/ui/ui-slice-view-actions.ts` | `openDatabasePage` / `closeDatabasePage` |
 | `src/renderer/src/app-shell/AppWorkspaceShell.tsx` | `ActivePage` 加 `<DatabasePage />`（lazy load） |
-| `src/renderer/src/lib/right-sidebar-visibility.ts`、`src/renderer/src/app-shell/use-app-chrome-layout.ts` | Database 頁面隱藏右側欄，版面比照 `space` |
-| 入口：`StatusBarSurface.tsx`、`src/shared/keybindings/types.ts`、`definitions-core-4.ts`、`app-command-handlers.ts` | 狀態列按鈕和快捷鍵 `Mod+Alt+D`（`definitions-core-1.ts` 已滿 300 行，所以放在 core-4） |
+| `src/renderer/src/lib/right-sidebar-visibility.ts` | Database 頁面隱藏右側欄；左側欄保留（比照 SSH／SFTP 頁面） |
+| 入口：`SidebarNav.tsx`、`src/shared/keybindings/types.ts`、`definitions-core-4.ts`、`app-command-handlers.ts` | 左側欄 SFTP 下方的「資料庫」項目（`DatabaseSidebarNavEntry`；原本是狀態列按鈕，2026-09-29 移過去）和快捷鍵 `Mod+Alt+D`（`definitions-core-1.ts` 已滿 300 行，所以放在 core-4） |
 | `en.json`、`zh.json` | 新增 `database` namespace，再用 `config/scripts/fork-maintenance/generate-zh-tw-locale.mjs` 產生 `zh-TW.json`（不要手改） |
 
 ### 4.2 可以重用的東西

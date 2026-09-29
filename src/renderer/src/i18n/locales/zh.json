@@ -19037,6 +19037,9 @@
       "starting": "正在开始…",
       "withTool": "{{value0}}（使用 {{value1}}）"
     },
+    "nav": {
+      "label": "数据库"
+    },
     "output": {
       "cancelled": "已取消",
       "command": "{{value0}} 完成，耗时 {{value1}} 毫秒",
@@ -19166,9 +19169,6 @@
       "connecting": "正在连接…",
       "disconnected": "未连接",
       "error": "连接失败"
-    },
-    "statusBar": {
-      "label": "数据库"
     },
     "table": {
       "countMissing": "计数查询没有返回任何行。",

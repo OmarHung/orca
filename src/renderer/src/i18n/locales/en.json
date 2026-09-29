@@ -19037,6 +19037,9 @@
       "starting": "Starting…",
       "withTool": "{{value0}} with {{value1}}"
     },
+    "nav": {
+      "label": "Database"
+    },
     "output": {
       "cancelled": "Cancelled",
       "command": "{{value0}} completed in {{value1}} ms",
@@ -19166,9 +19169,6 @@
       "connecting": "Connecting…",
       "disconnected": "Not connected",
       "error": "Connection failed"
-    },
-    "statusBar": {
-      "label": "Database"
     },
     "table": {
       "countMissing": "The count query returned no rows.",
