@@ -1,4 +1,4 @@
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
+import { isLocalSyntheticWorkspaceId } from '../../../shared/local-synthetic-workspace'
 import { parseExecutionHostId } from '../../../shared/execution-host'
 import type {
   PtyListedSession,
@@ -20,7 +20,7 @@ export function resolveActivationPtyListScope(
   state: WorktreeOperationRouteState,
   worktreeId: string
 ): PtySessionListScope | undefined {
-  if (worktreeId === FLOATING_TERMINAL_WORKTREE_ID) {
+  if (isLocalSyntheticWorkspaceId(worktreeId)) {
     return { connectionId: null }
   }
   const resolution = resolveWorktreeOperationRouteResult(state, worktreeId)

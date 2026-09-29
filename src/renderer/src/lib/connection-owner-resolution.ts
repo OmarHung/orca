@@ -1,3 +1,4 @@
+import { isLocalSyntheticWorkspaceId } from '../../../shared/local-synthetic-workspace'
 import type { AppState } from '@/store/types'
 import {
   findIndexedRepoOwnerForHost,
@@ -7,7 +8,6 @@ import {
 import { resolveWorktreeExecutionHost } from '../../../shared/worktree-execution-host-resolution'
 import { getRepoExecutionHostId, getRepoSshConnectionId } from '../../../shared/execution-host'
 import type { Repo } from '../../../shared/repo-types'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
 import { getRepoIdFromWorktreeId } from '../../../shared/worktree/id'
 import { parseWorkspaceKey } from '../../../shared/workspace-scope'
 import {
@@ -66,7 +66,7 @@ export function getConnectionIdFromState(
   state: ConnectionOwnerState,
   worktreeId: string | null
 ): string | null | undefined {
-  if (!worktreeId || worktreeId === FLOATING_TERMINAL_WORKTREE_ID) {
+  if (!worktreeId || isLocalSyntheticWorkspaceId(worktreeId)) {
     return null
   }
   const parsedWorkspaceKey = parseWorkspaceKey(worktreeId)

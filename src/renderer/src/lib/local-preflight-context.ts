@@ -1,5 +1,5 @@
+import { isLocalSyntheticWorkspaceId } from '../../../shared/local-synthetic-workspace'
 import type { AppState } from '@/store/types'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
 import { parseWslUncPath } from '../../../shared/wsl-paths'
 import {
   deriveGlobalWindowsRuntimeDefaultFromLegacySettings,
@@ -58,7 +58,7 @@ export function getLocalProjectExecutionRuntimeContext(
   wslContext: LocalProjectRuntimeWslContext = {},
   resolvedTarget?: ResolvedAgentBackgroundTarget
 ): ProjectExecutionRuntimeResolution | undefined {
-  if (appPlatform !== 'win32' || worktreeId === FLOATING_TERMINAL_WORKTREE_ID) {
+  if (appPlatform !== 'win32' || isLocalSyntheticWorkspaceId(worktreeId)) {
     return undefined
   }
   const worktree = resolvedTarget?.worktree ?? getLocalProjectRuntimeWorkspace(state, worktreeId)
@@ -180,7 +180,7 @@ export function getLocalAgentPreflightContext(
   worktreeId?: string | null
 ): LocalPreflightContext {
   // Why: Floating owns native host authority and must not inherit any agent runtime fallback.
-  if (worktreeId === FLOATING_TERMINAL_WORKTREE_ID) {
+  if (isLocalSyntheticWorkspaceId(worktreeId)) {
     return undefined
   }
   const projectRuntime = getLocalProjectExecutionRuntimeContext(

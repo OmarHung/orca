@@ -1,4 +1,4 @@
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
+import { isLocalSyntheticWorkspaceId } from '../../../shared/local-synthetic-workspace'
 import { BROWSER_SCREENCAST_RUNTIME_CAPABILITY } from '../../../shared/protocol-version'
 import type { RuntimeStatus } from '../../../shared/runtime-types'
 import type { AppState } from '@/store/types'
@@ -86,7 +86,7 @@ export function getWorkspaceClientCreationActionPolicy(
   state: AppState,
   worktreeId: string
 ): ClientCreationActionPolicy {
-  const floatingWorkspace = worktreeId === FLOATING_TERMINAL_WORKTREE_ID
+  const floatingWorkspace = isLocalSyntheticWorkspaceId(worktreeId)
   return creationPolicyForRuntime(
     state,
     floatingWorkspace ? null : runtimeEnvironmentIdOrLocalUnlessTwin(state, worktreeId),

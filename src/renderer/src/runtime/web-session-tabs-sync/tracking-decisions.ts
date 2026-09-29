@@ -1,4 +1,4 @@
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
+import { isLocalSyntheticWorkspaceId } from '../../../../shared/local-synthetic-workspace'
 import type { RuntimeMobileSessionTabsResult } from '../../../../shared/runtime-types'
 import {
   latestSessionTabsSnapshotByWorktree,
@@ -43,7 +43,7 @@ const WEB_SESSION_TABS_FRAME_UNMIRRORED = {
 } as const satisfies WebSessionTabsSnapshotDecision
 
 function isHostMirroredWorktree(worktreeId: string): boolean {
-  return worktreeId !== FLOATING_TERMINAL_WORKTREE_ID
+  return !isLocalSyntheticWorkspaceId(worktreeId)
 }
 
 export function shouldApplyWebSessionTabsSnapshot(

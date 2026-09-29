@@ -1,3 +1,4 @@
+import { isLocalSyntheticWorkspaceId } from '../../../shared/local-synthetic-workspace'
 import {
   getRepoExecutionHostId,
   parseExecutionHostId,
@@ -51,6 +52,9 @@ export function getKnownExecutionHostIdForWorktree(
   const floatingRoute = getFloatingWorkspaceOperationRoute(worktreeId)
   if (floatingRoute) {
     return floatingRoute.executionHostId
+  }
+  if (isLocalSyntheticWorkspaceId(worktreeId)) {
+    return 'local'
   }
   const activeHostId = getActiveWorkspaceExecutionHostId(state, worktreeId)
   if (activeHostId) {

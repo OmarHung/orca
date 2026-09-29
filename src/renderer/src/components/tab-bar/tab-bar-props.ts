@@ -20,6 +20,8 @@ export type TabBarProps = {
   /** Set only when this group is one of several splits. */
   onCloseSplitPane?: () => void
   onNewTerminalTab: () => void
+  /** When set, "+" calls this directly instead of opening the new-tab menu. */
+  onNewTabClick?: () => void
   onNewTerminalWithShell?: (shell: string) => void
   onNewBrowserTab: () => void
   onNewSimulatorTab?: () => void
