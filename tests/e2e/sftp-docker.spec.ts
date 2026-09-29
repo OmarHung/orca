@@ -198,6 +198,14 @@ test.describe('SFTP page against a Docker sshd', () => {
       await expect.poll(() => existsSync(path.join(inbox, 'orca-sftp-visible.txt'))).toBe(true)
       await expect(orcaPage.locator('[data-slot="dialog-overlay"]')).toHaveCount(0)
 
+      // Files show their extension on the icon.
+      await expect(
+        localPane.locator(
+          `[data-sftp-entry="${path.join(inbox, 'hello.txt')}"] svg[data-extension="TXT"]`
+        )
+      ).toBeVisible()
+      await localPane.screenshot({ path: testInfo.outputPath('sftp-local-pane.png') })
+
       // Dragging a header divider resizes that column in both panes.
       const nameHeader = remotePane.locator('[data-sftp-column="name"]')
       const widthBefore = (await nameHeader.boundingBox())?.width ?? 0
@@ -229,6 +237,8 @@ test.describe('SFTP page against a Docker sshd', () => {
       const sftpTabs = sftpPage.locator('[role="tab"]')
       await expect(sftpTabs).toHaveCount(2)
       await expect(remotePath).toHaveValue('/root', { timeout: 30_000 })
+      // The new tab opens the local folder this host showed last.
+      await expect(localPath).toHaveValue(inbox)
       await expect(sftpTabs.first().locator('[data-tab-folder]')).toHaveText('.ssh')
       await expect(sftpTabs.nth(1).locator('[data-tab-folder]')).toHaveText('root')
       await orcaPage.screenshot({ path: testInfo.outputPath('sftp-two-tabs.png') })

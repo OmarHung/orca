@@ -7,6 +7,7 @@ import { SettingsSection } from './SettingsSection'
 import { translate } from '@/i18n/i18n'
 import type { SettingsRenderContext } from './settings-render-context'
 import { SshVpnSettingsSection } from '../ssh-vpn/SshVpnSettingsSection'
+import { SftpLocalFolderSettingsSection } from '../sftp-page/SftpLocalFolderSettingsSection'
 
 export function renderServersSettingsSection(context: SettingsRenderContext): React.JSX.Element {
   const { model, navigation, view } = context
@@ -58,6 +59,7 @@ export function renderSshSettingsSection(context: SettingsRenderContext): React.
           <SshPane addTargetIntentSignal={model.sshHostAddIntentSignal} />
           <SshSavedPassphrasesSection />
           <SshVpnSettingsSection />
+          <SftpLocalFolderSettingsSection />
         </div>
       ) : null}
     </SettingsSection>

@@ -19394,7 +19394,9 @@
     },
     "local": {
       "upload": "上傳",
-      "title": "本機"
+      "title": "本機",
+      "setDefaultFolder": "設為所有主機的預設本機資料夾",
+      "clearDefaultFolder": "取消預設本機資料夾"
     },
     "nameDialog": {
       "label": "名稱",
@@ -19529,6 +19531,22 @@
       "vpn": "vpn",
       "openvpn": "openvpn",
       "ovpn": "ovpn"
+    }
+  },
+  "sftpSettings": {
+    "defaultLocalFolder": {
+      "label": "SFTP 預設本機資料夾",
+      "description": "尚未瀏覽過的主機，本機窗格會從這裡開啟。每台主機會重新開啟自己上次顯示的本機資料夾。",
+      "home": "主資料夾",
+      "choose": "選擇預設本機資料夾",
+      "clear": "改用主資料夾"
+    },
+    "search": {
+      "description": "選擇 SFTP 本機窗格開啟的位置。",
+      "sftp": "sftp",
+      "local": "本機",
+      "folder": "資料夾",
+      "transfer": "傳輸"
     }
   }
 }
