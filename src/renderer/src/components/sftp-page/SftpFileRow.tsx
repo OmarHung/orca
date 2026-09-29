@@ -1,34 +1,35 @@
 import { File, FileSymlink, Folder, FolderUp } from 'lucide-react'
 import type { SftpEntry } from '../../../../shared/sftp-types'
-import { sftpCellText, type SftpColumnId } from './sftp-columns'
+import { sftpCellText, type SftpColumnId, type SftpColumnWidths } from './sftp-columns'
 
-// Widths are mirrored in sftpListMinWidthRem.
 const CELL_CLASS: Record<SftpColumnId, string> = {
-  name: 'min-w-40 flex-1 truncate',
-  size: 'w-20 shrink-0 truncate text-right text-xs text-muted-foreground tabular-nums',
-  created: 'w-32 shrink-0 truncate text-right text-xs text-muted-foreground tabular-nums',
-  modified: 'w-32 shrink-0 truncate text-right text-xs text-muted-foreground tabular-nums',
-  type: 'w-24 shrink-0 truncate text-xs text-muted-foreground',
-  owner: 'w-20 shrink-0 truncate text-xs text-muted-foreground'
+  name: 'shrink-0 truncate px-1.5',
+  size: 'shrink-0 truncate px-1.5 text-right text-xs text-muted-foreground tabular-nums',
+  created: 'shrink-0 truncate px-1.5 text-right text-xs text-muted-foreground tabular-nums',
+  modified: 'shrink-0 truncate px-1.5 text-right text-xs text-muted-foreground tabular-nums',
+  type: 'shrink-0 truncate px-1.5 text-xs text-muted-foreground',
+  owner: 'shrink-0 truncate px-1.5 text-xs text-muted-foreground'
 }
 
 const ROW_CLASS =
-  'flex cursor-default items-center gap-3 px-3 py-1 text-[13px] select-none hover:bg-accent data-[selected=true]:bg-accent'
+  'flex cursor-default items-center px-3 py-1 text-[13px] select-none hover:bg-accent data-[selected=true]:bg-accent'
 
 function EntryIcon({ kind }: { kind: SftpEntry['kind'] }): React.JSX.Element {
   const Icon = kind === 'directory' ? Folder : kind === 'symlink' ? FileSymlink : File
-  return <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+  return <Icon className="mr-2 size-3.5 shrink-0 text-muted-foreground" />
 }
 
 export function SftpFileRow({
   entry,
   columns,
+  widths,
   isSelected,
   onClick,
   onDoubleClick
 }: {
   entry: SftpEntry
   columns: readonly SftpColumnId[]
+  widths: SftpColumnWidths
   isSelected: boolean
   onClick: (event: React.MouseEvent) => void
   onDoubleClick: () => void
@@ -45,11 +46,20 @@ export function SftpFileRow({
       className={ROW_CLASS}
     >
       <EntryIcon kind={entry.kind} />
-      {columns.map((column) => (
-        <span key={column} className={CELL_CLASS[column]}>
-          {sftpCellText(column, entry)}
-        </span>
-      ))}
+      {columns.map((column) => {
+        const text = sftpCellText(column, entry)
+        return (
+          <span
+            key={column}
+            className={CELL_CLASS[column]}
+            style={{ width: widths[column] }}
+            // Why: a narrowed column truncates; hovering shows the whole value.
+            title={text}
+          >
+            {text}
+          </span>
+        )
+      })}
     </div>
   )
 }
@@ -72,8 +82,8 @@ export function SftpParentRow({
       onDoubleClick={onOpen}
       className={ROW_CLASS}
     >
-      <FolderUp className="size-3.5 shrink-0 text-muted-foreground" />
-      <span className="min-w-40 flex-1 truncate">..</span>
+      <FolderUp className="mr-2 size-3.5 shrink-0 text-muted-foreground" />
+      <span className="truncate px-1.5">..</span>
     </div>
   )
 }
