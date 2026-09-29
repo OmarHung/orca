@@ -57,6 +57,23 @@ describe('dotnetPublishCommand', () => {
   })
 })
 
+describe('dotnetPublishCommand with unsafe paths', () => {
+  it.each([
+    [{ projectFile: 'src/$(touch pwned).csproj' }],
+    [{ outputDir: 'out/`id`' }],
+    [{ outputDir: 'out\\' }]
+  ])('builds no command for %o', (overrides) => {
+    expect(dotnetPublishCommand(publish(overrides))).toBeNull()
+    expect(dotnetPublishAsCommand(publish(overrides))).toBeNull()
+  })
+
+  it('leaves such a publish out of the plan instead of running it', () => {
+    const result = planRunConfiguration([publish({ outputDir: 'out/%TEMP%' })], 'p')
+
+    expect(result).toEqual({ ok: false, error: { code: 'missing', reference: 'p' } })
+  })
+})
+
 describe('dotnetPublishAsCommand', () => {
   it('runs from the workspace root and keeps its Before launch steps', () => {
     expect(dotnetPublishAsCommand(publish({ beforeLaunch: ['Test'] }))).toEqual({
@@ -134,7 +151,9 @@ describe('normalizing a dotnet-publish configuration', () => {
         singleFile: 'yes'
       },
       { type: 'dotnet-publish', name: 'Bad runtime', projectFile: 'Api.csproj', runtime: 'x; rm' },
-      { type: 'dotnet-publish', name: 'No project', projectFile: 'Api.sln' }
+      { type: 'dotnet-publish', name: 'No project', projectFile: 'Api.sln' },
+      { type: 'dotnet-publish', name: 'Bad project', projectFile: '$(id).csproj' },
+      { type: 'dotnet-publish', name: 'Bad output', projectFile: 'Api.csproj', outputDir: 'o"; id' }
     ])
 
     expect(configurations).toEqual([
@@ -148,6 +167,7 @@ describe('normalizing a dotnet-publish configuration', () => {
         selfContained: true
       }
     ])
-    expect(problems.map((problem) => problem.index)).toEqual([1, 2])
+    expect(problems.map((problem) => problem.index)).toEqual([1, 2, 3, 4])
+    expect(problems[3].message).toContain('cannot be passed safely to a shell')
   })
 })
