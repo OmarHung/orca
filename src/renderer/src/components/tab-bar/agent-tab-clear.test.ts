@@ -3,8 +3,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => {
   const ptyIdsByTabId: Record<string, string[]> = {}
   const terminalLayoutsByTabId: Record<string, unknown> = {}
+  const tabsByWorktree: Record<string, { id: string; title: string }[]> = {}
   return {
-    state: { ptyIdsByTabId, terminalLayoutsByTabId },
+    state: {
+      ptyIdsByTabId,
+      terminalLayoutsByTabId,
+      tabsByWorktree,
+      agentStatusByPaneKey: {},
+      agentStatusEpoch: 0,
+      runtimePaneTitlesByTabId: {}
+    },
+    activityStatus: 'done',
     settings: { activeRuntimeEnvironmentId: null },
     sendNativeChatMessage: vi.fn(),
     sendNativeChatTypedCommand: vi.fn()
@@ -21,8 +30,13 @@ vi.mock('../native-chat/native-chat-runtime-send', () => ({
   sendNativeChatMessage: mocks.sendNativeChatMessage,
   sendNativeChatTypedCommand: mocks.sendNativeChatTypedCommand
 }))
+vi.mock('./terminal-tab-activity-status', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  resolveTerminalTabActivityStatus: vi.fn(() => mocks.activityStatus)
+}))
 
 import { clearAgentTabConversation, resolveAgentTabFocusedPtyId } from './agent-tab-clear'
+import { resolveTerminalTabActivityStatus } from './terminal-tab-activity-status'
 
 function layout(activeLeafId: string | null, ptyIdsByLeafId: Record<string, string>) {
   return { root: null, activeLeafId, expandedLeafId: null, ptyIdsByLeafId }
@@ -67,30 +81,62 @@ describe('clearAgentTabConversation', () => {
   beforeEach(() => {
     mocks.state.ptyIdsByTabId = { tab: ['pty-1'] }
     mocks.state.terminalLayoutsByTabId = {}
+    mocks.state.tabsByWorktree = { wt: [{ id: 'tab', title: 'Claude' }] }
+    mocks.activityStatus = 'done'
     mocks.sendNativeChatMessage.mockReset()
     mocks.sendNativeChatTypedCommand.mockReset()
   })
 
+  function expectNothingSent(): void {
+    expect(mocks.sendNativeChatMessage).not.toHaveBeenCalled()
+    expect(mocks.sendNativeChatTypedCommand).not.toHaveBeenCalled()
+  }
+
   it('sends /clear to Claude as a submitted message', () => {
-    expect(clearAgentTabConversation('tab', 'claude')).toBe(true)
+    expect(clearAgentTabConversation('tab', 'claude', 'pty-1')).toBe('sent')
 
     expect(mocks.sendNativeChatMessage).toHaveBeenCalledWith(mocks.settings, 'pty-1', '/clear')
     expect(mocks.sendNativeChatTypedCommand).not.toHaveBeenCalled()
+    expect(resolveTerminalTabActivityStatus).toHaveBeenCalledWith(
+      expect.objectContaining({ tab: { id: 'tab', title: 'Claude' } })
+    )
   })
 
   it('types /clear key by key for Codex', () => {
-    expect(clearAgentTabConversation('tab', 'codex')).toBe(true)
+    expect(clearAgentTabConversation('tab', 'codex', 'pty-1')).toBe('sent')
 
     expect(mocks.sendNativeChatTypedCommand).toHaveBeenCalledWith(mocks.settings, 'pty-1', '/clear')
     expect(mocks.sendNativeChatMessage).not.toHaveBeenCalled()
   })
 
-  it('sends nothing when the tab has no live PTY', () => {
+  it('sends nothing once the tab has no live PTY', () => {
     mocks.state.ptyIdsByTabId = {}
 
-    expect(clearAgentTabConversation('tab', 'claude')).toBe(false)
+    expect(clearAgentTabConversation('tab', 'claude', 'pty-1')).toBe('changed')
+    expectNothingSent()
+  })
 
-    expect(mocks.sendNativeChatMessage).not.toHaveBeenCalled()
-    expect(mocks.sendNativeChatTypedCommand).not.toHaveBeenCalled()
+  it('sends nothing when the confirmed PTY is no longer the focused one', () => {
+    mocks.state.ptyIdsByTabId = { tab: ['pty-2'] }
+
+    expect(clearAgentTabConversation('tab', 'claude', 'pty-1')).toBe('changed')
+    expectNothingSent()
+  })
+
+  it.each(['working', 'monitoring', 'permission'])(
+    'sends nothing while the agent is %s at send time',
+    (status) => {
+      mocks.activityStatus = status
+
+      expect(clearAgentTabConversation('tab', 'claude', 'pty-1')).toBe('busy')
+      expectNothingSent()
+    }
+  )
+
+  it('sends nothing when the tab is gone from the store', () => {
+    mocks.state.tabsByWorktree = {}
+
+    expect(clearAgentTabConversation('tab', 'claude', 'pty-1')).toBe('busy')
+    expectNothingSent()
   })
 })
