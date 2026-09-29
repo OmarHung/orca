@@ -3,7 +3,8 @@ import {
   detectDotnetRunConfigurations,
   isDotnetProjectFile,
   readLaunchProfileDetails,
-  readLaunchProfiles
+  readLaunchProfiles,
+  readTargetFrameworks
 } from './dotnet-run-configurations'
 
 const WEB_PROJECT = '<Project Sdk="Microsoft.NET.Sdk.Web"><PropertyGroup /></Project>'
@@ -74,7 +75,11 @@ describe('detectDotnetRunConfigurations', () => {
         'dotnet publish WebApp.csproj -p:PublishProfile=FolderProfile'
       ]
     ])
-    expect(configurations[0]).toMatchObject({ projectName: 'WebApp', projectDir: '/w/WebApp' })
+    expect(configurations[0]).toMatchObject({
+      projectName: 'WebApp',
+      projectDir: '/w/WebApp',
+      projectFile: '/w/WebApp/WebApp.csproj'
+    })
   })
 
   it('falls back to a plain Run and a Release publish without profiles', () => {
@@ -115,6 +120,16 @@ describe('detectDotnetRunConfigurations', () => {
       launchProfile: 'Site'
     })
     expect(configurations[0].debug).toBeUndefined()
+  })
+})
+
+describe('readTargetFrameworks', () => {
+  it('reads one or several frameworks and skips MSBuild properties', () => {
+    expect(readTargetFrameworks('<TargetFramework>net8.0</TargetFramework>')).toEqual(['net8.0'])
+    expect(
+      readTargetFrameworks('<TargetFrameworks> net8.0;net9.0-windows ;$(Extra)</TargetFrameworks>')
+    ).toEqual(['net8.0', 'net9.0-windows'])
+    expect(readTargetFrameworks(LIBRARY)).toEqual([])
   })
 })
 
