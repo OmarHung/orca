@@ -8,7 +8,10 @@ const inputVariants = cva('', {
   variants: {
     variant: {
       default: '',
-      code: 'font-mono text-xs md:text-xs'
+      code: 'font-mono text-xs md:text-xs',
+      // Flat list search: no elevation or focus halo; pl-8 leaves room for a leading icon.
+      search:
+        'h-8 border-border bg-background pr-3 pl-8 text-xs shadow-none focus-visible:border-ring/70 focus-visible:ring-0 md:text-xs dark:bg-background'
     },
     density: {
       default: '',
