@@ -11,6 +11,7 @@ import {
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { cn } from '@/lib/utils'
 import { FileTypeIcon } from '@/components/FileTypeIcon'
+import { getFolderTypeIcon } from '@/lib/folder-type-icons'
 import {
   encodeWorkspaceFilePaths,
   WORKSPACE_FILE_PATH_MIME,
@@ -217,10 +218,11 @@ export function FileExplorerRow({
                 <Loader2 className="size-3 shrink-0 animate-spin text-muted-foreground" />
               ) : showLoadError ? (
                 <CircleAlert className="size-3 shrink-0 text-destructive" />
-              ) : isExpanded ? (
-                <FolderOpen className="size-3 shrink-0 text-muted-foreground" />
               ) : (
-                <Folder className="size-3 shrink-0 text-muted-foreground" />
+                React.createElement(
+                  getFolderTypeIcon(node.name) ?? (isExpanded ? FolderOpen : Folder),
+                  { className: 'size-3 shrink-0 text-muted-foreground' }
+                )
               )}
             </>
           ) : (
