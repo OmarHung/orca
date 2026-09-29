@@ -8462,6 +8462,10 @@
           "addDescription": "添加一台可通过 SSH 登录的持久机器。",
           "editingPrefix": "正在编辑"
         },
+        "SshTargetList": {
+          "noMatches": "没有符合搜索条件的 SSH 目标。",
+          "searchLabel": "搜索目标"
+        },
         "TasksPane": {
           "f71d8a9dd3": "任务提供者",
           "6b23a34f6d": "Jira",
