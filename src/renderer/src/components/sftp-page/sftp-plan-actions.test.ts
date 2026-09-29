@@ -138,4 +138,44 @@ describe('runSftpAction', () => {
     expect(options.commands).toEqual(['rm "/srv/app/a.txt"', 'rmdir "/srv/app"'])
     expect(useSftpTransfersStore.getState().transfers).toEqual([])
   })
+
+  describe('move', () => {
+    const move: SftpPlanRequest = {
+      kind: 'move',
+      targetId: 'web',
+      sources: ['/srv/app/a.txt'],
+      destinationDir: '/srv/backup'
+    }
+    const movePlan: SftpPlan = {
+      ...plan,
+      kind: 'move',
+      operations: [{ op: 'rename', from: '/srv/app/a.txt', to: '/srv/backup/a.txt' }],
+      totalBytes: 0
+    }
+
+    it('confirms the renames it will run, without starting a transfer', async () => {
+      planCall.mockResolvedValue({ ok: true, value: movePlan })
+
+      expect(await runSftpAction(move, { target, confirm })).toBe(true)
+
+      const [options] = confirm.mock.calls[0]
+      expect(options).toMatchObject({
+        title: 'Move on web-prod?',
+        confirmLabel: 'Move',
+        isDestructive: false
+      })
+      expect(options.commands).toEqual(['rename "/srv/app/a.txt" "/srv/backup/a.txt"'])
+      expect(useSftpTransfersStore.getState().transfers).toEqual([])
+    })
+
+    it('refuses without asking when a name is already taken in the folder', async () => {
+      planCall.mockResolvedValue({ ok: true, value: { ...movePlan, conflicts: ['a.txt'] } })
+
+      expect(await runSftpAction(move, { target, confirm })).toBe(false)
+
+      expect(confirm).not.toHaveBeenCalled()
+      expect(execute).not.toHaveBeenCalled()
+      expect(discardPlan).toHaveBeenCalledWith('p1')
+    })
+  })
 })
