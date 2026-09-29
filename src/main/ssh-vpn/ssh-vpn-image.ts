@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto'
+import { SSH_VPN_TUNNEL_USER } from '../../shared/ssh-vpn-command-format'
 
 export const SSH_VPN_LABEL = 'dev.orca.ssh-vpn'
 export const SSH_VPN_DNS_SCRIPT_PATH = '/usr/local/bin/orca-vpn-dns'
+export const SSH_VPN_FIREWALL_SCRIPT_PATH = '/usr/local/bin/orca-vpn-firewall'
 
 // Why pinned by digest: the image is built on the user's machine, so a moved tag must not change it.
 const ALPINE_BASE =
@@ -33,12 +35,35 @@ fi
 exit 0
 `
 
+/**
+ * Fail closed inside the container: the tunnel user (every per-connection `nc`) may only leave
+ * through the VPN's tun device. If OpenVPN never installs a route to the host, or drops its routes
+ * while reconnecting, connections are refused instead of leaving through Docker's own network.
+ * DNS stays allowed so names still resolve when the VPN pushes no DNS server.
+ */
+const FIREWALL_SCRIPT = `#!/bin/sh
+set -e
+for ipt in iptables ip6tables; do
+  $ipt -A OUTPUT -o lo -j ACCEPT
+  $ipt -A OUTPUT -m owner --uid-owner ${SSH_VPN_TUNNEL_USER} -o tun+ -j ACCEPT
+  $ipt -A OUTPUT -m owner --uid-owner ${SSH_VPN_TUNNEL_USER} -p udp --dport 53 -j ACCEPT
+  $ipt -A OUTPUT -m owner --uid-owner ${SSH_VPN_TUNNEL_USER} -p tcp --dport 53 -j ACCEPT
+  $ipt -A OUTPUT -m owner --uid-owner ${SSH_VPN_TUNNEL_USER} -j REJECT
+done
+`
+
+function installScript(path: string, script: string): string {
+  // Why base64: the build has no context directory to COPY from, and heredocs need BuildKit.
+  return `RUN echo ${Buffer.from(script).toString('base64')} | base64 -d > ${path} && chmod 0755 ${path}`
+}
+
 export const SSH_VPN_DOCKERFILE = [
   `FROM ${ALPINE_BASE}`,
   `LABEL ${SSH_VPN_LABEL}=1`,
-  'RUN apk add --no-cache openvpn',
-  // Why base64: the build has no context directory to COPY from, and heredocs need BuildKit.
-  `RUN echo ${Buffer.from(DNS_SCRIPT).toString('base64')} | base64 -d > ${SSH_VPN_DNS_SCRIPT_PATH} && chmod 0755 ${SSH_VPN_DNS_SCRIPT_PATH}`,
+  'RUN apk add --no-cache openvpn iptables',
+  `RUN adduser -D -H -s /sbin/nologin ${SSH_VPN_TUNNEL_USER}`,
+  installScript(SSH_VPN_DNS_SCRIPT_PATH, DNS_SCRIPT),
+  installScript(SSH_VPN_FIREWALL_SCRIPT_PATH, FIREWALL_SCRIPT),
   ''
 ].join('\n')
 
