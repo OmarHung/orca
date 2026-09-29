@@ -1,4 +1,4 @@
-import type { FileEntryWithStats, Stats, TransferOptions } from 'ssh2'
+import type { FileEntryWithStats, Stats } from 'ssh2'
 
 type Done = (err?: Error | null) => void
 
@@ -15,8 +15,20 @@ export type SftpOps = {
   rmdir(path: string, callback: Done): void
   unlink(path: string, callback: Done): void
   rename(srcPath: string, destPath: string, callback: Done): void
-  fastGet(remotePath: string, localPath: string, options: TransferOptions, callback: Done): void
-  open(path: string, mode: 'w', callback: (err: Error | undefined, handle: Buffer) => void): void
+  open(
+    path: string,
+    mode: 'r' | 'w',
+    callback: (err: Error | undefined, handle: Buffer) => void
+  ): void
+  fstat(handle: Buffer, callback: (err: Error | undefined, stats: Stats) => void): void
+  read(
+    handle: Buffer,
+    buffer: Buffer,
+    offset: number,
+    length: number,
+    position: number,
+    callback: (err: Error | undefined, bytesRead: number) => void
+  ): void
   write(
     handle: Buffer,
     buffer: Buffer,
@@ -67,19 +79,23 @@ export const sftpUnlink = (sftp: SftpOps, path: string): Promise<void> =>
 export const sftpRename = (sftp: SftpOps, from: string, to: string): Promise<void> =>
   settleVoid((callback) => sftp.rename(from, to, callback))
 
-export const sftpFastGet = (
-  sftp: SftpOps,
-  remotePath: string,
-  localPath: string,
-  onStep: (transferred: number) => void
-): Promise<void> =>
-  settleVoid((callback) =>
-    sftp.fastGet(remotePath, localPath, { step: (total) => onStep(total) }, callback)
-  )
+/** `w` creates or truncates the remote file. */
+export const sftpOpen = (sftp: SftpOps, path: string, mode: 'r' | 'w'): Promise<Buffer> =>
+  settle((callback) => sftp.open(path, mode, callback))
 
-/** Creates or truncates the remote file for writing. */
-export const sftpOpenForWrite = (sftp: SftpOps, path: string): Promise<Buffer> =>
-  settle((callback) => sftp.open(path, 'w', callback))
+export const sftpFstat = (sftp: SftpOps, handle: Buffer): Promise<Stats> =>
+  settle((callback) => sftp.fstat(handle, callback))
+
+/** Resolves with the bytes read; 0 at the end of the file. */
+export const sftpRead = (
+  sftp: SftpOps,
+  handle: Buffer,
+  buffer: Buffer,
+  offset: number,
+  length: number,
+  position: number
+): Promise<number> =>
+  settle((callback) => sftp.read(handle, buffer, offset, length, position, callback))
 
 export const sftpWrite = (
   sftp: SftpOps,
