@@ -12,6 +12,7 @@ import {
 import { Input } from '../../../ui/input'
 import { Label } from '../../../ui/label'
 import { SshHostAdvancedFields } from './SshHostAdvancedFields'
+import { saveSshHostVpnDraft, SshTargetVpnField } from '../ssh-vpn/SshTargetVpnField'
 import {
   applyParsedSshHostInput,
   hasAdvancedConnectionValues,
@@ -104,6 +105,9 @@ export function SshTargetForm({
             // Gate Enter too because it submits past disabled buttons.
             if (saving) {
               return
+            }
+            if (editingId) {
+              void saveSshHostVpnDraft(editingId)
             }
             onSave()
           }}
@@ -229,6 +233,7 @@ export function SshTargetForm({
                   )}
                 </p>
               </div>
+              <SshTargetVpnField open={open} targetId={editingId} />
               <SshHostAdvancedFields
                 offerProxyConnectionReuse
                 offerReconnectOnLaunch
