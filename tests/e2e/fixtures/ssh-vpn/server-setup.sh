@@ -28,6 +28,8 @@ server $3.0 255.255.255.0
 push "route $ROUTE_NET $ROUTE_MASK"
 push "dhcp-option DNS $3.1"
 push "dhcp-option DOMAIN orca-vpn.test"
+# Like ASUS routers: a Windows-only option Linux clients must shrug off.
+push "block-outside-dns"
 keepalive 10 60
 verb 3
 CONF
