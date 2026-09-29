@@ -2,6 +2,7 @@ import type { SshVpnProfile, SshVpnProfileState, SshVpnStatus } from '../../shar
 import { classifyOpenVpnLine, describeOpenVpnFailure, OpenVpnLogTail } from './openvpn-output'
 import { CONTAINER_PROFILE_PATH, prepareOvpnProfile } from './ovpn-profile-preparation'
 import { sshVpnContainerName, type SshVpnDocker } from './ssh-vpn-docker'
+import { sshVpnStartCommands } from './ssh-vpn-start-commands'
 
 const DEFAULT_READY_TIMEOUT_MS = 60_000
 const DEFAULT_POLL_INTERVAL_MS = 60_000
@@ -21,7 +22,8 @@ export type SshVpnDockerPort = Pick<
   SshVpnDocker,
   | 'dockerPath'
   | 'assertRunning'
-  | 'ensureImage'
+  | 'hasImage'
+  | 'buildImage'
   | 'startContainer'
   | 'writeFile'
   | 'countTunnels'
@@ -44,6 +46,13 @@ export type SshVpnManagerDeps = {
 /** How a connection reaches a ready VPN: pipe through `nc` in this container. */
 export type SshVpnRoute = { dockerPath: string; containerName: string }
 
+/** Shows the user every command a start will run; false means do not start. */
+export type SshVpnStartConfirm = (commands: string[]) => Promise<boolean>
+
+export class SshVpnStartDeclinedError extends Error {
+  override name = 'SshVpnStartDeclinedError'
+}
+
 type Entry = {
   profile: SshVpnProfile
   containerName: string
@@ -58,6 +67,8 @@ type Entry = {
   queue: Promise<unknown>
   idleSince: number | null
   pollTimer: ReturnType<typeof setInterval> | null
+  /** Counts the user saying no to a start; requests queued before a no are not asked again. */
+  declines: number
 }
 
 /** One OpenVPN container per profile: started on first use, stopped when idle, removed on quit. */
@@ -69,18 +80,37 @@ export class SshVpnManager {
     this.now = deps.now ?? Date.now
   }
 
-  /** Starts the profile's VPN if needed and returns the route once the tunnel is up. */
-  acquire(profile: SshVpnProfile): Promise<SshVpnRoute> {
+  /**
+   * Starts the profile's VPN if needed and returns the route once the tunnel is up. With
+   * `confirm`, a start first shows the user its commands and does nothing unless they agree.
+   */
+  acquire(
+    profile: SshVpnProfile,
+    options?: { confirm?: SshVpnStartConfirm }
+  ): Promise<SshVpnRoute> {
     const entry = this.entryFor(profile)
     entry.profile = profile
+    const declinesBefore = entry.declines
     return this.exclusive(entry, async () => {
       if (entry.status !== 'ready') {
-        await this.start(entry)
+        // Why: requests queued behind a start the user just declined share that answer.
+        if (options?.confirm && entry.declines !== declinesBefore) {
+          throw new SshVpnStartDeclinedError(`VPN "${profile.name}" was not started`)
+        }
+        await this.start(entry, options?.confirm)
       }
       // Why: gives the caller a full idle window to open its `nc` before the next poll counts.
       entry.idleSince = this.now()
       return this.routeOf(entry)
     })
+  }
+
+  /** Picks up an edited profile (e.g. its idle window) without restarting the VPN. */
+  updateProfile(profile: SshVpnProfile): void {
+    const entry = this.entries.get(profile.id)
+    if (entry) {
+      entry.profile = profile
+    }
   }
 
   /** The route when the VPN is up right now; never starts anything. */
@@ -136,7 +166,8 @@ export class SshVpnManager {
         generation: 0,
         queue: Promise.resolve(),
         idleSince: null,
-        pollTimer: null
+        pollTimer: null,
+        declines: 0
       }
       this.entries.set(profile.id, entry)
     }
@@ -171,7 +202,7 @@ export class SshVpnManager {
     this.deps.onStateChange?.(this.stateOf(entry))
   }
 
-  private async start(entry: Entry): Promise<void> {
+  private async start(entry: Entry, confirm?: SshVpnStartConfirm): Promise<void> {
     const generation = ++entry.generation
     entry.log = new OpenVpnLogTail()
     this.setStatus(entry, 'starting')
@@ -181,7 +212,25 @@ export class SshVpnManager {
       entry.dockerPath = docker.dockerPath
       const prepared = await prepareOvpnProfile(entry.profile.ovpnPath, this.deps.readFile)
       await docker.assertRunning()
-      await docker.ensureImage()
+      const buildsImage = !(await docker.hasImage())
+      if (confirm) {
+        const commands = sshVpnStartCommands({
+          dockerPath: docker.dockerPath,
+          containerName: entry.containerName,
+          instanceTag: this.deps.instanceTag,
+          profileId: entry.profile.id,
+          ovpnPath: entry.profile.ovpnPath,
+          files: prepared.files,
+          buildsImage
+        })
+        if (!(await confirm(commands))) {
+          entry.declines += 1
+          throw new SshVpnStartDeclinedError(`VPN "${entry.profile.name}" was not started`)
+        }
+      }
+      if (buildsImage) {
+        await docker.buildImage()
+      }
       await docker.remove(entry.containerName)
       await docker.startContainer(entry.containerName, this.deps.instanceTag, entry.profile.id)
       const files = [
@@ -193,6 +242,10 @@ export class SshVpnManager {
       }
       await this.runOpenVpn(entry, docker, generation)
     } catch (error) {
+      if (error instanceof SshVpnStartDeclinedError) {
+        this.setStatus(entry, 'stopped')
+        throw error
+      }
       const message = error instanceof Error ? error.message : String(error)
       entry.openvpn?.kill()
       entry.openvpn = null
