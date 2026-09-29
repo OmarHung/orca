@@ -55,6 +55,7 @@ import type { DebugApi } from './api/debug-api'
 import type { PluginsApi } from './api/plugins/plugin-host-api'
 import type { DatabaseApi } from './api/database-api'
 import type { SftpApi } from './api/sftp-api'
+import type { SshVpnApi } from './api/ssh-vpn-api'
 import type { PythonApi } from './api/python-api'
 import type { PreflightApi } from './api/preflight/preflight-api'
 import type { PtyApi } from './api/terminal/pty-api'
@@ -150,6 +151,7 @@ export type PreloadApi = {
   debug: DebugApi
   database: DatabaseApi
   sftp: SftpApi
+  sshVpn: SshVpnApi
   python: PythonApi
   browser: BrowserApi
   browserPasswords: BrowserPasswordsApi
