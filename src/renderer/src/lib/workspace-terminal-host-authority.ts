@@ -1,4 +1,4 @@
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
+import { isLocalSyntheticWorkspaceId } from '../../../shared/local-synthetic-workspace'
 import { parseExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
 import { parseWorkspaceKey } from '../../../shared/workspace-scope'
 import type { HostLiveTerminalProbeVerdict } from '@/runtime/host-live-terminal-probe'
@@ -40,7 +40,7 @@ export function resolveWorkspaceTerminalHostAuthority(
   /** The host the caller knows owns the workspace (a create's target), over the active selection. */
   executionHostId?: ExecutionHostId
 ): WorkspaceTerminalHostAuthority {
-  if (!worktreeId || worktreeId === FLOATING_TERMINAL_WORKTREE_ID) {
+  if (!worktreeId || isLocalSyntheticWorkspaceId(worktreeId)) {
     return 'none'
   }
   const selectedHost = executionHostId

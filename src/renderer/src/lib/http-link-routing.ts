@@ -12,7 +12,7 @@ import type { LinkOpenIntent, LinkSourceState } from './link-open-intent'
 import { captureLinkOpenIntent, canOpenLinkInSourceGroup } from './link-open-intent'
 import type { AppState } from '@/store/types'
 import { translate } from '@/i18n/i18n'
-import { isFloatingWorkspaceId } from '../../../shared/floating-workspace-worktree'
+import { isLocalSyntheticWorkspaceId } from '../../../shared/local-synthetic-workspace'
 import type { GlobalSettings } from '../../../shared/global-settings-types'
 import { toast } from 'sonner'
 import type { ExecutionHostId } from '../../../shared/execution-host'
@@ -285,7 +285,7 @@ function executeHttpLink(
       }
       const activate = !isHttpLinkBackgroundOpen(state) && reveal.canReveal()
       reveal.dispose()
-      if (activate && !isFloatingWorkspaceId(worktreeId)) {
+      if (activate && !isLocalSyntheticWorkspaceId(worktreeId)) {
         reselectWorkspaceKeepingHost(state, worktreeId)
       }
       openLocalHttpLinkTab(getState(), worktreeId, chosenUrl, undefined, activate)

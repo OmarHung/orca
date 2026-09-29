@@ -1,8 +1,8 @@
 /** Store-free registry/disposal lets shutdown slices stop watchers synchronously without re-entering store initialization through the watcher lifecycle import. */
 import type { NotificationWorkspaceOwner } from '../../../../shared/notification-source'
+import { addLocalSyntheticWorkspaceIds } from '../../../../shared/local-synthetic-workspace'
 import { discardPreHandlerPtyState, hasPreHandlerPtyExit } from './pty-pre-handler-buffer'
 import { parseRemoteRuntimePtyId } from '../../../../shared/remote-runtime/remote-runtime-pty-id'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
 import { releaseTerminalScrollIntentKey } from '../../lib/pane-manager/terminal-scroll-intent-key-store'
 
 export type ParkedTerminalPaneCapture = {
@@ -45,9 +45,11 @@ export function getParkedTerminalWatcherTabIds(): string[] {
   return Array.from(parkedWatchersByTabId.keys())
 }
 
-// Why: the floating workspace is synthetic, so repo/folder surface lists never include it.
+// Why: synthetic workspaces have no repo/folder row, so surface lists never include them.
 export function terminalWatcherLiveWorkspaceIds(workspaceIds: Iterable<string>): Set<string> {
-  return new Set([...workspaceIds, FLOATING_TERMINAL_WORKTREE_ID])
+  const liveIds = new Set(workspaceIds)
+  addLocalSyntheticWorkspaceIds(liveIds)
+  return liveIds
 }
 
 /** Reveal renders before watcher disposal; nonempty watcher entries identify park-reveal, while empty pinned-close tombstones do not. */

@@ -1,5 +1,5 @@
+import { addLocalSyntheticWorkspaceIds } from '../../../../shared/local-synthetic-workspace'
 import type { WorkspaceKey } from '../../../../shared/folder-workspace-types'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
 import {
   folderWorkspaceKey,
   isWorkspaceKey,
@@ -56,8 +56,8 @@ export function createWorkspaceTerminalHydrationActions(
           collectPersistedWorktreeIdsForSessionHydration(session)
         )
         const knownRepoIds = new Set(runtimeSessionPlaceholders.repos.map((r) => r.id))
-        // Floating Workspace uses session hydration despite being repo-less so daemon PTYs survive restart.
-        validWorktreeIds.add(FLOATING_TERMINAL_WORKTREE_ID)
+        // Synthetic workspaces (floating, SSH sessions) use session hydration despite being repo-less so daemon PTYs survive restart.
+        addLocalSyntheticWorkspaceIds(validWorktreeIds)
         for (const workspace of s.folderWorkspaces) {
           validWorktreeIds.add(folderWorkspaceKey(workspace.id))
         }

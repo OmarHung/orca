@@ -1,7 +1,7 @@
+import { isLocalSyntheticWorkspaceId } from '../../../../../shared/local-synthetic-workspace'
 import { useAppStore } from '@/store'
 import { getWorktreeMapFromState } from '@/store/selectors'
 import { parseWorkspaceKey } from '../../../../../shared/workspace-scope'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../../shared/constants'
 import { isEphemeralSetupTerminalWorktreeId } from '../../../../../shared/ephemeral-setup-terminal-worktree-id'
 import { isLocalExecutionHost } from '../../../../../shared/execution-host'
 import { resolveTerminalWorktreeRoute } from '@/lib/terminal-worktree-route'
@@ -100,7 +100,7 @@ export function installAgentIdleWorkingHandlers(session: ConnectPanePtySession):
       : null
   // Synthetic IDs and local-stamped rows already resolve; only unnamed hosts await hydration, or remote cwd could fail open to local (#10151).
   session.hostAgnosticTerminalWorktree =
-    session.deps.worktreeId === FLOATING_TERMINAL_WORKTREE_ID ||
+    isLocalSyntheticWorkspaceId(session.deps.worktreeId) ||
     isEphemeralSetupTerminalWorktreeId(session.deps.worktreeId)
   session.worktreeProvesLocalHost = isLocalExecutionHost(session.worktree?.hostId)
   session.connectionOwnerHydrating =
