@@ -19285,7 +19285,11 @@
       "show": "显示主机列表"
     },
     "session": {
-      "unsafeTarget": "这台主机的名称包含 Orca 无法安全传给 ssh 的字符。请在 ~/.ssh/config 中重新命名。"
+      "unsafeTarget": "这台主机的名称包含 Orca 无法安全传给 ssh 的字符。请在 ~/.ssh/config 中重新命名。",
+      "confirmTitle": "要连接到 {{host}} 吗？",
+      "confirmTarget": "目标：{{endpoint}}",
+      "confirmNote": "会打开新的标签页，在你的登录 shell 中输入这条指令，如同你亲自输入。",
+      "connect": "连接"
     },
     "picker": {
       "title": "开启 SSH 连接",
@@ -19326,14 +19330,10 @@
     },
     "delete": {
       "title": "要从 {{host}} 删除吗？",
-      "description": "{{names}}{{more}} 将被永久删除，文件夹内的所有内容也会一并删除。此操作无法撤销。",
       "confirm": "删除"
     },
     "conflict": {
-      "more": "（另有 {{count}} 个）",
-      "title": "要替换已有的内容吗？",
-      "description": "{{dir}} 中已有同名的：{{names}}{{more}}。文件会被替换，文件夹会合并。",
-      "replace": "替换"
+      "more": "（另有 {{count}} 个）"
     },
     "transfers": {
       "preparing": "准备中…",
@@ -19362,6 +19362,29 @@
     "nameDialog": {
       "label": "名称",
       "cancel": "取消"
+    },
+    "confirm": {
+      "host": "主机：{{label}}（{{endpoint}}）",
+      "uploadTitle": "要上传到 {{host}} 吗？",
+      "downloadTitle": "要从 {{host}} 下载吗？",
+      "mkdirTitle": "要在 {{host}} 上新建文件夹吗？",
+      "renameTitle": "要在 {{host}} 上重命名吗？",
+      "transferSummary": "文件：{{files}} · 文件夹：{{folders}} · 大小：{{size}}",
+      "removeSummary": "文件与链接：{{files}} · 文件夹：{{folders}}",
+      "removeWarning": "将永久删除，此操作无法撤销。",
+      "renameConflict": "此文件夹中已有“{{name}}”。",
+      "replaceWarning": "目标位置已存在，文件会被替换、文件夹会合并：{{names}}",
+      "legend": "以 OpenSSH sftp 批次指令格式表示。开头的“-”表示保留已存在的文件夹。",
+      "partialNote": "每个文件会先保存为“<名称>.orca-download”，完成后再改名，因此下载失败不会损坏已有的文件。",
+      "nothingToDo": "没有可传输的内容：所选内容中没有普通文件或文件夹。"
     }
+  },
+  "commandConfirm": {
+    "cancel": "取消",
+    "copied": "已复制 {{count}} 行",
+    "copy": "全部复制",
+    "count": "共 {{count}} 条指令，由上而下执行",
+    "listLabel": "指令",
+    "truncated": "仅显示前 {{shown}} 条，共 {{total}} 条。请用“全部复制”查看每一行。"
   }
 }

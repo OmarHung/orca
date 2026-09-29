@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { translate } from '@/i18n/i18n'
+import { CommandConfirmProvider } from '../command-confirm/CommandConfirmProvider'
 import { HostListToggleButton } from '../ssh-page/HostListToggleButton'
 import { useRemoteHostsLayout } from '../ssh-page/remote-hosts-layout-store'
 import { RemoteHostsPageFrame } from '../ssh-page/RemoteHostsPageFrame'
@@ -9,6 +10,14 @@ import { SftpWorkbench } from './SftpWorkbench'
 import { useSftpProgressEvents } from './use-sftp-progress-events'
 
 export default function SftpPage({ isVisible }: { isVisible: boolean }): React.JSX.Element {
+  return (
+    <CommandConfirmProvider>
+      <SftpPageContent isVisible={isVisible} />
+    </CommandConfirmProvider>
+  )
+}
+
+function SftpPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Element {
   const list = useSshTargetList(isVisible)
   const isHostListCollapsed = useRemoteHostsLayout((s) => s.hostListCollapsed.sftp)
   const [currentTargetId, setCurrentTargetId] = useState<string | null>(null)

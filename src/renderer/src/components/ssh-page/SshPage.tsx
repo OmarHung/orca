@@ -1,5 +1,8 @@
 import { useCallback, useState } from 'react'
+import type { SshTarget } from '../../../../shared/ssh-types'
+import { useCommandConfirm } from '../command-confirm/command-confirm-context'
 import { translate } from '@/i18n/i18n'
+import { CommandConfirmProvider } from '../command-confirm/CommandConfirmProvider'
 import { HostListToggleButton } from './HostListToggleButton'
 import { useRemoteHostsLayout } from './remote-hosts-layout-store'
 import { RemoteHostsPageFrame } from './RemoteHostsPageFrame'
@@ -12,10 +15,23 @@ import { useSshSessionItems } from './use-ssh-session-items'
 import { useSshTargetList } from './use-ssh-target-list'
 
 export default function SshPage({ isVisible }: { isVisible: boolean }): React.JSX.Element {
+  return (
+    <CommandConfirmProvider>
+      <SshPageContent isVisible={isVisible} />
+    </CommandConfirmProvider>
+  )
+}
+
+function SshPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Element {
   const list = useSshTargetList(isVisible)
   const items = useSshSessionItems(isVisible)
   const isHostListCollapsed = useRemoteHostsLayout((s) => s.hostListCollapsed.ssh)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const confirm = useCommandConfirm()
+  const openSession = useCallback(
+    (target: SshTarget) => void openSshSession(target, confirm),
+    [confirm]
+  )
   const openPicker = useCallback(() => setPickerOpen(true), [])
   const { activeTerminalId, terminalItems } = items
   const closeActiveSession = useCallback(() => {
@@ -49,7 +65,7 @@ export default function SshPage({ isVisible }: { isVisible: boolean }): React.JS
             <SshHostListPanel
               list={list}
               currentTargetId={currentTargetId}
-              onSelect={openSshSession}
+              onSelect={openSession}
             />
           )
         }
@@ -58,7 +74,7 @@ export default function SshPage({ isVisible }: { isVisible: boolean }): React.JS
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         targets={list.targets}
-        onSelect={openSshSession}
+        onSelect={openSession}
       />
     </RemoteHostsPageFrame>
   )

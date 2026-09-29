@@ -5,13 +5,12 @@ import { getCurrentMainWindow } from '../ipc/ssh-ipc-context'
 import { SshConnection } from '../ssh/ssh-connection'
 import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
 import {
-  SftpDownloadRequestSchema,
+  SftpExecuteRequestSchema,
   SftpLocalPathSchema,
   SftpPathRequestSchema,
-  SftpRemoveRequestSchema,
-  SftpRenameRequestSchema,
-  SftpTargetSchema,
-  SftpUploadRequestSchema
+  SftpPlanIdSchema,
+  SftpPlanRequestSchema,
+  SftpTargetSchema
 } from './sftp-ipc-schemas'
 import { listLocalDirectory, localHomeDirectory } from './sftp-local-fs'
 import { SftpSessionManager } from './sftp-session-manager'
@@ -65,35 +64,20 @@ export function registerSftpHandlers(): void {
       ? respond(() => sessions.list(request.data.targetId, request.data.path))
       : INVALID_REQUEST
   })
-  ipcMain.handle('sftp:mkdir', (_event, raw: unknown) => {
-    const request = SftpPathRequestSchema.safeParse(raw)
-    return request.success
-      ? respond(() => sessions.mkdir(request.data.targetId, request.data.path))
-      : INVALID_REQUEST
+  // Why: changes only run as plan → user confirms the listed steps → execute that stored plan.
+  ipcMain.handle('sftp:plan', (_event, raw: unknown) => {
+    const request = SftpPlanRequestSchema.safeParse(raw)
+    return request.success ? respond(() => sessions.plan(request.data)) : INVALID_REQUEST
   })
-  ipcMain.handle('sftp:rename', (_event, raw: unknown) => {
-    const request = SftpRenameRequestSchema.safeParse(raw)
-    return request.success
-      ? respond(() => sessions.rename(request.data.targetId, request.data.from, request.data.to))
-      : INVALID_REQUEST
+  ipcMain.handle('sftp:execute', (_event, raw: unknown) => {
+    const request = SftpExecuteRequestSchema.safeParse(raw)
+    return request.success ? respond(() => sessions.execute(request.data)) : INVALID_REQUEST
   })
-  ipcMain.handle('sftp:remove', (_event, raw: unknown) => {
-    const request = SftpRemoveRequestSchema.safeParse(raw)
-    return request.success
-      ? respond(() => sessions.remove(request.data.targetId, request.data.paths))
-      : INVALID_REQUEST
-  })
-  ipcMain.handle('sftp:upload', (_event, raw: unknown) => {
-    const request = SftpUploadRequestSchema.safeParse(raw)
-    return request.success
-      ? respond(() => sessions.transfer('upload', request.data))
-      : INVALID_REQUEST
-  })
-  ipcMain.handle('sftp:download', (_event, raw: unknown) => {
-    const request = SftpDownloadRequestSchema.safeParse(raw)
-    return request.success
-      ? respond(() => sessions.transfer('download', request.data))
-      : INVALID_REQUEST
+  ipcMain.handle('sftp:discardPlan', (_event, raw: unknown) => {
+    const planId = SftpPlanIdSchema.safeParse(raw)
+    if (planId.success) {
+      sessions.discardPlan(planId.data)
+    }
   })
   ipcMain.handle('sftp:cancel', (_event, raw: unknown) => {
     if (typeof raw === 'string') {
