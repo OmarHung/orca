@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { sshVpnProfileIdSchema } from '../ssh-vpn-types'
 
 export const DATABASE_PASSWORD_STORAGE_MODES = ['forever', 'session', 'never'] as const
 export type DatabasePasswordStorage = (typeof DATABASE_PASSWORD_STORAGE_MODES)[number]
@@ -49,7 +50,9 @@ const serverFields = {
     .object({ targetId: z.string().min(1).max(200) })
     .strict()
     .nullable()
-    .optional()
+    .optional(),
+  /** Reach the server through one of Orca's VPN profiles (Settings → SSH); not with sshTunnel. */
+  vpnProfileId: sshVpnProfileIdSchema.nullable().optional()
 }
 
 export const databaseConnectionDraftSchema = z.discriminatedUnion('driver', [
