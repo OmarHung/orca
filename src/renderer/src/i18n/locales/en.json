@@ -8156,7 +8156,11 @@
           "show": "Show",
           "hide": "Hide",
           "externalWorktreesGlobal": "Global default: {{value0}}",
-          "useGlobal": "Use global"
+          "useGlobal": "Use global",
+          "initialTab": "Initial Tab",
+          "initialTabDescription": "What opens when a workspace of this project has no tabs.",
+          "initialTabHelp": "Opens when a workspace of this project has no tabs. A disabled agent falls back to a terminal.",
+          "initialTabTerminal": "Terminal"
         },
         "RepositorySourceControlAiActionRows": {
           "548a6e1281": "Command template",
@@ -10480,7 +10484,12 @@
             "wsl": "wsl",
             "distro": "distro",
             "agentRuntime": "agent runtime",
-            "skillRuntime": "skill runtime"
+            "skillRuntime": "skill runtime",
+            "initialTab": "Initial Tab",
+            "initialTabDescription": "What opens when a workspace of this project has no tabs.",
+            "initialTabDefaultTab": "default tab",
+            "initialTabAgent": "agent",
+            "initialTabClaude": "claude"
           }
         },
         "runtime": {

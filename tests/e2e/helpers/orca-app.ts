@@ -349,8 +349,10 @@ export const test = base.extend<OrcaTestFixtures, OrcaWorkerFixtures>({
               return false
             }
             // Why: the fixture deliberately creates external Git worktrees. New
-            // repos hide those by default after the visibility rollout.
-            await store.getState().updateRepo(repo.id, { externalWorktreeVisibility: 'show' })
+            // repos hide those by default after the visibility rollout. Suites
+            // also expect a plain shell, not the default Claude initial tab.
+            const updates = { externalWorktreeVisibility: 'show', initialTab: 'terminal' } as const
+            await store.getState().updateRepo(repo.id, updates)
             return true
           }, seededRepoId),
         {

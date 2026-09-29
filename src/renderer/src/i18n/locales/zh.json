@@ -7924,7 +7924,11 @@
           "externalWorktreesGlobal": "全局默认值：{{value0}}",
           "useGlobal": "使用全局设置",
           "hostStateWorkspaceWindowClosed": "工作区窗口已关闭",
-          "hostWorkspaceWindowClosedHelp": "服务器可以访问，但其 Orca 窗口已关闭。在 {{value0}} 上打开 Orca 以使用此设置。"
+          "hostWorkspaceWindowClosedHelp": "服务器可以访问，但其 Orca 窗口已关闭。在 {{value0}} 上打开 Orca 以使用此设置。",
+          "initialTab": "初始选项卡",
+          "initialTabDescription": "此项目的工作区没有任何选项卡时要打开的内容。",
+          "initialTabHelp": "此项目的工作区没有任何选项卡时打开。若选择的智能体已停用，则改为打开终端。",
+          "initialTabTerminal": "终端"
         },
         "RepositorySourceControlAiActionRows": {
           "548a6e1281": "提示词模板",
@@ -10232,7 +10236,12 @@
             "wsl": "wsl",
             "distro": "发行版",
             "agentRuntime": "代理运行时",
-            "skillRuntime": "技能运行时间"
+            "skillRuntime": "技能运行时间",
+            "initialTab": "初始选项卡",
+            "initialTabDescription": "此项目的工作区没有任何选项卡时要打开的内容。",
+            "initialTabDefaultTab": "默认选项卡",
+            "initialTabAgent": "智能体",
+            "initialTabClaude": "claude"
           }
         },
         "runtime": {
