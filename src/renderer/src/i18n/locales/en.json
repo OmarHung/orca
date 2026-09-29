@@ -18954,7 +18954,8 @@
         "trimmed": "Trim unused code",
         "extraArgs": "Additional arguments",
         "extraArgsHint": "Appended to the command as written, e.g. -p:Version=1.2.3",
-        "command": "Runs from the workspace root"
+        "command": "Runs from the workspace root",
+        "unsafePath": "The project file or output folder contains characters that cannot be passed safely to a shell, such as \" $ ` % or !."
       }
     },
     "widget": {
@@ -19006,7 +19007,8 @@
       "addedEverything": "Every run found is already added",
       "search": "Filter runs",
       "noMatch": "No matching runs"
-    }
+    },
+    "unsafeShellPath": "This file’s path contains characters that cannot be passed safely to a shell, such as \" $ ` % or !."
   },
   "python": {
     "interpreter": {

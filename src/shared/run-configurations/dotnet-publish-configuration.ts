@@ -63,6 +63,12 @@ export function normalizeDotnetPublish(
     return `"${base.name}": "${invalid}" is not a valid configuration, framework or runtime.`
   }
   const outputDir = asText(record.outputDir)
+  const unquotable = [projectFile, outputDir].find(
+    (value) => value !== undefined && quoteShellArgument(value) === null
+  )
+  if (unquotable) {
+    return `"${base.name}": the path "${unquotable}" contains characters that cannot be passed safely to a shell, such as " $ \` % or !.`
+  }
   const extraArgs = asText(record.extraArgs)
   return {
     type: 'dotnet-publish',
@@ -82,12 +88,21 @@ export function normalizeDotnetPublish(
   }
 }
 
-/** The `dotnet publish` command line; it runs from the workspace root, so relative paths resolve there. */
-export function dotnetPublishCommand(configuration: DotnetPublishRunConfiguration): string {
+/**
+ * The `dotnet publish` command line; it runs from the workspace root, so relative paths resolve
+ * there. Null when a path cannot be quoted safely (normalizeDotnetPublish rejects those).
+ */
+export function dotnetPublishCommand(configuration: DotnetPublishRunConfiguration): string | null {
+  const projectFile = quoteShellArgument(configuration.projectFile)
+  const outputDir =
+    configuration.outputDir === undefined ? undefined : quoteShellArgument(configuration.outputDir)
+  if (projectFile === null || outputDir === null) {
+    return null
+  }
   const args = [
     'dotnet',
     'publish',
-    quoteShellArgument(configuration.projectFile),
+    projectFile,
     '-c',
     configuration.buildConfiguration ?? DEFAULT_PUBLISH_BUILD_CONFIGURATION
   ]
@@ -108,8 +123,8 @@ export function dotnetPublishCommand(configuration: DotnetPublishRunConfiguratio
       args.push('-p:PublishTrimmed=true')
     }
   }
-  if (configuration.outputDir) {
-    args.push('-o', quoteShellArgument(configuration.outputDir))
+  if (outputDir) {
+    args.push('-o', outputDir)
   }
   if (configuration.extraArgs) {
     args.push(configuration.extraArgs)
@@ -120,12 +135,16 @@ export function dotnetPublishCommand(configuration: DotnetPublishRunConfiguratio
 /** Publishing is a terminal command, so it runs, waits and stops like any command configuration. */
 export function dotnetPublishAsCommand(
   configuration: DotnetPublishRunConfiguration
-): CommandRunConfiguration {
+): CommandRunConfiguration | null {
+  const command = dotnetPublishCommand(configuration)
+  if (command === null) {
+    return null
+  }
   return {
     type: 'command',
     id: configuration.id,
     name: configuration.name,
-    command: dotnetPublishCommand(configuration),
+    command,
     ...(configuration.beforeLaunch ? { beforeLaunch: configuration.beforeLaunch } : {})
   }
 }
