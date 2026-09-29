@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { SshTarget } from '../../../../shared/ssh-types'
 import { useAppStore } from '@/store'
 
-type SshTargetListStatus = 'loading' | 'ready' | 'error'
+export type SshTargetListStatus = 'loading' | 'ready' | 'error'
 
 export type SshTargetList = {
   status: SshTargetListStatus
