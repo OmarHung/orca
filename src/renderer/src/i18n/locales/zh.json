@@ -19910,7 +19910,9 @@
       "rename": "重命名",
       "download": "下载",
       "dropHint": "空文件夹。将文件拖到这里即可上传。",
-      "delete": "删除"
+      "delete": "删除",
+      "move": "移动",
+      "moveTo": "移动到…"
     },
     "local": {
       "upload": "上传",
@@ -19933,7 +19935,8 @@
       "replaceWarning": "目标位置已存在，文件会被替换、文件夹会合并：{{names}}",
       "legend": "以 OpenSSH sftp 批次指令格式表示。开头的“-”表示保留已存在的文件夹。",
       "partialNote": "每个文件会先保存为“<名称>.orca-download”，完成后再改名，因此下载失败不会损坏已有的文件。",
-      "nothingToDo": "没有可传输的内容：所选内容中没有普通文件或文件夹。"
+      "nothingToDo": "没有可传输的内容：所选内容中没有普通文件或文件夹。",
+      "moveTitle": "要在 {{host}} 上移动吗？"
     },
     "tabs": {
       "label": "SFTP 标签页",
@@ -19942,6 +19945,14 @@
       "missingHost": "“{{name}}”已不在你的 SSH 主机中，请关闭此标签页。",
       "pickerTitle": "打开 SFTP 标签页",
       "pickerDescription": "选择要浏览的主机。"
+    },
+    "move": {
+      "titleOne": "将“{{name}}”移动到…",
+      "titleMany": "将所选的 {{count}} 项移动到…",
+      "destination": "目标文件夹",
+      "conflict": "目标文件夹中已有：{{names}}。请先重命名或删除它们。",
+      "nothingToDo": "已经在该文件夹中。",
+      "intoItself": "无法将文件夹移动到它自己里面。"
     }
   },
   "commandConfirm": {
