@@ -57,20 +57,42 @@ test.describe('SFTP page against a Docker sshd', () => {
       const result = await orcaPage.evaluate(
         async ({ targetId, remoteDir, sources, inbox }) => {
           const sftp = window.api.sftp
+          const run = async (request: Parameters<typeof sftp.plan>[0], transferId: string) => {
+            const planned = await sftp.plan(request)
+            if (!planned.ok) {
+              return { planned, executed: null, replayed: null }
+            }
+            const executed = await sftp.execute({ planId: planned.value.planId, transferId })
+            const replayed = await sftp.execute({ planId: planned.value.planId, transferId })
+            return { planned, executed, replayed }
+          }
           const home = await sftp.home(targetId)
-          await sftp.mkdir({ targetId, path: remoteDir })
-          const request = { targetId, destinationDir: remoteDir, overwrite: false }
-          const upload = await sftp.upload({ ...request, transferId: 'up-1', sources })
-          const conflict = await sftp.upload({ ...request, transferId: 'up-2', sources })
-          const listing = await sftp.list({ targetId, path: remoteDir })
-          const download = await sftp.download({
-            transferId: 'down-1',
+          const mkdir = await run({ kind: 'mkdir', targetId, path: remoteDir }, 'mk-1')
+          const upload = await run(
+            { kind: 'upload', targetId, sources, destinationDir: remoteDir },
+            'up-1'
+          )
+          const conflict = await sftp.plan({
+            kind: 'upload',
             targetId,
-            sources: [`${remoteDir}/hello.txt`, `${remoteDir}/nested`],
-            destinationDir: inbox,
-            overwrite: false
+            sources,
+            destinationDir: remoteDir
           })
-          return { home, upload, conflict, listing, download }
+          if (conflict.ok) {
+            await sftp.discardPlan(conflict.value.planId)
+          }
+          const forged = await sftp.execute({ planId: 'not-a-plan', transferId: 'x' })
+          const listing = await sftp.list({ targetId, path: remoteDir })
+          const download = await run(
+            {
+              kind: 'download',
+              targetId,
+              sources: [`${remoteDir}/hello.txt`, `${remoteDir}/nested`],
+              destinationDir: inbox
+            },
+            'down-1'
+          )
+          return { home, mkdir, upload, conflict, forged, listing, download }
         },
         {
           targetId,
@@ -80,12 +102,29 @@ test.describe('SFTP page against a Docker sshd', () => {
         }
       )
 
+      const done = { ok: true, value: { status: 'done' } }
       expect(result.home).toEqual({ ok: true, value: '/root' })
-      expect(result.upload).toEqual({ ok: true, value: { status: 'done' } })
-      expect(result.conflict).toEqual({
-        ok: true,
-        value: { status: 'conflict', conflicts: ['hello.txt', 'nested'] }
-      })
+      expect(result.mkdir.executed).toEqual(done)
+      expect(result.upload.executed).toEqual(done)
+      expect(result.upload.planned.ok && result.upload.planned.value.operations).toEqual([
+        {
+          op: 'put',
+          local: path.join(outbox, 'hello.txt'),
+          remote: `${REMOTE_DIR}/hello.txt`,
+          size: 10
+        },
+        { op: 'mkdir', path: `${REMOTE_DIR}/nested`, keepExisting: true },
+        {
+          op: 'put',
+          local: path.join(outbox, 'nested', 'deep.txt'),
+          remote: `${REMOTE_DIR}/nested/deep.txt`,
+          size: 4
+        }
+      ])
+      // A plan runs once; a plan id main never issued runs nothing.
+      expect(result.upload.replayed?.ok).toBe(false)
+      expect(result.forged.ok).toBe(false)
+      expect(result.conflict.ok && result.conflict.value.conflicts).toEqual(['hello.txt', 'nested'])
       expect(result.listing.ok && result.listing.value.map((entry) => entry.name)).toEqual([
         'nested',
         'hello.txt'
@@ -93,7 +132,7 @@ test.describe('SFTP page against a Docker sshd', () => {
       expect(execDockerSshRelayTargetCommand(target, `cat ${REMOTE_DIR}/nested/deep.txt`)).toBe(
         'deep'
       )
-      expect(result.download).toEqual({ ok: true, value: { status: 'done' } })
+      expect(result.download.executed).toEqual(done)
       expect(readFileSync(path.join(inbox, 'hello.txt'), 'utf8')).toBe('hello sftp')
       expect(readFileSync(path.join(inbox, 'nested', 'deep.txt'), 'utf8')).toBe('deep')
       expect(existsSync(path.join(inbox, 'hello.txt.orca-download'))).toBe(false)
@@ -106,10 +145,19 @@ test.describe('SFTP page against a Docker sshd', () => {
       expect(relayStatus).not.toBe('connected')
 
       const removal = await orcaPage.evaluate(
-        async ({ targetId, remoteDir }) => window.api.sftp.remove({ targetId, paths: [remoteDir] }),
+        async ({ targetId, remoteDir }) => {
+          const planned = await window.api.sftp.plan({
+            kind: 'remove',
+            targetId,
+            paths: [remoteDir]
+          })
+          return planned.ok
+            ? window.api.sftp.execute({ planId: planned.value.planId, transferId: 'rm-1' })
+            : planned
+        },
         { targetId, remoteDir: REMOTE_DIR }
       )
-      expect(removal).toEqual({ ok: true, value: undefined })
+      expect(removal).toEqual({ ok: true, value: { status: 'done' } })
       expect(
         execDockerSshRelayTargetCommand(target, `test -e ${REMOTE_DIR} && echo yes || echo no`)
       ).toBe('no')
@@ -121,6 +169,27 @@ test.describe('SFTP page against a Docker sshd', () => {
         timeout: 30_000
       })
       await orcaPage.screenshot({ path: testInfo.outputPath('sftp-page.png') })
+
+      // The UI only downloads after showing the exact command and getting a yes.
+      const localPath = orcaPage.locator('[data-sftp-pane="local"] input[aria-label="Path"]')
+      await localPath.fill(inbox)
+      await localPath.press('Enter')
+      await expect(
+        orcaPage.locator(`[data-sftp-entry="${path.join(inbox, 'hello.txt')}"]`)
+      ).toBeVisible()
+      await orcaPage.locator('[data-sftp-entry="/root/orca-sftp-visible.txt"]').click()
+      await orcaPage.getByRole('button', { name: 'Download', exact: true }).click()
+      const confirmDialog = orcaPage.locator('[data-command-confirm]')
+      await expect(confirmDialog.locator('[data-command-list]')).toContainText(
+        `get "/root/orca-sftp-visible.txt" ${JSON.stringify(path.join(inbox, 'orca-sftp-visible.txt'))}`
+      )
+      await orcaPage.screenshot({ path: testInfo.outputPath('sftp-confirm.png') })
+      await confirmDialog.getByRole('button', { name: 'Cancel' }).click()
+      await expect(confirmDialog).toBeHidden()
+      expect(existsSync(path.join(inbox, 'orca-sftp-visible.txt'))).toBe(false)
+      await orcaPage.getByRole('button', { name: 'Download', exact: true }).click()
+      await confirmDialog.getByRole('button', { name: 'Download', exact: true }).click()
+      await expect.poll(() => existsSync(path.join(inbox, 'orca-sftp-visible.txt'))).toBe(true)
 
       // Leaving the page and coming back keeps the host, folder and listing.
       const sftpPage = orcaPage.locator('[data-sftp-page]')
