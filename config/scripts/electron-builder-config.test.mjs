@@ -336,6 +336,21 @@ describe('electron-builder config', () => {
     expect(viteConfig).toMatch(new RegExp(`'${entryFilename.replace(/\.js$/, '')}':\\s*resolve\\(`))
   })
 
+  // Why: SFTP downloads fork this entry from disk; packed inside asar it cannot start and every
+  // download fails. The client and packaging must agree on the filename, so it is read from source.
+  it('unpacks the SFTP local writer entry that downloads fork', async () => {
+    const clientSource = await readFile(
+      join(SRC_MAIN_DIR, 'sftp', 'local-writer', 'sftp-local-writer.ts'),
+      'utf8'
+    )
+    const entryFilename = clientSource.match(/ENTRY_FILENAME = '([^']+)'/)?.[1]
+
+    expect(entryFilename).toBe('sftp-local-writer-entry.js')
+    expect(electronBuilderConfig.asarUnpack).toContain(`out/main/${entryFilename}`)
+    const viteConfig = await readFile(join(REPO_ROOT, 'electron.vite.config.ts'), 'utf8')
+    expect(viteConfig).toMatch(/'sftp-local-writer-entry':\s*resolve\(/)
+  })
+
   // Why: the scanner service is forked with ELECTRON_RUN_AS_NODE, so asar is
   // invisible to it and a packed worker entry fails closed — dropping every
   // OpenCode session in packaged builds while dev stays green. Three legs must

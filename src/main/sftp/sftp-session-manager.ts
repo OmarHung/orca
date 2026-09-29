@@ -7,6 +7,7 @@ import type {
   SftpPlanRequest,
   SftpTransferProgress
 } from '../../shared/sftp-types'
+import type { SpawnSftpLocalWriter } from './local-writer/sftp-local-writer'
 import { runSftpOperations } from './sftp-operation-runner'
 import { isSftpStatusError, sftpRealpath, type SftpOps } from './sftp-ops'
 import { draftSftpPlan } from './sftp-plan-builders'
@@ -27,6 +28,7 @@ type SftpSessionManagerDeps = {
   onProgress: (progress: SftpTransferProgress) => void
   idleMs?: number
   plans?: SftpPlanStore
+  spawnLocalWriter?: SpawnSftpLocalWriter
 }
 
 type Session = {
@@ -127,8 +129,11 @@ export class SftpSessionManager {
         return { status: 'cancelled' }
       }
       const reporter = createProgressReporter(this.deps.onProgress)
-      await runSftpOperations(record.channel, plan.operations, (progress) =>
-        reporter.report({ transferId, totalBytes: plan.totalBytes, ...progress })
+      await runSftpOperations(
+        record.channel,
+        plan.operations,
+        (progress) => reporter.report({ transferId, totalBytes: plan.totalBytes, ...progress }),
+        { localRoot: plan.localRoot, spawnLocalWriter: this.deps.spawnLocalWriter }
       )
       reporter.flush()
       return { status: 'done' }
