@@ -3,6 +3,7 @@
 import { act, createContext, createElement, useContext, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useSshVpnStore } from '../../ssh-vpn/ssh-vpn-store'
 import { DatabaseConnectionDialog } from './DatabaseConnectionDialog'
 
 const mocks = vi.hoisted(() => ({ labels: new Map<string, string>() }))
@@ -84,12 +85,15 @@ vi.mock('../../sidebar/AddRemoteHostDialog', () => ({
 
 const SSH_HINT = 'Host and port are as seen from the SSH host'
 const SSH_EMPTY = 'No saved SSH hosts yet.'
+const VPN_HINT = 'Host and port are as seen from inside the VPN.'
+const VPN_VIA_SSH = 'With an SSH tunnel, the SSH host’s own VPN setting applies.'
 
 let root: Root | null = null
 let saveConnection: ReturnType<typeof vi.fn>
 
 beforeEach(() => {
   mocks.labels = new Map()
+  useSshVpnStore.setState({ profiles: [] })
   saveConnection = vi.fn(async () => ({ ok: false, error: { message: 'not in this test' } }))
   vi.stubGlobal('api', {
     database: {
@@ -187,6 +191,29 @@ describe('DatabaseConnectionDialog', () => {
     await clickButton('Stub add all')
 
     expect(document.body.textContent).not.toContain(SSH_HINT)
+  })
+
+  it('saves the VPN picked for a direct connection, and drops it once an SSH tunnel is picked', async () => {
+    useSshVpnStore.setState({
+      profiles: [{ id: 'vpn-0001', name: 'office', ovpnPath: '/vpn/office.ovpn', idleMinutes: 10 }]
+    })
+    mocks.labels = new Map([['ssh-1', 'bastion']])
+    await renderDialog()
+    expect(document.body.textContent).not.toContain(VPN_HINT)
+
+    await clickButton('office')
+    expect(document.body.textContent).toContain(VPN_HINT)
+    await clickButton('Save')
+    expect(saveConnection.mock.calls[0]?.[0]).toMatchObject({
+      draft: { vpnProfileId: 'vpn-0001', sshTunnel: null }
+    })
+
+    await clickButton('bastion')
+    expect(document.body.textContent).toContain(VPN_VIA_SSH)
+    await clickButton('Save')
+    expect(saveConnection.mock.calls[1]?.[0]).toMatchObject({
+      draft: { vpnProfileId: null, sshTunnel: { targetId: 'ssh-1' } }
+    })
   })
 
   it('does not save the connection when the SSH host form is submitted', async () => {

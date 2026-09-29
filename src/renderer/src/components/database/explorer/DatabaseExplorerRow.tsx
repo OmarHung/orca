@@ -19,8 +19,6 @@ import {
 } from 'lucide-react'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
-import { useAppStore } from '@/store'
-import { isServerConnection } from '../../../../../shared/database/database-connection-types'
 import { cn } from '@/lib/utils'
 import { DatabaseSessionDot } from '../DatabaseConnectionBadge'
 import { useDatabaseConnectionColor } from '../database-connection-color'
@@ -28,6 +26,7 @@ import { useDatabaseConnectionsStore } from '../database-connections-store'
 import { DatabaseExplorerContextMenu } from './DatabaseExplorerContextMenu'
 import { DatabaseExplorerGroupContextMenu } from './DatabaseExplorerGroupMenus'
 import { commentLine, constraintLabel, folderLabel } from './database-explorer-labels'
+import { useConnectionRouteLabel } from './use-connection-route-label'
 import type { DatabaseExplorerRow as ExplorerRow } from './database-explorer-rows'
 import { isExpandableNode, type DatabaseExplorerNode } from './database-explorer-tree'
 
@@ -89,21 +88,11 @@ function ConnectionLabel({ connectionId }: { connectionId: string }): React.JSX.
     state.connections.find((entry) => entry.id === connectionId)
   )
   const session = useDatabaseConnectionsStore((state) => state.sessions[connectionId])
-  const sshTargetId =
-    connection && isServerConnection(connection) ? connection.sshTunnel?.targetId : undefined
-  const sshLabel = useAppStore((state) =>
-    sshTargetId ? (state.sshTargetLabels.get(sshTargetId) ?? null) : undefined
-  )
+  const routeLabel = useConnectionRouteLabel(connection)
   return (
     <>
       <span>{connection?.name ?? ''}</span>
-      {sshLabel !== undefined ? (
-        <span className="text-muted-foreground">
-          {translate('database.explorer.viaSsh', 'via {{value0}}', {
-            value0: sshLabel ?? translate('database.connectionForm.sshRemoved', 'Removed SSH host')
-          })}
-        </span>
-      ) : null}
+      {routeLabel ? <span className="text-muted-foreground">{routeLabel}</span> : null}
       <DatabaseSessionDot state={session?.state ?? 'disconnected'} />
       {/* Why capped: a long error would widen the whole tree; the title keeps all of it. */}
       {session?.state === 'error' && session.message ? (

@@ -76,6 +76,29 @@ describe('database connection form', () => {
     }
   })
 
+  it('round-trips the VPN a direct connection goes through, and drops it under an SSH tunnel', () => {
+    const form = { ...initialConnectionForm(null, true), vpnProfileId: 'vpn-0001' }
+    const parsed = parseConnectionForm(form)
+    expect(parsed.ok && parsed.draft).toMatchObject({ sshTunnel: null, vpnProfileId: 'vpn-0001' })
+    if (parsed.ok) {
+      const saved = {
+        ...parsed.draft,
+        id: 'conn-0001',
+        createdAt: 0,
+        updatedAt: 0,
+        hasSavedPassword: false
+      }
+      expect(initialConnectionForm(saved, true).vpnProfileId).toBe('vpn-0001')
+    }
+    const tunneled = parseConnectionForm({ ...form, sshTargetId: 'ssh-1' })
+    expect(tunneled.ok && tunneled.draft).toMatchObject({
+      sshTunnel: { targetId: 'ssh-1' },
+      vpnProfileId: null
+    })
+    const direct = parseConnectionForm(initialConnectionForm(null, true))
+    expect(direct.ok && direct.draft).toMatchObject({ vpnProfileId: null })
+  })
+
   it('round-trips a connection color for servers and SQLite, and rejects anything but a hex color', () => {
     const server = { ...initialConnectionForm(null, true), color: '#ef4444' }
     const parsed = parseConnectionForm(server)
