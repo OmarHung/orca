@@ -247,11 +247,13 @@ export function activateAndRevealWorktree(
     // Resume preserved provider sessions before shell seeding; synchronous tab creation prevents an extra bare shell.
     resumeSleepingAgentSessionsForWorktree(worktreeId)
   }
+  const blankTerminalSelected = opts?.agent === null
   if (shouldGateAgentActivation) {
     gateAndReseedEmptyWorkspace(worktreeId, {
       callerProvidesSurface: opts?.providesInitialSurface === true,
       seedUserDefaultSurface,
-      ...(opts?.executionHostId ? { executionHostId: opts.executionHostId } : {})
+      ...(opts?.executionHostId ? { executionHostId: opts.executionHostId } : {}),
+      ...(blankTerminalSelected ? { blankTerminalSelected } : {})
     })
   }
 
@@ -272,6 +274,7 @@ export function activateAndRevealWorktree(
             ...(opts?.createNewTerminalForStartup ? { createNewTerminalForStartup: true } : {}),
             ...(providesInitialSurface ? { callerProvidesSurface: true } : {}),
             ...(seedUserDefaultSurface ? { seedUserDefaultSurface: true } : {}),
+            ...(blankTerminalSelected ? { blankTerminalSelected: true } : {}),
             reseedEmptiedWorkspace: !providesInitialSurface
           }
         )

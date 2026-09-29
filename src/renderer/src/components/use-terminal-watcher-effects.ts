@@ -13,6 +13,7 @@ import {
 import { useAppStore } from '@/store'
 import { isTerminalWorkspaceEmptiedOnPurpose } from '../../../shared/closed-terminal-tab-tombstones'
 import { gateWorktreeAgentActivation } from '@/lib/worktree-agent-activation-gate'
+import { seedProjectInitialAgentTab } from '@/lib/project-initial-agent-tab-seeding'
 import { createWorkspaceTerminalHostAuthoritySelector } from '@/lib/workspace-terminal-host-authority'
 import { hasStructuredAgentLaunchInWorktree } from '@/lib/structured-agent-session-launch'
 import { isEmptyWorkspaceDefaultSurfacePending } from '@/lib/empty-workspace-default-surface-claims'
@@ -253,7 +254,10 @@ export function useTerminalWatcherEffects(controller: TerminalWatcherController)
         useAppStore.getState(),
         activeWorktreeId
       )
-      if (shouldAutoCreateInitialTerminal(renderableTabCount, activeWorktreeHasTerminalState)) {
+      if (
+        shouldAutoCreateInitialTerminal(renderableTabCount, activeWorktreeHasTerminalState) &&
+        !seedProjectInitialAgentTab(activeWorktreeId)
+      ) {
         if (
           ORCA_LAYOUT_OWNER_IS_MAIN &&
           createInitialTerminalThroughLayoutOwner(useAppStore.getState, activeWorktreeId, () =>

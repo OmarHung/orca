@@ -7,6 +7,7 @@ import type { GitRemoteIdentity } from './git-remote-identity'
 import type { RepoSourceControlAiOverrides } from './source-control-ai-types'
 import type { RepoProjectHostSetupMethod } from './project-types'
 import type { JiraProjectReference } from './jira/jira-project-reference'
+import type { RepoInitialTab } from './repo-initial-tab'
 
 export type RepoKind = 'git' | 'folder'
 
@@ -65,6 +66,8 @@ export type Repo = {
   ghAccount?: GhAccountBinding
   /** Controls Orca's fork-default-branch sync offer for repos with upstream metadata. */
   forkSyncMode?: ForkSyncMode
+  /** Tab an empty workspace opens with; absent means DEFAULT_REPO_INITIAL_TAB. */
+  initialTab?: RepoInitialTab
   /** Canonical identity for the repo remote Orca should use for provider-level grouping. */
   gitRemoteIdentity?: GitRemoteIdentity | null
   /** Controls whether worktrees Orca did not create appear in the sidebar. */

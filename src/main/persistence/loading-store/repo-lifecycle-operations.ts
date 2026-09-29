@@ -167,6 +167,7 @@ export class RepoLifecycleOperations {
         | 'symlinkPaths'
         | 'issueSourcePreference'
         | 'forkSyncMode'
+        | 'initialTab'
         | 'externalWorktreeVisibilityPromptDismissedAt'
         | 'externalWorktreeInboxBaselinePaths'
         | 'importedExternalWorktreePaths'
