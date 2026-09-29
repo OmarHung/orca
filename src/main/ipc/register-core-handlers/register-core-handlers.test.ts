@@ -24,6 +24,7 @@ const {
   registerPetHandlersMock,
   registerDebugHandlersMock,
   registerDatabaseHandlersMock,
+  registerSftpHandlersMock,
   registerSessionHandlersMock,
   registerUIHandlersMock,
   setTrustedUIRendererWebContentsIdMock,
@@ -98,6 +99,7 @@ const {
   registerPetHandlersMock: vi.fn(),
   registerDebugHandlersMock: vi.fn(),
   registerDatabaseHandlersMock: vi.fn(),
+  registerSftpHandlersMock: vi.fn(),
   registerSessionHandlersMock: vi.fn(),
   registerUIHandlersMock: vi.fn(),
   setTrustedUIRendererWebContentsIdMock: vi.fn(),
@@ -290,6 +292,10 @@ vi.mock('../../debug/debug-ipc', () => ({
 
 vi.mock('../../database/database-ipc', () => ({
   registerDatabaseHandlers: registerDatabaseHandlersMock
+}))
+
+vi.mock('../../sftp/sftp-ipc', () => ({
+  registerSftpHandlers: registerSftpHandlersMock
 }))
 
 vi.mock('../pets/pet', () => ({
@@ -502,6 +508,7 @@ describe('registerCoreHandlers', () => {
     registerPetHandlersMock.mockReset()
     registerDebugHandlersMock.mockReset()
     registerDatabaseHandlersMock.mockReset()
+    registerSftpHandlersMock.mockReset()
     registerSessionHandlersMock.mockReset()
     registerUIHandlersMock.mockReset()
     setTrustedUIRendererWebContentsIdMock.mockReset()
@@ -603,6 +610,7 @@ describe('registerCoreHandlers', () => {
     registeredRelaunchExit = registerAppHandlersMock.mock.calls[0]?.[1]?.onBeforeRelaunchExit
     expect(registerDebugHandlersMock).toHaveBeenCalled()
     expect(registerDatabaseHandlersMock).toHaveBeenCalled()
+    expect(registerSftpHandlersMock).toHaveBeenCalled()
 
     await expect(
       aiVaultOptions.scanRuntimeAiVaultSessions(
