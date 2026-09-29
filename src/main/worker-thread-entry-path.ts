@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { getAppEnvironment, hasAppEnvironment } from '../shared/app-environment'
 
@@ -36,6 +37,25 @@ export function resolveWorkerThreadEntryPath(
     return join(layout.resourcesPath, 'app.asar', 'out', 'main', entryFileName)
   }
   return join(layout.moduleDir, entryFileName)
+}
+
+/**
+ * Resolve a built entry that a forked child process runs from disk (packaging asarUnpacks these).
+ * @param layout - Packaged flag plus both candidate roots.
+ * @param entryFileName - Built file name, e.g. `database-worker-entry.js`.
+ * @returns Path passed to `fork()`.
+ */
+export function resolveForkedProcessEntryPath(
+  layout: WorkerEntryLayout,
+  entryFileName: string,
+  pathExists: (path: string) => boolean = existsSync
+): string {
+  if (layout.isPackaged && layout.resourcesPath) {
+    return join(layout.resourcesPath, 'app.asar.unpacked', 'out', 'main', entryFileName)
+  }
+  const adjacent = join(layout.moduleDir, entryFileName)
+  // Rollup can factor the caller into out/main/chunks; entries stay in out/main.
+  return pathExists(adjacent) ? adjacent : join(layout.moduleDir, '..', entryFileName)
 }
 
 /**

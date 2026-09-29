@@ -7,6 +7,7 @@ import {
   readdirSync,
   renameSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync
 } from 'node:fs'
@@ -14,11 +15,11 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { formatSftpOperation } from '../../shared/sftp-operation-format'
-import type { SftpPlanRequest } from '../../shared/sftp-types'
-import { runSftpOperations } from './sftp-operation-runner'
+import type { SftpLocalRoot, SftpOperation, SftpPlanRequest } from '../../shared/sftp-types'
+import { runSftpOperations, type SftpRunOptions } from './sftp-operation-runner'
 import { localFileIdentity } from './sftp-planned-upload'
 import { draftSftpPlan } from './sftp-plan-builders'
-import { FakeSftp } from './sftp-test-support'
+import { FakeSftp, spawnLocalWriterFromSource } from './sftp-test-support'
 
 let localRoot: string
 
@@ -183,8 +184,11 @@ describe('runSftpOperations', () => {
     })
     const reported: number[] = []
 
-    await runSftpOperations(sftp, plan.operations, (progress) =>
-      reported.push(progress.transferredBytes)
+    await runSftpOperations(
+      sftp,
+      plan.operations,
+      (progress) => reported.push(progress.transferredBytes),
+      writeInto(plan.localRoot)
     )
 
     expect(readFileSync(path.join(localRoot, 'app', 'sub', 'b.txt'), 'utf8')).toBe('hello')
@@ -227,13 +231,7 @@ describe('runSftpOperations', () => {
     writeFileSync(path.join(localRoot, 'a.txt'), 'original')
     sftp.beforeTransfer = () => sftp.end()
 
-    await expect(
-      runSftpOperations(
-        sftp,
-        [{ op: 'get', remote: '/srv/app/a.txt', local: path.join(localRoot, 'a.txt'), size: 3 }],
-        () => undefined
-      )
-    ).rejects.toThrow('Channel ended')
+    await expect(runGet(sftp, '/srv/app/a.txt', 'a.txt')).rejects.toThrow('Channel ended')
 
     expect(readFileSync(path.join(localRoot, 'a.txt'), 'utf8')).toBe('original')
     expect(readdirSync(localRoot)).toEqual(['a.txt'])
@@ -243,11 +241,7 @@ describe('runSftpOperations', () => {
     const sftp = remoteApp()
     writeFileSync(path.join(localRoot, 'a.txt'), 'original')
 
-    await runSftpOperations(
-      sftp,
-      [{ op: 'get', remote: '/srv/app/a.txt', local: path.join(localRoot, 'a.txt'), size: 3 }],
-      () => undefined
-    )
+    await runGet(sftp, '/srv/app/a.txt', 'a.txt')
 
     expect(readFileSync(path.join(localRoot, 'a.txt'), 'utf8')).toBe('abc')
     expect(readdirSync(localRoot)).toEqual(['a.txt'])
@@ -314,22 +308,116 @@ describe('runSftpOperations', () => {
     expect(sftp.readText('/srv/project/keys/id')).toBeNull()
   })
 
-  it('never writes a download through a link planted beside the target', async () => {
-    const sftp = remoteApp()
-    writeFileSync(path.join(localRoot, 'victim.txt'), 'keep me')
-    symlinkSync(path.join(localRoot, 'victim.txt'), path.join(localRoot, 'a.txt.orca-download'))
+  it('downloads a file larger than one read intact, reporting progress up to its size', async () => {
+    const content = randomBytes(200 * 1024 + 7)
+    const sftp = new FakeSftp().addDir('/srv')
+    sftp.nodes.set('/srv/big.bin', { kind: 'file', content })
+    const reported: number[] = []
 
-    await runSftpOperations(
-      sftp,
-      [{ op: 'get', remote: '/srv/app/a.txt', local: path.join(localRoot, 'a.txt'), size: 3 }],
-      () => undefined
-    )
+    await runGet(sftp, '/srv/big.bin', 'big.bin', content.length, (bytes) => reported.push(bytes))
+
+    expect(readFileSync(path.join(localRoot, 'big.bin')).equals(content)).toBe(true)
+    expect(reported).toEqual([...reported].sort((a, b) => a - b))
+    expect(reported.at(-1)).toBe(content.length)
+  })
+
+  it('replaces a link at the target name instead of writing through it', async () => {
+    writeFileSync(path.join(localRoot, 'victim.txt'), 'keep me')
+    symlinkSync(path.join(localRoot, 'victim.txt'), path.join(localRoot, 'a.txt'))
+
+    await runGet(remoteApp(), '/srv/app/a.txt', 'a.txt')
 
     expect(readFileSync(path.join(localRoot, 'victim.txt'), 'utf8')).toBe('keep me')
+    expect(lstatSync(path.join(localRoot, 'a.txt')).isFile()).toBe(true)
     expect(readFileSync(path.join(localRoot, 'a.txt'), 'utf8')).toBe('abc')
-    expect(readdirSync(localRoot).sort()).toEqual(['a.txt', 'a.txt.orca-download', 'victim.txt'])
+  })
+
+  it('writes nothing when the confirmed folder became a link to another one', async () => {
+    const selected = path.join(localRoot, 'selected')
+    const victim = path.join(localRoot, 'victim')
+    mkdirSync(selected)
+    mkdirSync(victim)
+    writeFileSync(path.join(victim, 'a.txt'), 'keep me')
+    const sftp = remoteApp()
+    const plan = await draftSftpPlan(sftp, {
+      kind: 'download',
+      targetId: 'web',
+      sources: ['/srv/app/a.txt'],
+      destinationDir: selected
+    })
+    renameSync(selected, path.join(localRoot, 'selected-old'))
+    symlinkSync(victim, selected)
+
+    await expect(
+      runSftpOperations(sftp, plan.operations, () => undefined, writeInto(plan.localRoot))
+    ).rejects.toThrow('moved or replaced after the download was confirmed')
+
+    expect(readdirSync(victim)).toEqual(['a.txt'])
+    expect(readFileSync(path.join(victim, 'a.txt'), 'utf8')).toBe('keep me')
+  })
+
+  it('stops when a folder inside the download is replaced by a link mid-way', async () => {
+    const victim = path.join(localRoot, 'victim')
+    mkdirSync(victim)
+    const destination = path.join(localRoot, 'inbox')
+    mkdirSync(destination)
+    const sftp = remoteApp()
+    const plan = await draftSftpPlan(sftp, {
+      kind: 'download',
+      targetId: 'web',
+      sources: ['/srv/app'],
+      destinationDir: destination
+    })
+    const sub = path.join(destination, 'app', 'sub')
+    // Why the hook: swap once the folders exist, before the file inside `sub` is written.
+    sftp.beforeTransfer = () => {
+      if (lstatSync(sub, { throwIfNoEntry: false })?.isDirectory()) {
+        rmSync(sub, { recursive: true })
+        symlinkSync(victim, sub)
+      }
+    }
+
+    await expect(
+      runSftpOperations(sftp, plan.operations, () => undefined, writeInto(plan.localRoot))
+    ).rejects.toThrow('moved or replaced after the download was confirmed')
+
+    expect(readdirSync(victim)).toEqual([])
+  })
+
+  it('refuses a local step outside the confirmed folder', async () => {
+    const operations: SftpOperation[] = [
+      { op: 'lmkdir', path: path.join(os.tmpdir(), 'elsewhere') }
+    ]
+
+    await expect(
+      runSftpOperations(new FakeSftp(), operations, () => undefined, writeInto(rootOf(localRoot)))
+    ).rejects.toThrow('outside the folder this download was confirmed into')
   })
 })
+
+function writeInto(root: SftpLocalRoot | undefined): SftpRunOptions {
+  return { localRoot: root, spawnLocalWriter: spawnLocalWriterFromSource }
+}
+
+function rootOf(dir: string): SftpLocalRoot {
+  const stats = statSync(dir, { bigint: true })
+  return { path: dir, dev: stats.dev.toString(), ino: stats.ino.toString() }
+}
+
+function runGet(
+  sftp: FakeSftp,
+  remote: string,
+  name: string,
+  size = 3,
+  onTransferred: (bytes: number) => void = () => undefined
+): Promise<void> {
+  return runSftpOperations(
+    sftp,
+    [{ op: 'get', remote, local: path.join(localRoot, name), size }],
+    (progress) => onTransferred(progress.transferredBytes),
+    writeInto(rootOf(localRoot))
+  )
+}
 
 function upload(names: string[]): SftpPlanRequest {
   return {

@@ -1,7 +1,18 @@
-import { writeFileSync } from 'node:fs'
 import path from 'node:path'
-import type { FileEntryWithStats, Stats, TransferOptions } from 'ssh2'
+import type { FileEntryWithStats, Stats } from 'ssh2'
+import { forkProcess } from '../../shared/child-process/fork-process'
+import type { SpawnedProcess } from '../../shared/child-process/process-spec'
 import type { SftpOps } from './sftp-ops'
+
+/** Runs the real local-writer entry from source under Node, as a build runs its compiled copy. */
+export function spawnLocalWriterFromSource(cwd: string): SpawnedProcess {
+  return forkProcess({
+    modulePath: path.join(__dirname, 'local-writer', 'sftp-local-writer-entry.ts'),
+    cwd,
+    stdio: ['ignore', 'ignore', 'pipe', 'ipc'],
+    serialization: 'advanced'
+  })
+}
 
 type FakeNode =
   | { kind: 'dir' }
@@ -154,26 +165,9 @@ export class FakeSftp implements SftpOps {
     callback()
   }
 
-  fastGet(
-    remote: string,
-    local: string,
-    options: TransferOptions,
-    callback: (err?: Error | null) => void
-  ): void {
-    this.beforeTransfer?.()
-    const node = this.resolve(remote)
-    if (this.ended || node?.kind !== 'file') {
-      callback(this.ended ? new Error('Channel ended') : noSuchFile(remote))
-      return
-    }
-    writeFileSync(local, node.content)
-    options.step?.(node.content.length, node.content.length, node.content.length)
-    callback()
-  }
-
   open(
     target: string,
-    _mode: 'w',
+    mode: 'r' | 'w',
     callback: (err: Error | undefined, handle: Buffer) => void
   ): void {
     this.beforeTransfer?.()
@@ -181,10 +175,51 @@ export class FakeSftp implements SftpOps {
       callback(new Error('Channel ended'), Buffer.alloc(0))
       return
     }
-    this.nodes.set(target, { kind: 'file', content: Buffer.alloc(0) })
+    if (mode === 'r') {
+      if (this.resolve(target)?.kind !== 'file') {
+        callback(noSuchFile(target), Buffer.alloc(0))
+        return
+      }
+    } else {
+      this.nodes.set(target, { kind: 'file', content: Buffer.alloc(0) })
+    }
     const handle = Buffer.from(String(this.nextHandle++))
     this.openFiles.set(handle.toString(), target)
     callback(undefined, handle)
+  }
+
+  private openFile(handle: Buffer): Buffer | Error {
+    const target = this.openFiles.get(handle.toString())
+    const node = target === undefined ? undefined : this.resolve(target)
+    if (this.ended || node?.kind !== 'file') {
+      return new Error(this.ended ? 'Channel ended' : 'Invalid handle')
+    }
+    return node.content
+  }
+
+  fstat(handle: Buffer, callback: (err: Error | undefined, stats: Stats) => void): void {
+    const content = this.openFile(handle)
+    if (content instanceof Error) {
+      callback(content, statsFor({ kind: 'dir' }))
+      return
+    }
+    callback(undefined, statsFor({ kind: 'file', content }))
+  }
+
+  read(
+    handle: Buffer,
+    buffer: Buffer,
+    offset: number,
+    length: number,
+    position: number,
+    callback: (err: Error | undefined, bytesRead: number) => void
+  ): void {
+    const content = this.openFile(handle)
+    if (content instanceof Error) {
+      callback(content, 0)
+      return
+    }
+    callback(undefined, content.copy(buffer, offset, position, position + length))
   }
 
   write(
