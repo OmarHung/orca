@@ -1,5 +1,5 @@
+import { addLocalSyntheticWorkspaceIds } from '../../../../shared/local-synthetic-workspace'
 import type { WorkspaceKey } from '../../../../shared/folder-workspace-types'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
 import {
   folderWorkspaceKey,
   parseWorkspaceKey,
@@ -54,8 +54,8 @@ export function createWorkspaceTerminalHydrationActions(
           collectPersistedWorktreeIdsForSessionHydration(session)
         )
         const knownRepoIds = new Set(runtimeSessionPlaceholders.repos.map((r) => r.id))
-        // Why: the Floating Workspace isn't a repo worktree, but its tabs use the normal session pipeline so daemon PTYs survive app restart.
-        validWorktreeIds.add(FLOATING_TERMINAL_WORKTREE_ID)
+        // Why: synthetic workspaces (floating, SSH sessions) aren't repo worktrees, but their tabs use the normal session pipeline so daemon PTYs survive app restart.
+        addLocalSyntheticWorkspaceIds(validWorktreeIds)
         for (const workspace of s.folderWorkspaces) {
           validWorktreeIds.add(folderWorkspaceKey(workspace.id))
         }

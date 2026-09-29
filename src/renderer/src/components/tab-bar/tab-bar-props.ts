@@ -18,6 +18,8 @@ export type TabBarProps = {
   onCloseToRight: (tabId: string) => void
   onCloseToLeft: (tabId: string) => void
   onNewTerminalTab: () => void
+  /** When set, "+" calls this directly instead of opening the new-tab menu. */
+  onNewTabClick?: () => void
   /** On Windows, opens a new terminal with a specific shell instead of the default. */
   onNewTerminalWithShell?: (shell: string) => void
   onNewBrowserTab: () => void

@@ -19283,6 +19283,13 @@
       "loadFailed": "无法加载 SSH 主机。",
       "retry": "重试",
       "empty": "还没有 SSH 主机。请在 ~/.ssh/config 或「设置 → SSH」中添加。"
+    },
+    "session": {
+      "unsafeTarget": "这台主机的名称包含 Orca 无法安全传给 ssh 的字符。请在 ~/.ssh/config 中重新命名。"
+    },
+    "picker": {
+      "title": "开启 SSH 连接",
+      "description": "选择要连接的主机。"
     }
   },
   "sftpPage": {

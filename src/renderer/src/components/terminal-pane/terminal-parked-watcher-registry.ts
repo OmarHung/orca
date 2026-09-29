@@ -7,9 +7,9 @@
  * mid-evaluation. Keeping the maps and pure disposal here lets the slice
  * import cycle-free, mirroring how pty-dispatcher exports its handler maps.
  */
+import { addLocalSyntheticWorkspaceIds } from '../../../../shared/local-synthetic-workspace'
 import { discardPreHandlerPtyState, hasPreHandlerPtyExit } from './pty-pre-handler-buffer'
 import { parseRemoteRuntimePtyId } from '../../../../shared/remote-runtime-pty-id'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
 import { releaseTerminalScrollIntentKey } from '../../lib/pane-manager/terminal-scroll-intent-key-store'
 
 export type ParkedTerminalPaneCapture = {
@@ -59,9 +59,11 @@ export function getParkedTerminalWatcherTabIds(): string[] {
   return Array.from(parkedWatchersByTabId.keys())
 }
 
-// Why: the floating workspace is synthetic, so repo/folder surface lists never include it.
+// Why: synthetic workspaces have no repo/folder row, so surface lists never include them.
 export function terminalWatcherLiveWorkspaceIds(workspaceIds: Iterable<string>): Set<string> {
-  return new Set([...workspaceIds, FLOATING_TERMINAL_WORKTREE_ID])
+  const liveIds = new Set(workspaceIds)
+  addLocalSyntheticWorkspaceIds(liveIds)
+  return liveIds
 }
 
 /**
