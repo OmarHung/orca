@@ -39,3 +39,44 @@ export type SshVpnProfileState = {
   /** Most recent OpenVPN output lines, oldest first. */
   logTail: string[]
 }
+
+export type SshVpnResult<T> = { ok: true; value: T } | { ok: false; error: { message: string } }
+
+/** Everything the VPN UI shows; refetched whenever main broadcasts `sshVpn:changed`. */
+export type SshVpnSnapshot = {
+  profiles: SshVpnProfile[]
+  /** SSH target id → VPN profile id. */
+  assignments: Record<string, string>
+  states: SshVpnProfileState[]
+}
+
+/** What the SSH page needs to type `ssh -o ProxyCommand=…` for a host behind a ready VPN. */
+export type SshVpnTerminalRoute = {
+  profileName: string
+  dockerPath: string
+  containerName: string
+}
+
+/** Main asks the renderer to show these commands before a VPN starts. */
+export type SshVpnStartConfirmRequest = {
+  requestId: string
+  profileName: string
+  /** The SSH host whose connection needs the VPN; null for a manual Connect. */
+  hostLabel: string | null
+  commands: string[]
+}
+
+export const sshVpnAssignmentSchema = z.object({
+  targetId: z.string().min(1).max(200),
+  profileId: sshVpnProfileIdSchema.nullable()
+})
+
+export const sshVpnSaveProfileSchema = z.object({
+  id: sshVpnProfileIdSchema.optional(),
+  draft: sshVpnProfileDraftSchema
+})
+
+export const sshVpnConfirmAnswerSchema = z.object({
+  requestId: z.string().min(1).max(100),
+  approved: z.boolean()
+})
