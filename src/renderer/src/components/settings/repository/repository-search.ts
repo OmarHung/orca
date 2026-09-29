@@ -98,6 +98,29 @@ function getRepositorySearchParts(
       ...translateSearchKeyword('auto.components.settings.repository.search.27733eb6c1', 'favicon')
     ]
   }
+  const initialTab = {
+    title: t('auto.components.settings.repository.search.initialTab', 'Initial Tab'),
+    description: t(
+      'auto.components.settings.repository.search.initialTabDescription',
+      'What opens when a workspace of this project has no tabs.'
+    ),
+    keywords: [
+      repo.displayName,
+      ...translateSearchKeyword(
+        'auto.components.settings.repository.search.initialTabDefaultTab',
+        'default tab'
+      ),
+      ...translateSearchKeyword(
+        'auto.components.settings.repository.search.initialTabAgent',
+        'agent'
+      ),
+      ...translateSearchKeyword(
+        'auto.components.settings.repository.search.initialTabClaude',
+        'claude',
+        { englishOnly: true }
+      )
+    ]
+  }
   const github = !isFolder
     ? {
         title: t('auto.components.settings.repository.search.eefc3e51ef', 'GitHub account'),
@@ -223,6 +246,7 @@ function getRepositorySearchParts(
     jira,
     displayName,
     icon,
+    initialTab,
     github,
     fork,
     projectRuntime,
@@ -244,7 +268,8 @@ export function getRepositoryPaneSearchEntries(
     parts.agentTrust,
     parts.jira,
     parts.displayName,
-    parts.icon
+    parts.icon,
+    parts.initialTab
   ]
   if (parts.github) {
     entries.push(parts.github)
@@ -278,7 +303,7 @@ export function getRepositoryPaneSearchMetadata(
 ) {
   const parts = getRepositorySearchParts(repo, options, t)
   const worktrees = isFolderRepo(repo) ? undefined : getRepositoryGitWorktreeSearchMetadata(repo, t)
-  const identity = [parts.agentTrust, parts.jira, parts.displayName, parts.icon]
+  const identity = [parts.agentTrust, parts.jira, parts.displayName, parts.icon, parts.initialTab]
   if (parts.github) {
     identity.push(parts.github)
   }

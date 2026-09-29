@@ -207,7 +207,13 @@ export async function executeWorktreeCreation(
             preparedRequest.issueCommand,
             defaultTabs,
             // Activation failed before providing its promised surface, so recovery must seed one.
-            { ...onCreationHost, ...windowStartup.terminalOptions }
+            {
+              ...onCreationHost,
+              ...windowStartup.terminalOptions,
+              ...(!backendSpawned && preparedRequest.agent === null
+                ? { blankTerminalSelected: true }
+                : {})
+            }
           )
         } catch (recoveryError) {
           console.error('worktree create: recovery seed failed', worktree.id, recoveryError)

@@ -4,6 +4,7 @@ import { shouldSeedDefaultSurface } from '@/lib/workspace/activation/initial-sur
 import { findPendingWorktreeCreationId } from '@/lib/workspace/creation/pending-worktree-creation'
 import { isTerminalWorkspaceEmptiedOnPurpose } from '../../../../shared/workspace-layout/closed-terminal-tab-tombstones'
 import { gateWorktreeAgentActivation } from '@/lib/workspace/activation/worktree-agent-activation-gate'
+import { seedProjectInitialAgentTab } from '@/lib/project-initial-agent-tab-seeding'
 import { createWorkspaceTerminalHostAuthoritySelector } from '@/lib/workspace/ownership/workspace-terminal-host-authority'
 import { hasStructuredAgentLaunchInWorktree } from '@/lib/agent-session/launch/structured-agent-session-launch-status'
 import { isEmptyWorkspaceDefaultSurfacePending } from '@/lib/workspace/activation/initial-surface/empty-workspace-default-surface-claims'
@@ -87,7 +88,10 @@ export function useTerminalStartupActivation(controller: TerminalStartupControll
         useAppStore.getState(),
         activeWorktreeId
       )
-      if (shouldSeedDefaultSurface(activeWorktreeId, renderableTabCount, emptiedOnPurpose)) {
+      if (
+        shouldSeedDefaultSurface(activeWorktreeId, renderableTabCount, emptiedOnPurpose) &&
+        !seedProjectInitialAgentTab(activeWorktreeId)
+      ) {
         if (
           ORCA_LAYOUT_OWNER_IS_MAIN &&
           createInitialTerminalThroughLayoutOwner(useAppStore.getState, activeWorktreeId, () =>

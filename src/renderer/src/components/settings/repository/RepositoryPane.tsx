@@ -22,6 +22,7 @@ import { matchesSettingsSearch } from '../search/settings-search'
 import { useAppStore } from '@/store/index'
 import { getRepositoryIconSectionId } from './repository-settings-targets'
 import { RepositoryIconPicker } from './identity/RepositoryIconPicker'
+import { RepositoryInitialTabSetting } from './RepositoryInitialTabSetting'
 import { getRepositoryPaneSearchMetadata } from './repository-search'
 import { RepositoryHostSetupsSection } from './hosts/RepositoryHostSetupsSection'
 import { RepoSettingsDraftInput } from './RepositorySettingsDraftInput'
@@ -293,6 +294,12 @@ export function RepositoryPane({
         />
 
         <RepositoryAgentTrustSection
+          repo={repo}
+          updateRepo={updateSelectedRepo}
+          forceVisible={forceFullPaneForRepoMatch}
+        />
+
+        <RepositoryInitialTabSetting
           repo={repo}
           updateRepo={updateSelectedRepo}
           forceVisible={forceFullPaneForRepoMatch}

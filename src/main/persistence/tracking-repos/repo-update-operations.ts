@@ -106,6 +106,7 @@ export class RepoUpdatePersistenceOperations {
         | 'defaultJiraProject'
         | 'forkSyncMode'
         | 'agentWorkspaceTrust'
+        | 'initialTab'
         | 'externalWorktreeVisibilityPromptDismissedAt'
         | 'externalWorktreeInboxBaselinePaths'
         | 'importedExternalWorktreePaths'

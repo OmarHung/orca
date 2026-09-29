@@ -191,6 +191,7 @@ export class RepoLifecycleOperations {
         | 'issueSourcePreference'
         | 'forkSyncMode'
         | 'agentWorkspaceTrust'
+        | 'initialTab'
         | 'externalWorktreeVisibilityPromptDismissedAt'
         | 'externalWorktreeInboxBaselinePaths'
         | 'importedExternalWorktreePaths'

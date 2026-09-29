@@ -69,6 +69,7 @@ export type RepositoryApi = {
         | 'projectGroupId'
         | 'forkSyncMode'
         | 'agentWorkspaceTrust'
+        | 'initialTab'
       >
     > & {
       projectGroupOrder?: number | null
