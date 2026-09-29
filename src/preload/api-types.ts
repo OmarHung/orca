@@ -54,6 +54,7 @@ import type { BrowserPasswordsApi } from './api/browser/browser-passwords-api'
 import type { DebugApi } from './api/debug-api'
 import type { PluginsApi } from './api/plugins/plugin-host-api'
 import type { DatabaseApi } from './api/database-api'
+import type { SftpApi } from './api/sftp-api'
 import type { PythonApi } from './api/python-api'
 import type { PreflightApi } from './api/preflight/preflight-api'
 import type { BackgroundWorkerApi } from './api/diagnostics/background-worker-api'
@@ -158,6 +159,7 @@ export type PreloadApi = {
   appIcon: AppIconApi
   debug: DebugApi
   database: DatabaseApi
+  sftp: SftpApi
   python: PythonApi
   browser: BrowserApi
   browserPasswords: BrowserPasswordsApi

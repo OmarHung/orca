@@ -64,6 +64,7 @@ import { appIconApi } from './api/window-ui/app-icon-bridge'
 import { browserPasswordsApi } from './api/browser/browser-passwords-bridge'
 import { debugApi } from './api/debug-bridge'
 import { databaseApi } from './api/database-bridge'
+import { sftpApi } from './api/sftp-bridge'
 import { pythonApi } from './api/python-bridge'
 import { browserApi } from './api/browser/browser-bridge'
 import { emulatorApi } from './api/emulator/emulator-bridge'
@@ -181,6 +182,7 @@ const api = {
   appIcon: appIconApi,
   debug: debugApi,
   database: databaseApi,
+  sftp: sftpApi,
   python: pythonApi,
   browser: browserApi,
   browserPasswords: browserPasswordsApi,
