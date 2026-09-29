@@ -21,7 +21,7 @@ afterEach(() => {
   container.remove()
 })
 
-function iconClassFor(name: string, kind: SftpEntry['kind']): string {
+function renderIcon(name: string, kind: SftpEntry['kind']): SVGElement | null {
   const entry: SftpEntry = {
     name,
     path: `/srv/${name}`,
@@ -43,14 +43,30 @@ function iconClassFor(name: string, kind: SftpEntry['kind']): string {
       />
     )
   )
-  return container.querySelector('svg')?.getAttribute('class') ?? ''
+  return container.querySelector('svg')
+}
+
+function iconClassFor(name: string, kind: SftpEntry['kind']): string {
+  return renderIcon(name, kind)?.getAttribute('class') ?? ''
+}
+
+function extensionLabelFor(name: string): string | null {
+  return renderIcon(name, 'file')?.querySelector('text')?.textContent ?? null
 }
 
 describe('SftpFileRow icon', () => {
-  it('shows a file-type icon for files', () => {
-    expect(iconClassFor('app.tsx', 'file')).toContain('lucide-file-code')
-    expect(iconClassFor('photo.png', 'file')).toContain('lucide-file-image')
-    expect(iconClassFor('notes.unknown', 'file')).toContain('lucide-file ')
+  it('prints the extension on the icon of files that have one', () => {
+    expect(extensionLabelFor('app.tsx')).toBe('TSX')
+    expect(extensionLabelFor('photo.PNG')).toBe('PNG')
+    expect(extensionLabelFor('backup.tar.gz')).toBe('GZ')
+    expect(extensionLabelFor('Package.swift')).toBe('SWIFT')
+  })
+
+  it('keeps the file-type icon when there is no extension or it is too long to read', () => {
+    expect(iconClassFor('Dockerfile', 'file')).toContain('lucide-file-cog')
+    expect(extensionLabelFor('.bashrc')).toBeNull()
+    expect(iconClassFor('trailing.', 'file')).toContain('lucide-file ')
+    expect(iconClassFor('app.properties', 'file')).toContain('lucide-file-sliders')
   })
 
   it('shows a folder-type icon for well-known folders and a plain folder otherwise', () => {
