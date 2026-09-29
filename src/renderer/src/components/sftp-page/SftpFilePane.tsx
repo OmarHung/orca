@@ -36,15 +36,18 @@ function PaneIconButton(props: {
   label: string
   onClick: () => void
   disabled?: boolean
+  /** Makes it a toggle that shows when it is on. */
+  isPressed?: boolean
   children: React.ReactNode
 }): React.JSX.Element {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          variant="ghost"
+          variant={props.isPressed ? 'secondary' : 'ghost'}
           size="icon-xs"
           aria-label={props.label}
+          aria-pressed={props.isPressed}
           disabled={props.disabled}
           onClick={props.onClick}
         >
