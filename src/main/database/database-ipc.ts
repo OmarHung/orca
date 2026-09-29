@@ -172,11 +172,9 @@ export function registerDatabaseHandlers(): void {
     return { ok: true, value: null }
   })
 
-  ipcMain.handle('database:deleteConnection', async (_event, raw: unknown) => {
+  ipcMain.handle('database:deleteConnection', (_event, raw: unknown) => {
     const id = databaseConnectionIdSchema.safeParse(raw)
-    if (id.success) {
-      await service.deleteConnection(id.data)
-    }
+    return id.success ? service.deleteConnection(id.data) : INVALID_REQUEST
   })
 
   ipcMain.handle('database:testConnection', (_event, raw: unknown) => {
