@@ -3,9 +3,10 @@ import type { Page } from '@stablyai/playwright-test'
 import { expect, test } from './helpers/orca-app'
 import {
   startSshVpnTestNetwork,
+  VPN_TEST_LOGIN,
   VPN_TEST_SSHD_NAME,
   type SshVpnTestNetwork
-} from './helpers/docker-ssh-vpn-network'
+} from '../../src/main/ssh-vpn/ssh-vpn-test-network'
 import { waitForSessionReady } from './helpers/store'
 
 // Why: mirrors SSH_SESSIONS_WORKTREE_ID in src/shared/local-synthetic-workspace.ts.
@@ -13,21 +14,28 @@ const SSH_WORKTREE_ID = 'global-ssh-sessions'
 const RUN = process.env.ORCA_E2E_SSH_VPN_DOCKER === '1'
 const HOST_LABEL = 'e2e-behind-vpn'
 
+type VpnDraft = {
+  name: string
+  ovpnPath: string
+  idleMinutes: number
+  username?: string
+  passwordStorage?: 'forever' | 'session' | 'never'
+}
+
 async function setUpVpnHost(
   page: Page,
-  network: SshVpnTestNetwork
+  network: SshVpnTestNetwork,
+  draft: VpnDraft = { name: 'E2E VPN', ovpnPath: network.ovpnPath, idleMinutes: 10 }
 ): Promise<{
   targetId: string
   profileId: string
 }> {
   return page.evaluate(
-    async ({ label, host, identityFile, ovpnPath }) => {
+    async ({ label, host, identityFile, draft }) => {
       const { target } = await window.api.ssh.addTarget({
         target: { label, host, port: 22, username: 'root', identityFile, identitiesOnly: true }
       })
-      const saved = await window.api.sshVpn.saveProfile({
-        draft: { name: 'E2E VPN', ovpnPath, idleMinutes: 10 }
-      })
+      const saved = await window.api.sshVpn.saveProfile({ draft })
       if (!saved.ok) {
         throw new Error(saved.error.message)
       }
@@ -38,7 +46,7 @@ async function setUpVpnHost(
       label: HOST_LABEL,
       host: VPN_TEST_SSHD_NAME,
       identityFile: network.privateKeyPath,
-      ovpnPath: network.ovpnPath
+      draft
     }
   )
 }
@@ -73,10 +81,10 @@ test.describe('SSH hosts routed through a per-host OpenVPN container', () => {
     orcaPage
   }, testInfo) => {
     test.setTimeout(300_000)
-    const network = startSshVpnTestNetwork()
+    const network = await startSshVpnTestNetwork()
     let profileId: string | null = null
     try {
-      expect(network.canReachWithoutVpn()).toBe(false)
+      await expect(network.canReachWithoutVpn()).resolves.toBe(false)
       await waitForSessionReady(orcaPage)
       const ids = await setUpVpnHost(orcaPage, network)
       profileId = ids.profileId
@@ -118,7 +126,52 @@ test.describe('SSH hosts routed through a per-host OpenVPN container', () => {
           { stdio: 'ignore' }
         )
       }
-      network.dispose()
+      await network.dispose()
+    }
+  })
+
+  test('asks for the VPN login when none is saved, then connects with it', async ({ orcaPage }) => {
+    test.setTimeout(300_000)
+    const network = await startSshVpnTestNetwork()
+    let profileId: string | null = null
+    try {
+      await waitForSessionReady(orcaPage)
+      const ids = await setUpVpnHost(orcaPage, network, {
+        name: 'E2E login VPN',
+        ovpnPath: network.loginOvpnPath,
+        idleMinutes: 10,
+        username: VPN_TEST_LOGIN.username,
+        passwordStorage: 'session'
+      })
+      profileId = ids.profileId
+
+      await orcaPage.evaluate((targetId) => {
+        // Why not awaited: it blocks on the dialogs this test answers below.
+        Reflect.set(window, '__e2eVpnHome', window.api.sftp.home(targetId))
+      }, ids.targetId)
+      await acceptConfirm(orcaPage, '--auth-user-pass /run/orca/login')
+      const prompt = orcaPage.locator('[data-ssh-vpn-login-prompt]')
+      await expect(prompt.locator('#ssh-vpn-prompt-username')).toHaveValue(VPN_TEST_LOGIN.username)
+      await prompt.locator('#ssh-vpn-prompt-password').fill(VPN_TEST_LOGIN.password)
+      await prompt.locator('[data-ssh-vpn-login-submit]').click()
+      await expect(prompt).toBeHidden()
+
+      const home = await orcaPage.evaluate(() => Reflect.get(window, '__e2eVpnHome'))
+      expect(home).toEqual({ ok: true, value: '/root' })
+      const snapshot = await orcaPage.evaluate(() => window.api.sshVpn.snapshot())
+      expect(snapshot.ok && snapshot.value.savedPasswordProfileIds).toContain(ids.profileId)
+    } finally {
+      if (profileId) {
+        spawnSync(
+          'sh',
+          [
+            '-c',
+            `docker ps -aq --filter label=dev.orca.ssh-vpn.profile=${profileId} | xargs docker rm -f`
+          ],
+          { stdio: 'ignore' }
+        )
+      }
+      await network.dispose()
     }
   })
 })

@@ -1,4 +1,7 @@
 import type {
+  SshVpnCredentialRequest,
+  SshVpnCredentials,
+  SshVpnOvpnInspection,
   SshVpnProfile,
   SshVpnProfileDraft,
   SshVpnProfileState,
@@ -9,10 +12,14 @@ import type {
 } from '../../shared/ssh-vpn-types'
 
 export type SshVpnApi = {
-  snapshot: () => Promise<SshVpnSnapshot>
+  snapshot: () => Promise<SshVpnResult<SshVpnSnapshot>>
+  /** Whether an .ovpn asks for a login, and whether Orca can use it at all. */
+  inspectOvpn: (ovpnPath: string) => Promise<SshVpnResult<SshVpnOvpnInspection>>
   saveProfile: (request: {
     id?: string
     draft: SshVpnProfileDraft
+    /** Omit to keep the saved password. */
+    password?: string
   }) => Promise<SshVpnResult<SshVpnProfile>>
   deleteProfile: (profileId: string) => Promise<SshVpnResult<void>>
   setAssignment: (request: {
@@ -26,8 +33,14 @@ export type SshVpnApi = {
   prepareTerminal: (targetId: string) => Promise<SshVpnResult<SshVpnTerminalRoute | null>>
   pickOvpnFile: () => Promise<string | null>
   answerStart: (answer: { requestId: string; approved: boolean }) => Promise<void>
+  /** Null cancels the start. */
+  answerCredentials: (answer: {
+    requestId: string
+    credentials: SshVpnCredentials | null
+  }) => Promise<void>
   onState: (callback: (state: SshVpnProfileState) => void) => () => void
   /** Profiles or assignments changed; refetch the snapshot. */
   onChanged: (callback: () => void) => () => void
   onConfirmStart: (callback: (request: SshVpnStartConfirmRequest) => void) => () => void
+  onCredentialRequest: (callback: (request: SshVpnCredentialRequest) => void) => () => void
 }

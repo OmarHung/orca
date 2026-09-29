@@ -1,7 +1,12 @@
 import { formatPosixCommand } from '../../shared/ssh-vpn-command-format'
-import { CONTAINER_PROFILE_PATH, type PreparedOvpnFile } from './ovpn-profile-preparation'
+import {
+  CONTAINER_LOGIN_PATH,
+  CONTAINER_PROFILE_PATH,
+  type PreparedOvpnFile
+} from './ovpn-profile-preparation'
 import {
   dockerBuildArgs,
+  dockerFirewallArgs,
   dockerImageInspectArgs,
   dockerInfoArgs,
   dockerOpenVpnArgs,
@@ -18,6 +23,8 @@ export type SshVpnStartPlan = {
   ovpnPath: string
   files: readonly Pick<PreparedOvpnFile, 'hostPath' | 'containerPath'>[]
   buildsImage: boolean
+  /** The profile asks for a username and password, which Orca writes next to it. */
+  writesLogin: boolean
 }
 
 /**
@@ -34,8 +41,12 @@ export function sshVpnStartCommands(plan: SshVpnStartPlan): string[] {
     ...(plan.buildsImage ? [`${docker(dockerBuildArgs())}   # stdin: Orca's Dockerfile`] : []),
     docker(dockerRemoveArgs(plan.containerName)),
     docker(dockerRunArgs(plan.containerName, plan.instanceTag, plan.profileId)),
+    docker(dockerFirewallArgs(plan.containerName)),
     writeFile(CONTAINER_PROFILE_PATH, `${plan.ovpnPath} (paths rewritten for the container)`),
     ...plan.files.map((file) => writeFile(file.containerPath, file.hostPath)),
-    docker(dockerOpenVpnArgs(plan.containerName))
+    ...(plan.writesLogin
+      ? [writeFile(CONTAINER_LOGIN_PATH, 'your VPN username and password (not shown)')]
+      : []),
+    docker(dockerOpenVpnArgs(plan.containerName, plan.writesLogin))
   ]
 }

@@ -13,11 +13,18 @@ export function isAbsoluteOvpnPath(value: string): boolean {
   return value.startsWith('/') || /^[A-Za-z]:[\\/]/.test(value) || value.startsWith('\\\\')
 }
 
+export const SSH_VPN_PASSWORD_STORAGE_MODES = ['forever', 'session', 'never'] as const
+/** Same meanings as the database page: keychain, until Orca quits, or ask every time. */
+export type SshVpnPasswordStorage = (typeof SSH_VPN_PASSWORD_STORAGE_MODES)[number]
+
 export const sshVpnProfileDraftSchema = z.object({
   name: z.string().trim().min(1).max(120),
   ovpnPath: z.string().trim().min(1).max(4096).refine(isAbsoluteOvpnPath),
   /** Minutes without any connection through the VPN before it stops; 0 keeps it up until quit. */
-  idleMinutes: z.number().int().min(0).max(MAX_SSH_VPN_IDLE_MINUTES)
+  idleMinutes: z.number().int().min(0).max(MAX_SSH_VPN_IDLE_MINUTES),
+  /** For profiles that ask for a username and password (`auth-user-pass`); unset otherwise. */
+  username: z.string().trim().min(1).max(200).optional(),
+  passwordStorage: z.enum(SSH_VPN_PASSWORD_STORAGE_MODES).optional()
 })
 
 export type SshVpnProfileDraft = z.infer<typeof sshVpnProfileDraftSchema>
@@ -51,6 +58,10 @@ export type SshVpnSnapshot = {
   /** SSH target id → VPN profile id. */
   assignments: Record<string, string>
   states: SshVpnProfileState[]
+  /** Profiles whose password is kept (keychain or until quit), so they connect without asking. */
+  savedPasswordProfileIds: string[]
+  /** False when the OS has no keychain, so 'forever' is not offered. */
+  canStorePasswords: boolean
 }
 
 /** What the SSH page needs to type `ssh -o ProxyCommand=…` for a host behind a ready VPN. */
@@ -76,7 +87,34 @@ export const sshVpnAssignmentSchema = z.object({
 
 export const sshVpnSaveProfileSchema = z.object({
   id: sshVpnProfileIdSchema.optional(),
-  draft: sshVpnProfileDraftSchema
+  draft: sshVpnProfileDraftSchema,
+  /** Omitted keeps the saved password. */
+  password: z.string().min(1).max(1000).optional()
+})
+
+/** What the profile form needs to know about an .ovpn before it is saved. */
+export type SshVpnOvpnInspection = { needsCredentials: boolean }
+
+export type SshVpnCredentials = { username: string; password: string }
+
+/** Main asks the renderer for a VPN login when none is saved (or the last one was rejected). */
+export type SshVpnCredentialRequest = {
+  requestId: string
+  profileName: string
+  username: string
+  hostLabel: string | null
+  /** Why it asks again, e.g. the server rejected the last password. */
+  error: string | null
+}
+
+export const sshVpnCredentialAnswerSchema = z.object({
+  requestId: z.string().min(1).max(100),
+  credentials: z
+    .object({
+      username: z.string().trim().min(1).max(200),
+      password: z.string().min(1).max(1000)
+    })
+    .nullable()
 })
 
 export const sshVpnConfirmAnswerSchema = z.object({

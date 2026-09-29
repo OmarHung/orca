@@ -71,6 +71,29 @@ describe('SshVpnStore', () => {
     expect(store.profileForTarget('target-a')).toEqual(profile)
   })
 
+  it('fails closed: an assignment to a missing or invalid profile throws instead of going direct', () => {
+    writeFileSync(
+      filePath,
+      JSON.stringify({
+        version: 1,
+        profiles: [{ id: 'bad-profile', name: 'x', ovpnPath: 'relative.ovpn', idleMinutes: 1 }],
+        assignments: { a: 'bad-profile' }
+      })
+    )
+
+    expect(() => new SshVpnStore(filePath).profileForTarget('a')).toThrow(/missing or invalid/)
+    expect(new SshVpnStore(filePath).profileForTarget('unassigned')).toBeNull()
+  })
+
+  it('fails closed on a file that is not JSON, and never overwrites it', () => {
+    writeFileSync(filePath, '{ not json')
+    const store = new SshVpnStore(filePath)
+
+    expect(() => store.profileForTarget('a')).toThrow(/not valid JSON/)
+    expect(() => store.saveProfile(undefined, DRAFT)).toThrow(/not valid JSON/)
+    expect(readFileSync(filePath, 'utf8')).toBe('{ not json')
+  })
+
   it('skips malformed records instead of dropping the whole file', () => {
     writeFileSync(
       filePath,
