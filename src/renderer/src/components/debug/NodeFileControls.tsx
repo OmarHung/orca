@@ -1,5 +1,6 @@
 import React from 'react'
 import { Bug, Play } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
@@ -58,23 +59,34 @@ export function NodeFileControls(): React.JSX.Element | null {
   const label = basename(launch.filePath)
   const relative = getRelativePathInsideRoot(launch.filePath, worktreePath) ?? launch.filePath
   const commandKey = `node-file:${launch.filePath}`
-  const target: RunTarget = {
-    worktreeId: launch.worktreeId,
-    groupId,
-    commandKey,
-    command: {
-      id: commandKey,
-      label,
-      command: `node ${quoteShellArgument(relative)}`,
-      appendEnter: true
+  const quotedPath = quoteShellArgument(relative)
+  const target: RunTarget | null =
+    quotedPath === null
+      ? null
+      : {
+          worktreeId: launch.worktreeId,
+          groupId,
+          commandKey,
+          command: { id: commandKey, label, command: `node ${quotedPath}`, appendEnter: true }
+        }
+  const runFile = (): void => {
+    if (!target) {
+      toast.error(
+        translate(
+          'run.unsafeShellPath',
+          'This file’s path contains characters that cannot be passed safely to a shell, such as " $ ` % or !.'
+        )
+      )
+      return
     }
+    void runConfiguration(target)
   }
   return (
     <div data-testid="node-file-controls" className="my-auto flex shrink-0 items-center gap-0.5">
       <ControlButton
         label={translate('run.action.runNamed', "Run '{{value0}}'", { value0: label })}
         testId="node-run-file"
-        onClick={() => void runConfiguration(target)}
+        onClick={runFile}
       >
         <Play />
       </ControlButton>
@@ -85,7 +97,7 @@ export function NodeFileControls(): React.JSX.Element | null {
       >
         <Bug />
       </ControlButton>
-      <RunSessionControls target={target} testId="node-run-controls" />
+      {target ? <RunSessionControls target={target} testId="node-run-controls" /> : null}
     </div>
   )
 }
