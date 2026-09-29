@@ -6,7 +6,8 @@ import type { DatabaseWorkerPort } from './database-worker-client'
 import {
   DatabaseSessionManager,
   type DatabaseTunnel,
-  type OpenDatabaseTunnel
+  type OpenDatabaseTunnel,
+  type OpenDatabaseVpnTunnel
 } from './database-session-manager'
 import type {
   DatabaseWorkerCommand,
@@ -74,7 +75,8 @@ const connectOk = (command: DatabaseWorkerCommand): DatabaseResult<unknown> =>
 
 function setup(
   answer = connectOk,
-  openTunnel?: OpenDatabaseTunnel
+  openTunnel?: OpenDatabaseTunnel,
+  openVpnTunnel?: OpenDatabaseVpnTunnel
 ): {
   manager: DatabaseSessionManager
   events: DatabaseSessionEvent[]
@@ -89,7 +91,8 @@ function setup(
       return worker.port
     },
     emit: (event) => events.push(event),
-    openTunnel
+    openTunnel,
+    openVpnTunnel
   })
   return { manager, events, workers }
 }
@@ -186,6 +189,67 @@ describe('DatabaseSessionManager SSH tunnels', () => {
     expect((await manager.test(tunneled, null)).ok).toBe(true)
     expect(tunnels.requests[0]?.key).toMatch(/^test:/)
     expect(tunnels.closed()).toBe(1)
+  })
+})
+
+const viaVpn: DatabaseConnection = { ...connection, host: 'db.vpn', vpnProfileId: 'vpn-0001' }
+
+describe('DatabaseSessionManager VPN routes', () => {
+  it('dials the worker through the VPN tunnel and closes it on disconnect', async () => {
+    const requests: Parameters<OpenDatabaseVpnTunnel>[0][] = []
+    let closed = 0
+    const { manager, workers } = setup(connectOk, undefined, async (request) => {
+      requests.push(request)
+      return { localPort: 40200, close: async () => void (closed += 1) }
+    })
+    expect((await manager.connect(viaVpn, null)).ok).toBe(true)
+    expect(requests).toEqual([
+      { profileId: 'vpn-0001', connectionLabel: 'Local', remoteHost: 'db.vpn', remotePort: 5432 }
+    ])
+    expect(workers[0]?.commands[0]).toMatchObject({ type: 'connect', tunnelPort: 40200 })
+    await manager.disconnect(viaVpn.id)
+    expect(closed).toBe(1)
+  })
+
+  it('fails closed when the VPN cannot start, without dialing the server', async () => {
+    const { manager, workers } = setup(connectOk, undefined, async () => {
+      throw new Error('VPN "office" was not started')
+    })
+    expect(await manager.connect(viaVpn, null)).toMatchObject({
+      ok: false,
+      error: { message: 'VPN: VPN "office" was not started' }
+    })
+    expect(workers[0]?.commands).toEqual([])
+  })
+
+  it('refuses a connection that names both an SSH tunnel and a VPN', async () => {
+    let opened = false
+    const { manager, workers } = setup(
+      connectOk,
+      async () => {
+        opened = true
+        return { localPort: 1, close: async () => undefined }
+      },
+      async () => {
+        opened = true
+        return { localPort: 1, close: async () => undefined }
+      }
+    )
+    const both: DatabaseConnection = { ...viaVpn, sshTunnel: { targetId: 'ssh-1' } }
+    expect(await manager.connect(both, null)).toMatchObject({
+      ok: false,
+      error: { message: 'A connection can use an SSH tunnel or a VPN, not both.' }
+    })
+    expect(opened).toBe(false)
+    expect(workers[0]?.commands).toEqual([])
+  })
+
+  it('refuses a VPN connection where Orca has no VPN runtime', async () => {
+    const { manager } = setup()
+    expect(await manager.connect(viaVpn, null)).toMatchObject({
+      ok: false,
+      error: { message: 'VPNs are not available here.', code: 'unavailable' }
+    })
   })
 })
 
