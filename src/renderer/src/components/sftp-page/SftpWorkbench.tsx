@@ -111,6 +111,7 @@ export function SftpWorkbench({
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex min-h-0 flex-1">
         <SftpFilePane
+          paneId="local"
           title={translate('sftpPage.local.title', 'Local')}
           pane={local}
           leading={hostToggle}
@@ -139,6 +140,7 @@ export function SftpWorkbench({
         />
         <div className="w-px shrink-0 bg-border" />
         <SftpFilePane
+          paneId="remote"
           title={target.label}
           pane={remote}
           dropZoneRef={dropZoneRef}

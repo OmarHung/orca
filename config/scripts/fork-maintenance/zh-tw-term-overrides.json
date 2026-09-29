@@ -423,5 +423,10 @@
     "from": "合並",
     "to": "合併",
     "why": "\"Merge\"; OpenCC turns 合并 into 合並, but Taiwan UI copy (125 other strings here) writes 合併."
+  },
+  {
+    "from": "檔案型別",
+    "to": "檔案類型",
+    "why": "\"File type\"; OpenCC turns 类型 into 型別, which Taiwan UI copy uses only for programming types."
   }
 ]

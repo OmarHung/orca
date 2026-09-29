@@ -8,6 +8,8 @@ import type { SshTarget } from '../../../../shared/ssh-types'
 import { ConfirmationDialogProvider } from '../confirmation-dialog'
 import { TooltipProvider } from '../ui/tooltip'
 import { SftpWorkbench } from './SftpWorkbench'
+import { useSftpColumnsStore } from './sftp-columns-store'
+import { DEFAULT_SFTP_SORT } from './sftp-entry-sort'
 import { useSftpTransfersStore } from './sftp-transfers-store'
 
 const target: SshTarget = {
@@ -19,11 +21,23 @@ const target: SshTarget = {
 }
 
 function entry(path: string, kind: SftpEntry['kind'], size = 10): SftpEntry {
-  return { name: path.split('/').pop() ?? path, path, kind, size, modifiedMs: 1_700_000_000_000 }
+  return {
+    name: path.split('/').pop() ?? path,
+    path,
+    kind,
+    size,
+    modifiedMs: 1_700_000_000_000,
+    createdMs: null,
+    owner: null
+  }
 }
 
 const remoteListings: Record<string, SftpEntry[]> = {
-  '/srv': [entry('/srv/app', 'directory'), entry('/srv/log.txt', 'file')],
+  '/srv': [
+    entry('/srv/app', 'directory'),
+    entry('/srv/log.txt', 'file'),
+    entry('/srv/big.bin', 'file', 500)
+  ],
   '/srv/app': [entry('/srv/app/index.js', 'file')]
 }
 
@@ -47,6 +61,10 @@ let root: Root
 beforeEach(async () => {
   vi.clearAllMocks()
   useSftpTransfersStore.setState({ transfers: [] })
+  useSftpColumnsStore.setState({
+    hiddenColumns: [],
+    sortByPane: { local: DEFAULT_SFTP_SORT, remote: DEFAULT_SFTP_SORT }
+  })
   Reflect.set(window, 'api', { sftp: api })
   container = document.createElement('div')
   document.body.appendChild(container)
@@ -81,6 +99,20 @@ function button(name: string): HTMLButtonElement {
     throw new Error(`button "${name}" not found`)
   }
   return found
+}
+
+function remotePane(): HTMLElement {
+  const pane = document.querySelector<HTMLElement>('[data-sftp-pane="remote"]')
+  if (!pane) {
+    throw new Error('remote pane not rendered')
+  }
+  return pane
+}
+
+function remoteRowPaths(): string[] {
+  return [...remotePane().querySelectorAll<HTMLElement>('[data-sftp-entry]')].map(
+    (item) => item.dataset.sftpEntry ?? ''
+  )
 }
 
 async function click(element: HTMLElement | null, init: MouseEventInit = {}): Promise<void> {
@@ -138,5 +170,47 @@ describe('SftpWorkbench', () => {
     await vi.waitFor(() =>
       expect(api.remove).toHaveBeenCalledWith({ targetId: 'web', paths: ['/srv/log.txt'] })
     )
+  })
+
+  it('goes to the parent folder from the ".." row', async () => {
+    await act(async () => {
+      remotePane()
+        .querySelector('[data-sftp-parent]')
+        ?.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    })
+
+    await vi.waitFor(() =>
+      expect(api.list).toHaveBeenLastCalledWith({ targetId: 'web', path: '/' })
+    )
+  })
+
+  it('sorts by a clicked column, folders first, and flips on a second click', async () => {
+    expect(remoteRowPaths()).toEqual(['/srv/app', '/srv/big.bin', '/srv/log.txt'])
+    const sizeHeader = remotePane().querySelector<HTMLElement>('[data-sftp-column="size"]')
+
+    await click(sizeHeader)
+    expect(remoteRowPaths()).toEqual(['/srv/app', '/srv/log.txt', '/srv/big.bin'])
+
+    await click(sizeHeader)
+    expect(remoteRowPaths()).toEqual(['/srv/app', '/srv/big.bin', '/srv/log.txt'])
+  })
+
+  it('extends a Shift-selection along the displayed order', async () => {
+    await click(remotePane().querySelector<HTMLElement>('[data-sftp-column="size"]'))
+
+    await click(row('/srv/app'))
+    await click(row('/srv/log.txt'), { shiftKey: true })
+
+    expect(row('/srv/log.txt')?.dataset.selected).toBe('true')
+    expect(row('/srv/big.bin')?.dataset.selected).toBeUndefined()
+  })
+
+  it('hides a column in both panes when it is switched off', async () => {
+    expect(remotePane().querySelector('[data-sftp-column="owner"]')).not.toBeNull()
+
+    await act(async () => useSftpColumnsStore.getState().toggleColumn('owner'))
+
+    expect(document.querySelector('[data-sftp-column="owner"]')).toBeNull()
+    expect(document.querySelector('[data-sftp-column="name"]')).not.toBeNull()
   })
 })
