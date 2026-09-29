@@ -120,6 +120,8 @@ export type UiViewHistory =
   | 'artifacts'
   | 'mobile'
   | 'database'
+  | 'ssh'
+  | 'sftp'
 
 export type UISliceCore = {
   sidebarOpen: boolean

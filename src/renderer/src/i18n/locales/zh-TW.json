@@ -19265,5 +19265,36 @@
     "banner": "正在與 {{label}}（{{sha}}）比較",
     "close": "關閉比較",
     "loadingFile": "正在載入 {{label}}…"
+  },
+  "sshPage": {
+    "nav": {
+      "ssh": "SSH"
+    },
+    "page": {
+      "title": "SSH",
+      "description": "在 SSH 主機上開啟終端機連線。",
+      "desktopOnly": "SSH 連線僅在桌面版中可用。",
+      "pickHost": "選擇一台主機以開啟 SSH 連線。"
+    },
+    "hostList": {
+      "search": "搜尋主機",
+      "noMatches": "沒有符合搜尋條件的主機。",
+      "loading": "正在載入主機…",
+      "loadFailed": "無法載入 SSH 主機。",
+      "retry": "重試",
+      "empty": "還沒有 SSH 主機。請在 ~/.ssh/config 或「設定 → SSH」中新增。"
+    }
+  },
+  "sftpPage": {
+    "nav": {
+      "sftp": "SFTP"
+    },
+    "page": {
+      "title": "SFTP",
+      "description": "在 SSH 主機上上傳和下載檔案。",
+      "desktopOnly": "檔案傳輸僅在桌面版中可用。",
+      "pickHost": "選擇一台主機以瀏覽其中的檔案。",
+      "comingSoon": "檔案傳輸功能將在下一次更新中推出。"
+    }
   }
 }

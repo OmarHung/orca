@@ -19862,5 +19862,36 @@
     "banner": "Comparing with {{label}} ({{sha}})",
     "close": "Close Comparison",
     "loadingFile": "Loading {{label}}…"
+  },
+  "sshPage": {
+    "nav": {
+      "ssh": "SSH"
+    },
+    "page": {
+      "title": "SSH",
+      "description": "Open terminal sessions on your SSH hosts.",
+      "desktopOnly": "SSH sessions are available in the desktop app only.",
+      "pickHost": "Pick a host to open an SSH session."
+    },
+    "hostList": {
+      "search": "Search hosts",
+      "noMatches": "No hosts match your search.",
+      "loading": "Loading hosts…",
+      "loadFailed": "Couldn't load your SSH hosts.",
+      "retry": "Retry",
+      "empty": "No SSH hosts yet. Add them to ~/.ssh/config or in Settings → SSH."
+    }
+  },
+  "sftpPage": {
+    "nav": {
+      "sftp": "SFTP"
+    },
+    "page": {
+      "title": "SFTP",
+      "description": "Upload and download files on your SSH hosts.",
+      "desktopOnly": "File transfers are available in the desktop app only.",
+      "pickHost": "Pick a host to browse its files.",
+      "comingSoon": "File transfer is coming in the next update."
+    }
   }
 }

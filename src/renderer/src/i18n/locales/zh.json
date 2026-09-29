@@ -19794,5 +19794,36 @@
     "banner": "正在与 {{label}}（{{sha}}）比较",
     "close": "关闭比较",
     "loadingFile": "正在加载 {{label}}…"
+  },
+  "sshPage": {
+    "nav": {
+      "ssh": "SSH"
+    },
+    "page": {
+      "title": "SSH",
+      "description": "在 SSH 主机上开启终端连接。",
+      "desktopOnly": "SSH 连接仅在桌面版中可用。",
+      "pickHost": "选择一台主机以开启 SSH 连接。"
+    },
+    "hostList": {
+      "search": "搜索主机",
+      "noMatches": "没有符合搜索条件的主机。",
+      "loading": "正在加载主机…",
+      "loadFailed": "无法加载 SSH 主机。",
+      "retry": "重试",
+      "empty": "还没有 SSH 主机。请在 ~/.ssh/config 或「设置 → SSH」中添加。"
+    }
+  },
+  "sftpPage": {
+    "nav": {
+      "sftp": "SFTP"
+    },
+    "page": {
+      "title": "SFTP",
+      "description": "在 SSH 主机上上传和下载文件。",
+      "desktopOnly": "文件传输仅在桌面版中可用。",
+      "pickHost": "选择一台主机以浏览其中的文件。",
+      "comingSoon": "文件传输功能将在下一次更新中推出。"
+    }
   }
 }
