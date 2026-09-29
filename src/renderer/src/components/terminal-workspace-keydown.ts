@@ -44,8 +44,9 @@ export function handleTerminalWorkspaceKeyDown(
   if (!activeWorktreeId) {
     return
   }
-  // Why: the SSH page hides the project workspace and handles its own tab shortcuts.
-  if (useAppStore.getState().activeView === 'ssh') {
+  // Why: the SSH and SFTP pages hide the project workspace and handle their own tab shortcuts.
+  const { activeView } = useAppStore.getState()
+  if (activeView === 'ssh' || activeView === 'sftp') {
     return
   }
   const context = getKeybindingContext(event.target)

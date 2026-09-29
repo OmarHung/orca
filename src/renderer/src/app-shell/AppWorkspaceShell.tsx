@@ -166,11 +166,12 @@ export function AppWorkspaceShell(props: {
               )
             ) : null}
             <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
-              {/* Why: automations/artifacts own their page headers and the SSH page's tab strip is its titlebar; the stacked titlebar would be an empty 36px stripe. */}
+              {/* Why: automations/artifacts own their page headers and the SSH/SFTP pages' tab strips are their titlebars; the stacked titlebar would be an empty 36px stripe. */}
               {layout.stackedSidebarOpen &&
               layout.activeView !== 'automations' &&
               layout.activeView !== 'artifacts' &&
-              layout.activeView !== 'ssh' ? (
+              layout.activeView !== 'ssh' &&
+              layout.activeView !== 'sftp' ? (
                 <div className="titlebar">{titlebarMainStrip}</div>
               ) : null}
               <div className="relative flex flex-1 min-w-0 min-h-0 overflow-hidden">
