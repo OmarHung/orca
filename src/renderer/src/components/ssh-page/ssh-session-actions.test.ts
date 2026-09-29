@@ -41,8 +41,14 @@ beforeEach(() => {
 })
 
 describe('openSshSession', () => {
-  it('opens a tab in the SSH workspace titled with the host and runs ssh in it', () => {
-    openSshSession(target)
+  it('shows the exact command, then opens a tab that runs it once confirmed', async () => {
+    const confirm = vi.fn(async () => true)
+
+    await openSshSession(target, confirm)
+
+    expect(confirm).toHaveBeenCalledWith(
+      expect.objectContaining({ commands: ['ssh web-prod-203.0.113.10'] })
+    )
 
     expect(mocks.createTab).toHaveBeenCalledWith(SSH_SESSIONS_WORKTREE_ID, 'group-1', undefined, {
       quickCommandLabel: 'web-prod-203.0.113.10'
@@ -53,8 +59,22 @@ describe('openSshSession', () => {
     expect(mocks.focusTerminalTabSurface).toHaveBeenCalledWith('tab-1')
   })
 
-  it('opens nothing for a host name that is unsafe to type into a shell', () => {
-    openSshSession({ ...target, configHost: '-oProxyCommand=sh' })
+  it('opens nothing when the user cancels', async () => {
+    await openSshSession(
+      target,
+      vi.fn(async () => false)
+    )
+
+    expect(mocks.createTab).not.toHaveBeenCalled()
+    expect(mocks.queueTabStartupCommand).not.toHaveBeenCalled()
+  })
+
+  it('opens nothing for a host name that is unsafe to type into a shell', async () => {
+    const confirm = vi.fn(async () => true)
+
+    await openSshSession({ ...target, configHost: '-oProxyCommand=sh' }, confirm)
+
+    expect(confirm).not.toHaveBeenCalled()
 
     expect(mocks.createTab).not.toHaveBeenCalled()
     expect(mocks.queueTabStartupCommand).not.toHaveBeenCalled()

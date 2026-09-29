@@ -7,10 +7,11 @@ import { useAppStore } from '@/store'
 import type { SshTarget } from '../../../../shared/ssh-types'
 import type { Tab } from '../../../../shared/tab-types'
 import { SSH_SESSIONS_WORKTREE_ID } from '../../../../shared/local-synthetic-workspace'
+import type { CommandConfirm } from '../command-confirm/command-confirm-context'
 import { buildSshSessionCommand } from './ssh-session-command'
 
-/** Opens a new SSH page tab that runs `ssh <alias>` in a local shell. */
-export function openSshSession(target: SshTarget): void {
+/** After the user confirms the exact command, opens an SSH page tab that types it into a local shell. */
+export async function openSshSession(target: SshTarget, confirm: CommandConfirm): Promise<void> {
   const command = buildSshSessionCommand(target)
   if (!command) {
     toast.error(
@@ -19,6 +20,27 @@ export function openSshSession(target: SshTarget): void {
         'This host has characters Orca cannot pass to ssh safely. Rename it in ~/.ssh/config.'
       )
     )
+    return
+  }
+  const isConfirmed = await confirm({
+    title: translate('sshPage.session.confirmTitle', 'Connect to {{host}}?', {
+      host: target.label
+    }),
+    details: [
+      translate('sshPage.session.confirmTarget', 'Target: {{endpoint}}', {
+        endpoint: `${target.username ? `${target.username}@` : ''}${target.host}:${target.port}`
+      })
+    ],
+    commands: [command],
+    notes: [
+      translate(
+        'sshPage.session.confirmNote',
+        'Opens a new tab running your login shell and types this command into it, as if you typed it.'
+      )
+    ],
+    confirmLabel: translate('sshPage.session.connect', 'Connect')
+  })
+  if (!isConfirmed) {
     return
   }
   const store = useAppStore.getState()
