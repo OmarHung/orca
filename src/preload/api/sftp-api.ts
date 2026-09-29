@@ -1,19 +1,21 @@
 import type {
   SftpEntry,
+  SftpExecuteOutcome,
+  SftpExecuteRequest,
+  SftpPlan,
+  SftpPlanRequest,
   SftpResult,
-  SftpTransferOutcome,
-  SftpTransferProgress,
-  SftpTransferRequest
+  SftpTransferProgress
 } from '../../shared/sftp-types'
 
 export type SftpApi = {
   home: (targetId: string) => Promise<SftpResult<string>>
   list: (request: { targetId: string; path: string }) => Promise<SftpResult<SftpEntry[]>>
-  mkdir: (request: { targetId: string; path: string }) => Promise<SftpResult<void>>
-  rename: (request: { targetId: string; from: string; to: string }) => Promise<SftpResult<void>>
-  remove: (request: { targetId: string; paths: string[] }) => Promise<SftpResult<void>>
-  upload: (request: SftpTransferRequest) => Promise<SftpResult<SftpTransferOutcome>>
-  download: (request: SftpTransferRequest) => Promise<SftpResult<SftpTransferOutcome>>
+  /** Lists the exact steps an action would run; nothing changes yet. */
+  plan: (request: SftpPlanRequest) => Promise<SftpResult<SftpPlan>>
+  /** Runs a plan main stored earlier, once. */
+  execute: (request: SftpExecuteRequest) => Promise<SftpResult<SftpExecuteOutcome>>
+  discardPlan: (planId: string) => Promise<void>
   cancel: (transferId: string) => Promise<void>
   disconnect: (targetId: string) => Promise<void>
   localHome: () => Promise<string>
