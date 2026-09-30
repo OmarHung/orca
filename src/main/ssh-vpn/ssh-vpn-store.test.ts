@@ -1,10 +1,16 @@
 import { mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { clearDurableWrites, queueDurableWrites } from '../durable-write-failures-test-support'
 import { SshVpnStore } from './ssh-vpn-store'
 
 const DRAFT = { name: 'Office', ovpnPath: '/vpn/office.ovpn', idleMinutes: 10 }
+
+vi.mock('../../shared/secure-file', async (importOriginal) => {
+  const { withQueuedDurableWrites } = await import('../durable-write-failures-test-support')
+  return withQueuedDurableWrites(await importOriginal())
+})
 
 describe('SshVpnStore', () => {
   let dir: string
@@ -13,6 +19,7 @@ describe('SshVpnStore', () => {
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'orca-ssh-vpn-store-'))
     filePath = join(dir, 'ssh-vpn.json')
+    clearDurableWrites()
   })
 
   afterEach(() => {
@@ -44,6 +51,39 @@ describe('SshVpnStore', () => {
     expect(store.listAssignments()).toEqual({ 'target-b': lab.id })
     store.setAssignment('target-b', null)
     expect(new SshVpnStore(filePath).listAssignments()).toEqual({})
+  })
+
+  it('adds a profile under the id the caller chose', () => {
+    const store = new SshVpnStore(filePath)
+
+    expect(store.saveProfile('chosen-id', DRAFT)).toEqual({ id: 'chosen-id', ...DRAFT })
+
+    expect(new SshVpnStore(filePath).getProfile('chosen-id')).toEqual({ id: 'chosen-id', ...DRAFT })
+  })
+
+  it('writes nothing when deleting a profile that is not there', () => {
+    const store = new SshVpnStore(filePath)
+    store.saveProfile(undefined, DRAFT)
+    queueDurableWrites(filePath, 'throw-before')
+
+    expect(() => store.deleteProfile('missing')).not.toThrow()
+  })
+
+  it('reads the file again after a write that failed after replacing it', () => {
+    const store = new SshVpnStore(filePath)
+    const profile = store.saveProfile(undefined, DRAFT)
+    const fixed = new Date('2026-01-01T00:00:00Z')
+    utimesSync(filePath, fixed, fixed)
+    expect(store.getProfile(profile.id)?.name).toBe('Office')
+    queueDurableWrites(filePath, 'throw-after')
+
+    expect(() => store.saveProfile(profile.id, { ...DRAFT, name: 'Renamed' })).toThrow(
+      'fsync failed'
+    )
+    // Why: on a filesystem with coarse timestamps the replaced file can keep the old mtime.
+    utimesSync(filePath, fixed, fixed)
+
+    expect(store.getProfile(profile.id)?.name).toBe('Renamed')
   })
 
   it('prunes assignments of removed hosts', () => {
