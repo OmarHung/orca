@@ -42,16 +42,29 @@ describe('detected run hide keys', () => {
 })
 
 describe('detectedRunMenu', () => {
-  it('groups by project, root first, and orders each project by kind', () => {
+  it('groups by toolchain, then project root first, then kind', () => {
     const menu = detectedRunMenu(RUNS, '/w', new Set())
 
-    expect(menu.projects.map((project) => [project.name, project.location])).toEqual([
-      ['root', ''],
-      ['api', 'api'],
-      ['web', 'apps/web']
+    expect(
+      menu.ecosystems.map(({ ecosystem, projects }) => [
+        ecosystem,
+        projects.map((project) => [project.name, project.location])
+      ])
+    ).toEqual([
+      [
+        'node',
+        [
+          ['root', ''],
+          ['web', 'apps/web']
+        ]
+      ],
+      ['python', [['api', 'api']]]
     ])
     expect(
-      menu.projects[2].groups.map((group) => [group.kind, group.runs.map((entry) => entry.name)])
+      menu.ecosystems[0].projects[1].groups.map((group) => [
+        group.kind,
+        group.runs.map((entry) => entry.name)
+      ])
     ).toEqual([
       ['run', ['dev']],
       ['build', ['build']],
@@ -74,8 +87,13 @@ describe('detectedRunMenu', () => {
       ])
     )
 
-    expect(menu.projects.map((project) => project.name)).toEqual(['web'])
-    expect(menu.projects[0].groups.map((group) => group.kind)).toEqual(['run', 'build', 'test'])
+    expect(menu.ecosystems.map(({ ecosystem }) => ecosystem)).toEqual(['node'])
+    expect(menu.ecosystems[0].projects.map((project) => project.name)).toEqual(['web'])
+    expect(menu.ecosystems[0].projects[0].groups.map((group) => group.kind)).toEqual([
+      'run',
+      'build',
+      'test'
+    ])
     expect(menu.hiddenProjects.map((project) => project.name)).toEqual(['api'])
     expect(menu.hiddenRuns.map((entry) => [entry.key, entry.run.name])).toEqual([
       ['run:node:apps/web:script:lint', 'lint'],
