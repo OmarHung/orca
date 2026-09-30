@@ -29,7 +29,7 @@ describe('code-navigation tabs that stay in the workspace that opened them', () 
       {}
     )
 
-    expect(session.openFilesByWorktree['wt-1']).toEqual([
+    expect(session.openFilesByWorktree?.['wt-1']).toEqual([
       expect.objectContaining({ filePath: DECOMPILED, staysInOpeningWorkspace: true }),
       expect.not.objectContaining({ staysInOpeningWorkspace: expect.anything() })
     ])
