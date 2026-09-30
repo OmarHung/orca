@@ -173,6 +173,7 @@ TS 的內建型別（`console`、`Array`）不需要處理：TypeScript 7 回傳
 ### 9.5 紀錄
 
 - 新檔：`main/code-navigation/lsp-hover.ts`、`csharp-metadata-files.ts`、`navigation-target-files.ts`、`renderer/src/lib/code-navigation/code-navigation-ts-worker-fallback.ts`；IPC 多一個 `codeNav:hover`，preload 多一個 `hover`。沒有新的 UI 字串，也沒有動到新的 upstream 檔案。
+- 另設 `ORCA_TEST_NETCOREAPP31=1`（需要 3.1 的 reference pack）會多跑一個 netcoreapp3.1 專案：`@model` 型別與 `Model.Total` 都要跳得到；拿掉注入的 targets 就會失敗。
 - e2e（`ORCA_E2E_CODE_NAVIGATION=1`）兩項都過：
   - TS：原本的 F12／Cmd+點擊／peek，加上懸停在 `greet` 上顯示 `function greet(name: string): string`（從 import 解析出的真實簽名）
   - C#：原本的跨專案 F12 與跳到實作，加上懸停 `IGreeter`，以及 F12 到 `Console` 開啟 `System.Console.cs`（停在第 10 行 `public static class Console`，Structure 面板也列出成員）
@@ -279,6 +280,10 @@ F12、⇧F12、⌘F12、⌘+點擊這些 Monaco 原本的鍵都保留。衝突�
 - csharp-ls 0.28 有實驗性的 Razor 支援：啟動加 `--features razor-support`，`.cshtml` 以 languageId `razor` 開啟。它用 Razor 原始碼產生器產出的 C# 對應位置，`@model` 型別、`Model.X`、`@{ }`／`@if` 區塊裡的 C# 都能跳到定義、找參照、懸停。
 - **BOM 陷阱**（實測）：傳給伺服器的文字若以 BOM 字元開頭，Razor 解析器認不出第一行的 `@model`，整個 view 什麼都查不到。Visual Studio 與 `dotnet new` 存的 view 都帶 BOM。Monaco 載入時已去掉 BOM，session 送出前仍一律去掉（`syncDocument`）。
 - 一開始以為 `.cshtml` 請求不等方案載入，後來證實空結果都是 BOM 造成的；`.cshtml` 請求一樣會等載入，沿用 §11 的預載即可。
+- **舊版 TFM**（使用者的 new-taipei（netcoreapp2.2）與 sisisusu（netcoreapp3.1）實測）：伺服器只看得到 Razor 產生器產出的 C#，而 SDK 只對 net6.0 以上預設啟用產生器，舊專案的 view 全部查無結果。
+  - 2.x：設環境變數 `UseRazorSourceGenerator=true` 即可（SDK 對 2.x 不寫死這個值）。
+  - 3.x／5.0：SDK 的 `Sdk.Razor.CurrentVersion.targets` 無條件設成 `false`，環境變數蓋不掉，csharp-ls 也沒有傳 MSBuild 全域屬性的選項。改由 Orca 寫一份 `language-servers/csharp-razor-design-time.targets`，用環境變數 `CustomAfterMicrosoftCommonTargets` 掛進 design-time build：只對 3.0 ≤ TFM < 6.0 匯入 SDK 自己的 `Microsoft.NET.Sdk.Razor.SourceGenerators.targets`，並在執行期把 `ResolveTagHelperRazorGenerateInputs` 從 `PrepareForRazorGenerateDependsOn` 拿掉（它會先編譯專案，與在編譯中執行的產生器形成循環相依）。使用者環境已設 `CustomAfterMicrosoftCommonTargets` 時不覆蓋。
+  - `textDocument/references` 不帶 `context` 時 csharp-ls 會丟 NullReferenceException；Orca 一律帶 `includeDeclaration`，只有手寫測試腳本會踩到。
 - 伺服器只處理 Razor 裡的 C#：tag helper 屬性值、partial 名稱等字串交給 §13.2。Blazor 的 `.razor` 不支援（csharp-ls 只認 `.cshtml`）。
 - 用 `dotnet new mvc` 的專案與 csharp-ls 自己的測試專案都驗證過；SDK 10.0.201（x64）與 10.0.401（arm64）結果相同。
 
