@@ -58,6 +58,7 @@ import { registerShellHandlers } from '../shell/shell'
 import { registerPetHandlers } from '../pets/pet'
 import { registerPluginHandlers } from '../plugins/plugins'
 import { registerDebugHandlers } from '../../debug/debug-ipc'
+import { registerCodeNavigationHandlers } from '../../code-navigation/code-navigation-ipc'
 import { registerDatabaseHandlers } from '../../database/database-ipc'
 import { registerSftpHandlers } from '../../sftp/sftp-ipc'
 import { registerSshVpnHandlers } from '../../ssh-vpn/ssh-vpn-ipc'
@@ -212,6 +213,7 @@ export async function registerCoreHandlers(
     registerDatabaseHandlers()
     registerSftpHandlers()
     registerSshVpnHandlers()
+    registerCodeNavigationHandlers()
     registerSessionHandlers(store, runtime)
     registerUIHandlers(store, { isDashboardPopoutRenderer })
     registerEmulatorFrameStreamHandlers()
