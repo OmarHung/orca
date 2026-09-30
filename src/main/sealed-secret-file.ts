@@ -19,6 +19,13 @@ export type SealResult = 'sealed' | 'no-encryption' | SecretFileProblem
 
 export type DeleteResult = 'deleted' | SecretFileProblem
 
+/** What the file holds for one id; `unavailable` is a saved secret the keychain cannot open now. */
+export type SealedLookup =
+  | { state: 'absent' }
+  | { state: 'available'; secret: string }
+  | { state: 'unavailable' }
+  | { state: 'problem'; problem: SecretFileProblem }
+
 type ReadResult = { contents: SealedSecretFileContents } | { problem: SecretFileProblem }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -82,20 +89,29 @@ export class SealedSecretFile {
   }
 
   get(id: string): string | null {
+    const found = this.lookup(id)
+    return found.state === 'available' ? found.secret : null
+  }
+
+  /** Unlike get(), tells a missing secret apart from one that exists but cannot be read now. */
+  lookup(id: string): SealedLookup {
     const read = this.read()
-    const ciphertext = 'contents' in read ? read.contents.ciphertexts[id] : undefined
-    if (typeof ciphertext !== 'string') {
-      return null
+    if ('problem' in read) {
+      return { state: 'problem', problem: read.problem }
+    }
+    if (!Object.hasOwn(read.contents.ciphertexts, id)) {
+      return { state: 'absent' }
     }
     const store = this.secretStore()
     if (!store.isEncryptionAvailable()) {
-      return null
+      return { state: 'unavailable' }
     }
     try {
-      return store.decryptString(Buffer.from(ciphertext, 'base64'))
+      const ciphertext = Buffer.from(read.contents.ciphertexts[id] ?? '', 'base64')
+      return { state: 'available', secret: store.decryptString(ciphertext) }
     } catch {
-      // A keychain reset makes old ciphertext undecryptable; asking again is the recovery.
-      return null
+      // Why unavailable: a locked keychain and a reset one fail alike, so never treat it as gone.
+      return { state: 'unavailable' }
     }
   }
 
