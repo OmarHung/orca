@@ -18891,6 +18891,7 @@
       "hideProject": "隐藏此项目",
       "hidden": "已隐藏（{{value0}}）",
       "hiddenHint": "点击即可重新显示",
+      "rootFolder": "工作区根目录",
       "showAll": "全部显示",
       "kind": {
         "run": "执行",

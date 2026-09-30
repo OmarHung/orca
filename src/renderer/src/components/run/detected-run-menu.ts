@@ -26,13 +26,22 @@ export type DetectedRunMenuProject = {
   groups: { kind: RunConfigurationKind; runs: DetectedRunConfiguration[] }[]
 }
 
-export type DetectedRunMenuEcosystem = {
-  ecosystem: RunConfigurationEcosystem
+/** Projects sharing a parent folder, e.g. `core` for `core/Piranha` and `core/Piranha.Manager`. */
+export type DetectedRunMenuFolder = {
+  /** Workspace-relative parent folder, '' for projects at the root. */
+  folder: string
   projects: DetectedRunMenuProject[]
 }
 
+export type DetectedRunMenuEcosystem = {
+  ecosystem: RunConfigurationEcosystem
+  projectCount: number
+  /** Root first, then by folder path. */
+  folders: DetectedRunMenuFolder[]
+}
+
 export type DetectedRunMenu = {
-  /** Shown projects by toolchain, each list root first and then by folder. */
+  /** Shown projects by toolchain, then by parent folder. */
   ecosystems: DetectedRunMenuEcosystem[]
   hiddenProjects: DetectedRunMenuProject[]
   /** Runs hidden one by one, in projects that are still shown. */
@@ -41,6 +50,24 @@ export type DetectedRunMenu = {
 
 export function isDetectedRunMenuEmpty(menu: DetectedRunMenu): boolean {
   return menu.ecosystems.length + menu.hiddenProjects.length + menu.hiddenRuns.length === 0
+}
+
+/** The folder part and the project's own folder name of a location like `core/Piranha`. */
+export function splitLocation(location: string): { folder: string; leaf: string } {
+  const slash = location.lastIndexOf('/')
+  return slash === -1
+    ? { folder: '', leaf: location }
+    : { folder: location.slice(0, slash), leaf: location.slice(slash + 1) }
+}
+
+function byFolder(projects: readonly DetectedRunMenuProject[]): DetectedRunMenuFolder[] {
+  const folders = [...new Set(projects.map((project) => splitLocation(project.location).folder))]
+  return folders
+    .sort((a, b) => a.localeCompare(b))
+    .map((folder) => ({
+      folder,
+      projects: projects.filter((project) => splitLocation(project.location).folder === folder)
+    }))
 }
 
 function locationOf(projectDir: string, worktreePath: string): string {
@@ -105,10 +132,15 @@ export function detectedRunMenu(
     .map(([key, shown]) => projectOf(key, shown, worktreePath))
     .sort(byLocation)
   return {
-    ecosystems: ECOSYSTEM_ORDER.map((ecosystem) => ({
-      ecosystem,
-      projects: projects.filter((project) => project.ecosystem === ecosystem)
-    })).filter((group) => group.projects.length > 0),
+    ecosystems: ECOSYSTEM_ORDER.map((ecosystem) =>
+      projects.filter((project) => project.ecosystem === ecosystem)
+    )
+      .filter((shown) => shown.length > 0)
+      .map((shown) => ({
+        ecosystem: shown[0].ecosystem,
+        projectCount: shown.length,
+        folders: byFolder(shown)
+      })),
     hiddenProjects: entries
       .filter(([key]) => hidden.has(key))
       .map(([key, projectRuns]) => projectOf(key, projectRuns, worktreePath))

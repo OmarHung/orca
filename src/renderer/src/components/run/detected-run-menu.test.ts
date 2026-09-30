@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
-import { detectedProjectHideKey, detectedRunHideKey, detectedRunMenu } from './detected-run-menu'
+import {
+  detectedProjectHideKey,
+  detectedRunHideKey,
+  detectedRunMenu,
+  splitLocation
+} from './detected-run-menu'
 
 function run(
   projectDir: string,
@@ -26,6 +31,7 @@ const RUNS = [
   run('/w/apps/web', 'web', 'dev', 'run'),
   run('/w/apps/web', 'web', 'test', 'test'),
   run('/w', 'root', 'format', 'other'),
+  run('/w/apps/admin', 'admin', 'dev', 'run'),
   run('/w/api', 'api', 'main.py', 'run', 'python')
 ]
 
@@ -42,26 +48,28 @@ describe('detected run hide keys', () => {
 })
 
 describe('detectedRunMenu', () => {
-  it('groups by toolchain, then project root first, then kind', () => {
+  it('groups by toolchain, then parent folder (root first), then project, then kind', () => {
     const menu = detectedRunMenu(RUNS, '/w', new Set())
 
     expect(
-      menu.ecosystems.map(({ ecosystem, projects }) => [
+      menu.ecosystems.map(({ ecosystem, projectCount, folders }) => [
         ecosystem,
-        projects.map((project) => [project.name, project.location])
+        projectCount,
+        folders.map(({ folder, projects }) => [folder, projects.map((project) => project.name)])
       ])
     ).toEqual([
       [
         'node',
+        3,
         [
-          ['root', ''],
-          ['web', 'apps/web']
+          ['', ['root']],
+          ['apps', ['admin', 'web']]
         ]
       ],
-      ['python', [['api', 'api']]]
+      ['python', 1, [['', ['api']]]]
     ])
     expect(
-      menu.ecosystems[0].projects[1].groups.map((group) => [
+      menu.ecosystems[0].folders[1].projects[1].groups.map((group) => [
         group.kind,
         group.runs.map((entry) => entry.name)
       ])
@@ -88,16 +96,25 @@ describe('detectedRunMenu', () => {
     )
 
     expect(menu.ecosystems.map(({ ecosystem }) => ecosystem)).toEqual(['node'])
-    expect(menu.ecosystems[0].projects.map((project) => project.name)).toEqual(['web'])
-    expect(menu.ecosystems[0].projects[0].groups.map((group) => group.kind)).toEqual([
-      'run',
-      'build',
-      'test'
-    ])
+    const [apps] = menu.ecosystems[0].folders
+    expect(apps.projects.map((project) => project.name)).toEqual(['admin', 'web'])
+    expect(apps.projects[1].groups.map((group) => group.kind)).toEqual(['run', 'build', 'test'])
     expect(menu.hiddenProjects.map((project) => project.name)).toEqual(['api'])
     expect(menu.hiddenRuns.map((entry) => [entry.key, entry.run.name])).toEqual([
       ['run:node:apps/web:script:lint', 'lint'],
       ['run:node::script:format', 'format']
     ])
+  })
+})
+
+describe('splitLocation', () => {
+  it('separates the parent folder from the project folder', () => {
+    expect(splitLocation('core/Piranha.Manager')).toEqual({
+      folder: 'core',
+      leaf: 'Piranha.Manager'
+    })
+    expect(splitLocation('src/services/Api')).toEqual({ folder: 'src/services', leaf: 'Api' })
+    expect(splitLocation('api')).toEqual({ folder: '', leaf: 'api' })
+    expect(splitLocation('')).toEqual({ folder: '', leaf: '' })
   })
 })
