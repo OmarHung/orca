@@ -107,6 +107,41 @@ describe('detectedRunMenu', () => {
   })
 })
 
+describe('detectedRunMenu with saved configurations', () => {
+  it('lists a saved folder publish under its .NET project, creating the kind when needed', () => {
+    const build: DetectedRunConfiguration = {
+      id: 'dotnet:/w/projects/P2:WebApp.csproj:build',
+      ecosystem: 'dotnet',
+      projectName: 'WebApp',
+      projectDir: '/w/projects/P2',
+      projectFile: '/w/projects/P2/WebApp.csproj',
+      kind: 'build',
+      name: 'Build',
+      command: 'dotnet build WebApp.csproj'
+    }
+    const publish = {
+      type: 'dotnet-publish' as const,
+      id: 'pub',
+      name: 'Publish WebApp to folder',
+      projectFile: 'projects/P2/WebApp.csproj'
+    }
+    const other = { ...publish, id: 'other', projectFile: 'projects/Other/Other.csproj' }
+
+    const menu = detectedRunMenu([build], '/w', new Set(), [publish, other])
+
+    expect(
+      menu.ecosystems[0].folders[0].projects[0].groups.map((group) => [
+        group.kind,
+        group.saved.map((configuration) => configuration.id),
+        group.runs.map((run) => run.name)
+      ])
+    ).toEqual([
+      ['build', [], ['Build']],
+      ['publish', ['pub'], []]
+    ])
+  })
+})
+
 describe('splitLocation', () => {
   it('separates the parent folder from the project folder', () => {
     expect(splitLocation('core/Shop.Admin')).toEqual({
