@@ -56,6 +56,7 @@ import { skillsApi } from './api/skills-bridge'
 import { petApi } from './api/pet-bridge'
 import { browserPasswordsApi } from './api/browser-passwords-bridge'
 import { debugApi } from './api/debug-bridge'
+import { codeNavigationApi } from './api/code-navigation-bridge'
 import { databaseApi } from './api/database-bridge'
 import { sftpApi } from './api/sftp-bridge'
 import { sshVpnApi } from './api/ssh-vpn-bridge'
@@ -165,6 +166,7 @@ const api = {
   skills: skillsApi,
   pet: petApi,
   debug: debugApi,
+  codeNavigation: codeNavigationApi,
   database: databaseApi,
   sftp: sftpApi,
   sshVpn: sshVpnApi,
