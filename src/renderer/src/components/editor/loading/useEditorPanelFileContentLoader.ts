@@ -173,7 +173,7 @@ export function useEditorPanelFileContentLoader({
               readTarget,
               runtimeEnvironmentId
             })
-            if (placement.kind === 'move') {
+            if (placement.kind === 'move' && restoredOpenFile.staysInOpeningWorkspace !== true) {
               await reownRestoredFile(placement.route, runtimeEnvironmentId ?? null)
               return
             }
