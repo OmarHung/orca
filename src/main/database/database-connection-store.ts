@@ -24,13 +24,14 @@ export class DatabaseConnectionStore {
     return this.read().find((connection) => connection.id === id) ?? null
   }
 
+  /** Replaces the connection with `id`, or adds one under `id` (a new id when none is given). */
   save(id: string | undefined, draft: DatabaseConnectionDraft): DatabaseConnection {
     const connections = this.read()
     const existing = id ? connections.find((connection) => connection.id === id) : undefined
     const timestamp = this.now()
     const saved: DatabaseConnection = {
       ...draft,
-      id: existing?.id ?? randomUUID(),
+      id: id ?? randomUUID(),
       createdAt: existing?.createdAt ?? timestamp,
       updatedAt: timestamp
     }
