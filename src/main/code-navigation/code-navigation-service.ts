@@ -21,6 +21,8 @@ import {
   type MetadataFileResolver
 } from './navigation-target-files'
 import { csharpImplementations } from './csharp-mediatr-handlers'
+import { detectMvcConstruct } from './aspnet-mvc-constructs'
+import { nodeMvcFileSystem, resolveMvcConstruct, type MvcTargetDeps } from './aspnet-mvc-targets'
 import type { LspLocation } from './lsp-locations'
 
 // Why: idle servers hold whole program graphs in memory; restarting one is cheap next to that.
@@ -41,6 +43,7 @@ export type CodeNavigationServiceDeps = {
   metadataDir?: string
   createSession?: (options: LanguageServerSessionOptions) => LanguageServerSession
   readPreview?: (path: string) => Promise<string | null>
+  mvcFileSystem?: Pick<MvcTargetDeps, 'fileExists' | 'listDir'>
   now?: () => number
 }
 
@@ -240,10 +243,14 @@ export class CodeNavigationService {
     }
   }
 
-  private serverLocations(
+  private async serverLocations(
     session: LanguageServerSession,
     request: CodeNavigationQuery
   ): Promise<LspLocation[]> {
+    const mvc = await this.mvcLocations(session, request)
+    if (mvc.length > 0) {
+      return mvc
+    }
     if (request.kind === 'csharp' && request.feature === 'implementation') {
       const read = this.deps.readPreview ?? readPreviewFile
       return csharpImplementations(
@@ -254,6 +261,29 @@ export class CodeNavigationService {
       )
     }
     return session.query(request.feature, request.document, request.position)
+  }
+
+  /**
+   * ASP.NET MVC references the C# server cannot follow: views named by convention
+   * (`return View()`, `<partial name>`) and actions named in strings (`asp-action`,
+   * `RedirectToAction`). Rider resolves these too; a definition on one lands on its target.
+   */
+  private async mvcLocations(
+    session: LanguageServerSession,
+    request: CodeNavigationQuery
+  ): Promise<LspLocation[]> {
+    if (request.kind !== 'csharp' || request.feature !== 'definition') {
+      return []
+    }
+    const construct = detectMvcConstruct(request.document, request.position)
+    if (!construct) {
+      return []
+    }
+    return resolveMvcConstruct(construct, request.document.path, {
+      root: request.root,
+      ...(this.deps.mvcFileSystem ?? nodeMvcFileSystem),
+      workspaceSymbols: (query) => session.request('workspace/symbol', { query })
+    })
   }
 
   private metadataResolver(session: LanguageServerSession): MetadataFileResolver | null {

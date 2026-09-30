@@ -71,7 +71,7 @@ export type CodeNavigationStatusEvent = {
 
 const WATCHED_EXTENSIONS: Record<CodeNavigationServerKind, readonly string[]> = {
   typescript: ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs', '.json'],
-  csharp: ['.cs', '.csproj', '.sln', '.slnx', '.props', '.targets', '.json']
+  csharp: ['.cs', '.cshtml', '.csproj', '.sln', '.slnx', '.props', '.targets', '.json']
 }
 
 /** Whether a changed file can affect what this kind of server knows about the workspace. */
