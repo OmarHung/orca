@@ -73,6 +73,32 @@ describe('SealedSecretFile', () => {
     expect(file.has('new')).toBe(false)
   })
 
+  it('tells a missing secret apart from one it cannot open now', () => {
+    let keychainOpen = true
+    let decryptFails = false
+    const lookups = new SealedSecretFile(filePath, () => ({
+      ...fakeSecretStore(),
+      isEncryptionAvailable: () => keychainOpen,
+      decryptString: (cipher) => {
+        if (decryptFails) {
+          throw new Error('keychain reset')
+        }
+        return cipher.toString().replace(/^sealed:/, '')
+      }
+    }))
+    lookups.seal('a', 'secret')
+
+    expect(lookups.lookup('missing')).toEqual({ state: 'absent' })
+    expect(lookups.lookup('a')).toEqual({ state: 'available', secret: 'secret' })
+    keychainOpen = false
+    expect(lookups.lookup('a')).toEqual({ state: 'unavailable' })
+    keychainOpen = true
+    decryptFails = true
+    expect(lookups.lookup('a')).toEqual({ state: 'unavailable' })
+    writeFileSync(filePath, '[]')
+    expect(lookups.lookup('a')).toEqual({ state: 'problem', problem: 'damaged' })
+  })
+
   it('names the file in every problem so the user can find it', () => {
     for (const problem of ['unreadable', 'damaged', 'newer-format'] as const) {
       expect(file.describeProblem(problem)).toContain(filePath)
