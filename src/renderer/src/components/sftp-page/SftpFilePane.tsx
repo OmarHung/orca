@@ -9,7 +9,10 @@ import { sftpRowWidthPx, TOGGLEABLE_SFTP_COLUMNS, type SftpColumnId } from './sf
 import { useSftpColumnsStore, type SftpPaneId } from './sftp-columns-store'
 import { sortSftpEntriesBy } from './sftp-entry-sort'
 import { SftpColumnsMenu, SftpFileListHeader } from './SftpFileListHeader'
+import { SftpFavoriteFoldersMenu } from './SftpFavoriteFoldersMenu'
+import type { SftpFavoriteList } from './sftp-favorite-folders'
 import { SftpFileRow, SftpParentRow } from './SftpFileRow'
+import { localFolderName, remoteFolderName } from './sftp-paths'
 import { selectionModifiersFromEvent } from './sftp-selection'
 import type { SftpPaneDrag } from './use-sftp-pane-drag'
 import type { SftpPaneState } from './use-sftp-pane'
@@ -21,6 +24,8 @@ type SftpFilePaneProps = {
   paneId: SftpPaneId
   title: string
   pane: SftpPaneState
+  /** The favorite folders lists the star menu keeps and offers. */
+  favoriteLists: readonly SftpFavoriteList[]
   onOpen: (entry: SftpEntry) => void
   actions?: React.ReactNode
   dropZoneRef?: RefObject<HTMLDivElement | null>
@@ -108,6 +113,7 @@ export function SftpFilePane({
   paneId,
   title,
   pane,
+  favoriteLists,
   onOpen,
   actions,
   dropZoneRef,
@@ -154,6 +160,12 @@ export function SftpFilePane({
         >
           <RefreshCw className="size-3.5" />
         </PaneIconButton>
+        <SftpFavoriteFoldersMenu
+          lists={favoriteLists}
+          path={pane.path}
+          folderName={paneId === 'local' ? localFolderName : remoteFolderName}
+          onNavigate={pane.navigate}
+        />
         <SftpColumnsMenu />
         {actions}
       </div>
