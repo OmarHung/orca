@@ -3,6 +3,7 @@ import {
   baseName,
   isRemotePathWithin,
   isValidEntryName,
+  localFolderName,
   localParent,
   remoteJoin,
   remoteParent,
@@ -33,6 +34,9 @@ describe('sftp paths', () => {
     expect(baseName('/srv/app/log.txt')).toBe('log.txt')
     expect(baseName('C:\\Users\\dev\\report.csv')).toBe('report.csv')
     expect(baseName('/srv/app/')).toBe('app')
+    expect(localFolderName('/Users/dev/uploads')).toBe('uploads')
+    expect(localFolderName('/')).toBe('/')
+    expect(localFolderName('C:\\')).toBe('C:')
   })
 
   it('accepts only a single real name for new and renamed entries', () => {
