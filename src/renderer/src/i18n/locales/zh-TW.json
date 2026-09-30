@@ -19446,6 +19446,19 @@
       "conflict": "目標資料夾中已有：{{names}}。請先重新命名或刪除它們。",
       "nothingToDo": "已經在該資料夾中。",
       "intoItself": "無法將資料夾移動到它自己裡面。"
+    },
+    "favorites": {
+      "menu": "常用資料夾",
+      "addCurrent": "將“{{name}}”加入常用",
+      "removeCurrent": "從常用中移除“{{name}}”",
+      "empty": "還沒有常用資料夾",
+      "removeMenu": "移除常用資料夾",
+      "addCurrentHost": "將“{{name}}”加入 {{host}} 專屬常用",
+      "removeCurrentHost": "從 {{host}} 專屬常用中移除“{{name}}”",
+      "addCurrentShared": "將“{{name}}”加入所有連線共用常用",
+      "removeCurrentShared": "從所有連線共用常用中移除“{{name}}”",
+      "hostList": "{{host}} 專屬",
+      "sharedList": "所有連線共用"
     }
   },
   "commandConfirm": {
