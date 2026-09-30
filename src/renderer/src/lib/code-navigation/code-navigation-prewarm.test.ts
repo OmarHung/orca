@@ -5,7 +5,7 @@ vi.mock('./code-navigation-providers', () => ({ serverRequestFor: () => requests
 
 import { installCodeNavigationPrewarm, prewarmCodeNavigation } from './code-navigation-prewarm'
 
-const warm = vi.fn(async () => {})
+const warm = vi.fn(async (_request: { kind: string; root: string; document: unknown }) => {})
 const document = { path: '/shop/App.cs', languageId: 'csharp', version: 1, text: 'using System;' }
 const csharp = (root: string) => ({
   kind: 'csharp',
@@ -54,18 +54,18 @@ describe('prewarmCodeNavigation', () => {
 describe('installCodeNavigationPrewarm', () => {
   it('warms when an editor shows a file and when it takes focus', () => {
     const handlers: Record<string, () => void> = {}
-    let onCreate: ((editor: unknown) => void) | null = null
+    const created: { listener: ((editor: unknown) => void) | null } = { listener: null }
     const fakeMonaco = {
       editor: {
         onDidCreateEditor: (listener: (editor: unknown) => void) => {
-          onCreate = listener
+          created.listener = listener
           return { dispose: () => {} }
         }
       }
     }
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: prewarm only uses onDidCreateEditor.
     installCodeNavigationPrewarm(fakeMonaco as never)
-    onCreate?.({
+    created.listener?.({
       getModel: () => model,
       onDidChangeModel: (handler: () => void) => {
         handlers.model = handler
