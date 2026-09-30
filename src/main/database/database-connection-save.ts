@@ -4,7 +4,7 @@ import type {
   DatabasePasswordStorage
 } from '../../shared/database/database-connection-types'
 import type { DatabaseResult } from '../../shared/database/database-query-types'
-import { afterUndo } from '../kept-passwords'
+import { afterUndo, rollBack } from '../kept-passwords'
 import type { DatabaseConnectionStore } from './database-connection-store'
 import type { DatabasePasswordVault } from './database-password-vault'
 
@@ -49,10 +49,17 @@ function saveExistingConnection(
   } catch (error) {
     throw afterUndo(error, undo())
   }
-  const kept = passwords.keep(previous.id, storage, password)
-  if (!kept.ok) {
+  const revert = (): void => {
     connections.save(previous.id, previous)
-    const message = afterUndo(new Error(kept.error.message), undo()).message
+  }
+  let kept: DatabaseResult<null>
+  try {
+    kept = passwords.keep(previous.id, storage, password)
+  } catch (error) {
+    throw rollBack(error, undo, revert)
+  }
+  if (!kept.ok) {
+    const message = rollBack(new Error(kept.error.message), undo, revert).message
     return { ok: false, error: { ...kept.error, message } }
   }
   return { ok: true, value: saved }
@@ -73,7 +80,14 @@ function saveNewConnection(
     passwords.rememberForSession(created.id, password)
     return { ok: true, value: created }
   }
-  const sealed = passwords.remember(created.id, 'forever', password)
+  // Why no password cleanup here: a failed remember already put the password file back.
+  let sealed: DatabaseResult<null>
+  try {
+    sealed = passwords.remember(created.id, 'forever', password)
+  } catch (error) {
+    connections.delete(created.id)
+    throw error
+  }
   if (!sealed.ok) {
     connections.delete(created.id)
     return sealed
