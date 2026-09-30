@@ -2,7 +2,8 @@ import {
   databasePasswordStorage,
   type DatabaseConnection,
   type DatabaseConnectionDraft,
-  type DatabaseConnectionSummary
+  type DatabaseConnectionSummary,
+  type DatabasePasswordStorage
 } from '../../shared/database/database-connection-types'
 import type { DatabaseDdlTarget } from '../../shared/database/database-ddl-types'
 import type {
@@ -114,19 +115,57 @@ export class DatabaseService {
       return { ok: false, error: { message: NO_SECURE_PASSWORD_STORAGE, code: 'unavailable' } }
     }
     const previous = request.id ? this.deps.connections.get(request.id) : null
-    const saved = this.deps.connections.save(request.id, request.draft)
+    const saved = previous
+      ? this.saveExistingConnection(previous.id, request.draft, storage, password)
+      : this.saveNewConnection(request.draft, storage, password)
+    if (!saved.ok) {
+      return saved
+    }
     // Why: a session opened with the old host or user would silently keep them.
     if (previous && changesSessionSettings(previous, request.draft)) {
-      await this.deps.sessions.disconnect(saved.id)
+      await this.deps.sessions.disconnect(saved.value.id)
     }
-    const stored =
+    return {
+      ok: true,
+      value: { ...saved.value, hasSavedPassword: passwords.has(saved.value.id) }
+    }
+  }
+
+  /** Moves the password first, so the saved setting never claims what the password file does not do. */
+  private saveExistingConnection(
+    connectionId: string,
+    draft: DatabaseConnectionDraft,
+    storage: DatabasePasswordStorage,
+    password: string | null
+  ): DatabaseResult<DatabaseConnection> {
+    const { passwords } = this.deps
+    const moved =
       password === null
-        ? passwords.forget(saved.id)
-        : passwords.remember(saved.id, storage, password)
-    if (!stored.ok) {
-      return stored
+        ? passwords.forget(connectionId)
+        : passwords.remember(connectionId, storage, password)
+    return moved.ok ? { ok: true, value: this.deps.connections.save(connectionId, draft) } : moved
+  }
+
+  /** A new connection gets a fresh id, so nothing is saved to move; only a typed password is kept. */
+  private saveNewConnection(
+    draft: DatabaseConnectionDraft,
+    storage: DatabasePasswordStorage,
+    password: string | null
+  ): DatabaseResult<DatabaseConnection> {
+    const created = this.deps.connections.save(undefined, draft)
+    if (password === null || storage === 'never') {
+      return { ok: true, value: created }
     }
-    return { ok: true, value: { ...saved, hasSavedPassword: passwords.has(saved.id) } }
+    if (storage === 'session') {
+      this.deps.passwords.rememberForSession(created.id, password)
+      return { ok: true, value: created }
+    }
+    const sealed = this.deps.passwords.remember(created.id, 'forever', password)
+    if (!sealed.ok) {
+      this.deps.connections.delete(created.id)
+      return sealed
+    }
+    return { ok: true, value: created }
   }
 
   /** Regrouping is cosmetic: open sessions stay. */
@@ -152,7 +191,9 @@ export class DatabaseService {
   ): Promise<DatabaseResult<{ serverVersion: string }>> {
     const password =
       request.password ??
-      (request.connectionId ? this.deps.passwords.get(request.connectionId) : null)
+      (request.connectionId && databasePasswordStorage(request.draft) !== 'never'
+        ? this.deps.passwords.get(request.connectionId)
+        : null)
     return this.deps.sessions.test(request.draft, password)
   }
 
@@ -164,7 +205,12 @@ export class DatabaseService {
     if (!connection) {
       return unknownConnection()
     }
-    const password = promptedPassword ?? this.deps.passwords.get(connectionId)
+    // Why: "Never" must not use a password, even one a failed removal left on disk.
+    const password =
+      promptedPassword ??
+      (databasePasswordStorage(connection) === 'never'
+        ? null
+        : this.deps.passwords.get(connectionId))
     const result = await this.deps.sessions.connect(connection, password)
     if (!result.ok) {
       // Why: with no password we tried trust/.pgpass first; a rejection means ask the user.
