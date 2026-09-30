@@ -162,6 +162,31 @@ describe('saveProfileWithPassword', () => {
     expect(new SshVpnPasswordVault(passwordsPath, secretStore).get(saved.id)).toBeNull()
   })
 
+  it.each(['session', 'never'] as const)(
+    'keeps the saved password when switching to %s fails to save the setting',
+    (storage) => {
+      const saved = saveProfileWithPassword({ store, vault }, null, DRAFT, 'hunter2')
+      const failing = {
+        saveProfile: () => {
+          throw new Error('disk full')
+        },
+        deleteProfile: store.deleteProfile.bind(store)
+      }
+
+      expect(() =>
+        saveProfileWithPassword(
+          { store: failing, vault },
+          saved,
+          { ...DRAFT, passwordStorage: storage },
+          undefined
+        )
+      ).toThrow('disk full')
+
+      expect(store.getProfile(saved.id)?.passwordStorage).toBe('forever')
+      expect(new SshVpnPasswordVault(passwordsPath, secretStore).get(saved.id)).toBe('hunter2')
+    }
+  )
+
   it('puts the old setting back when sealing after it fails', () => {
     const saved = saveProfileWithPassword(
       { store, vault },

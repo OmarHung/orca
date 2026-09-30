@@ -1,11 +1,12 @@
 import type { SshVpnProfile, SshVpnProfileDraft } from '../../shared/ssh-vpn-types'
+import { afterUndo } from '../kept-passwords'
 import type { SshVpnPasswordVault } from './ssh-vpn-password-vault'
 import type { SshVpnStore } from './ssh-vpn-store'
 
 /**
  * Saves a profile and moves its password to where the setting keeps it: removals before the
- * setting is saved, sealing after it (undone on failure), so a failed step never leaves a
- * setting claiming what the saved-password file does not do, or a password it did not ask for.
+ * setting is saved, sealing after it. Any failure puts the setting and the passwords back, so a
+ * failed save never loses a password or keeps one the setting did not ask for.
  */
 export function saveProfileWithPassword(
   {
@@ -21,13 +22,18 @@ export function saveProfileWithPassword(
 ): SshVpnProfile {
   const storage = draft.passwordStorage ?? 'session'
   if (previous) {
-    vault.release(previous.id, storage, password)
-    const saved = store.saveProfile(previous.id, draft)
+    const undo = vault.release(previous.id, storage, password)
+    let saved: SshVpnProfile
+    try {
+      saved = store.saveProfile(previous.id, draft)
+    } catch (error) {
+      throw afterUndo(error, undo())
+    }
     try {
       vault.keep(previous.id, storage, password)
     } catch (error) {
       store.saveProfile(previous.id, previous)
-      throw error
+      throw afterUndo(error, undo())
     }
     return saved
   }
