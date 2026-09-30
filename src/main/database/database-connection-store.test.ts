@@ -51,6 +51,15 @@ describe('DatabaseConnectionStore', () => {
     expect(createStore().list()).toEqual([])
   })
 
+  it('adds a connection under the id the caller chose', () => {
+    expect(createStore().save('chosen-id', draft)).toMatchObject({
+      id: 'chosen-id',
+      createdAt: 1_000
+    })
+
+    expect(createStore().get('chosen-id')).toMatchObject({ ...draft, id: 'chosen-id' })
+  })
+
   it('moves connections between groups in one write, leaving the rest alone', () => {
     const store = createStore()
     const first = store.save(undefined, draft)
