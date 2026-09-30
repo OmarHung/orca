@@ -3,7 +3,7 @@ import type {
   SshVpnProfile,
   SshVpnProfileDraft
 } from '../../shared/ssh-vpn-types'
-import { afterUndo } from '../kept-passwords'
+import { afterUndo, rollBack } from '../kept-passwords'
 import type { SshVpnPasswordVault } from './ssh-vpn-password-vault'
 import type { SshVpnStore } from './ssh-vpn-store'
 
@@ -36,8 +36,7 @@ export function saveProfileWithPassword(
     try {
       vault.keep(previous.id, storage, password)
     } catch (error) {
-      store.saveProfile(previous.id, previous)
-      throw afterUndo(error, undo())
+      throw rollBack(error, undo, () => store.saveProfile(previous.id, previous))
     }
     return saved
   }
