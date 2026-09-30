@@ -7,19 +7,12 @@ import {
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu'
 import { translate } from '@/i18n/i18n'
-import {
-  RunWidgetMenuRow,
-  type RunWidgetRowActions,
-  type RunWidgetRowState
-} from './RunWidgetMenuRow'
+import { isDetectedRunMenuEmpty, type DetectedRunMenu } from './detected-run-menu'
+import { RunWidgetDetectedSection, type DetectedSectionActions } from './RunWidgetDetectedSection'
+import { RunWidgetMenuRow, type RunWidgetRowContext } from './RunWidgetMenuRow'
 import type { RunWidgetItem } from './run-widget-items'
 
-type RowProps = {
-  selectedKey: string | null
-  onSelect: (item: RunWidgetItem) => void
-  rowState: (item: RunWidgetItem) => RunWidgetRowState
-  rowActions: RunWidgetRowActions
-}
+type RowProps = RunWidgetRowContext
 
 function Section({
   heading,
@@ -62,9 +55,14 @@ export function RunWidgetMenu({
   onEditConfigurations,
   onImportLaunchJson,
   onAddQuickCommand,
-  onManageQuickCommands
+  onManageQuickCommands,
+  detected,
+  detectedActions
 }: RowProps & {
   items: readonly RunWidgetItem[]
+  /** null until the workspace's first scan finishes. */
+  detected: DetectedRunMenu | null
+  detectedActions: DetectedSectionActions
   onEditConfigurations: () => void
   /** null when the workspace has no `.vscode/launch.json`. */
   onImportLaunchJson: (() => void) | null
@@ -90,13 +88,16 @@ export function RunWidgetMenu({
           heading={translate('run.configurations.sharedHeading', 'Shared (orca.yaml)')}
           items={items.filter((item) => item.kind === 'configuration' && item.source === 'shared')}
         />
+        <RunWidgetDetectedSection menu={detected} row={sectionProps} actions={detectedActions} />
         <Section
           {...sectionProps}
           heading={translate('run.widget.quickCommands', 'Quick commands')}
           items={items.filter((item) => item.kind === 'quick-command')}
         />
       </div>
-      {items.length > 0 ? <DropdownMenuSeparator /> : null}
+      {items.length > 0 || !detected || !isDetectedRunMenuEmpty(detected) ? (
+        <DropdownMenuSeparator />
+      ) : null}
       <DropdownMenuItem data-testid="run-configurations-edit" onSelect={onEditConfigurations}>
         <Settings2 />
         {translate('run.configurations.edit', 'Edit Configurations…')}

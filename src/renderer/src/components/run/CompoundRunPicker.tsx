@@ -13,16 +13,12 @@ import {
   type DetectedRunProject
 } from './detected-run-tree'
 import { RUN_KIND_ICONS, runConfigurationIcon } from './run-configuration-icon'
+import { RunEcosystemBadge } from './RunEcosystemBadge'
 
 const SAVED_NODE_KEY = 'saved'
 const INDENT_REM = 1
 /** Small workspaces show every run at once; larger ones start with projects collapsed. */
 const EXPAND_ALL_MAX_RUNS = 12
-
-const ECOSYSTEM_LABELS: Record<DetectedRunProject['ecosystem'], string> = {
-  node: 'Node',
-  dotnet: '.NET'
-}
 
 type TreeState = {
   isOpen: (key: string, byDefault: boolean) => boolean
@@ -87,9 +83,7 @@ function ProjectNode({
         onClick={() => tree.toggle(project.key, expandByDefault)}
       >
         <Chevron open={open} />
-        <span className="shrink-0 rounded-sm border border-border px-1 text-[10px] text-muted-foreground">
-          {ECOSYSTEM_LABELS[project.ecosystem]}
-        </span>
+        <RunEcosystemBadge ecosystem={project.ecosystem} />
         <span className="min-w-0 flex-1 truncate font-medium">{project.name}</span>
         <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
           {project.runs.length}
