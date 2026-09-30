@@ -31,6 +31,11 @@ import {
   resolveRemotePath
 } from './sftp-paths'
 import { runSftpAction, type SftpActionContext } from './sftp-plan-actions'
+import {
+  hostLocalFavoritesScope,
+  LOCAL_FAVORITES_SCOPE,
+  remoteFavoritesScope
+} from './sftp-favorite-folders'
 import { useSftpFileDrop } from './use-sftp-file-drop'
 import { useSftpPaneDrag, type SftpPaneDropHandler } from './use-sftp-pane-drag'
 import { useSftpPane, type SftpPaneSource } from './use-sftp-pane'
@@ -282,6 +287,10 @@ export function SftpWorkbench({
           paneId="local"
           title={translate('sftpPage.local.title', 'Local')}
           pane={local}
+          favoriteLists={[
+            { scope: hostLocalFavoritesScope(target.id), host: target.label },
+            { scope: LOCAL_FAVORITES_SCOPE, host: null }
+          ]}
           dropZoneRef={localZoneRef}
           drag={paneDrag.local}
           onOpen={(entry) =>
@@ -315,6 +324,7 @@ export function SftpWorkbench({
           paneId="remote"
           title={target.label}
           pane={remote}
+          favoriteLists={[{ scope: remoteFavoritesScope(target.id), host: target.label }]}
           dropZoneRef={dropZoneRef}
           isDropTarget={isDropTarget}
           dropHint={translate(

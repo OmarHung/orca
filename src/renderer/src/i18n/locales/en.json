@@ -19650,6 +19650,19 @@
       "conflict": "Already in the destination folder: {{names}}. Rename or delete those first.",
       "nothingToDo": "Already in that folder.",
       "intoItself": "A folder cannot be moved into itself."
+    },
+    "favorites": {
+      "menu": "Favorite folders",
+      "addCurrent": "Add “{{name}}” to favorites",
+      "removeCurrent": "Remove “{{name}}” from favorites",
+      "empty": "No favorite folders yet",
+      "removeMenu": "Remove a favorite",
+      "addCurrentHost": "Add “{{name}}” to favorites for {{host}}",
+      "removeCurrentHost": "Remove “{{name}}” from favorites for {{host}}",
+      "addCurrentShared": "Add “{{name}}” to favorites for all connections",
+      "removeCurrentShared": "Remove “{{name}}” from favorites for all connections",
+      "hostList": "{{host}} only",
+      "sharedList": "All connections"
     }
   },
   "commandConfirm": {
