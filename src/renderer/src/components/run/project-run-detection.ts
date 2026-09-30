@@ -10,6 +10,12 @@ import {
   isDotnetProjectFile
 } from '../../../../shared/run-configurations/dotnet-run-configurations'
 import { detectNodeRunConfigurations } from '../../../../shared/run-configurations/node-run-configurations'
+import {
+  detectPythonRunConfigurations,
+  isPythonProjectFile,
+  PYTHON_VIRTUAL_ENV_DIRS,
+  type PythonVirtualEnv
+} from '../../../../shared/run-configurations/python-run-configurations'
 import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
 import type { DirEntry } from '../../../../shared/filesystem-entry-types'
 
@@ -89,6 +95,45 @@ async function detectDotnet(
   })
 }
 
+/** The project's own virtualenv; `pyvenv.cfg` tells it apart from a config folder named `env`. */
+async function findVirtualEnv(
+  dir: string,
+  names: readonly string[],
+  files: ProjectFiles
+): Promise<PythonVirtualEnv | null> {
+  for (const dirName of PYTHON_VIRTUAL_ENV_DIRS.filter((name) => names.includes(name))) {
+    const envDir = joinPath(dir, dirName)
+    const inside = await files.listNames(envDir)
+    if (!inside.includes('pyvenv.cfg')) {
+      continue
+    }
+    const layout = inside.includes('Scripts') ? 'windows' : inside.includes('bin') ? 'posix' : null
+    if (layout) {
+      const executables = await files.listNames(
+        joinPath(envDir, layout === 'windows' ? 'Scripts' : 'bin')
+      )
+      return { dirName, layout, executables }
+    }
+  }
+  return null
+}
+
+async function detectPython(
+  dir: string,
+  names: readonly string[],
+  files: ProjectFiles
+): Promise<DetectedRunConfiguration[]> {
+  const pyprojectText = names.includes('pyproject.toml')
+    ? await files.readText(joinPath(dir, 'pyproject.toml'))
+    : null
+  return detectPythonRunConfigurations({
+    projectDir: dir,
+    fileNames: names,
+    pyprojectText,
+    venv: await findVirtualEnv(dir, names, files)
+  })
+}
+
 /**
  * Run configurations for a file-tree node: a folder contributes every project it directly
  * contains; a project file (package.json, *.csproj) contributes just that project.
@@ -123,12 +168,23 @@ export async function detectProjectRunConfigurations(
   for (const projectFileName of selected.filter(isDotnetProjectFile).sort()) {
     configurations.push(...(await detectDotnet(dir, projectFileName, projectFiles)))
   }
+  if (selected.some(isPythonProjectFile)) {
+    configurations.push(...(await detectPython(dir, names, projectFiles)))
+  }
   return configurations
 }
 
+// Why not main.py and the like: a single .py file already has its own Debug action.
+const PYTHON_PROJECT_MENU_FILES = new Set(['pyproject.toml', 'manage.py'])
+
 /** Cheap filename check so the context menu only probes folders and files that can be projects. */
 export function mayContainRunConfigurations(name: string, isDirectory: boolean): boolean {
-  return isDirectory || name === 'package.json' || isDotnetProjectFile(name)
+  return (
+    isDirectory ||
+    name === 'package.json' ||
+    isDotnetProjectFile(name) ||
+    PYTHON_PROJECT_MENU_FILES.has(name)
+  )
 }
 
 // Why skipped: dependency, build-output and tool folders never hold the projects people run.
@@ -141,7 +197,10 @@ const SKIPPED_WORKSPACE_DIRS = new Set([
   'out',
   'target',
   'vendor',
-  'coverage'
+  'coverage',
+  'venv',
+  '__pycache__',
+  'site-packages'
 ])
 const WORKSPACE_SCAN_DEPTH = 4
 const MAX_WORKSPACE_SCAN_DIRS = 200

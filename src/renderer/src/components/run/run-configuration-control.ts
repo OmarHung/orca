@@ -14,7 +14,10 @@ import type {
   TerminalCommandQuickCommand,
   TerminalQuickCommand
 } from '../../../../shared/terminal-quick-command-types'
-import type { DebugLaunchTarget } from '../../../../shared/debug/debug-session-types'
+import type {
+  DebugLaunchOptions,
+  DebugLaunchTarget
+} from '../../../../shared/debug/debug-session-types'
 import {
   isRunSessionActive,
   runSessionKey,
@@ -42,6 +45,7 @@ export type RunTarget = {
   cwd?: string
   /** How to debug the same configuration, when an adapter supports it. */
   debug?: DebugLaunchTarget
+  debugOptions?: DebugLaunchOptions
 }
 
 /** Only shell commands are run configurations; agent prompts start agents and have no Stop/Rerun. */

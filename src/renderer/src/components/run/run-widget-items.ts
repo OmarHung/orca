@@ -1,6 +1,7 @@
 import type { HostedTerminalQuickCommand } from '@/hooks/use-terminal-quick-command-hosts'
 import type { RunConfigurationDefinition } from '../../../../shared/run-configurations/run-configuration-definition'
 import { commandConfigurationOf } from '../../../../shared/run-configurations/run-configuration-plan'
+import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
 import type { RunTarget } from './run-configuration-control'
 import type { ListedRunConfiguration, RunConfigurationSource } from './run-configuration-store'
 
@@ -18,6 +19,14 @@ export type RunWidgetItem =
       configuration: RunConfigurationDefinition
     }
   | { kind: 'quick-command'; key: string; label: string; entry: HostedTerminalQuickCommand }
+  /** A run detected from project files; it shares its key and terminal with its recent entry. */
+  | {
+      kind: 'detected'
+      key: string
+      label: string
+      configuration: DetectedRunConfiguration
+      target: RunTarget
+    }
 
 export function recentItemKey(commandKey: string): string {
   return `recent:${commandKey}`
@@ -83,6 +92,7 @@ export function selectedRunWidgetItem(
 function runCommandKey(item: RunWidgetItem): string | null {
   switch (item.kind) {
     case 'recent':
+    case 'detected':
       return item.target.commandKey
     case 'configuration':
       return commandConfigurationOf(item.configuration)

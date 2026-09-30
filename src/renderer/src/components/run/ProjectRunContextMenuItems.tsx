@@ -114,20 +114,6 @@ export function ProjectRunContextMenuItems({
     return null
   }
   const run = async (configuration: DetectedRunConfiguration): Promise<void> => {
-    if (configuration.kind === 'publish') {
-      const confirmed = await confirm({
-        title: translate('run.publishConfirm.title', "Publish '{{value0}}'?", {
-          value0: configuration.projectName
-        }),
-        description: translate('run.publishConfirm.description', 'This runs: {{value0}}', {
-          value0: configuration.command
-        }),
-        confirmLabel: translate('run.publishConfirm.confirm', 'Publish')
-      })
-      if (!confirmed) {
-        return
-      }
-    }
     await runDetectedConfiguration(configuration, worktreeId, groupId, confirm)
   }
   const runPrimary = (configuration: DetectedRunConfiguration): void => {
