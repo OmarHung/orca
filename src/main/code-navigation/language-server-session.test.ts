@@ -88,18 +88,59 @@ describe('LanguageServerSession', () => {
     })
   })
 
-  it('asks for references including the declaration and returns file locations', async () => {
+  it('asks for references including the declaration and returns their locations', async () => {
     const started = await startReadySession()
     const range = { start: { line: 1, character: 0 }, end: { line: 1, character: 3 } }
 
     const pending = started.session.query('references', document(1), { line: 0, character: 14 })
     await answerNextQuery(started, 'textDocument/references', [{ uri: fileUri, range }])
 
-    await expect(pending).resolves.toEqual([{ path: filePath, range }])
+    await expect(pending).resolves.toEqual([{ uri: fileUri, range }])
     expect(started.last('textDocument/references')?.params).toMatchObject({
       textDocument: { uri: fileUri },
       position: { line: 0, character: 14 },
       context: { includeDeclaration: true }
+    })
+  })
+
+  it('turns a hover into Markdown blocks with its range', async () => {
+    const started = await startReadySession()
+    const range = { start: { line: 0, character: 13 }, end: { line: 0, character: 14 } }
+
+    const pending = started.session.hover(document(1), { line: 0, character: 13 })
+    await answerNextQuery(started, 'textDocument/hover', {
+      contents: { kind: 'markdown', value: '```typescript\nconst a: 1\n```' },
+      range
+    })
+
+    await expect(pending).resolves.toEqual({
+      contents: ['```typescript\nconst a: 1\n```'],
+      range
+    })
+  })
+
+  it('answers configuration requests from the launch settings, by section', async () => {
+    const fake = createFakeLspTransport()
+    new LanguageServerSession({
+      root,
+      launch: {
+        program: '/bin/server',
+        args: [],
+        env: {},
+        configuration: { csharp: { useMetadataUris: true } }
+      },
+      startTransport: () => fake.transport
+    })
+
+    fake.sendFromServer({
+      id: 'config-1',
+      method: 'workspace/configuration',
+      params: { items: [{ section: 'csharp' }, { section: 'editor' }, {}] }
+    })
+    await flush()
+
+    expect(fake.sent.find((message) => message.id === 'config-1')).toMatchObject({
+      result: [{ useMetadataUris: true }, null, null]
     })
   })
 

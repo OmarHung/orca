@@ -65,6 +65,16 @@ async function activeEditor(page: Page) {
   })
 }
 
+/** Hovers the first characters of the first editor line containing `text`; returns the hover. */
+async function hoverLineStart(page: Page, text: string) {
+  await page.mouse.move(0, 0)
+  const line = page.locator('.monaco-editor .view-line', { hasText: text }).first()
+  const box = await line.boundingBox()
+  expect(box).not.toBeNull()
+  await page.mouse.move(box!.x + 12, box!.y + box!.height / 2)
+  return page.locator('.monaco-hover:not(.hidden)').first()
+}
+
 async function screenshot(page: Page, name: string) {
   if (SCREENSHOT_DIR) {
     await page.screenshot({ path: join(SCREENSHOT_DIR, `${name}.png`) })
@@ -74,7 +84,7 @@ async function screenshot(page: Page, name: string) {
 test.describe('code navigation through language servers', () => {
   test.skip(!RUN, 'set ORCA_E2E_CODE_NAVIGATION=1 (downloads the language servers)')
 
-  test('TypeScript: F12 and Cmd/Ctrl+click open the definition in another tab; Shift+F12 peeks references', async ({
+  test('TypeScript: F12 and Cmd/Ctrl+click open the definition in another tab; Shift+F12 peeks references; hover resolves imports', async ({
     orcaPage,
     testRepoPath,
     registerPostElectronShutdownCleanup
@@ -128,9 +138,15 @@ test.describe('code navigation through language servers', () => {
     await expect
       .poll(() => activeEditor(orcaPage), { timeout: 30_000 })
       .toEqual({ file: 'greeter.ts', line: 1, column: 17 })
+
+    // The server resolves the import; Monaco's own worker would only know `greet` as `any`.
+    await openEditorFile(orcaPage, root, 'app.ts', 'typescript')
+    const hover = await hoverLineStart(orcaPage, "greet('again')")
+    await expect(hover).toContainText('function greet(name: string): string', { timeout: 30_000 })
+    await screenshot(orcaPage, 'ts-hover')
   })
 
-  test('C#: F12 crosses projects and Cmd/Ctrl+F12 finds the implementation', async ({
+  test('C#: F12 crosses projects and into decompiled code, Cmd/Ctrl+F12 finds the implementation, hover works', async ({
     orcaPage,
     testRepoPath,
     registerPostElectronShutdownCleanup
@@ -184,5 +200,23 @@ test.describe('code navigation through language servers', () => {
       .poll(() => activeEditor(orcaPage), { timeout: 60_000 })
       .toEqual({ file: 'Greeter.cs', line: 8, column: 14 })
     await screenshot(orcaPage, 'cs-implementation')
+
+    await openEditorFile(orcaPage, root, 'App/Program.cs', 'csharp')
+    const hover = await hoverLineStart(orcaPage, 'IGreeter greeter')
+    // C# has no other hover source, so any hover here came from the language server.
+    await expect(hover).toContainText('IGreeter', { timeout: 60_000 })
+    await screenshot(orcaPage, 'cs-hover')
+
+    // Framework types have no source here; F12 opens their decompiled code read-only.
+    await orcaPage.mouse.move(0, 0)
+    await placeCursorOnLine(orcaPage, 'Console.WriteLine')
+    await orcaPage.keyboard.press('F12')
+    await expect
+      .poll(async () => (await activeEditor(orcaPage)).file, { timeout: 60_000 })
+      .toBe('System.Console.cs')
+    await expect(
+      orcaPage.locator('.monaco-editor .view-line', { hasText: 'public static class Console' })
+    ).toBeVisible()
+    await screenshot(orcaPage, 'cs-decompiled')
   })
 })

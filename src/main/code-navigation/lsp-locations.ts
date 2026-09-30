@@ -1,8 +1,8 @@
 import { fileURLToPath } from 'node:url'
-import type {
-  CodeNavigationLocation,
-  CodeNavigationRange
-} from '../../shared/code-navigation/code-navigation-types'
+import type { CodeNavigationRange } from '../../shared/code-navigation/code-navigation-types'
+
+/** A location as the server reported it, before Orca maps its URI to a file it can open. */
+export type LspLocation = { uri: string; range: CodeNavigationRange }
 
 type LspLocationLike = {
   uri?: unknown
@@ -22,7 +22,7 @@ function isPosition(value: unknown): boolean {
   )
 }
 
-function isRange(value: unknown): value is CodeNavigationRange {
+export function isLspRange(value: unknown): value is CodeNavigationRange {
   return (
     typeof value === 'object' &&
     value !== null &&
@@ -33,8 +33,28 @@ function isRange(value: unknown): value is CodeNavigationRange {
   )
 }
 
-function filePathFromUri(uri: unknown): string | null {
-  if (typeof uri !== 'string' || !uri.startsWith('file:')) {
+function toLocation(entry: LspLocationLike): LspLocation | null {
+  // Why the selection range for links: it is the symbol's name, not its whole declaration.
+  const uri = entry.targetUri ?? entry.uri
+  const range = entry.targetUri !== undefined ? entry.targetSelectionRange : entry.range
+  if (typeof uri !== 'string' || !isLspRange(range)) {
+    return null
+  }
+  return { uri, range: { start: { ...range.start }, end: { ...range.end } } }
+}
+
+/** Normalizes `Location | Location[] | LocationLink[] | null` to a list of locations. */
+export function lspResultToLocations(result: unknown): LspLocation[] {
+  const entries = Array.isArray(result) ? result : result ? [result] : []
+  return entries
+    .filter((entry): entry is LspLocationLike => typeof entry === 'object' && entry !== null)
+    .map(toLocation)
+    .filter((location): location is LspLocation => location !== null)
+}
+
+/** The local path of a `file:` URI, or null for any other scheme. */
+export function filePathFromUri(uri: string): string | null {
+  if (!uri.startsWith('file:')) {
     return null
   }
   try {
@@ -42,26 +62,4 @@ function filePathFromUri(uri: unknown): string | null {
   } catch {
     return null
   }
-}
-
-function toLocation(entry: LspLocationLike): CodeNavigationLocation | null {
-  // Why the selection range for links: it is the symbol's name, not its whole declaration.
-  const path = filePathFromUri(entry.targetUri ?? entry.uri)
-  const range = entry.targetUri !== undefined ? entry.targetSelectionRange : entry.range
-  if (!path || !isRange(range)) {
-    return null
-  }
-  return { path, range: { start: { ...range.start }, end: { ...range.end } } }
-}
-
-/**
- * Normalizes `Location | Location[] | LocationLink[] | null` to file locations. Non-file URIs
- * (decompiled metadata, bundled libs) are dropped: nothing in Orca can open them yet.
- */
-export function lspResultToLocations(result: unknown): CodeNavigationLocation[] {
-  const entries = Array.isArray(result) ? result : result ? [result] : []
-  return entries
-    .filter((entry): entry is LspLocationLike => typeof entry === 'object' && entry !== null)
-    .map(toLocation)
-    .filter((location): location is CodeNavigationLocation => location !== null)
 }

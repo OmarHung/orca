@@ -48,6 +48,25 @@ async function installServer(
   return ensureDebugAdapterInstalled(artifact, baseDir, deps.install)
 }
 
+function artifactFor(
+  kind: CodeNavigationServerKind,
+  deps: Pick<LanguageServerLaunchDeps, 'platform' | 'arch'>
+): DebugAdapterArtifact | null {
+  return kind === 'typescript'
+    ? typescriptServerArtifactFor(deps.platform, deps.arch)
+    : CSHARP_SERVER_ARTIFACT
+}
+
+/** Whether `prepareLanguageServerLaunch` would start this kind without downloading anything. */
+export async function isLanguageServerInstalled(
+  kind: CodeNavigationServerKind,
+  baseDir: string,
+  deps: Pick<LanguageServerLaunchDeps, 'platform' | 'arch'> = defaultDeps()
+): Promise<boolean> {
+  const artifact = artifactFor(kind, deps)
+  return artifact ? isDebugAdapterInstalled(artifact, baseDir) : false
+}
+
 /** Downloads the server on first use and returns how to start it. */
 export async function prepareLanguageServerLaunch(
   kind: CodeNavigationServerKind,
@@ -56,7 +75,7 @@ export async function prepareLanguageServerLaunch(
   deps: LanguageServerLaunchDeps = defaultDeps()
 ): Promise<LanguageServerLaunch> {
   if (kind === 'typescript') {
-    const artifact = typescriptServerArtifactFor(deps.platform, deps.arch)
+    const artifact = artifactFor('typescript', deps)
     if (!artifact) {
       throw new Error(`TypeScript navigation is not available for ${deps.platform}-${deps.arch}`)
     }
@@ -79,6 +98,8 @@ export async function prepareLanguageServerLaunch(
     program: dotnet,
     args: [join(installDir, ...CSHARP_SERVER_ENTRY)],
     // Why Major: the server targets .NET 10 and should also run on a newer runtime.
-    env: { ...deps.env, DOTNET_ROLL_FORWARD: 'Major' }
+    env: { ...deps.env, DOTNET_ROLL_FORWARD: 'Major' },
+    // Why: without metadata URIs, jumping to a framework type (Console, List<T>) finds nothing.
+    configuration: { csharp: { useMetadataUris: true } }
   }
 }
