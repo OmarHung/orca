@@ -5,6 +5,7 @@ import { codeEditorShortcutAction, setClaimingCodeEditor } from './code-editor-s
 import { codeNavigationHistory } from './code-navigation-history'
 import { editorNavigationLocation } from './code-navigation-workspace'
 import { openNavigationTarget } from './code-navigation-editor-opener'
+import { installImplementationClick } from './code-navigation-implementation-click'
 
 type CodeEditor = Monaco.editor.ICodeEditor
 
@@ -94,7 +95,14 @@ export function installCodeNavigationKeymap(monaco: Pick<typeof Monaco, 'editor'
         note(editor)
       }
     })
-    editor.onDidDispose(() => release(editor))
+    const removeImplementationClick = installImplementationClick(
+      editor,
+      () => locationOf(editor) !== null
+    )
+    editor.onDidDispose(() => {
+      removeImplementationClick()
+      release(editor)
+    })
   })
 
   const onKeyDown = (event: KeyboardEvent): void => {
