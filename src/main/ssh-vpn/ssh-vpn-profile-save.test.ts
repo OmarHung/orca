@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SshVpnProfileDraft } from '../../shared/ssh-vpn-types'
 import type { SecretStore } from '../../shared/secret-store'
+import { clearDurableWrites, queueDurableWrites } from '../durable-write-failures-test-support'
 import { SshVpnPasswordVault } from './ssh-vpn-password-vault'
 import { saveProfileWithPassword, saveSshVpnProfile } from './ssh-vpn-profile-save'
 import { SshVpnStore } from './ssh-vpn-store'
@@ -16,6 +17,11 @@ const DRAFT: SshVpnProfileDraft = {
   passwordStorage: 'forever'
 }
 const DAMAGED = '{"version": 1,'
+
+vi.mock('../../shared/secure-file', async (importOriginal) => {
+  const { withQueuedDurableWrites } = await import('../durable-write-failures-test-support')
+  return withQueuedDurableWrites(await importOriginal())
+})
 
 let keychainOpen = true
 
@@ -31,16 +37,24 @@ function secretStore(): SecretStore {
 describe('saveProfileWithPassword', () => {
   let dir: string
   let passwordsPath: string
+  let settingsPath: string
   let store: SshVpnStore
   let vault: SshVpnPasswordVault
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'orca-ssh-vpn-profile-save-'))
     passwordsPath = join(dir, 'passwords.json')
-    store = new SshVpnStore(join(dir, 'ssh-vpn.json'))
+    settingsPath = join(dir, 'ssh-vpn.json')
+    store = new SshVpnStore(settingsPath)
     vault = new SshVpnPasswordVault(passwordsPath, secretStore)
     keychainOpen = true
+    clearDurableWrites()
   })
+
+  const savedStorage = (id: string): string | undefined =>
+    new SshVpnStore(settingsPath).getProfile(id)?.passwordStorage
+  const savedPassword = (id: string): string | null =>
+    new SshVpnPasswordVault(passwordsPath, secretStore).get(id)
 
   afterEach(() => rmSync(dir, { recursive: true, force: true }))
 
@@ -152,6 +166,7 @@ describe('saveProfileWithPassword', () => {
       saveProfile: () => {
         throw new Error('disk full')
       },
+      getProfile: store.getProfile.bind(store),
       deleteProfile: store.deleteProfile.bind(store)
     }
 
@@ -170,6 +185,7 @@ describe('saveProfileWithPassword', () => {
         saveProfile: () => {
           throw new Error('disk full')
         },
+        getProfile: store.getProfile.bind(store),
         deleteProfile: store.deleteProfile.bind(store)
       }
 
@@ -204,39 +220,99 @@ describe('saveProfileWithPassword', () => {
     expect(readFileSync(passwordsPath, 'utf8')).toBe(DAMAGED)
   })
 
-  it('puts the password back even when restoring the old setting fails', () => {
-    const saved = saveProfileWithPassword(
-      { store, vault },
-      null,
-      { ...DRAFT, passwordStorage: 'never' },
-      undefined
+  describe('when a write fails after it replaced the file', () => {
+    it.each(['session', 'never'] as const)(
+      'puts the old setting and its password back when switching to %s',
+      (storage) => {
+        const saved = saveProfileWithPassword({ store, vault }, null, DRAFT, 'hunter2')
+        queueDurableWrites(settingsPath, 'throw-after')
+
+        expect(() =>
+          saveProfileWithPassword(
+            { store, vault },
+            saved,
+            { ...DRAFT, passwordStorage: storage },
+            undefined
+          )
+        ).toThrow('fsync failed')
+
+        expect(savedStorage(saved.id)).toBe('forever')
+        expect(savedPassword(saved.id)).toBe('hunter2')
+      }
     )
-    const undo = vi.fn<() => string | null>(() => null)
-    const failingVault = {
-      release: () => undo,
-      keep: () => {
-        throw new Error('fsync failed')
-      },
-      remember: vault.remember.bind(vault),
-      rememberForSession: vault.rememberForSession.bind(vault)
-    }
-    let saves = 0
-    const flaky = {
-      saveProfile: (id: string | undefined, draft: SshVpnProfileDraft) => {
-        saves += 1
-        if (saves > 1) {
-          throw new Error('settings locked')
-        }
-        return store.saveProfile(id, draft)
-      },
-      deleteProfile: store.deleteProfile.bind(store)
-    }
 
-    expect(() =>
-      saveProfileWithPassword({ store: flaky, vault: failingVault }, saved, DRAFT, 'hunter2')
-    ).toThrow(/fsync failed.*settings locked/)
+    it('reports only the failed write when the setting was never replaced', () => {
+      const saved = saveProfileWithPassword({ store, vault }, null, DRAFT, 'hunter2')
+      queueDurableWrites(settingsPath, 'throw-before', 'throw-before')
 
-    expect(undo).toHaveBeenCalledOnce()
+      expect(() =>
+        saveProfileWithPassword(
+          { store, vault },
+          saved,
+          { ...DRAFT, passwordStorage: 'never' },
+          undefined
+        )
+      ).toThrow(/^disk full$/)
+
+      expect(savedStorage(saved.id)).toBe('forever')
+      expect(savedPassword(saved.id)).toBe('hunter2')
+    })
+
+    it('keeps the password off disk while the new setting cannot be taken back', () => {
+      const saved = saveProfileWithPassword({ store, vault }, null, DRAFT, 'hunter2')
+      queueDurableWrites(settingsPath, 'throw-after', 'throw-before')
+
+      expect(() =>
+        saveProfileWithPassword(
+          { store, vault },
+          saved,
+          { ...DRAFT, passwordStorage: 'never' },
+          undefined
+        )
+      ).toThrow('fsync failed The previous settings could not be put back: disk full')
+
+      expect(savedStorage(saved.id)).toBe('never')
+      expect(savedPassword(saved.id)).toBeNull()
+    })
+
+    it('keeps the new setting without a password when sealing fails and it cannot be taken back', () => {
+      const saved = saveProfileWithPassword(
+        { store, vault },
+        null,
+        { ...DRAFT, passwordStorage: 'never' },
+        undefined
+      )
+      queueDurableWrites(passwordsPath, 'throw-after')
+      queueDurableWrites(settingsPath, 'ok', 'throw-before')
+
+      expect(() => saveProfileWithPassword({ store, vault }, saved, DRAFT, 'hunter2')).toThrow(
+        'fsync failed The previous settings could not be put back: disk full'
+      )
+
+      expect(savedStorage(saved.id)).toBe('forever')
+      expect(savedPassword(saved.id)).toBeNull()
+    })
+
+    it('leaves no profile behind when creating it fails', () => {
+      queueDurableWrites(settingsPath, 'throw-after')
+
+      expect(() => saveProfileWithPassword({ store, vault }, null, DRAFT, 'hunter2')).toThrow(
+        'fsync failed'
+      )
+
+      expect(new SshVpnStore(settingsPath).listProfiles()).toEqual([])
+    })
+
+    it('leaves no profile or password behind when sealing a new one fails', () => {
+      queueDurableWrites(passwordsPath, 'throw-after')
+
+      expect(() => saveProfileWithPassword({ store, vault }, null, DRAFT, 'hunter2')).toThrow(
+        'fsync failed'
+      )
+
+      expect(new SshVpnStore(settingsPath).listProfiles()).toEqual([])
+      expect(new SshVpnPasswordVault(passwordsPath, secretStore).savedProfileIds()).toEqual([])
+    })
   })
 
   describe('saveSshVpnProfile (the Settings form save)', () => {

@@ -2,29 +2,16 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as SecureFile from '../shared/secure-file'
 import type { SecretStore } from '../shared/secret-store'
+import { clearDurableWrites, queueDurableWrites } from './durable-write-failures-test-support'
 import { KeptPasswords, type Released } from './kept-passwords'
 
 const NO_ENCRYPTION = 'no encryption'
 const DAMAGED = '{"version": 1,'
 
-const writes = vi.hoisted(() => ({ failAfterReplacing: 0 }))
-
 vi.mock('../shared/secure-file', async (importOriginal) => {
-  const actual = await importOriginal<typeof SecureFile>()
-  return {
-    ...actual,
-    // Why: a durable write can replace the file and only then fail on its ACL or directory fsync.
-    writeDurableSecureJsonFile: (targetPath: string, value: unknown): boolean => {
-      const written = actual.writeDurableSecureJsonFile(targetPath, value)
-      if (writes.failAfterReplacing > 0) {
-        writes.failAfterReplacing -= 1
-        throw new Error('fsync failed')
-      }
-      return written
-    }
-  }
+  const { withQueuedDurableWrites } = await import('./durable-write-failures-test-support')
+  return withQueuedDurableWrites(await importOriginal())
 })
 
 function undoOf(released: Released): () => string | null {
@@ -52,7 +39,7 @@ describe('KeptPasswords', () => {
     dir = mkdtempSync(join(tmpdir(), 'orca-kept-passwords-'))
     filePath = join(dir, 'passwords.json')
     keychainOpen = true
-    writes.failAfterReplacing = 0
+    clearDurableWrites()
     passwords = reopened()
   })
 
@@ -175,7 +162,7 @@ describe('KeptPasswords', () => {
       'puts back the saved password a release removed (%s)',
       (storage) => {
         passwords.remember('a', 'forever', 'hunter2')
-        writes.failAfterReplacing = 1
+        queueDurableWrites(filePath, 'throw-after')
 
         expect(() => passwords.release('a', storage, undefined)).toThrow('fsync failed')
 
@@ -184,7 +171,7 @@ describe('KeptPasswords', () => {
     )
 
     it('leaves nothing on disk when sealing a first password fails', () => {
-      writes.failAfterReplacing = 1
+      queueDurableWrites(filePath, 'throw-after')
 
       expect(() => passwords.remember('a', 'forever', 'hunter2')).toThrow('fsync failed')
 
@@ -194,7 +181,7 @@ describe('KeptPasswords', () => {
     it('puts the previous password back when sealing a new one fails', () => {
       passwords.remember('a', 'forever', 'old')
       undoOf(passwords.release('a', 'forever', 'new'))
-      writes.failAfterReplacing = 1
+      queueDurableWrites(filePath, 'throw-after')
 
       expect(() => passwords.keep('a', 'forever', 'new')).toThrow('fsync failed')
 
@@ -203,7 +190,7 @@ describe('KeptPasswords', () => {
 
     it('puts a password back when forgetting it fails', () => {
       passwords.remember('a', 'forever', 'hunter2')
-      writes.failAfterReplacing = 1
+      queueDurableWrites(filePath, 'throw-after')
 
       expect(() => passwords.forget('a')).toThrow('fsync failed')
 
@@ -212,7 +199,7 @@ describe('KeptPasswords', () => {
 
     it('says so when putting the password back fails too', () => {
       passwords.remember('a', 'forever', 'hunter2')
-      writes.failAfterReplacing = 2
+      queueDurableWrites(filePath, 'throw-after', 'throw-after')
 
       expect(() => passwords.forget('a')).toThrow(
         'fsync failed The saved password could not be put back: fsync failed'
@@ -222,7 +209,7 @@ describe('KeptPasswords', () => {
     it('has undo report its own failed write instead of throwing', () => {
       passwords.remember('a', 'forever', 'hunter2')
       const undo = undoOf(passwords.release('a', 'never', undefined))
-      writes.failAfterReplacing = 1
+      queueDurableWrites(filePath, 'throw-after')
 
       expect(undo()).toBe('fsync failed')
     })
