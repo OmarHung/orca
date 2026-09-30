@@ -33,11 +33,11 @@ describe('KeptPasswords', () => {
   it('moves a saved password into memory for "session" and back to disk for "forever"', () => {
     expect(passwords.remember('a', 'forever', 'hunter2')).toBeNull()
 
-    expect(passwords.release('a', 'session', undefined)).toBeNull()
+    expect(passwords.release('a', 'session', undefined).ok).toBe(true)
     expect(passwords.get('a')).toBe('hunter2')
     expect(reopened().get('a')).toBeNull()
 
-    expect(passwords.release('a', 'forever', undefined)).toBeNull()
+    expect(passwords.release('a', 'forever', undefined).ok).toBe(true)
     expect(passwords.keep('a', 'forever', undefined)).toBeNull()
     expect(reopened().get('a')).toBe('hunter2')
   })
@@ -47,7 +47,10 @@ describe('KeptPasswords', () => {
     const onDisk = readFileSync(filePath, 'utf8')
     keychainOpen = false
 
-    expect(passwords.release('a', 'session', undefined)).toContain('locked or unavailable')
+    expect(passwords.release('a', 'session', undefined)).toMatchObject({
+      ok: false,
+      problem: expect.stringContaining('locked or unavailable')
+    })
 
     expect(readFileSync(filePath, 'utf8')).toBe(onDisk)
     keychainOpen = true
@@ -59,7 +62,7 @@ describe('KeptPasswords', () => {
     const onDisk = readFileSync(filePath, 'utf8')
     keychainOpen = false
 
-    expect(passwords.release('a', 'forever', undefined)).toBeNull()
+    expect(passwords.release('a', 'forever', undefined).ok).toBe(true)
     expect(passwords.keep('a', 'forever', undefined)).toBeNull()
 
     expect(readFileSync(filePath, 'utf8')).toBe(onDisk)
@@ -69,13 +72,43 @@ describe('KeptPasswords', () => {
     passwords.remember('a', 'forever', 'old')
     passwords.remember('b', 'forever', 'old')
 
-    expect(passwords.release('a', 'forever', null)).toBeNull()
-    expect(passwords.release('b', 'forever', 'new')).toBeNull()
+    expect(passwords.release('a', 'forever', null).ok).toBe(true)
+    expect(passwords.release('b', 'forever', 'new').ok).toBe(true)
     expect(passwords.keep('b', 'forever', 'new')).toBeNull()
-    expect(passwords.release('b', 'never', undefined)).toBeNull()
+    expect(passwords.release('b', 'never', undefined).ok).toBe(true)
 
     expect(passwords.ids()).toEqual([])
     expect(reopened().get('a')).toBeNull()
+  })
+
+  it.each(['session', 'never'] as const)(
+    'puts a released "forever" password back with undo, even with the keychain locked (%s)',
+    (storage) => {
+      passwords.remember('a', 'forever', 'hunter2')
+      passwords.rememberForSession('b', 'other')
+      const released = passwords.release('a', storage, undefined)
+      if (!released.ok) {
+        throw new Error(released.problem)
+      }
+      keychainOpen = false
+
+      expect(released.undo()).toBeNull()
+
+      keychainOpen = true
+      expect(reopened().get('a')).toBe('hunter2')
+      expect(passwords.get('b')).toBe('other')
+    }
+  )
+
+  it('reports when undo cannot put the password back', () => {
+    passwords.remember('a', 'forever', 'hunter2')
+    const released = passwords.release('a', 'never', undefined)
+    if (!released.ok) {
+      throw new Error(released.problem)
+    }
+    writeFileSync(filePath, '{"version": 1,')
+
+    expect(released.undo()).toContain(filePath)
   })
 
   it('keeps nothing in memory for "session" when the saved copy cannot be removed', () => {
