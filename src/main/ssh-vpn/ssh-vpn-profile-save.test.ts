@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { SshVpnProfileDraft } from '../../shared/ssh-vpn-types'
 import type { SecretStore } from '../../shared/secret-store'
 import { SshVpnPasswordVault } from './ssh-vpn-password-vault'
-import { saveProfileWithPassword } from './ssh-vpn-profile-save'
+import { saveProfileWithPassword, saveSshVpnProfile } from './ssh-vpn-profile-save'
 import { SshVpnStore } from './ssh-vpn-store'
 
 const DRAFT: SshVpnProfileDraft = {
@@ -202,5 +202,52 @@ describe('saveProfileWithPassword', () => {
 
     expect(store.getProfile(saved.id)?.passwordStorage).toBe('never')
     expect(readFileSync(passwordsPath, 'utf8')).toBe(DAMAGED)
+  })
+
+  describe('saveSshVpnProfile (the Settings form save)', () => {
+    const inspectOvpn = async (): Promise<{ needsCredentials: boolean }> => ({
+      needsCredentials: true
+    })
+
+    it('renames a "Forever" profile while the keychain is locked, keeping its password', async () => {
+      const saved = saveProfileWithPassword({ store, vault }, null, DRAFT, 'hunter2')
+      keychainOpen = false
+
+      await saveSshVpnProfile(
+        { store, vault, inspectOvpn },
+        { id: saved.id, draft: { ...DRAFT, name: 'Renamed' } }
+      )
+
+      keychainOpen = true
+      expect(store.getProfile(saved.id)?.name).toBe('Renamed')
+      expect(vault.get(saved.id)).toBe('hunter2')
+    })
+
+    it('refuses a new "Forever" password while the keychain is locked, changing nothing', async () => {
+      const saved = saveProfileWithPassword({ store, vault }, null, DRAFT, 'hunter2')
+      keychainOpen = false
+
+      await expect(
+        saveSshVpnProfile(
+          { store, vault, inspectOvpn },
+          { id: saved.id, draft: { ...DRAFT, name: 'Renamed' }, password: 'new' }
+        )
+      ).rejects.toThrow('no secure password storage')
+
+      keychainOpen = true
+      expect(store.getProfile(saved.id)?.name).toBe('Office')
+      expect(vault.get(saved.id)).toBe('hunter2')
+    })
+
+    it('checks the username before changing anything', async () => {
+      await expect(
+        saveSshVpnProfile(
+          { store, vault, inspectOvpn },
+          { draft: { ...DRAFT, username: undefined }, password: 'typed' }
+        )
+      ).rejects.toThrow('Enter the username')
+
+      expect(store.listProfiles()).toEqual([])
+    })
   })
 })
