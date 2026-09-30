@@ -49,7 +49,9 @@ export class SshVpnLogins {
     hostLabel: string | null
   ): Promise<SshVpnCredentials | null> {
     const wasRejected = this.rejected.delete(profile.id)
-    const saved = this.deps.vault.get(profile.id)
+    const storage = profile.passwordStorage ?? 'session'
+    // Why: "Ask every time" must never use a password, even one a failed removal left on disk.
+    const saved = storage === 'never' ? null : this.deps.vault.get(profile.id)
     if (saved && profile.username && !wasRejected) {
       return { username: profile.username, password: saved }
     }
@@ -65,8 +67,11 @@ export class SshVpnLogins {
       this.deps.store.saveProfile(profile.id, { ...profile, username: answer.username })
       this.deps.onProfileChanged?.()
     }
+    if (storage === 'never') {
+      return answer
+    }
     try {
-      this.deps.vault.remember(profile.id, profile.passwordStorage ?? 'session', answer.password)
+      this.deps.vault.remember(profile.id, storage, answer.password)
     } catch {
       // Why: no keychain or an unusable saved-password file must not block connecting.
       this.deps.vault.rememberForSession(profile.id, answer.password)
