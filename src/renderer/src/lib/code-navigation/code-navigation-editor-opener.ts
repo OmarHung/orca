@@ -1,5 +1,6 @@
 import type * as Monaco from 'monaco-editor'
 import { useAppStore } from '@/store'
+import type { OpenFile } from '@/store/slices/editor'
 import { detectLanguage } from '@/lib/language-detect'
 import { getRelativePathInsideRoot } from '@/lib/path'
 import { toEditorModelUri } from '@/components/editor/editor-model-uri'
@@ -13,6 +14,30 @@ import { codeNavigationHistory } from './code-navigation-history'
 import { isCodeNavigationMetadataPath } from '../../../../shared/code-navigation/code-navigation-types'
 
 type TargetPosition = { lineNumber: number; column: number }
+
+type TabFlags = Pick<OpenFile, 'staysInOpeningWorkspace' | 'readOnly'>
+
+/**
+ * Re-opening an existing tab keeps its old flags, so a tab from before they existed (or opened
+ * another way) would still move away or stay editable. Patch them in and reload it once.
+ */
+function applyMissingTabFlags(fileId: string, flags: TabFlags): void {
+  const tab = useAppStore.getState().openFiles.find((file) => file.id === fileId)
+  const missing =
+    tab &&
+    ((flags.staysInOpeningWorkspace === true && tab.staysInOpeningWorkspace !== true) ||
+      (flags.readOnly === true && tab.readOnly !== true))
+  if (!missing) {
+    return
+  }
+  useAppStore.setState((state) => ({
+    openFiles: state.openFiles.map((file) =>
+      file.id === fileId
+        ? { ...file, ...flags, fileContentReloadNonce: (file.fileContentReloadNonce ?? 0) + 1 }
+        : file
+    )
+  }))
+}
 
 /** The workspace a navigation target opens in. */
 export type NavigationOwner = { worktreeId: string; runtimeEnvironmentId?: string | null }
@@ -46,6 +71,13 @@ export function openNavigationTarget(
   const root = localWorkspaceRoot(store, owner.worktreeId)
   const runtimeEnvironmentId = owner.runtimeEnvironmentId ?? null
   const relativePath = getRelativePathInsideRoot(targetPath, root)
+  const flags: TabFlags = {
+    // Why: without it an outside file moves to whichever project contains it (a project at the
+    // home folder holds Orca's own server files), switching projects and stranding Back.
+    ...(relativePath === null ? { staysInOpeningWorkspace: true } : {}),
+    // Decompiled sources are read-only files Orca regenerates; edits could never be saved.
+    ...(isCodeNavigationMetadataPath(targetPath) ? { readOnly: true } : {})
+  }
   const fileId = store.openFile(
     {
       filePath: targetPath,
@@ -55,14 +87,11 @@ export function openNavigationTarget(
       language: detectLanguage(targetPath),
       mode: 'edit',
       runtimeEnvironmentId,
-      // Why: without it an outside file moves to whichever project contains it (a project at the
-      // home folder holds Orca's own server files), switching projects and stranding Back.
-      ...(relativePath === null ? { staysInOpeningWorkspace: true } : {}),
-      // Decompiled sources are read-only files Orca regenerates; edits could never be saved.
-      ...(isCodeNavigationMetadataPath(targetPath) ? { readOnly: true } : {})
+      ...flags
     },
     { suppressActiveRuntimeFallback: runtimeEnvironmentId === null }
   )
+  applyMissingTabFlags(fileId, flags)
   if (!position) {
     return
   }

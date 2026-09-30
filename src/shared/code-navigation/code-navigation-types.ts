@@ -93,3 +93,14 @@ const METADATA_PATH_PATTERN = /[\\/]language-servers[\\/]csharp-metadata[\\/]/
 export function isCodeNavigationMetadataPath(path: string): boolean {
   return METADATA_PATH_PATTERN.test(path)
 }
+
+const LANGUAGE_SERVER_FILE_PATTERN =
+  /[\\/]language-servers[\\/](?:csharp-metadata|typescript-native)[\\/]/
+
+/**
+ * Whether a file is one Orca's language servers own (decompiled C#, TypeScript's lib files). They
+ * belong to no project, so a tab showing one never moves to a project whose folder contains it.
+ */
+export function isOrcaLanguageServerFilePath(path: string): boolean {
+  return LANGUAGE_SERVER_FILE_PATTERN.test(path)
+}

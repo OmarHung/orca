@@ -3,17 +3,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { URI } from 'monaco-editor/esm/vs/base/common/uri.js'
 import { CODE_NAVIGATION_PREVIEW_SCHEME } from './code-navigation-preview-models'
 
-const store = vi.hoisted(() => ({
-  openFile: vi.fn(() => 'opened-tab'),
-  setPendingEditorReveal: vi.fn()
-}))
+const store = vi.hoisted(
+  (): {
+    openFile: ReturnType<typeof vi.fn>
+    setPendingEditorReveal: ReturnType<typeof vi.fn>
+    openFiles: Record<string, unknown>[]
+  } => ({
+    openFile: vi.fn(() => 'opened-tab'),
+    setPendingEditorReveal: vi.fn(),
+    openFiles: []
+  })
+)
+type StoreUpdate = (state: { openFiles: Record<string, unknown>[] }) => {
+  openFiles: unknown[]
+}
+const setState = vi.hoisted(() => vi.fn<(update: StoreUpdate) => void>())
 const workspace = vi.hoisted((): { sourceTab: unknown; openTab: unknown; root: string | null } => ({
   sourceTab: null,
   openTab: null,
   root: '/repo'
 }))
 
-vi.mock('@/store', () => ({ useAppStore: { getState: () => store } }))
+vi.mock('@/store', () => ({ useAppStore: { getState: () => store, setState } }))
 vi.mock('./code-navigation-workspace', () => ({
   findEditTabForModelUri: (_state: unknown, modelUri: string) =>
     modelUri.endsWith('/src/app.ts') ? workspace.sourceTab : workspace.openTab,
@@ -55,6 +66,7 @@ function register(): Opener {
 const sourceEditor = { getModel: () => ({ uri: URI.file('/repo/src/app.ts') }) }
 
 beforeEach(() => {
+  store.openFiles = []
   workspace.sourceTab = {
     worktreeId: 'wt-1',
     filePath: '/repo/src/app.ts',
@@ -128,6 +140,23 @@ describe('registerCodeNavigationEditorOpener', () => {
       expect.not.objectContaining({ readOnly: true }),
       expect.anything()
     )
+  })
+
+  it('patches the flags into an existing tab that lacks them and reloads it once', () => {
+    const opener = register()
+    store.openFiles = [{ id: 'opened-tab', fileContentReloadNonce: 2 }]
+
+    opener.openCodeEditor(sourceEditor, URI.file('/sdk/lib.dom.d.ts'), { lineNumber: 1, column: 1 })
+
+    const update = setState.mock.calls[0][0]
+    expect(update(store).openFiles).toEqual([
+      { id: 'opened-tab', staysInOpeningWorkspace: true, fileContentReloadNonce: 3 }
+    ])
+
+    setState.mockClear()
+    store.openFiles = [{ id: 'opened-tab', staysInOpeningWorkspace: true }]
+    opener.openCodeEditor(sourceEditor, URI.file('/sdk/lib.dom.d.ts'), { lineNumber: 1, column: 1 })
+    expect(setState).not.toHaveBeenCalled()
   })
 
   it('opens decompiled sources read-only', () => {
