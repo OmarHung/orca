@@ -2,8 +2,7 @@ import {
   databasePasswordStorage,
   type DatabaseConnection,
   type DatabaseConnectionDraft,
-  type DatabaseConnectionSummary,
-  type DatabasePasswordStorage
+  type DatabaseConnectionSummary
 } from '../../shared/database/database-connection-types'
 import type { DatabaseDdlTarget } from '../../shared/database/database-ddl-types'
 import type {
@@ -32,6 +31,7 @@ import type {
   DatabaseSetConnectionGroupRequest,
   DatabaseTestConnectionRequest
 } from '../../shared/database/database-session-types'
+import { saveConnectionWithPassword } from './database-connection-save'
 import type { DatabaseConnectionStore } from './database-connection-store'
 import type { DatabaseConsoleFiles } from './database-console-files'
 import type { DatabaseQueryHistory } from './database-query-history'
@@ -110,9 +110,7 @@ export class DatabaseService {
       return { ok: false, error: { message: NO_SECURE_PASSWORD_STORAGE, code: 'unavailable' } }
     }
     const previous = request.id ? this.deps.connections.get(request.id) : null
-    const saved = previous
-      ? this.saveExistingConnection(previous, request.draft, storage, password)
-      : this.saveNewConnection(request.draft, storage, password)
+    const saved = saveConnectionWithPassword(this.deps, previous, request.draft, storage, password)
     if (!saved.ok) {
       return saved
     }
@@ -124,52 +122,6 @@ export class DatabaseService {
       ok: true,
       value: { ...saved.value, hasSavedPassword: passwords.has(saved.value.id) }
     }
-  }
-
-  /**
-   * Removals before the setting is saved, sealing after it (undone on failure), so a failed step
-   * never leaves a setting claiming what the password file does not do, or a password it did not ask for.
-   */
-  private saveExistingConnection(
-    previous: DatabaseConnection,
-    draft: DatabaseConnectionDraft,
-    storage: DatabasePasswordStorage,
-    password: string | null | undefined
-  ): DatabaseResult<DatabaseConnection> {
-    const { passwords, connections } = this.deps
-    const released = passwords.release(previous.id, storage, password)
-    if (!released.ok) {
-      return released
-    }
-    const saved = connections.save(previous.id, draft)
-    const kept = passwords.keep(previous.id, storage, password)
-    if (!kept.ok) {
-      connections.save(previous.id, previous)
-      return kept
-    }
-    return { ok: true, value: saved }
-  }
-
-  /** A new connection gets a fresh id, so nothing is saved to move; only a typed password is kept. */
-  private saveNewConnection(
-    draft: DatabaseConnectionDraft,
-    storage: DatabasePasswordStorage,
-    password: string | null | undefined
-  ): DatabaseResult<DatabaseConnection> {
-    const created = this.deps.connections.save(undefined, draft)
-    if (typeof password !== 'string' || storage === 'never') {
-      return { ok: true, value: created }
-    }
-    if (storage === 'session') {
-      this.deps.passwords.rememberForSession(created.id, password)
-      return { ok: true, value: created }
-    }
-    const sealed = this.deps.passwords.remember(created.id, 'forever', password)
-    if (!sealed.ok) {
-      this.deps.connections.delete(created.id)
-      return sealed
-    }
-    return { ok: true, value: created }
   }
 
   /** Regrouping is cosmetic: open sessions stay. */

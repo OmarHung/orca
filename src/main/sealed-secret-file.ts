@@ -115,6 +115,26 @@ export class SealedSecretFile {
     }
   }
 
+  /** The stored ciphertext for `id`, to put back later with restoreCiphertext; needs no keychain. */
+  ciphertext(id: string): string | null {
+    const read = this.read()
+    return 'contents' in read && Object.hasOwn(read.contents.ciphertexts, id)
+      ? (read.contents.ciphertexts[id] ?? null)
+      : null
+  }
+
+  restoreCiphertext(id: string, ciphertext: string): SecretFileProblem | null {
+    const read = this.read()
+    if ('problem' in read) {
+      return read.problem
+    }
+    this.write({
+      ...read.contents,
+      ciphertexts: { ...read.contents.ciphertexts, [id]: ciphertext }
+    })
+    return null
+  }
+
   seal(id: string, secret: string): SealResult {
     const store = this.secretStore()
     if (!store.isEncryptionAvailable()) {
