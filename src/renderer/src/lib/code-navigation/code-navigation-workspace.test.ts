@@ -95,4 +95,64 @@ describe('resolveCodeNavigationContext', () => {
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: as above.
     expect(resolveCodeNavigationContext(sshFolderState as never, modelUri)).toBeNull()
   })
+
+  describe('with a project nested in another (a repo at the home folder)', () => {
+    const filePath = '/home/shop/src/app.ts'
+    const tab = (worktreeId: string) => ({
+      id: `editor:${worktreeId}:${filePath}`,
+      filePath,
+      relativePath: 'src/app.ts',
+      worktreeId,
+      language: 'typescript',
+      mode: 'edit',
+      isDirty: false
+    })
+    function nestedState(active: { worktreeId: string; fileId?: string }) {
+      return {
+        openFiles: [tab('wt-home'), tab('wt-shop')],
+        activeWorktreeId: active.worktreeId,
+        activeFileId: active.fileId ?? null,
+        worktreesByRepo: {
+          'repo-home': [{ id: 'wt-home', repoId: 'repo-home', path: '/home' }],
+          'repo-shop': [{ id: 'wt-shop', repoId: 'repo-shop', path: '/home/shop' }]
+        },
+        repos: [
+          { id: 'repo-home', path: '/home' },
+          { id: 'repo-shop', path: '/home/shop' }
+        ],
+        folderWorkspaces: [],
+        projectGroups: [],
+        settings: { activeRuntimeEnvironmentId: null }
+      }
+    }
+    const resolveIn = (active: { worktreeId: string; fileId?: string }) =>
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the resolver reads only the fields built above.
+      resolveCodeNavigationContext(nestedState(active) as never, toEditorModelUri(filePath))
+
+    it('uses the tab of the active project when both show the file', () => {
+      expect(resolveIn({ worktreeId: 'wt-shop' })?.tab.worktreeId).toBe('wt-shop')
+      expect(resolveIn({ worktreeId: 'wt-home' })?.tab.worktreeId).toBe('wt-home')
+      expect(
+        resolveIn({ worktreeId: 'wt-other', fileId: `editor:wt-home:${filePath}` })?.tab.worktreeId
+      ).toBe('wt-home')
+    })
+
+    it('never sends decompiled sources to a server, even inside the home-folder project', () => {
+      const metadataPath =
+        '/home/Library/Application Support/orca/language-servers/csharp-metadata/MediatR-1/MediatR.ISender.cs'
+      const state = {
+        ...nestedState({ worktreeId: 'wt-home' }),
+        openFiles: [{ ...tab('wt-home'), id: 'metadata', filePath: metadataPath }]
+      }
+      expect(
+        // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: as above.
+        resolveCodeNavigationContext(state as never, toEditorModelUri(metadataPath))
+      ).toBeNull()
+    })
+
+    it('roots the server at the innermost project, not the home folder', () => {
+      expect(resolveIn({ worktreeId: 'wt-home' })?.root).toBe('/home/shop')
+      expect(resolveIn({ worktreeId: 'wt-shop' })?.root).toBe('/home/shop')
+    })
+  })
 })
