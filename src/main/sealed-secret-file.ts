@@ -26,6 +26,12 @@ export type SealedLookup =
   | { state: 'unavailable' }
   | { state: 'problem'; problem: SecretFileProblem }
 
+/** One id as stored, for restore(); `unusable` means the file could not be read, so it was not written either. */
+export type SealedSnapshot =
+  | { state: 'absent' }
+  | { state: 'present'; ciphertext: string }
+  | { state: 'unusable' }
+
 type ReadResult = { contents: SealedSecretFileContents } | { problem: SecretFileProblem }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -34,6 +40,10 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function isMissingFileError(error: unknown): boolean {
   return isObject(error) && error.code === 'ENOENT'
+}
+
+function storedCiphertext(contents: SealedSecretFileContents, id: string): string | undefined {
+  return Object.hasOwn(contents.ciphertexts, id) ? contents.ciphertexts[id] : undefined
 }
 
 function parseContents(text: string): ReadResult {
@@ -115,23 +125,31 @@ export class SealedSecretFile {
     }
   }
 
-  /** The stored ciphertext for `id`, to put back later with restoreCiphertext; needs no keychain. */
-  ciphertext(id: string): string | null {
+  snapshot(id: string): SealedSnapshot {
     const read = this.read()
-    return 'contents' in read && Object.hasOwn(read.contents.ciphertexts, id)
-      ? (read.contents.ciphertexts[id] ?? null)
-      : null
+    if ('problem' in read) {
+      return { state: 'unusable' }
+    }
+    const ciphertext = storedCiphertext(read.contents, id)
+    return ciphertext === undefined ? { state: 'absent' } : { state: 'present', ciphertext }
   }
 
-  restoreCiphertext(id: string, ciphertext: string): SecretFileProblem | null {
+  /** Puts `id` back as `before` held it, writing only if it changed; needs no keychain. */
+  restore(id: string, before: SealedSnapshot): SecretFileProblem | null {
+    if (before.state === 'unusable') {
+      return null
+    }
     const read = this.read()
     if ('problem' in read) {
       return read.problem
     }
-    this.write({
-      ...read.contents,
-      ciphertexts: { ...read.contents.ciphertexts, [id]: ciphertext }
-    })
+    const wanted = before.state === 'present' ? before.ciphertext : undefined
+    if (storedCiphertext(read.contents, id) === wanted) {
+      return null
+    }
+    const { [id]: _replaced, ...rest } = read.contents.ciphertexts
+    const ciphertexts = wanted === undefined ? rest : { ...read.contents.ciphertexts, [id]: wanted }
+    this.write({ ...read.contents, ciphertexts })
     return null
   }
 
