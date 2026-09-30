@@ -8,6 +8,7 @@ import {
   type CodeNavigationQueryResult
 } from '../../shared/code-navigation/code-navigation-types'
 import { CodeNavigationService } from './code-navigation-service'
+import { registerCodeEditorFocusMirror } from './code-editor-shortcut-ownership'
 import {
   isLanguageServerInstalled,
   languageServersDir,
@@ -58,6 +59,7 @@ const FilesChangedSchema = z.object({
 })
 
 export function registerCodeNavigationHandlers(): void {
+  registerCodeEditorFocusMirror()
   const baseDir = languageServersDir(app.getPath('userData'))
   const service = new CodeNavigationService({
     prepareLaunch: (kind, onDownloading) =>

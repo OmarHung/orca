@@ -1,6 +1,6 @@
 # 編輯器程式碼跳轉（LSP）：實作計畫（fork 專屬）
 
-> 狀態：Phase 1 完成（2026-09-30，§8）；Phase 2 完成（2026-09-30，§9）；Phase 3 未開始
+> 狀態：Phase 1 完成（2026-09-30，§8）；Phase 2 完成（2026-09-30，§9）；JetBrains 快捷鍵（§10）；Phase 3 未開始
 > 分支：`feat/code-navigation`（worktree `/Users/omar/myprojects/orca-code-nav`），完成後 fast-forward 回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -177,3 +177,39 @@ TS 的內建型別（`console`、`Array`）不需要處理：TypeScript 7 回傳
   - TS：原本的 F12／Cmd+點擊／peek，加上懸停在 `greet` 上顯示 `function greet(name: string): string`（從 import 解析出的真實簽名）
   - C#：原本的跨專案 F12 與跳到實作，加上懸停 `IGreeter`，以及 F12 到 `Console` 開啟 `System.Console.cs`（停在第 10 行 `public static class Console`，Structure 面板也列出成員）
 - 反編譯檔累積在 `csharp-metadata/`，目前不清理（都是小的文字檔）。
+
+## 10. JetBrains 快捷鍵與 Back／Forward（2026-09-30）
+
+### 10.1 使用者的決定
+
+- ⌘B（Ctrl+B）在**程式碼編輯器聚焦時**跳到宣告；其他地方仍是「切換左側欄」
+- 要做 ⌘[／⌘] 的 Back／Forward（跨分頁的跳轉歷史），在編輯器裡蓋掉 Monaco 的減少／增加縮排
+
+同一個原則（「編輯器聚焦時 JetBrains 的鍵優先」）也套用到：⇧⌘B（原本是「新增瀏覽器分頁」）、Windows/Linux 的 Ctrl+Alt+←／→（原本是工作區歷史）。
+
+### 10.2 鍵位（`shared/keybindings/definitions-code-navigation.ts`，scope `editor`，設定頁可改）
+
+| 動作 | macOS | Windows／Linux | 執行的 Monaco 動作 |
+|---|---|---|---|
+| Go to Declaration | ⌘B | Ctrl+B | `editor.action.revealDefinition` |
+| Go to Implementation | ⌥⌘B | Ctrl+Alt+B | `editor.action.goToImplementation` |
+| Go to Type Declaration | ⇧⌘B | Ctrl+Shift+B | `editor.action.goToTypeDefinition` |
+| Find Usages | ⌥F7 | Alt+F7 | `editor.action.goToReferences`（peek） |
+| Quick Documentation | F1 | （無，Ctrl+Q 是原生的結束） | `editor.action.showHover` |
+| Navigate Back／Forward | ⌘[／⌘] | Ctrl+Alt+←／→ | Orca 自己的歷史 |
+
+F12、⇧F12、⌘F12、⌘+點擊這些 Monaco 原本的鍵都保留。衝突偵測是按 `conflictGroup ?? scope` 分組，editor scope 的鍵不會被判定與 global／tabs 的同鍵衝突（`keybindings-conflicts.test.ts` 仍要求預設零衝突）。
+
+注意：dev 模式下 main 會攔截 F12 開關 DevTools，所以 dev 版只能用 ⌘B／⌘+點擊。
+
+### 10.3 按鍵怎麼送到編輯器
+
+- ⌘B、Ctrl+Alt+← 這類鍵在 main 的 `before-input-event` 就被攔截成 app 動作，renderer 收不到。比照 Markdown 編輯器 ⌘B 粗體的做法：renderer 在「編輯器分頁」的 Monaco 取得／失去文字焦點時送 `codeNav:setCodeEditorFocused`，main（`code-editor-shortcut-ownership.ts`，依 webContents id 記錄）在 `main-window-shortcut-routing.ts` 解析 app 動作之前，若這個鍵符合上表任一動作就放行。
+- renderer 端 `code-navigation-keymap.ts` 在 window 的 capture 階段接手（早於 Monaco 自己的 keybinding，才能蓋過 ⌘[ 縮排），只在焦點是編輯器分頁時作用；diff、SQL console 等其他 Monaco 不受影響。
+
+### 10.4 Back／Forward 歷史（`code-navigation-history.ts`）
+
+- 每個工作區一份，最多 50 筆。
+- 記錄點：(1) 每次跳轉前的位置——所有跳轉（F12、⌘B、⌘+點擊、peek 開啟，連同檔內跳轉）都會先經過 `registerEditorOpener` 的 opener，同檔跳轉只是之後回傳 false 交給 Monaco；(2) 游標落到另一個檔案（從檔案樹、搜尋開檔等）時，離開的那個位置。
+- Back／Forward 自己開啟的分頁回報位置時不算「移動」（`pendingArrival`），同一位置不重複記錄。
+
