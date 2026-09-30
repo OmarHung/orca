@@ -1,5 +1,5 @@
 import React from 'react'
-import { Boxes, ChevronLeft, Eye, EyeOff, LoaderCircle } from 'lucide-react'
+import { Boxes, ChevronLeft, Eye, EyeOff, LoaderCircle, Plus } from 'lucide-react'
 import {
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -9,6 +9,7 @@ import {
   DropdownMenuSubTrigger
 } from '@/components/ui/dropdown-menu'
 import { translate } from '@/i18n/i18n'
+import type { DotnetPublishRunConfiguration } from '../../../../shared/run-configurations/dotnet-publish-configuration'
 import type {
   DetectedRunConfiguration,
   RunConfigurationKind
@@ -32,6 +33,9 @@ export type DetectedSectionActions = {
   toItem: (run: DetectedRunConfiguration) => RunWidgetItem
   /** The widget's own row for a saved configuration; null once it is gone. */
   savedItem: (configurationId: string) => RunWidgetItem | null
+  /** Opens the Publish to folder dialog for a new configuration of this run's project. */
+  onNewPublish: (run: DetectedRunConfiguration) => void
+  onEditPublish: (configuration: DotnetPublishRunConfiguration) => void
   hideKeyOf: (run: DetectedRunConfiguration) => string
   onHide: (key: string) => void
   onShow: (keys: readonly string[]) => void
@@ -110,31 +114,47 @@ function folderHeading(folder: string): string {
   return folder ? `${folder}/` : translate('run.widget.rootFolder', 'Workspace root')
 }
 
+/** This machine's folder publishes open in their dialog; orca.yaml ones are edited in the file. */
+function editablePublish(item: RunWidgetItem): DotnetPublishRunConfiguration | null {
+  return item.kind === 'configuration' &&
+    item.source === 'local' &&
+    item.configuration.type === 'dotnet-publish'
+    ? item.configuration
+    : null
+}
+
 function KindSubmenu({
   group,
   row,
-  actions
+  actions,
+  newPublishFrom
 }: {
   group: DetectedRunMenuGroup
   row: RunWidgetRowContext
   actions: DetectedSectionActions
+  /** A run of a .NET project, when its Publish kind offers a new folder publish. */
+  newPublishFrom: DetectedRunConfiguration | null
 }): React.JSX.Element {
   const Icon = RUN_KIND_ICONS[group.kind]
   const savedItems = group.saved.flatMap((configuration) => {
     const item = actions.savedItem(configuration.id)
     return item ? [item] : []
   })
-  const rowFor = (item: RunWidgetItem, onHide?: () => void): React.JSX.Element => (
-    <RunWidgetMenuRow
-      key={item.key}
-      item={item}
-      current={item.key === row.selectedKey}
-      state={row.rowState(item)}
-      actions={row.rowActions}
-      onSelect={row.onSelect}
-      onHide={onHide}
-    />
-  )
+  const rowFor = (item: RunWidgetItem, onHide?: () => void): React.JSX.Element => {
+    const publish = editablePublish(item)
+    return (
+      <RunWidgetMenuRow
+        key={item.key}
+        item={item}
+        current={item.key === row.selectedKey}
+        state={row.rowState(item)}
+        actions={row.rowActions}
+        onSelect={row.onSelect}
+        onHide={onHide}
+        onEdit={publish ? () => actions.onEditPublish(publish) : undefined}
+      />
+    )
+  }
   return (
     <DropdownMenuSub>
       <CascadeSubTrigger testId="run-widget-detected-kind">
@@ -150,6 +170,18 @@ function KindSubmenu({
             rowFor(actions.toItem(run), () => actions.onHide(actions.hideKeyOf(run)))
           )}
         </div>
+        {newPublishFrom ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              data-testid="run-widget-new-publish"
+              onSelect={() => actions.onNewPublish(newPublishFrom)}
+            >
+              <Plus />
+              {translate('run.widget.newPublishToFolder', 'New Publish to Folder…')}
+            </DropdownMenuItem>
+          </>
+        ) : null}
       </DropdownMenuSubContent>
     </DropdownMenuSub>
   )
@@ -164,6 +196,10 @@ function ProjectSubmenu({
   row: RunWidgetRowContext
   actions: DetectedSectionActions
 }): React.JSX.Element {
+  const dotnetRun =
+    project.ecosystem === 'dotnet'
+      ? (project.groups.flatMap((group) => group.runs).find((run) => run.projectFile) ?? null)
+      : null
   return (
     <DropdownMenuSub>
       <CascadeSubTrigger testId="run-widget-detected-project">
@@ -171,7 +207,13 @@ function ProjectSubmenu({
       </CascadeSubTrigger>
       <DropdownMenuSubContent style={RUN_WIDGET_CONTENT_STYLE} className="min-w-44">
         {project.groups.map((group) => (
-          <KindSubmenu key={group.kind} group={group} row={row} actions={actions} />
+          <KindSubmenu
+            key={group.kind}
+            group={group}
+            row={row}
+            actions={actions}
+            newPublishFrom={group.kind === 'publish' ? dotnetRun : null}
+          />
         ))}
         <DropdownMenuSeparator />
         <DropdownMenuItem
