@@ -10,6 +10,7 @@ import { extractArchive } from '../debug/adapters/archive-extract'
 import { resolveCommandOnLocalPath } from '../ipc/command-path-resolver'
 import type { CodeNavigationServerKind } from '../../shared/code-navigation/code-navigation-types'
 import type { LanguageServerLaunch } from './language-server-session'
+import { findCsharpSolution } from './csharp-solution-discovery'
 import {
   CSHARP_SERVER_ARTIFACT,
   CSHARP_SERVER_ENTRY,
@@ -22,6 +23,7 @@ export type LanguageServerLaunchDeps = {
   platform: NodeJS.Platform
   arch: string
   env: NodeJS.ProcessEnv
+  findSolution: (root: string) => Promise<string | null>
 }
 
 const defaultDeps = (): LanguageServerLaunchDeps => ({
@@ -29,7 +31,8 @@ const defaultDeps = (): LanguageServerLaunchDeps => ({
   resolveCommand: (command) => resolveCommandOnLocalPath(command),
   platform: process.platform,
   arch: process.arch,
-  env: process.env
+  env: process.env,
+  findSolution: (root) => findCsharpSolution(root)
 })
 
 export function languageServersDir(userDataDir: string): string {
@@ -70,6 +73,7 @@ export async function isLanguageServerInstalled(
 /** Downloads the server on first use and returns how to start it. */
 export async function prepareLanguageServerLaunch(
   kind: CodeNavigationServerKind,
+  root: string,
   baseDir: string,
   onDownloading: () => void,
   deps: LanguageServerLaunchDeps = defaultDeps()
@@ -94,9 +98,11 @@ export async function prepareLanguageServerLaunch(
     throw new Error('C# navigation needs the .NET SDK, but dotnet was not found on PATH')
   }
   const installDir = await installServer(CSHARP_SERVER_ARTIFACT, baseDir, deps, onDownloading)
+  const solution = await deps.findSolution(root).catch(() => null)
   return {
     program: dotnet,
-    args: [join(installDir, ...CSHARP_SERVER_ENTRY)],
+    // Why a relative path: csharp-ls resolves --solution against its working directory, the root.
+    args: [join(installDir, ...CSHARP_SERVER_ENTRY), ...(solution ? ['--solution', solution] : [])],
     // Why Major: the server targets .NET 10 and should also run on a newer runtime.
     env: { ...deps.env, DOTNET_ROLL_FORWARD: 'Major' },
     // Why: without metadata URIs, jumping to a framework type (Console, List<T>) finds nothing.

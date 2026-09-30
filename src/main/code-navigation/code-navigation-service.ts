@@ -29,6 +29,7 @@ const MAX_RUNNING_SESSIONS = 5
 export type CodeNavigationServiceDeps = {
   prepareLaunch: (
     kind: CodeNavigationServerKind,
+    root: string,
     onDownloading: () => void
   ) => Promise<LanguageServerLaunch>
   /** Whether starting this kind needs no download; hovering never downloads. */
@@ -71,11 +72,16 @@ export class CodeNavigationService {
     const key = sessionKey(request.kind, request.root)
     const existing = this.sessions.get(key)
     const entry = existing ?? this.startSession(request.kind, request.root, emitStatus)
+    // Why: a query that joins a server still starting (one a prewarm or hover began) shows the
+    // loading toast too, instead of a jump that seems to do nothing.
+    const joinsStartingServer = existing !== undefined && existing.started === null
     const status = (event: Omit<CodeNavigationStatusEvent, 'kind' | 'root'>): void => {
-      // Why only the query that started the server reports: it owns the "starting" toast.
-      if (!existing) {
+      if (!existing || joinsStartingServer) {
         emitStatus({ kind: request.kind, root: request.root, ...event })
       }
+    }
+    if (joinsStartingServer) {
+      status({ phase: 'starting' })
     }
     this.touch(key, entry)
     try {
@@ -124,6 +130,15 @@ export class CodeNavigationService {
     }
   }
 
+  /**
+   * Starts an installed server in the background and has it compile, so the first jump is fast
+   * (a C# solution takes seconds to load). Like hover, it never downloads.
+   */
+  async warm(request: Omit<CodeNavigationHoverQuery, 'position'>): Promise<void> {
+    // Why a hover at the top: it needs the semantic model, so the project loads and compiles now.
+    await this.hover({ ...request, position: { line: 0, character: 0 } })
+  }
+
   closeDocument(kind: CodeNavigationServerKind, root: string, path: string): void {
     this.sessions.get(sessionKey(kind, root))?.started?.closeDocument(path)
   }
@@ -169,7 +184,7 @@ export class CodeNavigationService {
     const createSession =
       this.deps.createSession ?? ((options) => new LanguageServerSession(options))
     const session = (async () => {
-      const launch = await this.deps.prepareLaunch(kind, () =>
+      const launch = await this.deps.prepareLaunch(kind, root, () =>
         emitStatus({ kind, root, phase: 'downloading' })
       )
       emitStatus({ kind, root, phase: 'starting' })
