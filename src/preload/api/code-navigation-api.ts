@@ -1,5 +1,7 @@
 import type {
   CodeNavigationFileChange,
+  CodeNavigationHoverQuery,
+  CodeNavigationHoverResult,
   CodeNavigationQuery,
   CodeNavigationQueryResult,
   CodeNavigationServerKind,
@@ -8,6 +10,8 @@ import type {
 
 export type CodeNavigationApi = {
   query: (request: CodeNavigationQuery) => Promise<CodeNavigationQueryResult>
+  /** Never downloads a server; `ok: false` means keep Monaco's own hover. */
+  hover: (request: CodeNavigationHoverQuery) => Promise<CodeNavigationHoverResult>
   closeDocument: (request: {
     kind: CodeNavigationServerKind
     root: string

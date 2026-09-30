@@ -1,8 +1,8 @@
-import { readFile, stat } from 'node:fs/promises'
 import {
   isCodeNavigationWatchedPath,
   type CodeNavigationFileChange,
-  type CodeNavigationLocation,
+  type CodeNavigationHoverQuery,
+  type CodeNavigationHoverResult,
   type CodeNavigationQuery,
   type CodeNavigationQueryResult,
   type CodeNavigationServerKind,
@@ -13,20 +13,28 @@ import {
   type LanguageServerLaunch,
   type LanguageServerSessionOptions
 } from './language-server-session'
+import { writeCsharpMetadataFile } from './csharp-metadata-files'
+import {
+  readTargetPreviews,
+  toFileLocations,
+  type MetadataFileResolver
+} from './navigation-target-files'
 
 // Why: idle servers hold whole program graphs in memory; restarting one is cheap next to that.
 const IDLE_SHUTDOWN_MS = 30 * 60_000
 const IDLE_SWEEP_INTERVAL_MS = 60_000
 // Why: every worktree gets its own server, and people keep many worktrees of one repo open.
 const MAX_RUNNING_SESSIONS = 5
-const MAX_PREVIEW_FILES = 100
-const MAX_PREVIEW_BYTES = 1024 * 1024
 
 export type CodeNavigationServiceDeps = {
   prepareLaunch: (
     kind: CodeNavigationServerKind,
     onDownloading: () => void
   ) => Promise<LanguageServerLaunch>
+  /** Whether starting this kind needs no download; hovering never downloads. */
+  isInstalled: (kind: CodeNavigationServerKind) => Promise<boolean>
+  /** Where decompiled C# sources are written; without it they cannot be opened. */
+  metadataDir?: string
   createSession?: (options: LanguageServerSessionOptions) => LanguageServerSession
   readPreview?: (path: string) => Promise<string | null>
   now?: () => number
@@ -39,17 +47,6 @@ type SessionEntry = {
   /** Set once started, so notifications never wait on a starting server. */
   started: LanguageServerSession | null
   lastUsedAt: number
-}
-
-async function readPreviewFile(path: string): Promise<string | null> {
-  try {
-    if ((await stat(path)).size > MAX_PREVIEW_BYTES) {
-      return null
-    }
-    return await readFile(path, 'utf8')
-  } catch {
-    return null
-  }
 }
 
 function sessionKey(kind: CodeNavigationServerKind, root: string): string {
@@ -83,12 +80,44 @@ export class CodeNavigationService {
     this.touch(key, entry)
     try {
       const session = await entry.session
-      const locations = await session.query(request.feature, request.document, request.position)
-      const previews = await this.readPreviews(locations, request.document.path)
+      const locations = await toFileLocations(
+        await session.query(request.feature, request.document, request.position),
+        this.metadataResolver(session)
+      )
+      const previews = await readTargetPreviews(
+        locations,
+        request.document.path,
+        this.deps.readPreview
+      )
       status({ phase: 'ready' })
       return { ok: true, locations, previews }
     } catch (error) {
       status({ phase: 'failed', message: errorMessage(error) })
+      return { ok: false, message: errorMessage(error) }
+    } finally {
+      this.touch(key, entry)
+    }
+  }
+
+  /**
+   * Hover info from a running server. Starts an installed one (hovering shows the user is working
+   * in that language) but never downloads one; the renderer then keeps Monaco's own hover.
+   */
+  async hover(request: CodeNavigationHoverQuery): Promise<CodeNavigationHoverResult> {
+    const key = sessionKey(request.kind, request.root)
+    let entry = this.sessions.get(key)
+    if (!entry) {
+      const installed = await this.deps.isInstalled(request.kind).catch(() => false)
+      if (!installed) {
+        return { ok: false, message: 'The language server is not installed' }
+      }
+      entry = this.sessions.get(key) ?? this.startSession(request.kind, request.root, () => {})
+    }
+    this.touch(key, entry)
+    try {
+      const session = await entry.session
+      return { ok: true, hover: await session.hover(request.document, request.position) }
+    } catch (error) {
       return { ok: false, message: errorMessage(error) }
     } finally {
       this.touch(key, entry)
@@ -193,18 +222,14 @@ export class CodeNavigationService {
     }
   }
 
-  private async readPreviews(
-    locations: readonly CodeNavigationLocation[],
-    queriedPath: string
-  ): Promise<Record<string, string>> {
-    const read = this.deps.readPreview ?? readPreviewFile
-    const paths = [...new Set(locations.map((location) => location.path))]
-      .filter((path) => path !== queriedPath)
-      .slice(0, MAX_PREVIEW_FILES)
-    const contents = await Promise.all(paths.map(async (path) => [path, await read(path)] as const))
-    return Object.fromEntries(
-      contents.filter((entry): entry is readonly [string, string] => entry[1] !== null)
-    )
+  private metadataResolver(session: LanguageServerSession): MetadataFileResolver | null {
+    const { metadataDir } = this.deps
+    return metadataDir
+      ? (uri) =>
+          writeCsharpMetadataFile(metadataDir, uri, (method, params) =>
+            session.request(method, params)
+          )
+      : null
   }
 
   private async disposeEntry(entry: SessionEntry): Promise<void> {
