@@ -18769,6 +18769,7 @@
       "hideProject": "隱藏此專案",
       "hidden": "已隱藏（{{value0}}）",
       "hiddenHint": "點選即可重新顯示",
+      "rootFolder": "工作區根目錄",
       "showAll": "全部顯示",
       "kind": {
         "run": "執行",
