@@ -38,7 +38,12 @@ import {
   runWidgetFootprint,
   type RunWidgetFootprint
 } from './run-widget-activity'
-import { runWidgetItems, selectedRunWidgetItem, type RunWidgetItem } from './run-widget-items'
+import {
+  configurationItemKey,
+  runWidgetItems,
+  selectedRunWidgetItem,
+  type RunWidgetItem
+} from './run-widget-items'
 import { useWorktreeRunConfigurations } from './use-worktree-run-configurations'
 import { useCompoundQuickCommand } from './use-compound-quick-command'
 import { useFollowActiveRunTerminal } from './use-follow-active-run-terminal'
@@ -193,12 +198,18 @@ export function RunWidget({
           }
           detected={
             detectedRuns
-              ? detectedRunMenu(detectedRuns, data.worktreePath, new Set(hiddenDetected))
+              ? detectedRunMenu(
+                  detectedRuns,
+                  data.worktreePath,
+                  new Set(hiddenDetected),
+                  configurations
+                )
               : null
           }
           cascadeLeft={cascade === 'rtl'}
           detectedActions={{
             toItem: (run) => detectedRunWidgetItem(run, worktreeId, groupId),
+            savedItem: (id) => items.find((item) => item.key === configurationItemKey(id)) ?? null,
             hideKeyOf: (run) => detectedRunHideKey(run, data.worktreePath),
             onHide: (key) => useDetectedRunVisibilityStore.getState().hide(data.repoId, key),
             onShow: (keys) => useDetectedRunVisibilityStore.getState().show(data.repoId, keys)
