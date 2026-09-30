@@ -219,3 +219,13 @@ F12、⇧F12、⌘F12、⌘+點擊這些 Monaco 原本的鍵都保留。衝突�
 - 掛在每個編輯器的 container（`getContainerDomNode`，建立時就存在；view 的節點每換一次 model 就重建）的 capture 階段，早於 Monaco 的 pointer 處理。Monaco 原本把 ⌥⌘+點擊當成「在側邊開定義」，而且它的 link gesture 在 pointerup 觸發、`_hasTriggerKeyOnMouseDown` 會殘留，所以認領後要把 pointerdown／pointerup 連同之後 500ms 內的相容 mouse 事件都吞掉。
 - e2e：C# 在 `IGreeter` 上 ⌥⌘+點擊跳到 Greeter.cs 第 8 行的實作類別（跳到定義會停在第 3 行的介面）。
 
+### 10.6 巢狀專案（家目錄也是一個專案）的修正
+
+使用者回報：F12 到 MediatR 的 `ISender`（反編譯檔）時，Orca 跳到另一個專案，⌘[ 也回不去。
+
+- 原因：使用者把家目錄 `/Users/omar` 加成了一個專案，底下還有 `Autron/ecommerce_project` 等專案。同一個檔案在兩個專案各開一個分頁時，它們共用同一個 Monaco model（model 只看路徑），`findEditTabForModelUri` 取第一個符合的分頁，剛好是家目錄那個，於是跳轉目標開在家目錄專案、Orca 切了過去，而歷史是分專案記的。
+- 修正一：`findEditTabForModelUri` 在多個分頁都符合時，優先取使用中的檔案（`activeFileId`），其次是使用中專案（`activeWorktreeId`）的分頁。
+- 修正二：語言伺服器的根目錄改取「包含這個檔案的最內層本機專案」（`innermostLocalRoot`），家目錄專案裡的 `ecommerce_project` 檔案會以 `ecommerce_project` 為根，不會對整個家目錄啟動 csharp-ls。
+- 修正三：反編譯檔（`language-servers/csharp-metadata/` 底下，`isCodeNavigationMetadataPath`）一律不送給語言伺服器。它在家目錄底下，不排除的話，在家目錄專案裡懸停就會以整個家目錄為根啟動 csharp-ls（使用者的快取裡有兩份不同雜湊的 MediatR，就是從兩個不同的根解析出來的）。
+- e2e：C# 從反編譯的 `System.Console.cs` 按 Back 回到 Program.cs 原位置。巢狀專案的情境由 `code-navigation-workspace.test.ts` 覆蓋。
+
