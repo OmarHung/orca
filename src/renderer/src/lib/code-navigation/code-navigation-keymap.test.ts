@@ -55,6 +55,7 @@ function fakeEditor(path: string) {
       position = next
     }),
     revealPositionInCenterIfOutsideViewport: vi.fn(),
+    getContainerDomNode: () => ({ addEventListener: () => {}, removeEventListener: () => {} }),
     trigger: vi.fn(),
     focus() {
       textFocus = true
