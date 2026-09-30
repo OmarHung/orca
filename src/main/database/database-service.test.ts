@@ -1,7 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DatabaseConnectionDraft } from '../../shared/database/database-connection-types'
 import type { DatabaseError, DatabaseResult } from '../../shared/database/database-query-types'
 import type { SecretStore } from '../../shared/secret-store'
@@ -42,8 +42,10 @@ describe('DatabaseService', () => {
   let workerCommands: string[]
   let acceptedPassword: string
   let rejection: DatabaseError
+  let keychainOpen: boolean
 
   beforeEach(() => {
+    keychainOpen = true
     dir = mkdtempSync(join(tmpdir(), 'orca-db-service-'))
     connectPasswords = []
     workerCommands = []
@@ -68,7 +70,7 @@ describe('DatabaseService', () => {
     return new DatabaseService({
       connections: new DatabaseConnectionStore(join(dir, 'connections.json')),
       passwords: new DatabasePasswordVault(join(dir, 'passwords.json'), () =>
-        secretStore(encryption)
+        secretStore(encryption && keychainOpen)
       ),
       consoles: new DatabaseConsoleFiles(join(dir, 'consoles')),
       history: new DatabaseQueryHistory(join(dir, 'history')),
@@ -291,6 +293,77 @@ describe('DatabaseService', () => {
     })
 
     expect(connectPasswords).toEqual([null, null])
+  })
+
+  it('keeps a saved password when only the name changes while the keychain is locked', async () => {
+    const service = createService()
+    const saved = await service.saveConnection({ draft, password: 'right' })
+    if (!saved.ok) {
+      throw new Error(saved.error.message)
+    }
+    keychainOpen = false
+
+    const renamed = await service.saveConnection({
+      id: saved.value.id,
+      draft: { ...draft, name: 'Renamed' }
+    })
+    const moved = await service.saveConnection({
+      id: saved.value.id,
+      draft: { ...draft, passwordStorage: 'session' }
+    })
+
+    expect(renamed.ok).toBe(true)
+    expect(moved).toMatchObject({
+      ok: false,
+      error: { message: expect.stringContaining('locked') }
+    })
+    expect(service.listConnections()[0]).toMatchObject({
+      name: 'Renamed',
+      passwordStorage: 'forever'
+    })
+    keychainOpen = true
+    expect((await service.connect(saved.value.id)).ok).toBe(true)
+    expect(connectPasswords).toEqual(['right'])
+  })
+
+  it('clears the password for null and replaces it for a new one', async () => {
+    const service = createService()
+    const saved = await service.saveConnection({ draft, password: 'old' })
+    if (!saved.ok) {
+      throw new Error(saved.error.message)
+    }
+
+    await service.saveConnection({ id: saved.value.id, draft, password: 'right' })
+    await service.connect(saved.value.id)
+    const cleared = await service.saveConnection({ id: saved.value.id, draft, password: null })
+
+    expect(connectPasswords).toEqual(['right'])
+    expect(cleared).toMatchObject({ ok: true, value: { hasSavedPassword: false } })
+  })
+
+  it('seals nothing when saving the connection fails, and undoes it when sealing fails', async () => {
+    const service = createService()
+    const saved = await service.saveConnection({
+      draft: { ...draft, passwordStorage: 'never' },
+      password: null
+    })
+    if (!saved.ok) {
+      throw new Error(saved.error.message)
+    }
+    const save = vi.spyOn(DatabaseConnectionStore.prototype, 'save').mockImplementationOnce(() => {
+      throw new Error('disk full')
+    })
+
+    await expect(
+      service.saveConnection({ id: saved.value.id, draft, password: 'right' })
+    ).rejects.toThrow('disk full')
+    save.mockRestore()
+    expect(createService().listConnections()[0]?.hasSavedPassword).toBe(false)
+
+    writeFileSync(join(dir, 'passwords.json'), '{"version": 1,')
+    const sealing = await service.saveConnection({ id: saved.value.id, draft, password: 'right' })
+    expect(sealing.ok).toBe(false)
+    expect(service.listConnections()[0]).toMatchObject({ passwordStorage: 'never' })
   })
 
   it('round-trips console text', async () => {

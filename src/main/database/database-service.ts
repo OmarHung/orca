@@ -100,23 +100,18 @@ export class DatabaseService {
   ): Promise<DatabaseResult<DatabaseConnectionSummary>> {
     const { passwords } = this.deps
     const storage = databasePasswordStorage(request.draft)
-    // Why re-file an existing password: switching storage mode must move it, not strand it.
-    const password =
-      request.password === undefined
-        ? request.id
-          ? passwords.get(request.id)
-          : null
-        : request.password
+    // Why three states: undefined keeps (or moves) the password already kept, null clears it.
+    const { password } = request
     if (
       storage === 'forever' &&
-      password !== null &&
+      typeof password === 'string' &&
       !passwords.encryptionStatus().canStorePasswords
     ) {
       return { ok: false, error: { message: NO_SECURE_PASSWORD_STORAGE, code: 'unavailable' } }
     }
     const previous = request.id ? this.deps.connections.get(request.id) : null
     const saved = previous
-      ? this.saveExistingConnection(previous.id, request.draft, storage, password)
+      ? this.saveExistingConnection(previous, request.draft, storage, password)
       : this.saveNewConnection(request.draft, storage, password)
     if (!saved.ok) {
       return saved
@@ -131,29 +126,38 @@ export class DatabaseService {
     }
   }
 
-  /** Moves the password first, so the saved setting never claims what the password file does not do. */
+  /**
+   * Removals before the setting is saved, sealing after it (undone on failure), so a failed step
+   * never leaves a setting claiming what the password file does not do, or a password it did not ask for.
+   */
   private saveExistingConnection(
-    connectionId: string,
+    previous: DatabaseConnection,
     draft: DatabaseConnectionDraft,
     storage: DatabasePasswordStorage,
-    password: string | null
+    password: string | null | undefined
   ): DatabaseResult<DatabaseConnection> {
-    const { passwords } = this.deps
-    const moved =
-      password === null
-        ? passwords.forget(connectionId)
-        : passwords.remember(connectionId, storage, password)
-    return moved.ok ? { ok: true, value: this.deps.connections.save(connectionId, draft) } : moved
+    const { passwords, connections } = this.deps
+    const released = passwords.release(previous.id, storage, password)
+    if (!released.ok) {
+      return released
+    }
+    const saved = connections.save(previous.id, draft)
+    const kept = passwords.keep(previous.id, storage, password)
+    if (!kept.ok) {
+      connections.save(previous.id, previous)
+      return kept
+    }
+    return { ok: true, value: saved }
   }
 
   /** A new connection gets a fresh id, so nothing is saved to move; only a typed password is kept. */
   private saveNewConnection(
     draft: DatabaseConnectionDraft,
     storage: DatabasePasswordStorage,
-    password: string | null
+    password: string | null | undefined
   ): DatabaseResult<DatabaseConnection> {
     const created = this.deps.connections.save(undefined, draft)
-    if (password === null || storage === 'never') {
+    if (typeof password !== 'string' || storage === 'never') {
       return { ok: true, value: created }
     }
     if (storage === 'session') {
