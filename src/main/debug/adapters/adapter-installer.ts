@@ -57,13 +57,25 @@ async function install(
   }
 }
 
+export function debugAdapterInstallDir(artifact: DebugAdapterArtifact, baseDir: string): string {
+  return join(baseDir, artifact.name, artifact.version)
+}
+
+/** Whether a verified copy is already on disk, i.e. `ensureDebugAdapterInstalled` won't download. */
+export function isDebugAdapterInstalled(
+  artifact: DebugAdapterArtifact,
+  baseDir: string
+): Promise<boolean> {
+  return exists(join(debugAdapterInstallDir(artifact, baseDir), INSTALLED_MARKER))
+}
+
 /** Returns the adapter's install directory, downloading and verifying it on first use. */
 export function ensureDebugAdapterInstalled(
   artifact: DebugAdapterArtifact,
   baseDir: string,
   deps: AdapterInstallDeps
 ): Promise<string> {
-  const installDir = join(baseDir, artifact.name, artifact.version)
+  const installDir = debugAdapterInstallDir(artifact, baseDir)
   const existing = inFlightInstalls.get(installDir)
   if (existing) {
     return existing
