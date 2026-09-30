@@ -18627,7 +18627,9 @@
       "closeTerminals": "關閉 '{{value0}}' 的終端機"
     },
     "status": {
+      "queued": "正在啟動…",
       "running": "執行中",
+      "unverifiable": "終端機不可用",
       "stopping": "正在停止…",
       "succeeded": "已完成",
       "failed": "失敗（退出碼 {{value0}}）",

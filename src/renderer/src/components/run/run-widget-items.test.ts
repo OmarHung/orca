@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { runWidgetItemForRun, runWidgetItems, selectedRunWidgetItem } from './run-widget-items'
+import {
+  isRemoteQuickCommandSelectionPending,
+  runWidgetItemForRun,
+  runWidgetItems,
+  selectedRunWidgetItem
+} from './run-widget-items'
 import type { RunTarget } from './run-configuration-control'
 
 const recentRun: RunTarget = {
@@ -40,6 +45,28 @@ describe('selectedRunWidgetItem', () => {
     expect(selectedRunWidgetItem(items, 'b')?.label).toBe('Build')
     expect(selectedRunWidgetItem(items, 'gone')?.label).toBe('Api: https')
     expect(selectedRunWidgetItem([], undefined)).toBeNull()
+  })
+})
+
+describe('isRemoteQuickCommandSelectionPending', () => {
+  it('keeps a selected remote command unavailable until its owning host loads', () => {
+    expect(
+      isRemoteQuickCommandSelectionPending(
+        'quick:runtime:server\u0000deploy',
+        'runtime:server',
+        true
+      )
+    ).toBe(true)
+    expect(
+      isRemoteQuickCommandSelectionPending('quick:local\u0000lint', 'runtime:server', true)
+    ).toBe(false)
+    expect(
+      isRemoteQuickCommandSelectionPending(
+        'quick:runtime:server\u0000deploy',
+        'runtime:server',
+        false
+      )
+    ).toBe(false)
   })
 })
 

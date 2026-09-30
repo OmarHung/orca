@@ -2,8 +2,10 @@ import { create } from 'zustand'
 
 /** `finished` is a clean exit whose code the shell did not report. */
 export type RunSessionStatus =
+  | 'queued'
   | 'running'
   | 'stopping'
+  | 'unverifiable'
   | 'succeeded'
   | 'failed'
   | 'stopped'
@@ -15,6 +17,10 @@ export type RunSession = {
   commandKey: string
   label: string
   tabId: string
+  /** Durable layout identity; unlike tab and PTY ids, this survives pane detach and rebind. */
+  leafId: string
+  /** Prevents an older async stop/rerun from mutating its replacement run. */
+  attemptId: string
   status: RunSessionStatus
   exitCode: number | null
   /** Stop already sent the forceful signals; the next press closes the terminal. */
@@ -31,10 +37,18 @@ export function runSessionKey(worktreeId: string, commandKey: string): string {
 }
 
 export function isRunSessionActive(status: RunSessionStatus): boolean {
-  return status === 'running' || status === 'stopping'
+  return (
+    status === 'queued' ||
+    status === 'running' ||
+    status === 'stopping' ||
+    status === 'unverifiable'
+  )
 }
 
 export function runStopStage(session: RunSession): RunStopStage {
+  if (session.status === 'unverifiable') {
+    return 'close'
+  }
   if (session.status !== 'stopping') {
     return 'interrupt'
   }
@@ -51,7 +65,7 @@ export function finishRunSession(session: RunSession, exitCode: number | null): 
     return session
   }
   const status: RunSessionStatus =
-    session.status === 'stopping'
+    session.status === 'stopping' || session.status === 'unverifiable'
       ? 'stopped'
       : exitCode === null
         ? 'finished'
@@ -64,10 +78,13 @@ export function finishRunSession(session: RunSession, exitCode: number | null): 
 type RunSessionState = {
   sessionsByKey: Record<string, RunSession>
   upsertSession: (session: RunSession) => void
-  setStatus: (key: string, status: RunSessionStatus) => void
-  markForceStopped: (key: string) => void
-  /** Returns the session that finished, if the tab belonged to an active run. */
-  finishByTab: (tabId: string, exitCode: number | null) => RunSession | null
+  setStatus: (key: string, attemptId: string, status: RunSessionStatus) => void
+  setTabId: (key: string, attemptId: string, tabId: string) => void
+  markForceStopped: (key: string, attemptId: string) => void
+  markRunningByLeafId: (leafId: string) => void
+  /** Returns the active run that owns the stable pane, if any. */
+  finishByLeafId: (leafId: string, exitCode: number | null) => RunSession | null
+  finishAttempt: (key: string, attemptId: string, exitCode: number | null) => RunSession | null
 }
 
 // Why a standalone store: run state is per-window and transient, and staying out of the
@@ -76,27 +93,55 @@ export const useRunSessionStore = create<RunSessionState>((set, get) => ({
   sessionsByKey: {},
   upsertSession: (session) =>
     set({ sessionsByKey: { ...get().sessionsByKey, [session.key]: session } }),
-  setStatus: (key, status) => {
+  setStatus: (key, attemptId, status) => {
     const session = get().sessionsByKey[key]
-    if (session) {
+    if (session?.attemptId === attemptId && isRunSessionActive(session.status)) {
       set({ sessionsByKey: { ...get().sessionsByKey, [key]: { ...session, status } } })
     }
   },
-  markForceStopped: (key) => {
+  setTabId: (key, attemptId, tabId) => {
     const session = get().sessionsByKey[key]
-    if (session) {
+    if (session?.attemptId === attemptId && session.tabId !== tabId) {
+      set({ sessionsByKey: { ...get().sessionsByKey, [key]: { ...session, tabId } } })
+    }
+  },
+  markForceStopped: (key, attemptId) => {
+    const session = get().sessionsByKey[key]
+    if (session?.attemptId === attemptId) {
       set({ sessionsByKey: { ...get().sessionsByKey, [key]: { ...session, forceStopped: true } } })
     }
   },
-  finishByTab: (tabId, exitCode) => {
+  markRunningByLeafId: (leafId) => {
     const session = Object.values(get().sessionsByKey).find(
-      (candidate) => candidate.tabId === tabId && isRunSessionActive(candidate.status)
+      (candidate) => candidate.leafId === leafId && candidate.status === 'queued'
+    )
+    if (session) {
+      set({
+        sessionsByKey: {
+          ...get().sessionsByKey,
+          [session.key]: { ...session, status: 'running' }
+        }
+      })
+    }
+  },
+  finishByLeafId: (leafId, exitCode) => {
+    const session = Object.values(get().sessionsByKey).find(
+      (candidate) => candidate.leafId === leafId && isRunSessionActive(candidate.status)
     )
     if (!session) {
       return null
     }
     const finished = finishRunSession(session, exitCode)
     set({ sessionsByKey: { ...get().sessionsByKey, [session.key]: finished } })
+    return finished
+  },
+  finishAttempt: (key, attemptId, exitCode) => {
+    const session = get().sessionsByKey[key]
+    if (!session || session.attemptId !== attemptId || !isRunSessionActive(session.status)) {
+      return null
+    }
+    const finished = finishRunSession(session, exitCode)
+    set({ sessionsByKey: { ...get().sessionsByKey, [key]: finished } })
     return finished
   }
 }))

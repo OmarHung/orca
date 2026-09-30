@@ -8,8 +8,10 @@ export function runStatusTone(session: RunSession | null): RunStatusTone {
     return 'idle'
   }
   switch (session.status) {
+    case 'queued':
     case 'running':
     case 'stopping':
+    case 'unverifiable':
       return 'running'
     case 'succeeded':
       return 'success'
@@ -26,10 +28,14 @@ export function describeRunStatus(session: RunSession | null): string | null {
     return null
   }
   switch (session.status) {
+    case 'queued':
+      return translate('run.status.queued', 'Starting…')
     case 'running':
       return translate('run.status.running', 'Running')
     case 'stopping':
       return translate('run.status.stopping', 'Stopping…')
+    case 'unverifiable':
+      return translate('run.status.unverifiable', 'Terminal unavailable')
     case 'succeeded':
     case 'finished':
       return translate('run.status.succeeded', 'Finished')
