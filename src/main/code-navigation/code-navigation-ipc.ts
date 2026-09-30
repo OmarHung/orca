@@ -1,13 +1,18 @@
-import { isAbsolute } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 import { app, ipcMain } from 'electron'
 import { z } from 'zod'
 import {
   CODE_NAVIGATION_FEATURES,
   CODE_NAVIGATION_SERVER_KINDS,
+  type CodeNavigationHoverResult,
   type CodeNavigationQueryResult
 } from '../../shared/code-navigation/code-navigation-types'
 import { CodeNavigationService } from './code-navigation-service'
-import { languageServersDir, prepareLanguageServerLaunch } from './language-server-launch'
+import {
+  isLanguageServerInstalled,
+  languageServersDir,
+  prepareLanguageServerLaunch
+} from './language-server-launch'
 
 // Why bounded: renderer input reaches a child process's stdin verbatim.
 const MAX_DOCUMENT_CHARS = 8 * 1024 * 1024
@@ -25,10 +30,9 @@ const PositionSchema = z.object({
   character: z.number().int().nonnegative()
 })
 
-const QuerySchema = z.object({
+const HoverSchema = z.object({
   kind: KindSchema,
   root: AbsolutePathSchema,
-  feature: z.enum(CODE_NAVIGATION_FEATURES),
   document: z.object({
     path: AbsolutePathSchema,
     languageId: z.string().regex(/^[a-z]{1,40}$/),
@@ -37,6 +41,8 @@ const QuerySchema = z.object({
   }),
   position: PositionSchema
 })
+
+const QuerySchema = HoverSchema.extend({ feature: z.enum(CODE_NAVIGATION_FEATURES) })
 
 const CloseDocumentSchema = z.object({
   kind: KindSchema,
@@ -55,7 +61,9 @@ export function registerCodeNavigationHandlers(): void {
   const baseDir = languageServersDir(app.getPath('userData'))
   const service = new CodeNavigationService({
     prepareLaunch: (kind, onDownloading) =>
-      prepareLanguageServerLaunch(kind, baseDir, onDownloading)
+      prepareLanguageServerLaunch(kind, baseDir, onDownloading),
+    isInstalled: (kind) => isLanguageServerInstalled(kind, baseDir),
+    metadataDir: join(baseDir, 'csharp-metadata')
   })
 
   ipcMain.handle(
@@ -71,6 +79,16 @@ export function registerCodeNavigationHandlers(): void {
           sender.send('codeNav:status', status)
         }
       })
+    }
+  )
+
+  ipcMain.handle(
+    'codeNav:hover',
+    async (_event, rawRequest: unknown): Promise<CodeNavigationHoverResult> => {
+      const request = HoverSchema.safeParse(rawRequest)
+      return request.success
+        ? service.hover(request.data)
+        : { ok: false, message: 'Invalid code navigation request' }
     }
   )
 
