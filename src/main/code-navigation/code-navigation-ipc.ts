@@ -4,6 +4,7 @@ import { z } from 'zod'
 import {
   CODE_NAVIGATION_FEATURES,
   CODE_NAVIGATION_SERVER_KINDS,
+  CSHARP_METADATA_DIR_NAME,
   type CodeNavigationHoverResult,
   type CodeNavigationQueryResult
 } from '../../shared/code-navigation/code-navigation-types'
@@ -65,7 +66,7 @@ export function registerCodeNavigationHandlers(): void {
     prepareLaunch: (kind, onDownloading) =>
       prepareLanguageServerLaunch(kind, baseDir, onDownloading),
     isInstalled: (kind) => isLanguageServerInstalled(kind, baseDir),
-    metadataDir: join(baseDir, 'csharp-metadata')
+    metadataDir: join(baseDir, CSHARP_METADATA_DIR_NAME)
   })
 
   ipcMain.handle(
