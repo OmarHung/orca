@@ -1,29 +1,32 @@
 // @vitest-environment happy-dom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { TerminalLayoutSnapshot } from '../../../../shared/terminal-tab-types'
 
-const { appState, sendRuntimePtyInput, runQuickCommandInNewTab } = vi.hoisted(() => {
+const { appState, sendRuntimePtyInputVerified, runQuickCommandInNewTab } = vi.hoisted(() => {
   const tabsByWorktree: Record<string, { id: string }[]> = {}
   const ptyIdsByTabId: Record<string, string[]> = {}
+  const terminalLayoutsByTabId: Record<string, TerminalLayoutSnapshot> = {}
   const pendingStartupByTabId: Record<string, { command: string }> = {}
   return {
     appState: {
       settings: null,
       tabsByWorktree,
       ptyIdsByTabId,
+      terminalLayoutsByTabId,
       pendingStartupByTabId,
       consumeTabStartupCommand: vi.fn(),
       setActiveTab: vi.fn(),
       setActiveTabType: vi.fn(),
       closeTab: vi.fn()
     },
-    sendRuntimePtyInput: vi.fn(() => true),
+    sendRuntimePtyInputVerified: vi.fn(async () => true),
     runQuickCommandInNewTab: vi.fn()
   }
 })
 
 vi.mock('@/store', () => ({ useAppStore: { getState: () => appState } }))
-vi.mock('@/runtime/runtime-terminal-inspection', () => ({ sendRuntimePtyInput }))
+vi.mock('@/runtime/runtime-terminal-inspection', () => ({ sendRuntimePtyInputVerified }))
 vi.mock('@/lib/run-quick-command-in-new-tab', () => ({ runQuickCommandInNewTab }))
 
 import { dispatchTerminalCommandFinishedEvent } from '@/hooks/terminal-command-finished-event'
@@ -50,18 +53,37 @@ const key = runSessionKey('wt', 'cmd')
 function openTab(tabId: string): void {
   appState.tabsByWorktree = { wt: [{ id: tabId }] }
   appState.ptyIdsByTabId = { [tabId]: [`pty-${tabId}`] }
+  appState.terminalLayoutsByTabId = {
+    [tabId]: {
+      root: { type: 'leaf', leafId: LEAF },
+      activeLeafId: LEAF,
+      expandedLeafId: null,
+      ptyIdsByLeafId: { [LEAF]: `pty-${tabId}` }
+    }
+  }
 }
+
+let bindStartup = true
 
 beforeEach(() => {
   useRunSessionStore.setState({ sessionsByKey: {} })
   useRecentRunStore.setState({ recentByWorktree: {} })
   appState.tabsByWorktree = {}
   appState.ptyIdsByTabId = {}
+  appState.terminalLayoutsByTabId = {}
   appState.pendingStartupByTabId = {}
+  bindStartup = true
   vi.clearAllMocks()
   runQuickCommandInNewTab.mockImplementation(() => {
     openTab('tab-1')
-    return { tabId: 'tab-1' }
+    if (bindStartup) {
+      queueMicrotask(() => {
+        window.dispatchEvent(
+          new CustomEvent('orca:terminal-startup-bound', { detail: { paneKey: `tab-1:${LEAF}` } })
+        )
+      })
+    }
+    return { tabId: 'tab-1', leafId: LEAF }
   })
 })
 
@@ -90,7 +112,7 @@ describe('runConfiguration', () => {
     await runConfiguration(target)
 
     expect(runQuickCommandInNewTab).toHaveBeenCalledTimes(1)
-    expect(sendRuntimePtyInput).toHaveBeenCalledWith(null, 'pty-tab-1', 'pnpm dev\r')
+    expect(sendRuntimePtyInputVerified).toHaveBeenCalledWith(null, 'pty-tab-1', 'pnpm dev\r')
     expect(appState.setActiveTab).toHaveBeenCalledWith('tab-1')
     expect(useRunSessionStore.getState().sessionsByKey[key].status).toBe('running')
   })
@@ -143,11 +165,11 @@ describe('stopConfiguration', () => {
     await runConfiguration(target)
 
     stopConfiguration('wt', 'cmd')
-    expect(sendRuntimePtyInput).toHaveBeenLastCalledWith(null, 'pty-tab-1', '\x03')
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(null, 'pty-tab-1', '\x03')
     expect(useRunSessionStore.getState().sessionsByKey[key].status).toBe('stopping')
 
     stopConfiguration('wt', 'cmd')
-    expect(sendRuntimePtyInput).toHaveBeenLastCalledWith(null, 'pty-tab-1', '\x03\x1c')
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(null, 'pty-tab-1', '\x03\x1c')
     expect(appState.closeTab).not.toHaveBeenCalled()
     expect(useRunSessionStore.getState().sessionsByKey[key]).toMatchObject({
       status: 'stopping',
@@ -168,18 +190,19 @@ describe('stopConfiguration', () => {
 
     stopConfiguration('wt', 'cmd')
 
-    expect(sendRuntimePtyInput).toHaveBeenLastCalledWith(null, 'pty-tab-1', '\x03')
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(null, 'pty-tab-1', '\x03')
     expect(useRunSessionStore.getState().sessionsByKey[key].forceStopped).toBeUndefined()
   })
 
   it('cancels a command the shell has not received yet instead of sending Ctrl-C', async () => {
+    bindStartup = false
     await runConfiguration(target)
     appState.pendingStartupByTabId = { 'tab-1': { command: 'pnpm dev' } }
 
     stopConfiguration('wt', 'cmd')
 
     expect(appState.consumeTabStartupCommand).toHaveBeenCalledWith('tab-1')
-    expect(sendRuntimePtyInput).not.toHaveBeenCalledWith(null, 'pty-tab-1', '\x03')
+    expect(sendRuntimePtyInputVerified).not.toHaveBeenCalledWith(null, 'pty-tab-1', '\x03')
     expect(useRunSessionStore.getState().sessionsByKey[key].status).toBe('stopped')
   })
 
@@ -198,23 +221,24 @@ describe('rerunConfiguration', () => {
     await runConfiguration(target)
 
     const rerun = rerunConfiguration(target)
-    expect(sendRuntimePtyInput).toHaveBeenLastCalledWith(null, 'pty-tab-1', '\x03')
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(null, 'pty-tab-1', '\x03')
     dispatchTerminalCommandFinishedEvent('wt', 130, `tab-1:${LEAF}`)
     await rerun
 
-    expect(sendRuntimePtyInput).toHaveBeenLastCalledWith(null, 'pty-tab-1', 'pnpm dev\r')
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(null, 'pty-tab-1', 'pnpm dev\r')
     expect(runQuickCommandInNewTab).toHaveBeenCalledTimes(1)
     expect(useRunSessionStore.getState().sessionsByKey[key].status).toBe('running')
   })
 
   it('reruns at once when the previous command was still queued', async () => {
+    bindStartup = false
     await runConfiguration(target)
     appState.pendingStartupByTabId = { 'tab-1': { command: 'pnpm dev' } }
 
     await rerunConfiguration(target)
 
     expect(appState.closeTab).not.toHaveBeenCalled()
-    expect(sendRuntimePtyInput).toHaveBeenLastCalledWith(null, 'pty-tab-1', 'pnpm dev\r')
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(null, 'pty-tab-1', 'pnpm dev\r')
     expect(useRunSessionStore.getState().sessionsByKey[key].status).toBe('running')
   })
 
@@ -223,12 +247,12 @@ describe('rerunConfiguration', () => {
     await runConfiguration(target)
     runQuickCommandInNewTab.mockImplementation(() => {
       openTab('tab-2')
-      return { tabId: 'tab-2' }
+      return { tabId: 'tab-2', leafId: LEAF }
     })
 
     const rerun = rerunConfiguration(target)
     await vi.advanceTimersByTimeAsync(3_001)
-    expect(sendRuntimePtyInput).toHaveBeenLastCalledWith(null, 'pty-tab-1', '\x03\x1c')
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(null, 'pty-tab-1', '\x03\x1c')
     expect(appState.closeTab).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(2_001)
     await rerun
@@ -236,8 +260,20 @@ describe('rerunConfiguration', () => {
     expect(appState.closeTab).toHaveBeenCalledWith('tab-1')
     expect(useRunSessionStore.getState().sessionsByKey[key]).toMatchObject({
       tabId: 'tab-2',
-      status: 'running'
+      status: 'queued'
     })
+  })
+
+  it('coalesces repeated rerun requests into one terminal restart', async () => {
+    await runConfiguration(target)
+
+    const first = rerunConfiguration(target)
+    const second = rerunConfiguration(target)
+    dispatchTerminalCommandFinishedEvent('wt', 130, `tab-1:${LEAF}`)
+    await Promise.all([first, second])
+
+    expect(sendRuntimePtyInputVerified).toHaveBeenCalledTimes(2)
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(null, 'pty-tab-1', 'pnpm dev\r')
   })
 })
 
@@ -252,7 +288,7 @@ describe('rerunConfiguration after forcing', () => {
     await rerun
 
     expect(appState.closeTab).not.toHaveBeenCalled()
-    expect(sendRuntimePtyInput).toHaveBeenLastCalledWith(null, 'pty-tab-1', 'pnpm dev\r')
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(null, 'pty-tab-1', 'pnpm dev\r')
   })
 })
 
@@ -287,5 +323,104 @@ describe('runConfigurationAndWait', () => {
       status: 'stopped',
       exitCode: null
     })
+  })
+})
+
+describe('stable pane ownership', () => {
+  it('ignores a command finish from a sibling pane in the run tab', async () => {
+    await runConfiguration(target)
+
+    dispatchTerminalCommandFinishedEvent('wt', 0, 'tab-1:22222222-2222-4222-8222-222222222222')
+
+    expect(useRunSessionStore.getState().sessionsByKey[key].status).toBe('running')
+  })
+
+  it('follows the owned pane when it is detached into another tab', async () => {
+    await runConfiguration(target)
+    dispatchTerminalCommandFinishedEvent('wt', 0, `tab-1:${LEAF}`)
+    openTab('tab-detached')
+
+    await runConfiguration(target)
+
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(
+      null,
+      'pty-tab-detached',
+      'pnpm dev\r'
+    )
+    expect(useRunSessionStore.getState().sessionsByKey[key].tabId).toBe('tab-detached')
+  })
+
+  it('stops the owned split pane instead of the tab first PTY', async () => {
+    await runConfiguration(target)
+    const siblingLeaf = '22222222-2222-4222-8222-222222222222'
+    appState.ptyIdsByTabId = { 'tab-1': ['pty-sibling', 'pty-run'] }
+    appState.terminalLayoutsByTabId = {
+      'tab-1': {
+        root: {
+          type: 'split',
+          direction: 'horizontal',
+          first: { type: 'leaf', leafId: siblingLeaf },
+          second: { type: 'leaf', leafId: LEAF }
+        },
+        activeLeafId: siblingLeaf,
+        expandedLeafId: null,
+        ptyIdsByLeafId: { [siblingLeaf]: 'pty-sibling', [LEAF]: 'pty-run' }
+      }
+    }
+
+    stopConfiguration('wt', 'cmd')
+
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(null, 'pty-run', '\x03')
+  })
+
+  it('closes only the owned pane at the final stop stage', async () => {
+    await runConfiguration(target)
+    const siblingLeaf = '22222222-2222-4222-8222-222222222222'
+    appState.ptyIdsByTabId = { 'tab-1': ['pty-sibling', 'pty-run'] }
+    appState.terminalLayoutsByTabId = {
+      'tab-1': {
+        root: {
+          type: 'split',
+          direction: 'horizontal',
+          first: { type: 'leaf', leafId: siblingLeaf },
+          second: { type: 'leaf', leafId: LEAF }
+        },
+        activeLeafId: siblingLeaf,
+        expandedLeafId: null,
+        ptyIdsByLeafId: { [siblingLeaf]: 'pty-sibling', [LEAF]: 'pty-run' }
+      }
+    }
+    const closePane = vi.fn()
+    window.addEventListener('orca-close-terminal-pane', closePane)
+
+    stopConfiguration('wt', 'cmd')
+    stopConfiguration('wt', 'cmd')
+    stopConfiguration('wt', 'cmd')
+
+    expect(closePane).toHaveBeenCalledTimes(1)
+    const event = closePane.mock.calls[0]?.[0]
+    expect(event).toBeInstanceOf(CustomEvent)
+    if (!(event instanceof CustomEvent)) {
+      throw new Error('expected pane close event')
+    }
+    expect(event.detail).toMatchObject({
+      tabId: 'tab-1',
+      leafId: LEAF,
+      expectedPtyId: 'pty-run'
+    })
+    expect(appState.closeTab).not.toHaveBeenCalled()
+    window.removeEventListener('orca-close-terminal-pane', closePane)
+  })
+
+  it('marks a rejected remote stop unverifiable instead of claiming the process exited', async () => {
+    await runConfiguration(target)
+    sendRuntimePtyInputVerified.mockRejectedValueOnce(new Error('offline'))
+
+    stopConfiguration('wt', 'cmd')
+    await vi.waitFor(() =>
+      expect(useRunSessionStore.getState().sessionsByKey[key].status).toBe('unverifiable')
+    )
+
+    expect(useRunSessionStore.getState().sessionsByKey[key].exitCode).toBeNull()
   })
 })
