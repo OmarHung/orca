@@ -4,6 +4,7 @@ import { runQuickCommandInNewTab } from '@/lib/run-quick-command-in-new-tab'
 import { commandConfigurationOf } from '../../../../shared/run-configurations/run-configuration-plan'
 import { resolveCommandLaunch } from '../../../../shared/run-configurations/run-configuration-resolve'
 import { debugLaunchTarget } from '../debug/debug-launch'
+import { debugDetectedConfiguration, runDetectedConfiguration } from './detected-run-configuration'
 import { stopDebugSession } from '../debug/debug-session-controller'
 import {
   runConfiguration,
@@ -40,6 +41,7 @@ export function runWidgetSessionTarget(
 ): RunTarget | null {
   switch (item.kind) {
     case 'recent':
+    case 'detected':
       return item.target
     case 'quick-command':
       return toRunTarget(item.entry, scope.worktreeId, scope.groupId)
@@ -65,6 +67,9 @@ export function canDebugWidgetItem(item: RunWidgetItem): boolean {
   if (item.kind === 'recent') {
     return Boolean(item.target.debug && item.target.cwd)
   }
+  if (item.kind === 'detected') {
+    return Boolean(item.configuration.debug)
+  }
   return item.kind === 'configuration' && item.configuration.type === 'debug'
 }
 
@@ -81,6 +86,11 @@ export async function runWidgetItem(
   scope: RunWidgetScope,
   confirm: ConfirmationDialogContextValue
 ): Promise<void> {
+  if (item.kind === 'detected') {
+    // Why: this path also asks before a publish and makes the run the current temporary one.
+    await runDetectedConfiguration(item.configuration, scope.worktreeId, scope.groupId, confirm)
+    return
+  }
   if (!(await stopDebuggingBeforeRun(launchContext(item, scope, confirm)))) {
     return
   }
@@ -116,6 +126,10 @@ export async function debugWidgetItem(
   scope: RunWidgetScope,
   confirm: ConfirmationDialogContextValue
 ): Promise<void> {
+  if (item.kind === 'detected') {
+    await debugDetectedConfiguration(item.configuration, scope.worktreeId, scope.groupId, confirm)
+    return
+  }
   const context = launchContext(item, scope, confirm)
   if (!(await stopRunBeforeDebug(context, runWidgetSessionTarget(item, scope)))) {
     return
@@ -130,6 +144,7 @@ export async function debugWidgetItem(
       cwd: item.target.cwd,
       title: item.label,
       target: item.target.debug,
+      ...(item.target.debugOptions ? { launchOptions: item.target.debugOptions } : {}),
       sourceKey: item.key
     })
   }

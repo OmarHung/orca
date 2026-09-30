@@ -1,4 +1,5 @@
 import type { ConfirmationDialogContextValue } from '@/components/confirmation-dialog-context'
+import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { findWorktreeById } from '@/store/slices/worktree-helpers'
 import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
@@ -11,7 +12,7 @@ import {
   stopRunBeforeDebug,
   type RunDebugLaunchContext
 } from './run-debug-exclusivity'
-import { recentItemKey } from './run-widget-items'
+import { recentItemKey, type RunWidgetItem } from './run-widget-items'
 
 export function detectedConfigurationLabel(configuration: DetectedRunConfiguration): string {
   return `${configuration.projectName}: ${configuration.name}`
@@ -29,6 +30,9 @@ export function toDetectedRunTarget(
     commandKey,
     cwd: configuration.projectDir,
     ...(configuration.debug ? { debug: configuration.debug } : {}),
+    ...(configuration.debug && configuration.debugOptions
+      ? { debugOptions: configuration.debugOptions }
+      : {}),
     command: {
       id: commandKey,
       label: detectedConfigurationLabel(configuration),
@@ -38,8 +42,24 @@ export function toDetectedRunTarget(
   }
 }
 
+/** A detected run as a Run widget row; it shares its key with the recent entry it becomes. */
+export function detectedRunWidgetItem(
+  configuration: DetectedRunConfiguration,
+  worktreeId: string,
+  groupId: string | null
+): RunWidgetItem {
+  const target = toDetectedRunTarget(configuration, worktreeId, groupId)
+  return {
+    kind: 'detected',
+    key: recentItemKey(target.commandKey),
+    label: target.command.label,
+    configuration,
+    target
+  }
+}
+
 /** Keeps the run as the worktree's temporary configuration and selects it in the Run widget. */
-function rememberDetectedRun(target: RunTarget): void {
+export function selectDetectedRun(target: RunTarget): void {
   useRecentRunStore.getState().remember(target)
   const worktreesByRepo = useAppStore.getState().worktreesByRepo
   const repoId = worktreesByRepo
@@ -62,15 +82,36 @@ function detectedLaunchContext(
   }
 }
 
-/** Runs a detected configuration and makes it the worktree's current one in the tab bar. */
+function confirmPublish(
+  configuration: DetectedRunConfiguration,
+  confirm: ConfirmationDialogContextValue
+): Promise<boolean> {
+  return confirm({
+    title: translate('run.publishConfirm.title', "Publish '{{value0}}'?", {
+      value0: configuration.projectName
+    }),
+    description: translate('run.publishConfirm.description', 'This runs: {{value0}}', {
+      value0: configuration.command
+    }),
+    confirmLabel: translate('run.publishConfirm.confirm', 'Publish')
+  })
+}
+
+/**
+ * Runs a detected configuration (asking first for a publish) and makes it the worktree's current
+ * one in the tab bar.
+ */
 export async function runDetectedConfiguration(
   configuration: DetectedRunConfiguration,
   worktreeId: string,
   groupId: string | null,
   confirm: ConfirmationDialogContextValue
 ): Promise<void> {
+  if (configuration.kind === 'publish' && !(await confirmPublish(configuration, confirm))) {
+    return
+  }
   const target = toDetectedRunTarget(configuration, worktreeId, groupId)
-  rememberDetectedRun(target)
+  selectDetectedRun(target)
   if (await stopDebuggingBeforeRun(detectedLaunchContext(target, confirm))) {
     await runConfiguration(target)
   }
@@ -87,7 +128,7 @@ export async function debugDetectedConfiguration(
     return
   }
   const target = toDetectedRunTarget(configuration, worktreeId, groupId)
-  rememberDetectedRun(target)
+  selectDetectedRun(target)
   const context = detectedLaunchContext(target, confirm)
   if (!(await stopRunBeforeDebug(context, target))) {
     return
@@ -97,6 +138,7 @@ export async function debugDetectedConfiguration(
     cwd: configuration.projectDir,
     title: context.label,
     target: configuration.debug,
+    ...(configuration.debugOptions ? { launchOptions: configuration.debugOptions } : {}),
     sourceKey: context.sourceKey
   })
 }

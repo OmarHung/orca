@@ -51,6 +51,16 @@ describe('useRecentRunStore', () => {
     })
   })
 
+  it('keeps the arguments a debug target needs, e.g. Django runserver', () => {
+    const django = target('site', {
+      debug: { kind: 'python-file', filePath: '/repo/wt/site/manage.py' },
+      debugOptions: { args: ['runserver'] }
+    })
+    useRecentRunStore.getState().remember(django)
+
+    expect(readStoredRecentRuns().wt?.[0]).toEqual({ ...django, groupId: null })
+  })
+
   it('drops malformed stored entries', () => {
     window.localStorage.setItem(
       STORAGE_KEY,
