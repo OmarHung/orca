@@ -37,6 +37,8 @@ function run(commandKey: string, overrides: Partial<RunSession> = {}): RunSessio
     commandKey,
     label: commandKey,
     tabId: `tab-${commandKey}`,
+    leafId: `leaf-${commandKey}`,
+    attemptId: `attempt-${commandKey}`,
     status: 'running',
     exitCode: null,
     ...overrides

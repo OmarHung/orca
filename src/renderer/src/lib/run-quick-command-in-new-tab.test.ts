@@ -32,6 +32,9 @@ vi.mock('@/store', () => ({
 vi.mock('@/lib/launch-agent-in-new-tab', () => ({
   launchAgentInNewTab: mocks.launchAgentInNewTab
 }))
+vi.mock('@/lib/browser-uuid', () => ({
+  createBrowserUuid: () => '11111111-1111-4111-8111-111111111111'
+}))
 
 function createStoreState(): MockStoreState {
   return {
@@ -54,6 +57,30 @@ describe('runQuickCommandInNewTab', () => {
   beforeEach(() => {
     mockState = createStoreState()
     mocks.launchAgentInNewTab.mockReset()
+  })
+
+  it('returns the new pane leaf id and seeds the tab with it', () => {
+    const result = runQuickCommandInNewTab({
+      command: {
+        id: 'build',
+        label: 'Build',
+        action: 'terminal-command',
+        command: 'cd packages\nbun run build\ncd ..',
+        appendEnter: true
+      },
+      worktreeId: 'wt-1',
+      groupId: 'group-1'
+    })
+
+    expect(result).toEqual({
+      tabId: 'tab-new',
+      leafId: '11111111-1111-4111-8111-111111111111'
+    })
+    expect(mockState.createTab).toHaveBeenCalledWith('wt-1', 'group-1', undefined, {
+      quickCommandLabel: 'Build',
+      initialLeafId: '11111111-1111-4111-8111-111111111111',
+      pendingStartup: { command: 'cd packages; bun run build; cd ..' }
+    })
   })
 
   it('appends the new terminal after editor and browser tabs in the stored tab order', () => {

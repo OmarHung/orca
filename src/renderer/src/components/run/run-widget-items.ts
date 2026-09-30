@@ -45,6 +45,14 @@ export function quickCommandItemKey(entryKey: string): string {
   return `quick:${entryKey}`
 }
 
+export function isRemoteQuickCommandSelectionPending(
+  selectedKey: string | undefined,
+  executionHostId: string,
+  remoteHostPending: boolean
+): boolean {
+  return Boolean(remoteHostPending && selectedKey?.startsWith(`quick:${executionHostId}\u0000`))
+}
+
 export function runWidgetItems(options: {
   recent: readonly RunTarget[]
   configurations: readonly ListedRunConfiguration[]

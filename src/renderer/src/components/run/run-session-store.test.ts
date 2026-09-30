@@ -17,6 +17,8 @@ function session(overrides: Partial<RunSession> = {}): RunSession {
     commandKey: 'cmd',
     label: 'Dev Server',
     tabId: 'tab-1',
+    leafId: 'leaf-1',
+    attemptId: 'attempt-1',
     status: 'running',
     exitCode: null,
     ...overrides
@@ -46,20 +48,39 @@ describe('finishRunSession', () => {
 })
 
 describe('useRunSessionStore', () => {
-  it('finishes the active run that owns the tab', () => {
+  it('finishes the active run that owns the pane', () => {
     useRunSessionStore.getState().upsertSession(session())
 
-    const finished = useRunSessionStore.getState().finishByTab('tab-1', 0)
+    const finished = useRunSessionStore.getState().finishByLeafId('leaf-1', 0)
 
     expect(finished?.status).toBe('succeeded')
     expect(useRunSessionStore.getState().sessionsByKey[session().key].status).toBe('succeeded')
   })
 
-  it('ignores command finishes in tabs that are not running a configuration', () => {
+  it('ignores command finishes in panes that are not running a configuration', () => {
     useRunSessionStore.getState().upsertSession(session({ status: 'succeeded' }))
 
-    expect(useRunSessionStore.getState().finishByTab('tab-1', 1)).toBeNull()
-    expect(useRunSessionStore.getState().finishByTab('other-tab', 1)).toBeNull()
+    expect(useRunSessionStore.getState().finishByLeafId('leaf-1', 1)).toBeNull()
+    expect(useRunSessionStore.getState().finishByLeafId('other-leaf', 1)).toBeNull()
+  })
+
+  it('does not let an older attempt update its replacement', () => {
+    useRunSessionStore.getState().upsertSession(session({ attemptId: 'attempt-2' }))
+
+    useRunSessionStore.getState().setStatus(session().key, 'attempt-1', 'stopping')
+
+    expect(useRunSessionStore.getState().sessionsByKey[session().key].status).toBe('running')
+  })
+
+  it('does not let a late stop acknowledgement overwrite a completed run', () => {
+    useRunSessionStore.getState().upsertSession(session({ status: 'succeeded', exitCode: 0 }))
+
+    useRunSessionStore.getState().setStatus(session().key, session().attemptId, 'unverifiable')
+
+    expect(useRunSessionStore.getState().sessionsByKey[session().key]).toMatchObject({
+      status: 'succeeded',
+      exitCode: 0
+    })
   })
 })
 
@@ -78,7 +99,7 @@ describe('runStopStage', () => {
 
   it('remembers that Stop has forced a run', () => {
     useRunSessionStore.getState().upsertSession(session({ status: 'stopping' }))
-    useRunSessionStore.getState().markForceStopped(session().key)
+    useRunSessionStore.getState().markForceStopped(session().key, session().attemptId)
     expect(useRunSessionStore.getState().sessionsByKey[session().key].forceStopped).toBe(true)
   })
 })
