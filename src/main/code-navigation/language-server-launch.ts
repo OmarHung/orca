@@ -102,7 +102,13 @@ export async function prepareLanguageServerLaunch(
   return {
     program: dotnet,
     // Why a relative path: csharp-ls resolves --solution against its working directory, the root.
-    args: [join(installDir, ...CSHARP_SERVER_ENTRY), ...(solution ? ['--solution', solution] : [])],
+    args: [
+      join(installDir, ...CSHARP_SERVER_ENTRY),
+      // Why: without it, the C# in Razor views (.cshtml) gets no navigation at all.
+      '--features',
+      'razor-support',
+      ...(solution ? ['--solution', solution] : [])
+    ],
     // Why Major: the server targets .NET 10 and should also run on a newer runtime.
     env: { ...deps.env, DOTNET_ROLL_FORWARD: 'Major' },
     // Why: without metadata URIs, jumping to a framework type (Console, List<T>) finds nothing.
