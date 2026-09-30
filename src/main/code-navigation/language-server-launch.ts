@@ -109,8 +109,13 @@ export async function prepareLanguageServerLaunch(
       'razor-support',
       ...(solution ? ['--solution', solution] : [])
     ],
-    // Why Major: the server targets .NET 10 and should also run on a newer runtime.
-    env: { ...deps.env, DOTNET_ROLL_FORWARD: 'Major' },
+    env: {
+      ...deps.env,
+      // Why Major: the server targets .NET 10 and should also run on a newer runtime.
+      DOTNET_ROLL_FORWARD: 'Major',
+      // Why: views of pre-.NET 6 projects get no generated C# (so no Model navigation) without it.
+      UseRazorSourceGenerator: 'true'
+    },
     // Why: without metadata URIs, jumping to a framework type (Console, List<T>) finds nothing.
     configuration: { csharp: { useMetadataUris: true } }
   }
