@@ -12,5 +12,6 @@ export const codeNavigationApi = {
       callback(event)
     ipcRenderer.on('codeNav:status', listener)
     return () => ipcRenderer.removeListener('codeNav:status', listener)
-  }
+  },
+  setCodeEditorFocused: (focused) => ipcRenderer.send('codeNav:setCodeEditorFocused', focused)
 } satisfies PreloadApi['codeNavigation']
