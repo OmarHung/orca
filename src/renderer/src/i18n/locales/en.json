@@ -18831,7 +18831,9 @@
       "closeTerminals": "Close the terminals of '{{value0}}'"
     },
     "status": {
+      "queued": "Starting…",
       "running": "Running",
+      "unverifiable": "Terminal unavailable",
       "stopping": "Stopping…",
       "succeeded": "Finished",
       "failed": "Failed (exit {{value0}})",

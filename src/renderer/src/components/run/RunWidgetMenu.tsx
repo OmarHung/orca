@@ -7,6 +7,7 @@ import {
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu'
 import { translate } from '@/i18n/i18n'
+import { TabBarQuickCommandHostLoadStatus } from '../tab-bar/TabBarQuickCommandHostLoadStatus'
 import { isDetectedRunMenuEmpty, type DetectedRunMenu } from './detected-run-menu'
 import { RunWidgetDetectedSection, type DetectedSectionActions } from './RunWidgetDetectedSection'
 import { RUN_WIDGET_CONTENT_STYLE } from './run-widget-cascade'
@@ -59,7 +60,9 @@ export function RunWidgetMenu({
   onManageQuickCommands,
   detected,
   detectedActions,
-  cascadeLeft
+  cascadeLeft,
+  quickCommandHostPending,
+  quickCommandHostLoadFailed
 }: RowProps & {
   items: readonly RunWidgetItem[]
   /** null until the workspace's first scan finishes. */
@@ -72,6 +75,8 @@ export function RunWidgetMenu({
   onImportLaunchJson: (() => void) | null
   onAddQuickCommand: (() => void) | null
   onManageQuickCommands: () => void
+  quickCommandHostPending: boolean
+  quickCommandHostLoadFailed: boolean
 }): React.JSX.Element {
   const sectionProps = { selectedKey, onSelect, rowState, rowActions }
   return (
@@ -104,6 +109,9 @@ export function RunWidgetMenu({
           items={items.filter((item) => item.kind === 'quick-command')}
         />
       </div>
+      {quickCommandHostPending ? (
+        <TabBarQuickCommandHostLoadStatus failed={quickCommandHostLoadFailed} />
+      ) : null}
       {items.length > 0 || !detected || !isDetectedRunMenuEmpty(detected) ? (
         <DropdownMenuSeparator />
       ) : null}

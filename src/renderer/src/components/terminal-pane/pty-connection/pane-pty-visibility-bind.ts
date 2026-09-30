@@ -1,5 +1,6 @@
 import { scheduleRuntimeGraphSync } from '@/runtime/sync-runtime-graph'
 import { useAppStore } from '@/store'
+import { dispatchTerminalStartupBoundEvent } from '@/hooks/terminal-startup-bound-event'
 // Why: a restored pane's stale-account prompt can only be raised once a PTY is
 // actually attached — nothing is inspectable while the session hydrates.
 import { notifyCodexPaneBoundForStaleSweep } from '@/lib/codex-stale-pane-sweep'
@@ -131,6 +132,7 @@ export function installPanePtyVisibilityBind(session: ConnectPanePtySession): vo
     if (session.paneStartup && !session.startupPtyBound) {
       // Settles the captured one-shot startup only after this pane owns a concrete PTY.
       session.startupPtyBound = true
+      dispatchTerminalStartupBoundEvent(session.cacheKey)
       session.deps.onStartupBound?.()
     }
     if (options.seedInitialAgentStatus) {
