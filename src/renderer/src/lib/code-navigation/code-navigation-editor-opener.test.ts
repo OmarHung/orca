@@ -108,7 +108,7 @@ describe('registerCodeNavigationEditorOpener', () => {
     })
   })
 
-  it('opens files outside the workspace by absolute path', () => {
+  it('opens files outside the workspace by absolute path, kept in this workspace', () => {
     const opener = register()
 
     opener.openCodeEditor(sourceEditor, URI.file('/sdk/lib.dom.d.ts'), {
@@ -117,7 +117,28 @@ describe('registerCodeNavigationEditorOpener', () => {
     })
 
     expect(store.openFile).toHaveBeenCalledWith(
-      expect.objectContaining({ filePath: '/sdk/lib.dom.d.ts', relativePath: '/sdk/lib.dom.d.ts' }),
+      expect.objectContaining({
+        filePath: '/sdk/lib.dom.d.ts',
+        relativePath: '/sdk/lib.dom.d.ts',
+        staysInOpeningWorkspace: true
+      }),
+      expect.anything()
+    )
+    expect(store.openFile).toHaveBeenCalledWith(
+      expect.not.objectContaining({ readOnly: true }),
+      expect.anything()
+    )
+  })
+
+  it('opens decompiled sources read-only', () => {
+    const opener = register()
+    const decompiled =
+      '/Users/me/Library/Application Support/orca/language-servers/csharp-metadata/A-1/A.cs'
+
+    opener.openCodeEditor(sourceEditor, URI.file(decompiled), { lineNumber: 1, column: 1 })
+
+    expect(store.openFile).toHaveBeenCalledWith(
+      expect.objectContaining({ readOnly: true, staysInOpeningWorkspace: true }),
       expect.anything()
     )
   })

@@ -164,7 +164,11 @@ export function useEditorPanelFileContentLoader({
             const route = isFloatingWorkspaceId(worktreeId)
               ? null
               : findWorkspaceFileRoute(currentState, executionHostId, filePath)
-            if (route && route.worktreeId !== worktreeId) {
+            if (
+              route &&
+              route.worktreeId !== worktreeId &&
+              restoredOpenFile.staysInOpeningWorkspace !== true
+            ) {
               await reownRestoredFile(route, runtimeEnvironmentId ?? null)
               return
             }

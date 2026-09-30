@@ -10,6 +10,7 @@ import {
 } from './code-navigation-workspace'
 import { filePathForNavigationUri } from './code-navigation-preview-models'
 import { codeNavigationHistory } from './code-navigation-history'
+import { isCodeNavigationMetadataPath } from '../../../../shared/code-navigation/code-navigation-types'
 
 type TargetPosition = { lineNumber: number; column: number }
 
@@ -44,15 +45,21 @@ export function openNavigationTarget(
     findEditTabForModelUri(store, toEditorModelUri(requestedPath))?.filePath ?? requestedPath
   const root = localWorkspaceRoot(store, owner.worktreeId)
   const runtimeEnvironmentId = owner.runtimeEnvironmentId ?? null
+  const relativePath = getRelativePathInsideRoot(targetPath, root)
   const fileId = store.openFile(
     {
       filePath: targetPath,
       // Why the absolute path outside the root: that is how external files are opened elsewhere.
-      relativePath: getRelativePathInsideRoot(targetPath, root) ?? targetPath,
+      relativePath: relativePath ?? targetPath,
       worktreeId: owner.worktreeId,
       language: detectLanguage(targetPath),
       mode: 'edit',
-      runtimeEnvironmentId
+      runtimeEnvironmentId,
+      // Why: without it an outside file moves to whichever project contains it (a project at the
+      // home folder holds Orca's own server files), switching projects and stranding Back.
+      ...(relativePath === null ? { staysInOpeningWorkspace: true } : {}),
+      // Decompiled sources are read-only files Orca regenerates; edits could never be saved.
+      ...(isCodeNavigationMetadataPath(targetPath) ? { readOnly: true } : {})
     },
     { suppressActiveRuntimeFallback: runtimeEnvironmentId === null }
   )
