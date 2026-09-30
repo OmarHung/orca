@@ -120,7 +120,11 @@ describe('prepareLanguageServerLaunch', () => {
 
     expect(launch).toEqual({
       program: '/usr/local/share/dotnet/dotnet',
-      args: [join(installDir, 'tools', 'net10.0', 'any', 'CSharpLanguageServer.dll')],
+      args: [
+        join(installDir, 'tools', 'net10.0', 'any', 'CSharpLanguageServer.dll'),
+        '--features',
+        'razor-support'
+      ],
       env: { PATH: '/usr/bin', DOTNET_ROLL_FORWARD: 'Major' },
       configuration: { csharp: { useMetadataUris: true } }
     })
@@ -168,6 +172,8 @@ describe('prepareLanguageServerLaunch', () => {
     expect(findSolution).toHaveBeenCalledWith('/workspace')
     expect(launch.args).toEqual([
       join(installDir, 'tools', 'net10.0', 'any', 'CSharpLanguageServer.dll'),
+      '--features',
+      'razor-support',
       '--solution',
       join('backend', 'Shop.sln')
     ])
