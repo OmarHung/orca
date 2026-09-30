@@ -20,18 +20,43 @@ export function afterUndo(error: unknown, undoProblem: string | null): Error {
 }
 
 /**
- * Undoes a setting change that failed after it was saved: the passwords first, since undo never
- * throws, then the setting. The error says what could not be put back.
+ * How to take back a setting change. What is saved is read back rather than assumed, since a
+ * write can fail after it already replaced the file.
  */
-export function rollBack(error: unknown, undo: () => string | null, revert: () => void): Error {
-  const undoProblem = undo()
+export type SettingRollback = {
+  revert: () => void
+  /** Whether the setting saved now keeps passwords the way the previous one did. */
+  keepsPreviousPasswords: () => boolean
+}
+
+/**
+ * Takes back a setting change that failed partway: the setting first, then the passwords, but only
+ * once the saved setting keeps them the old way again; while the new setting is still saved, the
+ * passwords stay as it keeps them. The error says what could not be put back.
+ */
+export function rollBack(
+  error: unknown,
+  undo: () => string | null,
+  setting: SettingRollback
+): Error {
+  let failure = error instanceof Error ? error : new Error(String(error))
   try {
-    revert()
+    setting.revert()
   } catch (revertError) {
-    const both = `${messageOf(error)} The previous settings could not be put back: ${messageOf(revertError)}`
-    return afterUndo(new Error(both), undoProblem)
+    failure = new Error(
+      `${failure.message} The previous settings could not be put back: ${messageOf(revertError)}`
+    )
   }
-  return afterUndo(error, undoProblem)
+  return keepsPreviousPasswords(setting) ? afterUndo(failure, undo()) : failure
+}
+
+function keepsPreviousPasswords(setting: SettingRollback): boolean {
+  try {
+    return setting.keepsPreviousPasswords()
+  } catch {
+    // Why: with the setting unreadable, keeping the old password beats losing it for good.
+    return true
+  }
 }
 
 const LOCKED_MESSAGE =
