@@ -260,3 +260,13 @@ F12、⇧F12、⌘F12、⌘+點擊這些 Monaco 原本的鍵都保留。衝突�
 - **背景預熱**（`code-navigation-prewarm.ts` + `codeNav:warm`）：C# 檔的編輯器換上 model 或取得焦點時，在背景啟動「已安裝」的伺服器，並在檔案開頭發一次 hover 逼它載入並編譯（實測預熱後第一次跳轉從 12.3 秒降到 0.4 秒）。同一個專案 60 秒內最多一次，也順便讓持續工作中的專案不被閒置關閉。TS 不預熱（本來就約 1 秒）。
 - 預熱還沒完成就按跳轉時，那次查詢也會顯示「正在載入」的提示（`joinsStartingServer`）。
 
+## 12. MediatR：從 request 直接跳到 handler（2026-10-01）
+
+使用者問「mediator 的部分有快速到 handler 的方式嗎」。原本只能在 request 類型上 ⌥F7 找使用處，再從清單裡找 `IRequestHandler<…>` 那一行。
+
+- 在 C# 的「跳到實作」（⌥⌘B、⌥⌘+點擊、⌘F12）上加 MediatR 判斷（`csharp-mediatr-handlers.ts`）：一般實作結果只有型別本身（request 是具體類別／record）或是空的時，改找 handler。
+- 游標在 `new ListPublishedArticlesQuery(…)` 裡時，Roslyn 認定的符號是建構式，它的參照不含 handler。所以先用 `definition` 找到型別宣告，再從宣告處查 `references`（實測：從建構式查只有 4 筆使用處；從型別宣告查會多出 `: IRequestHandler<…>` 與 `Handle(…)` 兩筆）。
+- 參照的前文符合 `I(Request|Notification|StreamRequest)Handler<` 的就是 handler；目標是同一個 handler 裡、前文符合 `Handle(` 的那個參照所在的 `Handle` 方法名稱（找不到就停在 base list）。通知有多個 handler 時交給 peek 清單。
+- 真實驗證：使用者的 `ecommerce_project`，`ListPublishedArticlesQuery`、`GetPublishedArticleBySlugQuery` 都落在各自 handler 的 `Handle` 方法（熱的時候 57ms）。
+- e2e：C# 範例加入 MediatR 形狀的介面（不需要 NuGet），`new GetGreeting("world")` 上 ⌥⌘B 落在 `GetGreetingHandler.Handle`。
+
