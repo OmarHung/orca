@@ -63,8 +63,8 @@ export function registerCodeNavigationHandlers(): void {
   registerCodeEditorFocusMirror()
   const baseDir = languageServersDir(app.getPath('userData'))
   const service = new CodeNavigationService({
-    prepareLaunch: (kind, onDownloading) =>
-      prepareLanguageServerLaunch(kind, baseDir, onDownloading),
+    prepareLaunch: (kind, root, onDownloading) =>
+      prepareLanguageServerLaunch(kind, root, baseDir, onDownloading),
     isInstalled: (kind) => isLanguageServerInstalled(kind, baseDir),
     metadataDir: join(baseDir, CSHARP_METADATA_DIR_NAME)
   })
@@ -94,6 +94,13 @@ export function registerCodeNavigationHandlers(): void {
         : { ok: false, message: 'Invalid code navigation request' }
     }
   )
+
+  ipcMain.handle('codeNav:warm', (_event, rawRequest: unknown): void => {
+    const request = HoverSchema.omit({ position: true }).safeParse(rawRequest)
+    if (request.success) {
+      void service.warm(request.data)
+    }
+  })
 
   ipcMain.handle('codeNav:closeDocument', (_event, rawRequest: unknown): void => {
     const request = CloseDocumentSchema.safeParse(rawRequest)
