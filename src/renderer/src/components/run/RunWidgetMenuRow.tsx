@@ -1,11 +1,11 @@
 import React from 'react'
-import { Bot, Bug, Clock, Play, RotateCcw, Zap } from 'lucide-react'
+import { Bot, Bug, Clock, EyeOff, Play, RotateCcw, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
 import { isTerminalAgentQuickCommand } from '../../../../shared/terminal-quick-commands'
-import { runConfigurationIcon } from './run-configuration-icon'
+import { RUN_KIND_ICONS, runConfigurationIcon } from './run-configuration-icon'
 import { debugStopAction } from './RunStopControl'
 import type { RunStopStage } from './run-session-store'
 import { runStopAction, stoppingLabel } from './run-stop-stage-presentation'
@@ -27,6 +27,14 @@ export type RunWidgetRowActions = {
   stop: (item: RunWidgetItem) => void
 }
 
+/** What every section of the Run widget menu needs to render and drive its rows. */
+export type RunWidgetRowContext = {
+  selectedKey: string | null
+  onSelect: (item: RunWidgetItem) => void
+  rowState: (item: RunWidgetItem) => RunWidgetRowState
+  rowActions: RunWidgetRowActions
+}
+
 function itemIcon(item: RunWidgetItem): React.JSX.Element {
   switch (item.kind) {
     case 'recent':
@@ -37,6 +45,10 @@ function itemIcon(item: RunWidgetItem): React.JSX.Element {
     }
     case 'quick-command':
       return isTerminalAgentQuickCommand(item.entry.command) ? <Bot /> : <Zap />
+    case 'detected': {
+      const Icon = RUN_KIND_ICONS[item.configuration.kind]
+      return <Icon />
+    }
   }
 }
 
@@ -124,14 +136,25 @@ function LiveRowButtons({
 
 function IdleRowButtons({
   item,
-  actions
+  actions,
+  onHide
 }: {
   item: RunWidgetItem
   actions: RunWidgetRowActions
+  onHide?: (item: RunWidgetItem) => void
 }): React.JSX.Element {
   const value0 = item.label
   return (
     <span className="flex items-center opacity-0 transition-opacity group-hover/run-row:opacity-100 group-focus-within/run-row:opacity-100">
+      {onHide ? (
+        <RowButton
+          label={translate('run.widget.hideRun', "Hide '{{value0}}'", { value0 })}
+          testId="run-widget-item-hide"
+          onClick={() => onHide(item)}
+        >
+          <EyeOff />
+        </RowButton>
+      ) : null}
       {canRunWidgetItem(item) ? (
         <RowButton
           label={translate('run.action.runNamed', "Run '{{value0}}'", { value0 })}
@@ -163,13 +186,16 @@ export function RunWidgetMenuRow({
   current,
   state,
   actions,
-  onSelect
+  onSelect,
+  onHide
 }: {
   item: RunWidgetItem
   current: boolean
   state: RunWidgetRowState
   actions: RunWidgetRowActions
   onSelect: (item: RunWidgetItem) => void
+  /** Offered on idle rows that can be hidden from the menu. */
+  onHide?: (item: RunWidgetItem) => void
 }): React.JSX.Element {
   const live = state.running || state.debugging
   return (
@@ -189,12 +215,14 @@ export function RunWidgetMenuRow({
           />
         ) : null}
       </span>
-      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+      <span className="min-w-0 flex-1 truncate">
+        {item.kind === 'detected' ? item.configuration.name : item.label}
+      </span>
       <span className="-my-1 flex shrink-0 items-center">
         {live ? (
           <LiveRowButtons item={item} state={state} actions={actions} />
         ) : (
-          <IdleRowButtons item={item} actions={actions} />
+          <IdleRowButtons item={item} actions={actions} onHide={onHide} />
         )}
       </span>
     </DropdownMenuItem>

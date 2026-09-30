@@ -18762,7 +18762,21 @@
       "stopAll": "全部停止",
       "stopRunning": "停止（{{value0}} 個正在執行）",
       "forceStopAll": "全部強制停止",
-      "closeAllTerminals": "關閉全部終端機"
+      "closeAllTerminals": "關閉全部終端機",
+      "detected": "偵測到的",
+      "detecting": "正在偵測…",
+      "hideRun": "隱藏 '{{value0}}'",
+      "hideProject": "隱藏此專案",
+      "hidden": "已隱藏（{{value0}}）",
+      "hiddenHint": "點選即可重新顯示",
+      "showAll": "全部顯示",
+      "kind": {
+        "run": "執行",
+        "build": "建置",
+        "test": "測試",
+        "publish": "釋出",
+        "other": "其他"
+      }
     },
     "exclusive": {
       "debugging": {
