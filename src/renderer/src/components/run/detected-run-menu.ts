@@ -1,9 +1,11 @@
 import { getRelativePathInsideRoot } from '@/lib/path'
+import type { RunConfigurationDefinition } from '../../../../shared/run-configurations/run-configuration-definition'
 import type {
   DetectedRunConfiguration,
   RunConfigurationEcosystem,
   RunConfigurationKind
 } from '../../../../shared/run-configurations/run-configuration-types'
+import { comparablePath, savedRunAnchor, type SavedRunAnchor } from './saved-run-project-anchor'
 
 const ECOSYSTEM_ORDER: readonly RunConfigurationEcosystem[] = ['dotnet', 'node', 'python']
 
@@ -16,6 +18,13 @@ export const DETECTED_KIND_ORDER: readonly RunConfigurationKind[] = [
   'other'
 ]
 
+export type DetectedRunMenuGroup = {
+  kind: RunConfigurationKind
+  /** Saved configurations that point at this project, e.g. its Publish to folder. */
+  saved: RunConfigurationDefinition[]
+  runs: DetectedRunConfiguration[]
+}
+
 export type DetectedRunMenuProject = {
   /** Hide key; stable across worktrees of the same repo. */
   key: string
@@ -23,7 +32,7 @@ export type DetectedRunMenuProject = {
   ecosystem: DetectedRunConfiguration['ecosystem']
   /** Workspace-relative folder, '' for the root. */
   location: string
-  groups: { kind: RunConfigurationKind; runs: DetectedRunConfiguration[] }[]
+  groups: DetectedRunMenuGroup[]
 }
 
 /** Projects sharing a parent folder, e.g. `core` for `core/Piranha` and `core/Piranha.Manager`. */
@@ -88,21 +97,45 @@ export function detectedRunHideKey(run: DetectedRunConfiguration, worktreePath: 
   return `run:${run.ecosystem}:${locationOf(run.projectDir, worktreePath)}:${rest}`
 }
 
+type AnchoredConfiguration = { configuration: RunConfigurationDefinition; anchor: SavedRunAnchor }
+
+function belongsTo(
+  anchor: SavedRunAnchor,
+  first: DetectedRunConfiguration,
+  location: string,
+  worktreePath: string
+): boolean {
+  if (anchor.ecosystem !== first.ecosystem) {
+    return false
+  }
+  if (anchor.by === 'folder') {
+    return comparablePath(location) === anchor.path
+  }
+  const projectFile = first.projectFile
+    ? getRelativePathInsideRoot(first.projectFile, worktreePath)
+    : null
+  return projectFile !== null && comparablePath(projectFile) === anchor.path
+}
+
 function projectOf(
   key: string,
   runs: readonly DetectedRunConfiguration[],
-  worktreePath: string
+  worktreePath: string,
+  saved: readonly AnchoredConfiguration[] = []
 ): DetectedRunMenuProject {
   const [first] = runs
+  const location = locationOf(first.projectDir, worktreePath)
+  const own = saved.filter(({ anchor }) => belongsTo(anchor, first, location, worktreePath))
   return {
     key,
     name: first.projectName,
     ecosystem: first.ecosystem,
-    location: locationOf(first.projectDir, worktreePath),
+    location,
     groups: DETECTED_KIND_ORDER.map((kind) => ({
       kind,
+      saved: own.filter(({ anchor }) => anchor.kind === kind).map((entry) => entry.configuration),
       runs: runs.filter((run) => run.kind === kind)
-    })).filter((group) => group.runs.length > 0)
+    })).filter((group) => group.runs.length + group.saved.length > 0)
   }
 }
 
@@ -113,8 +146,13 @@ function projectOf(
 export function detectedRunMenu(
   runs: readonly DetectedRunConfiguration[],
   worktreePath: string,
-  hidden: ReadonlySet<string>
+  hidden: ReadonlySet<string>,
+  saved: readonly RunConfigurationDefinition[] = []
 ): DetectedRunMenu {
+  const anchored = saved.flatMap((configuration) => {
+    const anchor = savedRunAnchor(configuration, worktreePath)
+    return anchor ? [{ configuration, anchor }] : []
+  })
   const byProject = new Map<string, DetectedRunConfiguration[]>()
   for (const run of runs) {
     const key = detectedProjectHideKey(run, worktreePath)
@@ -129,7 +167,7 @@ export function detectedRunMenu(
   const projects = shownEntries
     .map(([key, projectRuns]) => [key, projectRuns.filter((run) => !isRunHidden(run))] as const)
     .filter(([, shown]) => shown.length > 0)
-    .map(([key, shown]) => projectOf(key, shown, worktreePath))
+    .map(([key, shown]) => projectOf(key, shown, worktreePath, anchored))
     .sort(byLocation)
   return {
     ecosystems: ECOSYSTEM_ORDER.map((ecosystem) =>
