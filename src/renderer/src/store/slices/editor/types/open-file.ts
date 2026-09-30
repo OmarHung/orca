@@ -146,6 +146,10 @@ export type OpenFile = {
   readOnly?: boolean
   /** Transient: paged CSV data must never become an editable buffer. */
   csvPreviewOnly?: boolean
+  /** Why: an absolute-path tab opened by code navigation stays in the workspace that navigated,
+   *  instead of moving to whichever workspace contains the path (e.g. a project at the home
+   *  folder holding Orca's decompiled sources), so the jump keeps its project and Back works. */
+  staysInOpeningWorkspace?: boolean
   /** Why: explicit live tail, only meaningful for a read-only local log. */
   liveTail?: boolean
   mode: 'edit' | 'diff' | 'conflict-review' | 'markdown-preview' | 'check-details'

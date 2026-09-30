@@ -92,6 +92,7 @@ export function createHydrateEditorSession(
               externalSshTargetId: pf.externalSshTargetId,
               ...(isReadOnly ? { readOnly: true } : {}),
               ...(isReadOnly && pf.liveTail === true ? { liveTail: true } : {}),
+              ...(pf.staysInOpeningWorkspace === true ? { staysInOpeningWorkspace: true } : {}),
               lastKnownDiskSignature: isReadOnly ? undefined : pf.lastKnownDiskSignature,
               // Why: suspend autosave until the conflict scan verifies disk vs baseline, else a slow remote read clobbers an offline write.
               pendingDiskBaselineVerification:

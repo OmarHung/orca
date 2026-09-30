@@ -14,5 +14,6 @@ export const persistedOpenFileSchema = z.object({
   dirtyDraftContent: z.string().optional(),
   lastKnownDiskSignature: z.string().optional(),
   readOnly: z.boolean().optional(),
+  staysInOpeningWorkspace: z.boolean().optional(),
   liveTail: z.boolean().optional()
 })
