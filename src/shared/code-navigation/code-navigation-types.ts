@@ -79,3 +79,17 @@ export function isCodeNavigationWatchedPath(kind: CodeNavigationServerKind, path
   const lower = path.toLowerCase()
   return WATCHED_EXTENSIONS[kind].some((extension) => lower.endsWith(extension))
 }
+
+/** Folder under Orca's language-server directory that holds decompiled C# sources. */
+export const CSHARP_METADATA_DIR_NAME = 'csharp-metadata'
+
+// Keep in step with CSHARP_METADATA_DIR_NAME.
+const METADATA_PATH_PATTERN = /[\\/]language-servers[\\/]csharp-metadata[\\/]/
+
+/**
+ * Whether a file is decompiled source Orca wrote itself. Such files belong to no project: under a
+ * project rooted at the home folder they would otherwise start a server over the whole home folder.
+ */
+export function isCodeNavigationMetadataPath(path: string): boolean {
+  return METADATA_PATH_PATTERN.test(path)
+}
