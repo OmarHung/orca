@@ -1,4 +1,8 @@
-import type { SshVpnProfile, SshVpnProfileDraft } from '../../shared/ssh-vpn-types'
+import type {
+  SshVpnOvpnInspection,
+  SshVpnProfile,
+  SshVpnProfileDraft
+} from '../../shared/ssh-vpn-types'
 import { afterUndo } from '../kept-passwords'
 import type { SshVpnPasswordVault } from './ssh-vpn-password-vault'
 import type { SshVpnStore } from './ssh-vpn-store'
@@ -53,4 +57,27 @@ export function saveProfileWithPassword(
     throw error
   }
   return created
+}
+
+type SaveProfileDeps = {
+  store: Pick<SshVpnStore, 'getProfile' | 'saveProfile' | 'deleteProfile'>
+  vault: Pick<SshVpnPasswordVault, 'release' | 'keep' | 'remember' | 'rememberForSession'>
+  inspectOvpn: (ovpnPath: string) => Promise<SshVpnOvpnInspection>
+}
+
+/** What the Settings form's save runs: check the profile, then save it with its password. */
+export async function saveSshVpnProfile(
+  deps: SaveProfileDeps,
+  request: { id?: string; draft: SshVpnProfileDraft; password?: string }
+): Promise<{ previous: SshVpnProfile | null; saved: SshVpnProfile }> {
+  const { draft } = request
+  // Why before saving: a profile that cannot connect should fail here, not on first use.
+  const { needsCredentials } = await deps.inspectOvpn(draft.ovpnPath)
+  if (needsCredentials && !draft.username) {
+    throw new Error('This profile asks for a username and password. Enter the username.')
+  }
+  const previous = request.id ? deps.store.getProfile(request.id) : null
+  // Why no keychain check here: only sealing a new or in-memory password needs one, and that
+  // step reports it, so renaming a "Forever" profile still works while the keychain is locked.
+  return { previous, saved: saveProfileWithPassword(deps, previous, draft, request.password) }
 }
