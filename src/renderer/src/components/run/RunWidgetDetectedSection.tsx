@@ -18,7 +18,8 @@ import {
   isDetectedRunMenuEmpty,
   type DetectedRunMenu,
   type DetectedRunMenuEcosystem,
-  type DetectedRunMenuProject
+  type DetectedRunMenuProject,
+  splitLocation
 } from './detected-run-menu'
 import { RUN_KIND_ICONS } from './run-configuration-icon'
 import { RUN_WIDGET_CONTENT_STYLE } from './run-widget-cascade'
@@ -79,22 +80,31 @@ function Count({ value }: { value: number }): React.JSX.Element {
   return <span className="shrink-0 text-muted-foreground tabular-nums">{value}</span>
 }
 
+/**
+ * A project's name, then where it lives: under a folder heading only its own folder (when named
+ * differently), elsewhere the toolchain and its full location.
+ */
 function ProjectLabel({
   project,
-  withEcosystem
+  underFolderHeading
 }: {
   project: DetectedRunMenuProject
-  withEcosystem: boolean
+  underFolderHeading: boolean
 }): React.JSX.Element {
+  const place = underFolderHeading ? splitLocation(project.location).leaf : project.location
   return (
     <>
-      {withEcosystem ? <RunEcosystemBadge ecosystem={project.ecosystem} /> : null}
+      {underFolderHeading ? null : <RunEcosystemBadge ecosystem={project.ecosystem} />}
       <span className="min-w-0 flex-1 truncate">{project.name}</span>
-      {project.location && project.location !== project.name ? (
-        <span className="max-w-32 min-w-0 truncate text-muted-foreground">{project.location}</span>
+      {place && place !== project.name ? (
+        <span className="max-w-32 min-w-0 truncate text-muted-foreground">{place}</span>
       ) : null}
     </>
   )
+}
+
+function folderHeading(folder: string): string {
+  return folder ? `${folder}/` : translate('run.widget.rootFolder', 'Workspace root')
 }
 
 function KindSubmenu({
@@ -148,7 +158,7 @@ function ProjectSubmenu({
   return (
     <DropdownMenuSub>
       <CascadeSubTrigger testId="run-widget-detected-project">
-        <ProjectLabel project={project} withEcosystem={false} />
+        <ProjectLabel project={project} underFolderHeading />
       </CascadeSubTrigger>
       <DropdownMenuSubContent style={RUN_WIDGET_CONTENT_STYLE} className="min-w-44">
         {project.groups.map((group) => (
@@ -181,12 +191,22 @@ function EcosystemSubmenu({
       <CascadeSubTrigger testId="run-widget-detected-ecosystem">
         <Boxes />
         <span className="min-w-0 flex-1 truncate">{runEcosystemLabel(group.ecosystem)}</span>
-        <Count value={group.projects.length} />
+        <Count value={group.projectCount} />
       </CascadeSubTrigger>
       <DropdownMenuSubContent style={RUN_WIDGET_CONTENT_STYLE} className="min-w-64">
         <div className="scrollbar-sleek max-h-[60vh] overflow-y-auto">
-          {group.projects.map((project) => (
-            <ProjectSubmenu key={project.key} project={project} row={row} actions={actions} />
+          {group.folders.map(({ folder, projects }) => (
+            <React.Fragment key={folder}>
+              {/* Why: a lone root group needs no heading. */}
+              {folder || group.folders.length > 1 ? (
+                <DropdownMenuLabel data-testid="run-widget-detected-folder">
+                  {folderHeading(folder)}
+                </DropdownMenuLabel>
+              ) : null}
+              {projects.map((project) => (
+                <ProjectSubmenu key={project.key} project={project} row={row} actions={actions} />
+              ))}
+            </React.Fragment>
           ))}
         </div>
       </DropdownMenuSubContent>
@@ -225,7 +245,7 @@ function HiddenSubmenu({
               onSelect={keepOpen(() => onShow([project.key]))}
             >
               <Eye />
-              <ProjectLabel project={project} withEcosystem />
+              <ProjectLabel project={project} underFolderHeading={false} />
             </DropdownMenuItem>
           ))}
           {menu.hiddenRuns.map(({ key, run }) => (
