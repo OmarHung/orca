@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { translate } from '@/i18n/i18n'
 import { readEditorPanelFileContent } from './editor-panel-file-reads'
+import { isOrcaLanguageServerFilePath } from '../../../../shared/code-navigation/code-navigation-types'
 import type { OpenFile } from '@/store/slices/editor'
 import { getConnectionIdForFile, isWorktreeConnectionResolved } from '@/lib/connection-context'
 import { useAppStore } from '@/store'
@@ -178,7 +179,11 @@ export function useEditorPanelFileContentLoader({
               readTarget,
               runtimeEnvironmentId
             })
-            if (placement.kind === 'move' && restoredOpenFile.staysInOpeningWorkspace !== true) {
+            if (
+              placement.kind === 'move' &&
+              restoredOpenFile.staysInOpeningWorkspace !== true &&
+              !isOrcaLanguageServerFilePath(filePath)
+            ) {
               await reownRestoredFile(placement.route, runtimeEnvironmentId ?? null)
               return
             }
