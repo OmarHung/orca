@@ -1,66 +1,96 @@
+import { randomUUID } from 'node:crypto'
+import { isDeepStrictEqual } from 'node:util'
 import type {
   SshVpnOvpnInspection,
+  SshVpnPasswordStorage,
   SshVpnProfile,
   SshVpnProfileDraft
 } from '../../shared/ssh-vpn-types'
-import { afterUndo, rollBack } from '../kept-passwords'
+import { rollBack } from '../kept-passwords'
 import type { SshVpnPasswordVault } from './ssh-vpn-password-vault'
 import type { SshVpnStore } from './ssh-vpn-store'
 
+type SaveDeps = {
+  store: Pick<SshVpnStore, 'getProfile' | 'saveProfile' | 'deleteProfile'>
+  vault: Pick<SshVpnPasswordVault, 'release' | 'keep' | 'remember' | 'rememberForSession'>
+}
+
+function storageOf(profile: SshVpnProfileDraft): SshVpnPasswordStorage {
+  return profile.passwordStorage ?? 'session'
+}
+
 /**
  * Saves a profile and moves its password to where the setting keeps it: removals before the
- * setting is saved, sealing after it. Any failure puts the setting and the passwords back, so a
- * failed save never loses a password or keeps one the setting did not ask for.
+ * setting is saved, sealing after it. Any failure takes the change back, so a failed save never
+ * loses a password or keeps one the saved setting did not ask for.
  */
 export function saveProfileWithPassword(
-  {
-    store,
-    vault
-  }: {
-    store: Pick<SshVpnStore, 'saveProfile' | 'deleteProfile'>
-    vault: Pick<SshVpnPasswordVault, 'release' | 'keep' | 'remember' | 'rememberForSession'>
-  },
+  deps: SaveDeps,
   previous: SshVpnProfile | null,
   draft: SshVpnProfileDraft,
   password: string | undefined
 ): SshVpnProfile {
-  const storage = draft.passwordStorage ?? 'session'
-  if (previous) {
-    const undo = vault.release(previous.id, storage, password)
-    let saved: SshVpnProfile
-    try {
-      saved = store.saveProfile(previous.id, draft)
-    } catch (error) {
-      throw afterUndo(error, undo())
-    }
-    try {
-      vault.keep(previous.id, storage, password)
-    } catch (error) {
-      throw rollBack(error, undo, () => store.saveProfile(previous.id, previous))
-    }
-    return saved
-  }
-  // Why: a new profile gets a fresh id, so nothing is saved to move or remove; only a typed password is kept.
-  const created = store.saveProfile(undefined, draft)
-  if (password === undefined || storage === 'never') {
-    return created
-  }
-  if (storage === 'session') {
-    vault.rememberForSession(created.id, password)
-    return created
-  }
-  try {
-    vault.remember(created.id, 'forever', password)
-  } catch (error) {
-    store.deleteProfile(created.id)
-    throw error
-  }
-  return created
+  return previous
+    ? saveExistingProfile(deps, previous, draft, password)
+    : saveNewProfile(deps, draft, password)
 }
 
-type SaveProfileDeps = {
-  store: Pick<SshVpnStore, 'getProfile' | 'saveProfile' | 'deleteProfile'>
-  vault: Pick<SshVpnPasswordVault, 'release' | 'keep' | 'remember' | 'rememberForSession'>
+function saveExistingProfile(
+  { store, vault }: SaveDeps,
+  previous: SshVpnProfile,
+  draft: SshVpnProfileDraft,
+  password: string | undefined
+): SshVpnProfile {
+  const storage = storageOf(draft)
+  const undo = vault.release(previous.id, storage, password)
+  try {
+    const saved = store.saveProfile(previous.id, draft)
+    vault.keep(previous.id, storage, password)
+    return saved
+  } catch (error) {
+    throw rollBack(error, undo, {
+      // Why only when changed: a write that failed before replacing the file left nothing to revert.
+      revert: () => {
+        if (!isDeepStrictEqual(store.getProfile(previous.id), previous)) {
+          store.saveProfile(previous.id, previous)
+        }
+      },
+      keepsPreviousPasswords: () => {
+        const saved = store.getProfile(previous.id)
+        return saved !== null && storageOf(saved) === storageOf(previous)
+      }
+    })
+  }
+}
+
+/** A new profile has nothing saved to move or remove, so only a typed password is kept. */
+function saveNewProfile(
+  { store, vault }: SaveDeps,
+  draft: SshVpnProfileDraft,
+  password: string | undefined
+): SshVpnProfile {
+  const storage = storageOf(draft)
+  // Why chosen here: a write can fail after it replaced the file, and only the id finds it then.
+  const id = randomUUID()
+  try {
+    const created = store.saveProfile(id, draft)
+    if (password !== undefined && storage === 'session') {
+      vault.rememberForSession(id, password)
+    }
+    if (password !== undefined && storage === 'forever') {
+      vault.remember(id, 'forever', password)
+    }
+    return created
+  } catch (error) {
+    // Why nothing to undo: a failed remember already put the password file back.
+    throw rollBack(error, () => null, {
+      revert: () => store.deleteProfile(id),
+      keepsPreviousPasswords: () => true
+    })
+  }
+}
+
+type SaveProfileDeps = SaveDeps & {
   inspectOvpn: (ovpnPath: string) => Promise<SshVpnOvpnInspection>
 }
 
