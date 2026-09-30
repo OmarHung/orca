@@ -8,7 +8,8 @@ import { getRelativePathInsideRoot } from '@/lib/path'
 import { isLocalDebugTarget } from '@/components/debug/debug-launch'
 import { toEditorModelUri } from '@/components/editor/editor-model-uri'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
-import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
+import { folderWorkspaceKey, parseWorkspaceKey } from '../../../../shared/workspace-scope'
+import { isCodeNavigationMetadataPath } from '../../../../shared/code-navigation/code-navigation-types'
 import {
   codeNavigationLanguageForPath,
   type CodeNavigationLanguage
@@ -26,10 +27,18 @@ export type CodeNavigationFileContext = CodeNavigationLanguage & {
 
 /** The editable tab showing this Monaco model, if any. */
 export function findEditTabForModelUri(state: AppState, modelUri: string): OpenFile | null {
+  const matches = state.openFiles.filter(
+    (file) => file.mode === 'edit' && toEditorModelUri(file.filePath) === modelUri
+  )
+  if (matches.length <= 1) {
+    return matches[0] ?? null
+  }
+  // Why: every tab of a path shares one model, and nested projects (a repo at the home folder)
+  // can show the same file twice; the editor being used belongs to the active tab or project.
   return (
-    state.openFiles.find(
-      (file) => file.mode === 'edit' && toEditorModelUri(file.filePath) === modelUri
-    ) ?? null
+    matches.find((file) => file.id === state.activeFileId) ??
+    matches.find((file) => file.worktreeId === state.activeWorktreeId) ??
+    matches[0]
   )
 }
 
@@ -63,13 +72,46 @@ export function localWorkspaceRoot(state: AppState, worktreeId: string): string 
   return isLocal ? worktree.path : null
 }
 
+function localWorkspaceIds(state: AppState): string[] {
+  const worktreeIds = Object.values(state.worktreesByRepo).flatMap((worktrees) =>
+    worktrees.map((worktree) => worktree.id)
+  )
+  const folderIds = state.folderWorkspaces.map((folder) => folderWorkspaceKey(folder.id))
+  return [...worktreeIds, ...folderIds]
+}
+
+/**
+ * The deepest local project containing the file, within `outerRoot`. Why: a project can nest
+ * others (a repo at the home folder), and a server rooted there would load every project below.
+ */
+function innermostLocalRoot(state: AppState, filePath: string, outerRoot: string): string {
+  let best = outerRoot
+  for (const workspaceId of localWorkspaceIds(state)) {
+    const root = localWorkspaceRoot(state, workspaceId)
+    if (
+      root &&
+      root.length > best.length &&
+      getRelativePathInsideRoot(root, outerRoot) !== null &&
+      getRelativePathInsideRoot(filePath, root) !== null
+    ) {
+      best = root
+    }
+  }
+  return best
+}
+
 /** Everything a language-server query needs for this model, or null to use Monaco's own. */
 export function resolveCodeNavigationContext(
   state: AppState,
   modelUri: string
 ): CodeNavigationFileContext | null {
   const tab = findEditTabForModelUri(state, modelUri)
-  if (!tab || tab.runtimeEnvironmentId || tab.externalSshTargetId) {
+  if (
+    !tab ||
+    tab.runtimeEnvironmentId ||
+    tab.externalSshTargetId ||
+    isCodeNavigationMetadataPath(tab.filePath)
+  ) {
     return null
   }
   const language = codeNavigationLanguageForPath(tab.filePath)
@@ -78,7 +120,7 @@ export function resolveCodeNavigationContext(
   if (!language || !root || getRelativePathInsideRoot(tab.filePath, root) === null) {
     return null
   }
-  return { ...language, tab, root }
+  return { ...language, tab, root: innermostLocalRoot(state, tab.filePath, root) }
 }
 
 type LocatableEditor = {

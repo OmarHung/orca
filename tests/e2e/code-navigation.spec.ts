@@ -280,5 +280,11 @@ test.describe('code navigation through language servers', () => {
       orcaPage.locator('.monaco-editor .view-line', { hasText: 'public static class Console' })
     ).toBeVisible()
     await screenshot(orcaPage, 'cs-decompiled')
+
+    // Back returns from decompiled dependency code to where the jump started.
+    await orcaPage.keyboard.press(BACK)
+    await expect
+      .poll(() => activeEditor(orcaPage), { timeout: 30_000 })
+      .toEqual({ file: 'Program.cs', line: 4, column: 1 })
   })
 })
