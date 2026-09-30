@@ -48,9 +48,20 @@ export class SshVpnPasswordVault {
     throwIfProblem(this.passwords.forget(profileId))
   }
 
-  /** Before a setting change is saved; `undefined` keeps the password already kept. */
-  release(profileId: string, storage: SshVpnPasswordStorage, password: string | undefined): void {
-    throwIfProblem(this.passwords.release(profileId, storage, password))
+  /**
+   * Before a setting change is saved; `undefined` keeps the password already kept. Returns how to
+   * put the passwords back if saving the setting then fails.
+   */
+  release(
+    profileId: string,
+    storage: SshVpnPasswordStorage,
+    password: string | undefined
+  ): () => string | null {
+    const released = this.passwords.release(profileId, storage, password)
+    if (!released.ok) {
+      throw new Error(released.problem)
+    }
+    return released.undo
   }
 
   /** After a setting change is saved. */
