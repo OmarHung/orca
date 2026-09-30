@@ -33,6 +33,11 @@ export function baseName(anyPath: string): string {
   return trimmed.slice(Math.max(trimmed.lastIndexOf('/'), trimmed.lastIndexOf('\\')) + 1)
 }
 
+/** Last segment of a local folder, "/" for the POSIX root and "C:" for a drive root. */
+export function localFolderName(localPath: string): string {
+  return baseName(localPath) || localPath
+}
+
 /** A single path segment the user may type for a new or renamed remote entry. */
 export function isValidEntryName(name: string): boolean {
   const trimmed = name.trim()
