@@ -15,6 +15,7 @@ const RUN = process.env.ORCA_E2E_CODE_NAVIGATION === '1'
 const MOD = process.platform === 'darwin' ? 'Meta' : 'Control'
 const BACK = process.platform === 'darwin' ? 'Meta+BracketLeft' : 'Control+Alt+ArrowLeft'
 const FORWARD = process.platform === 'darwin' ? 'Meta+BracketRight' : 'Control+Alt+ArrowRight'
+const WORD_RIGHT = process.platform === 'darwin' ? 'Alt+ArrowRight' : 'Control+ArrowRight'
 const SCREENSHOT_DIR = process.env.ORCA_E2E_CODE_NAVIGATION_SCREENSHOTS
 
 function hasDotnet(): boolean {
@@ -223,7 +224,7 @@ test.describe('code navigation through language servers', () => {
       .toEqual({ file: 'app.ts', line: 5, column: 1 })
   })
 
-  test('C#: F12 crosses projects and into decompiled code; Cmd/Ctrl+F12, Cmd/Ctrl+Alt+B and Cmd/Ctrl+Alt+click find the implementation; hover works', async ({
+  test('C#: F12 crosses projects and into decompiled code; Cmd/Ctrl+F12, Cmd/Ctrl+Alt+B and Cmd/Ctrl+Alt+click find the implementation (a MediatR request handler); hover works', async ({
     orcaPage,
     testRepoPath,
     registerPostElectronShutdownCleanup
@@ -255,7 +256,20 @@ test.describe('code navigation through language servers', () => {
     )
     writeFileSync(
       join(root, 'App', 'Program.cs'),
-      'using Lib;\n\nIGreeter greeter = new Greeter();\nConsole.WriteLine(greeter.Greet("world"));\n'
+      'using Lib;\n\nIGreeter greeter = new Greeter();\nConsole.WriteLine(greeter.Greet("world"));\nnew GetGreeting("world").ToString();\n'
+    )
+    // MediatR's shape without the package: a request, its handler, and the handler interface.
+    writeFileSync(
+      join(root, 'Lib', 'Mediator.cs'),
+      'namespace Lib;\n\npublic interface IRequest<TResponse> { }\n\npublic interface IRequestHandler<TRequest, TResponse> where TRequest : IRequest<TResponse>\n{\n    Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken);\n}\n'
+    )
+    writeFileSync(
+      join(root, 'Lib', 'GetGreeting.cs'),
+      'namespace Lib;\n\npublic sealed record GetGreeting(string Name) : IRequest<string>;\n'
+    )
+    writeFileSync(
+      join(root, 'Lib', 'GetGreetingHandler.cs'),
+      'namespace Lib;\n\npublic sealed class GetGreetingHandler : IRequestHandler<GetGreeting, string>\n{\n    public Task<string> Handle(GetGreeting request, CancellationToken cancellationToken) =>\n        Task.FromResult($"Hello, {request.Name}");\n}\n'
     )
     execFileSync('dotnet', ['restore', 'Sample.slnx'], { cwd: root, stdio: 'pipe' })
 
@@ -306,6 +320,16 @@ test.describe('code navigation through language servers', () => {
     await expect
       .poll(() => activeEditor(orcaPage), { timeout: 60_000 })
       .toEqual({ file: 'Greeter.cs', line: 8, column: 14 })
+
+    // MediatR: Go to Implementation on a request inside `new …(…)` lands on its handler's Handle.
+    await openEditorFile(orcaPage, root, 'App/Program.cs', 'csharp')
+    await placeCursorOnLine(orcaPage, 'new GetGreeting')
+    await orcaPage.keyboard.press(WORD_RIGHT)
+    await orcaPage.keyboard.press(WORD_RIGHT)
+    await orcaPage.keyboard.press(`${MOD}+Alt+B`)
+    await expect
+      .poll(() => activeEditor(orcaPage), { timeout: 60_000 })
+      .toEqual({ file: 'GetGreetingHandler.cs', line: 5, column: 25 })
 
     await openEditorFile(orcaPage, root, 'App/Program.cs', 'csharp')
     const hover = await hoverLineStart(orcaPage, 'IGreeter greeter')
