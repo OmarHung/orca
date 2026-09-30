@@ -56,6 +56,25 @@ export class SshVpnPasswordVault {
     this.sessionPasswords.delete(profileId)
   }
 
+  /**
+   * Moves a profile's password to where `storage` keeps it: `never` forgets it, `session` always
+   * removes any saved copy, `forever` saves `password` or the one already kept. Throws with a
+   * user-facing reason when the saved-password file cannot be changed, so callers can refuse.
+   */
+  applyStorage(profileId: string, storage: SshVpnPasswordStorage, password: string | null): void {
+    if (storage === 'never') {
+      this.forget(profileId)
+      return
+    }
+    const kept = password ?? this.get(profileId)
+    if (kept !== null) {
+      this.remember(profileId, storage, kept)
+    } else if (storage === 'session') {
+      // Why: an unreadable file hides a saved copy from get(), so removal must not depend on it.
+      this.deleteSealed(profileId)
+    }
+  }
+
   /** Keeps a password until Orca quits without touching the saved-password file. */
   rememberForSession(profileId: string, password: string): void {
     this.sessionPasswords.set(profileId, password)

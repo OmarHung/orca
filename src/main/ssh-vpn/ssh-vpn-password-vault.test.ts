@@ -66,6 +66,15 @@ describe('SshVpnPasswordVault', () => {
     expect(readFileSync(file, 'utf8')).toBe(contents)
   })
 
+  it('removes a saved copy for "session" even when it cannot read the file', () => {
+    const vault = new SshVpnPasswordVault(file, () => fakeSecretStore(true))
+    vault.remember('p1', 'forever', 'hunter2')
+    writeFileSync(file, '{"version": 1,')
+
+    expect(() => vault.applyStorage('p1', 'session', null)).toThrow(file)
+    expect(readFileSync(file, 'utf8')).toBe('{"version": 1,')
+  })
+
   it('keeps a password until quit without touching the file', () => {
     writeFileSync(file, '{"version": 1,')
     const vault = new SshVpnPasswordVault(file, () => fakeSecretStore(true))
