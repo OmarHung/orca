@@ -4,6 +4,17 @@ import { SealedSecretFile } from './sealed-secret-file'
 /** How a saved login keeps its password; the database and VPN settings share these values. */
 export type PasswordStorage = 'forever' | 'session' | 'never'
 
+/** A finished release, with how to put the passwords back if saving the setting then fails. */
+export type Released = { ok: true; undo: () => string | null } | { ok: false; problem: string }
+
+/** The error to report once a failed setting save was undone; says so when undoing failed too. */
+export function afterUndo(error: unknown, undoProblem: string | null): Error {
+  const failure = error instanceof Error ? error : new Error(String(error))
+  return undoProblem === null
+    ? failure
+    : new Error(`${failure.message} The saved password could not be put back: ${undoProblem}`)
+}
+
 const LOCKED_MESSAGE =
   'The saved password cannot be read right now because the system keychain is locked or unavailable. Enter the password again, or try again later.'
 
@@ -14,7 +25,8 @@ const LOCKED_MESSAGE =
  *
  * A setting change runs in two halves around saving the setting itself: `release` before it
  * removes what the new setting must not keep, and `keep` after it seals what the new setting
- * keeps. So a failed save of the setting never leaves a password on disk it did not ask for.
+ * keeps. So a failed save of the setting never leaves a password on disk it did not ask for, and
+ * `undo` from `release` puts back what it removed.
  */
 export class KeptPasswords {
   private readonly session = new Map<string, string>()
@@ -55,7 +67,7 @@ export class KeptPasswords {
 
   /** Keeps a password just typed the way `storage` says, replacing whatever was kept. */
   remember(id: string, storage: PasswordStorage, password: string): string | null {
-    return storage === 'forever' ? this.seal(id, password) : this.release(id, storage, password)
+    return storage === 'forever' ? this.seal(id, password) : this.releaseNow(id, storage, password)
   }
 
   /**
@@ -63,7 +75,17 @@ export class KeptPasswords {
    * keeps the one already kept. For `session` a saved copy moves into memory, and a copy the
    * keychain cannot open now is refused rather than dropped.
    */
-  release(
+  release(id: string, storage: PasswordStorage, password: string | null | undefined): Released {
+    const sessionBefore = this.session.get(id)
+    // Why the raw ciphertext: putting it back needs no keychain, so undo works even while it is locked.
+    const sealedBefore = this.sealed.ciphertext(id)
+    const problem = this.releaseNow(id, storage, password)
+    return problem === null
+      ? { ok: true, undo: () => this.restore(id, sessionBefore, sealedBefore) }
+      : { ok: false, problem }
+  }
+
+  private releaseNow(
     id: string,
     storage: PasswordStorage,
     password: string | null | undefined
@@ -100,6 +122,23 @@ export class KeptPasswords {
     const kept = password ?? this.session.get(id)
     // Why: with nothing new, the copy already saved stays untouched, even if the keychain is locked.
     return kept === undefined ? null : this.seal(id, kept)
+  }
+
+  private restore(
+    id: string,
+    sessionBefore: string | undefined,
+    sealedBefore: string | null
+  ): string | null {
+    if (sessionBefore === undefined) {
+      this.session.delete(id)
+    } else {
+      this.session.set(id, sessionBefore)
+    }
+    if (sealedBefore === null || this.sealed.ciphertext(id) === sealedBefore) {
+      return null
+    }
+    const problem = this.sealed.restoreCiphertext(id, sealedBefore)
+    return problem === null ? null : this.sealed.describeProblem(problem)
   }
 
   private seal(id: string, password: string): string | null {
