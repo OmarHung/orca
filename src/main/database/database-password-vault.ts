@@ -48,7 +48,10 @@ export class DatabasePasswordVault {
     }
     if (storage === 'session') {
       const cleared = this.deleteSealed(connectionId)
-      this.sessionPasswords.set(connectionId, password)
+      // Why: keeping it would let a connection run as "until quit" while its old copy stays on disk.
+      if (cleared.ok) {
+        this.sessionPasswords.set(connectionId, password)
+      }
       return cleared
     }
     const sealed = this.sealed.seal(connectionId, password)
