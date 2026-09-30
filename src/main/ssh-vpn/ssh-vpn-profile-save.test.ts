@@ -1,7 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SshVpnProfileDraft } from '../../shared/ssh-vpn-types'
 import type { SecretStore } from '../../shared/secret-store'
 import { SshVpnPasswordVault } from './ssh-vpn-password-vault'
@@ -202,6 +202,41 @@ describe('saveProfileWithPassword', () => {
 
     expect(store.getProfile(saved.id)?.passwordStorage).toBe('never')
     expect(readFileSync(passwordsPath, 'utf8')).toBe(DAMAGED)
+  })
+
+  it('puts the password back even when restoring the old setting fails', () => {
+    const saved = saveProfileWithPassword(
+      { store, vault },
+      null,
+      { ...DRAFT, passwordStorage: 'never' },
+      undefined
+    )
+    const undo = vi.fn<() => string | null>(() => null)
+    const failingVault = {
+      release: () => undo,
+      keep: () => {
+        throw new Error('fsync failed')
+      },
+      remember: vault.remember.bind(vault),
+      rememberForSession: vault.rememberForSession.bind(vault)
+    }
+    let saves = 0
+    const flaky = {
+      saveProfile: (id: string | undefined, draft: SshVpnProfileDraft) => {
+        saves += 1
+        if (saves > 1) {
+          throw new Error('settings locked')
+        }
+        return store.saveProfile(id, draft)
+      },
+      deleteProfile: store.deleteProfile.bind(store)
+    }
+
+    expect(() =>
+      saveProfileWithPassword({ store: flaky, vault: failingVault }, saved, DRAFT, 'hunter2')
+    ).toThrow(/fsync failed.*settings locked/)
+
+    expect(undo).toHaveBeenCalledOnce()
   })
 
   describe('saveSshVpnProfile (the Settings form save)', () => {
