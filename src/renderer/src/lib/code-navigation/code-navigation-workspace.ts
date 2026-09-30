@@ -13,6 +13,7 @@ import {
   codeNavigationLanguageForPath,
   type CodeNavigationLanguage
 } from './code-navigation-languages'
+import type { NavigationLocation } from './code-navigation-history'
 
 type AppState = ReturnType<typeof useAppStore.getState>
 
@@ -78,4 +79,29 @@ export function resolveCodeNavigationContext(
     return null
   }
   return { ...language, tab, root }
+}
+
+type LocatableEditor = {
+  getModel: () => { uri: { toString: () => string } } | null
+  getPosition: () => { lineNumber: number; column: number } | null
+}
+
+/** Where this editor's cursor is, if it shows an editor tab. */
+export function editorNavigationLocation(
+  state: AppState,
+  editor: LocatableEditor
+): NavigationLocation | null {
+  const model = editor.getModel()
+  const position = editor.getPosition()
+  const tab = model ? findEditTabForModelUri(state, model.uri.toString()) : null
+  if (!tab || !position) {
+    return null
+  }
+  return {
+    worktreeId: tab.worktreeId,
+    runtimeEnvironmentId: tab.runtimeEnvironmentId ?? null,
+    filePath: tab.filePath,
+    line: position.lineNumber,
+    column: position.column
+  }
 }

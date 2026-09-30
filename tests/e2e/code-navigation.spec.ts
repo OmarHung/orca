@@ -13,6 +13,8 @@ import { waitForSessionReady } from './helpers/store'
 // Opt-in: the first jump downloads the language servers from npm and nuget.org.
 const RUN = process.env.ORCA_E2E_CODE_NAVIGATION === '1'
 const MOD = process.platform === 'darwin' ? 'Meta' : 'Control'
+const BACK = process.platform === 'darwin' ? 'Meta+BracketLeft' : 'Control+Alt+ArrowLeft'
+const FORWARD = process.platform === 'darwin' ? 'Meta+BracketRight' : 'Control+Alt+ArrowRight'
 const SCREENSHOT_DIR = process.env.ORCA_E2E_CODE_NAVIGATION_SCREENSHOTS
 
 function hasDotnet(): boolean {
@@ -84,7 +86,7 @@ async function screenshot(page: Page, name: string) {
 test.describe('code navigation through language servers', () => {
   test.skip(!RUN, 'set ORCA_E2E_CODE_NAVIGATION=1 (downloads the language servers)')
 
-  test('TypeScript: F12 and Cmd/Ctrl+click open the definition in another tab; Shift+F12 peeks references; hover resolves imports', async ({
+  test('TypeScript: F12, Cmd/Ctrl+click and Cmd/Ctrl+B open the definition; Shift+F12 peeks references; hover resolves imports; Back/Forward retrace jumps', async ({
     orcaPage,
     testRepoPath,
     registerPostElectronShutdownCleanup
@@ -144,6 +146,25 @@ test.describe('code navigation through language servers', () => {
     const hover = await hoverLineStart(orcaPage, "greet('again')")
     await expect(hover).toContainText('function greet(name: string): string', { timeout: 30_000 })
     await screenshot(orcaPage, 'ts-hover')
+
+    // JetBrains keys: Cmd/Ctrl+B jumps without toggling the sidebar; Back / Forward retrace it.
+    await orcaPage.mouse.move(0, 0)
+    const sidebarOpen = () => orcaPage.evaluate(() => window.__store?.getState().sidebarOpen)
+    const sidebarBefore = await sidebarOpen()
+    await placeCursorOnLine(orcaPage, "greet('world')")
+    await orcaPage.keyboard.press(`${MOD}+B`)
+    await expect
+      .poll(() => activeEditor(orcaPage), { timeout: 30_000 })
+      .toEqual({ file: 'greeter.ts', line: 1, column: 17 })
+    expect(await sidebarOpen()).toBe(sidebarBefore)
+    await orcaPage.keyboard.press(BACK)
+    await expect
+      .poll(() => activeEditor(orcaPage), { timeout: 30_000 })
+      .toEqual({ file: 'app.ts', line: 3, column: 1 })
+    await orcaPage.keyboard.press(FORWARD)
+    await expect
+      .poll(() => activeEditor(orcaPage), { timeout: 30_000 })
+      .toEqual({ file: 'greeter.ts', line: 1, column: 17 })
   })
 
   test('C#: F12 crosses projects and into decompiled code, Cmd/Ctrl+F12 finds the implementation, hover works', async ({
@@ -200,6 +221,14 @@ test.describe('code navigation through language servers', () => {
       .poll(() => activeEditor(orcaPage), { timeout: 60_000 })
       .toEqual({ file: 'Greeter.cs', line: 8, column: 14 })
     await screenshot(orcaPage, 'cs-implementation')
+
+    // JetBrains Go to Implementation: Cmd+Alt+B (Ctrl+Alt+B elsewhere).
+    await openEditorFile(orcaPage, root, 'App/Program.cs', 'csharp')
+    await placeCursorOnLine(orcaPage, 'IGreeter greeter')
+    await orcaPage.keyboard.press(`${MOD}+Alt+B`)
+    await expect
+      .poll(() => activeEditor(orcaPage), { timeout: 60_000 })
+      .toEqual({ file: 'Greeter.cs', line: 8, column: 14 })
 
     await openEditorFile(orcaPage, root, 'App/Program.cs', 'csharp')
     const hover = await hoverLineStart(orcaPage, 'IGreeter greeter')
