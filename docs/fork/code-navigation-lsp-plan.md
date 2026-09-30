@@ -229,3 +229,12 @@ F12、⇧F12、⌘F12、⌘+點擊這些 Monaco 原本的鍵都保留。衝突�
 - 修正三：反編譯檔（`language-servers/csharp-metadata/` 底下，`isCodeNavigationMetadataPath`）一律不送給語言伺服器。它在家目錄底下，不排除的話，在家目錄專案裡懸停就會以整個家目錄為根啟動 csharp-ls（使用者的快取裡有兩份不同雜湊的 MediatR，就是從兩個不同的根解析出來的）。
 - e2e：C# 從反編譯的 `System.Console.cs` 按 Back 回到 Program.cs 原位置。巢狀專案的情境由 `code-navigation-workspace.test.ts` 覆蓋。
 
+### 10.7 真正的根本原因：外部檔案被遷移到「包含它的專案」
+
+§10.6 的修正之後，使用者再試出現「無法載入檔案：The sibling file is already open」。追下去才找到主因：
+
+- Orca 的分頁以絕對路徑開啟工作區外的檔案時，`useEditorPanelFileContentLoader` 在載入前會用 `findWorkspaceFileRoute` 找「路徑上包含這個檔案的專案」，找到就用 `migrateRestoredEditorFileOwner` 把分頁搬過去（upstream 行為）。反編譯檔與 TS 內建型別都在 `~/Library/Application Support/orca*/language-servers/` 底下，被家目錄專案包含，於是分頁被搬走、Orca 切換專案、Back 失效。§10.6 描述的「同一檔案兩個分頁」是另一個真實但次要的問題。
+- 這次的錯誤是：上一次搬過去的舊分頁還在家目錄專案裡，新分頁再搬就撞到它（`collision`）。
+- 修正：`OpenFile.staysInOpeningWorkspace`。跳轉開啟工作區外的檔案時設為 true，載入時不做遷移，分頁留在發起跳轉的專案。這個欄位跟 `readOnly` 一樣持久化（schema、`PersistedOpenFile`、`buildEditorSessionData`、`hydrateEditorSession` 各加一行），重啟後還原的分頁也不會被搬走。反編譯檔另外標 `readOnly`。
+- e2e：建立一個資料夾工作區，路徑就是 Orca 的 userData（等同家目錄專案包住伺服器檔案），在 TS 專案對 `console` 按 F12 開 `lib.dom.d.ts`，確認專案沒被切換、Back 回到 app.ts。拿掉修正時這個 e2e 會失敗（分頁被搬走）。注意 macOS 的 `/var` 與 `/private/var`：伺服器回報實體路徑，測試要 `realpath`。
+
