@@ -11,6 +11,7 @@ import { resolveCommandOnLocalPath } from '../ipc/command-path-resolver'
 import type { CodeNavigationServerKind } from '../../shared/code-navigation/code-navigation-types'
 import type { LanguageServerLaunch } from './language-server-session'
 import { findCsharpSolution } from './csharp-solution-discovery'
+import { ensureCsharpRazorDesignTimeTargets } from './csharp-razor-design-time'
 import {
   CSHARP_SERVER_ARTIFACT,
   CSHARP_SERVER_ENTRY,
@@ -70,6 +71,23 @@ export async function isLanguageServerInstalled(
   return artifact ? isDebugAdapterInstalled(artifact, baseDir) : false
 }
 
+/** MSBuild env that lets csharp-ls see the C# of views in pre-.NET 6 projects. */
+async function legacyRazorEnv(baseDir: string, env: NodeJS.ProcessEnv): Promise<NodeJS.ProcessEnv> {
+  // Why: pre-3.0 projects only run the Razor generator when this is set.
+  const legacy: NodeJS.ProcessEnv = { UseRazorSourceGenerator: 'true' }
+  // Why: never replace a hook the user's own environment already installs.
+  if (env.CustomAfterMicrosoftCommonTargets) {
+    return legacy
+  }
+  try {
+    const targets = await ensureCsharpRazorDesignTimeTargets(baseDir)
+    return { ...legacy, CustomAfterMicrosoftCommonTargets: targets }
+  } catch (error) {
+    console.warn('[code-navigation] Razor design-time targets unavailable:', error)
+    return legacy
+  }
+}
+
 /** Downloads the server on first use and returns how to start it. */
 export async function prepareLanguageServerLaunch(
   kind: CodeNavigationServerKind,
@@ -99,6 +117,7 @@ export async function prepareLanguageServerLaunch(
   }
   const installDir = await installServer(CSHARP_SERVER_ARTIFACT, baseDir, deps, onDownloading)
   const solution = await deps.findSolution(root).catch(() => null)
+  const razorEnv = await legacyRazorEnv(baseDir, deps.env)
   return {
     program: dotnet,
     // Why a relative path: csharp-ls resolves --solution against its working directory, the root.
@@ -113,8 +132,7 @@ export async function prepareLanguageServerLaunch(
       ...deps.env,
       // Why Major: the server targets .NET 10 and should also run on a newer runtime.
       DOTNET_ROLL_FORWARD: 'Major',
-      // Why: views of pre-.NET 6 projects get no generated C# (so no Model navigation) without it.
-      UseRazorSourceGenerator: 'true'
+      ...razorEnv
     },
     // Why: without metadata URIs, jumping to a framework type (Console, List<T>) finds nothing.
     configuration: { csharp: { useMetadataUris: true } }
