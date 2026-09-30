@@ -2,6 +2,7 @@ import { isRemoteRuntimePtyId } from '../../../../../shared/remote-runtime/remot
 import { captureNotificationTransportOwner } from '@/attention/notification-subject-owner'
 import { scheduleRuntimeGraphSync } from '@/runtime/sync-runtime-graph'
 import { useAppStore } from '@/store'
+import { dispatchTerminalStartupBoundEvent } from '@/hooks/terminal-startup-bound-event'
 // Inspect stale-account state only after a concrete PTY attaches.
 import { notifyCodexPaneBoundForStaleSweep } from '@/lib/codex-stale-pane-sweep'
 import { createTerminalGitHubPRLinkDetector } from '../../../../../shared/terminal-github-pr-link-detector'
@@ -113,6 +114,7 @@ export function installPanePtyVisibilityBind(session: ConnectPanePtySession): vo
     if (session.paneStartup && !session.startupPtyBound) {
       // Settles the captured one-shot startup only after this pane owns a concrete PTY.
       session.startupPtyBound = true
+      dispatchTerminalStartupBoundEvent(session.cacheKey)
       session.deps.onStartupBound?.()
     }
     if (options.seedInitialAgentStatus) {

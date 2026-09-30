@@ -36,7 +36,12 @@ import {
   runWidgetFootprint,
   type RunWidgetFootprint
 } from './run-widget-activity'
-import { runWidgetItems, selectedRunWidgetItem, type RunWidgetItem } from './run-widget-items'
+import {
+  isRemoteQuickCommandSelectionPending,
+  runWidgetItems,
+  selectedRunWidgetItem,
+  type RunWidgetItem
+} from './run-widget-items'
 import { useWorktreeRunConfigurations } from './use-worktree-run-configurations'
 import { useCompoundQuickCommand } from './use-compound-quick-command'
 import { useFollowActiveRunTerminal } from './use-follow-active-run-terminal'
@@ -121,7 +126,14 @@ export function RunWidget({
   )
   const footprintOf = (item: RunWidgetItem): RunWidgetFootprint =>
     footprints.get(item.key) ?? runWidgetFootprint(item, configurations)
-  const selected = selectedRunWidgetItem(items, selectedKey)
+  const selectedRemoteQuickCommandPending = isRemoteQuickCommandSelectionPending(
+    selectedKey,
+    quick.executionHostId,
+    quick.remoteHostPending
+  )
+  const selected = selectedRemoteQuickCommandPending
+    ? null
+    : selectedRunWidgetItem(items, selectedKey)
   useFollowActiveRunTerminal({
     worktreeId,
     repoId: data?.repoId,
@@ -205,12 +217,14 @@ export function RunWidget({
             }
           }}
           rowActions={rowActions}
+          quickCommandHostPending={quick.remoteHostPending}
+          quickCommandHostLoadFailed={quick.remoteHostLoadFailed}
           onEditConfigurations={() => setEditorOpen(true)}
           onImportLaunchJson={
             hasLaunchJson ? () => void importWorkspaceLaunchJson(worktreeId, data.repoId) : null
           }
           onAddQuickCommand={
-            quickRepoId
+            quickRepoId && !quick.remoteHostPending
               ? () =>
                   setQuickCommandDraft(
                     createTerminalQuickCommandDraft({

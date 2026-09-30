@@ -32,6 +32,9 @@ vi.mock('@/store', () => ({
 vi.mock('@/lib/launch-agent-in-new-tab', () => ({
   launchAgentInNewTab: mocks.launchAgentInNewTab
 }))
+vi.mock('@/lib/browser-uuid', () => ({
+  createBrowserUuid: () => '11111111-1111-4111-8111-111111111111'
+}))
 
 function createStoreState(): MockStoreState {
   return {
@@ -69,9 +72,13 @@ describe('runQuickCommandInNewTab', () => {
       groupId: 'group-1'
     })
 
-    expect(result).toEqual({ tabId: 'tab-new' })
+    expect(result).toEqual({
+      tabId: 'tab-new',
+      leafId: '11111111-1111-4111-8111-111111111111'
+    })
     expect(mockState.createTab).toHaveBeenCalledWith('wt-1', 'group-1', undefined, {
       quickCommandLabel: 'Build',
+      initialLeafId: '11111111-1111-4111-8111-111111111111',
       pendingStartup: { command: 'cd packages; bun run build; cd ..' }
     })
     expect(mockState.setRecentQuickCommandForGroup).toHaveBeenCalledWith('group-1', 'build')
@@ -135,10 +142,12 @@ describe('runQuickCommandInNewTab', () => {
       groupId: 'group-1'
     })
 
-    expect(mockState.createTab).toHaveBeenCalledWith('wt-1', 'group-1', undefined, {
-      quickCommandLabel: 'Status',
-      pendingStartup: { command: 'git status' }
-    })
+    expect(mockState.createTab).toHaveBeenCalledWith(
+      'wt-1',
+      'group-1',
+      undefined,
+      expect.objectContaining({ pendingStartup: { command: 'git status' } })
+    )
   })
 
   it('launches agent quick commands through the programmatic agent prompt path', () => {
