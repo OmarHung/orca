@@ -18966,7 +18966,21 @@
       "stopAll": "Stop All",
       "stopRunning": "Stop ({{value0}} running)",
       "forceStopAll": "Force Stop All",
-      "closeAllTerminals": "Close All Terminals"
+      "closeAllTerminals": "Close All Terminals",
+      "detected": "Detected",
+      "detecting": "Detecting…",
+      "hideRun": "Hide '{{value0}}'",
+      "hideProject": "Hide This Project",
+      "hidden": "Hidden ({{value0}})",
+      "hiddenHint": "Click to show again",
+      "showAll": "Show All",
+      "kind": {
+        "run": "Run",
+        "build": "Build",
+        "test": "Test",
+        "publish": "Publish",
+        "other": "Other"
+      }
     },
     "exclusive": {
       "debugging": {

@@ -18884,7 +18884,21 @@
       "stopAll": "全部停止",
       "stopRunning": "停止（{{value0}} 个正在运行）",
       "forceStopAll": "全部强制停止",
-      "closeAllTerminals": "关闭全部终端"
+      "closeAllTerminals": "关闭全部终端",
+      "detected": "侦测到的",
+      "detecting": "正在侦测…",
+      "hideRun": "隐藏 '{{value0}}'",
+      "hideProject": "隐藏此项目",
+      "hidden": "已隐藏（{{value0}}）",
+      "hiddenHint": "点击即可重新显示",
+      "showAll": "全部显示",
+      "kind": {
+        "run": "执行",
+        "build": "建置",
+        "test": "测试",
+        "publish": "发布",
+        "other": "其他"
+      }
     },
     "exclusive": {
       "debugging": {

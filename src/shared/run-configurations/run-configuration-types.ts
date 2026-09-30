@@ -1,8 +1,8 @@
-import type { DebugLaunchTarget } from '../debug/debug-session-types'
+import type { DebugLaunchOptions, DebugLaunchTarget } from '../debug/debug-session-types'
 
 export type RunConfigurationKind = 'build' | 'run' | 'test' | 'publish' | 'other'
 
-export type RunConfigurationEcosystem = 'node' | 'dotnet'
+export type RunConfigurationEcosystem = 'node' | 'dotnet' | 'python'
 
 /** A run configuration derived from project files; suggested, never persisted. */
 export type DetectedRunConfiguration = {
@@ -20,6 +20,8 @@ export type DetectedRunConfiguration = {
   command: string
   /** How to debug this configuration, when an adapter supports it. */
   debug?: DebugLaunchTarget
+  /** Program arguments the debug target needs, e.g. `runserver` for Django's manage.py. */
+  debugOptions?: DebugLaunchOptions
 }
 
 // Literal unquoted in POSIX shells, fish, PowerShell and cmd alike.

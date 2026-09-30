@@ -37,7 +37,8 @@ const files = {
 }
 
 const WORKSPACE_TREE: Record<string, string[]> = {
-  '/w': ['package.json', 'web', 'node_modules', '.git', 'src'],
+  '/w': ['package.json', 'web', 'node_modules', '.git', 'src', 'venv'],
+  '/w/venv': ['main.py'],
   '/w/web': ['package.json'],
   '/w/node_modules': ['package.json'],
   '/w/.git': ['package.json'],
@@ -112,6 +113,30 @@ describe('detectProjectRunConfigurations', () => {
     expect(configurations.every((configuration) => configuration.ecosystem === 'dotnet')).toBe(true)
   })
 
+  it('reads a Python project through its virtualenv, which needs pyvenv.cfg', async () => {
+    const tree: Record<string, string[]> = {
+      '/w/py': ['pyproject.toml', 'main.py', 'env', '.venv'],
+      '/w/py/env': ['settings.toml', 'bin'],
+      '/w/py/.venv': ['pyvenv.cfg', 'bin', 'lib'],
+      '/w/py/.venv/bin': ['python', 'serve']
+    }
+    const pyFiles = {
+      listNames: async (dir: string) => tree[dir] ?? [],
+      listDirectories: async () => [],
+      readText: async (path: string) =>
+        path === '/w/py/pyproject.toml'
+          ? '[project]\nname = "py"\n[project.scripts]\nserve = "py.cli:serve"'
+          : null
+    }
+
+    const configurations = await detectProjectRunConfigurations('wt', '/w/py', true, pyFiles)
+
+    expect(configurations.map((configuration) => configuration.command)).toEqual([
+      '.venv/bin/python main.py',
+      '.venv/bin/serve'
+    ])
+  })
+
   it('finds nothing in a folder without projects or for an unknown worktree', async () => {
     await expect(detectProjectRunConfigurations('wt', '/w/docs', true, files)).resolves.toEqual([])
     await expect(detectProjectRunConfigurations('nope', '/w/app', true, files)).resolves.toEqual([])
@@ -123,6 +148,8 @@ describe('mayContainRunConfigurations', () => {
     expect(mayContainRunConfigurations('src', true)).toBe(true)
     expect(mayContainRunConfigurations('package.json', false)).toBe(true)
     expect(mayContainRunConfigurations('Api.csproj', false)).toBe(true)
+    expect(mayContainRunConfigurations('pyproject.toml', false)).toBe(true)
+    expect(mayContainRunConfigurations('main.py', false)).toBe(false)
     expect(mayContainRunConfigurations('main.ts', false)).toBe(false)
   })
 })
