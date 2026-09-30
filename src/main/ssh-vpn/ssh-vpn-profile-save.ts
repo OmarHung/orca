@@ -3,8 +3,9 @@ import type { SshVpnPasswordVault } from './ssh-vpn-password-vault'
 import type { SshVpnStore } from './ssh-vpn-store'
 
 /**
- * Moves the profile's password to where its setting keeps it (see applyStorage) before the
- * setting is saved, so a setting never claims what the saved-password file does not do.
+ * Saves a profile and moves its password to where the setting keeps it: removals before the
+ * setting is saved, sealing after it (undone on failure), so a failed step never leaves a
+ * setting claiming what the saved-password file does not do, or a password it did not ask for.
  */
 export function saveProfileWithPassword(
   {
@@ -12,20 +13,27 @@ export function saveProfileWithPassword(
     vault
   }: {
     store: Pick<SshVpnStore, 'saveProfile' | 'deleteProfile'>
-    vault: Pick<SshVpnPasswordVault, 'applyStorage' | 'remember' | 'rememberForSession'>
+    vault: Pick<SshVpnPasswordVault, 'release' | 'keep' | 'remember' | 'rememberForSession'>
   },
   previous: SshVpnProfile | null,
   draft: SshVpnProfileDraft,
-  password: string | null
+  password: string | undefined
 ): SshVpnProfile {
   const storage = draft.passwordStorage ?? 'session'
   if (previous) {
-    vault.applyStorage(previous.id, storage, password)
-    return store.saveProfile(previous.id, draft)
+    vault.release(previous.id, storage, password)
+    const saved = store.saveProfile(previous.id, draft)
+    try {
+      vault.keep(previous.id, storage, password)
+    } catch (error) {
+      store.saveProfile(previous.id, previous)
+      throw error
+    }
+    return saved
   }
   // Why: a new profile gets a fresh id, so nothing is saved to move or remove; only a typed password is kept.
   const created = store.saveProfile(undefined, draft)
-  if (password === null || storage === 'never') {
+  if (password === undefined || storage === 'never') {
     return created
   }
   if (storage === 'session') {
