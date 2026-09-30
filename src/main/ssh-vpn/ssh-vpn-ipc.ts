@@ -97,7 +97,7 @@ function registerProfileHandlers(runtime: SshVpnRuntime): void {
         )
       }
       const previous = id ? store.getProfile(id) : null
-      const saved = saveProfileWithPassword(runtime, previous, draft, password ?? null)
+      const saved = saveProfileWithPassword(runtime, previous, draft, password)
       if (previous && previous.ovpnPath !== saved.ovpnPath) {
         await manager.stop(saved.id)
       }
