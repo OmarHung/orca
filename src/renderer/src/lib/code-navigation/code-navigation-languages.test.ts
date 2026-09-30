@@ -7,7 +7,8 @@ describe('codeNavigationLanguageForPath', () => {
     ['/repo/src/App.TSX', 'typescript', 'typescriptreact'],
     ['/repo/lib/index.mjs', 'typescript', 'javascript'],
     ['/repo/web/Button.jsx', 'typescript', 'javascriptreact'],
-    ['C:\\repo\\App\\Program.cs', 'csharp', 'csharp']
+    ['C:\\repo\\App\\Program.cs', 'csharp', 'csharp'],
+    ['/repo/Views/Home/Index.cshtml', 'csharp', 'razor']
   ])('maps %s to the %s server as %s', (path, kind, languageId) => {
     expect(codeNavigationLanguageForPath(path)).toEqual({ kind, languageId })
   })

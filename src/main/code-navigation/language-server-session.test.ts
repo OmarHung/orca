@@ -88,6 +88,22 @@ describe('LanguageServerSession', () => {
     })
   })
 
+  it("never sends a leading BOM, which hides a Razor view's @model from csharp-ls", async () => {
+    const started = await startReadySession()
+
+    const pending = started.session.query(
+      'definition',
+      { path: filePath, languageId: 'razor', version: 1, text: '\uFEFF@model Shop.Item' },
+      { line: 0, character: 8 }
+    )
+    await answerNextQuery(started, 'textDocument/definition', null)
+    await pending
+
+    expect(started.last('textDocument/didOpen')?.params).toMatchObject({
+      textDocument: { languageId: 'razor', text: '@model Shop.Item' }
+    })
+  })
+
   it('asks for references including the declaration and returns their locations', async () => {
     const started = await startReadySession()
     const range = { start: { line: 1, character: 0 }, end: { line: 1, character: 3 } }
