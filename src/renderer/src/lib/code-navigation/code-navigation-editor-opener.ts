@@ -1,13 +1,20 @@
 import type * as Monaco from 'monaco-editor'
 import { useAppStore } from '@/store'
-import type { OpenFile } from '@/store/slices/editor'
 import { detectLanguage } from '@/lib/language-detect'
 import { getRelativePathInsideRoot } from '@/lib/path'
 import { toEditorModelUri } from '@/components/editor/editor-model-uri'
-import { findEditTabForModelUri, localWorkspaceRoot } from './code-navigation-workspace'
+import {
+  editorNavigationLocation,
+  findEditTabForModelUri,
+  localWorkspaceRoot
+} from './code-navigation-workspace'
 import { filePathForNavigationUri } from './code-navigation-preview-models'
+import { codeNavigationHistory } from './code-navigation-history'
 
 type TargetPosition = { lineNumber: number; column: number }
+
+/** The workspace a navigation target opens in. */
+export type NavigationOwner = { worktreeId: string; runtimeEnvironmentId?: string | null }
 
 function targetPositionOf(
   selectionOrPosition: Monaco.IRange | Monaco.IPosition | undefined
@@ -24,9 +31,9 @@ function targetPositionOf(
   return { lineNumber: selectionOrPosition.lineNumber, column: selectionOrPosition.column }
 }
 
-/** Opens the target in an Orca tab of the source tab's workspace and moves the cursor there. */
+/** Opens the target in an Orca tab of the owner's workspace and moves the cursor there. */
 export function openNavigationTarget(
-  sourceTab: OpenFile,
+  owner: NavigationOwner,
   requestedPath: string,
   position: TargetPosition | null
 ): void {
@@ -35,14 +42,14 @@ export function openNavigationTarget(
   // tab's own path keeps the jump from opening the same file twice.
   const targetPath =
     findEditTabForModelUri(store, toEditorModelUri(requestedPath))?.filePath ?? requestedPath
-  const root = localWorkspaceRoot(store, sourceTab.worktreeId)
-  const runtimeEnvironmentId = sourceTab.runtimeEnvironmentId ?? null
+  const root = localWorkspaceRoot(store, owner.worktreeId)
+  const runtimeEnvironmentId = owner.runtimeEnvironmentId ?? null
   const fileId = store.openFile(
     {
       filePath: targetPath,
       // Why the absolute path outside the root: that is how external files are opened elsewhere.
       relativePath: getRelativePathInsideRoot(targetPath, root) ?? targetPath,
-      worktreeId: sourceTab.worktreeId,
+      worktreeId: owner.worktreeId,
       language: detectLanguage(targetPath),
       mode: 'edit',
       runtimeEnvironmentId
@@ -69,7 +76,8 @@ export function openNavigationTarget(
 
 /**
  * Standalone Monaco can only reveal positions inside the model it is showing; this sends every
- * jump to another file (go to definition, a peek result) to an Orca tab instead.
+ * jump to another file (go to definition, a peek result) to an Orca tab instead. Every jump from
+ * an editor tab, in-file ones included, passes here first, so it also feeds Navigate Back.
  */
 export function registerCodeNavigationEditorOpener(
   monaco: Pick<typeof Monaco, 'editor'>
@@ -78,18 +86,17 @@ export function registerCodeNavigationEditorOpener(
     openCodeEditor(source, resource, selectionOrPosition) {
       const sourceModel = source.getModel()
       const targetPath = filePathForNavigationUri(resource)
-      if (!sourceModel || !targetPath) {
+      const state = useAppStore.getState()
+      const from = editorNavigationLocation(state, source)
+      if (!sourceModel || !targetPath || !from) {
         return false
       }
+      codeNavigationHistory.recordJump(from)
       // Same model: Monaco's own handler reveals it in place.
       if (resource.toString() === sourceModel.uri.toString()) {
         return false
       }
-      const sourceTab = findEditTabForModelUri(useAppStore.getState(), sourceModel.uri.toString())
-      if (!sourceTab) {
-        return false
-      }
-      openNavigationTarget(sourceTab, targetPath, targetPositionOf(selectionOrPosition))
+      openNavigationTarget(from, targetPath, targetPositionOf(selectionOrPosition))
       return true
     }
   })
