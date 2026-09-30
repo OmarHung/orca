@@ -1,7 +1,12 @@
 export const CODE_NAVIGATION_SERVER_KINDS = ['typescript', 'csharp'] as const
 export type CodeNavigationServerKind = (typeof CODE_NAVIGATION_SERVER_KINDS)[number]
 
-export const CODE_NAVIGATION_FEATURES = ['definition', 'references', 'implementation'] as const
+export const CODE_NAVIGATION_FEATURES = [
+  'definition',
+  'typeDefinition',
+  'references',
+  'implementation'
+] as const
 export type CodeNavigationFeature = (typeof CODE_NAVIGATION_FEATURES)[number]
 
 /** LSP position: zero-based line and UTF-16 character offset (Monaco columns are UTF-16 too). */
@@ -23,6 +28,18 @@ export type CodeNavigationQuery = {
   document: CodeNavigationDocument
   position: CodeNavigationPosition
 }
+
+export type CodeNavigationHoverQuery = Omit<CodeNavigationQuery, 'feature'>
+
+export type CodeNavigationHover = {
+  /** Markdown blocks, shown in order. */
+  contents: string[]
+  range?: CodeNavigationRange
+}
+
+export type CodeNavigationHoverResult =
+  | { ok: true; hover: CodeNavigationHover | null }
+  | { ok: false; message: string }
 
 export type CodeNavigationLocation = {
   path: string

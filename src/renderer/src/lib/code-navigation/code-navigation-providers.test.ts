@@ -48,7 +48,13 @@ function setup(workerEntries: unknown[] = []) {
     }
   const worker = {
     getDefinitionAtPosition: vi.fn(async () => workerEntries),
-    getReferencesAtPosition: vi.fn(async () => workerEntries)
+    getReferencesAtPosition: vi.fn(async () => workerEntries),
+    getQuickInfoAtPosition: vi.fn(async () => ({
+      textSpan: { start: 9, length: 5 },
+      displayParts: [{ text: 'function greet(): void' }],
+      documentation: [{ text: 'Says hi.' }],
+      tags: [{ name: 'param', text: [{ text: 'name' }, { text: 'who' }] }]
+    }))
   }
   const defaults = () => ({
     modeConfiguration: { definitions: true, references: true, hovers: true },
@@ -65,6 +71,8 @@ function setup(workerEntries: unknown[] = []) {
     },
     languages: {
       registerDefinitionProvider: register('definition', 'provideDefinition'),
+      registerTypeDefinitionProvider: register('typeDefinition', 'provideTypeDefinition'),
+      registerHoverProvider: register('hover', 'provideHover'),
       registerReferenceProvider: register('references', 'provideReferences'),
       registerImplementationProvider: register('implementation', 'provideImplementation')
     },
@@ -92,6 +100,7 @@ function setup(workerEntries: unknown[] = []) {
 }
 
 const query = vi.fn()
+const hover = vi.fn()
 
 // Why strings: URI objects cache their formatted form, so equal URIs can differ structurally.
 function asStrings(locations: unknown): { uri: string; range: unknown }[] {
@@ -105,7 +114,8 @@ function asStrings(locations: unknown): { uri: string; range: unknown }[] {
 beforeEach(() => {
   context.current = null
   query.mockReset()
-  vi.stubGlobal('window', { api: { codeNavigation: { query } } })
+  hover.mockReset()
+  vi.stubGlobal('window', { api: { codeNavigation: { query, hover } } })
 })
 
 afterEach(() => {
@@ -119,15 +129,17 @@ describe('registerCodeNavigationProviders', () => {
     expect(monaco.typescript.typescriptDefaults.setModeConfiguration).toHaveBeenCalledWith({
       definitions: false,
       references: false,
-      hovers: true
+      hovers: false
     })
     expect(monaco.typescript.javascriptDefaults.setModeConfiguration).toHaveBeenCalled()
     expect([...providers.keys()].sort()).toEqual(
       ['csharp', 'javascript', 'typescript']
         .flatMap((language) => [
           `${language}:definition`,
+          `${language}:hover`,
           `${language}:implementation`,
-          `${language}:references`
+          `${language}:references`,
+          `${language}:typeDefinition`
         ])
         .sort()
     )
@@ -212,5 +224,69 @@ describe('registerCodeNavigationProviders', () => {
     await expect(
       call('csharp', 'implementation', fakeModel('/remote/App.cs', 'csharp'))
     ).resolves.toBeUndefined()
+  })
+
+  it('shows the language server hover as Markdown', async () => {
+    const { call } = setup()
+    context.current = {
+      kind: 'csharp',
+      languageId: 'csharp',
+      root: '/repo',
+      tab: { filePath: '/repo/App.cs' }
+    }
+    hover.mockResolvedValue({
+      ok: true,
+      hover: {
+        contents: ['```csharp\nvoid Greet()\n```'],
+        range: { start: { line: 1, character: 0 }, end: { line: 1, character: 5 } }
+      }
+    })
+
+    const result = await call('csharp', 'hover', fakeModel('/repo/App.cs', 'csharp'))
+
+    expect(hover).toHaveBeenCalledWith(expect.objectContaining({ kind: 'csharp', root: '/repo' }))
+    expect(result).toEqual({
+      contents: [{ value: '```csharp\nvoid Greet()\n```' }],
+      range: new FakeRange(2, 1, 2, 6)
+    })
+  })
+
+  it('keeps the TS worker hover where no server runs or the server is not installed', async () => {
+    const { call, worker } = setup()
+    const remote = await call('typescript', 'hover', fakeModel('/remote/app.ts'))
+
+    context.current = {
+      kind: 'typescript',
+      languageId: 'typescript',
+      root: '/repo',
+      tab: { filePath: '/repo/app.ts' }
+    }
+    hover.mockResolvedValue({ ok: false, message: 'The language server is not installed' })
+    const notInstalled = await call('typescript', 'hover', fakeModel('/repo/app.ts'))
+
+    expect(worker.getQuickInfoAtPosition).toHaveBeenCalledTimes(2)
+    expect(remote).toEqual({
+      range: new FakeRange(1, 10, 1, 15),
+      contents: [
+        { value: '```typescript\nfunction greet(): void\n```\n' },
+        { value: 'Says hi.\n\n*@param*`name` — who' }
+      ]
+    })
+    expect(notInstalled).toEqual(remote)
+  })
+
+  it('routes type definitions to the server', async () => {
+    const { call } = setup()
+    context.current = {
+      kind: 'typescript',
+      languageId: 'typescript',
+      root: '/repo',
+      tab: { filePath: '/repo/app.ts' }
+    }
+    query.mockResolvedValue({ ok: true, locations: [], previews: {} })
+
+    await call('typescript', 'typeDefinition', fakeModel('/repo/app.ts'))
+
+    expect(query).toHaveBeenCalledWith(expect.objectContaining({ feature: 'typeDefinition' }))
   })
 })

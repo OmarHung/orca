@@ -1,9 +1,12 @@
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { CodeNavigationService } from './code-navigation-service'
 import type { LanguageServerSession } from './language-server-session'
+import type { LspLocation } from './lsp-locations'
 import type {
-  CodeNavigationLocation,
   CodeNavigationQuery,
   CodeNavigationStatusEvent
 } from '../../shared/code-navigation/code-navigation-types'
@@ -27,16 +30,22 @@ function query(overrides: Partial<CodeNavigationQuery> = {}): CodeNavigationQuer
 type FakeSession = {
   whenReady: ReturnType<typeof vi.fn>
   query: ReturnType<typeof vi.fn>
+  hover: ReturnType<typeof vi.fn>
+  request: ReturnType<typeof vi.fn>
   closeDocument: ReturnType<typeof vi.fn>
   filesChanged: ReturnType<typeof vi.fn>
   dispose: ReturnType<typeof vi.fn>
   onExit: ReturnType<typeof vi.fn>
 }
 
-function fakeSession(locations: CodeNavigationLocation[] = []): FakeSession {
+const at = (path: string): LspLocation => ({ uri: pathToFileURL(path).href, range })
+
+function fakeSession(locations: LspLocation[] = []): FakeSession {
   return {
     whenReady: vi.fn(async () => {}),
     query: vi.fn(async () => locations),
+    hover: vi.fn(async () => ({ contents: ['**hover**'] })),
+    request: vi.fn(async () => null),
     closeDocument: vi.fn(),
     filesChanged: vi.fn(),
     dispose: vi.fn(async () => {}),
@@ -49,10 +58,14 @@ function createService(options: {
   prepareLaunch?: ConstructorParameters<typeof CodeNavigationService>[0]['prepareLaunch']
   previews?: Record<string, string | null>
   now?: () => number
+  installed?: boolean
+  metadataDir?: string
 }) {
   const created: FakeSession[] = []
   const service = new CodeNavigationService({
     prepareLaunch: options.prepareLaunch ?? (async () => ({ program: 'x', args: [], env: {} })),
+    isInstalled: async () => options.installed ?? true,
+    metadataDir: options.metadataDir,
     createSession: () => {
       const next = options.sessions[created.length]
       created.push(next)
@@ -96,12 +109,7 @@ describe('CodeNavigationService', () => {
   })
 
   it('returns previews for other target files only', async () => {
-    const session = fakeSession([
-      { path: queried, range },
-      { path: other, range },
-      { path: other, range },
-      { path: join(root, 'too-big.ts'), range }
-    ])
+    const session = fakeSession([at(queried), at(other), at(other), at(join(root, 'too-big.ts'))])
     const { service } = createService({
       sessions: [session],
       previews: { [queried]: 'self', [other]: 'export const lib = 1' }
@@ -202,5 +210,59 @@ describe('CodeNavigationService', () => {
 
     expect(created[0].dispose).toHaveBeenCalled()
     expect(created.slice(1).every((session) => !session.dispose.mock.calls.length)).toBe(true)
+  })
+
+  it('opens decompiled C# as a read-only file and drops schemes it cannot open', async () => {
+    const metadataDir = await mkdtemp(join(tmpdir(), 'orca-metadata-'))
+    try {
+      const metadataUri = 'csharp:/repo/App/App.csproj/decompiled/System.Console.cs'
+      const session = fakeSession([
+        { uri: metadataUri, range },
+        { uri: metadataUri, range },
+        { uri: 'bundled:///libs/lib.dom.d.ts', range }
+      ])
+      session.request.mockResolvedValue({
+        projectName: 'App',
+        assemblyName: 'System.Console',
+        symbolName: 'System.Console',
+        source: 'public static class Console {}'
+      })
+      const { service } = createService({ sessions: [session], metadataDir })
+
+      const result = await service.query(query({ kind: 'csharp' }), () => {})
+
+      expect(result.ok).toBe(true)
+      const locations = result.ok ? result.locations : []
+      expect(locations).toHaveLength(2)
+      expect(locations[0].path).toMatch(/System\.Console\.cs$/)
+      expect(await readFile(locations[0].path, 'utf8')).toBe('public static class Console {}')
+      expect(session.request).toHaveBeenCalledTimes(1)
+      expect(session.request).toHaveBeenCalledWith('csharp/metadata', {
+        textDocument: { uri: metadataUri }
+      })
+    } finally {
+      await rm(metadataDir, { recursive: true, force: true })
+    }
+  })
+
+  it('hovers through an installed server without reporting its start', async () => {
+    const session = fakeSession()
+    const { service, created } = createService({ sessions: [session] })
+    const { feature: _feature, ...hoverQuery } = query()
+
+    const result = await service.hover(hoverQuery)
+
+    expect(result).toEqual({ ok: true, hover: { contents: ['**hover**'] } })
+    expect(created).toHaveLength(1)
+  })
+
+  it('never starts a server for a hover when it would need a download', async () => {
+    const { service, created } = createService({ sessions: [fakeSession()], installed: false })
+    const { feature: _feature, ...hoverQuery } = query()
+
+    const result = await service.hover(hoverQuery)
+
+    expect(result.ok).toBe(false)
+    expect(created).toHaveLength(0)
   })
 })
