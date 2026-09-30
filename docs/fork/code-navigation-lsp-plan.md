@@ -241,3 +241,22 @@ F12、⇧F12、⌘F12、⌘+點擊這些 Monaco 原本的鍵都保留。衝突�
   - 載入端直接認得 Orca 語言伺服器的檔案（`isOrcaLanguageServerFilePath`：`language-servers/csharp-metadata/`、`language-servers/typescript-native/`），它們不屬於任何專案，一律不遷移。舊分頁按「重試」或重啟後就能載入，不必手動清理。
   - 跳轉到一個已經開著、但缺標記的分頁時（`openFile` 對既有分頁不會更新這些旗標），補上 `staysInOpeningWorkspace`／`readOnly` 並遞增 `fileContentReloadNonce` 重新載入一次（有未存修改的分頁不會被重新載入）。
 
+## 11. C# 第一次跳轉的速度（2026-10-01）
+
+使用者問「為什麼 loading 要這麼久」。在使用者的 `ecommerce_project`（2 個 csproj、EcommerceApi 1215 個 .cs）實測 csharp-ls：
+
+| 階段 | x86_64 .NET（經 Rosetta，使用者現況） | arm64 原生 .NET 10 |
+|---|---|---|
+| 啟動 | 0.9 秒 | 0.2 秒 |
+| csharp-ls 在資料夾裡找方案檔 | 2 秒 | 2 秒 |
+| MSBuild 載入方案 | 3.8 秒 | 1.4 秒 |
+| 第一次語意編譯 | 8.1 秒 | 3.2 秒 |
+| 第一次跳轉總計 | 14.8 秒 | 6.8 秒 |
+
+之後的跳轉都在 0.5 秒內。log 裡的「MSBuild failed」只是 NuGet 的 NU1510 警告（`System.Text.Encoding.CodePages` 可移除），不影響載入。
+
+使用者選的改善（arm64 dotnet 暫不做，要使用者另外安裝）：
+- **自動指定方案檔**（`csharp-solution-discovery.ts`）：Orca 以廣度優先找根目錄下最淺層的 `.sln`／`.slnx`（最多 4 層、2000 個資料夾，略過 node_modules、bin、obj、隱藏資料夾等），該層只有一個時用 `--solution <相對路徑>` 交給 csharp-ls。實測省下約 2 秒。
+- **背景預熱**（`code-navigation-prewarm.ts` + `codeNav:warm`）：C# 檔的編輯器換上 model 或取得焦點時，在背景啟動「已安裝」的伺服器，並在檔案開頭發一次 hover 逼它載入並編譯（實測預熱後第一次跳轉從 12.3 秒降到 0.4 秒）。同一個專案 60 秒內最多一次，也順便讓持續工作中的專案不被閒置關閉。TS 不預熱（本來就約 1 秒）。
+- 預熱還沒完成就按跳轉時，那次查詢也會顯示「正在載入」的提示（`joinsStartingServer`）。
+
