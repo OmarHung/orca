@@ -19,4 +19,6 @@ export type CodeNavigationApi = {
   }) => Promise<void>
   filesChanged: (request: { root: string; changes: CodeNavigationFileChange[] }) => Promise<void>
   onStatus: (callback: (event: CodeNavigationStatusEvent) => void) => () => void
+  /** Lets main pass JetBrains-style chords (Cmd/Ctrl+B …) through to a focused code editor. */
+  setCodeEditorFocused: (focused: boolean) => void
 }
