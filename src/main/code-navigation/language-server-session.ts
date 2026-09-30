@@ -3,12 +3,13 @@ import { pathToFileURL } from 'node:url'
 import { startStdioDapTransport, type StdioDapTransportSpec } from '../debug/dap-transport-stdio'
 import type { DapTransport } from '../debug/dap-transport'
 import { createLspConnection, type LspConnection } from './lsp-connection'
-import { lspResultToLocations } from './lsp-locations'
+import { lspResultToLocations, type LspLocation } from './lsp-locations'
+import { lspHoverToCodeNavigationHover } from './lsp-hover'
 import type {
   CodeNavigationDocument,
   CodeNavigationFeature,
   CodeNavigationFileChange,
-  CodeNavigationLocation,
+  CodeNavigationHover,
   CodeNavigationPosition
 } from '../../shared/code-navigation/code-navigation-types'
 
@@ -21,6 +22,7 @@ const STDERR_LINES_IN_ERRORS = 3
 
 const FEATURE_METHODS: Record<CodeNavigationFeature, string> = {
   definition: 'textDocument/definition',
+  typeDefinition: 'textDocument/typeDefinition',
   references: 'textDocument/references',
   implementation: 'textDocument/implementation'
 }
@@ -35,6 +37,8 @@ export type LanguageServerLaunch = {
   program: string
   args: readonly string[]
   env: NodeJS.ProcessEnv
+  /** Answers to `workspace/configuration`, by section; unlisted sections get null. */
+  configuration?: Readonly<Record<string, unknown>>
 }
 
 export type LanguageServerSessionOptions = {
@@ -49,11 +53,15 @@ function toUri(path: string): string {
   return pathToFileURL(path).href
 }
 
-function configurationItemCount(params: unknown): number {
+function configurationSections(params: unknown): unknown[] {
   if (typeof params !== 'object' || params === null || !('items' in params)) {
-    return 0
+    return []
   }
-  return Array.isArray(params.items) ? params.items.length : 0
+  return Array.isArray(params.items)
+    ? params.items.map((item: unknown) =>
+        typeof item === 'object' && item !== null && 'section' in item ? item.section : undefined
+      )
+    : []
 }
 
 /** One language server process serving one workspace root. */
@@ -101,19 +109,27 @@ export class LanguageServerSession {
     feature: CodeNavigationFeature,
     document: CodeNavigationDocument,
     position: CodeNavigationPosition
-  ): Promise<CodeNavigationLocation[]> {
+  ): Promise<LspLocation[]> {
+    const extra = feature === 'references' ? { context: { includeDeclaration: true } } : {}
+    return lspResultToLocations(
+      await this.requestAt(FEATURE_METHODS[feature], document, position, extra)
+    )
+  }
+
+  async hover(
+    document: CodeNavigationDocument,
+    position: CodeNavigationPosition
+  ): Promise<CodeNavigationHover | null> {
+    return lspHoverToCodeNavigationHover(
+      await this.requestAt('textDocument/hover', document, position, {})
+    )
+  }
+
+  /** A server-specific request, e.g. csharp-ls's `csharp/metadata`. */
+  async request(method: string, params: unknown): Promise<unknown> {
     await this.initialized
-    this.syncDocument(document)
-    const params = {
-      textDocument: { uri: toUri(document.path) },
-      position,
-      ...(feature === 'references' ? { context: { includeDeclaration: true } } : {})
-    }
     try {
-      const result = await this.connection.request(FEATURE_METHODS[feature], params, {
-        timeoutMs: QUERY_TIMEOUT_MS
-      })
-      return lspResultToLocations(result)
+      return await this.connection.request(method, params, { timeoutMs: QUERY_TIMEOUT_MS })
     } catch (error) {
       throw this.withStderr(error)
     }
@@ -171,8 +187,10 @@ export class LanguageServerSession {
             textDocument: {
               synchronization: { dynamicRegistration: false, didSave: false },
               definition: { linkSupport: true },
+              typeDefinition: { linkSupport: true },
               references: {},
-              implementation: { linkSupport: true }
+              implementation: { linkSupport: true },
+              hover: { contentFormat: ['markdown', 'plaintext'] }
             },
             workspace: {
               workspaceFolders: true,
@@ -188,6 +206,17 @@ export class LanguageServerSession {
       this.connection.close()
       throw this.withStderr(error)
     }
+  }
+
+  private async requestAt(
+    method: string,
+    document: CodeNavigationDocument,
+    position: CodeNavigationPosition,
+    extra: Record<string, unknown>
+  ): Promise<unknown> {
+    await this.initialized
+    this.syncDocument(document)
+    return this.request(method, { textDocument: { uri: toUri(document.path) }, position, ...extra })
   }
 
   private syncDocument(document: CodeNavigationDocument): void {
@@ -215,9 +244,15 @@ export class LanguageServerSession {
 
   private answerServerRequest(method: string, params: unknown): unknown {
     switch (method) {
-      case 'workspace/configuration':
+      case 'workspace/configuration': {
         // Why nulls: servers fall back to their defaults for every unset section.
-        return Array.from({ length: configurationItemCount(params) }, () => null)
+        const configuration = this.options.launch.configuration ?? {}
+        return configurationSections(params).map((section) =>
+          typeof section === 'string' && Object.hasOwn(configuration, section)
+            ? configuration[section]
+            : null
+        )
+      }
       case 'workspace/workspaceFolders':
         return [{ uri: this.rootUri, name: basename(this.options.root) }]
       case 'client/registerCapability':
