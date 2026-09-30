@@ -7,6 +7,10 @@ const ECOSYSTEM_LABELS: Record<RunConfigurationEcosystem, string> = {
   python: 'Python'
 }
 
+export function runEcosystemLabel(ecosystem: RunConfigurationEcosystem): string {
+  return ECOSYSTEM_LABELS[ecosystem]
+}
+
 /** Which toolchain a detected project belongs to, as a small tag before its name. */
 export function RunEcosystemBadge({
   ecosystem
@@ -15,7 +19,7 @@ export function RunEcosystemBadge({
 }): React.JSX.Element {
   return (
     <span className="shrink-0 rounded-sm border border-border px-1 text-[10px] text-muted-foreground">
-      {ECOSYSTEM_LABELS[ecosystem]}
+      {runEcosystemLabel(ecosystem)}
     </span>
   )
 }
