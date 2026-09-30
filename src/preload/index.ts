@@ -57,6 +57,7 @@ import { petApi } from './api/pet-bridge'
 import { appIconApi } from './api/app-icon-bridge'
 import { browserPasswordsApi } from './api/browser-passwords-bridge'
 import { debugApi } from './api/debug-bridge'
+import { codeNavigationApi } from './api/code-navigation-bridge'
 import { databaseApi } from './api/database-bridge'
 import { sftpApi } from './api/sftp-bridge'
 import { sshVpnApi } from './api/ssh-vpn-bridge'
@@ -167,6 +168,7 @@ const api = {
   pet: petApi,
   appIcon: appIconApi,
   debug: debugApi,
+  codeNavigation: codeNavigationApi,
   database: databaseApi,
   sftp: sftpApi,
   sshVpn: sshVpnApi,

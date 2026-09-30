@@ -51,6 +51,7 @@ import type { PetApi } from './api/pet-api'
 import type { AppIconApi } from './api/app-icon-api'
 import type { BrowserPasswordsApi } from './api/browser-passwords-api'
 import type { DebugApi } from './api/debug-api'
+import type { CodeNavigationApi } from './api/code-navigation-api'
 import type { DatabaseApi } from './api/database-api'
 import type { SftpApi } from './api/sftp-api'
 import type { SshVpnApi } from './api/ssh-vpn-api'
@@ -134,6 +135,7 @@ export type PreloadApi = {
   pet: PetApi
   appIcon: AppIconApi
   debug: DebugApi
+  codeNavigation: CodeNavigationApi
   database: DatabaseApi
   sftp: SftpApi
   sshVpn: SshVpnApi

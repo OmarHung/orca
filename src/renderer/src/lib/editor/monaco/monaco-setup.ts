@@ -32,6 +32,7 @@ import { installMonacoContextMenuPaste } from '@/components/editor/install-monac
 import { runMonacoSetupSteps } from './monaco-setup-steps'
 import { installMonacoTsWorkerIdleStop } from './monaco-ts-worker-idle-stop'
 import { onPluginFontLoadsChanged } from '@/store/plugins/appearance/plugin-fonts'
+import { installCodeNavigation } from './code-navigation/install-code-navigation'
 
 globalThis.MonacoEnvironment = {
   getWorker(_workerId, label) {
@@ -99,7 +100,8 @@ runMonacoSetupSteps([
   ['context-menu paste', () => installMonacoContextMenuPaste(monaco)],
   ['TS worker idle stop', () => installMonacoTsWorkerIdleStop(monaco)],
   // Monaco caches glyph widths, so a plugin font that loads after first paint must re-measure.
-  ['plugin font remeasure', () => onPluginFontLoadsChanged(() => monaco.editor.remeasureFonts())]
+  ['plugin font remeasure', () => onPluginFontLoadsChanged(() => monaco.editor.remeasureFonts())],
+  ['code navigation', () => void installCodeNavigation(monaco)]
 ])
 
 loader.config({ monaco })
