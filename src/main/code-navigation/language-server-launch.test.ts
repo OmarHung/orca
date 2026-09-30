@@ -125,7 +125,7 @@ describe('prepareLanguageServerLaunch', () => {
         '--features',
         'razor-support'
       ],
-      env: { PATH: '/usr/bin', DOTNET_ROLL_FORWARD: 'Major' },
+      env: { PATH: '/usr/bin', DOTNET_ROLL_FORWARD: 'Major', UseRazorSourceGenerator: 'true' },
       configuration: { csharp: { useMetadataUris: true } }
     })
   })
