@@ -16,11 +16,18 @@ const LANGUAGES_BY_EXTENSION: Record<string, CodeNavigationLanguage> = {
   '.mjs': typescript('javascript'),
   '.cjs': typescript('javascript'),
   '.jsx': typescript('javascriptreact'),
-  '.cs': { kind: 'csharp', languageId: 'csharp' }
+  '.cs': { kind: 'csharp', languageId: 'csharp' },
+  // Why the C# server: csharp-ls resolves the C# inside Razor views (run with razor-support).
+  '.cshtml': { kind: 'csharp', languageId: 'razor' }
 }
 
 /** Monaco language ids whose navigation Orca routes through a language server. */
-export const CODE_NAVIGATION_MONACO_LANGUAGES = ['typescript', 'javascript', 'csharp'] as const
+export const CODE_NAVIGATION_MONACO_LANGUAGES = [
+  'typescript',
+  'javascript',
+  'csharp',
+  'razor'
+] as const
 
 /** The server and LSP language id for a file, or null when no server handles it. */
 export function codeNavigationLanguageForPath(path: string): CodeNavigationLanguage | null {

@@ -221,10 +221,13 @@ export class LanguageServerSession {
 
   private syncDocument(document: CodeNavigationDocument): void {
     const uri = toUri(document.path)
+    // Why: a leading BOM character hides a Razor view's first-line `@model` from csharp-ls, which
+    // then answers nothing anywhere in the view. Monaco drops it already; this keeps it that way.
+    const text = document.text.replace(/^\uFEFF/, '')
     const synced = this.documents.get(uri)
     if (!synced) {
       this.connection.notify('textDocument/didOpen', {
-        textDocument: { uri, languageId: document.languageId, version: 1, text: document.text }
+        textDocument: { uri, languageId: document.languageId, version: 1, text }
       })
       this.documents.set(uri, { rendererVersion: document.version, serverVersion: 1 })
       return
@@ -237,7 +240,7 @@ export class LanguageServerSession {
     const serverVersion = synced.serverVersion + 1
     this.connection.notify('textDocument/didChange', {
       textDocument: { uri, version: serverVersion },
-      contentChanges: [{ text: document.text }]
+      contentChanges: [{ text }]
     })
     this.documents.set(uri, { rendererVersion: document.version, serverVersion })
   }
