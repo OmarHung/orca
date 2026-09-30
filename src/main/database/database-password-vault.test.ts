@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -48,6 +48,15 @@ describe('DatabasePasswordVault', () => {
     vault.remember('conn-1', 'forever', 'secret')
     vault.remember('conn-1', 'never', 'secret')
     expect(vault.has('conn-1')).toBe(false)
+  })
+
+  it('keeps no "until quit" password when the saved copy cannot be removed', () => {
+    const vault = new DatabasePasswordVault(filePath, () => fakeSecretStore())
+    vault.remember('conn-1', 'forever', 'old')
+    writeFileSync(filePath, '{"version": 1,')
+
+    expect(vault.remember('conn-1', 'session', 'new').ok).toBe(false)
+    expect(vault.get('conn-1')).toBeNull()
   })
 
   it('refuses to store "forever" without OS encryption', () => {
