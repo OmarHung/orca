@@ -1,6 +1,6 @@
 # 編輯器程式碼跳轉（LSP）：實作計畫（fork 專屬）
 
-> 狀態：Phase 1 完成（2026-09-30，§8）；Phase 2 完成（2026-09-30，§9）；JetBrains 快捷鍵（§10）；Phase 3 未開始
+> 狀態：Phase 1 完成（2026-09-30，§8）；Phase 2 完成（2026-09-30，§9）；JetBrains 快捷鍵（§10）；C# 速度（§11）；MediatR（§12）；Razor 與 ASP.NET MVC（2026-10-01，§13）；Phase 3 未開始
 > 分支：`feat/code-navigation`（worktree `/Users/omar/myprojects/orca-code-nav`），完成後 fast-forward 回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -269,4 +269,39 @@ F12、⇧F12、⌘F12、⌘+點擊這些 Monaco 原本的鍵都保留。衝突�
 - 參照的前文符合 `I(Request|Notification|StreamRequest)Handler<` 的就是 handler；目標是同一個 handler 裡、前文符合 `Handle(` 的那個參照所在的 `Handle` 方法名稱（找不到就停在 base list）。通知有多個 handler 時交給 peek 清單。
 - 真實驗證：使用者的 `ecommerce_project`，`ListPublishedArticlesQuery`、`GetPublishedArticleBySlugQuery` 都落在各自 handler 的 `Handle` 方法（熱的時候 57ms）。
 - e2e：C# 範例加入 MediatR 形狀的介面（不需要 NuGet），`new GetGreeting("world")` 上 ⌥⌘B 落在 `GetGreetingHandler.Handle`。
+
+## 13. Razor（.cshtml）與 ASP.NET MVC 對應（2026-10-01）
+
+使用者問 `.cshtml` 有沒有支援，選了「C# 部分 + MVC 對應跳轉」。
+
+### 13.1 .cshtml 裡的 C#（交給 csharp-ls）
+
+- csharp-ls 0.28 有實驗性的 Razor 支援：啟動加 `--features razor-support`，`.cshtml` 以 languageId `razor` 開啟。它用 Razor 原始碼產生器產出的 C# 對應位置，`@model` 型別、`Model.X`、`@{ }`／`@if` 區塊裡的 C# 都能跳到定義、找參照、懸停。
+- **BOM 陷阱**（實測）：傳給伺服器的文字若以 BOM 字元開頭，Razor 解析器認不出第一行的 `@model`，整個 view 什麼都查不到。Visual Studio 與 `dotnet new` 存的 view 都帶 BOM。Monaco 載入時已去掉 BOM，session 送出前仍一律去掉（`syncDocument`）。
+- 一開始以為 `.cshtml` 請求不等方案載入，後來證實空結果都是 BOM 造成的；`.cshtml` 請求一樣會等載入，沿用 §11 的預載即可。
+- 伺服器只處理 Razor 裡的 C#：tag helper 屬性值、partial 名稱等字串交給 §13.2。Blazor 的 `.razor` 不支援（csharp-ls 只認 `.cshtml`）。
+- 用 `dotnet new mvc` 的專案與 csharp-ls 自己的測試專案都驗證過；SDK 10.0.201（x64）與 10.0.401（arm64）結果相同。
+
+### 13.2 MVC 對應（Orca 自己實作，`aspnet-mvc-constructs.ts`、`aspnet-mvc-targets.ts`）
+
+C# 的「跳到定義」在送給伺服器之前，先判斷游標是不是下列寫法；命中且找得到目標就直接回傳（`View()` 本來會跳到反編譯的 `Controller.View`），否則照常走 LSP。
+
+| 位置 | 寫法 | 目標 |
+|---|---|---|
+| view | `asp-action="X"`（同一個 tag 的 `asp-controller`，沒有就用 view 所在的 `Views/{Controller}`） | controller 的 action（多載全列，peek） |
+| view | `asp-controller="X"` | controller 類別 |
+| view | `<partial name="X">`、`Html.Partial/PartialAsync/RenderPartial/RenderPartialAsync("X")`、`Layout = "X"` | view 檔 |
+| 兩者 | `Html.ActionLink(文字, action, controller)`、`Url.Action(action, controller)`、`Html.BeginForm(action, controller)`、`RedirectToAction(action, controller)` | action 或 controller |
+| controller | `View()`、`PartialView()`（沒寫名稱時取所在 action 的名稱，`[ActionName("X")]` 優先） | view 檔 |
+| controller | `View("X")`、`PartialView("X")` | view 檔 |
+
+- **找 view**：照 ASP.NET 的搜尋順序：view 自己的資料夾（partial 放在旁邊；也涵蓋 feature folders）→ `Areas/{A}/Views/{C}` → `Areas/{A}/Views/Shared` → `Views/{C}` → `Views/Shared` →（partial／layout）`Pages/Shared`。`~/` 開頭是專案相對路徑，含 `/` 是相對目前 view。專案目錄是往上找到的第一個 `.csproj` 所在資料夾。
+- **找 controller／action**：`workspace/symbol`（會等方案載入）。class 以名稱完全相符（kind 5）；action 比對 csharp-ls 的方法名稱格式 `IActionResult HomeController.Index(int id)`（kind 6）。有指定 area 時優先 `Areas/{A}/` 底下的結果；找不到 action（繼承或改名）就跳到 controller 類別。
+- **字串辨識**：取游標兩側最近的一對引號，而且左引號前面必須是 `(`、`,`、`=` 或 `:`，才能處理 `href="@Url.Action("Details")"` 這種 HTML 屬性裡再包 C# 字串的寫法，也不會把兩個字串中間的片段誤認為字串。往回找呼叫時會跳過前面字串參數裡的逗號。
+
+### 13.3 驗證
+
+- 單元測試：`aspnet-mvc-constructs.test.ts`（各種寫法、巢狀引號、`[ActionName]`、不該命中的情況）、`aspnet-mvc-targets.test.ts`（搜尋順序、area、多載、fallback）、session 的 BOM 測試。
+- 整合測試 `aspnet-mvc.integration.test.ts`（設 `ORCA_TEST_CSHARP_LS_DLL` 才跑）：`dotnet new mvc` 加上 Orders controller 與 view，asp-action／asp-controller／partial／`Model.RequestId`／`View()`／`View("Show")`／`[ActionName]`／`RedirectToAction` 全部命中。
+- e2e（`ORCA_E2E_CODE_NAVIGATION=1`）：view 裡 ⌘B 在 `asp-action="Privacy"` 開到 `HomeController.cs` 的 `Privacy`、⌘[ 回來；`@Model.RequestId` 到 `ErrorViewModel.cs`；controller 裡 `return View()` 到 `Views/Orders/Index.cshtml`。
 
