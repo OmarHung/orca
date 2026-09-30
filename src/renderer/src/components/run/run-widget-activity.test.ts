@@ -71,6 +71,8 @@ function session(commandKey: string, overrides: Partial<RunSession> = {}): RunSe
     commandKey,
     label: commandKey,
     tabId: `tab-${commandKey}`,
+    leafId: `leaf-${commandKey}`,
+    attemptId: `attempt-${commandKey}`,
     status: 'running',
     exitCode: null,
     ...overrides
@@ -121,7 +123,7 @@ describe('worktreeRunActivity', () => {
         session('config:other', { worktreeId: 'wt2' }),
         session('detected:api', { status: 'stopping' })
       ],
-      liveTabIds: new Set(['tab-config:shop', 'tab-config:admin', 'tab-detected:api']),
+      liveLeafIds: new Set(['leaf-config:shop', 'leaf-config:admin', 'leaf-detected:api']),
       debug: debugSession
     })
     expect(activity.runs.map((run) => run.commandKey)).toEqual(['config:shop', 'detected:api'])
@@ -130,7 +132,7 @@ describe('worktreeRunActivity', () => {
       worktreeRunActivity({
         worktreeId: 'wt',
         sessions: [],
-        liveTabIds: new Set(),
+        liveLeafIds: new Set(),
         debug: { ...debugSession, phase: 'ended' }
       }).debug
     ).toBeNull()

@@ -51,7 +51,7 @@ export function runQuickCommandInNewTab({
   groupId,
   historyId = command.id,
   startupCwd
-}: RunQuickCommandInNewTabArgs): { tabId: string } | null {
+}: RunQuickCommandInNewTabArgs): { tabId: string; leafId?: string } | null {
   const targetGroupId = groupId ?? undefined
   if (isTerminalAgentQuickCommand(command)) {
     if (!command.prompt.trim() || !supportsTerminalAgentQuickCommand(command.agent)) {
@@ -96,8 +96,10 @@ export function runQuickCommandInNewTab({
     return null
   }
   const store = useAppStore.getState()
+  const leafId = createNonSecureContextUuid()
   const tab = store.createTab(worktreeId, targetGroupId, undefined, {
     quickCommandLabel: command.label,
+    initialLeafId: leafId,
     pendingStartup: { command: flattenTerminalQuickCommand(command).command },
     ...(startupCwd ? { startupCwd } : {})
   })
@@ -113,5 +115,5 @@ export function runQuickCommandInNewTab({
     useAppStore.getState().setRecentQuickCommandForGroup(launchedGroupId, historyId)
   }
 
-  return { tabId: tab.id }
+  return { tabId: tab.id, leafId }
 }
