@@ -50,6 +50,7 @@ import { registerTelemetryHandlers } from '../telemetry'
 import { registerShellHandlers } from '../shell'
 import { registerPetHandlers } from '../pet'
 import { registerDebugHandlers } from '../../debug/debug-ipc'
+import { registerCodeNavigationHandlers } from '../../code-navigation/code-navigation-ipc'
 import { registerDatabaseHandlers } from '../../database/database-ipc'
 import { registerSftpHandlers } from '../../sftp/sftp-ipc'
 import { registerSshVpnHandlers } from '../../ssh-vpn/ssh-vpn-ipc'
@@ -212,6 +213,7 @@ export function registerCoreHandlers(
   registerShellHandlers(store)
   registerPetHandlers()
   registerDebugHandlers()
+  registerCodeNavigationHandlers()
   registerDatabaseHandlers()
   registerSftpHandlers()
   registerSshVpnHandlers()

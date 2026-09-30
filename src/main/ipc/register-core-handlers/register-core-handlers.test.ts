@@ -23,6 +23,7 @@ const {
   registerShellHandlersMock,
   registerPetHandlersMock,
   registerDebugHandlersMock,
+  registerCodeNavigationHandlersMock,
   registerDatabaseHandlersMock,
   registerSftpHandlersMock,
   registerSshVpnHandlersMock,
@@ -96,6 +97,7 @@ const {
   registerShellHandlersMock: vi.fn(),
   registerPetHandlersMock: vi.fn(),
   registerDebugHandlersMock: vi.fn(),
+  registerCodeNavigationHandlersMock: vi.fn(),
   registerDatabaseHandlersMock: vi.fn(),
   registerSftpHandlersMock: vi.fn(),
   registerSshVpnHandlersMock: vi.fn(),
@@ -277,6 +279,10 @@ vi.mock('../shell', () => ({
 
 vi.mock('../../debug/debug-ipc', () => ({
   registerDebugHandlers: registerDebugHandlersMock
+}))
+
+vi.mock('../../code-navigation/code-navigation-ipc', () => ({
+  registerCodeNavigationHandlers: registerCodeNavigationHandlersMock
 }))
 
 vi.mock('../../database/database-ipc', () => ({
@@ -465,6 +471,7 @@ describe('registerCoreHandlers', () => {
     registerShellHandlersMock.mockReset()
     registerPetHandlersMock.mockReset()
     registerDebugHandlersMock.mockReset()
+    registerCodeNavigationHandlersMock.mockReset()
     registerDatabaseHandlersMock.mockReset()
     registerSftpHandlersMock.mockReset()
     registerSshVpnHandlersMock.mockReset()
@@ -581,6 +588,7 @@ describe('registerCoreHandlers', () => {
     )
     expect(registerPetHandlersMock).toHaveBeenCalled()
     expect(registerDebugHandlersMock).toHaveBeenCalled()
+    expect(registerCodeNavigationHandlersMock).toHaveBeenCalled()
     expect(registerDatabaseHandlersMock).toHaveBeenCalled()
     expect(registerSftpHandlersMock).toHaveBeenCalled()
     expect(registerSshVpnHandlersMock).toHaveBeenCalled()

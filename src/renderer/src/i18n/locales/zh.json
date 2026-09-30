@@ -20130,5 +20130,10 @@
     "confirm": "清除",
     "noTerminal": "此选项卡没有正在运行的智能体可清除。",
     "changed": "确认期间此选项卡中的智能体已变更，因此未清除任何内容。"
+  },
+  "codeNavigation": {
+    "downloading": "正在下载 {{language}} 语言服务器…",
+    "starting": "正在为代码跳转加载 {{language}} 项目…",
+    "failed": "{{language}} 代码跳转不可用：{{message}}"
   }
 }
