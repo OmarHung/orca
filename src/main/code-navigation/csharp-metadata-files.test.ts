@@ -63,3 +63,21 @@ describe('writeCsharpMetadataFile', () => {
     ).toBeNull()
   })
 })
+
+describe('isCodeNavigationMetadataPath', () => {
+  it('recognizes decompiled files on every platform and nothing else', async () => {
+    const { isCodeNavigationMetadataPath } =
+      await import('../../shared/code-navigation/code-navigation-types')
+    expect(
+      isCodeNavigationMetadataPath(
+        '/Users/me/Library/Application Support/orca/language-servers/csharp-metadata/A-1/A.cs'
+      )
+    ).toBe(true)
+    expect(
+      isCodeNavigationMetadataPath(
+        'C:\\Users\\me\\AppData\\Roaming\\orca\\language-servers\\csharp-metadata\\A-1\\A.cs'
+      )
+    ).toBe(true)
+    expect(isCodeNavigationMetadataPath('/repo/csharp-metadata/A.cs')).toBe(false)
+  })
+})
