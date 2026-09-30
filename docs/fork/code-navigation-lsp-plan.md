@@ -1,6 +1,6 @@
 # 編輯器程式碼跳轉（LSP）：實作計畫（fork 專屬）
 
-> 狀態：Phase 1 完成（2026-09-30），紀錄見 §8；Phase 2、3 未開始
+> 狀態：Phase 1 完成（2026-09-30，§8）；Phase 2 完成（2026-09-30，§9）；Phase 3 未開始
 > 分支：`feat/code-navigation`（worktree `/Users/omar/myprojects/orca-code-nav`），完成後 fast-forward 回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -117,7 +117,7 @@ upstream 檔案的掛載點：`monaco-setup.ts`（`runMonacoSetupSteps` 加一�
 ## 6. 已知限制（Phase 1）
 
 - 只支援本機工作區（含資料夾工作區）；SSH、WSL、遠端 runtime 仍只有同檔案內的跳轉
-- 跳到 .NET 框架型別（沒有原始碼的 metadata）會找不到定義，Phase 2 再做反編譯
+- ~~跳到 .NET 框架型別會找不到定義~~：Phase 2 已改為開啟反編譯的原始碼（§9.3）
 - C# 的方案檔要在工作區根目錄（或讓 csharp-ls 自己掃 `.csproj`）；多個方案檔時由 csharp-ls 決定
 - 未存檔的修改：只有發出查詢的那個檔案會帶最新內容給伺服器，其他分頁的未存檔修改在下次從它們發出查詢前伺服器看不到
 
@@ -138,8 +138,42 @@ upstream 檔案的掛載點：`monaco-setup.ts`（`runMonacoSetupSteps` 加一�
   - C#：F12 從 App 專案跳進 Lib 專案的介面；Cmd/Ctrl+F12 跳到實作類別。含下載 csharp-ls 與載入方案，整個測試約 22 秒
 - 品質閘門（`check-changed-code-quality.mjs`）：新程式零問題；剩下的是既有的 fork 問題（`ProjectRunContextMenuItems.tsx`、IME 測試的型別斷言）。
 
-### Phase 2 的起點
+## 9. Phase 2：懸停提示、跳到型別定義、C# 反編譯（2026-09-30）
 
-- 懸停提示：LSP `textDocument/hover` 接 Monaco `registerHoverProvider`；內建 TS worker 的 hover 要跟定義一樣改成分派
-- C# 反編譯：csharp-ls 的 `csharp/metadata` 請求，回傳的原始碼用唯讀預覽 model（`orca-lsp-preview:` 之外另開一個 scheme）開啟
-- 符號大綱：可考慮讓現有的「Structure」面板在有 LSP 時改用 `textDocument/documentSymbol`
+### 9.1 範圍的決定
+
+| 項目 | 結果 |
+|---|---|
+| 懸停提示 | 做。TS/JS/C# 都改走 LSP |
+| 跳到型別定義 | 順便做。跟定義同一條路，只多一個 `textDocument/typeDefinition` |
+| C# 反編譯 | 做。F12 到 `Console`、`List<T>` 這類框架型別會開反編譯的原始碼 |
+| 符號大綱 | **不做**。Structure 面板已經用 TS worker 的 navigation tree（TS/JS）和 tree-sitter（C# 等）產生大綱，e2e 截圖裡 C# 的大綱也正確；換成 LSP 只多一個要啟動的伺服器，沒有明顯好處 |
+
+TS 的內建型別（`console`、`Array`）不需要處理：TypeScript 7 回傳的是安裝目錄裡的 `lib.*.d.ts` 實體檔，第 1 階段就能開。
+
+### 9.2 懸停提示
+
+- renderer 對 typescript、javascript、csharp 註冊 hover provider，並把內建 TS 的 `hovers` 也關掉（同樣是因為 Monaco 會把所有 provider 的結果疊在一起；內建 worker 解析不到 import，會顯示 `any`）。
+- **懸停不會觸發下載**：`codeNav:hover` 只會用正在跑的伺服器，或啟動「已經裝好」的伺服器（`isLanguageServerInstalled`，只檢查 `.orca-installed`）。沒裝就回 `ok: false`，renderer 退回 Monaco 內建的 TS hover（`code-navigation-ts-worker-fallback.ts`，照 Monaco 原本的格式重寫）。從 hover 啟動的伺服器不顯示 toast。
+- initialize 時宣告 `hover.contentFormat: ['markdown', 'plaintext']`；沒宣告的話 TypeScript 7 回傳純文字。純文字與 `{ language, value }` 形式都轉成程式碼區塊（`lsp-hover.ts`）。
+
+### 9.3 C# 反編譯
+
+- csharp-ls 預設 `useMetadataUris = false`，這時對框架型別的定義是空的。`LanguageServerLaunch.configuration` 在 `workspace/configuration` 的 `csharp` 區段回 `{ useMetadataUris: true }` 後，定義會回傳 `csharp:/<csproj>/decompiled/System.Console.cs`，再用 `csharp/metadata` 請求拿到原始碼。
+- Orca 的分頁以檔案為單位，所以把原始碼寫到 `userData/language-servers/csharp-metadata/<assembly>-<URI 雜湊>/<symbol>.cs`，**唯讀**（0o444）。內容沒變就不重寫，避免開著的分頁跳出「檔案已變更」。雜湊是為了區分不同專案參照的同名但不同版本組件。
+- 位置解析拆到 `navigation-target-files.ts`：`file:` 直接用、`csharp:` 經由上述檔案、其他 scheme 丟掉；同一個 `csharp:` URI 在一次查詢裡只解析一次。
+- 反編譯檔在工作區外，所以在裡面再按 F12 不會有作用（沿用第 1 階段「只處理工作區內的檔案」的規則）。
+
+### 9.4 驗證
+
+- 單元測試：`lsp-hover`、`csharp-metadata-files`、service 的反編譯與 hover（含「未安裝時 hover 不啟動伺服器」）、session 的 hover 與 `workspace/configuration`、renderer 的 hover 分派與 TS worker 後備。
+- 整合測試（真的伺服器）：TS hover 顯示跨檔解析的簽名；C# 跳進反編譯的 `System.Console`（寫出的檔案含 `public static class Console`）；C# hover。
+- e2e：見 §9.5。
+
+### 9.5 紀錄
+
+- 新檔：`main/code-navigation/lsp-hover.ts`、`csharp-metadata-files.ts`、`navigation-target-files.ts`、`renderer/src/lib/code-navigation/code-navigation-ts-worker-fallback.ts`；IPC 多一個 `codeNav:hover`，preload 多一個 `hover`。沒有新的 UI 字串，也沒有動到新的 upstream 檔案。
+- e2e（`ORCA_E2E_CODE_NAVIGATION=1`）兩項都過：
+  - TS：原本的 F12／Cmd+點擊／peek，加上懸停在 `greet` 上顯示 `function greet(name: string): string`（從 import 解析出的真實簽名）
+  - C#：原本的跨專案 F12 與跳到實作，加上懸停 `IGreeter`，以及 F12 到 `Console` 開啟 `System.Console.cs`（停在第 10 行 `public static class Console`，Structure 面板也列出成員）
+- 反編譯檔累積在 `csharp-metadata/`，目前不清理（都是小的文字檔）。
