@@ -79,8 +79,9 @@ test('nests detected runs by toolchain, project and kind, and hides and shows th
   await openRunMenu(orcaPage)
 
   await expect(ecosystem(orcaPage, 'Python')).toBeVisible({ timeout: 15_000 })
-  await openKind(orcaPage, ['Node', 'apps/web', 'Other'])
+  await openKind(orcaPage, ['Node', 'web', 'Other'])
   await expect(row(orcaPage, 'lint')).toBeVisible()
+  await expect(orcaPage.getByTestId('run-widget-detected-folder')).toHaveText(['apps/'])
   await expect(kind(orcaPage, /^(Run|Build|Other)/)).toHaveCount(3)
   await orcaPage.screenshot({ path: testInfo.outputPath('detected-nested-submenus.png') })
 
@@ -105,7 +106,7 @@ test('nests detected runs by toolchain, project and kind, and hides and shows th
 
   await orcaPage.getByTestId('run-widget-hidden-item').filter({ hasText: 'lint' }).click()
   await expect(orcaPage.getByTestId('run-widget-hidden-item')).toHaveCount(1)
-  await openKind(orcaPage, ['Node', 'apps/web', 'Run'])
+  await openKind(orcaPage, ['Node', 'web', 'Run'])
 
   // Choosing a detected run makes it the widget's current, recent run.
   await row(orcaPage, 'dev').click()
