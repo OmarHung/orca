@@ -1,4 +1,5 @@
 import { useCallback, type Dispatch, type MutableRefObject, type SetStateAction } from 'react'
+import { isOrcaLanguageServerFilePath } from '../../../../shared/code-navigation/code-navigation-types'
 import type { OpenFile } from '@/store/slices/editor'
 import { getConnectionIdForFile, isWorktreeConnectionResolved } from '@/lib/connection-context'
 import { useAppStore } from '@/store'
@@ -133,7 +134,8 @@ export function useEditorPanelFileContentLoader({
             if (
               route &&
               route.worktreeId !== worktreeId &&
-              restoredOpenFile.staysInOpeningWorkspace !== true
+              restoredOpenFile.staysInOpeningWorkspace !== true &&
+              !isOrcaLanguageServerFilePath(filePath)
             ) {
               const migration = await migrateRestoredEditorFileOwner(
                 id,
