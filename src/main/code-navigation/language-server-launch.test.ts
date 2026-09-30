@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -125,8 +125,34 @@ describe('prepareLanguageServerLaunch', () => {
         '--features',
         'razor-support'
       ],
-      env: { PATH: '/usr/bin', DOTNET_ROLL_FORWARD: 'Major', UseRazorSourceGenerator: 'true' },
+      env: {
+        PATH: '/usr/bin',
+        DOTNET_ROLL_FORWARD: 'Major',
+        UseRazorSourceGenerator: 'true',
+        CustomAfterMicrosoftCommonTargets: join(baseDir, 'csharp-razor-design-time.targets')
+      },
       configuration: { csharp: { useMetadataUris: true } }
+    })
+    expect(await readFile(join(baseDir, 'csharp-razor-design-time.targets'), 'utf8')).toContain(
+      'Microsoft.NET.Sdk.Razor.SourceGenerators.targets'
+    )
+  })
+
+  it("keeps the user's own MSBuild hook instead of the Razor design-time targets", async () => {
+    await markInstalled(CSHARP_SERVER_ARTIFACT.name, CSHARP_SERVER_ARTIFACT.version)
+    const env = { PATH: '/usr/bin', CustomAfterMicrosoftCommonTargets: '/team/custom.targets' }
+
+    const launch = await prepareLanguageServerLaunch(
+      'csharp',
+      '/workspace',
+      baseDir,
+      () => {},
+      deps({ env })
+    )
+
+    expect(launch.env).toMatchObject({
+      CustomAfterMicrosoftCommonTargets: '/team/custom.targets',
+      UseRazorSourceGenerator: 'true'
     })
   })
 
