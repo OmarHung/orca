@@ -167,7 +167,7 @@ test.describe('code navigation through language servers', () => {
       .toEqual({ file: 'greeter.ts', line: 1, column: 17 })
   })
 
-  test('C#: F12 crosses projects and into decompiled code, Cmd/Ctrl+F12 finds the implementation, hover works', async ({
+  test('C#: F12 crosses projects and into decompiled code; Cmd/Ctrl+F12, Cmd/Ctrl+Alt+B and Cmd/Ctrl+Alt+click find the implementation; hover works', async ({
     orcaPage,
     testRepoPath,
     registerPostElectronShutdownCleanup
@@ -226,6 +226,27 @@ test.describe('code navigation through language servers', () => {
     await openEditorFile(orcaPage, root, 'App/Program.cs', 'csharp')
     await placeCursorOnLine(orcaPage, 'IGreeter greeter')
     await orcaPage.keyboard.press(`${MOD}+Alt+B`)
+    await expect
+      .poll(() => activeEditor(orcaPage), { timeout: 60_000 })
+      .toEqual({ file: 'Greeter.cs', line: 8, column: 14 })
+
+    // JetBrains Go to Implementation click: Cmd+Alt+click (Ctrl+Alt+click elsewhere); a definition
+    // jump would stop at the interface on line 3 instead.
+    await openEditorFile(orcaPage, root, 'App/Program.cs', 'csharp')
+    await expect
+      .poll(async () => (await activeEditor(orcaPage)).file, { timeout: 30_000 })
+      .toBe('Program.cs')
+    const declarationLine = orcaPage
+      .locator('.monaco-editor .view-line', { hasText: 'IGreeter greeter' })
+      .first()
+    await expect(declarationLine).toBeVisible()
+    const lineBox = await declarationLine.boundingBox()
+    expect(lineBox).not.toBeNull()
+    await orcaPage.keyboard.down(MOD)
+    await orcaPage.keyboard.down('Alt')
+    await orcaPage.mouse.click(lineBox!.x + 12, lineBox!.y + lineBox!.height / 2)
+    await orcaPage.keyboard.up('Alt')
+    await orcaPage.keyboard.up(MOD)
     await expect
       .poll(() => activeEditor(orcaPage), { timeout: 60_000 })
       .toEqual({ file: 'Greeter.cs', line: 8, column: 14 })
