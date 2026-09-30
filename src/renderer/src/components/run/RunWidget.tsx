@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { ChevronDown, ListVideo } from 'lucide-react'
 import { DropdownMenu, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
@@ -44,6 +44,7 @@ import { useCompoundQuickCommand } from './use-compound-quick-command'
 import { useFollowActiveRunTerminal } from './use-follow-active-run-terminal'
 import { useRunWidgetActivity } from './use-run-widget-activity'
 import { useRunWidgetDetectedRuns } from './use-run-widget-detected-runs'
+import { runWidgetCascadeDirection } from './run-widget-cascade'
 
 /** The Run widget's Add Quick Command dialog, which can also save a compound run configuration. */
 function RunWidgetQuickCommandDialog({
@@ -83,12 +84,17 @@ export function RunWidget({
   const select = useRunConfigurationStore((s) => s.select)
   const repos = useAppStore((s) => s.repos)
   const [menuOpen, setMenuOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const [cascade, setCascade] = useState<'ltr' | 'rtl'>('ltr')
   const [editorOpen, setEditorOpen] = useState(false)
   // Why stored: a draft recreated on every render would reset the dialog while typing.
   const [quickCommandDraft, setQuickCommandDraft] = useState<TerminalQuickCommand | null>(null)
   const onMenuOpenChange = (open: boolean): void => {
     setMenuOpen(open)
     if (open) {
+      setCascade(
+        runWidgetCascadeDirection(triggerRef.current?.getBoundingClientRect(), window.innerWidth)
+      )
       void loadSharedRunConfigurations(worktreeId)
       quick.refreshRemoteHost()
     }
@@ -154,9 +160,11 @@ export function RunWidget({
       data-testid="run-configurations-widget"
       className="my-auto flex shrink-0 items-center gap-0.5"
     >
-      <DropdownMenu open={menuOpen} onOpenChange={onMenuOpenChange}>
+      {/* Why dir: only steers where submenus open and which arrow key opens them; content stays ltr. */}
+      <DropdownMenu open={menuOpen} onOpenChange={onMenuOpenChange} dir={cascade}>
         <DropdownMenuTrigger asChild>
           <button
+            ref={triggerRef}
             type="button"
             data-testid="run-configurations-trigger"
             aria-label={translate('run.configurations.menu', 'Run configurations')}
@@ -188,6 +196,7 @@ export function RunWidget({
               ? detectedRunMenu(detectedRuns, data.worktreePath, new Set(hiddenDetected))
               : null
           }
+          cascadeLeft={cascade === 'rtl'}
           detectedActions={{
             toItem: (run) => detectedRunWidgetItem(run, worktreeId, groupId),
             hideKeyOf: (run) => detectedRunHideKey(run, data.worktreePath),
