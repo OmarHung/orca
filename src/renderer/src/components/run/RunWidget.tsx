@@ -13,9 +13,7 @@ import { getRepoExecutionHostId } from '../../../../shared/execution-host'
 import type { TerminalQuickCommand } from '../../../../shared/terminal-quick-command-types'
 import { useTabBarQuickCommandsShortcut } from '../tab-bar/tab-bar-quick-commands-shortcut'
 import { EditRunConfigurationsDialog } from './EditRunConfigurationsDialog'
-import { detectedRunWidgetItem, selectDetectedRun } from './detected-run-configuration'
-import { detectedRunHideKey, detectedRunMenu } from './detected-run-menu'
-import { useDetectedRunVisibilityStore } from './detected-run-visibility-store'
+import { selectDetectedRun } from './detected-run-configuration'
 import { importWorkspaceLaunchJson, useWorkspaceHasLaunchJson } from './launch-json-import-action'
 import { RunStopControl } from './RunStopControl'
 import { RunWidgetActions } from './RunWidgetActions'
@@ -38,17 +36,12 @@ import {
   runWidgetFootprint,
   type RunWidgetFootprint
 } from './run-widget-activity'
-import {
-  configurationItemKey,
-  runWidgetItems,
-  selectedRunWidgetItem,
-  type RunWidgetItem
-} from './run-widget-items'
+import { runWidgetItems, selectedRunWidgetItem, type RunWidgetItem } from './run-widget-items'
 import { useWorktreeRunConfigurations } from './use-worktree-run-configurations'
 import { useCompoundQuickCommand } from './use-compound-quick-command'
 import { useFollowActiveRunTerminal } from './use-follow-active-run-terminal'
 import { useRunWidgetActivity } from './use-run-widget-activity'
-import { useRunWidgetDetectedRuns } from './use-run-widget-detected-runs'
+import { useRunWidgetDetectedMenu } from './use-run-widget-detected-menu'
 import { runWidgetCascadeDirection } from './run-widget-cascade'
 
 /** The Run widget's Add Quick Command dialog, which can also save a compound run configuration. */
@@ -64,7 +57,6 @@ function RunWidgetQuickCommandDialog({
 
 const NO_RECENT_RUNS: RunTarget[] = []
 const NO_CONFIGURATIONS: ListedRunConfiguration[] = []
-const NO_HIDDEN: string[] = []
 
 /**
  * The tab bar's single JetBrains-style Run widget: pick a configuration, temporary run or quick
@@ -107,10 +99,6 @@ export function RunWidget({
   useTabBarQuickCommandsShortcut({ menuOpen, onOpenChange: onMenuOpenChange })
   // Why keyed by menuOpen: the file can appear or disappear between openings.
   const hasLaunchJson = useWorkspaceHasLaunchJson(worktreeId, menuOpen)
-  const detectedRuns = useRunWidgetDetectedRuns(worktreeId, menuOpen)
-  const hiddenDetected = useDetectedRunVisibilityStore((s) =>
-    data ? (s.hiddenByRepo[data.repoId] ?? NO_HIDDEN) : NO_HIDDEN
-  )
   const items = runWidgetItems({
     recent,
     configurations: data?.listed ?? NO_CONFIGURATIONS,
@@ -119,6 +107,15 @@ export function RunWidget({
   const activity = useRunWidgetActivity(worktreeId)
   const confirm = useConfirmationDialog()
   const configurations = (data?.listed ?? NO_CONFIGURATIONS).map((entry) => entry.configuration)
+  const detected = useRunWidgetDetectedMenu({
+    worktreeId,
+    groupId,
+    menuOpen,
+    workspace: data,
+    items,
+    configurations,
+    closeMenu: () => setMenuOpen(false)
+  })
   const footprints = new Map(
     items.map((item) => [item.key, runWidgetFootprint(item, configurations)] as const)
   )
@@ -196,24 +193,9 @@ export function RunWidget({
               ? selectDetectedRun(item.target)
               : select(data.repoId, item.key)
           }
-          detected={
-            detectedRuns
-              ? detectedRunMenu(
-                  detectedRuns,
-                  data.worktreePath,
-                  new Set(hiddenDetected),
-                  configurations
-                )
-              : null
-          }
+          detected={detected.menu}
+          detectedActions={detected.actions}
           cascadeLeft={cascade === 'rtl'}
-          detectedActions={{
-            toItem: (run) => detectedRunWidgetItem(run, worktreeId, groupId),
-            savedItem: (id) => items.find((item) => item.key === configurationItemKey(id)) ?? null,
-            hideKeyOf: (run) => detectedRunHideKey(run, data.worktreePath),
-            onHide: (key) => useDetectedRunVisibilityStore.getState().hide(data.repoId, key),
-            onShow: (keys) => useDetectedRunVisibilityStore.getState().show(data.repoId, keys)
-          }}
           rowState={(item) => {
             const runs = footprintRuns(footprintOf(item), activity)
             return {
