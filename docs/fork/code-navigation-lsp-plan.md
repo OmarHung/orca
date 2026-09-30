@@ -192,7 +192,7 @@ TS 的內建型別（`console`、`Array`）不需要處理：TypeScript 7 回傳
 | 動作 | macOS | Windows／Linux | 執行的 Monaco 動作 |
 |---|---|---|---|
 | Go to Declaration | ⌘B | Ctrl+B | `editor.action.revealDefinition` |
-| Go to Implementation | ⌥⌘B | Ctrl+Alt+B | `editor.action.goToImplementation` |
+| Go to Implementation | ⌥⌘B、⌥⌘+點擊 | Ctrl+Alt+B、Ctrl+Alt+點擊 | `editor.action.goToImplementation` |
 | Go to Type Declaration | ⇧⌘B | Ctrl+Shift+B | `editor.action.goToTypeDefinition` |
 | Find Usages | ⌥F7 | Alt+F7 | `editor.action.goToReferences`（peek） |
 | Quick Documentation | F1 | （無，Ctrl+Q 是原生的結束） | `editor.action.showHover` |
@@ -212,4 +212,10 @@ F12、⇧F12、⌘F12、⌘+點擊這些 Monaco 原本的鍵都保留。衝突�
 - 每個工作區一份，最多 50 筆。
 - 記錄點：(1) 每次跳轉前的位置——所有跳轉（F12、⌘B、⌘+點擊、peek 開啟，連同檔內跳轉）都會先經過 `registerEditorOpener` 的 opener，同檔跳轉只是之後回傳 false 交給 Monaco；(2) 游標落到另一個檔案（從檔案樹、搜尋開檔等）時，離開的那個位置。
 - Back／Forward 自己開啟的分頁回報位置時不算「移動」（`pendingArrival`），同一位置不重複記錄。
+
+### 10.5 ⌥⌘+點擊跳到實作（`code-navigation-implementation-click.ts`）
+
+- 使用者問「跳到實作怎麼用滑鼠觸發」後補上，照 JetBrains：macOS ⌥⌘+點擊、其他平台 Ctrl+Alt+點擊。滑鼠手勢不在 Orca 的快捷鍵系統裡，所以不能在設定頁改。
+- 掛在每個編輯器的 container（`getContainerDomNode`，建立時就存在；view 的節點每換一次 model 就重建）的 capture 階段，早於 Monaco 的 pointer 處理。Monaco 原本把 ⌥⌘+點擊當成「在側邊開定義」，而且它的 link gesture 在 pointerup 觸發、`_hasTriggerKeyOnMouseDown` 會殘留，所以認領後要把 pointerdown／pointerup 連同之後 500ms 內的相容 mouse 事件都吞掉。
+- e2e：C# 在 `IGreeter` 上 ⌥⌘+點擊跳到 Greeter.cs 第 8 行的實作類別（跳到定義會停在第 3 行的介面）。
 
