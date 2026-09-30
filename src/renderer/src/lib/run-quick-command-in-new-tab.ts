@@ -2,6 +2,7 @@ import { useAppStore } from '@/store'
 import { reconcileTabOrder } from '@/components/tab-bar/reconcile-order'
 import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
 import { newAgentLaunchRequestId } from '@/lib/agent-launch-request-id'
+import { createBrowserUuid } from '@/lib/browser-uuid'
 import {
   flattenTerminalQuickCommand,
   isTerminalAgentQuickCommand,
@@ -62,7 +63,7 @@ export function runQuickCommandInNewTab({
   groupId,
   historyId = command.id,
   startupCwd
-}: RunQuickCommandInNewTabArgs): { tabId: string } | null {
+}: RunQuickCommandInNewTabArgs): { tabId: string; leafId?: string } | null {
   const targetGroupId = groupId ?? undefined
   if (isTerminalAgentQuickCommand(command)) {
     if (!command.prompt.trim() || !supportsTerminalAgentQuickCommand(command.agent)) {
@@ -108,13 +109,12 @@ export function runQuickCommandInNewTab({
     return null
   }
   const store = useAppStore.getState()
+  const leafId = createBrowserUuid()
   const tab = store.createTab(worktreeId, targetGroupId, undefined, {
     quickCommandLabel: command.label,
+    initialLeafId: leafId,
+    pendingStartup: { command: flattenTerminalQuickCommand(command).command },
     ...(startupCwd ? { startupCwd } : {})
-  })
-
-  store.queueTabStartupCommand(tab.id, {
-    command: flattenTerminalQuickCommand(command).command
   })
 
   // Why: match `+` button's createNewTerminalTab — without this, a worktree
@@ -144,5 +144,5 @@ export function runQuickCommandInNewTab({
     fresh.setRecentQuickCommandForGroup(launchedGroupId, historyId)
   }
 
-  return { tabId: tab.id }
+  return { tabId: tab.id, leafId }
 }

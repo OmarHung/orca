@@ -19156,7 +19156,9 @@
       "closeTerminals": "关闭 '{{value0}}' 的终端"
     },
     "status": {
+      "queued": "正在启动…",
       "running": "运行中",
+      "unverifiable": "终端不可用",
       "stopping": "正在停止…",
       "succeeded": "已完成",
       "failed": "失败（退出码 {{value0}}）",
