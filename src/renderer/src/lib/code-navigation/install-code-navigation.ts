@@ -4,6 +4,7 @@ import { registerCodeNavigationEditorOpener } from './code-navigation-editor-ope
 import { installCodeNavigationDocumentLifecycle } from './code-navigation-document-lifecycle'
 import { installCodeNavigationStatusToasts } from './code-navigation-status-toasts'
 import { installCodeNavigationKeymap } from './code-navigation-keymap'
+import { installCodeNavigationPrewarm } from './code-navigation-prewarm'
 
 /** Go to definition / references / implementation across files, backed by language servers,
  * plus JetBrains-style navigation keys and Back/Forward history. */
@@ -13,6 +14,7 @@ export function installCodeNavigation(monaco: typeof Monaco): () => void {
   const disposeLifecycle = installCodeNavigationDocumentLifecycle(monaco)
   const disposeToasts = installCodeNavigationStatusToasts()
   const disposeKeymap = installCodeNavigationKeymap(monaco)
+  const disposePrewarm = installCodeNavigationPrewarm(monaco)
   return () => {
     for (const provider of providers) {
       provider.dispose()
@@ -21,5 +23,6 @@ export function installCodeNavigation(monaco: typeof Monaco): () => void {
     disposeLifecycle()
     disposeToasts()
     disposeKeymap()
+    disposePrewarm()
   }
 }
