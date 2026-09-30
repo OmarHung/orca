@@ -99,6 +99,21 @@ describe('SealedSecretFile', () => {
     expect(lookups.lookup('a')).toEqual({ state: 'problem', problem: 'damaged' })
   })
 
+  it('puts one id back as a snapshot held it', () => {
+    file.seal('kept', 'old')
+    file.seal('other', 'x')
+    const kept = file.snapshot('kept')
+    const added = file.snapshot('added')
+    file.seal('kept', 'new')
+    file.seal('added', 'secret')
+
+    expect(file.restore('kept', kept)).toBeNull()
+    expect(file.restore('added', added)).toBeNull()
+
+    expect(file.get('kept')).toBe('old')
+    expect(file.ids()).toEqual(['kept', 'other'])
+  })
+
   it('names the file in every problem so the user can find it', () => {
     for (const problem of ['unreadable', 'damaged', 'newer-format'] as const) {
       expect(file.describeProblem(problem)).toContain(filePath)
