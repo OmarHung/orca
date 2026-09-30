@@ -17,10 +17,21 @@ vi.mock('@/store', () => ({ useAppStore: { getState: () => store } }))
 vi.mock('./code-navigation-workspace', () => ({
   findEditTabForModelUri: (_state: unknown, modelUri: string) =>
     modelUri.endsWith('/src/app.ts') ? workspace.sourceTab : workspace.openTab,
-  localWorkspaceRoot: () => workspace.root
+  localWorkspaceRoot: () => workspace.root,
+  editorNavigationLocation: () =>
+    workspace.sourceTab
+      ? {
+          worktreeId: 'wt-1',
+          runtimeEnvironmentId: null,
+          filePath: '/repo/src/app.ts',
+          line: 7,
+          column: 3
+        }
+      : null
 }))
 
 import { registerCodeNavigationEditorOpener } from './code-navigation-editor-opener'
+import { codeNavigationHistory } from './code-navigation-history'
 
 type Opener = {
   openCodeEditor: (source: unknown, resource: URI, selectionOrPosition?: unknown) => boolean
@@ -123,6 +134,19 @@ describe('registerCodeNavigationEditorOpener', () => {
     expect(store.openFile).toHaveBeenCalledWith(
       expect.objectContaining({ filePath: '/repo/src/Lib.ts', relativePath: 'src/Lib.ts' }),
       expect.anything()
+    )
+  })
+
+  it('records where every jump from an editor tab started, in-file ones included', () => {
+    const opener = register()
+    const recordJump = vi.spyOn(codeNavigationHistory, 'recordJump')
+
+    opener.openCodeEditor(sourceEditor, URI.file('/repo/src/app.ts'), { lineNumber: 40, column: 1 })
+    opener.openCodeEditor(sourceEditor, URI.file('/repo/src/lib.ts'), { lineNumber: 2, column: 1 })
+
+    expect(recordJump).toHaveBeenCalledTimes(2)
+    expect(recordJump).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: '/repo/src/app.ts', line: 7, column: 3 })
     )
   })
 

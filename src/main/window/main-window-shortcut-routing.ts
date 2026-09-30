@@ -27,6 +27,7 @@ import {
   textInputOwnsComposition,
   type TextShortcutInput
 } from '../../shared/text-input-shortcut-policy'
+import { codeEditorOwnsShortcut } from '../code-navigation/code-editor-shortcut-ownership'
 
 export function installMainWindowShortcutRouting(args: {
   focus: MainWindowFocusLifecycle
@@ -225,6 +226,11 @@ export function installMainWindowShortcutRouting(args: {
       (process.platform === 'darwin' ? !input.control : !input.meta) &&
       modForMarkdown
     ) {
+      return
+    }
+
+    // A focused code editor owns its JetBrains-style navigation chords (Cmd/Ctrl+B …).
+    if (codeEditorOwnsShortcut(mainWindow.webContents.id, input, process.platform, keybindings)) {
       return
     }
 
