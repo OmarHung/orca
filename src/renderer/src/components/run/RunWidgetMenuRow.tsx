@@ -1,5 +1,5 @@
 import React from 'react'
-import { Bot, Bug, Clock, EyeOff, Play, RotateCcw, Zap } from 'lucide-react'
+import { Bot, Bug, Clock, EyeOff, Play, RotateCcw, Settings2, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -137,15 +137,26 @@ function LiveRowButtons({
 function IdleRowButtons({
   item,
   actions,
-  onHide
+  onHide,
+  onEdit
 }: {
   item: RunWidgetItem
   actions: RunWidgetRowActions
   onHide?: (item: RunWidgetItem) => void
+  onEdit?: (item: RunWidgetItem) => void
 }): React.JSX.Element {
   const value0 = item.label
   return (
     <span className="flex items-center opacity-0 transition-opacity group-hover/run-row:opacity-100 group-focus-within/run-row:opacity-100">
+      {onEdit ? (
+        <RowButton
+          label={translate('run.widget.editConfiguration', "Edit '{{value0}}'…", { value0 })}
+          testId="run-widget-item-edit"
+          onClick={() => onEdit(item)}
+        >
+          <Settings2 />
+        </RowButton>
+      ) : null}
       {onHide ? (
         <RowButton
           label={translate('run.widget.hideRun', "Hide '{{value0}}'", { value0 })}
@@ -187,7 +198,8 @@ export function RunWidgetMenuRow({
   state,
   actions,
   onSelect,
-  onHide
+  onHide,
+  onEdit
 }: {
   item: RunWidgetItem
   current: boolean
@@ -196,6 +208,8 @@ export function RunWidgetMenuRow({
   onSelect: (item: RunWidgetItem) => void
   /** Offered on idle rows that can be hidden from the menu. */
   onHide?: (item: RunWidgetItem) => void
+  /** Offered on idle rows whose settings can be edited in place. */
+  onEdit?: (item: RunWidgetItem) => void
 }): React.JSX.Element {
   const live = state.running || state.debugging
   return (
@@ -222,7 +236,7 @@ export function RunWidgetMenuRow({
         {live ? (
           <LiveRowButtons item={item} state={state} actions={actions} />
         ) : (
-          <IdleRowButtons item={item} actions={actions} onHide={onHide} />
+          <IdleRowButtons item={item} actions={actions} onHide={onHide} onEdit={onEdit} />
         )}
       </span>
     </DropdownMenuItem>
