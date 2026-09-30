@@ -19601,5 +19601,10 @@
     "confirm": "清除",
     "noTerminal": "此分頁沒有正在執行的代理可清除。",
     "changed": "確認期間此分頁中的代理已變更，因此未清除任何內容。"
+  },
+  "codeNavigation": {
+    "downloading": "正在下載 {{language}} 語言伺服器…",
+    "starting": "正在為程式碼跳轉載入 {{language}} 專案…",
+    "failed": "{{language}} 程式碼跳轉不可用：{{message}}"
   }
 }

@@ -48,6 +48,7 @@ import type {
 } from './api/os-permission-api'
 import type { PetApi } from './api/pet-api'
 import type { DebugApi } from './api/debug-api'
+import type { CodeNavigationApi } from './api/code-navigation-api'
 import type { DatabaseApi } from './api/database-api'
 import type { SftpApi } from './api/sftp-api'
 import type { SshVpnApi } from './api/ssh-vpn-api'
@@ -123,6 +124,7 @@ export type PreloadApi = {
   skills: SkillsApi
   pet: PetApi
   debug: DebugApi
+  codeNavigation: CodeNavigationApi
   database: DatabaseApi
   sftp: SftpApi
   sshVpn: SshVpnApi

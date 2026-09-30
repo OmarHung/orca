@@ -19805,5 +19805,10 @@
     "confirm": "Clear",
     "noTerminal": "This tab has no running agent to clear.",
     "changed": "The agent in this tab changed while you were confirming, so nothing was cleared."
+  },
+  "codeNavigation": {
+    "downloading": "Downloading the {{language}} language server…",
+    "starting": "Loading the {{language}} project for code navigation…",
+    "failed": "{{language}} code navigation is unavailable: {{message}}"
   }
 }
