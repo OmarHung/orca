@@ -2,24 +2,29 @@ import type { DatabasePasswordStorage } from '../../shared/database/database-con
 import type { DatabaseResult } from '../../shared/database/database-query-types'
 import type { DatabaseEncryptionStatus } from '../../shared/database/database-session-types'
 import type { SecretStore } from '../../shared/secret-store'
-import { SealedSecretFile } from '../sealed-secret-file'
+import { KeptPasswords } from '../kept-passwords'
 
 export const NO_SECURE_PASSWORD_STORAGE =
   'This system has no secure password storage. Choose "Until Orca quits" or "Never" instead.'
 
+function toResult(problem: string | null): DatabaseResult<null> {
+  return problem === null
+    ? { ok: true, value: null }
+    : { ok: false, error: { message: problem, code: 'unavailable' } }
+}
+
 /**
- * Database passwords: `forever` is sealed with the OS keychain (never plaintext),
- * `session` lives in memory until Orca quits, `never` is not kept at all.
+ * Database passwords, by connection id (see KeptPasswords). A failed change reports why and
+ * changed nothing on disk.
  */
 export class DatabasePasswordVault {
-  private readonly sessionPasswords = new Map<string, string>()
-  private readonly sealed: SealedSecretFile
+  private readonly passwords: KeptPasswords
 
   constructor(
     filePath: string,
     private readonly secretStore: () => SecretStore
   ) {
-    this.sealed = new SealedSecretFile(filePath, secretStore)
+    this.passwords = new KeptPasswords(filePath, secretStore, NO_SECURE_PASSWORD_STORAGE)
   }
 
   encryptionStatus(): DatabaseEncryptionStatus {
@@ -31,11 +36,11 @@ export class DatabasePasswordVault {
   }
 
   has(connectionId: string): boolean {
-    return this.sessionPasswords.has(connectionId) || this.sealed.has(connectionId)
+    return this.passwords.has(connectionId)
   }
 
   get(connectionId: string): string | null {
-    return this.sessionPasswords.get(connectionId) ?? this.sealed.get(connectionId)
+    return this.passwords.get(connectionId)
   }
 
   remember(
@@ -43,45 +48,36 @@ export class DatabasePasswordVault {
     storage: DatabasePasswordStorage,
     password: string
   ): DatabaseResult<null> {
-    if (storage === 'never') {
-      return this.forget(connectionId)
-    }
-    if (storage === 'session') {
-      const cleared = this.deleteSealed(connectionId)
-      // Why: keeping it would let a connection run as "until quit" while its old copy stays on disk.
-      if (cleared.ok) {
-        this.sessionPasswords.set(connectionId, password)
-      }
-      return cleared
-    }
-    const sealed = this.sealed.seal(connectionId, password)
-    if (sealed === 'no-encryption') {
-      return { ok: false, error: { message: NO_SECURE_PASSWORD_STORAGE, code: 'unavailable' } }
-    }
-    if (sealed !== 'sealed') {
-      return {
-        ok: false,
-        error: { message: this.sealed.describeProblem(sealed), code: 'unavailable' }
-      }
-    }
-    this.sessionPasswords.delete(connectionId)
-    return { ok: true, value: null }
+    return toResult(this.passwords.remember(connectionId, storage, password))
   }
 
   /** Keeps a prompted password for this run without persisting it (storage `session`). */
   rememberForSession(connectionId: string, password: string): void {
-    this.sessionPasswords.set(connectionId, password)
+    this.passwords.rememberForSession(connectionId, password)
   }
 
   forget(connectionId: string): DatabaseResult<null> {
-    this.sessionPasswords.delete(connectionId)
-    return this.deleteSealed(connectionId)
+    return toResult(this.passwords.forget(connectionId))
   }
 
-  private deleteSealed(connectionId: string): DatabaseResult<null> {
-    const deleted = this.sealed.delete(connectionId)
-    return deleted === 'deleted'
-      ? { ok: true, value: null }
-      : { ok: false, error: { message: this.sealed.describeProblem(deleted), code: 'unavailable' } }
+  /**
+   * Before a setting change is saved. `password`: a new one, `null` to clear it, or `undefined`
+   * to keep the one already kept.
+   */
+  release(
+    connectionId: string,
+    storage: DatabasePasswordStorage,
+    password: string | null | undefined
+  ): DatabaseResult<null> {
+    return toResult(this.passwords.release(connectionId, storage, password))
+  }
+
+  /** After a setting change is saved. */
+  keep(
+    connectionId: string,
+    storage: DatabasePasswordStorage,
+    password: string | null | undefined
+  ): DatabaseResult<null> {
+    return toResult(this.passwords.keep(connectionId, storage, password))
   }
 }
