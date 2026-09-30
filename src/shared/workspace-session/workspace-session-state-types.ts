@@ -28,6 +28,8 @@ export type PersistedOpenFile = {
   lastKnownDiskSignature?: string
   /** Persist read-only only when true so log tabs stay read-only and older sessions stay writable. */
   readOnly?: boolean
+  /** Code-navigation tab kept in the workspace that opened it; persisted only when true. */
+  staysInOpeningWorkspace?: boolean
   /** Opt-in streaming append for a read-only local log tab. */
   liveTail?: boolean
 }
