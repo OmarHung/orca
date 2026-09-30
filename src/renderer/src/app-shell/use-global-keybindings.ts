@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { canShowRightSidebarForView } from '@/lib/right-sidebar-visibility'
 import { isEditableTarget } from '../lib/editable-target'
+import { codeEditorShortcutAction } from '../lib/code-navigation/code-editor-shortcut-claim'
 import { getSelectedTextForFileSearch } from '../lib/file-search-selection'
 import { registerAppCommandDispatcher } from '@/lib/app-command-dispatch'
 import { executePluginCommand } from '@/lib/plugin-command-execution'
@@ -289,6 +290,10 @@ export function useGlobalKeybindings(args: {
           defaultPrevented: e.defaultPrevented,
           preventDefault: () => e.preventDefault()
         })
+        return
+      }
+      // Why: a focused editor tab owns its JetBrains-style chords (Cmd/Ctrl+B …) over app shortcuts.
+      if (codeEditorShortcutAction(e)) {
         return
       }
       dispatchShortcutInput({

@@ -21,6 +21,7 @@ import type { CreateMainWindowOptions } from './main-window-contracts'
 import type { MainWindowFocusLifecycle } from './main-window-focus-lifecycle'
 import { sendResolvedWindowShortcutAction } from './main-window-shortcut-actions'
 import { isMacAppPasteInput } from './main-window-visual-lifecycle'
+import { codeEditorOwnsShortcut } from '../code-navigation/code-editor-shortcut-ownership'
 
 export function installMainWindowShortcutRouting(args: {
   focus: MainWindowFocusLifecycle
@@ -202,6 +203,11 @@ export function installMainWindowShortcutRouting(args: {
       !input.shift &&
       modForBold
     ) {
+      return
+    }
+
+    // Why: a focused code editor owns its JetBrains-style navigation chords (Cmd/Ctrl+B …).
+    if (codeEditorOwnsShortcut(mainWindow.webContents.id, input, process.platform, keybindings)) {
       return
     }
 
