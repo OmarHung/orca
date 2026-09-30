@@ -17,7 +17,7 @@ import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
 import { readOvpnProfileFile } from './ovpn-profile-files'
 import { prepareOvpnProfile } from './ovpn-profile-preparation'
 import { SshVpnStartDeclinedError } from './ssh-vpn-manager-types'
-import { saveProfileWithPassword } from './ssh-vpn-profile-save'
+import { saveSshVpnProfile } from './ssh-vpn-profile-save'
 import { createSshVpnRuntime, type SshVpnRuntime } from './ssh-vpn-runtime'
 
 const INVALID_REQUEST = { ok: false, error: { message: 'Invalid VPN request' } } as const
@@ -85,19 +85,10 @@ function registerProfileHandlers(runtime: SshVpnRuntime): void {
       return INVALID_REQUEST
     }
     return respond(async () => {
-      const { id, draft, password } = request.data
-      // Why before saving: a profile that cannot connect should fail here, not on first use.
-      const { needsCredentials } = await inspectOvpn(draft.ovpnPath)
-      if (needsCredentials && !draft.username) {
-        throw new Error('This profile asks for a username and password. Enter the username.')
-      }
-      if (draft.passwordStorage === 'forever' && !vault.canStorePasswords()) {
-        throw new Error(
-          'This system has no secure password storage. Choose "Until Orca quits" or "Ask every time" instead.'
-        )
-      }
-      const previous = id ? store.getProfile(id) : null
-      const saved = saveProfileWithPassword(runtime, previous, draft, password)
+      const { previous, saved } = await saveSshVpnProfile(
+        { store, vault, inspectOvpn },
+        request.data
+      )
       if (previous && previous.ovpnPath !== saved.ovpnPath) {
         await manager.stop(saved.id)
       }
