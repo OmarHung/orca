@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, realpathSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
 import { test, expect } from './helpers/orca-app'
@@ -354,5 +354,74 @@ test.describe('code navigation through language servers', () => {
     await expect
       .poll(() => activeEditor(orcaPage), { timeout: 30_000 })
       .toEqual({ file: 'Program.cs', line: 4, column: 1 })
+  })
+  test('ASP.NET MVC: tag helpers, View() and the C# in Razor views jump between views, controllers and models', async ({
+    orcaPage,
+    testRepoPath,
+    registerPostElectronShutdownCleanup
+  }) => {
+    test.skip(!hasDotnet(), 'needs the .NET SDK on PATH')
+    test.setTimeout(300_000)
+    const fixture = createGoldenWorktree(testRepoPath, 'code-navigation-mvc')
+    registerPostElectronShutdownCleanup(async () => cleanupGoldenWorktree(testRepoPath, fixture))
+    const root = fixture.worktreePath
+    execFileSync('dotnet', ['new', 'mvc', '-n', 'Shop', '-o', root, '--force'], { stdio: 'pipe' })
+    mkdirSync(join(root, 'Views', 'Orders'), { recursive: true })
+    writeFileSync(
+      join(root, 'Controllers', 'OrdersController.cs'),
+      'using Microsoft.AspNetCore.Mvc;\n\nnamespace Shop.Controllers;\n\npublic class OrdersController : Controller\n{\n    public IActionResult Index()\n    {\n        return View();\n    }\n}\n'
+    )
+    // Why a BOM: Visual Studio and dotnet new save views with one.
+    writeFileSync(
+      join(root, 'Views', 'Orders', 'Index.cshtml'),
+      '\uFEFF@model Shop.Models.ErrorViewModel\n<a asp-controller="Home"\n   asp-action="Privacy">Privacy</a>\n@Model.RequestId\n'
+    )
+    const homeLines = readFileSync(join(root, 'Controllers', 'HomeController.cs'), 'utf8').split(
+      '\n'
+    )
+    const privacyLine = homeLines.findIndex((line) => line.includes('IActionResult Privacy('))
+    const privacy = {
+      file: 'HomeController.cs',
+      line: privacyLine + 1,
+      column: homeLines[privacyLine].indexOf('Privacy') + 1
+    }
+    const moveRight = async (count: number) => {
+      for (let step = 0; step < count; step += 1) {
+        await orcaPage.keyboard.press('ArrowRight')
+      }
+    }
+
+    await waitForSessionReady(orcaPage)
+    await activateGoldenWorktree(orcaPage, testRepoPath, root)
+    await openEditorFile(orcaPage, root, 'Views/Orders/Index.cshtml', 'razor')
+
+    // asp-action names the controller's action; Back returns to the view.
+    await placeCursorOnLine(orcaPage, 'asp-action="Privacy"')
+    await moveRight('asp-action="Pr'.length)
+    await orcaPage.keyboard.press(`${MOD}+B`)
+    await expect.poll(() => activeEditor(orcaPage), { timeout: 180_000 }).toEqual(privacy)
+    await screenshot(orcaPage, 'mvc-asp-action')
+    await orcaPage.keyboard.press(BACK)
+    await expect
+      .poll(async () => (await activeEditor(orcaPage)).file, { timeout: 30_000 })
+      .toBe('Index.cshtml')
+
+    // The C# inside the view resolves through csharp-ls.
+    await placeCursorOnLine(orcaPage, '@Model.RequestId')
+    await moveRight('@Model.Re'.length)
+    await orcaPage.keyboard.press(`${MOD}+B`)
+    await expect
+      .poll(async () => (await activeEditor(orcaPage)).file, { timeout: 60_000 })
+      .toBe('ErrorViewModel.cs')
+
+    // return View() opens the action's view.
+    await openEditorFile(orcaPage, root, 'Controllers/OrdersController.cs', 'csharp')
+    await placeCursorOnLine(orcaPage, 'return View();')
+    await moveRight('return Vi'.length)
+    await orcaPage.keyboard.press(`${MOD}+B`)
+    await expect
+      .poll(() => activeEditor(orcaPage), { timeout: 60_000 })
+      .toEqual({ file: 'Index.cshtml', line: 1, column: 1 })
+    await screenshot(orcaPage, 'mvc-view')
   })
 })
