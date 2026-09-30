@@ -22,7 +22,7 @@ export type RunWidgetFootprint = {
 
 /** What is going on in one worktree, as the Run widget shows and stops it. */
 export type RunWidgetActivity = {
-  /** Active runs whose terminal tab still exists, oldest first. */
+  /** Active runs whose stable terminal pane still exists, oldest first. */
   runs: readonly RunSession[]
   /** The worktree's debug session while it lasts. */
   debug: DebugSessionView | null
@@ -89,7 +89,7 @@ export function runWidgetFootprint(
 export function worktreeRunActivity(options: {
   worktreeId: string
   sessions: readonly RunSession[]
-  liveTabIds: ReadonlySet<string>
+  liveLeafIds: ReadonlySet<string>
   debug: DebugSessionView | null
 }): RunWidgetActivity {
   const { worktreeId, debug } = options
@@ -98,7 +98,7 @@ export function worktreeRunActivity(options: {
       (session) =>
         session.worktreeId === worktreeId &&
         isRunSessionActive(session.status) &&
-        options.liveTabIds.has(session.tabId)
+        options.liveLeafIds.has(session.leafId)
     ),
     debug: debug && debug.worktreeId === worktreeId && debug.phase !== 'ended' ? debug : null
   }

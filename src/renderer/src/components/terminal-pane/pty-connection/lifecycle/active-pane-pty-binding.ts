@@ -1,6 +1,7 @@
 import { isRemoteRuntimePtyId } from '../../../../../../shared/remote-runtime/remote-runtime-pty-id'
 import { scheduleRuntimeGraphSync } from '@/runtime/sync-runtime-graph/graph-sync-scheduler'
 import { useAppStore } from '@/store'
+import { dispatchTerminalStartupBoundEvent } from '@/hooks/terminal-startup-bound-event'
 import { notifyCodexPaneBoundForStaleSweep } from '@/lib/agent-session/accounts/codex/codex-stale-pane-sweep'
 import { createTerminalGitHubPRLinkDetector } from '../../../../../../shared/terminal/links/terminal-github-pr-link-detector'
 import { setRendererPtyVisibilityClaim } from '../../pty-transport/delivery/pty-renderer-delivery-claims'
@@ -104,6 +105,7 @@ export function installActivePanePtyBinding(session: ConnectPanePtySession): voi
     if (session.paneStartup && !session.startupPtyBound) {
       // Settles the captured one-shot startup only after this pane owns a concrete PTY.
       session.startupPtyBound = true
+      dispatchTerminalStartupBoundEvent(session.cacheKey)
       session.deps.onStartupBound?.()
     }
     if (options.seedInitialAgentStatus) {

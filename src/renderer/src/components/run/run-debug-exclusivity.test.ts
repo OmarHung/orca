@@ -56,6 +56,8 @@ function runSession(status: RunSession['status']): RunSession {
     commandKey: 'detected:web',
     label: 'web: dev',
     tabId: 'tab-1',
+    leafId: 'leaf-1',
+    attemptId: 'attempt-1',
     status,
     exitCode: null
   }

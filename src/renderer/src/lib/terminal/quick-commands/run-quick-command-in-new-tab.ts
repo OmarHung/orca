@@ -2,6 +2,7 @@ import { useAppStore } from '@/store/index'
 import { persistAgentLaunchTabOrder } from '@/lib/agent-session/launch/pane/launch-agent-tab-order'
 import { launchAgentInNewTab } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab'
 import { newAgentLaunchRequestId } from '@/lib/agent-session/launch/routing/agent-launch-request-id'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../../shared/non-secure-context-uuid'
 import {
   flattenTerminalQuickCommand,
   isTerminalAgentQuickCommand,
@@ -50,7 +51,7 @@ export function runQuickCommandInNewTab({
   groupId,
   historyId = command.id,
   startupCwd
-}: RunQuickCommandInNewTabArgs): { tabId: string } | null {
+}: RunQuickCommandInNewTabArgs): { tabId: string; leafId?: string } | null {
   const targetGroupId = groupId ?? undefined
   if (isTerminalAgentQuickCommand(command)) {
     if (!command.prompt.trim() || !supportsTerminalAgentQuickCommand(command.agent)) {
@@ -95,8 +96,10 @@ export function runQuickCommandInNewTab({
     return null
   }
   const store = useAppStore.getState()
+  const leafId = createBrowserUuid()
   const tab = store.createTab(worktreeId, targetGroupId, undefined, {
     quickCommandLabel: command.label,
+    initialLeafId: leafId,
     pendingStartup: { command: flattenTerminalQuickCommand(command).command },
     ...(startupCwd ? { startupCwd } : {})
   })
@@ -112,5 +115,5 @@ export function runQuickCommandInNewTab({
     useAppStore.getState().setRecentQuickCommandForGroup(launchedGroupId, historyId)
   }
 
-  return { tabId: tab.id }
+  return { tabId: tab.id, leafId }
 }
