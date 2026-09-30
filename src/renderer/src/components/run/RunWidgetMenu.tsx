@@ -9,6 +9,7 @@ import {
 import { translate } from '@/i18n/i18n'
 import { isDetectedRunMenuEmpty, type DetectedRunMenu } from './detected-run-menu'
 import { RunWidgetDetectedSection, type DetectedSectionActions } from './RunWidgetDetectedSection'
+import { RUN_WIDGET_CONTENT_STYLE } from './run-widget-cascade'
 import { RunWidgetMenuRow, type RunWidgetRowContext } from './RunWidgetMenuRow'
 import type { RunWidgetItem } from './run-widget-items'
 
@@ -57,12 +58,15 @@ export function RunWidgetMenu({
   onAddQuickCommand,
   onManageQuickCommands,
   detected,
-  detectedActions
+  detectedActions,
+  cascadeLeft
 }: RowProps & {
   items: readonly RunWidgetItem[]
   /** null until the workspace's first scan finishes. */
   detected: DetectedRunMenu | null
   detectedActions: DetectedSectionActions
+  /** Submenus open to the left; see runWidgetCascadeDirection. */
+  cascadeLeft: boolean
   onEditConfigurations: () => void
   /** null when the workspace has no `.vscode/launch.json`. */
   onImportLaunchJson: (() => void) | null
@@ -71,7 +75,7 @@ export function RunWidgetMenu({
 }): React.JSX.Element {
   const sectionProps = { selectedKey, onSelect, rowState, rowActions }
   return (
-    <DropdownMenuContent align="end" className="min-w-60">
+    <DropdownMenuContent align="end" style={RUN_WIDGET_CONTENT_STYLE} className="min-w-60">
       <div className="scrollbar-sleek max-h-[60vh] overflow-y-auto">
         <Section
           {...sectionProps}
@@ -88,7 +92,12 @@ export function RunWidgetMenu({
           heading={translate('run.configurations.sharedHeading', 'Shared (orca.yaml)')}
           items={items.filter((item) => item.kind === 'configuration' && item.source === 'shared')}
         />
-        <RunWidgetDetectedSection menu={detected} row={sectionProps} actions={detectedActions} />
+        <RunWidgetDetectedSection
+          menu={detected}
+          row={sectionProps}
+          actions={detectedActions}
+          cascadeLeft={cascadeLeft}
+        />
         <Section
           {...sectionProps}
           heading={translate('run.widget.quickCommands', 'Quick commands')}

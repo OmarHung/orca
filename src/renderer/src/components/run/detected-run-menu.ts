@@ -1,8 +1,11 @@
 import { getRelativePathInsideRoot } from '@/lib/path'
 import type {
   DetectedRunConfiguration,
+  RunConfigurationEcosystem,
   RunConfigurationKind
 } from '../../../../shared/run-configurations/run-configuration-types'
+
+const ECOSYSTEM_ORDER: readonly RunConfigurationEcosystem[] = ['dotnet', 'node', 'python']
 
 /** The order kinds are listed in inside a project's submenu. */
 export const DETECTED_KIND_ORDER: readonly RunConfigurationKind[] = [
@@ -23,15 +26,21 @@ export type DetectedRunMenuProject = {
   groups: { kind: RunConfigurationKind; runs: DetectedRunConfiguration[] }[]
 }
 
-export type DetectedRunMenu = {
+export type DetectedRunMenuEcosystem = {
+  ecosystem: RunConfigurationEcosystem
   projects: DetectedRunMenuProject[]
+}
+
+export type DetectedRunMenu = {
+  /** Shown projects by toolchain, each list root first and then by folder. */
+  ecosystems: DetectedRunMenuEcosystem[]
   hiddenProjects: DetectedRunMenuProject[]
   /** Runs hidden one by one, in projects that are still shown. */
   hiddenRuns: { key: string; run: DetectedRunConfiguration }[]
 }
 
 export function isDetectedRunMenuEmpty(menu: DetectedRunMenu): boolean {
-  return menu.projects.length + menu.hiddenProjects.length + menu.hiddenRuns.length === 0
+  return menu.ecosystems.length + menu.hiddenProjects.length + menu.hiddenRuns.length === 0
 }
 
 function locationOf(projectDir: string, worktreePath: string): string {
@@ -71,8 +80,8 @@ function projectOf(
 }
 
 /**
- * Detected runs grouped by project (root first, then by folder), each project's runs grouped by
- * kind, with what the user hid split out so it can be shown again.
+ * Detected runs grouped by toolchain, then project, then kind, with what the user hid split out
+ * so it can be shown again.
  */
 export function detectedRunMenu(
   runs: readonly DetectedRunConfiguration[],
@@ -90,12 +99,16 @@ export function detectedRunMenu(
     hidden.has(detectedRunHideKey(run, worktreePath))
   const entries = [...byProject]
   const shownEntries = entries.filter(([key]) => !hidden.has(key))
+  const projects = shownEntries
+    .map(([key, projectRuns]) => [key, projectRuns.filter((run) => !isRunHidden(run))] as const)
+    .filter(([, shown]) => shown.length > 0)
+    .map(([key, shown]) => projectOf(key, shown, worktreePath))
+    .sort(byLocation)
   return {
-    projects: shownEntries
-      .map(([key, projectRuns]) => [key, projectRuns.filter((run) => !isRunHidden(run))] as const)
-      .filter(([, shown]) => shown.length > 0)
-      .map(([key, shown]) => projectOf(key, shown, worktreePath))
-      .sort(byLocation),
+    ecosystems: ECOSYSTEM_ORDER.map((ecosystem) => ({
+      ecosystem,
+      projects: projects.filter((project) => project.ecosystem === ecosystem)
+    })).filter((group) => group.projects.length > 0),
     hiddenProjects: entries
       .filter(([key]) => hidden.has(key))
       .map(([key, projectRuns]) => projectOf(key, projectRuns, worktreePath))
