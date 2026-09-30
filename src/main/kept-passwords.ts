@@ -1,11 +1,15 @@
 import type { SecretStore } from '../shared/secret-store'
-import { SealedSecretFile } from './sealed-secret-file'
+import { SealedSecretFile, type SealedSnapshot } from './sealed-secret-file'
 
 /** How a saved login keeps its password; the database and VPN settings share these values. */
 export type PasswordStorage = 'forever' | 'session' | 'never'
 
 /** A finished release, with how to put the passwords back if saving the setting then fails. */
 export type Released = { ok: true; undo: () => string | null } | { ok: false; problem: string }
+
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
 
 /** The error to report once a failed setting save was undone; says so when undoing failed too. */
 export function afterUndo(error: unknown, undoProblem: string | null): Error {
@@ -15,13 +19,29 @@ export function afterUndo(error: unknown, undoProblem: string | null): Error {
     : new Error(`${failure.message} The saved password could not be put back: ${undoProblem}`)
 }
 
+/**
+ * Undoes a setting change that failed after it was saved: the passwords first, since undo never
+ * throws, then the setting. The error says what could not be put back.
+ */
+export function rollBack(error: unknown, undo: () => string | null, revert: () => void): Error {
+  const undoProblem = undo()
+  try {
+    revert()
+  } catch (revertError) {
+    const both = `${messageOf(error)} The previous settings could not be put back: ${messageOf(revertError)}`
+    return afterUndo(new Error(both), undoProblem)
+  }
+  return afterUndo(error, undoProblem)
+}
+
 const LOCKED_MESSAGE =
   'The saved password cannot be read right now because the system keychain is locked or unavailable. Enter the password again, or try again later.'
 
 /**
  * Passwords by id: `forever` sealed with the OS keychain in a file (never plaintext), `session` in
  * memory until Orca quits, `never` not kept. Methods that change what is kept return a user-facing
- * problem, or null once done; on a problem nothing on disk was changed.
+ * problem, or null once done; on a problem nothing on disk was changed. A write can fail after it
+ * already replaced the file, so a change that throws puts back what it changed before rethrowing.
  *
  * A setting change runs in two halves around saving the setting itself: `release` before it
  * removes what the new setting must not keep, and `keep` after it seals what the new setting
@@ -61,13 +81,14 @@ export class KeptPasswords {
   }
 
   forget(id: string): string | null {
-    this.session.delete(id)
-    return this.deleteSealed(id)
+    return this.allOrNothing(id, () => this.forgetNow(id))
   }
 
   /** Keeps a password just typed the way `storage` says, replacing whatever was kept. */
   remember(id: string, storage: PasswordStorage, password: string): string | null {
-    return storage === 'forever' ? this.seal(id, password) : this.releaseNow(id, storage, password)
+    return this.allOrNothing(id, () =>
+      storage === 'forever' ? this.seal(id, password) : this.releaseNow(id, storage, password)
+    )
   }
 
   /**
@@ -76,13 +97,10 @@ export class KeptPasswords {
    * keychain cannot open now is refused rather than dropped.
    */
   release(id: string, storage: PasswordStorage, password: string | null | undefined): Released {
-    const sessionBefore = this.session.get(id)
-    // Why the raw ciphertext: putting it back needs no keychain, so undo works even while it is locked.
-    const sealedBefore = this.sealed.ciphertext(id)
-    const problem = this.releaseNow(id, storage, password)
-    return problem === null
-      ? { ok: true, undo: () => this.restore(id, sessionBefore, sealedBefore) }
-      : { ok: false, problem }
+    return this.allOrNothing(id, (undo) => {
+      const problem = this.releaseNow(id, storage, password)
+      return problem === null ? { ok: true, undo } : { ok: false, problem }
+    })
   }
 
   private releaseNow(
@@ -91,7 +109,7 @@ export class KeptPasswords {
     password: string | null | undefined
   ): string | null {
     if (password === null || storage === 'never') {
-      return this.forget(id)
+      return this.forgetNow(id)
     }
     if (storage === 'forever') {
       return null
@@ -121,24 +139,39 @@ export class KeptPasswords {
     }
     const kept = password ?? this.session.get(id)
     // Why: with nothing new, the copy already saved stays untouched, even if the keychain is locked.
-    return kept === undefined ? null : this.seal(id, kept)
+    return kept === undefined ? null : this.allOrNothing(id, () => this.seal(id, kept))
   }
 
+  /** Runs one change to `id`, handing it the undo; if the change throws, undoes it first. */
+  private allOrNothing<T>(id: string, change: (undo: () => string | null) => T): T {
+    const sessionBefore = this.session.get(id)
+    // Why the raw ciphertext: putting it back needs no keychain, so undo works even while it is locked.
+    const sealedBefore = this.sealed.snapshot(id)
+    const undo = (): string | null => this.restore(id, sessionBefore, sealedBefore)
+    try {
+      return change(undo)
+    } catch (error) {
+      throw afterUndo(error, undo())
+    }
+  }
+
+  /** Never throws, so a failed change can always be undone. */
   private restore(
     id: string,
     sessionBefore: string | undefined,
-    sealedBefore: string | null
+    sealedBefore: SealedSnapshot
   ): string | null {
     if (sessionBefore === undefined) {
       this.session.delete(id)
     } else {
       this.session.set(id, sessionBefore)
     }
-    if (sealedBefore === null || this.sealed.ciphertext(id) === sealedBefore) {
-      return null
+    try {
+      const problem = this.sealed.restore(id, sealedBefore)
+      return problem === null ? null : this.sealed.describeProblem(problem)
+    } catch (error) {
+      return messageOf(error)
     }
-    const problem = this.sealed.restoreCiphertext(id, sealedBefore)
-    return problem === null ? null : this.sealed.describeProblem(problem)
   }
 
   private seal(id: string, password: string): string | null {
@@ -151,6 +184,11 @@ export class KeptPasswords {
     }
     this.session.delete(id)
     return null
+  }
+
+  private forgetNow(id: string): string | null {
+    this.session.delete(id)
+    return this.deleteSealed(id)
   }
 
   private deleteSealed(id: string): string | null {
