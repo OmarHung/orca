@@ -237,4 +237,7 @@ F12、⇧F12、⌘F12、⌘+點擊這些 Monaco 原本的鍵都保留。衝突�
 - 這次的錯誤是：上一次搬過去的舊分頁還在家目錄專案裡，新分頁再搬就撞到它（`collision`）。
 - 修正：`OpenFile.staysInOpeningWorkspace`。跳轉開啟工作區外的檔案時設為 true，載入時不做遷移，分頁留在發起跳轉的專案。這個欄位跟 `readOnly` 一樣持久化（schema、`PersistedOpenFile`、`buildEditorSessionData`、`hydrateEditorSession` 各加一行），重啟後還原的分頁也不會被搬走。反編譯檔另外標 `readOnly`。
 - e2e：建立一個資料夾工作區，路徑就是 Orca 的 userData（等同家目錄專案包住伺服器檔案），在 TS 專案對 `console` 按 F12 開 `lib.dom.d.ts`，確認專案沒被切換、Back 回到 app.ts。拿掉修正時這個 e2e 會失敗（分頁被搬走）。注意 macOS 的 `/var` 與 `/private/var`：伺服器回報實體路徑，測試要 `realpath`。
+- 補強（使用者再次看到同一個錯誤：修正前留下的舊分頁在重啟後被還原，沒有標記）：
+  - 載入端直接認得 Orca 語言伺服器的檔案（`isOrcaLanguageServerFilePath`：`language-servers/csharp-metadata/`、`language-servers/typescript-native/`），它們不屬於任何專案，一律不遷移。舊分頁按「重試」或重啟後就能載入，不必手動清理。
+  - 跳轉到一個已經開著、但缺標記的分頁時（`openFile` 對既有分頁不會更新這些旗標），補上 `staysInOpeningWorkspace`／`readOnly` 並遞增 `fileContentReloadNonce` 重新載入一次（有未存修改的分頁不會被重新載入）。
 
