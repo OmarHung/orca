@@ -15,10 +15,13 @@ import {
 } from './language-server-session'
 import { writeCsharpMetadataFile } from './csharp-metadata-files'
 import {
+  readPreviewFile,
   readTargetPreviews,
   toFileLocations,
   type MetadataFileResolver
 } from './navigation-target-files'
+import { csharpImplementations } from './csharp-mediatr-handlers'
+import type { LspLocation } from './lsp-locations'
 
 // Why: idle servers hold whole program graphs in memory; restarting one is cheap next to that.
 const IDLE_SHUTDOWN_MS = 30 * 60_000
@@ -87,7 +90,7 @@ export class CodeNavigationService {
     try {
       const session = await entry.session
       const locations = await toFileLocations(
-        await session.query(request.feature, request.document, request.position),
+        await this.serverLocations(session, request),
         this.metadataResolver(session)
       )
       const previews = await readTargetPreviews(
@@ -235,6 +238,22 @@ export class CodeNavigationService {
     if (current && current.session === entry.session) {
       this.sessions.set(key, { ...current, lastUsedAt: this.now() })
     }
+  }
+
+  private serverLocations(
+    session: LanguageServerSession,
+    request: CodeNavigationQuery
+  ): Promise<LspLocation[]> {
+    if (request.kind === 'csharp' && request.feature === 'implementation') {
+      const read = this.deps.readPreview ?? readPreviewFile
+      return csharpImplementations(
+        session,
+        request.document,
+        request.position,
+        async (path) => (await read(path))?.split(/\r?\n/) ?? null
+      )
+    }
+    return session.query(request.feature, request.document, request.position)
   }
 
   private metadataResolver(session: LanguageServerSession): MetadataFileResolver | null {
