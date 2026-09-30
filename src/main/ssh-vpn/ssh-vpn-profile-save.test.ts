@@ -17,9 +17,11 @@ const DRAFT: SshVpnProfileDraft = {
 }
 const DAMAGED = '{"version": 1,'
 
+let keychainOpen = true
+
 function secretStore(): SecretStore {
   return {
-    isEncryptionAvailable: () => true,
+    isEncryptionAvailable: () => keychainOpen,
     encryptString: (plain) => Buffer.from(`sealed:${plain}`),
     decryptString: (cipher) => cipher.toString().replace(/^sealed:/, ''),
     describeProtectionGap: () => null
@@ -37,6 +39,7 @@ describe('saveProfileWithPassword', () => {
     passwordsPath = join(dir, 'passwords.json')
     store = new SshVpnStore(join(dir, 'ssh-vpn.json'))
     vault = new SshVpnPasswordVault(passwordsPath, secretStore)
+    keychainOpen = true
   })
 
   afterEach(() => rmSync(dir, { recursive: true, force: true }))
@@ -44,7 +47,12 @@ describe('saveProfileWithPassword', () => {
   it('moves a saved password when the setting changes', () => {
     const saved = saveProfileWithPassword({ store, vault }, null, DRAFT, 'hunter2')
 
-    saveProfileWithPassword({ store, vault }, saved, { ...DRAFT, passwordStorage: 'session' }, null)
+    saveProfileWithPassword(
+      { store, vault },
+      saved,
+      { ...DRAFT, passwordStorage: 'session' },
+      undefined
+    )
 
     expect(vault.get(saved.id)).toBe('hunter2')
     expect(new SshVpnPasswordVault(passwordsPath, secretStore).get(saved.id)).toBeNull()
@@ -61,7 +69,7 @@ describe('saveProfileWithPassword', () => {
           { store, vault },
           saved,
           { ...DRAFT, passwordStorage: storage },
-          null
+          undefined
         )
       ).toThrow(passwordsPath)
 
@@ -99,6 +107,75 @@ describe('saveProfileWithPassword', () => {
     expect(vault.get(session.id)).toBe('typed')
     expect(vault.get(never.id)).toBeNull()
     expect(store.listProfiles()).toHaveLength(2)
+    expect(readFileSync(passwordsPath, 'utf8')).toBe(DAMAGED)
+  })
+
+  it('refuses to move a saved password it cannot read while the keychain is locked', () => {
+    const saved = saveProfileWithPassword({ store, vault }, null, DRAFT, 'hunter2')
+    const onDisk = readFileSync(passwordsPath, 'utf8')
+    keychainOpen = false
+
+    expect(() =>
+      saveProfileWithPassword(
+        { store, vault },
+        saved,
+        { ...DRAFT, passwordStorage: 'session' },
+        undefined
+      )
+    ).toThrow('keychain is locked or unavailable')
+
+    expect(store.getProfile(saved.id)?.passwordStorage).toBe('forever')
+    expect(readFileSync(passwordsPath, 'utf8')).toBe(onDisk)
+    keychainOpen = true
+    expect(vault.get(saved.id)).toBe('hunter2')
+  })
+
+  it('keeps a saved password untouched when only the name changes while the keychain is locked', () => {
+    const saved = saveProfileWithPassword({ store, vault }, null, DRAFT, 'hunter2')
+    keychainOpen = false
+
+    saveProfileWithPassword({ store, vault }, saved, { ...DRAFT, name: 'Renamed' }, undefined)
+
+    keychainOpen = true
+    expect(store.getProfile(saved.id)?.name).toBe('Renamed')
+    expect(vault.get(saved.id)).toBe('hunter2')
+  })
+
+  it('seals nothing when saving the setting fails', () => {
+    const saved = saveProfileWithPassword(
+      { store, vault },
+      null,
+      { ...DRAFT, passwordStorage: 'never' },
+      undefined
+    )
+    const failing = {
+      saveProfile: () => {
+        throw new Error('disk full')
+      },
+      deleteProfile: store.deleteProfile.bind(store)
+    }
+
+    expect(() =>
+      saveProfileWithPassword({ store: failing, vault }, saved, DRAFT, 'hunter2')
+    ).toThrow('disk full')
+
+    expect(new SshVpnPasswordVault(passwordsPath, secretStore).get(saved.id)).toBeNull()
+  })
+
+  it('puts the old setting back when sealing after it fails', () => {
+    const saved = saveProfileWithPassword(
+      { store, vault },
+      null,
+      { ...DRAFT, passwordStorage: 'never' },
+      undefined
+    )
+    writeFileSync(passwordsPath, DAMAGED)
+
+    expect(() => saveProfileWithPassword({ store, vault }, saved, DRAFT, 'hunter2')).toThrow(
+      passwordsPath
+    )
+
+    expect(store.getProfile(saved.id)?.passwordStorage).toBe('never')
     expect(readFileSync(passwordsPath, 'utf8')).toBe(DAMAGED)
   })
 })
