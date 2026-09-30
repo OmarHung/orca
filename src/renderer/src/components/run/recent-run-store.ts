@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { normalizeDebugLaunchTarget } from '../../../../shared/run-configurations/run-configuration-definition'
+import { asArgs, asEnv } from '../../../../shared/run-configurations/run-configuration-values'
+import type { DebugLaunchOptions } from '../../../../shared/debug/debug-session-types'
 import type { RunTarget } from './run-configuration-control'
 
 const STORAGE_KEY = 'orca.run.recentByWorktree.v1'
@@ -8,6 +10,13 @@ export const MAX_RECENT_RUNS = 5
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? { ...value } : null
+}
+
+function readDebugOptions(value: unknown): DebugLaunchOptions | undefined {
+  const record = asRecord(value)
+  const args = asArgs(record?.args)
+  const env = asEnv(record?.env)
+  return args || env ? { ...(args ? { args } : {}), ...(env ? { env } : {}) } : undefined
 }
 
 function readTarget(value: unknown): RunTarget | null {
@@ -30,6 +39,7 @@ function readTarget(value: unknown): RunTarget | null {
   if (debug === null) {
     return null
   }
+  const debugOptions = debug ? readDebugOptions(record.debugOptions) : undefined
   return {
     worktreeId: record.worktreeId,
     groupId: null,
@@ -41,7 +51,8 @@ function readTarget(value: unknown): RunTarget | null {
       appendEnter: command.appendEnter
     },
     ...(typeof record.cwd === 'string' ? { cwd: record.cwd } : {}),
-    ...(debug ? { debug } : {})
+    ...(debug ? { debug } : {}),
+    ...(debugOptions ? { debugOptions } : {})
   }
 }
 
