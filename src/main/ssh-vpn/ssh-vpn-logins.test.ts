@@ -98,6 +98,22 @@ describe('SshVpnLogins', () => {
     expect(vault.rememberForSession).toHaveBeenCalledWith(PROFILE.id, 'p')
   })
 
+  it('never reads or keeps a password for an "Ask every time" profile', async () => {
+    const prompt = vi.fn(async () => ({ username: 'alice', password: 'typed' }))
+    const { logins, vault } = createLogins('left-on-disk', prompt)
+    const askEveryTime: SshVpnProfile = { ...PROFILE, passwordStorage: 'never' }
+
+    await expect(logins.startOptions(askEveryTime, null).credentials?.()).resolves.toEqual({
+      username: 'alice',
+      password: 'typed'
+    })
+
+    expect(prompt).toHaveBeenCalled()
+    expect(vault.get).not.toHaveBeenCalled()
+    expect(vault.remember).not.toHaveBeenCalled()
+    expect(vault.rememberForSession).not.toHaveBeenCalled()
+  })
+
   it('still asks again after a rejected login when the saved password cannot be removed', async () => {
     const prompt = vi.fn(async () => ({ username: 'alice', password: 'fixed' }))
     const { logins, vault } = createLogins('stale', prompt)
