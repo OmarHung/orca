@@ -34,6 +34,7 @@ function deps(overrides: Partial<LanguageServerLaunchDeps> = {}): LanguageServer
     platform: 'darwin',
     arch: 'arm64',
     env: { PATH: '/usr/bin' },
+    findSolution: vi.fn(async () => null),
     ...overrides
   }
 }
@@ -51,7 +52,13 @@ describe('prepareLanguageServerLaunch', () => {
     const installDir = await markInstalled(artifact.name, artifact.version)
     const onDownloading = vi.fn()
 
-    const launch = await prepareLanguageServerLaunch('typescript', baseDir, onDownloading, deps())
+    const launch = await prepareLanguageServerLaunch(
+      'typescript',
+      '/workspace',
+      baseDir,
+      onDownloading,
+      deps()
+    )
 
     expect(launch).toEqual({
       program: join(installDir, 'package', 'lib', 'tsc'),
@@ -67,6 +74,7 @@ describe('prepareLanguageServerLaunch', () => {
 
     const launch = await prepareLanguageServerLaunch(
       'typescript',
+      '/workspace',
       baseDir,
       () => {},
       deps({ platform: 'win32', arch: 'x64' })
@@ -79,14 +87,20 @@ describe('prepareLanguageServerLaunch', () => {
     const onDownloading = vi.fn()
 
     await expect(
-      prepareLanguageServerLaunch('typescript', baseDir, onDownloading, deps())
+      prepareLanguageServerLaunch('typescript', '/workspace', baseDir, onDownloading, deps())
     ).rejects.toThrow('no network in tests')
     expect(onDownloading).toHaveBeenCalledTimes(1)
   })
 
   it('refuses platforms without a TypeScript build', async () => {
     await expect(
-      prepareLanguageServerLaunch('typescript', baseDir, () => {}, deps({ platform: 'aix' }))
+      prepareLanguageServerLaunch(
+        'typescript',
+        '/workspace',
+        baseDir,
+        () => {},
+        deps({ platform: 'aix' })
+      )
     ).rejects.toThrow('not available for aix-arm64')
   })
 
@@ -96,7 +110,13 @@ describe('prepareLanguageServerLaunch', () => {
       CSHARP_SERVER_ARTIFACT.version
     )
 
-    const launch = await prepareLanguageServerLaunch('csharp', baseDir, () => {}, deps())
+    const launch = await prepareLanguageServerLaunch(
+      'csharp',
+      '/workspace',
+      baseDir,
+      () => {},
+      deps()
+    )
 
     expect(launch).toEqual({
       program: '/usr/local/share/dotnet/dotnet',
@@ -111,7 +131,7 @@ describe('prepareLanguageServerLaunch', () => {
     const launchDeps = deps({ resolveCommand: vi.fn(async () => null) })
 
     await expect(
-      prepareLanguageServerLaunch('csharp', baseDir, onDownloading, launchDeps)
+      prepareLanguageServerLaunch('csharp', '/workspace', baseDir, onDownloading, launchDeps)
     ).rejects.toThrow('dotnet was not found on PATH')
     expect(onDownloading).not.toHaveBeenCalled()
     expect(launchDeps.install.download).not.toHaveBeenCalled()
@@ -128,5 +148,28 @@ describe('prepareLanguageServerLaunch', () => {
     expect(
       await isLanguageServerInstalled('typescript', baseDir, { platform: 'aix', arch: 'x' })
     ).toBe(false)
+  })
+
+  it('passes the solution it finds under the root to csharp-ls', async () => {
+    const installDir = await markInstalled(
+      CSHARP_SERVER_ARTIFACT.name,
+      CSHARP_SERVER_ARTIFACT.version
+    )
+    const findSolution = vi.fn(async () => join('backend', 'Shop.sln'))
+
+    const launch = await prepareLanguageServerLaunch(
+      'csharp',
+      '/workspace',
+      baseDir,
+      () => {},
+      deps({ findSolution })
+    )
+
+    expect(findSolution).toHaveBeenCalledWith('/workspace')
+    expect(launch.args).toEqual([
+      join(installDir, 'tools', 'net10.0', 'any', 'CSharpLanguageServer.dll'),
+      '--solution',
+      join('backend', 'Shop.sln')
+    ])
   })
 })

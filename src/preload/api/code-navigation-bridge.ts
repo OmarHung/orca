@@ -5,6 +5,7 @@ import type { PreloadApi } from '../api-types'
 export const codeNavigationApi = {
   query: (request) => ipcRenderer.invoke('codeNav:query', request),
   hover: (request) => ipcRenderer.invoke('codeNav:hover', request),
+  warm: (request) => ipcRenderer.invoke('codeNav:warm', request),
   closeDocument: (request) => ipcRenderer.invoke('codeNav:closeDocument', request),
   filesChanged: (request) => ipcRenderer.invoke('codeNav:filesChanged', request),
   onStatus: (callback) => {

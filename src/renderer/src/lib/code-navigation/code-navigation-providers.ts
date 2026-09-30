@@ -26,9 +26,9 @@ function toMonacoRange(monaco: MonacoApi, range: CodeNavigationRange): Monaco.Ra
 }
 
 /** The server request for this model and position, or null when Monaco's own worker must answer. */
-function serverRequestFor(
+export function serverRequestFor(
   model: Monaco.editor.ITextModel,
-  position: Monaco.Position
+  position: Monaco.IPosition
 ): CodeNavigationHoverQuery | null {
   const context = resolveCodeNavigationContext(useAppStore.getState(), model.uri.toString())
   if (!window.api?.codeNavigation || !context) {
