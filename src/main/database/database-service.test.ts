@@ -229,6 +229,70 @@ describe('DatabaseService', () => {
     expect(readFileSync(join(dir, 'passwords.json'), 'utf8')).toBe(damaged)
   })
 
+  it.each(['never', 'session'] as const)(
+    'keeps the old setting when switching to %s cannot remove the saved password',
+    async (passwordStorage) => {
+      const service = createService()
+      const saved = await service.saveConnection({ draft, password: 'right' })
+      if (!saved.ok) {
+        throw new Error(saved.error.message)
+      }
+      writeFileSync(join(dir, 'passwords.json'), '{"version": 1,')
+
+      const changed = await service.saveConnection({
+        id: saved.value.id,
+        draft: { ...draft, passwordStorage }
+      })
+
+      expect(changed).toMatchObject({
+        ok: false,
+        error: { message: expect.stringContaining('damaged') }
+      })
+      expect(service.listConnections()[0]).toMatchObject({ passwordStorage: 'forever' })
+      expect(readFileSync(join(dir, 'passwords.json'), 'utf8')).toBe('{"version": 1,')
+    }
+  )
+
+  it('adds no connection whose password cannot be saved, but keeps an "until quit" one', async () => {
+    writeFileSync(join(dir, 'passwords.json'), '{"version": 1,')
+    const service = createService()
+
+    const forever = await service.saveConnection({ draft, password: 'right' })
+    const session = await service.saveConnection({
+      draft: { ...draft, name: 'Session', passwordStorage: 'session' },
+      password: 'right'
+    })
+
+    expect(forever.ok).toBe(false)
+    expect(service.listConnections().map((connection) => connection.name)).toEqual(['Session'])
+    if (!session.ok) {
+      throw new Error(session.error.message)
+    }
+    expect((await service.connect(session.value.id)).ok).toBe(true)
+    expect(connectPasswords).toEqual(['right'])
+  })
+
+  it('never uses a saved password for a "never" connection, even one left on disk', async () => {
+    const service = createService()
+    const saved = await service.saveConnection({ draft, password: 'right' })
+    if (!saved.ok) {
+      throw new Error(saved.error.message)
+    }
+    // Why the store directly: this is the state an earlier failed removal could leave behind.
+    new DatabaseConnectionStore(join(dir, 'connections.json')).save(saved.value.id, {
+      ...draft,
+      passwordStorage: 'never'
+    })
+
+    await service.connect(saved.value.id)
+    await service.testConnection({
+      connectionId: saved.value.id,
+      draft: { ...draft, passwordStorage: 'never' }
+    })
+
+    expect(connectPasswords).toEqual([null, null])
+  })
+
   it('round-trips console text', async () => {
     const service = createService()
     const ref = { connectionId: 'conn-0001', consoleId: 'console-01' }
