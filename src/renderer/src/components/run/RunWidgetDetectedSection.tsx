@@ -1,5 +1,5 @@
 import React from 'react'
-import { Eye, EyeOff, LoaderCircle } from 'lucide-react'
+import { Boxes, ChevronLeft, Eye, EyeOff, LoaderCircle } from 'lucide-react'
 import {
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -17,9 +17,12 @@ import { detectedConfigurationLabel } from './detected-run-configuration'
 import {
   isDetectedRunMenuEmpty,
   type DetectedRunMenu,
+  type DetectedRunMenuEcosystem,
   type DetectedRunMenuProject
 } from './detected-run-menu'
-import { RunEcosystemBadge } from './RunEcosystemBadge'
+import { RUN_KIND_ICONS } from './run-configuration-icon'
+import { RUN_WIDGET_CONTENT_STYLE } from './run-widget-cascade'
+import { RunEcosystemBadge, runEcosystemLabel } from './RunEcosystemBadge'
 import { RunWidgetMenuRow, type RunWidgetRowContext } from './RunWidgetMenuRow'
 import type { RunWidgetItem } from './run-widget-items'
 
@@ -28,6 +31,25 @@ export type DetectedSectionActions = {
   hideKeyOf: (run: DetectedRunConfiguration) => string
   onHide: (key: string) => void
   onShow: (keys: readonly string[]) => void
+}
+
+/** True when submenus open to the left, so their triggers point that way. */
+const CascadeLeftContext = React.createContext(false)
+
+function CascadeSubTrigger({
+  testId,
+  children
+}: {
+  testId: string
+  children: React.ReactNode
+}): React.JSX.Element {
+  const cascadeLeft = React.useContext(CascadeLeftContext)
+  return (
+    <DropdownMenuSubTrigger data-testid={testId} hideChevron={cascadeLeft}>
+      {children}
+      {cascadeLeft ? <ChevronLeft className="ml-auto size-4" /> : null}
+    </DropdownMenuSubTrigger>
+  )
 }
 
 function kindHeading(kind: RunConfigurationKind): string {
@@ -53,15 +75,64 @@ function keepOpen(action: () => void): (event: Event) => void {
   }
 }
 
-function ProjectLabel({ project }: { project: DetectedRunMenuProject }): React.JSX.Element {
+function Count({ value }: { value: number }): React.JSX.Element {
+  return <span className="shrink-0 text-muted-foreground tabular-nums">{value}</span>
+}
+
+function ProjectLabel({
+  project,
+  withEcosystem
+}: {
+  project: DetectedRunMenuProject
+  withEcosystem: boolean
+}): React.JSX.Element {
   return (
     <>
-      <RunEcosystemBadge ecosystem={project.ecosystem} />
+      {withEcosystem ? <RunEcosystemBadge ecosystem={project.ecosystem} /> : null}
       <span className="min-w-0 flex-1 truncate">{project.name}</span>
       {project.location && project.location !== project.name ? (
         <span className="max-w-32 min-w-0 truncate text-muted-foreground">{project.location}</span>
       ) : null}
     </>
+  )
+}
+
+function KindSubmenu({
+  group,
+  row,
+  actions
+}: {
+  group: DetectedRunMenuProject['groups'][number]
+  row: RunWidgetRowContext
+  actions: DetectedSectionActions
+}): React.JSX.Element {
+  const Icon = RUN_KIND_ICONS[group.kind]
+  return (
+    <DropdownMenuSub>
+      <CascadeSubTrigger testId="run-widget-detected-kind">
+        <Icon />
+        <span className="min-w-0 flex-1 truncate">{kindHeading(group.kind)}</span>
+        <Count value={group.runs.length} />
+      </CascadeSubTrigger>
+      <DropdownMenuSubContent style={RUN_WIDGET_CONTENT_STYLE} className="min-w-56">
+        <div className="scrollbar-sleek max-h-[60vh] overflow-y-auto">
+          {group.runs.map((run) => {
+            const item = actions.toItem(run)
+            return (
+              <RunWidgetMenuRow
+                key={run.id}
+                item={item}
+                current={item.key === row.selectedKey}
+                state={row.rowState(item)}
+                actions={row.rowActions}
+                onSelect={row.onSelect}
+                onHide={() => actions.onHide(actions.hideKeyOf(run))}
+              />
+            )
+          })}
+        </div>
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
   )
 }
 
@@ -76,31 +147,13 @@ function ProjectSubmenu({
 }): React.JSX.Element {
   return (
     <DropdownMenuSub>
-      <DropdownMenuSubTrigger data-testid="run-widget-detected-project">
-        <ProjectLabel project={project} />
-      </DropdownMenuSubTrigger>
-      <DropdownMenuSubContent className="min-w-56">
-        <div className="scrollbar-sleek max-h-[60vh] overflow-y-auto">
-          {project.groups.map((group) => (
-            <React.Fragment key={group.kind}>
-              <DropdownMenuLabel>{kindHeading(group.kind)}</DropdownMenuLabel>
-              {group.runs.map((run) => {
-                const item = actions.toItem(run)
-                return (
-                  <RunWidgetMenuRow
-                    key={run.id}
-                    item={item}
-                    current={item.key === row.selectedKey}
-                    state={row.rowState(item)}
-                    actions={row.rowActions}
-                    onSelect={row.onSelect}
-                    onHide={() => actions.onHide(actions.hideKeyOf(run))}
-                  />
-                )
-              })}
-            </React.Fragment>
-          ))}
-        </div>
+      <CascadeSubTrigger testId="run-widget-detected-project">
+        <ProjectLabel project={project} withEcosystem={false} />
+      </CascadeSubTrigger>
+      <DropdownMenuSubContent style={RUN_WIDGET_CONTENT_STYLE} className="min-w-44">
+        {project.groups.map((group) => (
+          <KindSubmenu key={group.kind} group={group} row={row} actions={actions} />
+        ))}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           data-testid="run-widget-hide-project"
@@ -109,6 +162,33 @@ function ProjectSubmenu({
           <EyeOff />
           {translate('run.widget.hideProject', 'Hide This Project')}
         </DropdownMenuItem>
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
+  )
+}
+
+function EcosystemSubmenu({
+  group,
+  row,
+  actions
+}: {
+  group: DetectedRunMenuEcosystem
+  row: RunWidgetRowContext
+  actions: DetectedSectionActions
+}): React.JSX.Element {
+  return (
+    <DropdownMenuSub>
+      <CascadeSubTrigger testId="run-widget-detected-ecosystem">
+        <Boxes />
+        <span className="min-w-0 flex-1 truncate">{runEcosystemLabel(group.ecosystem)}</span>
+        <Count value={group.projects.length} />
+      </CascadeSubTrigger>
+      <DropdownMenuSubContent style={RUN_WIDGET_CONTENT_STYLE} className="min-w-64">
+        <div className="scrollbar-sleek max-h-[60vh] overflow-y-auto">
+          {group.projects.map((project) => (
+            <ProjectSubmenu key={project.key} project={project} row={row} actions={actions} />
+          ))}
+        </div>
       </DropdownMenuSubContent>
     </DropdownMenuSub>
   )
@@ -127,13 +207,13 @@ function HiddenSubmenu({
   ]
   return (
     <DropdownMenuSub>
-      <DropdownMenuSubTrigger data-testid="run-widget-hidden">
+      <CascadeSubTrigger testId="run-widget-hidden">
         <EyeOff />
         <span className="flex-1">
           {translate('run.widget.hidden', 'Hidden ({{value0}})', { value0: keys.length })}
         </span>
-      </DropdownMenuSubTrigger>
-      <DropdownMenuSubContent className="min-w-56">
+      </CascadeSubTrigger>
+      <DropdownMenuSubContent style={RUN_WIDGET_CONTENT_STYLE} className="min-w-56">
         <DropdownMenuLabel>
           {translate('run.widget.hiddenHint', 'Click to show again')}
         </DropdownMenuLabel>
@@ -145,7 +225,7 @@ function HiddenSubmenu({
               onSelect={keepOpen(() => onShow([project.key]))}
             >
               <Eye />
-              <ProjectLabel project={project} />
+              <ProjectLabel project={project} withEcosystem />
             </DropdownMenuItem>
           ))}
           {menu.hiddenRuns.map(({ key, run }) => (
@@ -174,17 +254,19 @@ function HiddenSubmenu({
 }
 
 /**
- * Runs detected from project files, one submenu per project with its runs grouped by kind, and
- * the entries the user hid, which can be shown again. `menu` is null until the first scan ends.
+ * Runs detected from project files, nested toolchain → project → kind → run, and the entries the
+ * user hid, which can be shown again. `menu` is null until the first scan ends.
  */
 export function RunWidgetDetectedSection({
   menu,
   row,
-  actions
+  actions,
+  cascadeLeft
 }: {
   menu: DetectedRunMenu | null
   row: RunWidgetRowContext
   actions: DetectedSectionActions
+  cascadeLeft: boolean
 }): React.JSX.Element | null {
   const heading = (
     <DropdownMenuLabel>{translate('run.widget.detected', 'Detected')}</DropdownMenuLabel>
@@ -205,12 +287,12 @@ export function RunWidgetDetectedSection({
   }
   const hasHidden = menu.hiddenProjects.length + menu.hiddenRuns.length > 0
   return (
-    <>
+    <CascadeLeftContext.Provider value={cascadeLeft}>
       {heading}
-      {menu.projects.map((project) => (
-        <ProjectSubmenu key={project.key} project={project} row={row} actions={actions} />
+      {menu.ecosystems.map((group) => (
+        <EcosystemSubmenu key={group.ecosystem} group={group} row={row} actions={actions} />
       ))}
       {hasHidden ? <HiddenSubmenu menu={menu} onShow={actions.onShow} /> : null}
-    </>
+    </CascadeLeftContext.Provider>
   )
 }
