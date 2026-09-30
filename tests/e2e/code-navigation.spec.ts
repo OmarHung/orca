@@ -127,7 +127,19 @@ test.describe('code navigation through language servers', () => {
     await expect(peek.locator('.peekview-title')).toContainText('(4)')
     await screenshot(orcaPage, 'ts-references-peek')
 
-    await orcaPage.keyboard.press('Escape')
+    // Double-clicking a result in another file opens its tab, and the peek does not linger behind.
+    await peek.locator('.monaco-list-row', { hasText: 'greeter.ts' }).click()
+    await peek
+      .locator('.monaco-list-row', { hasText: 'function greet(name' })
+      .dblclick({ timeout: 30_000 })
+    await expect
+      .poll(() => activeEditor(orcaPage), { timeout: 30_000 })
+      .toEqual({ file: 'greeter.ts', line: 1, column: 17 })
+    await openEditorFile(orcaPage, root, 'app.ts', 'typescript')
+    await expect
+      .poll(async () => (await activeEditor(orcaPage)).file, { timeout: 30_000 })
+      .toBe('app.ts')
+    await screenshot(orcaPage, 'ts-after-peek-open')
     await expect(peek).toBeHidden()
     const callLine = orcaPage.locator('.monaco-editor .view-line', { hasText: "greet('world')" })
     const box = await callLine.first().boundingBox()
