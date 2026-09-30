@@ -18,6 +18,7 @@ import {
   isDetectedRunMenuEmpty,
   type DetectedRunMenu,
   type DetectedRunMenuEcosystem,
+  type DetectedRunMenuGroup,
   type DetectedRunMenuProject,
   splitLocation
 } from './detected-run-menu'
@@ -29,6 +30,8 @@ import type { RunWidgetItem } from './run-widget-items'
 
 export type DetectedSectionActions = {
   toItem: (run: DetectedRunConfiguration) => RunWidgetItem
+  /** The widget's own row for a saved configuration; null once it is gone. */
+  savedItem: (configurationId: string) => RunWidgetItem | null
   hideKeyOf: (run: DetectedRunConfiguration) => string
   onHide: (key: string) => void
   onShow: (keys: readonly string[]) => void
@@ -112,34 +115,40 @@ function KindSubmenu({
   row,
   actions
 }: {
-  group: DetectedRunMenuProject['groups'][number]
+  group: DetectedRunMenuGroup
   row: RunWidgetRowContext
   actions: DetectedSectionActions
 }): React.JSX.Element {
   const Icon = RUN_KIND_ICONS[group.kind]
+  const savedItems = group.saved.flatMap((configuration) => {
+    const item = actions.savedItem(configuration.id)
+    return item ? [item] : []
+  })
+  const rowFor = (item: RunWidgetItem, onHide?: () => void): React.JSX.Element => (
+    <RunWidgetMenuRow
+      key={item.key}
+      item={item}
+      current={item.key === row.selectedKey}
+      state={row.rowState(item)}
+      actions={row.rowActions}
+      onSelect={row.onSelect}
+      onHide={onHide}
+    />
+  )
   return (
     <DropdownMenuSub>
       <CascadeSubTrigger testId="run-widget-detected-kind">
         <Icon />
         <span className="min-w-0 flex-1 truncate">{kindHeading(group.kind)}</span>
-        <Count value={group.runs.length} />
+        <Count value={savedItems.length + group.runs.length} />
       </CascadeSubTrigger>
       <DropdownMenuSubContent style={RUN_WIDGET_CONTENT_STYLE} className="min-w-56">
         <div className="scrollbar-sleek max-h-[60vh] overflow-y-auto">
-          {group.runs.map((run) => {
-            const item = actions.toItem(run)
-            return (
-              <RunWidgetMenuRow
-                key={run.id}
-                item={item}
-                current={item.key === row.selectedKey}
-                state={row.rowState(item)}
-                actions={row.rowActions}
-                onSelect={row.onSelect}
-                onHide={() => actions.onHide(actions.hideKeyOf(run))}
-              />
-            )
-          })}
+          {/* Why first: a saved configuration is one the user set up on purpose. */}
+          {savedItems.map((item) => rowFor(item))}
+          {group.runs.map((run) =>
+            rowFor(actions.toItem(run), () => actions.onHide(actions.hideKeyOf(run)))
+          )}
         </div>
       </DropdownMenuSubContent>
     </DropdownMenuSub>
