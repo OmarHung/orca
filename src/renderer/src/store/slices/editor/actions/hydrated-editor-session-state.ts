@@ -108,6 +108,7 @@ export function buildHydratedEditorSessionState(
         externalSshTargetId: pf.externalSshTargetId,
         ...(isReadOnly ? { readOnly: true } : {}),
         ...(isReadOnly && pf.liveTail === true ? { liveTail: true } : {}),
+        ...(pf.staysInOpeningWorkspace === true ? { staysInOpeningWorkspace: true } : {}),
         lastKnownDiskSignature: isReadOnly ? undefined : pf.lastKnownDiskSignature,
         mode: 'edit'
       })
