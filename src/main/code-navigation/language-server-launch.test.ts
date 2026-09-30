@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('electron', () => ({ net: { fetch: vi.fn() } }))
 
 import {
+  isLanguageServerInstalled,
   prepareLanguageServerLaunch,
   type LanguageServerLaunchDeps
 } from './language-server-launch'
@@ -100,7 +101,8 @@ describe('prepareLanguageServerLaunch', () => {
     expect(launch).toEqual({
       program: '/usr/local/share/dotnet/dotnet',
       args: [join(installDir, 'tools', 'net10.0', 'any', 'CSharpLanguageServer.dll')],
-      env: { PATH: '/usr/bin', DOTNET_ROLL_FORWARD: 'Major' }
+      env: { PATH: '/usr/bin', DOTNET_ROLL_FORWARD: 'Major' },
+      configuration: { csharp: { useMetadataUris: true } }
     })
   })
 
@@ -113,5 +115,18 @@ describe('prepareLanguageServerLaunch', () => {
     ).rejects.toThrow('dotnet was not found on PATH')
     expect(onDownloading).not.toHaveBeenCalled()
     expect(launchDeps.install.download).not.toHaveBeenCalled()
+  })
+
+  it('reports whether a kind is installed for this platform', async () => {
+    const artifact = typescriptServerArtifactFor('darwin', 'arm64')!
+    const platform = { platform: 'darwin' as const, arch: 'arm64' }
+
+    expect(await isLanguageServerInstalled('typescript', baseDir, platform)).toBe(false)
+    await markInstalled(artifact.name, artifact.version)
+    expect(await isLanguageServerInstalled('typescript', baseDir, platform)).toBe(true)
+    expect(await isLanguageServerInstalled('csharp', baseDir, platform)).toBe(false)
+    expect(
+      await isLanguageServerInstalled('typescript', baseDir, { platform: 'aix', arch: 'x' })
+    ).toBe(false)
   })
 })

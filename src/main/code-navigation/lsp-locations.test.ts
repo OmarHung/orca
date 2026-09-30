@@ -1,19 +1,28 @@
 import { pathToFileURL } from 'node:url'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { lspResultToLocations } from './lsp-locations'
+import { filePathFromUri, lspResultToLocations } from './lsp-locations'
 
 const filePath = join(process.cwd(), 'src', 'lib', 'greeter.ts')
 const fileUri = pathToFileURL(filePath).href
+const metadataUri = 'csharp:/repo/App/App.csproj/decompiled/System.Console.cs'
 const range = { start: { line: 4, character: 2 }, end: { line: 4, character: 7 } }
 
 describe('lspResultToLocations', () => {
   it('accepts a single Location', () => {
-    expect(lspResultToLocations({ uri: fileUri, range })).toEqual([{ path: filePath, range }])
+    expect(lspResultToLocations({ uri: fileUri, range })).toEqual([{ uri: fileUri, range }])
   })
 
-  it('accepts a Location array', () => {
-    expect(lspResultToLocations([{ uri: fileUri, range }])).toEqual([{ path: filePath, range }])
+  it('accepts a Location array and keeps every scheme', () => {
+    expect(
+      lspResultToLocations([
+        { uri: fileUri, range },
+        { uri: metadataUri, range }
+      ])
+    ).toEqual([
+      { uri: fileUri, range },
+      { uri: metadataUri, range }
+    ])
   })
 
   it('uses the target selection range of a LocationLink', () => {
@@ -22,21 +31,25 @@ describe('lspResultToLocations', () => {
       lspResultToLocations([
         { targetUri: fileUri, targetRange: wholeDeclaration, targetSelectionRange: range }
       ])
-    ).toEqual([{ path: filePath, range }])
+    ).toEqual([{ uri: fileUri, range }])
   })
 
-  it('returns nothing for null', () => {
+  it('returns nothing for null and skips malformed entries', () => {
     expect(lspResultToLocations(null)).toEqual([])
-  })
-
-  it('drops non-file URIs and malformed entries', () => {
     expect(
       lspResultToLocations([
-        { uri: 'csharp:/metadata/projects/App/System.Console.cs', range },
         { uri: fileUri, range: { start: { line: 1 } } },
         'nonsense',
+        { range },
         { uri: fileUri, range }
       ])
-    ).toEqual([{ path: filePath, range }])
+    ).toEqual([{ uri: fileUri, range }])
+  })
+})
+
+describe('filePathFromUri', () => {
+  it('maps file URIs to paths and rejects other schemes', () => {
+    expect(filePathFromUri(fileUri)).toBe(filePath)
+    expect(filePathFromUri(metadataUri)).toBeNull()
   })
 })
