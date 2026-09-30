@@ -29,6 +29,8 @@ export type PersistedOpenFile = {
   /** Why: a read-only tab (AI Vault View Log) must survive restart still
    *  read-only; persisted only when true so old sessions stay writable. */
   readOnly?: boolean
+  /** Code-navigation tab kept in the workspace that opened it; persisted only when true. */
+  staysInOpeningWorkspace?: boolean
   /** Opt-in streaming append for a read-only local log tab. */
   liveTail?: boolean
 }

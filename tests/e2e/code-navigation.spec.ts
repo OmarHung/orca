@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, realpathSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
 import { test, expect } from './helpers/orca-app'
@@ -87,6 +87,7 @@ test.describe('code navigation through language servers', () => {
   test.skip(!RUN, 'set ORCA_E2E_CODE_NAVIGATION=1 (downloads the language servers)')
 
   test('TypeScript: F12, Cmd/Ctrl+click and Cmd/Ctrl+B open the definition; Shift+F12 peeks references; hover resolves imports; Back/Forward retrace jumps', async ({
+    electronApp,
     orcaPage,
     testRepoPath,
     registerPostElectronShutdownCleanup
@@ -103,7 +104,7 @@ test.describe('code navigation through language servers', () => {
     )
     writeFileSync(
       join(root, 'app.ts'),
-      "import { greet } from './lib/greeter'\n\ngreet('world')\ngreet('again')\n"
+      "import { greet } from './lib/greeter'\n\ngreet('world')\ngreet('again')\nconsole.log('done')\n"
     )
 
     await waitForSessionReady(orcaPage)
@@ -177,6 +178,49 @@ test.describe('code navigation through language servers', () => {
     await expect
       .poll(() => activeEditor(orcaPage), { timeout: 30_000 })
       .toEqual({ file: 'greeter.ts', line: 1, column: 17 })
+
+    // A project containing Orca's own server files (like a project at the home folder) must not
+    // capture a jump into them: the tab stays in this project and Back still returns.
+    // Why realpath: the server reports resolved paths (macOS /var → /private/var).
+    const userData = realpathSync(await electronApp.evaluate(({ app }) => app.getPath('userData')))
+    await orcaPage.evaluate(async (folderPath) => {
+      const state = window.__store!.getState()
+      const group = await window.api.projectGroups.create({
+        name: 'Server files',
+        parentPath: folderPath,
+        createdFrom: 'folder-scan'
+      })
+      await state.fetchProjectGroups()
+      if (!group) {
+        throw new Error('Could not create project group')
+      }
+      const workspace = await state.createFolderWorkspace({
+        projectGroupId: group.id,
+        name: 'server-files',
+        folderPath
+      })
+      if (!workspace) {
+        throw new Error('Could not create folder workspace')
+      }
+    }, userData)
+    await activateGoldenWorktree(orcaPage, testRepoPath, root)
+    const activeWorkspace = () =>
+      orcaPage.evaluate(() => window.__store?.getState().activeWorktreeId)
+    const projectWorkspace = await activeWorkspace()
+    await openEditorFile(orcaPage, root, 'app.ts', 'typescript')
+    await placeCursorOnLine(orcaPage, "console.log('done')")
+    await orcaPage.keyboard.press('F12')
+    await expect
+      .poll(async () => (await activeEditor(orcaPage)).file, { timeout: 30_000 })
+      .toBe('lib.dom.d.ts')
+    await expect(
+      orcaPage.locator('.monaco-editor .view-line', { hasText: 'declare var console' })
+    ).toBeVisible({ timeout: 30_000 })
+    expect(await activeWorkspace()).toBe(projectWorkspace)
+    await orcaPage.keyboard.press(BACK)
+    await expect
+      .poll(() => activeEditor(orcaPage), { timeout: 30_000 })
+      .toEqual({ file: 'app.ts', line: 5, column: 1 })
   })
 
   test('C#: F12 crosses projects and into decompiled code; Cmd/Ctrl+F12, Cmd/Ctrl+Alt+B and Cmd/Ctrl+Alt+click find the implementation; hover works', async ({

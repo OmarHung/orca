@@ -130,7 +130,11 @@ export function useEditorPanelFileContentLoader({
                 ? toRuntimeExecutionHostId(runtimeEnvironmentId)
                 : LOCAL_EXECUTION_HOST_ID
             const route = findWorkspaceFileRoute(currentState, executionHostId, filePath)
-            if (route && route.worktreeId !== worktreeId) {
+            if (
+              route &&
+              route.worktreeId !== worktreeId &&
+              restoredOpenFile.staysInOpeningWorkspace !== true
+            ) {
               const migration = await migrateRestoredEditorFileOwner(
                 id,
                 route,
