@@ -19298,6 +19298,8 @@
       "hideProject": "隐藏此项目",
       "hidden": "已隐藏（{{value0}}）",
       "hiddenHint": "点击即可重新显示",
+      "editConfiguration": "编辑 '{{value0}}'…",
+      "newPublishToFolder": "新增 .NET 发布到文件夹…",
       "rootFolder": "工作区根目录",
       "showAll": "全部显示",
       "kind": {

@@ -19366,6 +19366,8 @@
       "hideProject": "Hide This Project",
       "hidden": "Hidden ({{value0}})",
       "hiddenHint": "Click to show again",
+      "editConfiguration": "Edit '{{value0}}'…",
+      "newPublishToFolder": "New Publish to Folder…",
       "rootFolder": "Workspace root",
       "showAll": "Show All",
       "kind": {

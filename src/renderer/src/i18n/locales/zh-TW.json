@@ -18769,6 +18769,8 @@
       "hideProject": "隱藏此專案",
       "hidden": "已隱藏（{{value0}}）",
       "hiddenHint": "點選即可重新顯示",
+      "editConfiguration": "編輯 '{{value0}}'…",
+      "newPublishToFolder": "新增 .NET 釋出到資料夾…",
       "rootFolder": "工作區根目錄",
       "showAll": "全部顯示",
       "kind": {
