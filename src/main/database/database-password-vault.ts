@@ -62,14 +62,17 @@ export class DatabasePasswordVault {
 
   /**
    * Before a setting change is saved. `password`: a new one, `null` to clear it, or `undefined`
-   * to keep the one already kept.
+   * to keep the one already kept. The value puts the passwords back if saving then fails.
    */
   release(
     connectionId: string,
     storage: DatabasePasswordStorage,
     password: string | null | undefined
-  ): DatabaseResult<null> {
-    return toResult(this.passwords.release(connectionId, storage, password))
+  ): DatabaseResult<() => string | null> {
+    const released = this.passwords.release(connectionId, storage, password)
+    return released.ok
+      ? { ok: true, value: released.undo }
+      : { ok: false, error: { message: released.problem, code: 'unavailable' } }
   }
 
   /** After a setting change is saved. */

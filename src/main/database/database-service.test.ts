@@ -366,6 +366,32 @@ describe('DatabaseService', () => {
     expect(service.listConnections()[0]).toMatchObject({ passwordStorage: 'never' })
   })
 
+  it.each(['session', 'never'] as const)(
+    'keeps the saved password when switching to %s fails to save the connection',
+    async (passwordStorage) => {
+      const service = createService()
+      const saved = await service.saveConnection({ draft, password: 'right' })
+      if (!saved.ok) {
+        throw new Error(saved.error.message)
+      }
+      const save = vi
+        .spyOn(DatabaseConnectionStore.prototype, 'save')
+        .mockImplementationOnce(() => {
+          throw new Error('disk full')
+        })
+
+      await expect(
+        service.saveConnection({ id: saved.value.id, draft: { ...draft, passwordStorage } })
+      ).rejects.toThrow('disk full')
+      save.mockRestore()
+
+      const restarted = createService()
+      expect(restarted.listConnections()[0]).toMatchObject({ passwordStorage: 'forever' })
+      expect((await restarted.connect(saved.value.id)).ok).toBe(true)
+      expect(connectPasswords).toEqual(['right'])
+    }
+  )
+
   it('round-trips console text', async () => {
     const service = createService()
     const ref = { connectionId: 'conn-0001', consoleId: 'console-01' }
