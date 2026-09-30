@@ -39,11 +39,12 @@ export class SshVpnStore {
     return this.state().profiles.find((profile) => profile.id === id) ?? null
   }
 
+  /** Replaces the profile with `id`, or adds one under `id` (a new id when none is given). */
   saveProfile(id: string | undefined, draft: SshVpnProfileDraft): SshVpnProfile {
     const state = this.state()
-    const existing = id ? state.profiles.find((profile) => profile.id === id) : undefined
-    const saved: SshVpnProfile = { ...draft, id: existing?.id ?? randomUUID() }
-    const profiles = existing
+    const saved: SshVpnProfile = { ...draft, id: id ?? randomUUID() }
+    const exists = state.profiles.some((profile) => profile.id === saved.id)
+    const profiles = exists
       ? state.profiles.map((profile) => (profile.id === saved.id ? saved : profile))
       : [...state.profiles, saved]
     this.write({ ...state, profiles })
@@ -53,12 +54,16 @@ export class SshVpnStore {
   /** Also unassigns every host that used the profile. */
   deleteProfile(id: string): void {
     const state = this.state()
-    this.write({
-      profiles: state.profiles.filter((profile) => profile.id !== id),
-      assignments: Object.fromEntries(
-        Object.entries(state.assignments).filter(([, profileId]) => profileId !== id)
-      )
-    })
+    const profiles = state.profiles.filter((profile) => profile.id !== id)
+    const assignments = Object.entries(state.assignments).filter(
+      ([, profileId]) => profileId !== id
+    )
+    if (
+      profiles.length !== state.profiles.length ||
+      assignments.length !== Object.keys(state.assignments).length
+    ) {
+      this.write({ profiles, assignments: Object.fromEntries(assignments) })
+    }
   }
 
   /**
@@ -153,6 +158,8 @@ export class SshVpnStore {
 
   private write(state: StoreState): void {
     const file: StoreFile = { version: 1, ...state }
+    // Why first: a write can fail after it replaced the file, so the next read must go to disk.
+    this.cache = null
     writeDurableSecureJsonFile(this.filePath, file)
     this.cache = { state, mtimeMs: this.mtimeMs() }
   }
