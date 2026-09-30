@@ -96,7 +96,7 @@ describe('CodeNavigationService', () => {
   it('reports a download before starting when the server is not installed yet', async () => {
     const { service } = createService({
       sessions: [fakeSession()],
-      prepareLaunch: async (_kind, onDownloading) => {
+      prepareLaunch: async (_kind, _root, onDownloading) => {
         onDownloading()
         return { program: 'x', args: [], env: {} }
       }
@@ -264,5 +264,39 @@ describe('CodeNavigationService', () => {
 
     expect(result.ok).toBe(false)
     expect(created).toHaveLength(0)
+  })
+
+  it('warms an installed server by hovering the top of the file', async () => {
+    const session = fakeSession()
+    const { service, created } = createService({ sessions: [session] })
+    const { feature: _feature, position: _position, ...warmRequest } = query()
+
+    await service.warm(warmRequest)
+
+    expect(created).toHaveLength(1)
+    expect(session.hover).toHaveBeenCalledWith(warmRequest.document, { line: 0, character: 0 })
+  })
+
+  it('reports loading to a query that joins a server a warm-up is still starting', async () => {
+    let finishStart: () => void = () => {}
+    const session = fakeSession()
+    session.whenReady.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishStart = resolve
+        })
+    )
+    const { service } = createService({ sessions: [session] })
+    const { feature: _feature, position: _position, ...warmRequest } = query()
+    const phases: string[] = []
+
+    const warming = service.warm(warmRequest)
+    await new Promise((resolve) => setImmediate(resolve))
+    const jumping = service.query(query(), (event) => phases.push(event.phase))
+    expect(phases).toEqual(['starting'])
+    finishStart()
+    await Promise.all([warming, jumping])
+
+    expect(phases).toEqual(['starting', 'ready'])
   })
 })
