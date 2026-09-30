@@ -51,14 +51,19 @@ let root = ''
 let service: CodeNavigationService
 
 /** Where the `|` marks the cursor in `marked`, as a definition query on the file. */
-function definitionAt(relativePath: string, text: string, marker: string): CodeNavigationQuery {
+function definitionAt(
+  relativePath: string,
+  text: string,
+  marker: string,
+  feature: CodeNavigationQuery['feature'] = 'definition'
+): CodeNavigationQuery {
   const offset = text.indexOf(marker.replace('|', ''))
   const cursor = offset + marker.indexOf('|')
   const before = text.slice(0, cursor).split('\n')
   return {
     kind: 'csharp',
     root,
-    feature: 'definition',
+    feature,
     document: {
       path: join(root, relativePath),
       languageId: relativePath.endsWith('.cshtml') ? 'razor' : 'csharp',
@@ -104,7 +109,7 @@ describe.skipIf(!csharpLsDll)('ASP.NET MVC navigation against csharp-ls', () => 
       prepareLaunch: async () => ({
         program: dotnet!,
         args: [csharpLsDll!, '--features', 'razor-support'],
-        env: { ...process.env, DOTNET_ROLL_FORWARD: 'Major' },
+        env: { ...process.env, DOTNET_ROLL_FORWARD: 'Major', UseRazorSourceGenerator: 'true' },
         configuration: { csharp: { useMetadataUris: true } }
       }),
       isInstalled: async () => true
@@ -132,6 +137,12 @@ describe.skipIf(!csharpLsDll)('ASP.NET MVC navigation against csharp-ls', () => 
     expect(await targetOf(definitionAt(view, ORDERS_INDEX, '@Model.Request|Id'))).toEqual([
       { file: 'Models/ErrorViewModel.cs', line: expect.any(Number) }
     ])
+    const usages = await targetOf(
+      definitionAt(view, ORDERS_INDEX, '@Model.Request|Id', 'references')
+    )
+    expect(usages.map((usage) => usage.file)).toEqual(
+      expect.arrayContaining(['Models/ErrorViewModel.cs', 'Views/Shared/Error.cshtml'])
+    )
   }, 180_000)
 
   it('follows View() and RedirectToAction in a controller', async () => {
