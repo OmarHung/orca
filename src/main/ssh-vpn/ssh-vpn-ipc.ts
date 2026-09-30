@@ -17,6 +17,7 @@ import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
 import { readOvpnProfileFile } from './ovpn-profile-files'
 import { prepareOvpnProfile } from './ovpn-profile-preparation'
 import { SshVpnStartDeclinedError } from './ssh-vpn-manager-types'
+import { saveProfileWithPassword } from './ssh-vpn-profile-save'
 import { createSshVpnRuntime, type SshVpnRuntime } from './ssh-vpn-runtime'
 
 const INVALID_REQUEST = { ok: false, error: { message: 'Invalid VPN request' } } as const
@@ -96,13 +97,7 @@ function registerProfileHandlers(runtime: SshVpnRuntime): void {
         )
       }
       const previous = id ? store.getProfile(id) : null
-      const saved = store.saveProfile(id, draft)
-      const storage = saved.passwordStorage ?? 'session'
-      // Why: a changed save setting moves the password already kept to where it now belongs.
-      const passwordToKeep = password ?? vault.get(saved.id)
-      if (passwordToKeep) {
-        vault.remember(saved.id, storage, passwordToKeep)
-      }
+      const saved = saveProfileWithPassword(runtime, previous, draft, password ?? null)
       if (previous && previous.ovpnPath !== saved.ovpnPath) {
         await manager.stop(saved.id)
       }
