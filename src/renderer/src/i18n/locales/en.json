@@ -21148,6 +21148,7 @@
       "hideProject": "Hide This Project",
       "hidden": "Hidden ({{value0}})",
       "hiddenHint": "Click to show again",
+      "rootFolder": "Workspace root",
       "showAll": "Show All",
       "kind": {
         "run": "Run",
