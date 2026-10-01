@@ -284,6 +284,17 @@ describe('SftpWorkbench', () => {
     expect(row('/srv/big.bin')?.dataset.selected).toBeUndefined()
   })
 
+  it('sums the selected files in the pane footer', async () => {
+    const summary = (): string | null | undefined =>
+      remotePane().querySelector('[data-sftp-pane-summary]')?.textContent
+    expect(summary()).toBe('Items: 3')
+
+    await click(row('/srv/log.txt'))
+    await click(row('/srv/big.bin'), { metaKey: true, ctrlKey: true })
+
+    expect(summary()).toBe('Selected: 2 of 3 · 510 B')
+  })
+
   it('hides a column in both panes when it is switched off', async () => {
     expect(remotePane().querySelector('[data-sftp-column="owner"]')).not.toBeNull()
 
