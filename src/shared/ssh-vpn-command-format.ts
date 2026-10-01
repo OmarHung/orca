@@ -12,8 +12,8 @@ export function isShellSafeSshHost(host: string): boolean {
 /** The container user every per-connection `nc` runs as; its firewall only allows the VPN. */
 export const SSH_VPN_TUNNEL_USER = 'tunnel'
 
-// Matches ssh2's CONNECT_TIMEOUT_MS so the tunnel never outlives the attempt it serves.
-const TUNNEL_CONNECT_TIMEOUT_SECONDS = '30'
+// Matches ssh2's CONNECT_TIMEOUT_MS so a probe never outlives the attempt it serves.
+const PROBE_CONNECT_TIMEOUT_SECONDS = '30'
 
 export function quotePosixArg(value: string): string {
   return POSIX_SAFE.test(value) ? value : `'${value.replaceAll("'", "'\\''")}'`
@@ -26,20 +26,9 @@ export function formatPosixCommand(argv: readonly string[]): string {
 
 /** The per-connection pipe: `nc` inside the container, so the TCP connection leaves through tun0. */
 export function sshVpnTunnelArgs(containerName: string, host: string, port: string): string[] {
-  // Why -w: killing the `docker exec` client does not kill `nc`, so a connect to a filtered port
-  // would hang in the container and count as a live connection forever. -w bounds only the connect.
-  return [
-    'exec',
-    '-i',
-    '--user',
-    SSH_VPN_TUNNEL_USER,
-    containerName,
-    'nc',
-    '-w',
-    TUNNEL_CONNECT_TIMEOUT_SECONDS,
-    host,
-    port
-  ]
+  // Why no -w: BusyBox nc exits after two -w periods without traffic either way, which cut every
+  // idle session. Without it, a connect to a filtered port ends at the kernel's SYN timeout.
+  return ['exec', '-i', '--user', SSH_VPN_TUNNEL_USER, containerName, 'nc', host, port]
 }
 
 /** Checks that the VPN reaches host:port (`nc -z`: connect, send nothing, exit 0 on success). */
@@ -56,7 +45,7 @@ export function sshVpnReachabilityArgs(
     'nc',
     '-z',
     '-w',
-    TUNNEL_CONNECT_TIMEOUT_SECONDS,
+    PROBE_CONNECT_TIMEOUT_SECONDS,
     host,
     port
   ]
