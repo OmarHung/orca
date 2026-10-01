@@ -44,7 +44,10 @@ const HoverSchema = z.object({
   position: PositionSchema
 })
 
-const QuerySchema = HoverSchema.extend({ feature: z.enum(CODE_NAVIGATION_FEATURES) })
+const QuerySchema = HoverSchema.extend({
+  feature: z.enum(CODE_NAVIGATION_FEATURES),
+  userInitiated: z.boolean()
+})
 
 const CloseDocumentSchema = z.object({
   kind: KindSchema,

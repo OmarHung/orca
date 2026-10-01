@@ -1,5 +1,9 @@
 import type * as Monaco from 'monaco-editor'
 import { ReferenceWidget as MonacoReferenceWidget } from 'monaco-editor/esm/vs/editor/contrib/gotoSymbol/browser/peek/referencesWidget.js'
+import {
+  markMonacoPeekReferencesClosed,
+  markMonacoPeekReferencesOpen
+} from './monaco-peek-references-lifecycle'
 
 type PeekPreviewEditor = Pick<Monaco.editor.ICodeEditor, 'updateOptions'>
 
@@ -13,6 +17,7 @@ type ReferenceWidgetInstance = {
   _preview?: PeekPreviewEditor
   _fillBody?: (containerElement: HTMLElement) => void
   _revealReference?: (...args: unknown[]) => Promise<unknown>
+  dispose?: () => void
 }
 
 type ReferenceWidgetConstructor = {
@@ -37,9 +42,14 @@ export function installMonacoPeekReferencesPreviewOptions(
 
   const originalFillBody = prototype._fillBody
   const originalRevealReference = prototype._revealReference
+  const originalDispose = prototype.dispose
   // Why: these are private Monaco members with no stability guarantee; if an
   // upgrade removes either, skip patching so Peek keeps Monaco's defaults.
-  if (typeof originalFillBody !== 'function' || typeof originalRevealReference !== 'function') {
+  if (
+    typeof originalFillBody !== 'function' ||
+    typeof originalRevealReference !== 'function' ||
+    typeof originalDispose !== 'function'
+  ) {
     return
   }
 
@@ -48,6 +58,7 @@ export function installMonacoPeekReferencesPreviewOptions(
     containerElement: HTMLElement
   ): void {
     originalFillBody.call(this, containerElement)
+    markMonacoPeekReferencesOpen(this)
     applyPeekReferencesPreviewOptions(this._preview)
   }
 
@@ -60,6 +71,14 @@ export function installMonacoPeekReferencesPreviewOptions(
       return await originalRevealReference.apply(this, args)
     } finally {
       applyPeekReferencesPreviewOptions(this._preview)
+    }
+  }
+
+  prototype.dispose = function disposeWithLifecycle(this: ReferenceWidgetInstance): void {
+    try {
+      originalDispose.call(this)
+    } finally {
+      markMonacoPeekReferencesClosed(this)
     }
   }
 

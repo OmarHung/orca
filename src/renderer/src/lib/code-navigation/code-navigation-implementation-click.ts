@@ -30,7 +30,8 @@ export function isImplementationClick(
  */
 export function installImplementationClick(
   editor: ClickableEditor,
-  isEditorTab: () => boolean
+  isEditorTab: () => boolean,
+  onNavigate: () => void
 ): () => void {
   // Why the container: it exists from creation on, while the view's node is rebuilt per model.
   const node = editor.getContainerDomNode()
@@ -54,6 +55,7 @@ export function installImplementationClick(
     swallowMouseUntil = performance.now() + TRAILING_MOUSE_EVENT_MS
     editor.focus()
     editor.setPosition(position)
+    onNavigate()
     editor.trigger('mouse', 'editor.action.goToImplementation', null)
   }
   const onPointerUp = (event: PointerEvent): void => {
