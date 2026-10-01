@@ -62,6 +62,11 @@ vi.mock('../../store', () => {
   return { useAppStore }
 })
 
+// Fork: the projection hides Run panel terminals through a real zustand hook.
+vi.mock('../run/use-run-panel-sessions', () => ({
+  useRunPanelTabIds: () => new Set<string>()
+}))
+
 vi.mock('../../store/selectors', () => ({
   useAllWorktrees: () => [{ id: 'wt-1', path: '/worktree' }]
 }))

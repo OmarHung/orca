@@ -8,7 +8,7 @@ import {
   createGoldenWorktree
 } from './helpers/golden-source-control'
 import { waitForSessionReady } from './helpers/store'
-import { getTerminalContent } from './helpers/terminal-pane-identity'
+import { getRunPanelTerminalContent } from './helpers/run-panel'
 
 const LAUNCH_SETTINGS = `{
   // comments are allowed, as Rider and Visual Studio write them
@@ -109,7 +109,7 @@ test('offers Build/Run/Publish for .NET and Node projects in the file tree and r
   const controls = orcaPage.getByTestId('run-configurations-session')
   await expect(controls).toHaveAttribute('data-run-status', 'succeeded', { timeout: 30_000 })
   await expect
-    .poll(async () => getTerminalContent(orcaPage, 20_000), { timeout: 20_000 })
+    .poll(async () => getRunPanelTerminalContent(orcaPage, 20_000), { timeout: 20_000 })
     .toContain(`built-42:${realpathSync(web)}`)
   await expect(orcaPage.getByTestId('run-configurations-trigger')).toContainText('web: build')
 

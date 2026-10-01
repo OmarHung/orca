@@ -18823,7 +18823,13 @@
       "search": "篩選 run",
       "noMatch": "沒有符合的 run"
     },
-    "unsafeShellPath": "此檔案的路徑包含無法安全傳給 shell 的字元，例如 \" $ ` % 或 !。"
+    "unsafeShellPath": "此檔案的路徑包含無法安全傳給 shell 的字元，例如 \" $ ` % 或 !。",
+    "toolWindow": "執行",
+    "panel": {
+      "empty": "這裡還沒有執行過任何內容。請從右上角的執行按鈕啟動一個設定。",
+      "runs": "執行",
+      "close": "關閉 '{{value0}}'"
+    }
   },
   "python": {
     "interpreter": {

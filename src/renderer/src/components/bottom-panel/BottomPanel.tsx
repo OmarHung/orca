@@ -18,6 +18,16 @@ const GitLogView = lazy(() =>
     default: module.GitLogView
   }))
 )
+const RunPanel = lazy(() =>
+  import('../run/RunPanel').then((module) => ({
+    default: module.RunPanel
+  }))
+)
+const RunPanelTabs = lazy(() =>
+  import('../run/RunPanelTabs').then((module) => ({
+    default: module.RunPanelTabs
+  }))
+)
 const DebugPanel = lazy(() =>
   import('../debug/DebugPanel').then((module) => ({
     default: module.DebugPanel
@@ -97,8 +107,14 @@ export function BottomPanel(): React.JSX.Element {
             tab="git-log"
             label={translate('bottomPanel.gitLog.toggleLabel', 'Git Log')}
           />
+          <BottomPanelTabButton tab="run" label={translate('run.toolWindow', 'Run')} />
           <BottomPanelTabButton tab="debug" label={translate('debug.toolWindow', 'Debug')} />
         </div>
+        {activeTab === 'run' ? (
+          <Suspense fallback={null}>
+            <RunPanelTabs />
+          </Suspense>
+        ) : null}
         <div className="flex-1" />
         <Button
           variant="ghost"
@@ -112,7 +128,13 @@ export function BottomPanel(): React.JSX.Element {
       </div>
       <div className="min-h-0 flex-1">
         <Suspense fallback={null}>
-          {activeTab === 'debug' ? <DebugPanel /> : <GitLogView />}
+          {activeTab === 'debug' ? (
+            <DebugPanel />
+          ) : activeTab === 'run' ? (
+            <RunPanel />
+          ) : (
+            <GitLogView />
+          )}
         </Suspense>
       </div>
     </div>

@@ -10,6 +10,11 @@ import {
 import { shouldMountBackgroundWorktreeTab } from '../terminal/background-terminal-worktree-mount'
 import { useNativeChatToggleShortcut } from '../native-chat/use-native-chat-toggle-shortcut'
 import { RetainedPaneHost } from '../tab-group/RetainedPaneHost'
+import {
+  runPanelHostFor,
+  runPanelOverlayAssignment,
+  useRunPanelTerminalPlacement
+} from '../run/run-panel-terminal-placement'
 import { TerminalOverlaySlot } from './TerminalOverlaySlot'
 import { captureWorkspaceEmptiedReaction } from '../tab-group/workspace-emptied-reaction'
 import { TerminalRestoringPlaceholder } from './TerminalRestoringPlaceholder'
@@ -64,6 +69,8 @@ const TerminalPaneOverlayLayer = memo(function TerminalPaneOverlayLayer({
   )
   const focusGroup = useAppStore((state) => state.focusGroup)
   const consumeSuppressedPtyExit = useAppStore((state) => state.consumeSuppressedPtyExit)
+  // Fork: run configurations' terminals render in the Run panel instead of their tab group.
+  const runPanel = useRunPanelTerminalPlacement(worktreeId)
 
   useNativeChatToggleShortcut(worktreeId, isWorktreeActive && ownsNativeChatToggleShortcut)
 
@@ -91,14 +98,19 @@ const TerminalPaneOverlayLayer = memo(function TerminalPaneOverlayLayer({
       if (tab.contentType !== 'terminal') {
         continue
       }
-      entries.set(tab.entityId, {
-        unifiedTabId: tab.id,
-        groupId: tab.groupId,
-        isActiveInGroup: groupActiveTabById[tab.groupId] === tab.id
-      })
+      entries.set(
+        tab.entityId,
+        runPanel.tabIds.has(tab.entityId)
+          ? runPanelOverlayAssignment(runPanel, tab.id, tab.entityId)
+          : {
+              unifiedTabId: tab.id,
+              groupId: tab.groupId,
+              isActiveInGroup: groupActiveTabById[tab.groupId] === tab.id
+            }
+      )
     }
     return entries
-  }, [groupActiveTabById, unifiedTabs])
+  }, [groupActiveTabById, runPanel, unifiedTabs])
 
   const activeTerminalTabId = useMemo(() => {
     if (!activeGroupId) {
@@ -134,10 +146,12 @@ const TerminalPaneOverlayLayer = memo(function TerminalPaneOverlayLayer({
       {terminalTabs.map((terminalTab) => {
         const assignment = assignments.get(terminalTab.id)
         const isVisible = Boolean(isWorktreeActive && assignment?.isActiveInGroup)
+        const runPanelHost = runPanelHostFor(runPanel, terminalTab.id)
         if (!shouldMountBackgroundWorktreeTab(backgroundMountTabIds, terminalTab.id)) {
           // Why only the startup hold lands here visible: reveal admits every other visible
           // deferred tab in the same render pass.
-          return isVisible ? (
+          // Fork: a Run panel terminal has no tab-group anchor for the placeholder to sit on.
+          return isVisible && !runPanelHost ? (
             <RetainedPaneHost
               key={terminalTab.id}
               groupId={assignment?.groupId}
@@ -148,7 +162,9 @@ const TerminalPaneOverlayLayer = memo(function TerminalPaneOverlayLayer({
             </RetainedPaneHost>
           ) : null
         }
-        const isActive = Boolean(isVisible && assignment?.groupId === activeGroupId)
+        const isActive = Boolean(
+          isVisible && (runPanelHost ? runPanel.focused : assignment?.groupId === activeGroupId)
+        )
         const activityTerminalPortal = findActivityTerminalPortal(activityTerminalPortals, {
           worktreeId,
           tabId: terminalTab.id
@@ -169,6 +185,7 @@ const TerminalPaneOverlayLayer = memo(function TerminalPaneOverlayLayer({
             isVisible={isVisible}
             isActive={isActive}
             activityTerminalPortal={activityTerminalPortal}
+            runPanelHost={runPanelHost}
             onFocusOwningGroup={focusOwningGroup}
             consumeSuppressedPtyExit={consumeSuppressedPtyExit}
             captureEmptiedReaction={captureEmptiedReaction}
