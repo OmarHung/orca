@@ -13,6 +13,7 @@ import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import { basename } from '@/lib/path'
+import { cn } from '@/lib/utils'
 import {
   debugContinue,
   debugPause,
@@ -30,6 +31,7 @@ type ToolbarAction = {
   label: string
   enabled: boolean
   onClick: () => void
+  isStop?: boolean
 }
 
 function describeSession(session: DebugSessionView | null): string {
@@ -65,7 +67,7 @@ function ToolbarButton({ action }: { action: ToolbarAction }): React.JSX.Element
       disabled={!action.enabled}
       onClick={action.onClick}
     >
-      <Icon />
+      <Icon className={cn(action.isStop && action.enabled && 'text-destructive')} />
     </Button>
   )
 }
@@ -112,7 +114,8 @@ export function DebugToolbar(): React.JSX.Element {
       icon: Square,
       label: translate('debug.action.stop', 'Stop'),
       enabled: live,
-      onClick: () => void stopDebugSession()
+      onClick: () => void stopDebugSession(),
+      isStop: true
     }
   ]
 

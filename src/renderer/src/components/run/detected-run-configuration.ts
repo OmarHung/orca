@@ -31,6 +31,7 @@ export function toDetectedRunTarget(
     groupId,
     commandKey,
     cwd: configuration.projectDir,
+    kind: configuration.kind,
     ...(configuration.debug ? { debug: configuration.debug } : {}),
     ...(configuration.debug && configuration.debugOptions
       ? { debugOptions: configuration.debugOptions }
