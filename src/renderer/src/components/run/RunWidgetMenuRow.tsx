@@ -1,5 +1,5 @@
 import React from 'react'
-import { Bot, Bug, Clock, EyeOff, Play, RotateCcw, Settings2, Zap } from 'lucide-react'
+import { Bot, Bug, Clock, EyeOff, FileCode, Play, RotateCcw, Settings2, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -49,6 +49,8 @@ function itemIcon(item: RunWidgetItem): React.JSX.Element {
       const Icon = RUN_KIND_ICONS[item.configuration.kind]
       return <Icon />
     }
+    case 'current-file':
+      return <FileCode />
   }
 }
 
@@ -218,6 +220,7 @@ export function RunWidgetMenuRow({
       data-current={current}
       data-run-active={live}
       data-testid="run-widget-item"
+      data-run-item-kind={item.kind}
       onSelect={() => onSelect(item)}
     >
       <span className="relative flex shrink-0">
