@@ -7,8 +7,8 @@ import {
   type HoverExpression
 } from './debug-hover-expression'
 import type { EvaluateResult } from './debug-protocol-readers'
+import type { HoverAnchor } from './debug-value-hover-placement'
 
-const WIDGET_ID = 'orca.debug.valueHover'
 /** How long the pointer rests on a name before it is evaluated (Monaco's own hover delay). */
 const SHOW_DELAY_MS = 300
 /** Time to move the pointer from the name into the popup before it closes. */
@@ -21,7 +21,7 @@ const MODIFIER_KEYS = new Set([
 ])
 
 type HoverTarget = HoverExpression & { lineNumber: number }
-export type DebugHoverValue = HoverTarget & { result: EvaluateResult }
+export type DebugHoverValue = HoverTarget & { result: EvaluateResult; anchor: HoverAnchor }
 
 const keyOf = (target: HoverTarget): string =>
   `${target.lineNumber}:${target.startColumn}:${target.expression}`
@@ -46,8 +46,8 @@ function targetAt(
 
 /**
  * JetBrains-style value popup: resting the pointer on a name (or inside a selection) while
- * paused evaluates it and shows an expandable value under it. `domNode` is the popup's
- * container and `onChange` renders a value into it. Attach only while paused in this file.
+ * paused evaluates it; `onChange` renders the value (or null) as a popup at its anchor.
+ * Attach only while paused in this file.
  */
 export class DebugValueHover implements IDisposable {
   private shown: DebugHoverValue | null = null
@@ -60,25 +60,12 @@ export class DebugValueHover implements IDisposable {
   private hideTimer: ReturnType<typeof setTimeout> | undefined
   /** The editor's own hover setting while this popup holds it off, else null. */
   private suppressedHoverEnabled: boolean | null = null
-  private readonly widget: editor.IContentWidget
-  private readonly resizeObserver: ResizeObserver
   private readonly listeners: IDisposable[]
 
   constructor(
     private readonly codeEditor: editor.IStandaloneCodeEditor,
-    domNode: HTMLElement,
     private readonly onChange: (value: DebugHoverValue | null) => void
   ) {
-    this.widget = {
-      allowEditorOverflow: true,
-      getId: () => WIDGET_ID,
-      getDomNode: () => domNode,
-      getPosition: () => this.widgetPosition()
-    }
-    codeEditor.addContentWidget(this.widget)
-    // Why: expanding a value grows the popup, and an above-the-line popup must move up for it.
-    this.resizeObserver = new ResizeObserver(() => codeEditor.layoutContentWidget(this.widget))
-    this.resizeObserver.observe(domNode)
     this.listeners = this.listen()
   }
 
@@ -98,8 +85,6 @@ export class DebugValueHover implements IDisposable {
   dispose(): void {
     this.hide()
     this.listeners.forEach((listener) => listener.dispose())
-    this.resizeObserver.disconnect()
-    this.codeEditor.removeContentWidget(this.widget)
   }
 
   private hide(): void {
@@ -114,17 +99,18 @@ export class DebugValueHover implements IDisposable {
     }
   }
 
-  private widgetPosition(): editor.IContentWidgetPosition | null {
-    if (!this.shown) {
+  /** The target's box in window coordinates; the popup lives outside the editor's DOM. */
+  private anchorOf(target: HoverTarget): HoverAnchor | null {
+    const visible = this.codeEditor.getScrolledVisiblePosition({
+      lineNumber: target.lineNumber,
+      column: target.startColumn
+    })
+    const box = this.codeEditor.getDomNode()?.getBoundingClientRect()
+    if (!visible || !box) {
       return null
     }
-    return {
-      position: { lineNumber: this.shown.lineNumber, column: this.shown.startColumn },
-      preference: [
-        monaco.editor.ContentWidgetPositionPreference.BELOW,
-        monaco.editor.ContentWidgetPositionPreference.ABOVE
-      ]
-    }
+    const top = box.top + visible.top
+    return { left: box.left + visible.left, top, bottom: top + visible.height }
   }
 
   private listen(): IDisposable[] {
@@ -132,11 +118,7 @@ export class DebugValueHover implements IDisposable {
     return [
       codeEditor.onMouseMove((event) => this.onMouseMove(event)),
       codeEditor.onMouseLeave(() => this.pointTo(null)),
-      codeEditor.onMouseDown((event) => {
-        if (!this.isPopupTarget(event)) {
-          this.hide()
-        }
-      }),
+      codeEditor.onMouseDown(() => this.hide()),
       codeEditor.onKeyDown((event) => {
         if (this.shown && !MODIFIER_KEYS.has(event.keyCode)) {
           this.hide()
@@ -147,22 +129,14 @@ export class DebugValueHover implements IDisposable {
           this.hide()
         }
       }),
+      // The anchor is a snapshot, so anything that moves the text closes the popup.
+      codeEditor.onDidLayoutChange(() => this.hide()),
       codeEditor.onDidChangeModelContent(() => this.hide()),
       codeEditor.onDidChangeModel(() => this.hide())
     ]
   }
 
-  private isPopupTarget(event: editor.IEditorMouseEvent): boolean {
-    return (
-      event.target.type === monaco.editor.MouseTargetType.CONTENT_WIDGET &&
-      event.target.detail === WIDGET_ID
-    )
-  }
-
   private onMouseMove(event: editor.IEditorMouseEvent): void {
-    if (this.isPopupTarget(event)) {
-      return
-    }
     const { target } = event
     const position = target.type === monaco.editor.MouseTargetType.CONTENT_TEXT && target.position
     // Nothing while a drag selects text; holding Alt shows the language hover, like VS Code.
@@ -196,9 +170,10 @@ export class DebugValueHover implements IDisposable {
   private async evaluate(target: HoverTarget, id: number): Promise<void> {
     try {
       const result = await evaluateExpression(target.expression, 'hover')
-      if (id === this.request) {
+      const anchor = this.anchorOf(target)
+      if (id === this.request && anchor) {
         clearTimeout(this.hideTimer)
-        this.setShown({ ...target, result })
+        this.setShown({ ...target, result, anchor })
       }
     } catch {
       // Not every name is a value (keywords, types, out-of-scope names): give it back to the
@@ -226,7 +201,6 @@ export class DebugValueHover implements IDisposable {
   private setShown(value: DebugHoverValue | null): void {
     this.shown = value
     this.onChange(value)
-    this.codeEditor.layoutContentWidget(this.widget)
   }
 
   // Why: the language hover (types, docs) would stack on the value popup; JetBrains shows one.
