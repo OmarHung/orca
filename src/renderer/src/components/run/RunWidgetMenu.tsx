@@ -24,7 +24,8 @@ function Section({
   rowState,
   rowActions
 }: RowProps & {
-  heading: string
+  /** Omitted for a lone row such as "Current File". */
+  heading?: string
   items: readonly RunWidgetItem[]
 }): React.JSX.Element | null {
   if (items.length === 0) {
@@ -32,7 +33,7 @@ function Section({
   }
   return (
     <>
-      <DropdownMenuLabel>{heading}</DropdownMenuLabel>
+      {heading ? <DropdownMenuLabel>{heading}</DropdownMenuLabel> : null}
       {items.map((item) => (
         <RunWidgetMenuRow
           key={item.key}
@@ -82,6 +83,7 @@ export function RunWidgetMenu({
   return (
     <DropdownMenuContent align="end" style={RUN_WIDGET_CONTENT_STYLE} className="min-w-60">
       <div className="scrollbar-sleek max-h-[60vh] overflow-y-auto">
+        <Section {...sectionProps} items={items.filter((item) => item.kind === 'current-file')} />
         <Section
           {...sectionProps}
           heading={translate('run.widget.recent', 'Recent')}

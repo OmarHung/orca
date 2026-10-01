@@ -32,6 +32,21 @@ async function openMenu(page: Page): Promise<void> {
   await expect(page.getByRole('menu')).toBeVisible()
 }
 
+async function openExplorer(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const state = window.__store?.getState()
+    state?.setRightSidebarTab('source-control')
+    state?.setRightSidebarOpen(true)
+  })
+  await page.getByRole('button', { name: 'Explorer' }).click()
+}
+
+function explorerRow(page: Page, name: string) {
+  return page
+    .locator('[data-orca-explorer-shell] [data-file-explorer-row]')
+    .filter({ has: page.locator('[data-file-explorer-row-name]').getByText(name, { exact: true }) })
+}
+
 async function addMember(page: Page, name: string): Promise<void> {
   await page.getByTestId('compound-add-member').click()
   await page.getByTestId('compound-run-picker').getByRole('button', { name, exact: true }).click()
@@ -81,6 +96,24 @@ test('builds a sequential compound from detected runs and starts members in orde
   await expect.poll(() => tabLabels(orcaPage), { timeout: 30_000 }).toContain('web: migrate')
   expect(await tabLabels(orcaPage)).not.toContain('web: dev')
   await expect.poll(() => tabLabels(orcaPage), { timeout: 30_000 }).toContain('web: dev')
+
+  // Saved into the compound, the detected run is that configuration now: running it from the file
+  // tree reuses its terminal instead of starting a second copy, and Recent does not list it again.
+  await openExplorer(orcaPage)
+  await explorerRow(orcaPage, 'web').click({ button: 'right' })
+  await orcaPage.getByRole('menuitem', { name: "Run 'web: dev'" }).click()
+  await expect(orcaPage.getByTestId('run-configurations-trigger').first()).toHaveText(/web: dev/)
+  await expect(orcaPage.getByTestId('run-configurations-session').first()).toHaveAttribute(
+    'data-run-status',
+    'succeeded',
+    { timeout: 30_000 }
+  )
+  expect((await tabLabels(orcaPage)).filter((label) => label === 'web: dev')).toHaveLength(1)
+  await openMenu(orcaPage)
+  await expect(orcaPage.getByTestId('run-widget-item').filter({ hasText: 'web: dev' })).toHaveCount(
+    1
+  )
+  await orcaPage.keyboard.press('Escape')
 
   // Edit Configurations shows the same members and lets a new compound pick detected runs.
   await openMenu(orcaPage)
