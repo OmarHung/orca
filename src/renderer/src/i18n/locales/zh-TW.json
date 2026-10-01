@@ -19613,6 +19613,7 @@
   "codeNavigation": {
     "downloading": "正在下載 {{language}} 語言伺服器…",
     "starting": "正在為程式碼跳轉載入 {{language}} 專案…",
-    "failed": "{{language}} 程式碼跳轉不可用：{{message}}"
+    "failed": "{{language}} 程式碼跳轉不可用：{{message}}",
+    "nuxtTypesMissing": "這個 Nuxt 專案還沒有生成型別，自動匯入的名稱無法跳轉。請在 {{project}} 中執行 `nuxi prepare`。"
   }
 }

@@ -1,4 +1,4 @@
-export const CODE_NAVIGATION_SERVER_KINDS = ['typescript', 'csharp'] as const
+export const CODE_NAVIGATION_SERVER_KINDS = ['typescript', 'csharp', 'vue'] as const
 export type CodeNavigationServerKind = (typeof CODE_NAVIGATION_SERVER_KINDS)[number]
 
 export const CODE_NAVIGATION_FEATURES = [
@@ -62,7 +62,13 @@ export type CodeNavigationFileChange = {
   path: string
 }
 
-export type CodeNavigationStatusPhase = 'downloading' | 'starting' | 'ready' | 'failed'
+export type CodeNavigationStatusPhase =
+  | 'downloading'
+  | 'starting'
+  | 'ready'
+  | 'failed'
+  /** A Nuxt project without its generated `.nuxt/` types; auto-imports cannot resolve. */
+  | 'nuxtTypesMissing'
 
 export type CodeNavigationStatusEvent = {
   kind: CodeNavigationServerKind
@@ -73,7 +79,8 @@ export type CodeNavigationStatusEvent = {
 
 const WATCHED_EXTENSIONS: Record<CodeNavigationServerKind, readonly string[]> = {
   typescript: ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs', '.json'],
-  csharp: ['.cs', '.cshtml', '.csproj', '.sln', '.slnx', '.props', '.targets', '.json']
+  csharp: ['.cs', '.cshtml', '.csproj', '.sln', '.slnx', '.props', '.targets', '.json'],
+  vue: ['.vue', '.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs', '.json']
 }
 
 /** Whether a changed file can affect what this kind of server knows about the workspace. */
@@ -85,10 +92,12 @@ export function isCodeNavigationWatchedPath(kind: CodeNavigationServerKind, path
 export const LANGUAGE_SERVERS_DIR_NAME = 'language-servers'
 export const CSHARP_METADATA_DIR_NAME = 'csharp-metadata'
 export const TYPESCRIPT_LANGUAGE_SERVER_DIR_NAME = 'typescript-native'
+export const VUE_LANGUAGE_SERVER_DIR_NAME = 'vue-vtsls'
 
 const ORCA_OWNED_LANGUAGE_SERVER_DIRS = [
   CSHARP_METADATA_DIR_NAME,
-  TYPESCRIPT_LANGUAGE_SERVER_DIR_NAME
+  TYPESCRIPT_LANGUAGE_SERVER_DIR_NAME,
+  VUE_LANGUAGE_SERVER_DIR_NAME
 ] as const
 
 /**

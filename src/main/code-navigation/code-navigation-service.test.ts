@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { CodeNavigationService } from './code-navigation-service'
+import { CodeNavigationRouter } from './code-navigation-routing'
 import type { LanguageServerSession } from './language-server-session'
 import type { LspLocation } from './lsp-locations'
 import type {
@@ -74,6 +75,9 @@ function createService(options: {
       return next as unknown as LanguageServerSession
     },
     readPreview: async (path) => options.previews?.[path] ?? null,
+    router: new CodeNavigationRouter({
+      projects: { projectFor: async () => null, invalidate: () => {} }
+    }),
     now: options.now
   })
   return { service, created }
@@ -340,6 +344,7 @@ describe('CodeNavigationService', () => {
     const warming = service.warm(warmRequest)
     await new Promise((resolve) => setImmediate(resolve))
     const jumping = service.query(query(), (event) => phases.push(event.phase))
+    await new Promise((resolve) => setImmediate(resolve))
     expect(phases).toEqual(['starting'])
     finishStart()
     await Promise.all([warming, jumping])
