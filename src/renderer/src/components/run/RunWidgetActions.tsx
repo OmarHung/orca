@@ -7,7 +7,7 @@ import { translate } from '@/i18n/i18n'
 import { useDebugStore } from '../debug/debug-store'
 import { DebugSessionControls } from './DebugSessionControls'
 import { ControlButton, RunSessionControls } from './RunSessionControls'
-import { RunStatusDot } from './RunStatusDot'
+import { RunStatusIcon } from './RunStatusIcon'
 import { isDebuggingSource } from './run-debug-exclusivity'
 import { isRunSessionActive } from './run-session-store'
 import {
@@ -192,7 +192,7 @@ function CompoundRunActions({
               className="flex size-4 items-center justify-center"
               title={`${item.label}: ${status}`}
             >
-              <RunStatusDot tone="running" />
+              <RunStatusIcon tone="running" mode="run" />
             </span>
             <ControlButton
               action={{

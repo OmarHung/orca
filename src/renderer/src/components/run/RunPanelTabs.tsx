@@ -3,7 +3,8 @@ import { X } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
-import { RunStatusDot } from './RunStatusDot'
+import { RunStatusIcon } from './RunStatusIcon'
+import { runTargetMode } from './run-mode'
 import { closeRunPanelSession } from './run-panel-actions'
 import { useRunPanelStore } from './run-panel-store'
 import { describeRunStatus, runStatusTone } from './run-status-presentation'
@@ -38,7 +39,7 @@ function RunPanelTab({
         className="flex max-w-48 min-w-0 items-center gap-1.5"
         onClick={() => select(session.worktreeId, session.commandKey)}
       >
-        <RunStatusDot tone={runStatusTone(session)} />
+        <RunStatusIcon tone={runStatusTone(session)} mode={runTargetMode(session.target)} />
         <span className="truncate">{session.label}</span>
       </button>
       <button

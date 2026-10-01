@@ -9,6 +9,7 @@ import type {
   CommandRunConfiguration,
   RunConfigurationDefinition
 } from '../../../../shared/run-configurations/run-configuration-definition'
+import type { RunConfigurationKind } from '../../../../shared/run-configurations/run-configuration-types'
 import {
   planRunConfiguration,
   type RunLaunchPlan
@@ -35,6 +36,7 @@ import {
   type RunTarget
 } from './run-configuration-control'
 import { combineRunConfigurations, useRunConfigurationStore } from './run-configuration-store'
+import { runConfigurationKindOf } from './run-mode'
 import { configurationCommandKey, configurationItemKey } from './run-widget-items'
 
 /** The run target a command configuration uses; its key keeps one terminal tab per configuration. */
@@ -42,7 +44,8 @@ export function configurationRunTarget(
   configuration: CommandRunConfiguration,
   launch: { command: string; cwd: string },
   worktreeId: string,
-  groupId: string | null
+  groupId: string | null,
+  kind?: RunConfigurationKind
 ): RunTarget {
   const commandKey = configurationCommandKey(configuration.id)
   return {
@@ -50,6 +53,7 @@ export function configurationRunTarget(
     groupId,
     commandKey,
     cwd: launch.cwd,
+    ...(kind ? { kind } : {}),
     command: {
       id: commandKey,
       label: configuration.name,
@@ -116,6 +120,22 @@ type LaunchScope = {
   groupId: string | null
   context: RunConfigurationVariableContext
   pending: PendingLaunch
+  /** Kinds by configuration id; publishes reach the launcher already turned into commands. */
+  kinds: ReadonlyMap<string, RunConfigurationKind>
+}
+
+function launchRunTarget(
+  configuration: CommandRunConfiguration,
+  launch: { command: string; cwd: string },
+  scope: LaunchScope
+): RunTarget {
+  return configurationRunTarget(
+    configuration,
+    launch,
+    scope.worktreeId,
+    scope.groupId,
+    scope.kinds.get(configuration.id)
+  )
 }
 
 /** Runs a command to completion; false (after a toast) unless it exited 0. */
@@ -128,9 +148,7 @@ async function runToSuccess(
   if (!launch) {
     return false
   }
-  const exit = await runConfigurationAndWait(
-    configurationRunTarget(step, launch, scope.worktreeId, scope.groupId)
-  )
+  const exit = await runConfigurationAndWait(launchRunTarget(step, launch, scope))
   if (scope.pending.cancelled) {
     return false
   }
@@ -190,9 +208,7 @@ async function startLaunch(
       configuration.name
     )
     if (launch) {
-      await runConfiguration(
-        configurationRunTarget(configuration, launch, scope.worktreeId, scope.groupId)
-      )
+      await runConfiguration(launchRunTarget(configuration, launch, scope))
     }
     return
   }
@@ -286,7 +302,13 @@ async function launchPlanned(
       workspaceFolder: worktree.path,
       file: activeFileIn(options.worktreeId)
     },
-    pending
+    pending,
+    kinds: new Map(
+      listed.flatMap(({ configuration }) => {
+        const kind = runConfigurationKindOf(configuration)
+        return kind ? [[configuration.id, kind] as const] : []
+      })
+    )
   }
   if (!(await runBeforeLaunchSteps(result.plan.beforeLaunch, scope))) {
     return

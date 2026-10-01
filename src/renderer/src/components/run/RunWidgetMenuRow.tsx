@@ -6,6 +6,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { translate } from '@/i18n/i18n'
 import { isTerminalAgentQuickCommand } from '../../../../shared/terminal-quick-commands'
 import { RUN_KIND_ICONS, runConfigurationIcon } from './run-configuration-icon'
+import { RunModeIcon } from './RunModeIcon'
+import { runWidgetItemMode } from './run-mode'
 import { debugStopAction } from './RunStopControl'
 import type { RunStopStage } from './run-session-store'
 import { runStopAction, stoppingLabel } from './run-stop-stage-presentation'
@@ -130,7 +132,7 @@ function LiveRowButtons({
         testId="run-widget-item-stop"
         onClick={() => actions.stop(item)}
       >
-        <StopIcon />
+        <StopIcon className="text-destructive" />
       </RowButton>
     </>
   )
@@ -191,8 +193,8 @@ function IdleRowButtons({
 }
 
 /**
- * A row of the Run widget menu, as in JetBrains: a live item shows a green dot with Rerun and
- * Stop; an idle one offers Run and Debug on hover. The row itself only selects.
+ * A row of the Run widget menu, as in JetBrains: a live item badges its icon with its mode and
+ * offers Rerun and Stop; an idle one offers Run and Debug on hover. The row itself only selects.
  */
 export function RunWidgetMenuRow({
   item,
@@ -226,10 +228,12 @@ export function RunWidgetMenuRow({
       <span className="relative flex shrink-0">
         {itemIcon(item)}
         {live ? (
-          <span
-            aria-hidden
-            className="absolute -right-0.5 -bottom-0.5 size-1.5 rounded-full bg-status-success ring-1 ring-popover"
-          />
+          <span className="absolute -right-1 -bottom-1 flex rounded-full bg-popover p-px">
+            <RunModeIcon
+              mode={state.running ? runWidgetItemMode(item) : 'debug'}
+              className="size-2.5"
+            />
+          </span>
         ) : null}
       </span>
       <span className="min-w-0 flex-1 truncate">
