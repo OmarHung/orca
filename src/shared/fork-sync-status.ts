@@ -13,8 +13,31 @@ export const FORK_SYNC_STAGES: readonly ForkSyncStage[] = [
   'build'
 ]
 
+/** One upstream release's notes, as published on its GitHub release page. */
+export type ForkReleaseNote = {
+  tag: string
+  title: string
+  url: string
+  publishedAt: string | null
+  /** Markdown, cut short past a size cap; `url` has the full text. */
+  body: string
+}
+
+/** A fork commit that conflicts when replayed onto the target tag, with its conflicted files. */
+export type ForkSyncConflictCommit = {
+  sha: string
+  subject: string
+  files: string[]
+}
+
 export type ForkSyncStatus =
-  | { phase: 'available'; baseTag: string; targetTag: string }
+  | {
+      phase: 'available'
+      baseTag: string
+      targetTag: string
+      /** Releases after the base up to the target, newest first; absent when unavailable. */
+      releaseNotes?: ForkReleaseNote[]
+    }
   | { phase: 'syncing'; baseTag: string; targetTag: string; stage: ForkSyncStage }
   /** Rebuilt; installing hands the manifest to Orca's local-build installer. */
   | { phase: 'built'; baseTag: string; targetTag: string; manifestPath: string }
@@ -27,6 +50,8 @@ export type ForkSyncStatus =
       files: string[]
       /** Subject of this fork's commit that no longer applies cleanly. */
       commitSubject: string | null
+      /** Every fork commit a dry run found conflicting, in rebase order; absent when it could not run. */
+      conflictCommits?: ForkSyncConflictCommit[]
     }
   | {
       phase: 'failed'

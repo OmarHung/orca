@@ -18614,7 +18614,9 @@
     "failedTitle": "更新到 {{value0}} 失敗",
     "failedAt": "停在：{{value0}}",
     "failedStart": "同步無法開始。",
-    "agentFallback": "已複製衝突處理提示詞。請貼上到在 {{value0}} 中執行的 AI 代理。"
+    "agentFallback": "已複製衝突處理提示詞。請貼上到在 {{value0}} 中執行的 AI 代理。",
+    "releaseNotesTitle": "上游更新內容",
+    "conflictCommitCount": "你的 {{value0}} 個提交與 {{value1}} 衝突。分支保持不變。"
   },
   "debug": {
     "toolWindow": "除錯",

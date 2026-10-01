@@ -6,14 +6,23 @@ export const FORK_SYNC_EVENT_PREFIX = 'ORCA_SYNC_EVENT '
 /** Exit code the sync script uses when a rebase conflict was reported and aborted. */
 export const FORK_SYNC_CONFLICT_EXIT_CODE = 2
 
+const MAX_LISTED_FILES = 500
+
+const conflictCommitSchema = z.object({
+  sha: z.string().min(1),
+  subject: z.string(),
+  files: z.array(z.string()).max(MAX_LISTED_FILES)
+})
+
 const forkSyncEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('stage'), stage: z.enum(FORK_SYNC_STAGES) }),
   z.object({
     type: z.literal('conflict'),
     worktree: z.string().min(1),
     baseTag: z.string().min(1),
-    files: z.array(z.string()).max(500),
-    commitSubject: z.string().nullable()
+    files: z.array(z.string()).max(MAX_LISTED_FILES),
+    commitSubject: z.string().nullable(),
+    conflictCommits: z.array(conflictCommitSchema).max(MAX_LISTED_FILES).optional()
   }),
   z.object({ type: z.literal('done'), manifestPath: z.string().min(1) })
 ])
