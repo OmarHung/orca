@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { editor } from 'monaco-editor'
 import { Glasses } from 'lucide-react'
@@ -32,13 +32,33 @@ function AddToWatchesButton({ expression }: { expression: string }): React.JSX.E
 
 function DebugValuePopup({
   value,
-  onPointerInside
+  onClose
 }: {
   value: DebugHoverValue
-  onPointerInside: (inside: boolean) => void
+  onClose: () => void
 }): React.JSX.Element {
   const popupRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
+
+  // Pinned until a click outside it or Escape, wherever focus is.
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent): void => {
+      if (!(event.target instanceof Node && popupRef.current?.contains(event.target))) {
+        onClose()
+      }
+    }
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+    document.addEventListener('pointerdown', onPointerDown, true)
+    document.addEventListener('keydown', onKeyDown, true)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true)
+      document.removeEventListener('keydown', onKeyDown, true)
+    }
+  }, [onClose])
 
   useLayoutEffect(() => {
     const popup = popupRef.current
@@ -75,8 +95,6 @@ function DebugValuePopup({
         top: value.anchor.bottom,
         maxHeight: MAX_POPUP_HEIGHT_PX
       }}
-      onPointerEnter={() => onPointerInside(true)}
-      onPointerLeave={() => onPointerInside(false)}
       // Keeps focus (and Escape, typing) in the editor while rows expand, as JetBrains does.
       onMouseDown={(event) => event.preventDefault()}
     >
@@ -115,6 +133,7 @@ export function DebugValueHoverWidget({
   )
   const [value, setValue] = useState<DebugHoverValue | null>(null)
   const controllerRef = useRef<DebugValueHover | null>(null)
+  const close = useCallback(() => controllerRef.current?.close(), [])
 
   useEffect(() => {
     if (!codeEditor || pausedFrameId === null || !DEBUGGABLE_LANGUAGES.has(language)) {
@@ -132,11 +151,5 @@ export function DebugValueHoverWidget({
   if (!value) {
     return null
   }
-  return createPortal(
-    <DebugValuePopup
-      value={value}
-      onPointerInside={(inside) => controllerRef.current?.setPointerInPopup(inside)}
-    />,
-    document.body
-  )
+  return createPortal(<DebugValuePopup value={value} onClose={close} />, document.body)
 }
