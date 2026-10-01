@@ -126,6 +126,8 @@ function projectOf(
   const [first] = runs
   const location = locationOf(first.projectDir, worktreePath)
   const own = saved.filter(({ anchor }) => belongsTo(anchor, first, location, worktreePath))
+  // Why: a Dockerfile's export stages are offered under Publish before any export is saved.
+  const exportsStages = runs.some((run) => run.dockerExport)
   return {
     key,
     name: first.projectName,
@@ -135,7 +137,10 @@ function projectOf(
       kind,
       saved: own.filter(({ anchor }) => anchor.kind === kind).map((entry) => entry.configuration),
       runs: runs.filter((run) => run.kind === kind)
-    })).filter((group) => group.runs.length + group.saved.length > 0)
+    })).filter(
+      (group) =>
+        group.runs.length + group.saved.length > 0 || (group.kind === 'publish' && exportsStages)
+    )
   }
 }
 
