@@ -8,7 +8,9 @@ import type {
   SshVpnProfileState,
   SshVpnResult,
   SshVpnSnapshot,
+  SshVpnStartAnswer,
   SshVpnStartConfirmRequest,
+  SshVpnStartPreview,
   SshVpnTerminalRoute
 } from '../../shared/ssh-vpn-types'
 
@@ -32,10 +34,12 @@ export type SshVpnApi = {
   /** Starts the VPN after the user approves its commands in the start confirmation. */
   connect: (profileId: string) => Promise<SshVpnResult<void>>
   disconnect: (profileId: string) => Promise<SshVpnResult<void>>
+  /** What using a profile would run right now, for the start confirmation's VPN picker. */
+  previewStart: (profileId: string) => Promise<SshVpnResult<SshVpnStartPreview>>
   /** Null when the host has no VPN; otherwise starts it (asking first) and returns the route. */
   prepareTerminal: (targetId: string) => Promise<SshVpnResult<SshVpnTerminalRoute | null>>
   pickOvpnFile: () => Promise<string | null>
-  answerStart: (answer: { requestId: string; approved: boolean }) => Promise<void>
+  answerStart: (answer: SshVpnStartAnswer & { requestId: string }) => Promise<void>
   /** Null cancels the start. */
   answerCredentials: (answer: {
     requestId: string
