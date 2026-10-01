@@ -116,16 +116,14 @@ describe('planRunConfiguration', () => {
     })
   })
 
-  it('allows only one debug session per compound', () => {
+  it('debugs every debug member of a compound, each in its own session', () => {
     const all = configs([
       { name: 'A', target: { kind: 'node-file', filePath: 'a.js' } },
       { name: 'B', target: { kind: 'node-file', filePath: 'b.js' } },
       { name: 'Both', configurations: ['A', 'B'] }
     ])
-    expect(planRunConfiguration(all, 'Both')).toEqual({
-      ok: false,
-      error: { code: 'multiple-debug', reference: 'B' }
-    })
+    const result = planRunConfiguration(all, 'Both')
+    expect(result.ok && names(result.plan.launches)).toEqual(['A', 'B'])
   })
 
   it('reports compounds in between as involved', () => {

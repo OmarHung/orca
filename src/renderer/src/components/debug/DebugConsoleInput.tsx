@@ -2,13 +2,17 @@ import React, { useRef, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { translate } from '@/i18n/i18n'
 import { evaluateInConsole } from './debug-evaluate'
-import { useDebugStore } from './debug-store'
+import { isLiveDebugSession, type DebugSession } from './debug-store'
 
 const MAX_HISTORY = 100
 
 /** Debug console prompt: Enter evaluates in the selected frame, ↑/↓ walk the history. */
-export function DebugConsoleInput(): React.JSX.Element {
-  const live = useDebugStore((s) => s.session !== null && s.session.phase !== 'ended')
+export function DebugConsoleInput({
+  session
+}: {
+  session: DebugSession | null
+}): React.JSX.Element {
+  const live = session !== null && isLiveDebugSession(session)
   const [draft, setDraft] = useState('')
   const history = useRef<string[]>([])
   const historyIndex = useRef<number | null>(null)
@@ -29,14 +33,14 @@ export function DebugConsoleInput(): React.JSX.Element {
       className="shrink-0 border-t border-border px-2 py-1"
       onSubmit={(event) => {
         event.preventDefault()
-        if (!draft.trim()) {
+        if (!draft.trim() || !session) {
           return
         }
         history.current = [...history.current.filter((entry) => entry !== draft), draft].slice(
           -MAX_HISTORY
         )
         historyIndex.current = null
-        void evaluateInConsole(draft)
+        void evaluateInConsole(session.id, draft)
         setDraft('')
       }}
     >

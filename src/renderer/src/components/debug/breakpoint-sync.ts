@@ -1,7 +1,17 @@
 import type { DebugLaunchTarget } from '../../../../shared/debug/debug-session-types'
 import { toSourceBreakpoints, useBreakpointStore, type BreakpointSpec } from './breakpoint-store'
-import { currentSessionId, dapRequest, reportDebugError } from './debug-request'
-import { useDebugStore } from './debug-store'
+import {
+  isInDebugScope,
+  mergeVerifiedLines,
+  type DebugBreakpointScope
+} from './debug-breakpoint-scope'
+import { dapRequest, reportDebugError } from './debug-request'
+import {
+  findDebugSession,
+  isLiveDebugSession,
+  useDebugStore,
+  type DebugSession
+} from './debug-store'
 
 type BreakpointPatch = Partial<Omit<BreakpointSpec, 'line'>>
 
@@ -20,12 +30,14 @@ export function adapterIdForTarget(target: DebugLaunchTarget): string {
   }
 }
 
-export function breakpointsForRequest(): Record<string, ReturnType<typeof toSourceBreakpoints>> {
+/** The breakpoints a session takes at launch: its workspace's, in its adapter's languages. */
+export function breakpointsForRequest(
+  scope: DebugBreakpointScope
+): Record<string, ReturnType<typeof toSourceBreakpoints>> {
   return Object.fromEntries(
-    Object.entries(useBreakpointStore.getState().breakpointsByFile).map(([path, specs]) => [
-      path,
-      toSourceBreakpoints(specs)
-    ])
+    Object.entries(useBreakpointStore.getState().breakpointsByFile)
+      .filter(([path]) => isInDebugScope(scope, path))
+      .map(([path, specs]) => [path, toSourceBreakpoints(specs)])
   )
 }
 
@@ -47,17 +59,26 @@ export function readVerified(body: unknown, sentLines: readonly number[]): Recor
   return verified
 }
 
-/** Sends one file's breakpoints to the running session and records which ones bound. */
-export async function syncFileBreakpoints(path: string): Promise<void> {
-  if (!currentSessionId()) {
-    return
-  }
+/** line → bound for the gutter, over the live sessions that take `path`; undefined if none. */
+export function verifiedLinesForFile(
+  sessions: readonly DebugSession[],
+  path: string
+): Record<number, boolean> | undefined {
+  return mergeVerifiedLines(
+    sessions
+      .filter((session) => isLiveDebugSession(session) && isInDebugScope(session, path))
+      .map((session) => session.verifiedByFile[path])
+  )
+}
+
+async function syncFileToSession(session: DebugSession, path: string): Promise<void> {
   const breakpoints = toSourceBreakpoints(
     useBreakpointStore.getState().breakpointsByFile[path] ?? []
   )
   try {
-    const body = await dapRequest('setBreakpoints', { source: { path }, breakpoints })
-    useBreakpointStore.getState().setVerified(
+    const body = await dapRequest(session.id, 'setBreakpoints', { source: { path }, breakpoints })
+    useDebugStore.getState().setVerified(
+      session.id,
       path,
       readVerified(
         body,
@@ -65,19 +86,34 @@ export async function syncFileBreakpoints(path: string): Promise<void> {
       )
     )
   } catch (error) {
-    reportDebugError(error)
+    reportDebugError(session.id, error)
   }
 }
 
-/** Re-sends every file once the program runs, to learn which breakpoints bound. */
-export async function syncAllBreakpoints(): Promise<void> {
+/** Sends one file's breakpoints to every running session that takes it. */
+export async function syncFileBreakpoints(path: string): Promise<void> {
+  const sessions = useDebugStore
+    .getState()
+    .sessions.filter((session) => isLiveDebugSession(session) && isInDebugScope(session, path))
+  await Promise.all(sessions.map((session) => syncFileToSession(session, path)))
+}
+
+/** Re-sends a session's files once its program runs, to learn which breakpoints bound. */
+export async function syncSessionBreakpoints(sessionId: string): Promise<void> {
+  const session = findDebugSession(useDebugStore.getState().sessions, sessionId)
+  if (!session) {
+    return
+  }
+  const paths = Object.keys(useBreakpointStore.getState().breakpointsByFile)
   await Promise.all(
-    Object.keys(useBreakpointStore.getState().breakpointsByFile).map(syncFileBreakpoints)
+    paths
+      .filter((path) => isInDebugScope(session, path))
+      .map((path) => syncFileToSession(session, path))
   )
 }
 
 /** Applies a DAP `breakpoint` event (an adapter binding a breakpoint later, e.g. js-debug). */
-export function applyBreakpointEvent(body: unknown): void {
+export function applyBreakpointEvent(sessionId: string, body: unknown): void {
   const breakpoint =
     typeof body === 'object' && body !== null && 'breakpoint' in body ? body.breakpoint : null
   if (typeof breakpoint !== 'object' || breakpoint === null) {
@@ -86,12 +122,12 @@ export function applyBreakpointEvent(body: unknown): void {
   const record: Record<string, unknown> = { ...breakpoint }
   const source: Record<string, unknown> =
     typeof record.source === 'object' && record.source !== null ? { ...record.source } : {}
-  if (typeof source.path !== 'string' || typeof record.line !== 'number') {
+  const session = findDebugSession(useDebugStore.getState().sessions, sessionId)
+  if (!session || typeof source.path !== 'string' || typeof record.line !== 'number') {
     return
   }
-  const store = useBreakpointStore.getState()
-  store.setVerified(source.path, {
-    ...store.verifiedByFile[source.path],
+  useDebugStore.getState().setVerified(sessionId, source.path, {
+    ...session.verifiedByFile[source.path],
     [record.line]: record.verified === true
   })
 }
@@ -111,13 +147,14 @@ export function removeDebugBreakpoint(path: string, line: number): void {
   void syncFileBreakpoints(path)
 }
 
-/** Saves the choice and applies it to a running session of the same adapter. */
+/** Saves the choice and applies it to every running session of that adapter. */
 export function setDebugExceptionFilters(adapterId: string, filters: string[]): void {
   useBreakpointStore.getState().setExceptionFilters(adapterId, filters)
-  if (
-    currentSessionId() &&
-    useDebugStore.getState().exceptionFilterOptions?.adapterId === adapterId
-  ) {
-    dapRequest('setExceptionBreakpoints', { filters }).catch(reportDebugError)
+  for (const session of useDebugStore.getState().sessions) {
+    if (isLiveDebugSession(session) && session.adapterId === adapterId) {
+      dapRequest(session.id, 'setExceptionBreakpoints', { filters }).catch((error: unknown) =>
+        reportDebugError(session.id, error)
+      )
+    }
   }
 }

@@ -25,12 +25,16 @@ import {
 import { gentlestStopStage, runStopStage, type RunStopStage } from './run-session-store'
 import {
   footprintRuns,
-  isFootprintDebugging,
+  footprintDebugSessions,
   type RunningProcess,
   type RunWidgetActivity,
   type RunWidgetFootprint
 } from './run-widget-activity'
-import { configurationIdOfCommandKey, type RunWidgetItem } from './run-widget-items'
+import {
+  configurationIdOfCommandKey,
+  debugSourceKeyOf,
+  type RunWidgetItem
+} from './run-widget-items'
 import { runConfigurationKindOf } from './run-mode'
 
 export type RunWidgetScope = { worktreeId: string; groupId: string | null; worktreePath: string }
@@ -93,7 +97,12 @@ function launchContext(
   scope: RunWidgetScope,
   confirm: ConfirmationDialogContextValue
 ): RunDebugLaunchContext {
-  return { worktreeId: scope.worktreeId, sourceKey: item.key, label: item.label, confirm }
+  return {
+    worktreeId: scope.worktreeId,
+    sourceKey: debugSourceKeyOf(item),
+    label: item.label,
+    confirm
+  }
 }
 
 export async function runWidgetItem(
@@ -169,7 +178,7 @@ export async function debugWidgetItem(
       cwd: item.debug.cwd,
       title: item.target?.command.label ?? item.label,
       target: item.debug.target,
-      sourceKey: item.key
+      sourceKey: debugSourceKeyOf(item)
     })
     return
   }
@@ -215,20 +224,20 @@ export function stopRunWidgetItem(
     })),
     worktreeId
   )
-  if (isFootprintDebugging(footprint, activity)) {
-    void stopDebugSession()
+  for (const session of footprintDebugSessions(footprint, activity)) {
+    void stopDebugSession(session.id)
   }
 }
 
 export function stopRunningProcess(process: RunningProcess, worktreeId: string): void {
   if (process.kind === 'debug') {
-    void stopDebugSession()
+    void stopDebugSession(process.sessionId)
     return
   }
   stopConfiguration(worktreeId, process.commandKey)
 }
 
-/** JetBrains' Stop All: every run one step further, the debug session, and no further members. */
+/** JetBrains' Stop All: every run one step further, every debug session, and no further members. */
 export function stopAllRunningProcesses(
   processes: readonly RunningProcess[],
   worktreeId: string
@@ -238,7 +247,9 @@ export function stopAllRunningProcesses(
     processes.flatMap((process) => (process.kind === 'run' ? [process] : [])),
     worktreeId
   )
-  if (processes.some((process) => process.kind === 'debug')) {
-    void stopDebugSession()
+  for (const process of processes) {
+    if (process.kind === 'debug') {
+      void stopDebugSession(process.sessionId)
+    }
   }
 }
