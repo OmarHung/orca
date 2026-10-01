@@ -41,6 +41,7 @@ import { useNewModelLineEnding } from '../model-lifetime/buffer-text/editor-new-
 import { useMonacoDebugDecorations } from '../../debug/use-monaco-debug-decorations'
 import { useMonacoChangeMarkers } from '../change-markers/use-monaco-change-markers'
 import { useMonacoRevisionCompareActions } from '../revision-compare/use-monaco-revision-compare-actions'
+import { DebugValueHoverWidget } from '../../debug/DebugValueHoverWidget'
 
 type MonacoEditorProps = {
   fileId: string
@@ -369,6 +370,7 @@ export default function MonacoEditor({
         relativePath={relativePath}
         worktreeId={worktreeId}
       />
+      <DebugValueHoverWidget editor={mountedEditor} filePath={filePath} language={language} />
     </div>
   )
 }
