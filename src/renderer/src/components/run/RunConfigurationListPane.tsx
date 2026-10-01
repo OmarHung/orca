@@ -1,6 +1,7 @@
 import React from 'react'
 import {
   Bug,
+  Container,
   Copy,
   Layers,
   Plus,
@@ -24,6 +25,7 @@ const TYPE_ICONS: Record<RunConfigurationType, LucideIcon> = {
   command: SquareTerminal,
   debug: Bug,
   'dotnet-publish': Upload,
+  'docker-export': Container,
   compound: Layers
 }
 
@@ -35,6 +37,8 @@ function addLabel(type: RunConfigurationType): string {
       return translate('run.configurations.add.debug', 'Add debug configuration')
     case 'dotnet-publish':
       return translate('run.configurations.add.dotnetPublish', 'Add .NET publish to folder')
+    case 'docker-export':
+      return translate('run.configurations.add.dockerExport', 'Add Docker export to folder')
     case 'compound':
       return translate('run.configurations.add.compound', 'Add compound (start several together)')
   }
@@ -104,7 +108,13 @@ export function RunConfigurationListPane({
   onDuplicate: () => void
   onDelete: () => void
 }): React.JSX.Element {
-  const types: RunConfigurationType[] = ['command', 'debug', 'dotnet-publish', 'compound']
+  const types: RunConfigurationType[] = [
+    'command',
+    'debug',
+    'dotnet-publish',
+    'docker-export',
+    'compound'
+  ]
   return (
     <div className="flex w-60 shrink-0 flex-col border-r border-border">
       <div className="flex items-center gap-0.5 border-b border-border px-2 py-1">

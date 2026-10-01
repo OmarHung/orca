@@ -1,5 +1,6 @@
 import {
   Bug,
+  Container,
   FlaskConical,
   Hammer,
   Layers,
@@ -36,6 +37,8 @@ export function runConfigurationIcon(configuration: RunConfigurationDefinition):
       return Bug
     case 'dotnet-publish':
       return Upload
+    case 'docker-export':
+      return Container
     case 'compound':
       return Layers
   }

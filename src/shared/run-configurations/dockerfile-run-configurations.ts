@@ -14,7 +14,7 @@ const HEREDOC_INSTRUCTIONS = new Set(['RUN', 'COPY', 'ADD'])
 
 type Instruction = { keyword: string; args: string }
 
-type Stage = { name: string | null; base: string; ports: string[] }
+type Stage = { name: string | null; base: string; ports: string[]; runs: boolean }
 
 /** The part that tells variants apart: `dev` for `Dockerfile.dev` and `dev.Dockerfile`. */
 function variantOf(name: string): string | null {
@@ -81,13 +81,31 @@ function stagesOf(instructions: readonly Instruction[]): Stage[] {
       stages.push({
         base: base.toLowerCase(),
         name: as?.toLowerCase() === 'as' && name ? name.toLowerCase() : null,
-        ports: []
+        ports: [],
+        runs: false
       })
     } else if (keyword === 'EXPOSE') {
       stages.at(-1)?.ports.push(...wordsOf(args))
+    } else if (keyword === 'CMD' || keyword === 'ENTRYPOINT') {
+      const stage = stages.at(-1)
+      if (stage) {
+        stage.runs = true
+      }
     }
   }
   return stages
+}
+
+// Why scratch without CMD: such a stage only holds files for `docker build -o`; it cannot run.
+function isExportStage(stage: Stage): boolean {
+  return stage.base === 'scratch' && !stage.runs
+}
+
+/** Named stages that only hold files to export, e.g. `FROM scratch AS export-web`. */
+export function dockerExportStages(text: string): string[] {
+  return stagesOf(instructionsOf(text))
+    .filter(isExportStage)
+    .flatMap((stage) => (stage.name ? [stage.name] : []))
 }
 
 /** `-p` flags for the ports the final stage exposes, including those of stages it builds on. */
@@ -161,6 +179,14 @@ function imageName(projectDir: string, fileName: string): string {
   return variant ? `${folder}-${variant}` : folder
 }
 
+function ancestorDir(path: string, levels: number): string {
+  let dir = path
+  for (let level = 0; level < levels; level += 1) {
+    dir = dir.replace(/[\\/]+[^\\/]+[\\/]*$/, '')
+  }
+  return dir
+}
+
 /** Commands are chained with `&&`, which Windows PowerShell 5.1 cannot parse. */
 function mayChainCommands(projectDir: string): boolean {
   return !isWindowsAbsolutePathLike(projectDir) || isWslUncPath(projectDir)
@@ -183,32 +209,43 @@ export function detectDockerfileRunConfigurations(options: {
     return []
   }
   const instructions = instructionsOf(options.text)
+  const stages = stagesOf(instructions)
   const levelsUp = contextLevelsUp(projectDir, options.workspaceRoot, contextSources(instructions))
   const context = levelsUp === 0 ? '.' : Array.from({ length: levelsUp }, () => '..').join('/')
   const image = imageName(projectDir, fileName)
   const fileFlag = fileName === 'Dockerfile' && context === '.' ? '' : `-f ${quotedFile} `
   const build = `docker build ${fileFlag}-t ${image} ${context}`
-  const run = ['docker run --rm -it', ...publishFlags(stagesOf(instructions)), image].join(' ')
+  const run = ['docker run --rm -it', ...publishFlags(stages), image].join(' ')
+  const exportStages = dockerExportStages(options.text)
   const base = {
     ecosystem: 'docker' as const,
     projectName: fileName,
     projectDir,
     projectFile: joinProjectPath(projectDir, fileName)
   }
+  const finalStage = stages.at(-1)
+  const runnable = finalStage !== undefined && !isExportStage(finalStage)
   return [
-    {
-      ...base,
-      id: `docker:${projectDir}:dockerfile:${fileName}:run`,
-      kind: 'run',
-      name: 'run',
-      command: mayChainCommands(projectDir) ? `${build} && ${run}` : run
-    },
+    ...(runnable
+      ? [
+          {
+            ...base,
+            id: `docker:${projectDir}:dockerfile:${fileName}:run`,
+            kind: 'run' as const,
+            name: 'run',
+            command: mayChainCommands(projectDir) ? `${build} && ${run}` : run
+          }
+        ]
+      : []),
     {
       ...base,
       id: `docker:${projectDir}:dockerfile:${fileName}:build`,
       kind: 'build',
       name: 'build',
-      command: build
+      command: build,
+      ...(exportStages.length > 0
+        ? { dockerExport: { contextDir: ancestorDir(projectDir, levelsUp), stages: exportStages } }
+        : {})
     }
   ]
 }
