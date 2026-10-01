@@ -161,7 +161,12 @@ export async function runInExistingTerminal(
   const text = `${flattenTerminalQuickCommand(target.command).command}\r`
   try {
     if (
-      !(await sendRuntimePtyInputVerified(useAppStore.getState().settings, binding.ptyId, text))
+      !(await sendRuntimePtyInputVerified(
+        useAppStore.getState().settings,
+        binding.ptyId,
+        text,
+        'launch'
+      ))
     ) {
       return false
     }
