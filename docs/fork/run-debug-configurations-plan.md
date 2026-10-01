@@ -263,6 +263,7 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - 只在「目前選取的 frame」所在的檔案啟用；每次暫停／切換 frame 都換一個新的 controller，continue 就關閉
 - 名稱上的語言 hover（LSP 型別／文件）會被暫時關掉（`hover.enabled: false`，離開名稱就還原），避免兩個 hover 疊在一起；求值失敗的名稱（關鍵字、型別）在這次暫停內改回語言 hover；按住 Alt 一律顯示語言 hover（同 VS Code）
 - 游標可以移進彈出框（300ms 寬限），點擊彈出框不搶編輯器焦點，所以 Esc、打字、捲動都會關閉它
+- 彈出框用 portal 掛在 `document.body`、fixed 定位（`debug-value-hover-placement.ts`），不是 Monaco content widget：放在編輯器 DOM 裡時，Monaco 以整個視窗判斷「下方放得下」，展開後的成員卻被編輯器容器裁掉、被底部 Debug 面板蓋住。現在下方放不下才翻到上方，兩邊都不夠就在較大的一側捲動；編輯器捲動或版面改變就關閉（錨點是快照）
 - e2e：`debug-value-hover.spec.ts`。**踩到的坑**：測試程式不能叫 `inspect.py`，它會蓋掉標準函式庫的 `inspect`，debugpy 直接跑完不會停
 
 **仍未支援**：REPL 的自動補全（DAP `completions`）、在 Variables 裡直接修改變數值（`setVariable`）、function breakpoint、data breakpoint
