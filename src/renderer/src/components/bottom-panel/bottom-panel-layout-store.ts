@@ -47,7 +47,7 @@ const STORAGE_KEY = 'orca.bottomPanel.layout.v1'
 
 type BottomPanelSizes = Record<BottomPanelSizeKey, number>
 
-export type BottomPanelTab = 'git-log' | 'debug'
+export type BottomPanelTab = 'git-log' | 'run' | 'debug'
 
 type PersistedBottomPanelLayout = BottomPanelSizes & {
   open: boolean
@@ -89,7 +89,8 @@ function readPersistedLayout(): PersistedBottomPanelLayout {
   }
   return {
     open: parsed.open === true,
-    activeTab: parsed.activeTab === 'debug' ? 'debug' : 'git-log',
+    activeTab:
+      parsed.activeTab === 'debug' || parsed.activeTab === 'run' ? parsed.activeTab : 'git-log',
     commitFilesViewMode: parsed.commitFilesViewMode === 'tree' ? 'tree' : 'list',
     height: clampBottomPanelSize('height', parsed.height),
     branchTreeWidth: clampBottomPanelSize('branchTreeWidth', parsed.branchTreeWidth),

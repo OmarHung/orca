@@ -6,22 +6,16 @@ import { RunWidget } from './RunWidget'
 /** Fork run controls in the focused tab group's bar: current-file runners, then the Run widget. */
 export function RunToolbar({
   worktreeId,
-  groupId,
-  activeTerminalTabId
+  groupId
 }: {
   worktreeId: string
   groupId: string
-  activeTerminalTabId: string | null
 }): React.JSX.Element {
   return (
     <>
       <PythonFileControls />
       <NodeFileControls />
-      <RunWidget
-        worktreeId={worktreeId}
-        groupId={groupId}
-        activeTerminalTabId={activeTerminalTabId}
-      />
+      <RunWidget worktreeId={worktreeId} groupId={groupId} />
     </>
   )
 }

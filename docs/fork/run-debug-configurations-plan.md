@@ -320,6 +320,28 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - 由 `tests/e2e/dotnet-publish-folder.spec.ts`（本機有 dotnet 才跑：實際發佈到含空白的資料夾並檢查 dll）和 `project-run-configurations.spec.ts` 驗證
 - **沒做**：Rider 的「Delete existing files」（各 shell 刪資料夾的語法不同）；Browse 按鈕只在本機 workspace 出現
 
+### 後續：獨立的 Run 工具視窗（2026-10-01）
+
+使用者要求執行之後不要開 terminal 分頁，改成跟 JetBrains 一樣的獨立 Run 區塊，並且跟 Debug、Git Log 一樣能用右下角的按鈕開關。
+
+- **畫面**：底部面板多了 Run 分頁（Git Log、Run、Debug），狀態列右下角多了 Run 按鈕。標題列在 Run 分頁時列出這個 workspace 的每個執行（狀態點、名稱、×），左側是直排工具列（重新執行、分階段停止），中間是輸出。開始執行時自動打開面板並選中它，但不搶鍵盤焦點；點進輸出區才會接收鍵盤輸入（stdin 可用）
+- **做法：run 仍然是 workspace 的一般 terminal，只是畫在面板裡。** 這樣本機、WSL、SSH、遠端 runtime 的啟動、OSC 133 結束訊號、Stop、重啟後由 daemon 保留的程序都沿用原本的機制，不用另做一套 PTY
+  - `openRunTerminal` 用 `createTab(..., { activate: false })` 在背景建立 terminal，tab id 先產生並登記成 run session，再建立 tab，讓 overlay 第一次 render 就知道它屬於 Run 面板（否則會先掛在 tab group 再搬過去，造成 xterm 重新掛載）
+  - **顯示**：`TerminalPaneOverlayLayer` 遇到 run 的 terminal 時改用 portal，畫進一個固定的 host 節點（`run-panel-terminal-hosts.ts`）。面板打開時把這個節點搬進面板，關閉時搬回隱藏的停放區，所以開關面板不會重新掛載 xterm。它在 overlay 裡用一個不存在的 group id 當作所屬群組，所以永遠不是任何 tab group 的可見或作用中 terminal；只有面板正在顯示它時才算可見（cold park 也照這個判斷），只有焦點在面板裡時才算 active
+  - **從 tab 列隱藏**：`useTabGroupItemProjections` 濾掉 run 的 terminal（tab 列、關閉其他分頁等指令都用這份清單），`getGroupVisibleTabOrder` 也濾掉，所以 Ctrl+Tab 等切換不會切到它
+  - **保護機制**（`run-panel-tab-guard.ts`，在 microtask 裡執行，避免插進其他 action 的中間步驟）：run 的 terminal 仍在某個 tab group 的 `tabOrder` 裡，所以 store 的遞補邏輯可能讓它變成群組的作用中分頁。(1) 某個分割視窗只剩 run 的 terminal 時，把它們移到另一個群組，讓 store 照常收合這個分割；(2) 作用中群組的作用中分頁變成 run 的 terminal 時，改回最近用過的可見分頁；如果是使用者主動要求的（MRU 最後一筆就是它，例如從分頁搜尋或 CLI focus），同時在 Run 面板顯示它
+- **重啟後**：run session 存在 localStorage（`orca.run.sessionsByKey.v1`，含重新執行用的 target），所以 daemon 保留下來的 run terminal 重啟後仍在 Run 面板，不會跑回 tab 列。重啟前還在跑的狀態一律當成「執行中」，因為無法得知程序是否已經結束；Stop 會從 Ctrl-C 重新開始，重新執行會先中斷再打指令
+- **重新執行**：已存的設定（`config:<id>`）走 `launchRunConfiguration`，所以信任確認和 Before launch 會再跑一次；其他（最近執行、偵測到的、快速指令）用 session 存的 target
+- **關閉 run 的分頁**：走 `closeTerminalTab`，還有程序在跑時會跳出 Orca 原本的確認對話框
+- Run 元件改成跟著 Run 面板目前顯示的 run（取代原本的「跟著作用中的 terminal 分頁」）
+- 驗證：`tests/e2e/run-panel.spec.ts`（從分割視窗執行後關掉分割、focus run 的 terminal、執行中關閉要確認、停止後關閉、stdin），以及改成讀 Run 面板輸出的 `tab-bar-run-configurations.spec.ts` 等既有 run 測試
+
+**已知限制**：
+- 關閉整個分割視窗（「Close split pane」）會連同裡面的 run terminal 一起關掉，因為 run 的 terminal 仍屬於那個群組
+- 只有 run 的 terminal 的 workspace，關掉最後一個可見分頁後不會回到首頁，而是顯示空白的 tab group
+- Orca Mobile、遠端 client、`orca` CLI 的 terminal 清單仍會看到 run 的 terminal（它們不知道 Run 面板）
+- Agent prompt 類的快速指令仍然開新的 terminal 分頁（它們本來就不是 run session）
+
 ## 7. 必須遵守的專案規則（摘自 AGENTS.md）
 
 - UI 依照 `docs/STYLEGUIDE.md`，使用 `main.css` 的 token 和 `components/ui/` 的 shadcn 元件；`pnpm run check:code-quality:changed` 必須通過

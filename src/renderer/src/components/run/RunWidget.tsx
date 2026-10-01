@@ -69,13 +69,10 @@ const NO_CONFIGURATIONS: ListedRunConfiguration[] = []
  */
 export function RunWidget({
   worktreeId,
-  groupId,
-  activeTerminalTabId
+  groupId
 }: {
   worktreeId: string
   groupId: string | null
-  /** The group's active terminal tab; when it belongs to a run, that run is selected. */
-  activeTerminalTabId: string | null
 }): React.JSX.Element | null {
   const data = useWorktreeRunConfigurations(worktreeId)
   const quick = useWorktreeQuickCommands(worktreeId)
@@ -137,7 +134,6 @@ export function RunWidget({
   useFollowActiveRunTerminal({
     worktreeId,
     repoId: data?.repoId,
-    activeTerminalTabId,
     items,
     selectedFootprint: selected ? footprintOf(selected) : null
   })
