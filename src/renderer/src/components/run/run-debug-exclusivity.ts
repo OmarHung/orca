@@ -18,23 +18,36 @@ export type RunDebugLaunchContext = {
   confirm: ConfirmationDialogContextValue
 }
 
+/** The live debug sessions an item started in a worktree. */
+export function debugSessionsOfSource(
+  sessions: readonly DebugSessionView[],
+  worktreeId: string,
+  sourceKey: string
+): DebugSessionView[] {
+  return sessions.filter(
+    (session) =>
+      session.phase !== 'ended' &&
+      session.worktreeId === worktreeId &&
+      session.sourceKey === sourceKey
+  )
+}
+
 export function isDebuggingSource(
-  session: DebugSessionView | null,
+  sessions: readonly DebugSessionView[],
   worktreeId: string,
   sourceKey: string
 ): boolean {
-  return (
-    session !== null &&
-    session.phase !== 'ended' &&
-    session.worktreeId === worktreeId &&
-    session.sourceKey === sourceKey
-  )
+  return debugSessionsOfSource(sessions, worktreeId, sourceKey).length > 0
 }
 
 /** Resolves false when the user keeps the debug session; otherwise stops it so the run can start. */
 export async function stopDebuggingBeforeRun(context: RunDebugLaunchContext): Promise<boolean> {
-  const session = useDebugStore.getState().session
-  if (!isDebuggingSource(session, context.worktreeId, context.sourceKey)) {
+  const sessions = debugSessionsOfSource(
+    useDebugStore.getState().sessions,
+    context.worktreeId,
+    context.sourceKey
+  )
+  if (sessions.length === 0) {
     return true
   }
   const confirmed = await context.confirm({
@@ -48,7 +61,7 @@ export async function stopDebuggingBeforeRun(context: RunDebugLaunchContext): Pr
     confirmLabel: translate('run.exclusive.debugging.confirm', 'Stop and Run')
   })
   if (confirmed) {
-    await stopDebugSession()
+    await Promise.all(sessions.map((session) => stopDebugSession(session.id)))
   }
   return confirmed
 }

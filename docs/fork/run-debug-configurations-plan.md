@@ -266,6 +266,15 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - 彈出框用 portal 掛在 `document.body`、fixed 定位（`debug-value-hover-placement.ts`），不是 Monaco content widget：放在編輯器 DOM 裡時，Monaco 以整個視窗判斷「下方放得下」，展開後的成員卻被編輯器容器裁掉、被底部 Debug 面板蓋住。現在下方放不下才翻到上方，兩邊都不夠就在較大的一側捲動
 - e2e：`debug-value-hover.spec.ts`。**踩到的坑**：測試程式不能叫 `inspect.py`，它會蓋掉標準函式庫的 `inspect`，debugpy 直接跑完不會停
 
+**多 session 分頁與中斷點範圍（2026-10-01）**：使用者要求像 Run 一樣每個除錯程式一個分頁，中斷點只列「目前 workspace＋該程式的語言」。
+- main 的 `DebugSessionManager` 本來就以 session id 管多個 session，這次只改 renderer：`debug-store` 從單一 `session` 改成 `sessions[]`（tab 順序）＋`selectedByWorktree`，console 輸出另存 `outputBySession`，免得每行輸出都讓讀暫停狀態的元件重繪。所有 DAP 請求都帶 session id（`dapRequest(sessionId, …)`）
+- 分頁在底部面板標題列（`DebugPanelTabs`，外框與 Run 共用 `BottomPanelSessionTab`）：暫停顯示 ⏸、執行中綠點、結束無標記；× 會先停掉程式再關分頁；哪個 session 停下來就切到它的分頁（同 JetBrains）
+- 「同一個東西」再除錯一次會停掉並取代舊分頁：identity 是 Run widget 的 sourceKey，沒有就用 launch target。Current File 每個檔案的 sourceKey 不同（`debugSourceKeyOf`），否則除錯第二個檔案會重啟第一個，Run widget 也會把 🐞 藏起來
+- 中斷點範圍（`debug-breakpoint-scope.ts`）：session 記下 workspace 根目錄和 adapter，啟動與同步時只送根目錄底下、該 adapter 語言（.py／js-ts-vue／.cs）的中斷點；Breakpoints 分頁同樣過濾，沒有 session 時列目前 workspace 的全部。綁定狀態改成每個 session 各記一份，gutter 用「任一個綁上就算綁上」合併，避免兩個同語言 session 互相蓋掉
+- 編輯器的暫停行、行內值、hover 依「停在這個檔案的 session」決定，所以後端和前端可以同時各自暫停；Watch 結果也依 session 分開
+- Run widget：Stop／Stop All／Run 與 Debug 互斥都改成處理多個 session；compound 原本最多一個 debug 成員的限制（`multiple-debug`）拿掉，每個成員各開一個 session
+- e2e：`debug-sessions.spec.ts`（同時除錯兩個 .py、切換分頁、Breakpoints 不列 .js、結束與關閉分頁）
+
 **仍未支援**：REPL 的自動補全（DAP `completions`）、在 Variables 裡直接修改變數值（`setVariable`）、function breakpoint、data breakpoint
 
 ### Phase 5：進階功能

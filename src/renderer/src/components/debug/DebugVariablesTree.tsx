@@ -3,24 +3,30 @@ import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { DebugProtocol } from '@vscode/debugprotocol'
 import { translate } from '@/i18n/i18n'
 import { loadDebugVariables } from './debug-session-controller'
-import { useDebugStore } from './debug-store'
+import { findDebugSession, useDebugStore, type DebugSession } from './debug-store'
 
 const INDENT_PX = 12
 // Why: DAP variable graphs can be cyclic (a.parent.child.parent…); cap how deep a user can drill.
 const MAX_DEPTH = 32
 
 export function VariableRow({
+  sessionId,
   variable,
   depth,
   trailing
 }: {
+  /** The session whose variables these are; children load from it. */
+  sessionId: string
   variable: DebugProtocol.Variable
   depth: number
   /** Extra controls at the end of the row, e.g. a watch's remove button. */
   trailing?: React.ReactNode
 }): React.JSX.Element {
   const [expanded, setExpanded] = useState(false)
-  const children = useDebugStore((s) => s.variablesByReference[variable.variablesReference])
+  const children = useDebugStore(
+    (s) =>
+      findDebugSession(s.sessions, sessionId)?.variablesByReference[variable.variablesReference]
+  )
   const expandable = variable.variablesReference > 0 && depth < MAX_DEPTH
 
   const toggle = (): void => {
@@ -28,7 +34,7 @@ export function VariableRow({
       return
     }
     if (!expanded && !children) {
-      void loadDebugVariables(variable.variablesReference)
+      void loadDebugVariables(sessionId, variable.variablesReference)
     }
     setExpanded(!expanded)
   }
@@ -59,6 +65,7 @@ export function VariableRow({
         ? children.map((child) => (
             <VariableRow
               key={`${variable.variablesReference}:${child.name}`}
+              sessionId={sessionId}
               variable={child}
               depth={depth + 1}
             />
@@ -68,9 +75,13 @@ export function VariableRow({
   )
 }
 
-export function DebugVariablesTree(): React.JSX.Element {
-  const scopes = useDebugStore((s) => s.scopes)
-  const variablesByReference = useDebugStore((s) => s.variablesByReference)
+export function DebugVariablesTree({
+  session
+}: {
+  session: DebugSession | null
+}): React.JSX.Element {
+  const scopes = session?.scopes ?? []
+  const variablesByReference = session?.variablesByReference ?? {}
   const scopesWithVariables = scopes.filter(
     (scope) => variablesByReference[scope.variablesReference]
   )
@@ -81,7 +92,7 @@ export function DebugVariablesTree(): React.JSX.Element {
         {translate('debug.variables', 'Variables')}
       </div>
       <div className="scrollbar-sleek min-h-0 flex-1 overflow-auto">
-        {scopesWithVariables.length === 0 ? (
+        {!session || scopesWithVariables.length === 0 ? (
           <div className="px-2 py-1 text-xs text-muted-foreground">
             {translate('debug.variablesEmpty', 'Variables appear when the program pauses')}
           </div>
@@ -92,7 +103,12 @@ export function DebugVariablesTree(): React.JSX.Element {
                 <div className="px-2 pt-1 text-xs text-muted-foreground">{scope.name}</div>
               ) : null}
               {variablesByReference[scope.variablesReference].map((variable) => (
-                <VariableRow key={variable.name} variable={variable} depth={0} />
+                <VariableRow
+                  key={variable.name}
+                  sessionId={session.id}
+                  variable={variable}
+                  depth={0}
+                />
               ))}
             </div>
           ))

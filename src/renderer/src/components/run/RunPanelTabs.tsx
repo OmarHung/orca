@@ -1,8 +1,7 @@
 import React from 'react'
-import { X } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { BottomPanelSessionTab } from '../bottom-panel/BottomPanelSessionTab'
 import { RunStatusIcon } from './RunStatusIcon'
 import { runTargetMode } from './run-mode'
 import { closeRunPanelSession } from './run-panel-actions'
@@ -21,37 +20,17 @@ function RunPanelTab({
   const select = useRunPanelStore((s) => s.select)
   const status = describeRunStatus(session)
   return (
-    <div
-      className={cn(
-        'group flex h-6 shrink-0 items-center gap-1 rounded-md pr-0.5 pl-2 text-xs transition-colors',
-        selected
-          ? 'bg-accent text-accent-foreground'
-          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-      )}
-    >
-      <button
-        type="button"
-        role="tab"
-        aria-selected={selected}
-        data-testid="run-panel-tab"
-        data-run-status={session.status}
-        title={status ? `${session.label}: ${status}` : session.label}
-        className="flex max-w-48 min-w-0 items-center gap-1.5"
-        onClick={() => select(session.worktreeId, session.commandKey)}
-      >
-        <RunStatusIcon tone={runStatusTone(session)} mode={runTargetMode(session.target)} />
-        <span className="truncate">{session.label}</span>
-      </button>
-      <button
-        type="button"
-        aria-label={translate('run.panel.close', "Close '{{value0}}'", { value0: session.label })}
-        data-testid="run-panel-tab-close"
-        className="flex size-4 items-center justify-center rounded-sm opacity-60 hover:bg-accent hover:opacity-100"
-        onClick={() => closeRunPanelSession(session)}
-      >
-        <X className="size-3" />
-      </button>
-    </div>
+    <BottomPanelSessionTab
+      label={session.label}
+      title={status ? `${session.label}: ${status}` : session.label}
+      status={<RunStatusIcon tone={runStatusTone(session)} mode={runTargetMode(session.target)} />}
+      selected={selected}
+      onSelect={() => select(session.worktreeId, session.commandKey)}
+      onClose={() => closeRunPanelSession(session)}
+      closeLabel={translate('run.panel.close', "Close '{{value0}}'", { value0: session.label })}
+      tabProps={{ 'data-testid': 'run-panel-tab', 'data-run-status': session.status }}
+      closeTestId="run-panel-tab-close"
+    />
   )
 }
 

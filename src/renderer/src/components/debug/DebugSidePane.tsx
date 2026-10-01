@@ -3,6 +3,7 @@ import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import { DebugBreakpointsList } from './DebugBreakpointsList'
 import { DebugConsole } from './DebugConsole'
+import type { DebugSession } from './debug-store'
 
 type SideTab = 'console' | 'breakpoints'
 
@@ -32,7 +33,13 @@ function TabButton({
 }
 
 /** Console and Breakpoints share the Debug window's right column, as tabs. */
-export function DebugSidePane(): React.JSX.Element {
+export function DebugSidePane({
+  session,
+  worktreeId
+}: {
+  session: DebugSession | null
+  worktreeId: string | null
+}): React.JSX.Element {
   const [tab, setTab] = useState<SideTab>('console')
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -48,7 +55,11 @@ export function DebugSidePane(): React.JSX.Element {
           onClick={() => setTab('breakpoints')}
         />
       </div>
-      {tab === 'console' ? <DebugConsole /> : <DebugBreakpointsList />}
+      {tab === 'console' ? (
+        <DebugConsole session={session} />
+      ) : (
+        <DebugBreakpointsList session={session} worktreeId={worktreeId} />
+      )}
     </div>
   )
 }

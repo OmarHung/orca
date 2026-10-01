@@ -4,8 +4,8 @@ import type { editor } from 'monaco-editor'
 import { Glasses } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
-import { refreshWatches } from './debug-evaluate'
-import { useDebugStore } from './debug-store'
+import { refreshAllWatches } from './debug-evaluate'
+import { pausedDebugSessionForFile, useDebugStore } from './debug-store'
 import { DebugValueHover, type DebugHoverValue } from './debug-value-hover'
 import { MAX_POPUP_HEIGHT_PX, placeValuePopup } from './debug-value-hover-placement'
 import { VariableRow } from './DebugVariablesTree'
@@ -22,7 +22,7 @@ function AddToWatchesButton({ expression }: { expression: string }): React.JSX.E
       title={label}
       onClick={() => {
         useWatchStore.getState().add(expression)
-        void refreshWatches()
+        void refreshAllWatches()
       }}
     >
       <Glasses />
@@ -31,9 +31,11 @@ function AddToWatchesButton({ expression }: { expression: string }): React.JSX.E
 }
 
 function DebugValuePopup({
+  sessionId,
   value,
   onClose
 }: {
+  sessionId: string
   value: DebugHoverValue
   onClose: () => void
 }): React.JSX.Element {
@@ -102,6 +104,7 @@ function DebugValuePopup({
         <VariableRow
           // A new key per target so expansion state never leaks between names.
           key={`${value.lineNumber}:${value.startColumn}:${value.expression}`}
+          sessionId={sessionId}
           depth={0}
           variable={{
             name: value.expression,
@@ -126,30 +129,36 @@ export function DebugValueHoverWidget({
   filePath: string
   language: string
 }): React.JSX.Element | null {
-  const pausedFrameId = useDebugStore((s) =>
-    s.session?.stoppedThreadId != null && s.executionLocation?.path === filePath
-      ? s.selectedFrameId
-      : null
-  )
+  const pausedSession = useDebugStore((s) => pausedDebugSessionForFile(s.sessions, filePath))
+  const sessionId = pausedSession?.id ?? null
+  const pausedFrameId = pausedSession?.selectedFrameId ?? null
   const [value, setValue] = useState<DebugHoverValue | null>(null)
   const controllerRef = useRef<DebugValueHover | null>(null)
   const close = useCallback(() => controllerRef.current?.close(), [])
 
   useEffect(() => {
-    if (!codeEditor || pausedFrameId === null || !DEBUGGABLE_LANGUAGES.has(language)) {
+    if (
+      !codeEditor ||
+      sessionId === null ||
+      pausedFrameId === null ||
+      !DEBUGGABLE_LANGUAGES.has(language)
+    ) {
       return
     }
     // A fresh controller per paused frame, so values never outlive the frame they came from.
-    const controller = new DebugValueHover(codeEditor, setValue)
+    const controller = new DebugValueHover(codeEditor, sessionId, setValue)
     controllerRef.current = controller
     return () => {
       controllerRef.current = null
       controller.dispose()
     }
-  }, [codeEditor, language, pausedFrameId])
+  }, [codeEditor, language, pausedFrameId, sessionId])
 
-  if (!value) {
+  if (!value || !sessionId) {
     return null
   }
-  return createPortal(<DebugValuePopup value={value} onClose={close} />, document.body)
+  return createPortal(
+    <DebugValuePopup sessionId={sessionId} value={value} onClose={close} />,
+    document.body
+  )
 }

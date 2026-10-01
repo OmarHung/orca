@@ -47,7 +47,7 @@ export type RunLaunchPlan = {
   involvedIds: string[]
 }
 
-export type RunPlanErrorCode = 'missing' | 'cycle' | 'step-not-command' | 'multiple-debug'
+export type RunPlanErrorCode = 'missing' | 'cycle' | 'step-not-command'
 
 export type RunPlanResult =
   | { ok: true; plan: RunLaunchPlan }
@@ -153,11 +153,6 @@ export function planRunConfiguration(
       }
     } else {
       collectLaunches(all, top, launches, new Set(), expanded)
-    }
-    const debugLaunches = launches.filter((launch) => launch.type === 'debug')
-    if (debugLaunches.length > 1) {
-      // Why: Orca runs one debug session at a time; starting another stops the first.
-      throw new RunPlanError('multiple-debug', debugLaunches[1].name)
     }
     const beforeLaunch: CommandRunConfiguration[] = []
     for (const launch of launches) {

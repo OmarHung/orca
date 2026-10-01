@@ -55,6 +55,8 @@ export class DebugValueHover implements IDisposable {
 
   constructor(
     private readonly codeEditor: editor.IStandaloneCodeEditor,
+    /** The session paused in this editor's file; values come from its selected frame. */
+    private readonly sessionId: string,
     private readonly onChange: (value: DebugHoverValue | null) => void
   ) {
     this.listeners = this.listen()
@@ -152,7 +154,7 @@ export class DebugValueHover implements IDisposable {
 
   private async evaluate(target: HoverTarget, id: number): Promise<void> {
     try {
-      const result = await evaluateExpression(target.expression, 'hover')
+      const result = await evaluateExpression(this.sessionId, target.expression, 'hover')
       const anchor = this.anchorOf(target)
       if (id === this.request && anchor) {
         this.setShown({ ...target, result, anchor })
