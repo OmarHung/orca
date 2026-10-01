@@ -85,7 +85,7 @@ export function stopConfiguration(worktreeId: string, commandKey: string): void 
 }
 
 function verifyStopInput(session: RunSession, ptyId: string, input: string): void {
-  void sendRuntimePtyInputVerified(useAppStore.getState().settings, ptyId, input)
+  void sendRuntimePtyInputVerified(useAppStore.getState().settings, ptyId, input, 'driving')
     .then((accepted) => {
       if (!accepted) {
         useRunSessionStore.getState().setStatus(session.key, session.attemptId, 'unverifiable')
