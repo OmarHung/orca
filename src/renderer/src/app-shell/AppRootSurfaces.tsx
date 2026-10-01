@@ -7,6 +7,7 @@ import NewWorkspaceComposerModal from '../components/NewWorkspaceComposerModal'
 import { CrashReportDialog } from '../components/crash-report/CrashReportDialog'
 import { MarkdownTemplatePicker } from '../components/editor/MarkdownTemplatePicker'
 import { RevisionComparePicker } from '../components/editor/revision-compare/RevisionComparePicker'
+import { DockerExportDialogHost } from '../components/run/DockerExportDialog'
 import { DotnetPublishDialogHost } from '../components/run/DotnetPublishDialog'
 import { SshVpnStartConfirmHost } from '../components/ssh-vpn/SshVpnStartConfirmHost'
 import RecentTabSwitcher from '../components/tab-bar/RecentTabSwitcher'
@@ -337,6 +338,7 @@ export function AppRootSurfaces(props: {
         <MarkdownTemplatePicker />
         <RevisionComparePicker />
         <DotnetPublishDialogHost />
+        <DockerExportDialogHost />
         <SshVpnStartConfirmHost />
       </ModalBoundary>
       <RecoverableRenderErrorBoundary

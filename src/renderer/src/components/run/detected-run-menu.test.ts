@@ -142,6 +142,38 @@ describe('detectedRunMenu with saved configurations', () => {
   })
 })
 
+describe('detectedRunMenu with Docker exports', () => {
+  it('offers Publish for a Dockerfile with export stages and lists its saved exports there', () => {
+    const build: DetectedRunConfiguration = {
+      ...run('/w', 'Dockerfile', 'build', 'build', 'docker'),
+      projectFile: '/w/Dockerfile',
+      dockerExport: { contextDir: '/w', stages: ['export-web', 'export-api'] }
+    }
+    const saved = {
+      type: 'docker-export' as const,
+      id: 'web',
+      name: 'Export web',
+      dockerfile: 'Dockerfile',
+      target: 'export-web',
+      outputDir: '/deploy/web'
+    }
+
+    const before = detectedRunMenu([build], '/w', new Set())
+    const after = detectedRunMenu([build], '/w', new Set(), [saved])
+
+    const groupsOf = (menu: ReturnType<typeof detectedRunMenu>) =>
+      menu.ecosystems[0].folders[0].projects[0].groups.map((group) => [group.kind, group.saved])
+    expect(groupsOf(before)).toEqual([
+      ['build', []],
+      ['publish', []]
+    ])
+    expect(groupsOf(after)).toEqual([
+      ['build', []],
+      ['publish', [saved]]
+    ])
+  })
+})
+
 describe('splitLocation', () => {
   it('separates the parent folder from the project folder', () => {
     expect(splitLocation('core/Piranha.Manager')).toEqual({

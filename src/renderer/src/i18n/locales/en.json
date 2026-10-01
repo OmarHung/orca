@@ -18857,7 +18857,8 @@
       "publish": "Publish '{{value0}}'…",
       "run": "Run '{{value0}}'",
       "more": "More Run/Debug",
-      "debugNamed": "Debug '{{value0}}'"
+      "debugNamed": "Debug '{{value0}}'",
+      "exportToFolder": "Export '{{value0}}' to Folder…"
     },
     "publishConfirm": {
       "title": "Publish '{{value0}}'?",
@@ -18944,7 +18945,8 @@
         "command": "Add command configuration",
         "debug": "Add debug configuration",
         "compound": "Add compound (start several together or in order)",
-        "dotnetPublish": "Add .NET publish to folder"
+        "dotnetPublish": "Add .NET publish to folder",
+        "dockerExport": "Add Docker export to folder"
       },
       "publish": {
         "targetLocation": "Target location",
@@ -18968,6 +18970,18 @@
         "extraArgsHint": "Appended to the command as written, e.g. -p:Version=1.2.3",
         "command": "Runs from the workspace root",
         "unsafePath": "The project file or output folder contains characters that cannot be passed safely to a shell, such as \" $ ` % or !."
+      },
+      "dockerExport": {
+        "stage": "Stage",
+        "cleanSection": "Before exporting",
+        "cleanHint": "Docker only adds and overwrites files, so files from an earlier export stay. On this computer the folder goes to the Trash; on an SSH host it is deleted.",
+        "clean": "Empty the output folder",
+        "dockerfile": "Dockerfile",
+        "context": "Build context",
+        "contextHint": "Empty uses the Dockerfile's folder.",
+        "outputDir": "Output folder",
+        "extraArgsHint": "Appended to the command as written, e.g. --build-arg VERSION=1.2.3",
+        "unsafe": "Choose a stage, and use paths without \" $ ` % ! or commas."
       }
     },
     "widget": {
@@ -18995,7 +19009,8 @@
         "test": "Test",
         "publish": "Publish",
         "other": "Other"
-      }
+      },
+      "newExportToFolder": "New Export to Folder…"
     },
     "exclusive": {
       "debugging": {
@@ -19046,6 +19061,17 @@
     },
     "currentFile": {
       "named": "Current File: {{value0}}"
+    },
+    "dockerExportDialog": {
+      "title": "Export to folder",
+      "description": "Builds one stage of the Dockerfile and copies its files to a folder. Saved as a run configuration for this repository, so the Run widget can export again with the same settings.",
+      "export": "Export"
+    },
+    "emptyOutput": {
+      "failed": "'{{value0}}' did not run: could not empty {{value1}}",
+      "notAbsolute": "its path could not be resolved",
+      "systemFolder": "it is a root, home or system folder",
+      "containsSources": "it holds the workspace or the build context"
     }
   },
   "python": {

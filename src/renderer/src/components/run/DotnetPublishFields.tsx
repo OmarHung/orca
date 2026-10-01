@@ -1,6 +1,4 @@
 import React, { useId } from 'react'
-import { FolderOpen } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,13 +10,13 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { translate } from '@/i18n/i18n'
-import { getRelativePathInsideRoot } from '@/lib/path'
 import {
   DEFAULT_PUBLISH_BUILD_CONFIGURATION,
   DOTNET_PUBLISH_RUNTIMES,
   dotnetPublishCommand,
   type DotnetPublishRunConfiguration
 } from '../../../../shared/run-configurations/dotnet-publish-configuration'
+import { FolderPathInput } from './FolderPathInput'
 import { FormField } from './RunConfigurationFormField'
 
 const PORTABLE = 'portable'
@@ -105,17 +103,6 @@ function TargetLocationField({
   browseRoot,
   onChange
 }: Props): React.JSX.Element {
-  const browse = async (): Promise<void> => {
-    if (!browseRoot) {
-      return
-    }
-    const picked = await window.api.shell.pickDirectory({ defaultPath: browseRoot })
-    if (picked) {
-      // Why relative: the configuration is saved per repository and must work in every worktree.
-      const relative = getRelativePathInsideRoot(picked, browseRoot)
-      onChange({ ...configuration, outputDir: relative === null ? picked : relative || '.' })
-    }
-  }
   return (
     <FormField
       label={translate('run.configurations.publish.targetLocation', 'Target location')}
@@ -124,27 +111,14 @@ function TargetLocationField({
         'Relative to the workspace root, or absolute. Empty uses bin/<configuration>/<framework>/publish.'
       )}
     >
-      <div className="flex gap-2">
-        <Input
-          value={configuration.outputDir ?? ''}
-          disabled={disabled}
-          placeholder="src/Api/bin/Release/net8.0/publish"
-          data-testid="dotnet-publish-output-dir"
-          onChange={(event) => onChange({ ...configuration, outputDir: event.target.value })}
-        />
-        {browseRoot ? (
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={disabled}
-            data-testid="dotnet-publish-browse"
-            onClick={() => void browse()}
-          >
-            <FolderOpen />
-            {translate('run.configurations.publish.browse', 'Browse…')}
-          </Button>
-        ) : null}
-      </div>
+      <FolderPathInput
+        value={configuration.outputDir ?? ''}
+        disabled={disabled}
+        browseRoot={browseRoot}
+        placeholder="src/Api/bin/Release/net8.0/publish"
+        testIdPrefix="dotnet-publish"
+        onChange={(outputDir) => onChange({ ...configuration, outputDir })}
+      />
     </FormField>
   )
 }

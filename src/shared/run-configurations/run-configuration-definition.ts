@@ -1,5 +1,9 @@
 import type { DebugLaunchTarget } from '../debug/debug-session-types'
 import {
+  normalizeDockerExport,
+  type DockerExportRunConfiguration
+} from './docker-export-configuration'
+import {
   DOTNET_PROJECT_FILE_PATTERN,
   normalizeDotnetPublish,
   type DotnetPublishRunConfiguration
@@ -49,6 +53,7 @@ export type RunConfigurationDefinition =
   | CommandRunConfiguration
   | DebugRunConfiguration
   | DotnetPublishRunConfiguration
+  | DockerExportRunConfiguration
   | CompoundRunConfiguration
 
 export type RunConfigurationProblem = { index: number; message: string }
@@ -153,6 +158,7 @@ function inferType(record: Record<string, unknown>): RunConfigurationDefinition[
     record.type === 'command' ||
     record.type === 'debug' ||
     record.type === 'dotnet-publish' ||
+    record.type === 'docker-export' ||
     record.type === 'compound'
   ) {
     return record.type
@@ -213,6 +219,8 @@ function normalizeOne(value: unknown): RunConfigurationDefinition | string {
     }
     case 'dotnet-publish':
       return normalizeDotnetPublish(record, { id, name, ...(beforeLaunch ? { beforeLaunch } : {}) })
+    case 'docker-export':
+      return normalizeDockerExport(record, { id, name, ...(beforeLaunch ? { beforeLaunch } : {}) })
     case 'compound': {
       const configurations = asTextList(record.configurations)
       if (!configurations) {

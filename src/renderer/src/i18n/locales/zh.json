@@ -18775,7 +18775,8 @@
       "publish": "发布 '{{value0}}'…",
       "run": "运行 '{{value0}}'",
       "more": "更多运行/调试",
-      "debugNamed": "调试 '{{value0}}'"
+      "debugNamed": "调试 '{{value0}}'",
+      "exportToFolder": "导出 '{{value0}}' 到文件夹…"
     },
     "publishConfirm": {
       "title": "发布 '{{value0}}'？",
@@ -18862,7 +18863,8 @@
         "command": "添加命令配置",
         "debug": "添加调试配置",
         "compound": "添加组合（同时或依序启动多个）",
-        "dotnetPublish": "添加 .NET 发布到文件夹"
+        "dotnetPublish": "添加 .NET 发布到文件夹",
+        "dockerExport": "添加 Docker 导出到文件夹"
       },
       "publish": {
         "targetLocation": "目标位置",
@@ -18886,6 +18888,18 @@
         "extraArgsHint": "按原样附加到命令末尾，例如 -p:Version=1.2.3",
         "command": "在工作区根目录执行",
         "unsafePath": "项目文件或输出文件夹包含无法安全传给 shell 的字符，例如 \" $ ` % 或 !。"
+      },
+      "dockerExport": {
+        "stage": "阶段",
+        "cleanSection": "导出前",
+        "cleanHint": "Docker 只会新增和覆盖文件，之前导出的文件会留下。在这台电脑上，文件夹会移到垃圾桶；在 SSH 主机上会直接删除。",
+        "clean": "清空输出文件夹",
+        "dockerfile": "Dockerfile",
+        "context": "构建上下文",
+        "contextHint": "留空则使用 Dockerfile 所在的文件夹。",
+        "outputDir": "输出文件夹",
+        "extraArgsHint": "按原样附加到命令末尾，例如 --build-arg VERSION=1.2.3",
+        "unsafe": "请选择阶段，并且路径不能包含 \" $ ` % ! 或逗号。"
       }
     },
     "widget": {
@@ -18913,7 +18927,8 @@
         "test": "测试",
         "publish": "发布",
         "other": "其他"
-      }
+      },
+      "newExportToFolder": "新增导出到文件夹…"
     },
     "exclusive": {
       "debugging": {
@@ -18964,6 +18979,17 @@
     },
     "currentFile": {
       "named": "当前文件：{{value0}}"
+    },
+    "dockerExportDialog": {
+      "title": "导出到文件夹",
+      "description": "构建 Dockerfile 的一个阶段，并把其中的文件复制到文件夹。会保存为此仓库的运行配置，之后可在运行工具栏用相同设置再次导出。",
+      "export": "导出"
+    },
+    "emptyOutput": {
+      "failed": "'{{value0}}' 未运行：无法清空 {{value1}}",
+      "notAbsolute": "无法解析它的路径",
+      "systemFolder": "它是根目录、主目录或系统文件夹",
+      "containsSources": "它包含工作区或构建上下文"
     }
   },
   "python": {
