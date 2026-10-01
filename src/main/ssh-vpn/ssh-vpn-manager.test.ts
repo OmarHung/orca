@@ -4,6 +4,7 @@ import type { ProcessResult } from '../../shared/child-process/process-spec'
 import type { SshVpnProfile, SshVpnProfileState } from '../../shared/ssh-vpn-types'
 import { SshVpnManager } from './ssh-vpn-manager'
 import type { SshVpnDockerPort } from './ssh-vpn-manager-types'
+import { previewSshVpnStart } from './ssh-vpn-start-sequence'
 
 const PROFILE: SshVpnProfile = {
   id: 'profile-0001',
@@ -272,6 +273,32 @@ describe('SshVpnManager', () => {
     await expect(manager.acquire(PROFILE, { confirm })).resolves.toMatchObject({
       containerName: CONTAINER
     })
+  })
+
+  it('previews exactly what a start then confirms, without starting anything', async () => {
+    const { docker } = createFakeDocker()
+    const { manager } = createManager(docker)
+    const confirm = vi.fn(async (_commands: string[]) => true)
+    const preview = (profile: SshVpnProfile) =>
+      previewSshVpnStart(
+        {
+          docker: async () => docker,
+          instanceTag: 'tag12345',
+          readFile: async () => Buffer.from('client\nremote vpn.example.com\n'),
+          isReady: (id) => manager.getReadyRoute(id) !== null
+        },
+        profile
+      )
+
+    const before = await preview(PROFILE)
+    expect(docker.startContainer).not.toHaveBeenCalled()
+    await manager.acquire(PROFILE, { confirm })
+
+    expect(before).toEqual({ kind: 'start', commands: confirm.mock.calls[0][0] })
+    await expect(preview(PROFILE)).resolves.toEqual({ kind: 'ready' })
+    await expect(
+      preview({ id: 'profile-0002', kind: 'container', name: 'B', containerName: 'vpn-b' })
+    ).resolves.toEqual({ kind: 'borrowed', containerName: 'vpn-b' })
   })
 
   it('does not ask again while the VPN is already up', async () => {

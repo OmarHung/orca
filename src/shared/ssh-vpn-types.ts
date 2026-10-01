@@ -109,11 +109,21 @@ export type SshVpnTerminalRoute = {
 /** Main asks the renderer to show these commands before a VPN starts. */
 export type SshVpnStartConfirmRequest = {
   requestId: string
+  profileId: string
   profileName: string
   /** The SSH host whose connection needs the VPN; null for a manual Connect. */
   hostLabel: string | null
+  /** An SSH host's connection, so the user may pick another VPN for the host instead. */
+  switchable: boolean
   commands: string[]
 }
+
+/** What using a VPN would take right now, for the start confirmation's VPN picker. */
+export type SshVpnStartPreview =
+  | { kind: 'start'; commands: string[] }
+  | { kind: 'ready' }
+  /** Started outside Orca; Orca only checks the container and connects through it. */
+  | { kind: 'borrowed'; containerName: string }
 
 export const sshVpnAssignmentSchema = z.object({
   targetId: z.string().min(1).max(200),
@@ -152,7 +162,16 @@ export const sshVpnCredentialAnswerSchema = z.object({
     .nullable()
 })
 
+// Why bounded: the commands only come back from the confirmation, which lists a few dozen at most.
+const approvedCommandsSchema = z.array(z.string().max(100_000)).max(1000)
+
 export const sshVpnConfirmAnswerSchema = z.object({
   requestId: z.string().min(1).max(100),
-  approved: z.boolean()
+  approved: z.boolean(),
+  /** Approved for another VPN picked in the confirmation, after seeing these commands for it. */
+  switchTo: z
+    .object({ profileId: sshVpnProfileIdSchema, commands: approvedCommandsSchema })
+    .optional()
 })
+
+export type SshVpnStartAnswer = Omit<z.infer<typeof sshVpnConfirmAnswerSchema>, 'requestId'>

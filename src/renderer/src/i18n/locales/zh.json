@@ -20129,7 +20129,14 @@
       "isolated": "VPN 在 Docker 容器中运行，这台电脑的其他网络流量不会改走 VPN。",
       "title": "要启动 VPN「{{name}}」吗？",
       "tunnelNote": "之后每条 SSH 连接都会运行 `docker exec -i <容器> nc <主机> <端口>`，经由 VPN 连到主机。",
-      "start": "启动 VPN"
+      "start": "启动 VPN",
+      "useTitle": "要经由 VPN「{{name}}」连接吗？",
+      "profile": "VPN",
+      "switchNote": "之后 {{host}} 都会经由这个 VPN 连接。",
+      "loading": "正在检查这个 VPN 需要执行的指令…",
+      "alreadyUp": "这个 VPN 已经连接，不需要执行任何指令。",
+      "borrowedNote": "这个 VPN 在容器 {{name}} 中运行，由 Orca 以外的方式启动和停止，Orca 只会检查它并经由它连接。",
+      "connect": "连接"
     },
     "button": "VPN",
     "login": {
