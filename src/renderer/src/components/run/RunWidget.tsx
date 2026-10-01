@@ -45,7 +45,7 @@ import {
 import { useWorktreeRunConfigurations } from './use-worktree-run-configurations'
 import { useCompoundQuickCommand } from './use-compound-quick-command'
 import { useFollowActiveRunTerminal } from './use-follow-active-run-terminal'
-import { savedCommandFor } from './saved-command-match'
+import { savedRunFor } from './saved-command-match'
 import { useCurrentFileRunItem } from './use-current-file-run-item'
 import { useRunWidgetActivity } from './use-run-widget-activity'
 import { useRunWidgetDetectedMenu } from './use-run-widget-detected-menu'
@@ -107,13 +107,10 @@ export function RunWidget({
   const currentFile = useCurrentFileRunItem(worktreeId, groupId)
   const items = runWidgetItems({
     currentFile,
-    // Why: a temporary run saved as a configuration is that configuration now, as in JetBrains.
-    recent: data
-      ? recent.filter(
-          (target) =>
-            !savedCommandFor(target.command.command, target.cwd, configurations, data.worktreePath)
-        )
-      : recent,
+    recent,
+    // Why: a temporary run saved as a configuration shares that configuration's single run.
+    savedTargetOf: (target) =>
+      data ? (savedRunFor(target, configurations, data.worktreePath)?.target ?? null) : null,
     configurations: data?.listed ?? NO_CONFIGURATIONS,
     quickCommands: [...quick.repoCommands, ...quick.globalCommands]
   })

@@ -13,8 +13,8 @@ import {
   type RunDebugLaunchContext
 } from './run-debug-exclusivity'
 import { launchRunConfiguration } from './run-configuration-launcher'
-import { configurationItemKey, recentItemKey, type DetectedRunWidgetItem } from './run-widget-items'
-import { storedSavedRunFor, type SavedRun } from './saved-command-match'
+import { recentItemKey, type DetectedRunWidgetItem } from './run-widget-items'
+import { storedSavedRunFor } from './saved-command-match'
 
 export function detectedConfigurationLabel(configuration: DetectedRunConfiguration): string {
   return `${configuration.projectName}: ${configuration.name}`
@@ -60,24 +60,8 @@ export function detectedRunWidgetItem(
   }
 }
 
-/** The saved configuration this run became, selected in the Run widget instead of a temporary one. */
-function selectSavedRun(target: RunTarget): SavedRun | null {
-  const match = storedSavedRunFor(target)
-  if (match) {
-    useRunConfigurationStore.getState().select(match.repoId, configurationItemKey(match.saved.id))
-  }
-  return match?.saved ?? null
-}
-
-/**
- * Selects the run in the Run widget: the saved configuration it became, if any (returned),
- * otherwise kept as the worktree's temporary configuration.
- */
-export function selectDetectedRun(target: RunTarget): SavedRun | null {
-  const saved = selectSavedRun(target)
-  if (saved) {
-    return saved
-  }
+/** Keeps the run as the worktree's temporary configuration and selects it in the Run widget. */
+export function selectDetectedRun(target: RunTarget): void {
   useRecentRunStore.getState().remember(target)
   const worktreesByRepo = useAppStore.getState().worktreesByRepo
   const repoId = worktreesByRepo
@@ -86,7 +70,6 @@ export function selectDetectedRun(target: RunTarget): SavedRun | null {
   if (repoId) {
     useRunConfigurationStore.getState().select(repoId, recentItemKey(target.commandKey))
   }
-  return null
 }
 
 function detectedLaunchContext(
@@ -130,7 +113,8 @@ export async function runDetectedConfiguration(
     return
   }
   const target = toDetectedRunTarget(configuration, worktreeId, groupId)
-  const saved = selectDetectedRun(target)
+  selectDetectedRun(target)
+  const saved = storedSavedRunFor(target)?.saved
   if (!(await stopDebuggingBeforeRun(detectedLaunchContext(target, confirm)))) {
     return
   }
@@ -151,7 +135,8 @@ export async function debugDetectedConfiguration(
     return
   }
   const target = toDetectedRunTarget(configuration, worktreeId, groupId)
-  const saved = selectDetectedRun(target)
+  selectDetectedRun(target)
+  const saved = storedSavedRunFor(target)?.saved
   const context = detectedLaunchContext(target, confirm)
   if (!(await stopRunBeforeDebug(context, saved?.target ?? target))) {
     return

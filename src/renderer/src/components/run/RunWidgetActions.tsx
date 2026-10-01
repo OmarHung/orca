@@ -138,7 +138,9 @@ function SingleRunActions({
         showStop={false}
         // Why: configurations rerun through the launcher so trust and Before launch apply again.
         onRerun={
-          item.kind === 'configuration' ? () => void runWidgetItem(item, scope, confirm) : undefined
+          item.kind === 'configuration' || (item.kind === 'recent' && item.savedTarget)
+            ? () => void runWidgetItem(item, scope, confirm)
+            : undefined
         }
       />
       {debugging ? <DebugSessionControls label={item.label} onRestart={debug} /> : null}

@@ -97,8 +97,8 @@ test('builds a sequential compound from detected runs and starts members in orde
   expect(await tabLabels(orcaPage)).not.toContain('web: dev')
   await expect.poll(() => tabLabels(orcaPage), { timeout: 30_000 }).toContain('web: dev')
 
-  // Saved into the compound, the detected run is that configuration now: running it from the file
-  // tree reuses its terminal instead of starting a second copy, and Recent does not list it again.
+  // Saved into the compound, the detected run shares that configuration's run: running it from
+  // the file tree reuses its terminal instead of starting a second copy, and both rows stay listed.
   await openExplorer(orcaPage)
   await explorerRow(orcaPage, 'web').click({ button: 'right' })
   await orcaPage.getByRole('menuitem', { name: "Run 'web: dev'" }).click()
@@ -111,7 +111,7 @@ test('builds a sequential compound from detected runs and starts members in orde
   expect((await tabLabels(orcaPage)).filter((label) => label === 'web: dev')).toHaveLength(1)
   await openMenu(orcaPage)
   await expect(orcaPage.getByTestId('run-widget-item').filter({ hasText: 'web: dev' })).toHaveCount(
-    1
+    2
   )
   await orcaPage.keyboard.press('Escape')
 
