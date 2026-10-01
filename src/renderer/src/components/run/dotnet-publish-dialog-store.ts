@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { useAppStore } from '@/store'
 import { createBrowserUuid } from '@/lib/browser-uuid'
-import { dirname, getRelativePathInsideRoot, normalizeRelativePath } from '@/lib/path'
+import { dirname, normalizeRelativePath } from '@/lib/path'
 import { findWorktreeById } from '@/store/slices/worktree-helpers'
 import {
   newDotnetPublishConfiguration,
@@ -12,6 +12,7 @@ import type { DetectedRunConfiguration } from '../../../../shared/run-configurat
 import { worktreeProjectFiles } from './project-run-detection'
 import { uniqueName } from './run-configuration-drafts'
 import { useRunConfigurationStore } from './run-configuration-store'
+import { workspaceRelativePath } from './workspace-relative-path'
 
 export type DotnetPublishDialogRequest = {
   worktreeId: string
@@ -34,12 +35,6 @@ export const useDotnetPublishDialogStore = create<DotnetPublishDialogState>((set
   close: () => set({ request: null })
 }))
 
-/** Relative to the workspace root, so the configuration works in every worktree of the repo. */
-function workspaceRelative(path: string, worktreePath: string): string {
-  const relative = getRelativePathInsideRoot(path, worktreePath)
-  return relative === null ? path : normalizeRelativePath(relative)
-}
-
 function samePath(a: string, b: string): boolean {
   return normalizeRelativePath(a).toLowerCase() === normalizeRelativePath(b).toLowerCase()
 }
@@ -58,7 +53,7 @@ export async function openDotnetPublishDialog(
   if (!worktree || !detected.projectFile) {
     return
   }
-  const projectFile = workspaceRelative(detected.projectFile, worktree.path)
+  const projectFile = workspaceRelativePath(detected.projectFile, worktree.path)
   const local = useRunConfigurationStore.getState().localByRepo[worktree.repoId] ?? []
   const saved = options.asNew
     ? undefined
@@ -74,7 +69,7 @@ export async function openDotnetPublishDialog(
     id: createBrowserUuid(),
     projectName: detected.projectName,
     projectFile,
-    projectDir: workspaceRelative(dirname(detected.projectFile), worktree.path),
+    projectDir: workspaceRelativePath(dirname(detected.projectFile), worktree.path),
     targetFrameworks: projectXml ? readTargetFrameworks(projectXml) : []
   })
   useDotnetPublishDialogStore.getState().open({

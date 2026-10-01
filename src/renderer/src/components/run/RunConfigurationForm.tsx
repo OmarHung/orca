@@ -7,11 +7,13 @@ import type {
   DebugRunConfiguration,
   RunConfigurationDefinition
 } from '../../../../shared/run-configurations/run-configuration-definition'
+import type { DockerExportRunConfiguration } from '../../../../shared/run-configurations/docker-export-configuration'
 import type { DotnetPublishRunConfiguration } from '../../../../shared/run-configurations/dotnet-publish-configuration'
 import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
 import { CompoundMembersEditor } from './CompoundMembersEditor'
 import { ConfigurationReferenceList } from './ConfigurationReferenceList'
 import { DebugTargetFields } from './DebugTargetFields'
+import { DockerExportFields } from './DockerExportFields'
 import { DotnetPublishFields } from './DotnetPublishFields'
 import { FormField } from './RunConfigurationFormField'
 import {
@@ -58,7 +60,10 @@ function BeforeLaunchField({
   readOnly,
   onChange
 }: FormProps<
-  CommandRunConfiguration | DebugRunConfiguration | DotnetPublishRunConfiguration
+  | CommandRunConfiguration
+  | DebugRunConfiguration
+  | DotnetPublishRunConfiguration
+  | DockerExportRunConfiguration
 >): React.JSX.Element {
   return (
     <FormField
@@ -71,7 +76,11 @@ function BeforeLaunchField({
       <ConfigurationReferenceList
         testId="run-configuration-before-launch"
         references={configuration.beforeLaunch ?? []}
-        candidates={referenceCandidates(all, configuration.id, ['command', 'dotnet-publish'])}
+        candidates={referenceCandidates(all, configuration.id, [
+          'command',
+          'dotnet-publish',
+          'docker-export'
+        ])}
         all={all}
         disabled={readOnly}
         onChange={(beforeLaunch) => onChange({ ...configuration, beforeLaunch })}
@@ -184,6 +193,17 @@ export function RunConfigurationForm(
             configuration={configuration}
             disabled={readOnly}
             browseRoot={props.browseRoot}
+            onChange={onChange}
+          />
+          <BeforeLaunchField {...props} configuration={configuration} />
+        </>
+      ) : configuration.type === 'docker-export' ? (
+        <>
+          <DockerExportFields
+            configuration={configuration}
+            disabled={readOnly}
+            browseRoot={props.browseRoot}
+            stages={[]}
             onChange={onChange}
           />
           <BeforeLaunchField {...props} configuration={configuration} />

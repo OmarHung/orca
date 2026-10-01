@@ -64,6 +64,15 @@ export function newConfiguration(
         projectFile: '',
         buildConfiguration: DEFAULT_PUBLISH_BUILD_CONFIGURATION
       }
+    case 'docker-export':
+      return {
+        type,
+        ...base,
+        dockerfile: 'Dockerfile',
+        target: '',
+        outputDir: '',
+        cleanOutputDir: true
+      }
     case 'compound':
       return { type, ...base, configurations: [] }
   }

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Boxes, ChevronLeft, Eye, EyeOff, LoaderCircle, Plus } from 'lucide-react'
+import { Boxes, ChevronLeft, Eye, EyeOff, LoaderCircle } from 'lucide-react'
 import {
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -9,11 +9,13 @@ import {
   DropdownMenuSubTrigger
 } from '@/components/ui/dropdown-menu'
 import { translate } from '@/i18n/i18n'
+import type { DockerExportRunConfiguration } from '../../../../shared/run-configurations/docker-export-configuration'
 import type { DotnetPublishRunConfiguration } from '../../../../shared/run-configurations/dotnet-publish-configuration'
 import type {
   DetectedRunConfiguration,
   RunConfigurationKind
 } from '../../../../shared/run-configurations/run-configuration-types'
+import { DetectedPublishActions, unsavedExportStages } from './DetectedPublishActions'
 import { detectedConfigurationLabel } from './detected-run-configuration'
 import {
   isDetectedRunMenuEmpty,
@@ -35,7 +37,11 @@ export type DetectedSectionActions = {
   savedItem: (configurationId: string) => RunWidgetItem | null
   /** Opens the Publish to folder dialog for a new configuration of this run's project. */
   onNewPublish: (run: DetectedRunConfiguration) => void
-  onEditPublish: (configuration: DotnetPublishRunConfiguration) => void
+  /** Opens the Export to folder dialog for a new export of this Dockerfile (of `stage`). */
+  onNewDockerExport: (run: DetectedRunConfiguration, stage?: string) => void
+  onEditPublish: (
+    configuration: DotnetPublishRunConfiguration | DockerExportRunConfiguration
+  ) => void
   hideKeyOf: (run: DetectedRunConfiguration) => string
   onHide: (key: string) => void
   onShow: (keys: readonly string[]) => void
@@ -114,11 +120,13 @@ function folderHeading(folder: string): string {
   return folder ? `${folder}/` : translate('run.widget.rootFolder', 'Workspace root')
 }
 
-/** This machine's folder publishes open in their dialog; orca.yaml ones are edited in the file. */
-function editablePublish(item: RunWidgetItem): DotnetPublishRunConfiguration | null {
+/** This machine's folder publishes and exports open in their dialog; orca.yaml ones in the file. */
+function editablePublish(
+  item: RunWidgetItem
+): DotnetPublishRunConfiguration | DockerExportRunConfiguration | null {
   return item.kind === 'configuration' &&
     item.source === 'local' &&
-    item.configuration.type === 'dotnet-publish'
+    (item.configuration.type === 'dotnet-publish' || item.configuration.type === 'docker-export')
     ? item.configuration
     : null
 }
@@ -127,13 +135,13 @@ function KindSubmenu({
   group,
   row,
   actions,
-  newPublishFrom
+  publishFrom
 }: {
   group: DetectedRunMenuGroup
   row: RunWidgetRowContext
   actions: DetectedSectionActions
-  /** A run of a .NET project, when its Publish kind offers a new folder publish. */
-  newPublishFrom: DetectedRunConfiguration | null
+  /** On Publish: the run a new folder publish or Docker export starts from. */
+  publishFrom: DetectedRunConfiguration | null
 }): React.JSX.Element {
   const Icon = RUN_KIND_ICONS[group.kind]
   const savedItems = group.saved.flatMap((configuration) => {
@@ -160,7 +168,13 @@ function KindSubmenu({
       <CascadeSubTrigger testId="run-widget-detected-kind">
         <Icon />
         <span className="min-w-0 flex-1 truncate">{kindHeading(group.kind)}</span>
-        <Count value={savedItems.length + group.runs.length} />
+        <Count
+          value={
+            savedItems.length +
+            group.runs.length +
+            unsavedExportStages(publishFrom, group.saved).length
+          }
+        />
       </CascadeSubTrigger>
       <DropdownMenuSubContent style={RUN_WIDGET_CONTENT_STYLE} className="min-w-56">
         <div className="scrollbar-sleek max-h-[60vh] overflow-y-auto">
@@ -170,17 +184,13 @@ function KindSubmenu({
             rowFor(actions.toItem(run), () => actions.onHide(actions.hideKeyOf(run)))
           )}
         </div>
-        {newPublishFrom ? (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              data-testid="run-widget-new-publish"
-              onSelect={() => actions.onNewPublish(newPublishFrom)}
-            >
-              <Plus />
-              {translate('run.widget.newPublishToFolder', 'New Publish to Folder…')}
-            </DropdownMenuItem>
-          </>
+        {publishFrom ? (
+          <DetectedPublishActions
+            from={publishFrom}
+            saved={group.saved}
+            onNewPublish={actions.onNewPublish}
+            onNewDockerExport={actions.onNewDockerExport}
+          />
         ) : null}
       </DropdownMenuSubContent>
     </DropdownMenuSub>
@@ -196,10 +206,11 @@ function ProjectSubmenu({
   row: RunWidgetRowContext
   actions: DetectedSectionActions
 }): React.JSX.Element {
-  const dotnetRun =
+  const runs = project.groups.flatMap((group) => group.runs)
+  const publishFrom =
     project.ecosystem === 'dotnet'
-      ? (project.groups.flatMap((group) => group.runs).find((run) => run.projectFile) ?? null)
-      : null
+      ? (runs.find((run) => run.projectFile) ?? null)
+      : (runs.find((run) => run.dockerExport) ?? null)
   return (
     <DropdownMenuSub>
       <CascadeSubTrigger testId="run-widget-detected-project">
@@ -212,7 +223,7 @@ function ProjectSubmenu({
             group={group}
             row={row}
             actions={actions}
-            newPublishFrom={group.kind === 'publish' ? dotnetRun : null}
+            publishFrom={group.kind === 'publish' ? publishFrom : null}
           />
         ))}
         <DropdownMenuSeparator />

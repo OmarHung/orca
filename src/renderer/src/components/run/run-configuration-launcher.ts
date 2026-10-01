@@ -37,7 +37,15 @@ import {
 } from './run-configuration-control'
 import { combineRunConfigurations, useRunConfigurationStore } from './run-configuration-store'
 import { runConfigurationKindOf } from './run-mode'
+import { withPendingLaunch, type PendingLaunch } from './run-launch-pending'
+import {
+  outputFoldersToEmpty,
+  prepareOutputFolder,
+  type OutputFolderToEmpty
+} from './run-output-folder-cleanup'
 import { configurationCommandKey, configurationItemKey } from './run-widget-items'
+
+export { cancelPendingLaunches } from './run-launch-pending'
 
 /** The run target a command configuration uses; its key keeps one terminal tab per configuration. */
 export function configurationRunTarget(
@@ -98,23 +106,6 @@ function activeFileIn(worktreeId: string): string | undefined {
   return file?.mode === 'edit' ? file.filePath : undefined
 }
 
-/** A launch still running Before launch steps or starting compound members. */
-type PendingLaunch = { worktreeId: string; reference: string; cancelled: boolean }
-
-const pendingLaunches = new Set<PendingLaunch>()
-
-/** Keeps launches in progress from starting anything more; without a reference, all in the worktree. */
-export function cancelPendingLaunches(worktreeId: string, reference?: string): void {
-  for (const pending of pendingLaunches) {
-    if (
-      pending.worktreeId === worktreeId &&
-      (reference === undefined || pending.reference === reference)
-    ) {
-      pending.cancelled = true
-    }
-  }
-}
-
 type LaunchScope = {
   worktreeId: string
   groupId: string | null
@@ -122,6 +113,8 @@ type LaunchScope = {
   pending: PendingLaunch
   /** Kinds by configuration id; publishes reach the launcher already turned into commands. */
   kinds: ReadonlyMap<string, RunConfigurationKind>
+  /** Output folders Docker exports empty before each run, by configuration id. */
+  emptyFirst: ReadonlyMap<string, OutputFolderToEmpty>
 }
 
 function launchRunTarget(
@@ -148,7 +141,13 @@ async function runToSuccess(
   if (!launch) {
     return false
   }
-  const exit = await runConfigurationAndWait(launchRunTarget(step, launch, scope))
+  const target = launchRunTarget(step, launch, scope)
+  if (
+    !(await prepareOutputFolder(step.name, target, scope.emptyFirst.get(step.id), scope.pending))
+  ) {
+    return false
+  }
+  const exit = await runConfigurationAndWait(target)
   if (scope.pending.cancelled) {
     return false
   }
@@ -207,8 +206,10 @@ async function startLaunch(
       resolveCommandLaunch(configuration, scope.context),
       configuration.name
     )
-    if (launch) {
-      await runConfiguration(launchRunTarget(configuration, launch, scope))
+    const target = launch ? launchRunTarget(configuration, launch, scope) : null
+    const output = scope.emptyFirst.get(configuration.id)
+    if (target && (await prepareOutputFolder(configuration.name, target, output, scope.pending))) {
+      await runConfiguration(target)
     }
     return
   }
@@ -249,18 +250,9 @@ export async function launchRunConfiguration(options: {
   reference: string
 }): Promise<void> {
   // Why: running it again replaces a launch of it that is still starting members.
-  cancelPendingLaunches(options.worktreeId, options.reference)
-  const pending: PendingLaunch = {
-    worktreeId: options.worktreeId,
-    reference: options.reference,
-    cancelled: false
-  }
-  pendingLaunches.add(pending)
-  try {
-    await launchPlanned(options, pending)
-  } finally {
-    pendingLaunches.delete(pending)
-  }
+  await withPendingLaunch(options.worktreeId, options.reference, (pending) =>
+    launchPlanned(options, pending)
+  )
 }
 
 async function launchPlanned(
@@ -303,6 +295,10 @@ async function launchPlanned(
       file: activeFileIn(options.worktreeId)
     },
     pending,
+    emptyFirst: outputFoldersToEmpty(
+      listed.map((entry) => entry.configuration),
+      { workspaceFolder: worktree.path }
+    ),
     kinds: new Map(
       listed.flatMap(({ configuration }) => {
         const kind = runConfigurationKindOf(configuration)

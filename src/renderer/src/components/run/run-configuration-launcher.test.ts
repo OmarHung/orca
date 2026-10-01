@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   ),
   debugLaunchTarget: vi.fn(async () => {}),
   confirmSharedRunConfigurations: vi.fn(async () => 'run'),
+  prepareOutputFolder: vi.fn(async () => true),
   toastError: vi.fn()
 }))
 
@@ -37,6 +38,10 @@ vi.mock('./project-run-detection', () => ({ worktreeProjectFiles: () => null }))
 vi.mock('./run-configuration-control', () => ({
   runConfiguration: mocks.runConfiguration,
   runConfigurationAndWait: mocks.runConfigurationAndWait
+}))
+vi.mock('./run-output-folder-cleanup', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  prepareOutputFolder: mocks.prepareOutputFolder
 }))
 
 import { cancelPendingLaunches, launchRunConfiguration } from './run-configuration-launcher'
@@ -62,7 +67,16 @@ beforeEach(() => {
         { type: 'command', id: 'web', name: 'Web', command: 'pnpm dev' },
         { type: 'compound', id: 'all', name: 'All', configurations: ['api', 'web'] },
         { type: 'dotnet-publish', id: 'ship', name: 'Ship', projectFile: 'api/Api.csproj' },
-        { type: 'compound', id: 'release', name: 'Release', configurations: ['web', 'ship'] }
+        { type: 'compound', id: 'release', name: 'Release', configurations: ['web', 'ship'] },
+        {
+          type: 'docker-export',
+          id: 'export',
+          name: 'Export',
+          dockerfile: 'Dockerfile',
+          target: 'export-web',
+          outputDir: '/out/web',
+          cleanOutputDir: true
+        }
       ]
     },
     selectedByRepo: {},
@@ -112,6 +126,30 @@ describe('launchRunConfiguration', () => {
     expect(mocks.runConfiguration).toHaveBeenCalledWith(
       expect.not.objectContaining({ kind: expect.anything() })
     )
+  })
+
+  it('empties a Docker export folder before exporting into it', async () => {
+    await launch('export')
+    expect(mocks.prepareOutputFolder).toHaveBeenCalledWith(
+      'Export',
+      expect.objectContaining({ commandKey: 'config:export' }),
+      { folder: '/out/web', contextDir: '/repo/wt' },
+      expect.objectContaining({ cancelled: false })
+    )
+    expect(mocks.runConfiguration).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'publish',
+        command: expect.objectContaining({
+          command: 'docker build --target export-web -o /out/web .'
+        })
+      })
+    )
+  })
+
+  it('does not export when its folder could not be emptied', async () => {
+    mocks.prepareOutputFolder.mockResolvedValueOnce(false)
+    await launch('export')
+    expect(mocks.runConfiguration).not.toHaveBeenCalled()
   })
 
   it('starts every compound member', async () => {
