@@ -29,6 +29,8 @@ import { SshVpnStore } from './ssh-vpn-store'
 const QUIT_REMOVE_TIMEOUT_MS = 5_000
 
 export type SshVpnRuntime = {
+  /** Resolves the docker CLI; rejects with a user-facing message when it is missing. */
+  docker: () => Promise<SshVpnDockerPort>
   store: SshVpnStore
   manager: SshVpnManager
   service: SshVpnService
@@ -75,8 +77,9 @@ export function createSshVpnRuntime(options: SshVpnRuntimeOptions): SshVpnRuntim
     options.secretStore
   )
   const stateWatchers = new Set<(state: SshVpnProfileState) => void>()
+  const docker = createDockerResolver()
   const manager = new SshVpnManager({
-    docker: createDockerResolver(),
+    docker,
     // Why: scopes containers to this profile directory, so a dev build never removes the app's.
     instanceTag: createHash('sha256').update(options.userDataPath).digest('hex').slice(0, 8),
     readFile: readOvpnProfileFile,
@@ -145,6 +148,7 @@ export function createSshVpnRuntime(options: SshVpnRuntimeOptions): SshVpnRuntim
   }
 
   return {
+    docker,
     store,
     manager,
     service,
