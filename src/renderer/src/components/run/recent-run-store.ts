@@ -19,7 +19,8 @@ function readDebugOptions(value: unknown): DebugLaunchOptions | undefined {
   return args || env ? { ...(args ? { args } : {}), ...(env ? { env } : {}) } : undefined
 }
 
-function readTarget(value: unknown): RunTarget | null {
+/** A run target read back from storage; null when any field is malformed. */
+export function readStoredRunTarget(value: unknown): RunTarget | null {
   const record = asRecord(value)
   const command = asRecord(record?.command)
   if (
@@ -66,7 +67,7 @@ export function readStoredRecentRuns(): Record<string, RunTarget[]> {
         continue
       }
       const targets = list
-        .map(readTarget)
+        .map(readStoredRunTarget)
         .filter((entry): entry is RunTarget => entry !== null)
         .slice(0, MAX_RECENT_RUNS)
       if (targets.length > 0) {

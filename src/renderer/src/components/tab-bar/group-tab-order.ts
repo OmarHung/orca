@@ -1,6 +1,7 @@
 import type { Tab, TabGroup } from '../../../../shared/tab-types'
 import type { AppState } from '../../store/types'
 import { reconcileTabOrder } from './reconcile-order'
+import { isRunPanelTerminalTab } from '../run/run-session-store'
 
 export type VisibleTabRef = {
   type: 'terminal' | 'editor' | 'agent-session' | 'browser' | 'simulator'
@@ -36,7 +37,8 @@ export function getGroupVisibleTabOrder(
   const tabsById = new Map(groupTabs.map((t) => [t.id, t]))
   const toRef = (tab: Tab): VisibleTabRef | null => {
     if (tab.contentType === 'terminal') {
-      return terminalEntityIds.has(tab.entityId)
+      // Fork: run terminals live in the Run panel, so tab cycling skips them.
+      return terminalEntityIds.has(tab.entityId) && !isRunPanelTerminalTab(tab.entityId)
         ? { type: 'terminal', id: tab.entityId, tabId: tab.id }
         : null
     }
