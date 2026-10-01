@@ -19147,7 +19147,9 @@
     "failedTitle": "Updating to {{value0}} failed",
     "failedAt": "Stopped at: {{value0}}",
     "failedStart": "The sync could not start.",
-    "agentFallback": "Copied a conflict-resolution prompt. Paste it into an agent running in {{value0}}."
+    "agentFallback": "Copied a conflict-resolution prompt. Paste it into an agent running in {{value0}}.",
+    "releaseNotesTitle": "What's new upstream",
+    "conflictCommitCount": "{{value0}} of your commits conflict with {{value1}}. The branch was left unchanged."
   },
   "debug": {
     "toolWindow": "Debug",

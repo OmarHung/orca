@@ -14,10 +14,12 @@
 //                    one beside this checkout if none does, so the checkout you develop in is
 //                    never switched or blocked by uncommitted work.
 //   --events         print `ORCA_SYNC_EVENT <json>` lines (stage / conflict / done) and, on a
-//                    conflict, abort the rebase so the branch is left exactly as before (exit 2).
+//                    conflict, abort the rebase so the branch is left exactly as before (exit 2);
+//                    the conflict event lists every conflicting commit from a merge-tree dry run.
 import { execFileSync, spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
+import { previewRebaseConflicts } from './rebase-conflict-preview.mjs'
 
 const UPSTREAM_REMOTE = 'origin'
 const FORK_REMOTE = 'fork'
@@ -140,6 +142,22 @@ function stoppedCommitSubject() {
   }
 }
 
+// Why after the abort: the dry run replays every commit, so the card can list them all, not just
+// the first stop. It reports the fork's own conflicts; how one is resolved can change the next.
+function previewConflictCommits(currentBase) {
+  try {
+    return previewRebaseConflicts({
+      cwd: repoRoot,
+      base: currentBase,
+      branch: CUSTOM_BRANCH,
+      onto: targetTag
+    })
+  } catch (error) {
+    console.log(`[sync-upstream] Could not preview the other conflicts: ${error.message}`)
+    return null
+  }
+}
+
 function rebaseOnto(currentBase) {
   const ownCommits = git('log', '--oneline', `${currentBase}..HEAD`)
   console.log(
@@ -155,14 +173,18 @@ function rebaseOnto(currentBase) {
     if (eventsMode) {
       // Why abort in app mode: nobody is at a terminal to finish a half-applied rebase, so the
       // branch must return to its pre-sync state; the report says exactly what to resolve.
+      const files = conflictedFiles()
+      const commitSubject = stoppedCommitSubject()
+      execFileSync('git', ['rebase', '--abort'], { cwd: repoRoot, stdio: 'inherit' })
+      const conflictCommits = previewConflictCommits(currentBase)
       emit({
         type: 'conflict',
         worktree: repoRoot,
         baseTag: currentBase,
-        files: conflictedFiles(),
-        commitSubject: stoppedCommitSubject()
+        files,
+        commitSubject,
+        ...(conflictCommits ? { conflictCommits } : {})
       })
-      execFileSync('git', ['rebase', '--abort'], { cwd: repoRoot, stdio: 'inherit' })
       process.exit(CONFLICT_EXIT_CODE)
     }
     fail(
