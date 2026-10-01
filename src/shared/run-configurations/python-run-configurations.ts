@@ -1,4 +1,5 @@
 import { classifyScript } from './node-run-configurations'
+import { joinProjectPath } from './project-path'
 import { readPyprojectTables, type PyprojectTables } from './pyproject-tables'
 import {
   quoteShellArgument,
@@ -48,11 +49,6 @@ export function isPythonProjectFile(name: string): boolean {
 
 function isWindowsPath(path: string): boolean {
   return /^[A-Za-z]:[\\/]/.test(path)
-}
-
-function joinProjectPath(dir: string, fileName: string): string {
-  const separator = dir.includes('\\') && !dir.includes('/') ? '\\' : '/'
-  return `${dir.replace(/[\\/]+$/, '')}${separator}${fileName}`
 }
 
 type Launcher = {

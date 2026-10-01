@@ -4,7 +4,8 @@ import type { RunConfigurationEcosystem } from '../../../../shared/run-configura
 const ECOSYSTEM_LABELS: Record<RunConfigurationEcosystem, string> = {
   node: 'Node',
   dotnet: '.NET',
-  python: 'Python'
+  python: 'Python',
+  docker: 'Docker'
 }
 
 export function runEcosystemLabel(ecosystem: RunConfigurationEcosystem): string {
