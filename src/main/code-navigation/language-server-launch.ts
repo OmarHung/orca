@@ -1,5 +1,9 @@
 import { join } from 'node:path'
 import {
+  LANGUAGE_SERVERS_DIR_NAME,
+  type CodeNavigationServerKind
+} from '../../shared/code-navigation/code-navigation-types'
+import {
   ensureDebugAdapterInstalled,
   isDebugAdapterInstalled,
   type AdapterInstallDeps
@@ -8,7 +12,6 @@ import type { DebugAdapterArtifact } from '../debug/adapters/adapter-manifest'
 import { downloadWithElectronNet } from '../debug/adapters/adapter-download'
 import { extractArchive } from '../debug/adapters/archive-extract'
 import { resolveCommandOnLocalPath } from '../ipc/command-path-resolver'
-import type { CodeNavigationServerKind } from '../../shared/code-navigation/code-navigation-types'
 import type { LanguageServerLaunch } from './language-server-session'
 import { findCsharpSolution } from './csharp-solution-discovery'
 import { ensureCsharpRazorDesignTimeTargets } from './csharp-razor-design-time'
@@ -37,7 +40,7 @@ const defaultDeps = (): LanguageServerLaunchDeps => ({
 })
 
 export function languageServersDir(userDataDir: string): string {
-  return join(userDataDir, 'language-servers')
+  return join(userDataDir, LANGUAGE_SERVERS_DIR_NAME)
 }
 
 async function installServer(

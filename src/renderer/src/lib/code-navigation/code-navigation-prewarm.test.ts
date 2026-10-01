@@ -4,6 +4,7 @@ const requests = vi.hoisted((): { next: unknown } => ({ next: null }))
 vi.mock('./code-navigation-providers', () => ({ serverRequestFor: () => requests.next }))
 
 import { installCodeNavigationPrewarm, prewarmCodeNavigation } from './code-navigation-prewarm'
+import { CodeNavigationActivation } from './code-navigation-activation'
 
 const warm = vi.fn(async (_request: { kind: string; root: string; document: unknown }) => {})
 const document = { path: '/shop/App.cs', languageId: 'csharp', version: 1, text: 'using System;' }
@@ -15,6 +16,7 @@ const csharp = (root: string) => ({
 })
 // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: prewarm hands the model to the mocked request builder only.
 const model = {} as never
+const activation = new CodeNavigationActivation()
 
 beforeEach(() => {
   vi.stubGlobal('window', { api: { codeNavigation: { warm } } })
@@ -29,9 +31,9 @@ describe('prewarmCodeNavigation', () => {
   it('warms a C# project once a minute at most', () => {
     requests.next = csharp('/shop-a')
 
-    prewarmCodeNavigation(model, 1_000)
-    prewarmCodeNavigation(model, 30_000)
-    prewarmCodeNavigation(model, 70_000)
+    prewarmCodeNavigation(model, activation, 1_000)
+    prewarmCodeNavigation(model, activation, 30_000)
+    prewarmCodeNavigation(model, activation, 70_000)
 
     expect(warm).toHaveBeenCalledTimes(2)
     expect(warm).toHaveBeenCalledWith({ kind: 'csharp', root: '/shop-a', document })
@@ -39,13 +41,13 @@ describe('prewarmCodeNavigation', () => {
 
   it('keeps projects apart and leaves TypeScript and non-server files alone', () => {
     requests.next = csharp('/shop-b')
-    prewarmCodeNavigation(model, 1_000)
+    prewarmCodeNavigation(model, activation, 1_000)
     requests.next = csharp('/shop-c')
-    prewarmCodeNavigation(model, 1_000)
+    prewarmCodeNavigation(model, activation, 1_000)
     requests.next = { ...csharp('/web'), kind: 'typescript' }
-    prewarmCodeNavigation(model, 1_000)
+    prewarmCodeNavigation(model, activation, 1_000)
     requests.next = null
-    prewarmCodeNavigation(model, 1_000)
+    prewarmCodeNavigation(model, activation, 1_000)
 
     expect(warm.mock.calls.map(([request]) => request.root)).toEqual(['/shop-b', '/shop-c'])
   })
@@ -64,7 +66,7 @@ describe('installCodeNavigationPrewarm', () => {
       }
     }
     // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: prewarm only uses onDidCreateEditor.
-    installCodeNavigationPrewarm(fakeMonaco as never)
+    installCodeNavigationPrewarm(fakeMonaco as never, activation)
     created.listener?.({
       getModel: () => model,
       onDidChangeModel: (handler: () => void) => {
