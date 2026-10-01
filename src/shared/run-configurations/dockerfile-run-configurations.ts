@@ -1,9 +1,5 @@
-import {
-  getRuntimePathBasename,
-  isWindowsAbsolutePathLike,
-  relativePathInsideRoot
-} from '../cross-platform-path'
-import { isWslUncPath } from '../wsl-paths'
+import { getRuntimePathBasename, relativePathInsideRoot } from '../cross-platform-path'
+import { runsPosixShell } from './host-shell'
 import { joinProjectPath } from './project-path'
 import { quoteShellArgument, type DetectedRunConfiguration } from './run-configuration-types'
 
@@ -187,11 +183,6 @@ function ancestorDir(path: string, levels: number): string {
   return dir
 }
 
-/** Commands are chained with `&&`, which Windows PowerShell 5.1 cannot parse. */
-function mayChainCommands(projectDir: string): boolean {
-  return !isWindowsAbsolutePathLike(projectDir) || isWslUncPath(projectDir)
-}
-
 /**
  * Build and Run for a Dockerfile: the image is named after the folder, the build context is found
  * from what the file copies, and Run publishes the exposed ports (building first where the shell
@@ -233,7 +224,7 @@ export function detectDockerfileRunConfigurations(options: {
             id: `docker:${projectDir}:dockerfile:${fileName}:run`,
             kind: 'run' as const,
             name: 'run',
-            command: mayChainCommands(projectDir) ? `${build} && ${run}` : run
+            command: runsPosixShell(projectDir) ? `${build} && ${run}` : run
           }
         ]
       : []),

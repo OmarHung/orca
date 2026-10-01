@@ -203,6 +203,7 @@ export function RunConfigurationForm(
             configuration={configuration}
             disabled={readOnly}
             browseRoot={props.browseRoot}
+            worktreePath={props.worktreePath}
             stages={[]}
             onChange={onChange}
           />

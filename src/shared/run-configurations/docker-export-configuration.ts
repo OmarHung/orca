@@ -15,7 +15,10 @@ export type DockerExportRunConfiguration = {
   target: string
   /** Relative to the workspace root, or absolute. */
   outputDir: string
-  /** Empty the folder first: `docker build -o` adds and overwrites files but never removes any. */
+  /**
+   * Empty the folder first: `docker build -o` adds and overwrites files but never removes any.
+   * POSIX shells run `rm -rf` before the build; on Windows the launcher deletes it.
+   */
   cleanOutputDir?: boolean
   /** Appended to the command line as written. */
   extraArgs?: string
@@ -86,11 +89,20 @@ export function normalizeDockerExport(
   }
 }
 
+export type DockerExportCommandOptions = {
+  /** The workspace's shell has `rm` and `&&` (see runsPosixShell); otherwise Orca empties it. */
+  posixShell: boolean
+}
+
 /**
- * The `docker build` command line; it runs from the workspace root, so relative paths resolve
- * there. Null when a path cannot be passed safely (normalizeDockerExport rejects those).
+ * The `docker build` command line (after `rm -rf` of the output folder when it is emptied in a
+ * POSIX shell); it runs from the workspace root, so relative paths resolve there. Null when a path
+ * cannot be passed safely (normalizeDockerExport rejects those).
  */
-export function dockerExportCommand(configuration: DockerExportRunConfiguration): string | null {
+export function dockerExportCommand(
+  configuration: DockerExportRunConfiguration,
+  options: DockerExportCommandOptions
+): string | null {
   const context = dockerExportContext(configuration)
   const quoted = [configuration.dockerfile, context, configuration.outputDir].map(
     quoteShellArgument
@@ -108,6 +120,7 @@ export function dockerExportCommand(configuration: DockerExportRunConfiguration)
   // Why: `<context>/Dockerfile` is Docker's default, so the usual command stays as people write it.
   const isDefaultFile = sameRelativePath(configuration.dockerfile, `${context}/Dockerfile`)
   return [
+    ...(configuration.cleanOutputDir && options.posixShell ? [`rm -rf ${outputDir} &&`] : []),
     'docker build',
     ...(isDefaultFile ? [] : [`-f ${dockerfile}`]),
     `--target ${configuration.target}`,
@@ -119,9 +132,10 @@ export function dockerExportCommand(configuration: DockerExportRunConfiguration)
 
 /** Exporting is a terminal command, so it runs, waits and stops like any command configuration. */
 export function dockerExportAsCommand(
-  configuration: DockerExportRunConfiguration
+  configuration: DockerExportRunConfiguration,
+  options: DockerExportCommandOptions
 ): CommandRunConfiguration | null {
-  const command = dockerExportCommand(configuration)
+  const command = dockerExportCommand(configuration, options)
   if (command === null) {
     return null
   }
