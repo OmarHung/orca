@@ -24,6 +24,8 @@ type TerminalOverlaySlotProps = {
   /** Visible on the unfocused side of a split. */
   dimmed?: boolean
   activityTerminalPortal: ActivityTerminalPortalTarget | null
+  /** Fork: a run configuration's terminal renders in the Run panel through this node. */
+  runPanelHost?: HTMLElement | null
   onFocusOwningGroup: ((groupId: string) => void) | undefined
   consumeSuppressedPtyExit: (ptyId: string) => boolean
   /** Read when a close is requested; the returned reaction runs once it lands. */
@@ -43,6 +45,7 @@ export const TerminalOverlaySlot = memo(function TerminalOverlaySlot({
   hiddenPrewarm = null,
   dimmed = false,
   activityTerminalPortal,
+  runPanelHost = null,
   onFocusOwningGroup,
   consumeSuppressedPtyExit,
   captureEmptiedReaction
@@ -101,6 +104,10 @@ export const TerminalOverlaySlot = memo(function TerminalOverlaySlot({
       activityTerminalPortal.target,
       `activity-terminal-${terminalTabId}`
     )
+  }
+
+  if (runPanelHost) {
+    return createPortal(terminalPane, runPanelHost, `run-panel-terminal-${terminalTabId}`)
   }
 
   return (

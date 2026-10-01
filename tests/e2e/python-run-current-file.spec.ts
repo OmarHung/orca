@@ -8,7 +8,7 @@ import {
   createGoldenWorktree
 } from './helpers/golden-source-control'
 import { waitForSessionReady } from './helpers/store'
-import { getTerminalContent } from './helpers/terminal-pane-identity'
+import { getRunPanelTerminalContent } from './helpers/run-panel'
 
 const PROGRAM = path.join('scripts', 'where.py')
 // Why arithmetic: the printed marker must not match the echoed command line.
@@ -71,7 +71,7 @@ test('runs and debugs the current Python file with the project venv, or a chosen
   const controls = orcaPage.getByTestId('python-run-controls')
   await expect(controls).toHaveAttribute('data-run-status', 'succeeded', { timeout: 30_000 })
   await expect
-    .poll(async () => getTerminalContent(orcaPage, 20_000), { timeout: 20_000 })
+    .poll(async () => getRunPanelTerminalContent(orcaPage, 20_000), { timeout: 20_000 })
     .toContain(`prefix-42:${venvPrefix}`)
   await orcaPage.screenshot({ path: testInfo.outputPath('python-run-venv.png') })
 
