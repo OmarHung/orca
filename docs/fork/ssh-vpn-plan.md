@@ -263,7 +263,7 @@ ORCA_TEST_SSH_VPN_DOCKER=1 node_modules/.bin/vitest run --config config/vitest.c
 ### Phase 0 之後的修正（2026-09-29）
 
 用使用者的 `taipei.ovpn` 在 dev 實測時發現：
-- **容器裡的 `nc` 殘留**：`docker exec` 的 client 被殺掉時，容器裡的 `nc` 不會跟著結束。連不到的主機每次重試都會留下一個卡在 connect 的 `nc`，閒置計數永遠不會歸零。改成 `nc -w 30`（只限制建立連線；已實測，已連上的閒置連線不受影響）。修正後，閒置 10 分鐘自動中斷連線在 dev 實際生效。
+- **容器裡的 `nc` 殘留**：`docker exec` 的 client 被殺掉時，容器裡的 `nc` 不會跟著結束。連不到的主機每次重試都會留下一個卡在 connect 的 `nc`，閒置計數永遠不會歸零。當時改成 `nc -w 30`，以為只限制建立連線；2026-10-01 發現它其實會砍掉閒置 60 秒的連線，已拿掉（見下方「閒置 60 秒斷線」）。修正後，閒置 10 分鐘自動中斷連線在 dev 實際生效。
 - 實測結果：taipei VPN 本身正常（容器出口 IP 跟 Mac 不同，Mac 的網路不變），但 FC-Beta 的防火牆沒有放行 taipei 的出口 IP，所以連不上。使用者的其他 .ovpn（例如「豐田固定ip」、asuscomm）都需要帳密，第一版不支援。
 - `ssh-vpn.json` 改成檔案 mtime 變了就重新讀取，手動編輯不用重開。
 
@@ -273,7 +273,7 @@ ORCA_TEST_SSH_VPN_DOCKER=1 node_modules/.bin/vitest run --config config/vitest.c
 - main：`SshVpnManager.acquire(profile, { confirm })` 在實際動作前，先用 `sshVpnStartCommands()` 列出每一條 docker 指令（跟實際執行的 argv 同一來源）。使用者拒絕、沒有視窗、5 分鐘沒回應都不啟動；排在同一個「拒絕」後面的請求不會再問一次（用拒絕次數判斷，不用時間戳，避免同一毫秒的誤判）。
 - renderer：`SshVpnStartConfirmHost` 掛在 `AppRootSurfaces`（跟 `DotnetPublishDialogHost` 同一區），用既有的 `CommandConfirmProvider` 顯示。
 - 拒絕不算錯誤：IPC 結果帶 `declined: true`，UI 不跳錯誤訊息。
-- SSH 頁：先檢查主機名稱能不能安全輸入，再啟動 VPN（會先跳 VPN 確認），然後才跳原本的 ssh 指令確認，指令是 `ssh -o 'ProxyCommand=<docker> exec -i <容器> nc -w 30 %h %p' <主機>`。Windows 的終端機可能是 cmd 或 PowerShell，所以用 PATH 上的 `docker` 加雙引號。
+- SSH 頁：先檢查主機名稱能不能安全輸入，再啟動 VPN（會先跳 VPN 確認），然後才跳原本的 ssh 指令確認，指令是 `ssh -o 'ProxyCommand=<docker> exec -i <容器> nc %h %p' <主機>`。Windows 的終端機可能是 cmd 或 PowerShell，所以用 PATH 上的 `docker` 加雙引號。
 
 **新檔案**：`src/shared/ssh-vpn-command-format.ts`（POSIX 引號、通道 argv、ProxyCommand、終端機選項，main 和 renderer 共用）；`src/main/ssh-vpn/` 的 `ssh-vpn-start-commands.ts`、`ssh-vpn-start-approvals.ts`、`ssh-vpn-runtime.ts`、`ssh-vpn-ipc.ts`（`sshVpn:*`）；`src/preload/api/ssh-vpn-{api,bridge}.ts`；`src/renderer/src/components/ssh-vpn/`（store、狀態點、設定檔表單／列／面板、VPN 按鈕與對話框、主機右鍵選單與 badge、啟動確認）；`ssh-page/ssh-session-vpn.ts`。
 
@@ -338,11 +338,11 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 ### 資料庫連線走 VPN（2026-09-29，使用者要求）
 
 - 資料庫的伺服器連線（PostgreSQL、MySQL／MariaDB、SQL Server）多一個「VPN」欄位，選的是設定 → SSH 裡同一批 VPN 設定檔。存在資料庫連線自己的 `vpnProfileId`（fork 自己的型別，不必像 SSH 主機那樣另存到 `ssh-vpn.json`）。
-- 做法沿用資料庫 SSH 通道的形狀：main 開一個 `127.0.0.1` 的本機 port，每條進來的連線各跑一個 `docker exec -i --user tunnel <容器> nc -w 30 <主機> <埠>`（`database-vpn-tunnel.ts`）。driver 和原生 pg_dump／mysqldump 都連這個 port，所以不用各自支援自訂 socket。
+- 做法沿用資料庫 SSH 通道的形狀：main 開一個 `127.0.0.1` 的本機 port，每條進來的連線各跑一個 `docker exec -i --user tunnel <容器> nc <主機> <埠>`（`database-vpn-tunnel.ts`）。driver 和原生 pg_dump／mysqldump 都連這個 port，所以不用各自支援自訂 socket。
 - 連線前先用 `nc -z` 探測一次，連不到時直接說「VPN X could not reach host:port（nc 的原因）」，不會開出一個死的 port。
 - 一樣 fail closed：VPN 起不來、被拒絕、設定檔被刪掉，或連線途中 VPN 斷掉（監聽 manager 的狀態），連線就失敗或結束，不會改成直接連線。VPN 沒有 `ready` 時進來的連線直接關掉，不會 spawn。
 - 啟動 VPN 用同一個確認框和登入框，說明文字是「Connecting to <連線名稱> needs this VPN.」。
-- 關閉時只關掉 `nc` 的 stdin（`nc -w 30` 會在 30 秒內結束），不直接 kill `docker exec`，否則 `nc` 會留在容器裡，被閒置檢查當成使用中。
+- 關閉時只關掉 `nc` 的 stdin（`nc` 會半關閉連線，等伺服器關掉後結束；35 秒內沒結束才 kill），不直接 kill `docker exec`，否則 `nc` 會留在容器裡，被閒置檢查當成使用中。
 - 跟 SSH 通道擇一：選了 SSH 通道時 VPN 欄位停用，因為 SSH 通道本來就會套用那台 SSH 主機自己的 VPN 設定；兩者同時存在的舊資料會被 main 拒絕。
 - 掛載點：`ssh-vpn-database-route.ts`（跟 `ssh-vpn-route.ts` 一樣的 seam，VPN runtime 在資料庫 handler 之後註冊）。`SshVpnService.connect` 多收一個連線名稱並回傳設定檔名稱。
 - 測試：單元（tunnel 7、session manager 4、表單 1、對話框 1）；Docker 整合 4 個（VPN 外連不到、經 VPN 的 DNS 名稱連到並在關閉後容器內沒有殘留 `nc`、連不到時的錯誤、VPN 停掉時結束連線）；e2e 1 個（MariaDB 10.5 放在只有 VPN 連得到的網路，走對話框選 VPN、測試、存檔、開 console 查詢）。測試內網多了 `startBehindVpn`。
@@ -359,6 +359,13 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 - 程式碼：`ssh-vpn-borrowed-containers.ts`（狀態、重新檢查）由 `SshVpnManager` 依 `kind` 轉交；同一個 id 換種類時先停掉另一邊。介面：表單上方切換「OpenVPN 設定檔／我已在執行的容器」，`SshVpnContainerField.tsx` 列出 `docker ps`（排除 Orca 自己的容器）；列表列只有「檢查」按鈕。
 - openvpn-socks 那邊：Dockerfile 加 `iptables` 和 `tunnel` 使用者，`entrypoint.sh` 在啟動 OpenVPN 前跑 `tunnel-firewall.sh`（規則同 Orca；重啟時從 `/tmp/resolv.conf.orig` 讀 Docker 自己的 DNS）。要重新 build 容器才生效。
 
+### 閒置 60 秒斷線（2026-10-01，使用者回報）
+
+- 症狀：SSH 頁的連線停在提示字元約一分鐘後出現 `Connection to <主機> closed by remote host.`、`client_loop: send disconnect: Broken pipe`。Orca 自己的容器和借用的容器都會。
+- 原因：容器裡是 BusyBox 的 `nc`，它的 `-w N` 不只是建立連線的逾時，兩個方向都 2N 秒沒有資料時也會自己結束（實測 `-w 10` 閒置 20 秒結束、`-w 30` 60 秒撐住 75 秒斷，不加 `-w` 閒置 90 秒仍正常）。SSH 頁的 ssh 沒有 keepalive，資料庫通道閒置的連線也一樣；SFTP 和 relay 用的 ssh2／系統 ssh 每 15 秒送 keepalive，所以沒事。
+- 修法：每條連線的 `nc` 不加 `-w`（`nc -z` 探測保留）。代價：連到會吞掉封包的位址時，容器裡的 `nc` 要等系統的 SYN 逾時才結束（實測約 2 分鐘），只會讓閒置斷線晚一點算。
+- 測試：Docker 整合測試多一個「沒有 keepalive 的 ssh2 連線閒置 75 秒後還能下指令」；加回 `-w 30` 時它會失敗（`Not connected`）。
+
 ## 10. 使用說明與已知限制
 
 **需求**：Docker Desktop、OrbStack 或 Colima 正在執行。第一次連線會在本機建置 `orca-ssh-vpn:<雜湊>` 映像檔（需要連網，約數十秒）。
@@ -369,7 +376,7 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 3. 連線時會先跳出確認框，列出每一條 docker 指令；沒有保存密碼時會再跳登入框。
 
 **行為**：
-- 每個設定檔一個容器（`orca-ssh-vpn-<實例>-<設定檔 id>`），不開任何 port；每條連線是一個 `docker exec -i --user tunnel <容器> nc -w 30 <主機> <埠>`，防火牆只允許它從 VPN 出去。
+- 每個設定檔一個容器（`orca-ssh-vpn-<實例>-<設定檔 id>`），不開任何 port；每條連線是一個 `docker exec -i --user tunnel <容器> nc <主機> <埠>`，防火牆只允許它從 VPN 出去。
 - 沒有連線使用時，閒置設定的分鐘數（預設 10）後自動斷線；關閉 Orca 時一定移除容器。當機留下的容器會在下次啟動時清掉。
 - VPN 起不來、設定檔壞掉、或主機的 VPN 設定檔不見時，一律拒絕連線，不會改成直接連線。
 

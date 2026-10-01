@@ -8,7 +8,7 @@ import {
 } from './ssh-vpn-command-format'
 
 describe('sshVpnTunnelArgs', () => {
-  it('bounds only the connect, and passes host and port as arguments', () => {
+  it('passes host and port as arguments, with no -w that would end idle sessions', () => {
     expect(sshVpnTunnelArgs('c', 'db.internal', '22')).toEqual([
       'exec',
       '-i',
@@ -16,8 +16,6 @@ describe('sshVpnTunnelArgs', () => {
       'tunnel',
       'c',
       'nc',
-      '-w',
-      '30',
       'db.internal',
       '22'
     ])
@@ -45,10 +43,10 @@ describe('formatPosixCommand', () => {
 describe('sshVpnProxyCommand', () => {
   it('leaves plain paths bare and quotes the rest for the platform', () => {
     expect(sshVpnProxyCommand('/usr/local/bin/docker', 'c', 'darwin')).toBe(
-      '/usr/local/bin/docker exec -i --user tunnel c nc -w 30 %h %p'
+      '/usr/local/bin/docker exec -i --user tunnel c nc %h %p'
     )
     expect(sshVpnProxyCommand('/Users/o b/docker', 'c', 'darwin')).toBe(
-      "'/Users/o b/docker' exec -i --user tunnel c nc -w 30 %h %p"
+      "'/Users/o b/docker' exec -i --user tunnel c nc %h %p"
     )
     expect(
       sshVpnProxyCommand(
@@ -57,7 +55,7 @@ describe('sshVpnProxyCommand', () => {
         'win32'
       )
     ).toBe(
-      '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" exec -i --user tunnel c nc -w 30 %h %p'
+      '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe" exec -i --user tunnel c nc %h %p'
     )
   })
 })
@@ -69,10 +67,10 @@ describe('sshVpnTerminalProxyOption', () => {
         { dockerPath: '/usr/local/bin/docker', containerName: 'c' },
         'darwin'
       )
-    ).toBe("-o 'ProxyCommand=/usr/local/bin/docker exec -i --user tunnel c nc -w 30 %h %p'")
+    ).toBe("-o 'ProxyCommand=/usr/local/bin/docker exec -i --user tunnel c nc %h %p'")
     expect(
       sshVpnTerminalProxyOption({ dockerPath: '/Users/o b/docker', containerName: 'c' }, 'linux')
-    ).toBe(`-o 'ProxyCommand='\\''/Users/o b/docker'\\'' exec -i --user tunnel c nc -w 30 %h %p'`)
+    ).toBe(`-o 'ProxyCommand='\\''/Users/o b/docker'\\'' exec -i --user tunnel c nc %h %p'`)
   })
 
   it('uses docker from PATH inside double quotes on Windows', () => {
@@ -81,6 +79,6 @@ describe('sshVpnTerminalProxyOption', () => {
         { dockerPath: 'C:\\Program Files\\Docker\\docker.exe', containerName: 'c' },
         'win32'
       )
-    ).toBe('-o "ProxyCommand=docker exec -i --user tunnel c nc -w 30 %h %p"')
+    ).toBe('-o "ProxyCommand=docker exec -i --user tunnel c nc %h %p"')
   })
 })

@@ -19721,7 +19721,7 @@
       "manual": "你要求连接这个 VPN。",
       "isolated": "VPN 在 Docker 容器中运行，这台电脑的其他网络流量不会改走 VPN。",
       "title": "要启动 VPN「{{name}}」吗？",
-      "tunnelNote": "之后每条 SSH 连接都会运行 `docker exec -i <容器> nc -w 30 <主机> <端口>`，经由 VPN 连到主机。",
+      "tunnelNote": "之后每条 SSH 连接都会运行 `docker exec -i <容器> nc <主机> <端口>`，经由 VPN 连到主机。",
       "start": "启动 VPN"
     },
     "button": "VPN",

@@ -57,7 +57,7 @@ describe('SshVpnService', () => {
     await expect(service.prepare(target(), null)).resolves.toEqual({
       kind: 'argv',
       program: '/usr/local/bin/docker',
-      args: ['exec', '-i', '--user', 'tunnel', 'orca-ssh-vpn-t-p', 'nc', '-w', '30', '%h', '%p']
+      args: ['exec', '-i', '--user', 'tunnel', 'orca-ssh-vpn-t-p', 'nc', '%h', '%p']
     })
     expect(approveStart).toHaveBeenCalledWith({
       profile: PROFILE,
@@ -65,7 +65,7 @@ describe('SshVpnService', () => {
       commands: ['docker run …']
     })
     expect(service.proxyCommand(target())).toBe(
-      '/usr/local/bin/docker exec -i --user tunnel orca-ssh-vpn-t-p nc -w 30 %h %p'
+      '/usr/local/bin/docker exec -i --user tunnel orca-ssh-vpn-t-p nc %h %p'
     )
   })
 
