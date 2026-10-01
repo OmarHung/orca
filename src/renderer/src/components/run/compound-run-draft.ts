@@ -1,4 +1,3 @@
-import { getRelativePathInsideRoot } from '@/lib/path'
 import type {
   CommandRunConfiguration,
   CompoundRunConfiguration,
@@ -7,12 +6,7 @@ import type {
 import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
 import { detectedConfigurationLabel } from './detected-run-configuration'
 import { uniqueName } from './run-configuration-drafts'
-
-/** Relative to the workspace root so the configuration works in every worktree of the repo. */
-function workspaceRelativeCwd(projectDir: string, worktreePath: string): string | undefined {
-  const relative = getRelativePathInsideRoot(projectDir, worktreePath)
-  return relative === null ? projectDir : relative || undefined
-}
+import { savedCommandFor, workspaceRelativeCwd } from './saved-command-match'
 
 /**
  * The command configuration a compound references for a detected run: an identical saved
@@ -24,17 +18,11 @@ export function detectedCommandConfiguration(
   worktreePath: string,
   createId: () => string
 ): { id: string; created?: CommandRunConfiguration } {
-  const cwd = workspaceRelativeCwd(detected.projectDir, worktreePath)
-  const match = existing.find(
-    (configuration) =>
-      configuration.type === 'command' &&
-      configuration.command === detected.command &&
-      configuration.cwd === cwd &&
-      !configuration.beforeLaunch
-  )
+  const match = savedCommandFor(detected.command, detected.projectDir, existing, worktreePath)
   if (match) {
     return { id: match.id }
   }
+  const cwd = workspaceRelativeCwd(detected.projectDir, worktreePath)
   const created: CommandRunConfiguration = {
     type: 'command',
     id: createId(),

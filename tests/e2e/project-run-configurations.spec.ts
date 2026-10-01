@@ -8,7 +8,7 @@ import {
   createGoldenWorktree
 } from './helpers/golden-source-control'
 import { waitForSessionReady } from './helpers/store'
-import { getRunPanelTerminalContent } from './helpers/run-panel'
+import { getRunPanelTerminalContent, runTerminalsInTabStrip } from './helpers/run-panel'
 
 const LAUNCH_SETTINGS = `{
   // comments are allowed, as Rider and Visual Studio write them
@@ -127,6 +127,11 @@ test('offers Build/Run/Publish for .NET and Node projects in the file tree and r
   await orcaPage.reload()
   await waitForSessionReady(orcaPage)
   await expect(orcaPage.getByTestId('run-configurations-trigger')).toContainText('web: build')
+  // The run's terminal comes back in the Run panel, not as a tab.
+  await expect(orcaPage.getByTestId('run-panel-tab').filter({ hasText: 'web: build' })).toHaveCount(
+    1
+  )
+  expect(await runTerminalsInTabStrip(orcaPage, 'web: build')).toBe(0)
   await orcaPage.getByTestId('run-configurations-trigger').click()
   await expect(orcaPage.getByRole('menuitem', { name: 'web: build' })).toBeVisible()
   await orcaPage.keyboard.press('Escape')

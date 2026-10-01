@@ -1,6 +1,5 @@
 import React from 'react'
-import { Bug, Check, ChevronDown, FolderOpen, Play, RefreshCw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Check, ChevronDown, FolderOpen, RefreshCw } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,11 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
-import { debugFile } from '../debug/debug-launch'
-import { RunSessionControls } from '../run/RunSessionControls'
-import { runConfiguration } from '../run/run-configuration-control'
 import type { PythonInterpreter } from '../../../../shared/python-interpreter-types'
 import { interpreterLabel, usePythonInterpreterStore } from './python-interpreter-store'
 import { usePythonFileContext, type PythonFileContext } from './use-python-file-context'
@@ -95,53 +90,17 @@ function InterpreterMenu({ context }: { context: PythonFileContext }): React.JSX
   )
 }
 
-function IconAction({
-  label,
-  testId,
-  disabled = false,
-  onClick,
-  children
-}: {
-  label: string
-  testId: string
-  disabled?: boolean
-  onClick: () => void
-  children: React.ReactNode
-}): React.JSX.Element {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          aria-label={label}
-          data-testid={testId}
-          disabled={disabled}
-          onClick={onClick}
-        >
-          {children}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" sideOffset={6}>
-        {label}
-      </TooltipContent>
-    </Tooltip>
-  )
-}
-
-/** Interpreter picker plus Run and Debug for the active Python file (JetBrains "Current File"). */
-export function PythonFileControls(): React.JSX.Element | null {
+/**
+ * The interpreter the active Python file runs and debugs with; running it is the Run widget's
+ * "Current File" entry.
+ */
+export function PythonInterpreterPicker(): React.JSX.Element | null {
   const context = usePythonFileContext()
   if (!context) {
     return null
   }
-  const fileLabel = context.runTarget.command.label
-  const debugLabel = context.local
-    ? translate('debug.action.debugFile', "Debug '{{value0}}'", { value0: fileLabel })
-    : translate('debug.localOnlyShort', 'Debugging needs a local workspace')
-
   return (
-    <div data-testid="python-file-controls" className="my-auto flex shrink-0 items-center gap-0.5">
+    <div data-testid="python-file-controls" className="my-auto flex shrink-0 items-center">
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild disabled={!context.local}>
           <button
@@ -156,24 +115,6 @@ export function PythonFileControls(): React.JSX.Element | null {
         </DropdownMenuTrigger>
         <InterpreterMenu context={context} />
       </DropdownMenu>
-      <IconAction
-        label={translate('python.action.runFile', "Run '{{value0}}'", { value0: fileLabel })}
-        testId="python-run-file"
-        onClick={() => void runConfiguration(context.runTarget)}
-      >
-        <Play />
-      </IconAction>
-      <IconAction
-        label={debugLabel}
-        testId="python-debug-file"
-        disabled={!context.local}
-        onClick={() =>
-          void debugFile(context.worktreeId, context.filePath, context.interpreter?.path)
-        }
-      >
-        <Bug />
-      </IconAction>
-      <RunSessionControls target={context.runTarget} testId="python-run-controls" />
     </div>
   )
 }
