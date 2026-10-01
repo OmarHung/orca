@@ -38,7 +38,7 @@ const target: SshTarget = {
 }
 
 const VPN_COMMAND =
-  "ssh -S none -o 'ProxyCommand=/usr/local/bin/docker exec -i --user tunnel orca-ssh-vpn-t-p nc -w 30 %h %p' Web-Staging"
+  "ssh -S none -o 'ProxyCommand=/usr/local/bin/docker exec -i --user tunnel orca-ssh-vpn-t-p nc %h %p' Web-Staging"
 
 beforeEach(() => {
   vi.clearAllMocks()

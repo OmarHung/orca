@@ -19663,7 +19663,7 @@
       "manual": "你要求連線這個 VPN。",
       "isolated": "VPN 在 Docker 容器中執行，這台電腦的其他網路流量不會改走 VPN。",
       "title": "要啟動 VPN「{{name}}」嗎？",
-      "tunnelNote": "之後每條 SSH 連線都會執行 `docker exec -i <容器> nc -w 30 <主機> <埠>`，經由 VPN 連到主機。",
+      "tunnelNote": "之後每條 SSH 連線都會執行 `docker exec -i <容器> nc <主機> <埠>`，經由 VPN 連到主機。",
       "start": "啟動 VPN"
     },
     "button": "VPN",
