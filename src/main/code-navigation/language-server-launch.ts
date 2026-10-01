@@ -15,6 +15,9 @@ import { resolveCommandOnLocalPath } from '../ipc/command-path-resolver'
 import type { LanguageServerLaunch } from './language-server-session'
 import { findCsharpSolution } from './csharp-solution-discovery'
 import { ensureCsharpRazorDesignTimeTargets } from './csharp-razor-design-time'
+import { ensureNpmPackageSetInstalled, isNpmPackageSetInstalled } from './npm-package-set-installer'
+import { VUE_LANGUAGE_SERVER_PACKAGES } from './vue-language-server-manifest'
+import { vueServerLaunch } from './vue-language-server-launch'
 import {
   CSHARP_SERVER_ARTIFACT,
   CSHARP_SERVER_ENTRY,
@@ -27,6 +30,8 @@ export type LanguageServerLaunchDeps = {
   platform: NodeJS.Platform
   arch: string
   env: NodeJS.ProcessEnv
+  /** Orca's own binary, which runs JavaScript servers as Node (ELECTRON_RUN_AS_NODE). */
+  execPath: string
   findSolution: (root: string) => Promise<string | null>
 }
 
@@ -36,6 +41,7 @@ const defaultDeps = (): LanguageServerLaunchDeps => ({
   platform: process.platform,
   arch: process.arch,
   env: process.env,
+  execPath: process.execPath,
   findSolution: (root) => findCsharpSolution(root)
 })
 
@@ -56,7 +62,7 @@ async function installServer(
 }
 
 function artifactFor(
-  kind: CodeNavigationServerKind,
+  kind: Exclude<CodeNavigationServerKind, 'vue'>,
   deps: Pick<LanguageServerLaunchDeps, 'platform' | 'arch'>
 ): DebugAdapterArtifact | null {
   return kind === 'typescript'
@@ -70,6 +76,9 @@ export async function isLanguageServerInstalled(
   baseDir: string,
   deps: Pick<LanguageServerLaunchDeps, 'platform' | 'arch'> = defaultDeps()
 ): Promise<boolean> {
+  if (kind === 'vue') {
+    return isNpmPackageSetInstalled(VUE_LANGUAGE_SERVER_PACKAGES, baseDir)
+  }
   const artifact = artifactFor(kind, deps)
   return artifact ? isDebugAdapterInstalled(artifact, baseDir) : false
 }
@@ -99,6 +108,17 @@ export async function prepareLanguageServerLaunch(
   onDownloading: () => void,
   deps: LanguageServerLaunchDeps = defaultDeps()
 ): Promise<LanguageServerLaunch> {
+  if (kind === 'vue') {
+    if (!(await isNpmPackageSetInstalled(VUE_LANGUAGE_SERVER_PACKAGES, baseDir))) {
+      onDownloading()
+    }
+    const installDir = await ensureNpmPackageSetInstalled(
+      VUE_LANGUAGE_SERVER_PACKAGES,
+      baseDir,
+      deps.install
+    )
+    return vueServerLaunch(installDir, deps)
+  }
   if (kind === 'typescript') {
     const artifact = artifactFor('typescript', deps)
     if (!artifact) {
