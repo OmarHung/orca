@@ -20143,7 +20143,17 @@
       "cancel": "Cancel",
       "checking": "Checking…",
       "save": "Save",
-      "pathPlaceholder": "/path/to/office.ovpn"
+      "pathPlaceholder": "/path/to/office.ovpn",
+      "kind": "How this VPN connects",
+      "kindOvpn": "OpenVPN profile (.ovpn)",
+      "kindContainer": "Container I already run",
+      "container": "Running VPN container",
+      "containerLoading": "Looking for containers…",
+      "containerPlaceholder": "Choose a container",
+      "containerRefresh": "Refresh",
+      "containerNone": "No running containers. Start your VPN container, then Refresh.",
+      "containerHelp": "Orca never starts, stops or removes this container. It needs a \"tunnel\" user whose traffic its firewall lets out only through the VPN; Orca checks that before every connection.",
+      "containerCommand": "Each connection runs:"
     },
     "row": {
       "idleNever": "Stays connected until Orca quits",
@@ -20157,7 +20167,10 @@
       "delete": "Delete…",
       "deleteNote": "Hosts using this VPN go back to connecting directly.",
       "hideLog": "Hide OpenVPN log",
-      "showLog": "Show OpenVPN log"
+      "showLog": "Show OpenVPN log",
+      "container": "Container: {{name}}",
+      "borrowed": "Started and stopped outside Orca",
+      "check": "Check"
     },
     "panel": {
       "add": "Add VPN profile",

@@ -1,6 +1,12 @@
-import type { SshVpnProfile, SshVpnProfileState, SshVpnStatus } from '../../shared/ssh-vpn-types'
+import type {
+  SshVpnOvpnProfile,
+  SshVpnProfile,
+  SshVpnProfileState,
+  SshVpnStatus
+} from '../../shared/ssh-vpn-types'
 import { describeOpenVpnFailure, OpenVpnLogTail } from './openvpn-output'
 import { waitForOpenVpnReady } from './openvpn-startup'
+import { SshVpnBorrowedContainers } from './ssh-vpn-borrowed-containers'
 import { sshVpnContainerName } from './ssh-vpn-docker'
 import {
   SshVpnStartDeclinedError,
@@ -17,7 +23,7 @@ const DEFAULT_POLL_INTERVAL_MS = 60_000
 const MS_PER_MINUTE = 60_000
 
 type Entry = {
-  profile: SshVpnProfile
+  profile: SshVpnOvpnProfile
   containerName: string
   status: SshVpnStatus
   error?: string
@@ -34,13 +40,22 @@ type Entry = {
   declines: number
 }
 
-/** One OpenVPN container per profile: started on first use, stopped when idle, removed on quit. */
+/**
+ * One OpenVPN container per .ovpn profile: started on first use, stopped when idle, removed on
+ * quit. Profiles that borrow someone else's container are handed to SshVpnBorrowedContainers.
+ */
 export class SshVpnManager {
   private readonly entries = new Map<string, Entry>()
+  private readonly borrowed: SshVpnBorrowedContainers
   private readonly now: () => number
 
   constructor(private readonly deps: SshVpnManagerDeps) {
     this.now = deps.now ?? Date.now
+    this.borrowed = new SshVpnBorrowedContainers({
+      docker: deps.docker,
+      onStateChange: deps.onStateChange,
+      recheckIntervalMs: deps.pollIntervalMs
+    })
   }
 
   /**
@@ -48,6 +63,11 @@ export class SshVpnManager {
    * `confirm`, a start first shows the user its commands and does nothing unless they agree.
    */
   acquire(profile: SshVpnProfile, options?: SshVpnStartOptions): Promise<SshVpnRoute> {
+    // Why stop the other kind first: a profile switched by hand-editing ssh-vpn.json keeps its id.
+    if (profile.kind === 'container') {
+      return this.stopOvpn(profile.id).then(() => this.borrowed.acquire(profile))
+    }
+    this.borrowed.release(profile.id)
     const entry = this.entryFor(profile)
     entry.profile = profile
     const declinesBefore = entry.declines
@@ -67,6 +87,10 @@ export class SshVpnManager {
 
   /** Picks up an edited profile (e.g. its idle window) without restarting the VPN. */
   updateProfile(profile: SshVpnProfile): void {
+    if (profile.kind === 'container') {
+      this.borrowed.updateProfile(profile)
+      return
+    }
     const entry = this.entries.get(profile.id)
     if (entry) {
       entry.profile = profile
@@ -76,16 +100,20 @@ export class SshVpnManager {
   /** The route when the VPN is up right now; never starts anything. */
   getReadyRoute(profileId: string): SshVpnRoute | null {
     const entry = this.entries.get(profileId)
-    return entry?.status === 'ready' ? this.routeOf(entry) : null
+    return (
+      this.borrowed.getReadyRoute(profileId) ??
+      (entry?.status === 'ready' ? this.routeOf(entry) : null)
+    )
   }
 
   stop(profileId: string): Promise<void> {
-    const entry = this.entries.get(profileId)
-    return entry ? this.exclusive(entry, () => this.teardown(entry, 'stopped')) : Promise.resolve()
+    this.borrowed.release(profileId)
+    return this.stopOvpn(profileId)
   }
 
   async stopAll(): Promise<void> {
-    await Promise.all([...this.entries.keys()].map((profileId) => this.stop(profileId)))
+    this.borrowed.releaseAll()
+    await Promise.all([...this.entries.keys()].map((profileId) => this.stopOvpn(profileId)))
   }
 
   /** Removes containers a previous run of this Orca left behind (crash, force quit). */
@@ -105,15 +133,36 @@ export class SshVpnManager {
   }
 
   getState(profileId: string): SshVpnProfileState {
-    const entry = this.entries.get(profileId)
-    return entry ? this.stateOf(entry) : { profileId, status: 'stopped', logTail: [] }
+    return (
+      this.listStates().find((state) => state.profileId === profileId) ?? {
+        profileId,
+        status: 'stopped',
+        logTail: []
+      }
+    )
   }
 
+  /** One state per profile; after a kind switch the side that is not stopped wins. */
   listStates(): SshVpnProfileState[] {
-    return [...this.entries.values()].map((entry) => this.stateOf(entry))
+    const states = new Map<string, SshVpnProfileState>()
+    for (const state of [
+      ...[...this.entries.values()].map((entry) => this.stateOf(entry)),
+      ...this.borrowed.listStates()
+    ]) {
+      if (states.get(state.profileId)?.status !== undefined && state.status === 'stopped') {
+        continue
+      }
+      states.set(state.profileId, state)
+    }
+    return [...states.values()]
   }
 
-  private entryFor(profile: SshVpnProfile): Entry {
+  private stopOvpn(profileId: string): Promise<void> {
+    const entry = this.entries.get(profileId)
+    return entry ? this.exclusive(entry, () => this.teardown(entry, 'stopped')) : Promise.resolve()
+  }
+
+  private entryFor(profile: SshVpnOvpnProfile): Entry {
     let entry = this.entries.get(profile.id)
     if (!entry) {
       entry = {

@@ -23,6 +23,7 @@ export type SshVpnDockerPort = Pick<
   | 'countTunnels'
   | 'remove'
   | 'listContainers'
+  | 'query'
 > & { spawnOpenVpn(containerName: string, withLogin: boolean): OpenVpnProcess }
 
 export type SshVpnManagerDeps = {
