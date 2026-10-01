@@ -4,7 +4,9 @@ import type {
   SshVpnCredentialRequest,
   SshVpnCredentials,
   SshVpnProfileState,
+  SshVpnStartAnswer,
   SshVpnStartConfirmRequest,
+  SshVpnStartPreview,
   SshVpnStatus
 } from '../../shared/ssh-vpn-types'
 import { runProcessSync } from '../../shared/child-process/run-process'
@@ -24,6 +26,7 @@ import { setSshVpnDatabaseRoutes } from './ssh-vpn-database-route'
 import { SshVpnRendererRequests } from './ssh-vpn-renderer-requests'
 import { setSshVpnRouteProvider } from './ssh-vpn-route'
 import { SshVpnService } from './ssh-vpn-service'
+import { previewSshVpnStart } from './ssh-vpn-start-sequence'
 import { SshVpnStore } from './ssh-vpn-store'
 
 const QUIT_REMOVE_TIMEOUT_MS = 5_000
@@ -35,8 +38,10 @@ export type SshVpnRuntime = {
   manager: SshVpnManager
   service: SshVpnService
   vault: SshVpnPasswordVault
-  approvals: SshVpnRendererRequests<SshVpnStartConfirmRequest, boolean>
+  approvals: SshVpnRendererRequests<SshVpnStartConfirmRequest, SshVpnStartAnswer>
   logins: SshVpnRendererRequests<SshVpnCredentialRequest, SshVpnCredentials | null>
+  /** What using a profile would take right now, for the start confirmation's VPN picker. */
+  previewStart: (profileId: string) => Promise<SshVpnStartPreview>
   /** Removes every container synchronously; for app quit. */
   removeAllSync: () => void
 }
@@ -78,10 +83,11 @@ export function createSshVpnRuntime(options: SshVpnRuntimeOptions): SshVpnRuntim
   )
   const stateWatchers = new Set<(state: SshVpnProfileState) => void>()
   const docker = createDockerResolver()
+  // Why: scopes containers to this profile directory, so a dev build never removes the app's.
+  const instanceTag = createHash('sha256').update(options.userDataPath).digest('hex').slice(0, 8)
   const manager = new SshVpnManager({
     docker,
-    // Why: scopes containers to this profile directory, so a dev build never removes the app's.
-    instanceTag: createHash('sha256').update(options.userDataPath).digest('hex').slice(0, 8),
+    instanceTag,
     readFile: readOvpnProfileFile,
     onStateChange: (state) => {
       options.onStateChange(state)
@@ -90,9 +96,9 @@ export function createSshVpnRuntime(options: SshVpnRuntimeOptions): SshVpnRuntim
       }
     }
   })
-  const approvals = new SshVpnRendererRequests<SshVpnStartConfirmRequest, boolean>(
+  const approvals = new SshVpnRendererRequests<SshVpnStartConfirmRequest, SshVpnStartAnswer>(
     options.sendStartConfirm,
-    false
+    { approved: false }
   )
   const logins = new SshVpnRendererRequests<SshVpnCredentialRequest, SshVpnCredentials | null>(
     options.sendCredentialRequest,
@@ -101,8 +107,16 @@ export function createSshVpnRuntime(options: SshVpnRuntimeOptions): SshVpnRuntim
   const service = new SshVpnService({
     store,
     manager,
-    approveStart: ({ profile, hostLabel, commands }) =>
-      approvals.ask((requestId) => ({ requestId, profileName: profile.name, hostLabel, commands })),
+    approveStart: ({ profile, hostLabel, switchable, commands }) =>
+      approvals.ask((requestId) => ({
+        requestId,
+        profileId: profile.id,
+        profileName: profile.name,
+        hostLabel,
+        switchable,
+        commands
+      })),
+    onAssignmentChanged: options.onProfilesChanged,
     logins: new SshVpnLogins({
       vault,
       store,
@@ -155,6 +169,17 @@ export function createSshVpnRuntime(options: SshVpnRuntimeOptions): SshVpnRuntim
     vault,
     approvals,
     logins,
+    previewStart: async (profileId) => {
+      const profile = store.getProfile(profileId)
+      if (!profile) {
+        throw new Error('This VPN profile no longer exists')
+      }
+      const isReady = (id: string): boolean => manager.getReadyRoute(id) !== null
+      return previewSshVpnStart(
+        { docker, instanceTag, readFile: readOvpnProfileFile, isReady },
+        profile
+      )
+    },
     removeAllSync: () => {
       const running = manager.runningContainers()
       if (running.length === 0) {

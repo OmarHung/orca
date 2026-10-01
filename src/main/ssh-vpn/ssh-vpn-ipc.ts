@@ -146,10 +146,14 @@ function registerProfileHandlers(runtime: SshVpnRuntime): void {
 }
 
 function registerConnectionHandlers(runtime: SshVpnRuntime): void {
-  const { manager, service, approvals, logins } = runtime
+  const { manager, service, approvals, logins, previewStart } = runtime
   ipcMain.handle('sshVpn:connect', (_event, raw: unknown) => {
     const id = sshVpnProfileIdSchema.safeParse(raw)
     return id.success ? respond(() => service.connect(id.data)) : INVALID_REQUEST
+  })
+  ipcMain.handle('sshVpn:previewStart', (_event, raw: unknown) => {
+    const id = sshVpnProfileIdSchema.safeParse(raw)
+    return id.success ? respond(() => previewStart(id.data)) : INVALID_REQUEST
   })
   ipcMain.handle('sshVpn:disconnect', (_event, raw: unknown) => {
     const id = sshVpnProfileIdSchema.safeParse(raw)
@@ -171,7 +175,8 @@ function registerConnectionHandlers(runtime: SshVpnRuntime): void {
   ipcMain.handle('sshVpn:answerStart', (_event, raw: unknown) => {
     const answer = sshVpnConfirmAnswerSchema.safeParse(raw)
     if (answer.success) {
-      approvals.answer(answer.data.requestId, answer.data.approved)
+      const { requestId, ...rest } = answer.data
+      approvals.answer(requestId, rest)
     }
   })
   ipcMain.handle('sshVpn:answerCredentials', (_event, raw: unknown) => {
