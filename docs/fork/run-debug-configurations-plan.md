@@ -355,6 +355,16 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - Orca Mobile、遠端 client、`orca` CLI 的 terminal 清單仍會看到 run 的 terminal（它們不知道 Run 面板）
 - Agent prompt 類的快速指令仍然開新的 terminal 分頁（它們本來就不是 run session）
 
+### 後續：模式圖示取代綠點、停止鈕紅色（2026-10-01）
+
+使用者要求執行中的綠點改成對應模式的圖示，run 用綠色、debug／build／publish 用其他顏色，停止用紅色。
+
+- **模式**（`run-mode.ts`）：`run`、`debug`、`build`、`test`、`publish`。偵測到的 run 用它的 kind（`other` 算 run），`.NET Publish to Folder` 設定算 publish，其他（command 設定、compound、快速指令、目前檔案）算 run；除錯 session 一律是 debug
+- **模式跟著 run 走**：`RunTarget` 多了選填的 `kind`，偵測到的 run、存成設定後共用的 run（`savedRunFor`）、publish 設定（launcher 依設定 id 補上，因為 publish 進 launcher 前已經轉成 command）都會帶著；最近執行與 run session 存在 localStorage 時一起保存，所以 Run 面板分頁和重啟後的最近執行也知道模式。舊資料沒有 `kind` 就當 run
+- **畫面**（`RunModeIcon`、`RunStatusIcon`）：工具列與 Run 面板分頁的狀態點改成模式圖示（執行中用模式顏色並閃爍、正常結束變灰、失敗變紅）；Run 選單每列的綠點改成圖示右下角的小徽章。顏色是 `main.css` 新增的 `--run-mode-debug`（橘）、`--run-mode-build`（藍）、`--run-mode-test`（青）、`--run-mode-publish`（紫），run 沿用 `--status-success`（綠）
+- **停止鈕紅色**：Run 元件的 ■（含數量徽章那顆和 Stop 選單的每一項、Stop All）、選單列的 ■、Run 面板直排工具列、Debug 工具列的停止都用 `text-destructive`；停用時維持灰色。Stop 選單裡的除錯 session 改用橘色 🐞
+- **沒改**：閒置時的 ▶／🐞 按鈕仍是灰色（使用者只要求狀態點與停止鈕）
+
 ## 7. 必須遵守的專案規則（摘自 AGENTS.md）
 
 - UI 依照 `docs/STYLEGUIDE.md`，使用 `main.css` 的 token 和 `components/ui/` 的 shadcn 元件；`pnpm run check:code-quality:changed` 必須通過
@@ -404,7 +414,7 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - 入口有兩個：Run widget 的 Add Quick Command 對話框多了第三個 Action「Compound」，存成本機 run 設定（不是 quick command，quick command 的資料結構沒變），存完自動選取；Edit Configurations 的 compound 表單用同一個 `CompoundMembersEditor`
 
 **Compound 執行中的逐一管理（2026-09-27）**：使用者要求 compound 跑起來後，能像 JetBrains 一樣從下拉選單管理每個程式的啟停。現在：
-- **下拉選單每一列**（`RunWidgetMenuRow`）：執行中或除錯中的項目，圖示右下角有綠點，右側固定顯示 ↻（重新執行；只在除錯的項目是「重新開始除錯」）和 ■；沒在跑的項目滑鼠移上去才出現 ▶（和可以除錯的 🐞）。compound 那一列只要有任一成員在跑就算執行中，它的 ■ 會停掉所有成員。點列本身仍然只是「選取」；↻ 和 ■ 不關選單（可以連續管理好幾個），▶ 和 🐞 會關選單（會開 terminal 或對話框）
+- **下拉選單每一列**（`RunWidgetMenuRow`）：執行中或除錯中的項目，圖示右下角有模式徽章（2026-10-01 起，原本是綠點），右側固定顯示 ↻（重新執行；只在除錯的項目是「重新開始除錯」）和 ■；沒在跑的項目滑鼠移上去才出現 ▶（和可以除錯的 🐞）。compound 那一列只要有任一成員在跑就算執行中，它的 ■ 會停掉所有成員。點列本身仍然只是「選取」；↻ 和 ■ 不關選單（可以連續管理好幾個），▶ 和 🐞 會關選單（會開 terminal 或對話框）
 - **■ 改成整個 workspace 共用**（`RunStopControl`，跟 JetBrains 一樣不管目前選哪個）：只有一個程式在跑時直接停；兩個以上時右下角顯示數量，點開列出每個「Stop 'X'」（除錯 session 是「Stop debugging 'X'」），最後是「Stop All N」。所以選中項目的控制區不再有自己的 ■（`RunSessionControls` 多了 `showStop`，Python／Node 目前檔案的控制照舊有 ■），`DebugSessionControls` 也只剩狀態和重新開始
 - **選中 compound 時**：只要有成員在跑，▶ 換成狀態點和 ↻（整組重跑，已在跑的成員會單一實例重啟）。啟動 compound 時每個成員都會開新 tab，原本「跟隨目前的 run terminal」會把選取跳到最後一個成員；現在如果目前選的 compound 已經涵蓋那個 run，就維持選取（`use-follow-active-run-terminal.ts`，每次切 tab 只跟隨一次）
 - **哪些 run 屬於哪個項目**（`run-widget-activity.ts`）：compound 用 `planRunConfiguration` 展開（包含巢狀 compound 和 Before launch 步驟），command 成員對應 `config:<id>` 的 run key，debug 成員對應它自己的項目 key。為了讓 debug 成員也對得上，launcher 啟動 debug 設定時一律用成員自己的 `config:<id>` 當 `sourceKey`（原本從 compound 啟動時是空的）
