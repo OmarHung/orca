@@ -176,7 +176,7 @@ test('exports a Dockerfile stage to a folder, emptying it first', async ({
   await expect(dialog).toBeVisible()
   await orcaPage.getByTestId('docker-export-output-dir').fill(output)
   await expect(orcaPage.getByTestId('docker-export-command')).toHaveText(
-    `docker build --target export-site -o ${output} site`
+    `rm -rf ${output} && docker build --target export-site -o ${output} site`
   )
   await orcaPage.screenshot({ path: testInfo.outputPath('docker-export-dialog.png') })
   await orcaPage.getByTestId('docker-export-run').click()

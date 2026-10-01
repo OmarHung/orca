@@ -133,14 +133,14 @@ describe('launchRunConfiguration', () => {
     expect(mocks.prepareOutputFolder).toHaveBeenCalledWith(
       'Export',
       expect.objectContaining({ commandKey: 'config:export' }),
-      { folder: '/out/web', contextDir: '/repo/wt' },
+      { folder: '/out/web', contextDir: '/repo/wt', orcaDeletes: false },
       expect.objectContaining({ cancelled: false })
     )
     expect(mocks.runConfiguration).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'publish',
         command: expect.objectContaining({
-          command: 'docker build --target export-web -o /out/web .'
+          command: 'rm -rf /out/web && docker build --target export-web -o /out/web .'
         })
       })
     )
