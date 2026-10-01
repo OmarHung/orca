@@ -39,6 +39,10 @@ vi.mock('@/store', () => {
     )
   }
 })
+// Fork: these cover upstream's default shell seeding, so no project initial agent tab applies.
+vi.mock('@/lib/project-initial-agent-tab-seeding', () => ({
+  seedProjectInitialAgentTab: () => false
+}))
 vi.mock('@/lib/workspace/activation/worktree-agent-activation-gate', () => ({
   gateWorktreeAgentActivation: mocks.gate
 }))
