@@ -37,6 +37,7 @@ import {
 import { useMonacoTheme } from '@/hooks/use-monaco-theme'
 import { useEditorModelRekeyCarry } from './model-lifetime/identity/editor-model-rekey-carry'
 import { useMonacoDebugDecorations } from '../debug/use-monaco-debug-decorations'
+import { DebugValueHoverWidget } from '../debug/DebugValueHoverWidget'
 import { useMonacoChangeMarkers } from './change-markers/use-monaco-change-markers'
 import { useMonacoInlineBlame } from './inline-blame/use-monaco-inline-blame'
 import { useMonacoRevisionCompareActions } from './revision-compare/use-monaco-revision-compare-actions'
@@ -361,6 +362,7 @@ export default function MonacoEditor({
         relativePath={relativePath}
         worktreeId={worktreeId}
       />
+      <DebugValueHoverWidget editor={mountedEditor} filePath={filePath} language={language} />
     </div>
   )
 }

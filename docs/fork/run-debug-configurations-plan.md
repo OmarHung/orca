@@ -257,6 +257,14 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - **4b 看值**：Watch 放在 Variables 下方，會跨 session 保留，每次暫停都重新求值；Console 可以輸入運算式在目前選取的 frame 求值，有 ↑／↓ 歷史紀錄；滑鼠移到變數上會顯示值（只在暫停的那個檔案，會包含 `a.b.c` 成員鏈，但不會包含函式呼叫）；暫停行之前的程式行會在行尾顯示變數值。**踩到的坑**：Monaco 的 injected text（`after`）放在行尾的空 range 上不會顯示，要用整行的 range 才會出現
 - **4c 補齊**：「More Run/Debug」子選單每個可除錯的設定都有 Debug 項目；從選單除錯的設定也會成為 tab bar 上最近執行的那一個，而且那裡多了 🐞 按鈕
 
+**JetBrains 式 hover（2026-10-01）**：原本的 hover 是 Monaco 的 markdown hover，只有一行 `expr (type) = value`。改成自己的 content widget（`debug-value-hover.ts` + `DebugValueHoverWidget.tsx`），內容重用 Variables 的 `VariableRow`：
+- 游標停在名稱上 300ms 後求值（DAP `evaluate`，`context: 'hover'`），彈出框顯示 `name = {Type} value`，物件可以逐層展開（lazy `variables`），右側有「Add to Watches」
+- 游標停在選取範圍裡時，求值整段選取（單行、500 字以內），跟 JetBrains 的 value-on-selection 一樣
+- 只在「目前選取的 frame」所在的檔案啟用；每次暫停／切換 frame 都換一個新的 controller，continue 就關閉
+- 名稱上的語言 hover（LSP 型別／文件）會被暫時關掉（`hover.enabled: false`，離開名稱就還原），避免兩個 hover 疊在一起；求值失敗的名稱（關鍵字、型別）在這次暫停內改回語言 hover；按住 Alt 一律顯示語言 hover（同 VS Code）
+- 游標可以移進彈出框（300ms 寬限），點擊彈出框不搶編輯器焦點，所以 Esc、打字、捲動都會關閉它
+- e2e：`debug-value-hover.spec.ts`。**踩到的坑**：測試程式不能叫 `inspect.py`，它會蓋掉標準函式庫的 `inspect`，debugpy 直接跑完不會停
+
 **仍未支援**：REPL 的自動補全（DAP `completions`）、在 Variables 裡直接修改變數值（`setVariable`）、function breakpoint、data breakpoint
 
 ### Phase 5：進階功能
