@@ -105,6 +105,18 @@ test('hovering a name while paused shows a JetBrains-style expandable value', as
     timeout: 120_000
   })
 
+  // Leave the paused line at the editor's bottom edge, right above the Debug panel.
+  const separator = await orcaPage
+    .getByRole('separator', { name: 'Resize bottom panel' })
+    .boundingBox()
+  expect(separator).not.toBeNull()
+  const pausedLine = await textBox(editor, 'print(config', 'print')
+  const separatorX = separator!.x + separator!.width / 2
+  await orcaPage.mouse.move(separatorX, separator!.y + separator!.height / 2)
+  await orcaPage.mouse.down()
+  await orcaPage.mouse.move(separatorX, pausedLine.y + 30, { steps: 5 })
+  await orcaPage.mouse.up()
+
   // Resting on a name shows its value with an expander instead of the language hover.
   const hover = orcaPage.getByTestId('debug-value-hover')
   const configBox = await textBox(editor, 'print(config', 'config')
@@ -119,6 +131,15 @@ test('hovering a name while paused shows a JetBrains-style expandable value', as
   await valueRow.click()
   await expect(valueRow).toHaveAttribute('aria-expanded', 'true')
   await expect(hover).toContainText(/'size'=(\{int\} )?3/)
+  // Members past the editor's bottom edge float over the Debug panel instead of being cut off.
+  const lastMember = hover.getByRole('button', { name: /^len\(\)/ })
+  await expect(lastMember).toBeVisible()
+  const lastMemberOnTop = await lastMember.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+    return hit !== null && element.contains(hit)
+  })
+  expect(lastMemberOnTop).toBe(true)
   await orcaPage.screenshot({ path: testInfo.outputPath('value-hover-expanded.png') })
 
   // Escape closes it.
