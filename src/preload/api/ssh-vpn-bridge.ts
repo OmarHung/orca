@@ -21,6 +21,7 @@ export const sshVpnApi = {
   setAssignment: (request) => ipcRenderer.invoke('sshVpn:setAssignment', request),
   connect: (profileId) => ipcRenderer.invoke('sshVpn:connect', profileId),
   disconnect: (profileId) => ipcRenderer.invoke('sshVpn:disconnect', profileId),
+  previewStart: (profileId) => ipcRenderer.invoke('sshVpn:previewStart', profileId),
   prepareTerminal: (targetId) => ipcRenderer.invoke('sshVpn:prepareTerminal', targetId),
   pickOvpnFile: () => ipcRenderer.invoke('sshVpn:pickOvpnFile'),
   answerStart: (answer) => ipcRenderer.invoke('sshVpn:answerStart', answer),
