@@ -151,12 +151,34 @@ describe('LanguageServerSession', () => {
     fake.sendFromServer({
       id: 'config-1',
       method: 'workspace/configuration',
-      params: { items: [{ section: 'csharp' }, { section: 'editor' }, {}] }
+      params: { items: [{ section: 'csharp' }, { section: 'editor' }, {}, { section: '' }] }
     })
     await flush()
 
+    // Why the whole object: no section (vtsls sends '') asks for every setting.
+    const whole = { csharp: { useMetadataUris: true } }
     expect(fake.sent.find((message) => message.id === 'config-1')).toMatchObject({
-      result: [{ useMetadataUris: true }, null, null]
+      result: [{ useMetadataUris: true }, null, whole, whole]
+    })
+  })
+
+  it('answers null for every section when the launch has no settings', async () => {
+    const fake = createFakeLspTransport()
+    new LanguageServerSession({
+      root,
+      launch: { program: '/bin/server', args: [], env: {} },
+      startTransport: () => fake.transport
+    })
+
+    fake.sendFromServer({
+      id: 'config-2',
+      method: 'workspace/configuration',
+      params: { items: [{ section: '' }, { section: 'typescript' }] }
+    })
+    await flush()
+
+    expect(fake.sent.find((message) => message.id === 'config-2')).toMatchObject({
+      result: [null, null]
     })
   })
 

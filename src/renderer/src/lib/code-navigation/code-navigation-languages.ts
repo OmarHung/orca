@@ -18,7 +18,10 @@ const LANGUAGES_BY_EXTENSION: Record<string, CodeNavigationLanguage> = {
   '.jsx': typescript('javascriptreact'),
   '.cs': { kind: 'csharp', languageId: 'csharp' },
   // Why the C# server: csharp-ls resolves the C# inside Razor views (run with razor-support).
-  '.cshtml': { kind: 'csharp', languageId: 'razor' }
+  '.cshtml': { kind: 'csharp', languageId: 'razor' },
+  // Why its own server: TypeScript 7 cannot load Vue's plugin; main also routes a Vue project's
+  // TypeScript files there.
+  '.vue': { kind: 'vue', languageId: 'vue' }
 }
 
 /** Monaco language ids whose navigation Orca routes through a language server. */
@@ -26,7 +29,8 @@ export const CODE_NAVIGATION_MONACO_LANGUAGES = [
   'typescript',
   'javascript',
   'csharp',
-  'razor'
+  'razor',
+  'vue'
 ] as const
 
 /** The server and LSP language id for a file, or null when no server handles it. */
