@@ -13,17 +13,15 @@ import {
   type LanguageServerLaunch,
   type LanguageServerSessionOptions
 } from './language-server-session'
+import { isPathInsideOrEqual } from '../../shared/cross-platform-path'
 import { writeCsharpMetadataFile } from './csharp-metadata-files'
 import {
-  readPreviewFile,
   readTargetPreviews,
   toFileLocations,
   type MetadataFileResolver
 } from './navigation-target-files'
-import { csharpImplementations } from './csharp-mediatr-handlers'
-import { detectMvcConstruct } from './aspnet-mvc-constructs'
-import { nodeMvcFileSystem, resolveMvcConstruct, type MvcTargetDeps } from './aspnet-mvc-targets'
-import type { LspLocation } from './lsp-locations'
+import { serverLocations, type ServerLocationDeps } from './code-navigation-server-locations'
+import { CodeNavigationRouter } from './code-navigation-routing'
 
 // Why: idle servers hold whole program graphs in memory; restarting one is cheap next to that.
 const IDLE_SHUTDOWN_MS = 30 * 60_000
@@ -42,10 +40,9 @@ export type CodeNavigationServiceDeps = {
   /** Where decompiled C# sources are written; without it they cannot be opened. */
   metadataDir?: string
   createSession?: (options: LanguageServerSessionOptions) => LanguageServerSession
-  readPreview?: (path: string) => Promise<string | null>
-  mvcFileSystem?: Pick<MvcTargetDeps, 'fileExists' | 'listDir'>
+  router?: CodeNavigationRouter
   now?: () => number
-}
+} & ServerLocationDeps
 
 type SessionEntry = {
   kind: CodeNavigationServerKind
@@ -68,14 +65,22 @@ function errorMessage(error: unknown): string {
 export class CodeNavigationService {
   private readonly sessions = new Map<string, SessionEntry>()
   private readonly explicitlyActivated = new Set<string>()
+  private readonly router: CodeNavigationRouter
   private idleTimer: ReturnType<typeof setInterval> | null = null
 
-  constructor(private readonly deps: CodeNavigationServiceDeps) {}
+  constructor(private readonly deps: CodeNavigationServiceDeps) {
+    this.router = deps.router ?? new CodeNavigationRouter()
+  }
 
   async query(
-    request: CodeNavigationQuery,
+    rendererRequest: CodeNavigationQuery,
     emitStatus: (event: CodeNavigationStatusEvent) => void
   ): Promise<CodeNavigationQueryResult> {
+    const { kind, root, nuxt } = await this.routeOf(rendererRequest)
+    const request = { ...rendererRequest, kind, root }
+    if (request.userInitiated && (await this.router.needsNuxtHint({ kind, root, nuxt }))) {
+      emitStatus({ kind, root, phase: 'nuxtTypesMissing' })
+    }
     const key = sessionKey(request.kind, request.root)
     const existing = this.sessions.get(key)
     if (!existing && !request.userInitiated && !this.explicitlyActivated.has(key)) {
@@ -100,7 +105,7 @@ export class CodeNavigationService {
     try {
       const session = await entry.session
       const locations = await toFileLocations(
-        await this.serverLocations(session, request),
+        await serverLocations(session, request, nuxt, this.deps),
         this.metadataResolver(session)
       )
       const previews = await readTargetPreviews(
@@ -122,7 +127,9 @@ export class CodeNavigationService {
    * Hover info from a running server. It may restart an activated, installed server but never
    * downloads one; before activation the renderer keeps Monaco's own hover.
    */
-  async hover(request: CodeNavigationHoverQuery): Promise<CodeNavigationHoverResult> {
+  async hover(rendererRequest: CodeNavigationHoverQuery): Promise<CodeNavigationHoverResult> {
+    const { kind, root } = await this.routeOf(rendererRequest)
+    const request = { ...rendererRequest, kind, root }
     const key = sessionKey(request.kind, request.root)
     let entry = this.sessions.get(key)
     if (!entry) {
@@ -156,16 +163,21 @@ export class CodeNavigationService {
   }
 
   closeDocument(kind: CodeNavigationServerKind, root: string, path: string): void {
-    this.sessions.get(sessionKey(kind, root))?.started?.closeDocument(path)
+    const route = this.router.closeDocument(kind, root, path)
+    this.sessions.get(sessionKey(route.kind, route.root))?.started?.closeDocument(path)
   }
 
   filesChanged(root: string, changes: readonly CodeNavigationFileChange[]): void {
+    this.router.filesChanged(changes)
     for (const entry of this.sessions.values()) {
-      if (entry.root !== root || !entry.started) {
+      // Why inside: a Vue server is rooted at its package, below the watched workspace root.
+      if (!entry.started || !isPathInsideOrEqual(root, entry.root)) {
         continue
       }
-      const relevant = changes.filter((change) =>
-        isCodeNavigationWatchedPath(entry.kind, change.path)
+      const relevant = changes.filter(
+        (change) =>
+          isCodeNavigationWatchedPath(entry.kind, change.path) &&
+          isPathInsideOrEqual(entry.root, change.path)
       )
       entry.started.filesChanged(relevant)
     }
@@ -254,47 +266,8 @@ export class CodeNavigationService {
     }
   }
 
-  private async serverLocations(
-    session: LanguageServerSession,
-    request: CodeNavigationQuery
-  ): Promise<LspLocation[]> {
-    const mvc = await this.mvcLocations(session, request)
-    if (mvc.length > 0) {
-      return mvc
-    }
-    if (request.kind === 'csharp' && request.feature === 'implementation') {
-      const read = this.deps.readPreview ?? readPreviewFile
-      return csharpImplementations(
-        session,
-        request.document,
-        request.position,
-        async (path) => (await read(path))?.split(/\r?\n/) ?? null
-      )
-    }
-    return session.query(request.feature, request.document, request.position)
-  }
-
-  /**
-   * ASP.NET MVC references the C# server cannot follow: views named by convention
-   * (`return View()`, `<partial name>`) and actions named in strings (`asp-action`,
-   * `RedirectToAction`). Rider resolves these too; a definition on one lands on its target.
-   */
-  private async mvcLocations(
-    session: LanguageServerSession,
-    request: CodeNavigationQuery
-  ): Promise<LspLocation[]> {
-    if (request.kind !== 'csharp' || request.feature !== 'definition') {
-      return []
-    }
-    const construct = detectMvcConstruct(request.document, request.position)
-    if (!construct) {
-      return []
-    }
-    return resolveMvcConstruct(construct, request.document.path, {
-      root: request.root,
-      ...(this.deps.mvcFileSystem ?? nodeMvcFileSystem),
-      workspaceSymbols: (query) => session.request('workspace/symbol', { query })
-    })
+  private routeOf(request: CodeNavigationHoverQuery) {
+    return this.router.route(request.kind, request.root, request.document.path)
   }
 
   private metadataResolver(session: LanguageServerSession): MetadataFileResolver | null {

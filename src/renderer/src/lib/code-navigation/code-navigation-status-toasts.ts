@@ -7,10 +7,13 @@ import type {
 
 // Why delayed: a TypeScript server is usually ready in well under a second, so a toast would flash.
 const STARTING_TOAST_DELAY_MS = 800
+// Why longer: the hint names a command to run.
+const NUXT_HINT_DURATION_MS = 12_000
 
 const LANGUAGE_NAMES: Record<CodeNavigationServerKind, string> = {
   typescript: 'TypeScript/JavaScript',
-  csharp: 'C#'
+  csharp: 'C#',
+  vue: 'Vue'
 }
 
 const startingTimers = new Map<string, ReturnType<typeof setTimeout>>()
@@ -54,6 +57,17 @@ export function showCodeNavigationStatus(event: CodeNavigationStatusEvent): void
       return
     case 'ready':
       toast.dismiss(id)
+      return
+    case 'nuxtTypesMissing':
+      // Why its own id: the 'ready' that follows dismisses the loading toast, not this one.
+      toast.info(
+        translate(
+          'codeNavigation.nuxtTypesMissing',
+          'This Nuxt project has no generated types yet, so auto-imports cannot be followed. Run `nuxi prepare` in {{project}}.',
+          { project: event.root.split(/[\\/]/).pop() ?? event.root }
+        ),
+        { id: `${id}:nuxt-types`, duration: NUXT_HINT_DURATION_MS }
+      )
       return
     case 'failed':
       toast.error(
