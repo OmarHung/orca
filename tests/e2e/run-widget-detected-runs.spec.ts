@@ -113,3 +113,38 @@ test('nests detected runs by toolchain, project and kind, and hides and shows th
   await expect(orcaPage.getByRole('menu')).toHaveCount(0)
   await expect(orcaPage.getByTestId('run-configurations-trigger').first()).toHaveText('web: dev')
 })
+
+test('lists compose files and Dockerfiles under Docker', async ({
+  orcaPage,
+  testRepoPath,
+  registerPostElectronShutdownCleanup
+}, testInfo) => {
+  test.setTimeout(120_000)
+  const fixture = createGoldenWorktree(testRepoPath, 'run-widget-detected-docker')
+  registerPostElectronShutdownCleanup(async () => cleanupGoldenWorktree(testRepoPath, fixture))
+  const stack = path.join(fixture.worktreePath, 'stack')
+  mkdirSync(stack)
+  writeFileSync(
+    path.join(stack, 'compose.yaml'),
+    'services:\n  db:\n    image: postgres:16\n  api:\n    build: .\n'
+  )
+  writeFileSync(path.join(stack, 'Dockerfile'), 'FROM alpine\nEXPOSE 8080\n')
+
+  await waitForSessionReady(orcaPage)
+  await activateGoldenWorktree(orcaPage, testRepoPath, fixture.worktreePath)
+  await openRunMenu(orcaPage)
+
+  await openKind(orcaPage, ['Docker', 'compose.yaml', 'Run'])
+  await expect(row(orcaPage, 'up api')).toBeVisible()
+  await expect(row(orcaPage, 'up db')).toBeVisible()
+  await orcaPage.screenshot({ path: testInfo.outputPath('detected-docker-compose.png') })
+
+  // Why reopened: the compose project's own Build entry stays mounted while its submenu fades.
+  await orcaPage.keyboard.press('Escape')
+  await expect(orcaPage.locator('[data-slot="dropdown-menu-content"]')).toHaveCount(0)
+  await openRunMenu(orcaPage)
+  // Why not clicked: a run would build a real image on the machine's Docker.
+  await openKind(orcaPage, ['Docker', 'Dockerfile', 'Build'])
+  await expect(row(orcaPage, 'build')).toBeVisible()
+  await expect(kind(orcaPage, /^(Run|Build)/)).toHaveCount(2)
+})
