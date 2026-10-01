@@ -374,6 +374,14 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - **停止鈕紅色**：Run 元件的 ■（含數量徽章那顆和 Stop 選單的每一項、Stop All）、選單列的 ■、Run 面板直排工具列、Debug 工具列的停止都用 `text-destructive`；停用時維持灰色。Stop 選單裡的除錯 session 改用橘色 🐞
 - **沒改**：閒置時的 ▶／🐞 按鈕仍是灰色（使用者只要求狀態點與停止鈕）
 
+### 後續：偵測 Docker（2026-10-02）
+
+使用者問「偵測到的」能不能認出 Docker，選了 Compose + Dockerfile 都偵測、compose 的每個 service 各列一項。新的工具鏈 `docker`，排在 .NET／Node／Python 之後；工作區掃描和檔案樹右鍵都會用到。
+
+- **Compose**（`docker-compose-run-configurations.ts`）：每個 compose 檔是一個專案，名稱就是檔名。項目有 Run 底下的 `up`、`up -d`、每個 service 的 `up <service>`，Build 底下的 `build`，以及 Other 底下的 `down`、`logs -f`。預設檔（compose 自己的找檔順序 `compose.yaml` → `docker-compose.yml`）不加 `-f`，`*.override.*` 的 service 併進預設檔、不單獨列。具名檔（`docker-compose.prod.yml`）只要有 service 不能單獨啟動（沒有 `image`／`build`／`extends`），或依賴自己沒定義的 service，就疊在預設檔上執行（`-f 預設 -f 具名`），否則單獨 `-f 具名`。YAML 用 `merge: true` 解析，`<<: *anchor` 才會展開；解析失敗時仍會列出整個 stack 的指令
+- **Dockerfile**（`dockerfile-run-configurations.ts`）：`Dockerfile`、`Dockerfile.<x>`、`<x>.Dockerfile`（排除 `Dockerfile.dockerignore`）。image 名稱取自資料夾名稱（變體會加上 `-<x>`）。Visual Studio 產生的 Dockerfile 會從方案資料夾 build，所以 COPY 的來源路徑如果以 Dockerfile 自己所在的資料夾路徑開頭，context 就往上推相同層數（`docker build -f Dockerfile -t api ../..`）。Run 只會發布最終 stage 及其基底 stage 的 `EXPOSE`；在 macOS、Linux、WSL、SSH 上會先 build 再 run（`&&`）。Windows 路徑則只有 `docker run`，因為 Windows PowerShell 5.1 不支援 `&&`
+- **共用**：`joinProjectPath` 從 .NET／Python 偵測器抽到 `project-path.ts`；`DetectedRunConfiguration.projectFile` 也會填入 compose 檔和 Dockerfile 的路徑。在檔案樹右鍵單一 compose 檔時，還是會一起讀同資料夾的所有 compose 檔（具名檔可能疊在預設檔上），再依檔名篩選出那個專案
+
 ## 7. 必須遵守的專案規則（摘自 AGENTS.md）
 
 - UI 依照 `docs/STYLEGUIDE.md`，使用 `main.css` 的 token 和 `components/ui/` 的 shadcn 元件；`pnpm run check:code-quality:changed` 必須通過
