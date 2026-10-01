@@ -336,6 +336,10 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - Run 元件改成跟著 Run 面板目前顯示的 run（取代原本的「跟著作用中的 terminal 分頁」）
 - 驗證：`tests/e2e/run-panel.spec.ts`（從分割視窗執行後關掉分割、focus run 的 terminal、執行中關閉要確認、停止後關閉、stdin），以及改成讀 Run 面板輸出的 `tab-bar-run-configurations.spec.ts` 等既有 run 測試
 
+**同一天的後續調整**（dev 試用時發現）：
+- **「目前檔案」併入 Run 元件**：原本開 JS/TS/Python 檔時，Run 元件左邊會多一組 ▶ 🐞（`NodeFileControls`、`PythonFileControls`），看起來像重複的按鈕。現在比照 JetBrains，選單最上面多一個「目前檔案：檔名」項目（key 固定是 `current-file`，切換檔案後仍維持選中），用 Run 元件本身的 ▶ 🐞 執行或除錯；Python 的 interpreter 選擇器保留在原位（`PythonInterpreterPicker`）。開的不是可執行的檔案時，這個項目不會出現
+- **暫時設定存檔後就是那個設定**：建立組合（compound）時，選到的偵測執行會存成本機的 command 設定，但「最近執行」裡同一個偵測執行還在，而且 key 不同（`detected:…` vs `config:…`），所以同一個程式可以被啟動兩份。現在指令和工作目錄完全相同、沒有 Before launch 的已存設定（`saved-command-match.ts`，和組合編輯器用同一個比對）會被當成同一個執行：「最近執行」不再列出它；從檔案樹右鍵或偵測子選單執行時，改成執行那個已存設定（走 launcher，所以只會有一份），偵測子選單的那一列也顯示已存設定的狀態和 ↻ ■
+
 **已知限制**：
 - 關閉整個分割視窗（「Close split pane」）會連同裡面的 run terminal 一起關掉，因為 run 的 terminal 仍屬於那個群組
 - 只有 run 的 terminal 的 workspace，關掉最後一個可見分頁後不會回到首頁，而是顯示空白的 tab group

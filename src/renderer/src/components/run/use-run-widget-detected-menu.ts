@@ -9,6 +9,7 @@ import {
 import type { DetectedSectionActions } from './RunWidgetDetectedSection'
 import { configurationItemKey, type RunWidgetItem } from './run-widget-items'
 import { useRunWidgetDetectedRuns } from './use-run-widget-detected-runs'
+import { savedRunFor } from './saved-command-match'
 
 const NO_HIDDEN: string[] = []
 
@@ -36,7 +37,11 @@ export function useRunWidgetDetectedMenu(options: {
         ? detectedRunMenu(runs, worktreePath, new Set(hidden), options.configurations)
         : null,
     actions: {
-      toItem: (run) => detectedRunWidgetItem(run, worktreeId, groupId),
+      toItem: (run) => {
+        const item = detectedRunWidgetItem(run, worktreeId, groupId)
+        const saved = savedRunFor(item.target, options.configurations, worktreePath)
+        return saved ? { ...item, savedTarget: saved.target } : item
+      },
       savedItem: (id) => items.find((item) => item.key === configurationItemKey(id)) ?? null,
       onNewPublish: (run) =>
         void openDotnetPublishDialog(run, worktreeId, groupId, { asNew: true }),

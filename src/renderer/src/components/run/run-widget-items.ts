@@ -2,6 +2,7 @@ import type { HostedTerminalQuickCommand } from '@/hooks/use-terminal-quick-comm
 import type { RunConfigurationDefinition } from '../../../../shared/run-configurations/run-configuration-definition'
 import { commandConfigurationOf } from '../../../../shared/run-configurations/run-configuration-plan'
 import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
+import type { DebugLaunchTarget } from '../../../../shared/debug/debug-session-types'
 import type { RunTarget } from './run-configuration-control'
 import type { ListedRunConfiguration, RunConfigurationSource } from './run-configuration-store'
 
@@ -26,7 +27,24 @@ export type RunWidgetItem =
       label: string
       configuration: DetectedRunConfiguration
       target: RunTarget
+      /** The run of the saved configuration this detected run was saved as; it runs as that. */
+      savedTarget?: RunTarget
     }
+  /** The active editor file, run or debugged as is (JetBrains' "Current File"). */
+  | {
+      kind: 'current-file'
+      key: string
+      label: string
+      /** null when the file's path cannot be passed to a shell safely. */
+      target: RunTarget | null
+      /** null when the file cannot be debugged here, e.g. Python in a remote workspace. */
+      debug: { target: DebugLaunchTarget; cwd: string } | null
+    }
+
+export type DetectedRunWidgetItem = Extract<RunWidgetItem, { kind: 'detected' }>
+
+/** One key whatever the file, so "Current File" stays selected while switching files. */
+export const CURRENT_FILE_ITEM_KEY = 'current-file'
 
 export function recentItemKey(commandKey: string): string {
   return `recent:${commandKey}`
@@ -60,11 +78,13 @@ export function isRemoteQuickCommandSelectionPending(
 }
 
 export function runWidgetItems(options: {
+  currentFile?: RunWidgetItem | null
   recent: readonly RunTarget[]
   configurations: readonly ListedRunConfiguration[]
   quickCommands: readonly HostedTerminalQuickCommand[]
 }): RunWidgetItem[] {
   return [
+    ...(options.currentFile ? [options.currentFile] : []),
     ...options.recent.map((target) => ({
       kind: 'recent' as const,
       key: recentItemKey(target.commandKey),
@@ -106,8 +126,11 @@ export function selectedRunWidgetItem(
 function runCommandKey(item: RunWidgetItem): string | null {
   switch (item.kind) {
     case 'recent':
-    case 'detected':
       return item.target.commandKey
+    case 'detected':
+      return (item.savedTarget ?? item.target).commandKey
+    case 'current-file':
+      return item.target?.commandKey ?? null
     case 'configuration':
       return commandConfigurationOf(item.configuration)
         ? configurationCommandKey(item.configuration.id)

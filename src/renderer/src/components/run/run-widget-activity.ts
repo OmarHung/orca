@@ -63,8 +63,17 @@ export function runWidgetFootprint(
 ): RunWidgetFootprint {
   switch (item.kind) {
     case 'recent':
-    case 'detected':
       return { commandKeys: [item.target.commandKey], debugSourceKeys: [item.key] }
+    case 'detected':
+      return {
+        commandKeys: [(item.savedTarget ?? item.target).commandKey],
+        debugSourceKeys: [item.key]
+      }
+    case 'current-file':
+      return {
+        commandKeys: item.target ? [item.target.commandKey] : [],
+        debugSourceKeys: [item.key]
+      }
     case 'quick-command':
       return {
         commandKeys: isTerminalAgentQuickCommand(item.entry.command) ? [] : [item.entry.key],
