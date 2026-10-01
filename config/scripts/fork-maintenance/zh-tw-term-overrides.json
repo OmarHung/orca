@@ -433,5 +433,10 @@
     "from": "目標執行時",
     "to": "目標執行階段",
     "why": "\".NET target runtime (RID)\"; OpenCC turns 运行时 into 執行時."
+  },
+  {
+    "from": "移到回收站",
+    "to": "移到資源回收筒",
+    "why": "Windows \"Recycle Bin\"; Taiwan Windows names it 資源回收筒."
   }
 ]
