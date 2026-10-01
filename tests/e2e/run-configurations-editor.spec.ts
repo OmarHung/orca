@@ -8,7 +8,7 @@ import {
   createGoldenWorktree
 } from './helpers/golden-source-control'
 import { waitForSessionReady } from './helpers/store'
-import { getTerminalContent } from './helpers/terminal-pane-identity'
+import { getRunPanelTerminalContent } from './helpers/run-panel'
 
 const LAUNCH_JSON = `{
   // VS Code writes comments here
@@ -80,7 +80,7 @@ test('edits run configurations, chains Before launch steps, imports launch.json 
   await orcaPage.getByTestId('run-configurations-launch').first().click()
   await expect.poll(() => tabCountWithLabel(orcaPage, 'Serve'), { timeout: 30_000 }).toBe(1)
   await expect
-    .poll(() => getTerminalContent(orcaPage, 20_000), { timeout: 30_000 })
+    .poll(() => getRunPanelTerminalContent(orcaPage, 20_000), { timeout: 30_000 })
     .toContain('serve-33')
   expect(await tabCountWithLabel(orcaPage, 'Build')).toBe(1)
 
@@ -120,6 +120,6 @@ test('edits run configurations, chains Before launch steps, imports launch.json 
   await orcaPage.getByRole('dialog').getByRole('button', { name: 'Run hooks' }).click()
   await expect.poll(() => tabCountWithLabel(orcaPage, 'Shared hello'), { timeout: 30_000 }).toBe(1)
   await expect
-    .poll(() => getTerminalContent(orcaPage, 20_000), { timeout: 30_000 })
+    .poll(() => getRunPanelTerminalContent(orcaPage, 20_000), { timeout: 30_000 })
     .toContain('shared-2')
 })

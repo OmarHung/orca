@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { TerminalLayoutSnapshot } from '../../../../shared/terminal-tab-types'
 
-const { appState, sendRuntimePtyInputVerified, runQuickCommandInNewTab } = vi.hoisted(() => {
+const { appState, sendRuntimePtyInputVerified, openRunTerminal } = vi.hoisted(() => {
   const tabsByWorktree: Record<string, { id: string }[]> = {}
   const ptyIdsByTabId: Record<string, string[]> = {}
   const terminalLayoutsByTabId: Record<string, TerminalLayoutSnapshot> = {}
@@ -21,13 +21,13 @@ const { appState, sendRuntimePtyInputVerified, runQuickCommandInNewTab } = vi.ho
       closeTab: vi.fn()
     },
     sendRuntimePtyInputVerified: vi.fn(async () => true),
-    runQuickCommandInNewTab: vi.fn()
+    openRunTerminal: vi.fn()
   }
 })
 
 vi.mock('@/store', () => ({ useAppStore: { getState: () => appState } }))
 vi.mock('@/runtime/runtime-terminal-inspection', () => ({ sendRuntimePtyInputVerified }))
-vi.mock('@/lib/run-quick-command-in-new-tab', () => ({ runQuickCommandInNewTab }))
+vi.mock('./run-terminal-open', () => ({ openRunTerminal }))
 
 import { dispatchTerminalCommandFinishedEvent } from '@/hooks/terminal-command-finished-event'
 import {
@@ -40,6 +40,9 @@ import {
 import { runDetectedConfiguration } from './detected-run-configuration'
 import { runSessionKey, useRunSessionStore } from './run-session-store'
 import { useRecentRunStore } from './recent-run-store'
+import { useRunPanelStore } from './run-panel-store'
+import type { RunTerminalIds } from './run-terminal-open'
+import { useBottomPanelLayout } from '../bottom-panel/bottom-panel-layout-store'
 
 const LEAF = '11111111-1111-4111-8111-111111111111'
 const target: RunTarget = {
@@ -74,17 +77,20 @@ beforeEach(() => {
   appState.pendingStartupByTabId = {}
   bindStartup = true
   vi.clearAllMocks()
-  runQuickCommandInNewTab.mockImplementation(() => {
-    openTab('tab-1')
-    if (bindStartup) {
-      queueMicrotask(() => {
-        window.dispatchEvent(
-          new CustomEvent('orca:terminal-startup-bound', { detail: { paneKey: `tab-1:${LEAF}` } })
-        )
-      })
+  openRunTerminal.mockImplementation(
+    (_target: RunTarget, beforeCreate: (ids: RunTerminalIds) => void) => {
+      beforeCreate({ tabId: 'tab-1', leafId: LEAF })
+      openTab('tab-1')
+      if (bindStartup) {
+        queueMicrotask(() => {
+          window.dispatchEvent(
+            new CustomEvent('orca:terminal-startup-bound', { detail: { paneKey: `tab-1:${LEAF}` } })
+          )
+        })
+      }
+      return { tabId: 'tab-1', leafId: LEAF }
     }
-    return { tabId: 'tab-1', leafId: LEAF }
-  })
+  )
 })
 
 afterEach(() => {
@@ -95,8 +101,9 @@ describe('runConfiguration', () => {
   it('starts the first run in a new terminal tab and tracks it', async () => {
     await runConfiguration(target)
 
-    expect(runQuickCommandInNewTab).toHaveBeenCalledWith(
-      expect.objectContaining({ worktreeId: 'wt', groupId: 'group', historyId: 'cmd' })
+    expect(openRunTerminal).toHaveBeenCalledWith(
+      expect.objectContaining({ worktreeId: 'wt', groupId: 'group', commandKey: 'cmd' }),
+      expect.any(Function)
     )
     expect(useRunSessionStore.getState().sessionsByKey[key]).toMatchObject({
       tabId: 'tab-1',
@@ -111,9 +118,10 @@ describe('runConfiguration', () => {
 
     await runConfiguration(target)
 
-    expect(runQuickCommandInNewTab).toHaveBeenCalledTimes(1)
+    expect(openRunTerminal).toHaveBeenCalledTimes(1)
     expect(sendRuntimePtyInputVerified).toHaveBeenCalledWith(null, 'pty-tab-1', 'pnpm dev\r')
-    expect(appState.setActiveTab).toHaveBeenCalledWith('tab-1')
+    expect(useRunPanelStore.getState().selectedByWorktree.wt).toBe('cmd')
+    expect(useBottomPanelLayout.getState()).toMatchObject({ open: true, activeTab: 'run' })
     expect(useRunSessionStore.getState().sessionsByKey[key].status).toBe('running')
   })
 
@@ -124,7 +132,7 @@ describe('runConfiguration', () => {
 
     await runConfiguration(target)
 
-    expect(runQuickCommandInNewTab).toHaveBeenCalledTimes(2)
+    expect(openRunTerminal).toHaveBeenCalledTimes(2)
   })
 })
 
@@ -145,14 +153,15 @@ describe('runDetectedConfiguration', () => {
       async () => true
     )
 
-    expect(runQuickCommandInNewTab).toHaveBeenCalledWith(
+    expect(openRunTerminal).toHaveBeenCalledWith(
       expect.objectContaining({
-        startupCwd: '/w/api',
+        cwd: '/w/api',
         command: expect.objectContaining({
           label: 'Api: Run',
           command: 'dotnet run --project Api.csproj'
         })
-      })
+      }),
+      expect.any(Function)
     )
     const [recent] = useRecentRunStore.getState().recentByWorktree.wt ?? []
     expect(recent?.commandKey).toBe('detected:dotnet:/w/api:Api.csproj:run')
@@ -226,7 +235,7 @@ describe('rerunConfiguration', () => {
     await rerun
 
     expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(null, 'pty-tab-1', 'pnpm dev\r')
-    expect(runQuickCommandInNewTab).toHaveBeenCalledTimes(1)
+    expect(openRunTerminal).toHaveBeenCalledTimes(1)
     expect(useRunSessionStore.getState().sessionsByKey[key].status).toBe('running')
   })
 
@@ -245,10 +254,13 @@ describe('rerunConfiguration', () => {
   it('forces, then closes the tab and starts fresh when the command ignores Ctrl-C', async () => {
     vi.useFakeTimers()
     await runConfiguration(target)
-    runQuickCommandInNewTab.mockImplementation(() => {
-      openTab('tab-2')
-      return { tabId: 'tab-2', leafId: LEAF }
-    })
+    openRunTerminal.mockImplementation(
+      (_target: RunTarget, beforeCreate: (ids: RunTerminalIds) => void) => {
+        beforeCreate({ tabId: 'tab-2', leafId: LEAF })
+        openTab('tab-2')
+        return { tabId: 'tab-2', leafId: LEAF }
+      }
+    )
 
     const rerun = rerunConfiguration(target)
     await vi.advanceTimersByTimeAsync(3_001)
@@ -295,14 +307,14 @@ describe('rerunConfiguration after forcing', () => {
 describe('runConfigurationAndWait', () => {
   it('resolves with the exit code the shell reports', async () => {
     const exit = runConfigurationAndWait(target)
-    await vi.waitFor(() => expect(runQuickCommandInNewTab).toHaveBeenCalled())
+    await vi.waitFor(() => expect(openRunTerminal).toHaveBeenCalled())
     dispatchTerminalCommandFinishedEvent('wt', 2, `tab-1:${LEAF}`)
     await expect(exit).resolves.toEqual({ status: 'failed', exitCode: 2 })
   })
 
   it('reports a stop when the run is stopped', async () => {
     const exit = runConfigurationAndWait(target)
-    await vi.waitFor(() => expect(runQuickCommandInNewTab).toHaveBeenCalled())
+    await vi.waitFor(() => expect(openRunTerminal).toHaveBeenCalled())
     stopConfiguration('wt', 'cmd')
     dispatchTerminalCommandFinishedEvent('wt', 130, `tab-1:${LEAF}`)
     await expect(exit).resolves.toEqual({ status: 'stopped', exitCode: 130 })
@@ -318,7 +330,7 @@ describe('runConfigurationAndWait', () => {
   })
 
   it('fails at once when no terminal could be opened', async () => {
-    runQuickCommandInNewTab.mockImplementation(() => null)
+    openRunTerminal.mockImplementation(() => null)
     await expect(runConfigurationAndWait(target)).resolves.toEqual({
       status: 'stopped',
       exitCode: null
