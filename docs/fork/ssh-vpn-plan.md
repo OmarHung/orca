@@ -366,6 +366,12 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 - 修法：每條連線的 `nc` 不加 `-w`（`nc -z` 探測保留）。代價：連到會吞掉封包的位址時，容器裡的 `nc` 要等系統的 SYN 逾時才結束（實測約 2 分鐘），只會讓閒置斷線晚一點算。
 - 測試：Docker 整合測試多一個「沒有 keepalive 的 ssh2 連線閒置 75 秒後還能下指令」；加回 `-w 30` 時它會失敗（`Not connected`）。
 
+### 在啟動確認框直接切換 VPN（2026-10-01，使用者要求）
+
+- 確認框多一個 VPN 下拉選單（只在 SSH 主機的連線、且有兩個以上設定檔時出現；手動 Connect 和資料庫連線自己指定 VPN，不顯示）。選別的 VPN 時，renderer 呼叫 `sshVpn:previewStart` 取得那個 VPN 現在要跑的指令（`previewSshVpnStart`：跟實際啟動共用 `planSshVpnStart`，不改 Docker 狀態），已連線的顯示「已連線」、借用的容器顯示由 Orca 以外啟動。
+- 按確認時回傳 `switchTo: { profileId, commands }`。`SshVpnService` 把主機改指派到新 VPN（存進 ssh-vpn.json，之後都走它），丟出 `SshVpnProfileSwitchedError`（manager 當成拒絕：舊 VPN 維持停止、不算錯誤），`routeFor` 用新 VPN 重跑；新 VPN 要啟動時，指令和使用者看過的完全一樣才自動放行，不一樣（例如映像檔剛好被刪）就再問一次。按取消時主機的 VPN 不變。
+- 同一台主機排在後面的連線，到確認那一步時發現主機已改用別的 VPN，就不問舊的、直接改走新的。
+
 ## 10. 使用說明與已知限制
 
 **需求**：Docker Desktop、OrbStack 或 Colima 正在執行。第一次連線會在本機建置 `orca-ssh-vpn:<雜湊>` 映像檔（需要連網，約數十秒）。
@@ -373,7 +379,7 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 **設定**：
 1. 在 SSH 頁或 SFTP 頁主機欄的「VPN」按鈕，或設定 → SSH 的 VPN 區塊，新增 .ovpn。需要帳密的設定檔會多出帳號、密碼和保存方式。
 2. 在主機上按右鍵選 VPN，或在設定 → SSH 編輯主機時選。新增主機時要先存檔才能選。
-3. 連線時會先跳出確認框，列出每一條 docker 指令；沒有保存密碼時會再跳登入框。
+3. 連線時會先跳出確認框，列出每一條 docker 指令；沒有保存密碼時會再跳登入框。確認框上方可以直接改選別的 VPN，按確認後這台主機之後都走新選的 VPN。
 
 **行為**：
 - 每個設定檔一個容器（`orca-ssh-vpn-<實例>-<設定檔 id>`），不開任何 port；每條連線是一個 `docker exec -i --user tunnel <容器> nc <主機> <埠>`，防火牆只允許它從 VPN 出去。
