@@ -19944,6 +19944,25 @@
       "hide": "Hide host list",
       "show": "Show host list"
     },
+    "groups": {
+      "newGroupButton": "New group",
+      "newGroup": "New Group…",
+      "newSubgroup": "New Subgroup…",
+      "newTitle": "New Group",
+      "newSubgroupTitle": "New Subgroup in “{{name}}”",
+      "renameGroup": "Rename Group…",
+      "renameTitle": "Rename Group",
+      "create": "Create",
+      "rename": "Rename",
+      "name": "Group name",
+      "nameTaken": "A group with this name is already here.",
+      "nameTooLong": "Use {{max}} characters or fewer.",
+      "moveTo": "Move to Group",
+      "moveToTop": "Move to Top Level",
+      "removeFromGroup": "Remove from Group",
+      "ungroup": "Ungroup",
+      "ungrouped": "Ungrouped"
+    },
     "session": {
       "unsafeTarget": "This host has characters Orca cannot pass to ssh safely. Rename it in ~/.ssh/config.",
       "confirmTitle": "Connect to {{host}}?",

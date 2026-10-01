@@ -19876,6 +19876,25 @@
       "hide": "隐藏主机列表",
       "show": "显示主机列表"
     },
+    "groups": {
+      "newGroupButton": "新建群组",
+      "newGroup": "新建群组…",
+      "newSubgroup": "新建子群组…",
+      "newTitle": "新建群组",
+      "newSubgroupTitle": "在「{{name}}」中新建子群组",
+      "renameGroup": "重命名群组…",
+      "renameTitle": "重命名群组",
+      "create": "创建",
+      "rename": "重命名",
+      "name": "群组名称",
+      "nameTaken": "这里已经有同名的群组。",
+      "nameTooLong": "请使用 {{max}} 个字符以内。",
+      "moveTo": "移到群组",
+      "moveToTop": "移到最上层",
+      "removeFromGroup": "移出群组",
+      "ungroup": "解散群组",
+      "ungrouped": "未分组"
+    },
     "session": {
       "unsafeTarget": "这台主机的名称包含 Orca 无法安全传给 ssh 的字符。请在 ~/.ssh/config 中重新命名。",
       "confirmTitle": "要连接到 {{host}} 吗？",
