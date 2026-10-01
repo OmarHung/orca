@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import type { RunConfigurationDefinition } from '../../../../shared/run-configurations/run-configuration-definition'
 import type { RunConfigurationKind } from '../../../../shared/run-configurations/run-configuration-types'
+import type { RunMode } from './run-mode'
 
 export const RUN_KIND_ICONS: Record<RunConfigurationKind, LucideIcon> = {
   build: Hammer,
@@ -17,6 +18,14 @@ export const RUN_KIND_ICONS: Record<RunConfigurationKind, LucideIcon> = {
   test: FlaskConical,
   publish: Upload,
   other: Play
+}
+
+export const RUN_MODE_ICONS: Record<RunMode, LucideIcon> = {
+  run: Play,
+  debug: Bug,
+  build: Hammer,
+  test: FlaskConical,
+  publish: Upload
 }
 
 export function runConfigurationIcon(configuration: RunConfigurationDefinition): LucideIcon {
