@@ -2,7 +2,7 @@ import type { DebugLaunchOptions, DebugLaunchTarget } from '../debug/debug-sessi
 
 export type RunConfigurationKind = 'build' | 'run' | 'test' | 'publish' | 'other'
 
-export type RunConfigurationEcosystem = 'node' | 'dotnet' | 'python'
+export type RunConfigurationEcosystem = 'node' | 'dotnet' | 'python' | 'docker'
 
 /** A run configuration derived from project files; suggested, never persisted. */
 export type DetectedRunConfiguration = {
@@ -12,7 +12,7 @@ export type DetectedRunConfiguration = {
   projectName: string
   /** Absolute directory the command runs in. */
   projectDir: string
-  /** Absolute path of the .NET project file (.csproj etc.) the configuration came from. */
+  /** Absolute path of the project file (.csproj, compose file, Dockerfile) it came from. */
   projectFile?: string
   kind: RunConfigurationKind
   /** Short name within the project, e.g. "dev" or "MvcWeb". */
