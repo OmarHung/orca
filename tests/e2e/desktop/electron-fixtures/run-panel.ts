@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
 
 /** Output of the run the Run panel shows; empty while the panel is closed or has no run. */
 export async function getRunPanelTerminalContent(page: Page, charLimit = 4000): Promise<string> {
@@ -23,4 +23,15 @@ export async function runTerminalsInTabStrip(page: Page, label: string): Promise
       document.querySelector(`[data-testid="sortable-tab"][data-tab-id="${CSS.escape(tabId)}"]`)
     ).length
   }, label)
+}
+
+/** Runs or debugs the open file through the Run widget's "Current File" entry, as in JetBrains. */
+export async function launchCurrentFile(page: Page, mode: 'run' | 'debug'): Promise<void> {
+  // Why: a menu still animating closed swallows the next trigger click.
+  await expect(page.locator('[data-slot="dropdown-menu-content"]')).toHaveCount(0)
+  await page.getByTestId('run-configurations-trigger').click()
+  await page.locator('[data-testid="run-widget-item"][data-run-item-kind="current-file"]').click()
+  await page
+    .getByTestId(mode === 'run' ? 'run-configurations-launch' : 'run-configurations-debug')
+    .click()
 }

@@ -1,9 +1,8 @@
 import React from 'react'
-import { NodeFileControls } from '../debug/NodeFileControls'
-import { PythonFileControls } from '../python/PythonFileControls'
+import { PythonInterpreterPicker } from '../python/PythonInterpreterPicker'
 import { RunWidget } from './RunWidget'
 
-/** Fork run controls in the focused tab group's bar: current-file runners, then the Run widget. */
+/** Fork run controls in the focused tab group's bar: the Python interpreter, then the Run widget. */
 export function RunToolbar({
   worktreeId,
   groupId
@@ -13,8 +12,7 @@ export function RunToolbar({
 }): React.JSX.Element {
   return (
     <>
-      <PythonFileControls />
-      <NodeFileControls />
+      <PythonInterpreterPicker />
       <RunWidget worktreeId={worktreeId} groupId={groupId} />
     </>
   )
