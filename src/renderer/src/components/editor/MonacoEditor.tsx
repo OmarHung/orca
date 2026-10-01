@@ -26,6 +26,7 @@ import { useDocumentDarkTheme } from '@/hooks/use-document-dark-theme'
 import { snapshotMonacoViewState } from './monaco-view-state-persistence'
 import { MonacoMarkdownAnnotationOverlay } from './MonacoMarkdownAnnotationOverlay'
 import { useMonacoDebugDecorations } from '../debug/use-monaco-debug-decorations'
+import { DebugValueHoverWidget } from '../debug/DebugValueHoverWidget'
 import { useMonacoChangeMarkers } from './change-markers/use-monaco-change-markers'
 import { useMonacoInlineBlame } from './inline-blame/use-monaco-inline-blame'
 import { useMonacoRevisionCompareActions } from './revision-compare/use-monaco-revision-compare-actions'
@@ -312,6 +313,7 @@ export default function MonacoEditor({
         filePath={filePath}
         relativePath={relativePath}
       />
+      <DebugValueHoverWidget editor={mountedEditor} filePath={filePath} language={language} />
     </div>
   )
 }

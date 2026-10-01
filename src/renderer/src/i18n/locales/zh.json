@@ -19135,6 +19135,9 @@
       "notPaused": "不可用",
       "add": "添加监视表达式"
     },
+    "hover": {
+      "addToWatches": "添加到监视"
+    },
     "consoleInput": {
       "input": "求值表达式",
       "inputHint": "在所选帧中对表达式求值",
