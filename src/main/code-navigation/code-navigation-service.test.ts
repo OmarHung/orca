@@ -21,6 +21,7 @@ function query(overrides: Partial<CodeNavigationQuery> = {}): CodeNavigationQuer
     kind: 'typescript',
     root,
     feature: 'definition',
+    userInitiated: true,
     document: { path: queried, languageId: 'typescript', version: 1, text: '' },
     position: { line: 0, character: 0 },
     ...overrides
@@ -245,32 +246,68 @@ describe('CodeNavigationService', () => {
     }
   })
 
-  it('hovers through an installed server without reporting its start', async () => {
+  it('hovers through a server after explicit navigation activates the workspace', async () => {
     const session = fakeSession()
     const { service, created } = createService({ sessions: [session] })
-    const { feature: _feature, ...hoverQuery } = query()
+    const { feature: _feature, userInitiated: _userInitiated, ...hoverQuery } = query()
 
+    await service.query(query(), () => {})
     const result = await service.hover(hoverQuery)
 
     expect(result).toEqual({ ok: true, hover: { contents: ['**hover**'] } })
     expect(created).toHaveLength(1)
   })
 
-  it('never starts a server for a hover when it would need a download', async () => {
-    const { service, created } = createService({ sessions: [fakeSession()], installed: false })
-    const { feature: _feature, ...hoverQuery } = query()
+  it('does not start from a passive definition lookup before explicit navigation', async () => {
+    const { service, created } = createService({ sessions: [fakeSession()] })
 
-    const result = await service.hover(hoverQuery)
+    const result = await service.query(query({ userInitiated: false }), () => {})
 
     expect(result.ok).toBe(false)
     expect(created).toHaveLength(0)
   })
 
-  it('warms an installed server by hovering the top of the file', async () => {
+  it('does not start an installed server from passive hover or warm before explicit navigation', async () => {
+    const { service, created } = createService({ sessions: [fakeSession()], installed: true })
+    const { feature: _feature, userInitiated: _userInitiated, ...hoverQuery } = query()
+    const { position: _position, ...warmRequest } = hoverQuery
+
+    const result = await service.hover(hoverQuery)
+    await service.warm(warmRequest)
+
+    expect(result.ok).toBe(false)
+    expect(created).toHaveLength(0)
+  })
+
+  it('never downloads a missing server for hover after activation', async () => {
+    let now = 0
+    const { service, created } = createService({
+      sessions: [fakeSession()],
+      installed: false,
+      now: () => now
+    })
+    const { feature: _feature, userInitiated: _userInitiated, ...hoverQuery } = query()
+
+    await service.query(query(), () => {})
+    now = 31 * 60_000
+    await service.sweepIdle()
+    const result = await service.hover(hoverQuery)
+
+    expect(result).toEqual({ ok: false, message: 'The language server is not installed' })
+    expect(created).toHaveLength(1)
+  })
+
+  it('warms an explicitly activated server by hovering the top of the file', async () => {
     const session = fakeSession()
     const { service, created } = createService({ sessions: [session] })
-    const { feature: _feature, position: _position, ...warmRequest } = query()
+    const {
+      feature: _feature,
+      position: _position,
+      userInitiated: _userInitiated,
+      ...warmRequest
+    } = query()
 
+    await service.query(query(), () => {})
     await service.warm(warmRequest)
 
     expect(created).toHaveLength(1)
@@ -279,17 +316,27 @@ describe('CodeNavigationService', () => {
 
   it('reports loading to a query that joins a server a warm-up is still starting', async () => {
     let finishStart: () => void = () => {}
-    const session = fakeSession()
-    session.whenReady.mockImplementation(
+    let now = 0
+    const firstSession = fakeSession()
+    const warmingSession = fakeSession()
+    warmingSession.whenReady.mockImplementation(
       () =>
         new Promise<void>((resolve) => {
           finishStart = resolve
         })
     )
-    const { service } = createService({ sessions: [session] })
-    const { feature: _feature, position: _position, ...warmRequest } = query()
+    const { service } = createService({ sessions: [firstSession, warmingSession], now: () => now })
+    const {
+      feature: _feature,
+      position: _position,
+      userInitiated: _userInitiated,
+      ...warmRequest
+    } = query()
     const phases: string[] = []
 
+    await service.query(query(), () => {})
+    now = 31 * 60_000
+    await service.sweepIdle()
     const warming = service.warm(warmRequest)
     await new Promise((resolve) => setImmediate(resolve))
     const jumping = service.query(query(), (event) => phases.push(event.phase))

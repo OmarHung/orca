@@ -1,3 +1,4 @@
+import { TYPESCRIPT_LANGUAGE_SERVER_DIR_NAME } from '../../shared/code-navigation/code-navigation-types'
 import type { DebugAdapterArtifact } from '../debug/adapters/adapter-manifest'
 
 const TYPESCRIPT_VERSION = '7.0.2'
@@ -9,7 +10,7 @@ function typescriptArtifact(
   sizeBytes: number
 ): DebugAdapterArtifact {
   return {
-    name: 'typescript-native',
+    name: TYPESCRIPT_LANGUAGE_SERVER_DIR_NAME,
     version: TYPESCRIPT_VERSION,
     url: `${NPM_REGISTRY}/typescript-${target}/-/typescript-${target}-${TYPESCRIPT_VERSION}.tgz`,
     sha256,

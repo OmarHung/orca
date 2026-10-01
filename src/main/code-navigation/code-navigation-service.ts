@@ -67,6 +67,7 @@ function errorMessage(error: unknown): string {
 /** Owns one language server per (kind, workspace root) and answers navigation queries. */
 export class CodeNavigationService {
   private readonly sessions = new Map<string, SessionEntry>()
+  private readonly explicitlyActivated = new Set<string>()
   private idleTimer: ReturnType<typeof setInterval> | null = null
 
   constructor(private readonly deps: CodeNavigationServiceDeps) {}
@@ -77,6 +78,12 @@ export class CodeNavigationService {
   ): Promise<CodeNavigationQueryResult> {
     const key = sessionKey(request.kind, request.root)
     const existing = this.sessions.get(key)
+    if (!existing && !request.userInitiated && !this.explicitlyActivated.has(key)) {
+      return { ok: false, message: 'Code navigation requires an explicit navigation action' }
+    }
+    if (request.userInitiated) {
+      this.explicitlyActivated.add(key)
+    }
     const entry = existing ?? this.startSession(request.kind, request.root, emitStatus)
     // Why: a query that joins a server still starting (one a prewarm or hover began) shows the
     // loading toast too, instead of a jump that seems to do nothing.
@@ -112,13 +119,16 @@ export class CodeNavigationService {
   }
 
   /**
-   * Hover info from a running server. Starts an installed one (hovering shows the user is working
-   * in that language) but never downloads one; the renderer then keeps Monaco's own hover.
+   * Hover info from a running server. It may restart an activated, installed server but never
+   * downloads one; before activation the renderer keeps Monaco's own hover.
    */
   async hover(request: CodeNavigationHoverQuery): Promise<CodeNavigationHoverResult> {
     const key = sessionKey(request.kind, request.root)
     let entry = this.sessions.get(key)
     if (!entry) {
+      if (!this.explicitlyActivated.has(key)) {
+        return { ok: false, message: 'Code navigation has not been activated for this workspace' }
+      }
       const installed = await this.deps.isInstalled(request.kind).catch(() => false)
       if (!installed) {
         return { ok: false, message: 'The language server is not installed' }
@@ -137,8 +147,8 @@ export class CodeNavigationService {
   }
 
   /**
-   * Starts an installed server in the background and has it compile, so the first jump is fast
-   * (a C# solution takes seconds to load). Like hover, it never downloads.
+   * Restarts an activated, installed server in the background and has it compile. Like hover, it
+   * never downloads and cannot activate a workspace.
    */
   async warm(request: Omit<CodeNavigationHoverQuery, 'position'>): Promise<void> {
     // Why a hover at the top: it needs the semantic model, so the project loads and compiles now.
@@ -164,6 +174,7 @@ export class CodeNavigationService {
   async disposeAll(): Promise<void> {
     const entries = [...this.sessions.values()]
     this.sessions.clear()
+    this.explicitlyActivated.clear()
     this.stopIdleSweep()
     await Promise.all(entries.map((entry) => this.disposeEntry(entry)))
   }
