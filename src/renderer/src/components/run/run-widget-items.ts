@@ -53,6 +53,16 @@ export type DetectedRunWidgetItem = Extract<RunWidgetItem, { kind: 'detected' }>
 /** One key whatever the file, so "Current File" stays selected while switching files. */
 export const CURRENT_FILE_ITEM_KEY = 'current-file'
 
+/**
+ * The key an item's debug sessions carry. Current File keys each file on its own, so debugging
+ * a second file opens another session instead of restarting the first.
+ */
+export function debugSourceKeyOf(item: RunWidgetItem): string {
+  return item.kind === 'current-file' && item.debug
+    ? `${item.key}:${JSON.stringify(item.debug.target)}`
+    : item.key
+}
+
 export function recentItemKey(commandKey: string): string {
   return `recent:${commandKey}`
 }

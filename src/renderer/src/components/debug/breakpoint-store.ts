@@ -134,16 +134,12 @@ function readExceptionFilters(): Record<string, string[]> {
 
 type BreakpointState = {
   breakpointsByFile: Record<string, BreakpointSpec[]>
-  /** file → line → whether the running adapter bound it; empty while no session runs. */
-  verifiedByFile: Record<string, Record<number, boolean>>
   /** adapterId → exception filters the user turned on (unset: the adapter's defaults). */
   exceptionFiltersByAdapter: Record<string, string[]>
   editing: BreakpointEdit | null
   toggle: (path: string, line: number) => BreakpointSpec[]
   update: (path: string, line: number, patch: BreakpointPatch) => BreakpointSpec[]
   remove: (path: string, line: number) => BreakpointSpec[]
-  setVerified: (path: string, verified: Record<number, boolean>) => void
-  clearVerified: () => void
   setExceptionFilters: (adapterId: string, filters: string[]) => void
   openEditor: (edit: BreakpointEdit) => void
   closeEditor: () => void
@@ -159,7 +155,6 @@ export const useBreakpointStore = create<BreakpointState>((set, get) => {
   }
   return {
     breakpointsByFile: readPersistedBreakpoints(),
-    verifiedByFile: {},
     exceptionFiltersByAdapter: readExceptionFilters(),
     editing: null,
     toggle: (path, line) =>
@@ -176,9 +171,6 @@ export const useBreakpointStore = create<BreakpointState>((set, get) => {
         path,
         (get().breakpointsByFile[path] ?? []).filter((spec) => spec.line !== line)
       ),
-    setVerified: (path, verified) =>
-      set({ verifiedByFile: { ...get().verifiedByFile, [path]: verified } }),
-    clearVerified: () => set({ verifiedByFile: {} }),
     setExceptionFilters: (adapterId, filters) => {
       const exceptionFiltersByAdapter = { ...get().exceptionFiltersByAdapter, [adapterId]: filters }
       set({ exceptionFiltersByAdapter })

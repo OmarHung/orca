@@ -27,16 +27,16 @@ function writeWatches(watches: string[]): void {
 type WatchState = {
   /** Watch expressions, kept across sessions like JetBrains'. */
   expressions: string[]
-  /** Latest value per expression; empty while nothing is paused. */
-  results: Record<string, WatchResult>
+  /** sessionId → latest value per expression; empty while that session runs. */
+  resultsBySession: Record<string, Record<string, WatchResult>>
   add: (expression: string) => void
   remove: (expression: string) => void
-  setResults: (results: Record<string, WatchResult>) => void
+  setResults: (sessionId: string, results: Record<string, WatchResult>) => void
 }
 
 export const useWatchStore = create<WatchState>((set, get) => ({
   expressions: readWatches(),
-  results: {},
+  resultsBySession: {},
   add: (expression) => {
     const trimmed = expression.trim()
     if (!trimmed || get().expressions.includes(trimmed)) {
@@ -48,9 +48,15 @@ export const useWatchStore = create<WatchState>((set, get) => ({
   },
   remove: (expression) => {
     const expressions = get().expressions.filter((entry) => entry !== expression)
-    const { [expression]: _removed, ...results } = get().results
-    set({ expressions, results })
+    const resultsBySession = Object.fromEntries(
+      Object.entries(get().resultsBySession).map(([sessionId, results]) => {
+        const { [expression]: _removed, ...rest } = results
+        return [sessionId, rest]
+      })
+    )
+    set({ expressions, resultsBySession })
     writeWatches(expressions)
   },
-  setResults: (results) => set({ results })
+  setResults: (sessionId, results) =>
+    set({ resultsBySession: { ...get().resultsBySession, [sessionId]: results } })
 }))

@@ -11,6 +11,7 @@ import {
 import {
   configurationCommandKey,
   configurationItemKey,
+  debugSourceKeyOf,
   type RunWidgetItem
 } from './run-widget-items'
 
@@ -24,11 +25,11 @@ export type RunWidgetFootprint = {
 export type RunWidgetActivity = {
   /** Active runs whose stable terminal pane still exists, oldest first. */
   runs: readonly RunSession[]
-  /** The worktree's debug session while it lasts. */
-  debug: DebugSessionView | null
+  /** The worktree's debug sessions that have not ended, oldest first. */
+  debugSessions: readonly DebugSessionView[]
 }
 
-export const NO_RUN_ACTIVITY: RunWidgetActivity = { runs: [], debug: null }
+export const NO_RUN_ACTIVITY: RunWidgetActivity = { runs: [], debugSessions: [] }
 
 export function isCompoundItem(item: RunWidgetItem): boolean {
   return item.kind === 'configuration' && item.configuration.type === 'compound'
@@ -71,7 +72,7 @@ export function runWidgetFootprint(
     case 'current-file':
       return {
         commandKeys: item.target ? [item.target.commandKey] : [],
-        debugSourceKeys: [item.key]
+        debugSourceKeys: [debugSourceKeyOf(item)]
       }
     case 'quick-command':
       return {
@@ -98,9 +99,9 @@ export function worktreeRunActivity(options: {
   worktreeId: string
   sessions: readonly RunSession[]
   liveLeafIds: ReadonlySet<string>
-  debug: DebugSessionView | null
+  debugSessions: readonly DebugSessionView[]
 }): RunWidgetActivity {
-  const { worktreeId, debug } = options
+  const { worktreeId } = options
   return {
     runs: options.sessions.filter(
       (session) =>
@@ -108,7 +109,9 @@ export function worktreeRunActivity(options: {
         isRunSessionActive(session.status) &&
         options.liveLeafIds.has(session.leafId)
     ),
-    debug: debug && debug.worktreeId === worktreeId && debug.phase !== 'ended' ? debug : null
+    debugSessions: options.debugSessions.filter(
+      (session) => session.worktreeId === worktreeId && session.phase !== 'ended'
+    )
   }
 }
 
@@ -119,12 +122,22 @@ export function footprintRuns(
   return activity.runs.filter((run) => footprint.commandKeys.includes(run.commandKey))
 }
 
+/** The debug sessions an item started (a compound can start several). */
+export function footprintDebugSessions(
+  footprint: RunWidgetFootprint,
+  activity: RunWidgetActivity
+): DebugSessionView[] {
+  return activity.debugSessions.filter(
+    (session) =>
+      session.sourceKey !== undefined && footprint.debugSourceKeys.includes(session.sourceKey)
+  )
+}
+
 export function isFootprintDebugging(
   footprint: RunWidgetFootprint,
   activity: RunWidgetActivity
 ): boolean {
-  const sourceKey = activity.debug?.sourceKey
-  return sourceKey !== undefined && footprint.debugSourceKeys.includes(sourceKey)
+  return footprintDebugSessions(footprint, activity).length > 0
 }
 
 export function isFootprintActive(
@@ -134,10 +147,10 @@ export function isFootprintActive(
   return footprintRuns(footprint, activity).length > 0 || isFootprintDebugging(footprint, activity)
 }
 
-/** One entry in the Stop menu: a run's terminal or the debug session. */
+/** One entry in the Stop menu: a run's terminal or a debug session. */
 export type RunningProcess =
   | { kind: 'run'; key: string; label: string; commandKey: string; stage: RunStopStage }
-  | { kind: 'debug'; key: string; label: string }
+  | { kind: 'debug'; key: string; label: string; sessionId: string }
 
 export function runningProcesses(activity: RunWidgetActivity): RunningProcess[] {
   return [
@@ -148,8 +161,11 @@ export function runningProcesses(activity: RunWidgetActivity): RunningProcess[] 
       commandKey: run.commandKey,
       stage: runStopStage(run)
     })),
-    ...(activity.debug
-      ? [{ kind: 'debug' as const, key: `debug:${activity.debug.id}`, label: activity.debug.title }]
-      : [])
+    ...activity.debugSessions.map((session) => ({
+      kind: 'debug' as const,
+      key: `debug:${session.id}`,
+      label: session.title,
+      sessionId: session.id
+    }))
   ]
 }

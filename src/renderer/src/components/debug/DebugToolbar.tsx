@@ -14,15 +14,15 @@ import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import { basename } from '@/lib/path'
 import { cn } from '@/lib/utils'
+import { stopDebugSession } from './debug-session-controller'
+import { isLiveDebugSession, type DebugSessionView } from './debug-store'
 import {
   debugContinue,
   debugPause,
   debugStepInto,
   debugStepOut,
-  debugStepOver,
-  stopDebugSession
-} from './debug-session-controller'
-import { useDebugStore, type DebugSessionView } from './debug-store'
+  debugStepOver
+} from './debug-thread-commands'
 import { useDebugLaunchTarget } from './use-debug-launch-target'
 import { debugFile } from './debug-launch'
 
@@ -72,49 +72,50 @@ function ToolbarButton({ action }: { action: ToolbarAction }): React.JSX.Element
   )
 }
 
-export function DebugToolbar(): React.JSX.Element {
-  const session = useDebugStore((s) => s.session)
+/** Controls for the session tab the Debug window shows. */
+export function DebugToolbar({ session }: { session: DebugSessionView | null }): React.JSX.Element {
   const launchTarget = useDebugLaunchTarget()
-  const live = session !== null && session.phase !== 'ended'
+  const live = session !== null && isLiveDebugSession(session)
   const paused = live && session.stoppedThreadId !== null
   const busy = session?.phase === 'installing-adapter' || session?.phase === 'starting'
+  const id = session?.id ?? ''
 
   const actions: ToolbarAction[] = [
     {
       icon: Play,
       label: translate('debug.action.resume', 'Resume Program'),
       enabled: paused,
-      onClick: debugContinue
+      onClick: () => debugContinue(id)
     },
     {
       icon: Pause,
       label: translate('debug.action.pause', 'Pause Program'),
       enabled: live && !paused && !busy,
-      onClick: () => void debugPause()
+      onClick: () => void debugPause(id)
     },
     {
       icon: RedoDot,
       label: translate('debug.action.stepOver', 'Step Over'),
       enabled: paused,
-      onClick: debugStepOver
+      onClick: () => debugStepOver(id)
     },
     {
       icon: ArrowDownToDot,
       label: translate('debug.action.stepInto', 'Step Into'),
       enabled: paused,
-      onClick: debugStepInto
+      onClick: () => debugStepInto(id)
     },
     {
       icon: ArrowUpFromDot,
       label: translate('debug.action.stepOut', 'Step Out'),
       enabled: paused,
-      onClick: debugStepOut
+      onClick: () => debugStepOut(id)
     },
     {
       icon: Square,
       label: translate('debug.action.stop', 'Stop'),
       enabled: live,
-      onClick: () => void stopDebugSession(),
+      onClick: () => void stopDebugSession(id),
       isStop: true
     }
   ]
@@ -125,7 +126,6 @@ export function DebugToolbar(): React.JSX.Element {
         <Button
           variant="ghost"
           size="xs"
-          disabled={live}
           title={launchTarget.filePath}
           onClick={() => void debugFile(launchTarget.worktreeId, launchTarget.filePath)}
         >

@@ -28,6 +28,11 @@ const RunPanelTabs = lazy(() =>
     default: module.RunPanelTabs
   }))
 )
+const DebugPanelTabs = lazy(() =>
+  import('../debug/DebugPanelTabs').then((module) => ({
+    default: module.DebugPanelTabs
+  }))
+)
 const DebugPanel = lazy(() =>
   import('../debug/DebugPanel').then((module) => ({
     default: module.DebugPanel
@@ -110,9 +115,9 @@ export function BottomPanel(): React.JSX.Element {
           <BottomPanelTabButton tab="run" label={translate('run.toolWindow', 'Run')} />
           <BottomPanelTabButton tab="debug" label={translate('debug.toolWindow', 'Debug')} />
         </div>
-        {activeTab === 'run' ? (
+        {activeTab === 'run' || activeTab === 'debug' ? (
           <Suspense fallback={null}>
-            <RunPanelTabs />
+            {activeTab === 'run' ? <RunPanelTabs /> : <DebugPanelTabs />}
           </Suspense>
         ) : null}
         <div className="flex-1" />

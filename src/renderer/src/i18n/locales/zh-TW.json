@@ -18673,6 +18673,12 @@
     "hover": {
       "addToWatches": "新增到監視"
     },
+    "tab": {
+      "ended": "{{value0}}（已結束）",
+      "paused": "{{value0}}（已暫停）",
+      "sessions": "除錯會話",
+      "close": "關閉 '{{value0}}'"
+    },
     "consoleInput": {
       "input": "求值表示式",
       "inputHint": "在所選幀中對錶達式求值",
@@ -18734,7 +18740,6 @@
       "error": {
         "cycle": "'{{value0}}' 透過“啟動前”或組合設定依賴了自己",
         "missing": "找不到名為 '{{value0}}' 的執行設定",
-        "multipleDebug": "同一時間只能有一個除錯會話；請移除 '{{value0}}' 或單獨執行它",
         "stepFailed": "啟動前步驟 '{{value0}}' 沒有以 0 退出（{{value1}}）",
         "stepNotCommand": "“啟動前”只能執行命令設定；'{{value0}}' 不是命令設定",
         "stepStopped": "啟動前步驟 '{{value0}}' 已被停止",

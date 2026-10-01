@@ -37,16 +37,17 @@ function context(confirmed: boolean) {
   }
 }
 
-function debugSession(sourceKey: string, phase: 'running' | 'ended' = 'running'): void {
-  useDebugStore.getState().setSession({
-    id: 's1',
+function debugSession(sourceKey: string, phase: 'running' | 'ended' = 'running', id = 's1'): void {
+  useDebugStore.getState().addSession({
+    id,
     worktreeId: 'wt',
     title: 'web: dev',
     sourceKey,
-    phase,
-    stoppedThreadId: null,
-    stopReason: null
+    identity: sourceKey,
+    adapterId: 'pwa-node',
+    rootPath: '/wt'
   })
+  useDebugStore.getState().updateSession(id, { phase })
 }
 
 function runSession(status: RunSession['status']): RunSession {
@@ -65,7 +66,7 @@ function runSession(status: RunSession['status']): RunSession {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  useDebugStore.getState().setSession(null)
+  useDebugStore.setState({ sessions: [], outputBySession: {}, selectedByWorktree: {} })
 })
 
 describe('stopDebuggingBeforeRun', () => {
@@ -85,11 +86,13 @@ describe('stopDebuggingBeforeRun', () => {
     expect(ctx.confirm).not.toHaveBeenCalled()
   })
 
-  it('stops debugging the same item once the user confirms', async () => {
+  it('stops every session debugging the same item once the user confirms', async () => {
     debugSession('recent:detected:web')
+    debugSession('recent:detected:web', 'running', 's2')
+    debugSession('recent:detected:other', 'running', 's3')
 
     await expect(stopDebuggingBeforeRun(context(true))).resolves.toBe(true)
-    expect(stopDebugSession).toHaveBeenCalledTimes(1)
+    expect(stopDebugSession.mock.calls).toEqual([['s1'], ['s2']])
   })
 
   it('keeps the debug session when the user cancels', async () => {
