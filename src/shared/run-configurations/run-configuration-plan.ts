@@ -1,3 +1,4 @@
+import { dockerExportAsCommand } from './docker-export-configuration'
 import { dotnetPublishAsCommand } from './dotnet-publish-configuration'
 import {
   findRunConfiguration,
@@ -17,6 +18,8 @@ export function commandConfigurationOf(
       return configuration
     case 'dotnet-publish':
       return dotnetPublishAsCommand(configuration)
+    case 'docker-export':
+      return dockerExportAsCommand(configuration)
     case 'debug':
     case 'compound':
       return null
@@ -30,9 +33,16 @@ type LaunchableConfiguration =
 
 /** Null for a publish whose paths cannot be quoted safely; it is left out, so it reads as missing. */
 function launchable(configuration: RunConfigurationDefinition): LaunchableConfiguration | null {
-  return configuration.type === 'dotnet-publish'
-    ? dotnetPublishAsCommand(configuration)
-    : configuration
+  switch (configuration.type) {
+    case 'dotnet-publish':
+      return dotnetPublishAsCommand(configuration)
+    case 'docker-export':
+      return dockerExportAsCommand(configuration)
+    case 'command':
+    case 'debug':
+    case 'compound':
+      return configuration
+  }
 }
 
 export type RunLaunchPlan = {
