@@ -19347,6 +19347,25 @@
       "hide": "隱藏主機列表",
       "show": "顯示主機列表"
     },
+    "groups": {
+      "newGroupButton": "新增群組",
+      "newGroup": "新增群組…",
+      "newSubgroup": "新增子群組…",
+      "newTitle": "新增群組",
+      "newSubgroupTitle": "在「{{name}}」中新增子群組",
+      "renameGroup": "重新命名群組…",
+      "renameTitle": "重新命名群組",
+      "create": "建立",
+      "rename": "重新命名",
+      "name": "群組名稱",
+      "nameTaken": "這裡已經有同名的群組。",
+      "nameTooLong": "請使用 {{max}} 個字元以內。",
+      "moveTo": "移到群組",
+      "moveToTop": "移到最上層",
+      "removeFromGroup": "移出群組",
+      "ungroup": "解散群組",
+      "ungrouped": "未分組"
+    },
     "session": {
       "unsafeTarget": "這台主機的名稱包含 Orca 無法安全傳給 ssh 的字元。請在 ~/.ssh/config 中重新命名。",
       "confirmTitle": "要連線到 {{host}} 嗎？",
