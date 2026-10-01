@@ -18672,7 +18672,9 @@
     "failedTitle": "更新到 {{value0}} 失败",
     "failedAt": "停在：{{value0}}",
     "failedStart": "同步无法开始。",
-    "agentFallback": "已复制冲突处理提示词。请粘贴到在 {{value0}} 中运行的 AI 代理。"
+    "agentFallback": "已复制冲突处理提示词。请粘贴到在 {{value0}} 中运行的 AI 代理。",
+    "releaseNotesTitle": "上游更新内容",
+    "conflictCommitCount": "你的 {{value0}} 个提交与 {{value1}} 冲突。分支保持不变。"
   },
   "debug": {
     "toolWindow": "调试",

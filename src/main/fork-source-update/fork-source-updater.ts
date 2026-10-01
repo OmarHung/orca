@@ -1,5 +1,6 @@
 import {
   FORK_SYNC_STAGE_PERCENT,
+  type ForkReleaseNote,
   type ForkSyncStage,
   type ForkSyncStatus
 } from '../../shared/fork-sync-status'
@@ -24,6 +25,8 @@ export type ForkSourceUpdaterDeps = {
     onEvent: (event: ForkSyncEvent) => void
   ) => Promise<ForkSyncRunResult>
   installLocalBuild: (manifestPath: string) => Promise<void>
+  /** Upstream release notes after `baseTag` up to `targetTag`, newest first. */
+  fetchReleaseNotes: (baseTag: string, targetTag: string) => Promise<ForkReleaseNote[]>
 }
 
 /**
@@ -61,12 +64,18 @@ export class ForkSourceUpdater {
         this.set({ state: 'not-available', userInitiated })
         return
       }
+      const releaseNotes = await this.deps.fetchReleaseNotes(baseTag, latest).catch((error) => {
+        // Why carry on: the notes only describe the offer; a GitHub hiccup must not hide it.
+        console.warn('[fork-source-update] release notes unavailable:', errorMessage(error))
+        return []
+      })
       this.setFork(
         { state: 'available', version: latest, changelog: null },
         {
           phase: 'available',
           baseTag,
-          targetTag: latest
+          targetTag: latest,
+          ...(releaseNotes.length > 0 ? { releaseNotes } : {})
         }
       )
     } catch (error) {
@@ -152,11 +161,15 @@ export class ForkSourceUpdater {
   }): void {
     const { baseTag, targetTag, stage, conflict, manifestPath, result } = outcome
     if (conflict) {
+      const commitCount = conflict.conflictCommits?.length ?? 0
       const subject = conflict.commitSubject ? `"${conflict.commitSubject}"` : 'A fork commit'
       this.setFork(
         {
           state: 'error',
-          message: `${subject} conflicts with ${targetTag} in ${conflict.files.length} file(s). The branch was left unchanged.`,
+          message:
+            commitCount > 1
+              ? `${commitCount} fork commits conflict with ${targetTag}. The branch was left unchanged.`
+              : `${subject} conflicts with ${targetTag} in ${conflict.files.length} file(s). The branch was left unchanged.`,
           version: targetTag,
           retryable: true,
           userInitiated: true
@@ -168,7 +181,8 @@ export class ForkSourceUpdater {
           repoRoot: conflict.worktree,
           branch: this.deps.identity.branch,
           files: conflict.files,
-          commitSubject: conflict.commitSubject
+          commitSubject: conflict.commitSubject,
+          ...(conflict.conflictCommits ? { conflictCommits: conflict.conflictCommits } : {})
         }
       )
       return

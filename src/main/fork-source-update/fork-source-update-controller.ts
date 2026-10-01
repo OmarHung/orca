@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import type { UpdateStatus } from '../../shared/update-status-types'
 import { readForkSourceIdentity } from './fork-source-identity'
+import { fetchUpstreamReleaseNotes } from './fork-source-release-notes'
 import { listUpstreamTags, runForkSync } from './fork-source-runtime'
 import { ForkSourceUpdater } from './fork-source-updater'
 
@@ -42,7 +43,9 @@ export function initForkSourceUpdater(host: HostUpdater): void {
     publish: (status) => host.publishExternalStatus(status),
     listUpstreamTags: () => listUpstreamTags(identity),
     runSync: (targetTag, onEvent) => runForkSync(identity, targetTag, onEvent),
-    installLocalBuild: (manifestPath) => host.installLocalBuild(manifestPath)
+    installLocalBuild: (manifestPath) => host.installLocalBuild(manifestPath),
+    fetchReleaseNotes: (baseTag, targetTag) =>
+      fetchUpstreamReleaseNotes(identity, baseTag, targetTag)
   })
   forkUpdater = updater
   const backgroundCheck = (): void => {
