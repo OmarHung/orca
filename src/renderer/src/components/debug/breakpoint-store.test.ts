@@ -13,7 +13,6 @@ beforeEach(() => {
   window.localStorage.clear()
   useBreakpointStore.setState({
     breakpointsByFile: {},
-    verifiedByFile: {},
     exceptionFiltersByAdapter: {},
     editing: null
   })
