@@ -105,9 +105,9 @@ test('shows watches, console results, hover values and inline values while pause
   })
   expect(wordBox).not.toBeNull()
   await orcaPage.mouse.move(wordBox!.x, wordBox!.y)
-  const hover = orcaPage.locator('.monaco-hover').filter({ hasText: /total.*= 0/ })
+  const hover = orcaPage.getByTestId('debug-value-hover')
   await expect(hover).toBeVisible({ timeout: 10_000 })
-  await expect(hover).toContainText('= 0')
+  await expect(hover).toContainText(/total=(\{int\} )?0/)
   await orcaPage.screenshot({ path: testInfo.outputPath('inspect-paused.png') })
 
   // The next pause re-evaluates the watch for the new frame.

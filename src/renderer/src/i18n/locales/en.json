@@ -18810,6 +18810,9 @@
       "notPaused": "not available",
       "add": "Add watch expression"
     },
+    "hover": {
+      "addToWatches": "Add to Watches"
+    },
     "consoleInput": {
       "input": "Evaluate expression",
       "inputHint": "Evaluate an expression in the selected frame",
