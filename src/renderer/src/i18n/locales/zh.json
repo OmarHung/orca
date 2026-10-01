@@ -19299,14 +19299,15 @@
       "dockerExport": {
         "stage": "阶段",
         "cleanSection": "导出前",
-        "cleanHint": "Docker 只会新增和覆盖文件，之前导出的文件会留下。在这台电脑上，文件夹会移到垃圾桶；在 SSH 主机上会直接删除。",
+        "cleanHint": "Docker 只会新增和覆盖文件，之前导出的文件会留下。导出前会先用 rm -rf 删除这个文件夹；在 Windows 上则由 Orca 移到回收站。",
         "clean": "清空输出文件夹",
         "dockerfile": "Dockerfile",
         "context": "构建上下文",
         "contextHint": "留空则使用 Dockerfile 所在的文件夹。",
         "outputDir": "输出文件夹",
         "extraArgsHint": "按原样附加到命令末尾，例如 --build-arg VERSION=1.2.3",
-        "unsafe": "请选择阶段，并且路径不能包含 \" $ ` % ! 或逗号。"
+        "unsafe": "请选择阶段，并且路径不能包含 \" $ ` % ! 或逗号。",
+        "folderProblem": "这个文件夹不能清空，所以不会导出：{{value0}}"
       }
     },
     "widget": {

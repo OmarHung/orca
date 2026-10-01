@@ -7,6 +7,9 @@ describe('outputFolderEmptyingProblem', () => {
   it('allows a folder of its own, inside or outside the workspace', () => {
     expect(outputFolderEmptyingProblem('/Users/me/deploy/web', PROTECT)).toBeNull()
     expect(outputFolderEmptyingProblem('/Users/me/src/app/publish', PROTECT)).toBeNull()
+    expect(
+      outputFolderEmptyingProblem('/Volumes/WD SN7100/Autron/Publish location/web', PROTECT)
+    ).toBeNull()
     expect(outputFolderEmptyingProblem('D:\\deploy\\web', PROTECT)).toBeNull()
   })
 
@@ -21,7 +24,10 @@ describe('outputFolderEmptyingProblem', () => {
       'C:\\',
       'C:\\Users\\me',
       'C:\\Windows',
-      '\\\\server\\share'
+      '\\\\server\\share',
+      '/Volumes/WD SN7100',
+      '/mnt/c',
+      '/media/me/usb'
     ]) {
       expect(outputFolderEmptyingProblem(folder, PROTECT)).toBe('system-folder')
     }

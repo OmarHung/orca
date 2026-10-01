@@ -16,36 +16,52 @@ const BASE: DockerExportRunConfiguration = {
   outputDir: '/deploy/bioab_web'
 }
 
+const POSIX = { posixShell: true }
+
 describe('dockerExportCommand', () => {
+  it('empties the folder with rm -rf first in a POSIX shell, and leaves that to Orca elsewhere', () => {
+    const clean = { ...BASE, outputDir: '/Volumes/Disk/Publish location/web', cleanOutputDir: true }
+
+    expect(dockerExportCommand(clean, POSIX)).toBe(
+      'rm -rf "/Volumes/Disk/Publish location/web" && docker build --target export-bioab -o "/Volumes/Disk/Publish location/web" .'
+    )
+    expect(dockerExportCommand(clean, { posixShell: false })).toBe(
+      'docker build --target export-bioab -o "/Volumes/Disk/Publish location/web" .'
+    )
+  })
+
   it('writes the usual command when the Dockerfile is the context default', () => {
-    expect(dockerExportCommand(BASE)).toBe(
+    expect(dockerExportCommand(BASE, POSIX)).toBe(
       'docker build --target export-bioab -o /deploy/bioab_web .'
     )
   })
 
   it('names the Dockerfile when the context is elsewhere, and quotes paths with spaces', () => {
     expect(
-      dockerExportCommand({
-        ...BASE,
-        dockerfile: 'src/Api/Dockerfile',
-        context: '.',
-        outputDir: 'out dir/web',
-        extraArgs: '--build-arg A=1'
-      })
+      dockerExportCommand(
+        {
+          ...BASE,
+          dockerfile: 'src/Api/Dockerfile',
+          context: '.',
+          outputDir: 'out dir/web',
+          extraArgs: '--build-arg A=1'
+        },
+        POSIX
+      )
     ).toBe(
       'docker build -f src/Api/Dockerfile --target export-bioab -o "out dir/web" --build-arg A=1 .'
     )
   })
 
   it("defaults the context to the Dockerfile's folder", () => {
-    expect(dockerExportCommand({ ...BASE, dockerfile: 'web/Dockerfile.prod' })).toBe(
+    expect(dockerExportCommand({ ...BASE, dockerfile: 'web/Dockerfile.prod' }, POSIX)).toBe(
       'docker build -f web/Dockerfile.prod --target export-bioab -o /deploy/bioab_web web'
     )
   })
 
   it('refuses a folder with a comma, which Docker reads as another option', () => {
-    expect(dockerExportCommand({ ...BASE, outputDir: 'a,b' })).toBeNull()
-    expect(dockerExportAsCommand({ ...BASE, target: '' })).toBeNull()
+    expect(dockerExportCommand({ ...BASE, outputDir: 'a,b' }, POSIX)).toBeNull()
+    expect(dockerExportAsCommand({ ...BASE, target: '' }, POSIX)).toBeNull()
   })
 })
 

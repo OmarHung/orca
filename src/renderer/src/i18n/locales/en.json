@@ -19367,14 +19367,15 @@
       "dockerExport": {
         "stage": "Stage",
         "cleanSection": "Before exporting",
-        "cleanHint": "Docker only adds and overwrites files, so files from an earlier export stay. On this computer the folder goes to the Trash; on an SSH host it is deleted.",
+        "cleanHint": "Docker only adds and overwrites files, so files from an earlier export stay. The folder is deleted with rm -rf first; on Windows, Orca moves it to the Recycle Bin.",
         "clean": "Empty the output folder",
         "dockerfile": "Dockerfile",
         "context": "Build context",
         "contextHint": "Empty uses the Dockerfile's folder.",
         "outputDir": "Output folder",
         "extraArgsHint": "Appended to the command as written, e.g. --build-arg VERSION=1.2.3",
-        "unsafe": "Choose a stage, and use paths without \" $ ` % ! or commas."
+        "unsafe": "Choose a stage, and use paths without \" $ ` % ! or commas.",
+        "folderProblem": "This folder cannot be emptied, so the export will not run: {{value0}}"
       }
     },
     "widget": {

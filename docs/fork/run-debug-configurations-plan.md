@@ -385,9 +385,13 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 後續同一天：
 - **compose 的 `--build`**：使用者自己的文件都用 `up -d --build`，但希望不要加 `-d`，讓 log 留在 Run 視窗，按停止就停掉容器。所以 Run 底下多了整體的 `up --build`，每個 service 改成 `up --build <service>`；`up` 和 `up -d` 保留
 - **Docker「Export to Folder」**（新的設定類型 `docker-export`，`docker-export-configuration.ts`）：對應 `FROM scratch AS export-*` 這種只放部署檔的 stage，以及 `docker build --target <stage> -o <資料夾> .` 的用法。使用者選了「存成設定」，沒選「固定輸出位置的自動偵測」。沒有 CMD／ENTRYPOINT 的具名 scratch stage 就算 export stage（`dockerExportStages`）；偵測時掛在 Dockerfile 的 build run 上（`DetectedRunConfiguration.dockerExport`，含 build context）。如果最後一個 stage 本身就是 export stage，就不列 Run。Run 選單的 Publish 群組依序列出已存的 export（可編輯），然後是還沒存過的 stage（`export-web…`），最後是「New Export to Folder…」，都會開啟 `DockerExportDialog`。檔案樹右鍵有「Export '…' to Folder…」，Edit Configurations 也能新增和編輯，orca.yaml 同樣支援
-- **匯出前清空**（`cleanOutputDir`，新設定預設勾選）：`docker build -o` 只會新增和覆蓋檔案。清空不用 `rm -rf`，因為 Windows PowerShell 不支援，而是由 launcher 在執行前透過 Orca 的檔案 API 刪除（`run-output-folder-cleanup.ts`）：先停掉同一個設定前一次的執行，本機搬到垃圾桶（`shell.trashItem`，外部路徑先 `authorizeExternalPath`），SSH 主機上直接刪除。所有已存設定都會經過 launcher，包括 Run 面板的重新執行，所以每次都會清空。`output-folder-safety.ts` 會拒絕根目錄、頂層、家目錄、系統資料夾，以及包含工作區或 build context 的資料夾，並用 toast 說明原因
+- **匯出前清空**（`cleanOutputDir`，新設定預設勾選；之後改成 POSIX 用 `rm -rf`，見下方「使用者試用後的調整」）：`docker build -o` 只會新增和覆蓋檔案。清空不用 `rm -rf`，因為 Windows PowerShell 不支援，而是由 launcher 在執行前透過 Orca 的檔案 API 刪除（`run-output-folder-cleanup.ts`）：先停掉同一個設定前一次的執行，本機搬到垃圾桶（`shell.trashItem`，外部路徑先 `authorizeExternalPath`），SSH 主機上直接刪除。所有已存設定都會經過 launcher，包括 Run 面板的重新執行，所以每次都會清空。`output-folder-safety.ts` 會拒絕根目錄、頂層、家目錄、系統資料夾，以及包含工作區或 build context 的資料夾，並用 toast 說明原因
 - **重用**：`DotnetPublishDialog` 的外框抽成 `SavedRunConfigurationDialog`（名稱、錯誤、取消／儲存／執行），.NET 和 Docker 兩個對話框共用；資料夾欄位加 Browse 的部分抽成 `FolderPathInput`。共用對話框依 design system 移除了 `DialogTitle`／`DialogDescription` 的字級 class。launcher 為了不超過 300 行，把 pending launch 登記表拆到 `run-launch-pending.ts`
 - **已知限制**：Edit Configurations 裡的 stage 是文字欄位，只有從選單開啟的對話框會讀 Dockerfile 提供下拉選單。如果遠端 runtime 環境（配對的遠端 Orca）的輸出資料夾在工作區外，無法清空，會跳錯誤、不執行
+
+使用者試用後的調整（2026-10-02）：
+- **清空改成真的 `rm -rf`**：使用者看到勾了「清空」，但預覽沒有 `rm -rf`，以為沒作用。兩個選項中，使用者選了「改成真的 rm -rf 指令」，沒選「預覽多一行說明由 Orca 清空」。現在 POSIX shell（macOS、Linux、SSH、WSL；`host-shell.ts` 的 `runsPosixShell` 依工作區路徑判斷，Dockerfile 偵測的 `&&` 也共用它）的指令是 `rm -rf <資料夾> && docker build …`，預覽和 Run 視窗都看得到，不會進垃圾桶。Windows 本機維持由 Orca 移到資源回收筒（`orcaDeletes`）。`planRunConfiguration`／`commandConfigurationOf` 多了選填的 `{ posixShell }`，預設是 false，也就是不寫 shell 專屬步驟；只有 launcher 和預覽會傳入真實值。安全檢查照舊在 launcher 執行前做，不安全就不執行；對話框裡也會用紅字預先提示。保護範圍另外加上掛載點（`/Volumes/<名稱>`、`/mnt/<名稱>`、`/media/<使用者>/<名稱>`），因為 `rm -rf` 刪了就救不回來
+- **失敗圖示**：失敗時整個模式圖示變紅，結果 ▷ 變成紅色 ▷，在工具列看起來像第三顆執行按鈕。使用者選了「工具列不顯示，只留 Run 面板」：`RunSessionControls` 只在執行中顯示狀態圖示；Run 面板分頁的失敗狀態改成灰色模式圖示加右下角紅色 ✕（`RunStatusIcon`），`RunModeIcon` 拿掉 `failed` tone
 
 ## 7. 必須遵守的專案規則（摘自 AGENTS.md）
 
