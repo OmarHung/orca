@@ -125,7 +125,7 @@ test('hovering a name while paused shows a JetBrains-style expandable value', as
   await expect(hover).toContainText("config={dict} {'name': 'orca', 'size': 3}")
   await expect(orcaPage.locator('.monaco-hover:visible')).toHaveCount(0)
 
-  // The popup survives moving into it, and its value expands into members.
+  // Its value expands into members.
   const valueRow = hover.getByRole('button', { name: /^config/ })
   await valueRow.hover()
   await valueRow.click()
@@ -141,6 +141,17 @@ test('hovering a name while paused shows a JetBrains-style expandable value', as
   })
   expect(lastMemberOnTop).toBe(true)
   await orcaPage.screenshot({ path: testInfo.outputPath('value-hover-expanded.png') })
+
+  // It stays pinned while the pointer moves away, even across other names.
+  const itemsBox = await textBox(editor, 'items = [10', 'items')
+  await orcaPage.mouse.move((itemsBox.left + itemsBox.right) / 2, itemsBox.y)
+  const variables = await panel.getByTestId('debug-variables').boundingBox()
+  await orcaPage.mouse.move(
+    variables!.x + variables!.width / 2,
+    variables!.y + variables!.height / 2
+  )
+  await orcaPage.waitForTimeout(1_000)
+  await expect(hover).toContainText("config={dict} {'name': 'orca', 'size': 3}")
 
   // Escape closes it.
   await orcaPage.keyboard.press('Escape')
@@ -158,7 +169,7 @@ test('hovering a name while paused shows a JetBrains-style expandable value', as
   await expect(panel.getByTestId('debug-watches')).toContainText('items[1]')
   await expect(panel.getByTestId('debug-watches')).toContainText('20')
 
-  // Resuming closes the popup with the pause it came from.
-  await panel.getByRole('button', { name: 'Resume Program' }).click()
+  // A click outside closes it.
+  await panel.getByTestId('debug-variables').click()
   await expect(hover).toHaveCount(0)
 })
