@@ -101,6 +101,22 @@ describe.skipIf(process.platform !== 'darwin' || process.getuid?.() === 0)(
       expect(commands.every((command) => !command.includes('mv -f'))).toBe(true)
     })
 
+    it('publishes a symlink that other users can read', async () => {
+      const fixture = await createPrivilegedFixture()
+      const installer = new CliInstaller({
+        ...fixtureInstallerOptions(fixture),
+        privilegedRunner: async (command) => {
+          await chmod(fixture.protectedDirectory, 0o700)
+          await executePrivilegedShell(command)
+        }
+      })
+
+      await chmod(fixture.protectedDirectory, 0o500)
+      await expect(installer.install()).resolves.toMatchObject({ state: 'installed' })
+      // Why: macOS enforces symlink mode bits on readlink, so a root-owned 0700 link is unreadable to the user.
+      expect((await lstat(fixture.commandPath)).mode & 0o777).toBe(0o755)
+    })
+
     it('restores a trailing-newline symlink inserted after privileged inspection', async () => {
       const fixture = await createPrivilegedFixture()
       const staleTarget = join(fixture.userDataPath, 'cli', 'bin', 'old', 'orca')

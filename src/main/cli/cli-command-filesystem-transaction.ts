@@ -198,9 +198,10 @@ export function buildMacPrivilegedSymlinkTransaction(
   const rollback =
     `/bin/rm -f ${quoteShell(publishPath)}; /bin/rmdir ${quoteShell(publishDirectory)} 2>/dev/null || :; ` +
     `if [ "$captured" -eq 1 ]; then ${restoreOrPreserve}; else /bin/rmdir ${quoteShell(transactionDirectory)}; fi; exit 73`
+  // Why: macOS enforces symlink mode bits on readlink; under umask 077 the root-owned link is unreadable to the user.
   return (
     `${capture}if /bin/mkdir ${quoteShell(publishDirectory)} && ` +
-    `/bin/ln -s ${quoteShell(args.launcherPath)} ${quoteShell(publishPath)} && ` +
+    `(umask 022 && /bin/ln -s ${quoteShell(args.launcherPath)} ${quoteShell(publishPath)}) && ` +
     `/bin/ln -P ${quoteShell(publishPath)} ${quoteShell(commandDirectory)}; then ` +
     `/bin/rm ${quoteShell(publishPath)}; /bin/rmdir ${quoteShell(publishDirectory)}; ` +
     `if [ "$captured" -eq 1 ]; then /bin/rm ${quoteShell(heldPath)}; fi; ` +
