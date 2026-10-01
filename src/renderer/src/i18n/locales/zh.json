@@ -19498,6 +19498,12 @@
       "retry": "重试",
       "empty": "此文件夹是空的。"
     },
+    "summary": {
+      "items": "共 {{total}} 项",
+      "selected": "已选取 {{selected}} / {{total}} 项",
+      "selectedSize": "已选取 {{selected}} / {{total}} 项 · {{size}}",
+      "selectedSizeWithoutFolders": "已选取 {{selected}} / {{total}} 项 · {{size}}（不含文件夹）"
+    },
     "column": {
       "menu": "显示栏位",
       "name": "名称",
