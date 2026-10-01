@@ -7,6 +7,7 @@ import { resolveUnifiedTabLabel } from '../../../../../shared/workspace-layout/t
 import type { useAppStore } from '../../../store/index'
 import { isEditorTabContentType } from '@/store/slices/editor/tabs/editor-tab-content-type'
 import { openFileIndex } from '@/store/slices/editor/tabs/workspace-editor-files'
+import { useRunPanelTabIds } from '../run/use-run-panel-sessions'
 
 type TabGroupAppState = ReturnType<typeof useAppStore.getState>
 
@@ -41,9 +42,16 @@ export function useTabGroupItemProjections({
     () => worktreeState.groups.find((item) => item.id === groupId) ?? null,
     [groupId, worktreeState.groups]
   )
+  // Fork: run configurations' terminals live in the Run panel, not the tab strip.
+  const runPanelTabIds = useRunPanelTabIds(worktreeId)
   const groupTabs = useMemo(
-    () => worktreeState.unifiedTabs.filter((item) => item.groupId === groupId),
-    [groupId, worktreeState.unifiedTabs]
+    () =>
+      worktreeState.unifiedTabs.filter(
+        (item) =>
+          item.groupId === groupId &&
+          !(item.contentType === 'terminal' && runPanelTabIds.has(item.entityId))
+      ),
+    [groupId, runPanelTabIds, worktreeState.unifiedTabs]
   )
   const activeItemId = group?.activeTabId ?? null
   const activeTab = groupTabs.find((item) => item.id === activeItemId) ?? null

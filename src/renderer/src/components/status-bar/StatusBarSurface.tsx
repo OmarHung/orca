@@ -10,6 +10,7 @@ import { SkillUpdateStatusSegment } from './updates/SkillUpdateStatusSegment'
 import { AgentCliUpdateStatusSegment } from './updates/AgentCliUpdateStatusSegment'
 import { GitLogStatusSegment } from '../bottom-panel/GitLogStatusSegment'
 import { DebugStatusSegment } from '../debug/DebugStatusSegment'
+import { RunStatusSegment } from '../run/RunStatusSegment'
 import { GitBranchStatusSegment } from '../git-branch-status/GitBranchStatusSegment'
 import { NativeChatResumeStatusSegment } from './NativeChatResumeStatusSegment'
 import { CaffeinateStatusSegment } from './CaffeinateStatusSegment'
@@ -131,6 +132,7 @@ export function StatusBarSurface({
           </React.Suspense>
           <GitBranchStatusSegment iconOnly={segmentsIconOnly} />
           <GitLogStatusSegment />
+          <RunStatusSegment />
           <DebugStatusSegment />
           {showFloatingTerminalToggle && (
             <FloatingTerminalIconContextMenu currentLocation="status-bar" className="relative">
