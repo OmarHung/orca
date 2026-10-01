@@ -1,4 +1,7 @@
-import { dockerExportAsCommand } from './docker-export-configuration'
+import {
+  dockerExportAsCommand,
+  type DockerExportCommandOptions
+} from './docker-export-configuration'
 import { dotnetPublishAsCommand } from './dotnet-publish-configuration'
 import {
   findRunConfiguration,
@@ -9,9 +12,16 @@ import {
   type RunConfigurationDefinition
 } from './run-configuration-definition'
 
+/** How commands are written for the workspace's shell; see runsPosixShell. */
+export type RunCommandOptions = DockerExportCommandOptions
+
+// Why the default: without a known shell, no shell-specific step (`rm -rf`) is written.
+const ANY_SHELL: RunCommandOptions = { posixShell: false }
+
 /** The terminal command a configuration runs; null for debug sessions and compounds. */
 export function commandConfigurationOf(
-  configuration: RunConfigurationDefinition
+  configuration: RunConfigurationDefinition,
+  options: RunCommandOptions = ANY_SHELL
 ): CommandRunConfiguration | null {
   switch (configuration.type) {
     case 'command':
@@ -19,7 +29,7 @@ export function commandConfigurationOf(
     case 'dotnet-publish':
       return dotnetPublishAsCommand(configuration)
     case 'docker-export':
-      return dockerExportAsCommand(configuration)
+      return dockerExportAsCommand(configuration, options)
     case 'debug':
     case 'compound':
       return null
@@ -32,12 +42,15 @@ type LaunchableConfiguration =
   | CompoundRunConfiguration
 
 /** Null for a publish whose paths cannot be quoted safely; it is left out, so it reads as missing. */
-function launchable(configuration: RunConfigurationDefinition): LaunchableConfiguration | null {
+function launchable(
+  configuration: RunConfigurationDefinition,
+  options: RunCommandOptions
+): LaunchableConfiguration | null {
   switch (configuration.type) {
     case 'dotnet-publish':
       return dotnetPublishAsCommand(configuration)
     case 'docker-export':
-      return dockerExportAsCommand(configuration)
+      return dockerExportAsCommand(configuration, options)
     case 'command':
     case 'debug':
     case 'compound':
@@ -138,10 +151,11 @@ function collectLaunches(
 /** Resolves references into what to run first and what to start, or why it cannot run. */
 export function planRunConfiguration(
   configurations: readonly RunConfigurationDefinition[],
-  reference: string
+  reference: string,
+  options: RunCommandOptions = ANY_SHELL
 ): RunPlanResult {
   const all = configurations
-    .map(launchable)
+    .map((configuration) => launchable(configuration, options))
     .filter((configuration): configuration is LaunchableConfiguration => configuration !== null)
   try {
     const launches: RunLaunchPlan['launches'] = []

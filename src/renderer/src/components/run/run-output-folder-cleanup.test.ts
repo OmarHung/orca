@@ -36,7 +36,7 @@ import {
   prepareOutputFolder
 } from './run-output-folder-cleanup'
 
-const OUT = { folder: '/Users/me/deploy/web', contextDir: '/repo/wt' }
+const OUT = { folder: '/Users/me/deploy/web', contextDir: '/repo/wt', orcaDeletes: true }
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -66,11 +66,12 @@ describe('outputFoldersToEmpty', () => {
           outputDir: 'publish/b'
         }
       ],
-      { workspaceFolder: '/repo/wt' }
+      { workspaceFolder: '/repo/wt' },
+      { orcaDeletes: false }
     )
 
     expect([...folders]).toEqual([
-      ['a', { folder: '/repo/wt/publish/web', contextDir: '/repo/wt/web' }]
+      ['a', { folder: '/repo/wt/publish/web', contextDir: '/repo/wt/web', orcaDeletes: false }]
     ])
   })
 })
@@ -97,7 +98,7 @@ describe('emptyOutputFolder', () => {
 
   it('refuses a folder holding the workspace, and says why', async () => {
     await expect(
-      emptyOutputFolder('wt', 'Export', { folder: '/repo', contextDir: '/repo/wt' })
+      emptyOutputFolder('wt', 'Export', { ...OUT, folder: '/repo', contextDir: '/repo/wt' })
     ).resolves.toBe(false)
     expect(mocks.deletePath).not.toHaveBeenCalled()
     expect(mocks.toastError).toHaveBeenCalled()
@@ -122,6 +123,24 @@ describe('prepareOutputFolder', () => {
     await expect(prepareOutputFolder('X', target, OUT, { cancelled: false })).resolves.toBe(true)
     expect(mocks.stopConfigurationAndWait).toHaveBeenCalledWith(target)
     expect(mocks.deletePath).toHaveBeenCalled()
+  })
+
+  it("only checks the folder when the command's own rm -rf empties it", async () => {
+    const shellEmpties = { ...OUT, orcaDeletes: false }
+    await expect(
+      prepareOutputFolder('X', target, shellEmpties, { cancelled: false })
+    ).resolves.toBe(true)
+    expect(mocks.stopConfigurationAndWait).not.toHaveBeenCalled()
+    expect(mocks.deletePath).not.toHaveBeenCalled()
+    await expect(
+      prepareOutputFolder(
+        'X',
+        target,
+        { ...shellEmpties, folder: '/Users/me' },
+        { cancelled: false }
+      )
+    ).resolves.toBe(false)
+    expect(mocks.toastError).toHaveBeenCalled()
   })
 
   it('leaves runs without an output folder alone', async () => {

@@ -1,8 +1,9 @@
 import { isPathInsideOrEqual } from '../cross-platform-path'
 
 // Why by layout: the execution host may be remote, so its real home folder is not known here.
+// Mounted drives (`/Volumes/Data`, `/mnt/c`, `/media/me/usb`) count too: emptying one wipes a disk.
 const HOME_OR_SYSTEM_FOLDER =
-  /^(?:\/(?:Users|home)(?:\/[^/]+)?|\/root|[A-Za-z]:\/(?:Users(?:\/[^/]+)?|Windows|Program Files(?: \(x86\))?|ProgramData))$/i
+  /^(?:\/(?:Users|home)(?:\/[^/]+)?|\/root|\/(?:Volumes|mnt)\/[^/]+|\/media(?:\/[^/]+){1,2}|[A-Za-z]:\/(?:Users(?:\/[^/]+)?|Windows|Program Files(?: \(x86\))?|ProgramData))$/i
 
 function normalized(path: string): string {
   return path.replace(/\\/g, '/').replace(/(.)\/+$/, '$1')

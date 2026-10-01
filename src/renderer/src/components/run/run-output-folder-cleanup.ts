@@ -14,13 +14,17 @@ import {
 import { getTabEntryFileOperationContext } from '../tab-bar/tab-create-entry-local-path'
 import { stopConfigurationAndWait, type RunTarget } from './run-configuration-control'
 
-/** An output folder to empty before a run, and the build context it must not swallow. */
-export type OutputFolderToEmpty = { folder: string; contextDir: string }
+/**
+ * An output folder emptied before a run, and the build context it must not swallow. The command's
+ * own `rm -rf` empties it in a POSIX shell; elsewhere Orca deletes it (`orcaDeletes`).
+ */
+export type OutputFolderToEmpty = { folder: string; contextDir: string; orcaDeletes: boolean }
 
 /** Docker exports set to empty their folder first, by configuration id, as absolute paths. */
 export function outputFoldersToEmpty(
   configurations: readonly RunConfigurationDefinition[],
-  context: RunConfigurationVariableContext
+  context: RunConfigurationVariableContext,
+  options: { orcaDeletes: boolean }
 ): Map<string, OutputFolderToEmpty> {
   const folders = new Map<string, OutputFolderToEmpty>()
   for (const configuration of configurations) {
@@ -30,13 +34,19 @@ export function outputFoldersToEmpty(
     const folder = resolveRunConfigurationPath(configuration.outputDir, context)
     const contextDir = resolveRunConfigurationPath(dockerExportContext(configuration), context)
     if (folder.ok && contextDir.ok) {
-      folders.set(configuration.id, { folder: folder.value, contextDir: contextDir.value })
+      folders.set(configuration.id, {
+        folder: folder.value,
+        contextDir: contextDir.value,
+        orcaDeletes: options.orcaDeletes
+      })
     }
   }
   return folders
 }
 
-function problemMessage(problem: 'not-absolute' | 'system-folder' | 'contains-sources'): string {
+export function outputFolderProblemMessage(
+  problem: 'not-absolute' | 'system-folder' | 'contains-sources'
+): string {
   switch (problem) {
     case 'not-absolute':
       return translate('run.emptyOutput.notAbsolute', 'its path could not be resolved')
@@ -61,9 +71,22 @@ function emptyFailed(name: string, folder: string, reason: string): false {
   return false
 }
 
+/** False, after telling the user, when the folder must not be emptied (see output-folder-safety). */
+function checkOutputFolder(
+  worktreePath: string,
+  name: string,
+  target: OutputFolderToEmpty
+): boolean {
+  const problem = outputFolderEmptyingProblem(target.folder, {
+    workspaceRoot: worktreePath,
+    contextDir: target.contextDir
+  })
+  return problem ? emptyFailed(name, target.folder, outputFolderProblemMessage(problem)) : true
+}
+
 /**
- * Empties an export's output folder on the host that owns the workspace (to the Trash on this
- * computer); false, after telling the user, when the folder is unsafe or could not be emptied.
+ * Checks an export's output folder may be emptied, and empties it when Orca does that (to the
+ * Trash on this computer); false, after telling the user, when it is unsafe or could not be emptied.
  */
 export async function emptyOutputFolder(
   worktreeId: string,
@@ -72,15 +95,11 @@ export async function emptyOutputFolder(
 ): Promise<boolean> {
   const state = useAppStore.getState()
   const worktree = findWorktreeById(state.worktreesByRepo, worktreeId)
-  if (!worktree) {
+  if (!worktree || !checkOutputFolder(worktree.path, name, target)) {
     return false
   }
-  const problem = outputFolderEmptyingProblem(target.folder, {
-    workspaceRoot: worktree.path,
-    contextDir: target.contextDir
-  })
-  if (problem) {
-    return emptyFailed(name, target.folder, problemMessage(problem))
+  if (!target.orcaDeletes) {
+    return true
   }
   const context = getTabEntryFileOperationContext(state, worktreeId, worktree.path)
   try {
@@ -97,7 +116,7 @@ export async function emptyOutputFolder(
   }
 }
 
-/** Ends the previous run of `target`, then empties the folder it exports to, when it has one. */
+/** Before an export: refuses an unsafe output folder, and empties it when Orca does that. */
 export async function prepareOutputFolder(
   name: string,
   target: RunTarget,
@@ -107,6 +126,9 @@ export async function prepareOutputFolder(
   if (!output) {
     return true
   }
-  await stopConfigurationAndWait(target)
+  // Why stop first: the previous export must not write into the folder once it is emptied.
+  if (output.orcaDeletes) {
+    await stopConfigurationAndWait(target)
+  }
   return !pending.cancelled && (await emptyOutputFolder(target.worktreeId, name, output))
 }
