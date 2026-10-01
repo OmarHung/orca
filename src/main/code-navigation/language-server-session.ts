@@ -249,12 +249,19 @@ export class LanguageServerSession {
     switch (method) {
       case 'workspace/configuration': {
         // Why nulls: servers fall back to their defaults for every unset section.
-        const configuration = this.options.launch.configuration ?? {}
-        return configurationSections(params).map((section) =>
-          typeof section === 'string' && Object.hasOwn(configuration, section)
+        const configuration = this.options.launch.configuration
+        return configurationSections(params).map((section) => {
+          if (!configuration) {
+            return null
+          }
+          // Why: no section (vtsls sends '') asks for the whole configuration.
+          if (section === undefined || section === '') {
+            return configuration
+          }
+          return typeof section === 'string' && Object.hasOwn(configuration, section)
             ? configuration[section]
             : null
-        )
+        })
       }
       case 'workspace/workspaceFolders':
         return [{ uri: this.rootUri, name: basename(this.options.root) }]

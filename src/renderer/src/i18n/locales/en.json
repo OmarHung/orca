@@ -20210,6 +20210,7 @@
   "codeNavigation": {
     "downloading": "Downloading the {{language}} language server…",
     "starting": "Loading the {{language}} project for code navigation…",
-    "failed": "{{language}} code navigation is unavailable: {{message}}"
+    "failed": "{{language}} code navigation is unavailable: {{message}}",
+    "nuxtTypesMissing": "This Nuxt project has no generated types yet, so auto-imports cannot be followed. Run `nuxi prepare` in {{project}}."
   }
 }
