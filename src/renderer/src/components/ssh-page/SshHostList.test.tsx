@@ -5,6 +5,9 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SshTarget } from '../../../../shared/ssh-types'
 import { ContextMenuItem } from '../ui/context-menu'
+import { TooltipProvider } from '../ui/tooltip'
+import { EMPTY_SSH_HOST_GROUPS } from './ssh-host-groups'
+import { sshHostGroupActions, useSshHostGroups } from './ssh-host-groups-store'
 import { SshHostList } from './SshHostList'
 
 const targets: SshTarget[] = [
@@ -16,6 +19,8 @@ let container: HTMLDivElement
 let root: Root
 
 beforeEach(() => {
+  window.localStorage.clear()
+  useSshHostGroups.setState({ data: EMPTY_SSH_HOST_GROUPS })
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -33,12 +38,14 @@ async function renderList(props: {
 }): Promise<void> {
   await act(async () => {
     root.render(
-      <SshHostList
-        targets={targets}
-        currentTargetId={props.currentTargetId}
-        onSelect={props.onSelect ?? vi.fn()}
-        hostMenuItems={props.hostMenuItems}
-      />
+      <TooltipProvider>
+        <SshHostList
+          targets={targets}
+          currentTargetId={props.currentTargetId}
+          onSelect={props.onSelect ?? vi.fn()}
+          hostMenuItems={props.hostMenuItems}
+        />
+      </TooltipProvider>
     )
   })
 }
@@ -47,15 +54,23 @@ function rows(): HTMLButtonElement[] {
   return [...container.querySelectorAll<HTMLButtonElement>('button[data-ssh-host-row]')]
 }
 
+function setInputValue(input: HTMLInputElement, value: string): void {
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, value)
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+function groupHeadings(): string[] {
+  return [...container.querySelectorAll<HTMLElement>('[data-ssh-host-group]')].map(
+    (row) => row.textContent ?? ''
+  )
+}
+
 async function typeQuery(value: string): Promise<void> {
   const input = container.querySelector<HTMLInputElement>('input[aria-label="Search hosts"]')
   if (!input) {
     throw new Error('search input not rendered')
   }
-  await act(async () => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, value)
-    input.dispatchEvent(new Event('input', { bubbles: true }))
-  })
+  await act(async () => setInputValue(input, value))
 }
 
 describe('SshHostList', () => {
@@ -110,5 +125,61 @@ describe('SshHostList', () => {
     await typeQuery('nothing-here')
     expect(rows()).toHaveLength(0)
     expect(container.textContent).toContain('No hosts match your search.')
+  })
+  it('shows hosts under their groups, with the rest under Ungrouped', async () => {
+    await act(async () => sshHostGroupActions.create('Production', null, ['web']))
+    await renderList({})
+
+    expect(groupHeadings()).toEqual(['Production1'])
+    expect(container.querySelector('[data-ssh-host-ungrouped]')?.textContent).toBe('Ungrouped1')
+    expect(rows().map((row) => row.dataset.sshHostRow)).toEqual(['web', 'ci'])
+  })
+
+  it('folds a group when its heading is clicked, but not during a search', async () => {
+    await act(async () => sshHostGroupActions.create('Production', null, ['web']))
+    await renderList({})
+    const heading = (): HTMLElement => container.querySelector('[data-ssh-host-group]')!
+
+    await act(async () => heading().click())
+    expect(heading().getAttribute('aria-expanded')).toBe('false')
+    expect(rows().map((row) => row.dataset.sshHostRow)).toEqual(['ci'])
+
+    await typeQuery('production')
+    expect(rows().map((row) => row.dataset.sshHostRow)).toEqual(['web'])
+    await act(async () => heading().click())
+    expect(rows().map((row) => row.dataset.sshHostRow)).toEqual(['web'])
+  })
+
+  it('creates a group from the toolbar and explains a clashing name', async () => {
+    await act(async () => sshHostGroupActions.create('Production', null))
+    await renderList({})
+
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('button[aria-label="New group"]')?.click()
+    )
+    const input = document.querySelector<HTMLInputElement>('input[aria-label="Group name"]')!
+    const submit = (): HTMLButtonElement =>
+      [...document.querySelectorAll<HTMLButtonElement>('button')].find(
+        (button) => button.textContent === 'Create'
+      )!
+
+    await act(async () => setInputValue(input, 'production'))
+    expect(document.body.textContent).toContain('A group with this name is already here.')
+    expect(submit().disabled).toBe(true)
+
+    await act(async () => setInputValue(input, '  Staging  '))
+    await act(async () => submit().click())
+    expect(groupHeadings()).toEqual(['Production0', 'Staging0'])
+  })
+
+  it('offers Move to Group in a host’s right-click menu', async () => {
+    await renderList({})
+
+    await act(async () => {
+      rows()[0].dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))
+    })
+
+    const subTrigger = document.querySelector('[data-slot="context-menu-sub-trigger"]')
+    expect(subTrigger?.textContent).toBe('Move to Group')
   })
 })
