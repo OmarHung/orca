@@ -9,6 +9,14 @@ import {
   detectDotnetRunConfigurations,
   isDotnetProjectFile
 } from '../../../../shared/run-configurations/dotnet-run-configurations'
+import {
+  detectDockerComposeRunConfigurations,
+  isDockerComposeFile
+} from '../../../../shared/run-configurations/docker-compose-run-configurations'
+import {
+  detectDockerfileRunConfigurations,
+  isDockerfile
+} from '../../../../shared/run-configurations/dockerfile-run-configurations'
 import { detectNodeRunConfigurations } from '../../../../shared/run-configurations/node-run-configurations'
 import {
   detectPythonRunConfigurations,
@@ -134,6 +142,36 @@ async function detectPython(
   })
 }
 
+/** Compose files are read together (a named one may layer onto the default); `selected` filters. */
+async function detectDocker(
+  dir: string,
+  names: readonly string[],
+  selected: readonly string[],
+  workspaceRoot: string,
+  files: ProjectFiles
+): Promise<DetectedRunConfiguration[]> {
+  const composeFiles = selected.some(isDockerComposeFile)
+    ? await Promise.all(
+        names
+          .filter(isDockerComposeFile)
+          .map(async (name) => ({ name, text: await files.readText(joinPath(dir, name)) }))
+      )
+    : []
+  const compose = detectDockerComposeRunConfigurations({ projectDir: dir, files: composeFiles })
+  const dockerfiles = await Promise.all(
+    selected
+      .filter(isDockerfile)
+      .sort()
+      .map(async (fileName) => {
+        const text = await files.readText(joinPath(dir, fileName))
+        return text === null
+          ? []
+          : detectDockerfileRunConfigurations({ projectDir: dir, workspaceRoot, fileName, text })
+      })
+  )
+  return [...compose.filter((run) => selected.includes(run.projectName)), ...dockerfiles.flat()]
+}
+
 /**
  * Run configurations for a file-tree node: a folder contributes every project it directly
  * contains; a project file (package.json, *.csproj) contributes just that project.
@@ -146,7 +184,7 @@ export async function detectProjectRunConfigurations(
 ): Promise<DetectedRunConfiguration[]> {
   const workspace = worktreeProjectFiles(worktreeId)
   const projectFiles = workspace ? (files ?? workspace.files) : null
-  if (!projectFiles) {
+  if (!workspace || !projectFiles) {
     return []
   }
   const dir = isDirectory ? path : dirname(path)
@@ -171,6 +209,7 @@ export async function detectProjectRunConfigurations(
   if (selected.some(isPythonProjectFile)) {
     configurations.push(...(await detectPython(dir, names, projectFiles)))
   }
+  configurations.push(...(await detectDocker(dir, names, selected, workspace.root, projectFiles)))
   return configurations
 }
 
@@ -183,7 +222,9 @@ export function mayContainRunConfigurations(name: string, isDirectory: boolean):
     isDirectory ||
     name === 'package.json' ||
     isDotnetProjectFile(name) ||
-    PYTHON_PROJECT_MENU_FILES.has(name)
+    PYTHON_PROJECT_MENU_FILES.has(name) ||
+    isDockerComposeFile(name) ||
+    isDockerfile(name)
   )
 }
 
