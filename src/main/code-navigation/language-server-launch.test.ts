@@ -34,6 +34,7 @@ function deps(overrides: Partial<LanguageServerLaunchDeps> = {}): LanguageServer
     platform: 'darwin',
     arch: 'arm64',
     env: { PATH: '/usr/bin' },
+    execPath: '/Applications/Orca.app/Contents/MacOS/Orca',
     findSolution: vi.fn(async () => null),
     ...overrides
   }

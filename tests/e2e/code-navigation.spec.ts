@@ -9,13 +9,18 @@ import {
   createGoldenWorktree
 } from './helpers/golden-source-control'
 import { waitForSessionReady } from './helpers/store'
+import {
+  activeEditor,
+  BACK,
+  FORWARD,
+  MOD,
+  openEditorFile,
+  placeCursorOnLine,
+  WORD_RIGHT
+} from './helpers/code-navigation-editor'
 
 // Opt-in: the first jump downloads the language servers from npm and nuget.org.
 const RUN = process.env.ORCA_E2E_CODE_NAVIGATION === '1'
-const MOD = process.platform === 'darwin' ? 'Meta' : 'Control'
-const BACK = process.platform === 'darwin' ? 'Meta+BracketLeft' : 'Control+Alt+ArrowLeft'
-const FORWARD = process.platform === 'darwin' ? 'Meta+BracketRight' : 'Control+Alt+ArrowRight'
-const WORD_RIGHT = process.platform === 'darwin' ? 'Alt+ArrowRight' : 'Control+ArrowRight'
 const SCREENSHOT_DIR = process.env.ORCA_E2E_CODE_NAVIGATION_SCREENSHOTS
 
 function hasDotnet(): boolean {
@@ -25,47 +30,6 @@ function hasDotnet(): boolean {
   } catch {
     return false
   }
-}
-
-async function openEditorFile(page: Page, root: string, relativePath: string, language: string) {
-  await page.evaluate(
-    ({ root: rootPath, rel, lang }) => {
-      const state = window.__store?.getState()
-      const worktreeId = state?.activeWorktreeId
-      if (!state || !worktreeId) {
-        throw new Error('no active worktree')
-      }
-      const separator = rootPath.includes('\\') ? '\\' : '/'
-      state.openFile({
-        filePath: `${rootPath}${separator}${rel.split('/').join(separator)}`,
-        relativePath: rel,
-        worktreeId,
-        language: lang,
-        mode: 'edit'
-      })
-    },
-    { root, rel: relativePath, lang: language }
-  )
-}
-
-/** Puts the cursor at the start of the first editor line containing `text`. */
-async function placeCursorOnLine(page: Page, text: string) {
-  const line = page.locator('.monaco-editor .view-line', { hasText: text }).first()
-  await expect(line).toBeVisible({ timeout: 30_000 })
-  await line.click()
-  await page.keyboard.press('Home')
-}
-
-async function activeEditor(page: Page) {
-  return page.evaluate(() => {
-    const probe = window.__monacoEditorE2E
-    const selection = probe?.snapshot().selection
-    return {
-      file: probe?.filePath.split(/[\\/]/).pop() ?? null,
-      line: selection?.positionLineNumber ?? null,
-      column: selection?.positionColumn ?? null
-    }
-  })
 }
 
 /** Hovers the first characters of the first editor line containing `text`; returns the hover. */
