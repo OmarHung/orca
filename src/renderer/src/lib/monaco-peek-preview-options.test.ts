@@ -3,6 +3,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import type * as Monaco from 'monaco-editor'
 import { installMonacoPeekReferencesPreviewOptions } from './monaco-peek-preview-options'
+import {
+  hasOpenMonacoPeekReferences,
+  onDidCloseMonacoPeekReferences
+} from './monaco-peek-references-lifecycle'
 
 type FakePreviewEditor = Pick<Monaco.editor.ICodeEditor, 'updateOptions'>
 
@@ -10,14 +14,16 @@ type FakeReferenceWidgetInstance = {
   _preview?: FakePreviewEditor
   _fillBody?: (containerElement: HTMLElement) => void
   _revealReference?: (...args: unknown[]) => Promise<unknown>
+  dispose?: () => void
 }
 
 function createReferenceWidgetConstructor(hooks: {
   fillBody?: (instance: FakeReferenceWidgetInstance) => void
   revealReference?: (instance: FakeReferenceWidgetInstance) => Promise<unknown>
+  dispose?: (instance: FakeReferenceWidgetInstance) => void
 }): {
   prototype: FakeReferenceWidgetInstance &
-    Required<Pick<FakeReferenceWidgetInstance, '_fillBody' | '_revealReference'>>
+    Required<Pick<FakeReferenceWidgetInstance, '_fillBody' | '_revealReference' | 'dispose'>>
 } {
   return {
     prototype: {
@@ -26,6 +32,9 @@ function createReferenceWidgetConstructor(hooks: {
       },
       async _revealReference(this: FakeReferenceWidgetInstance): Promise<unknown> {
         return hooks.revealReference?.(this)
+      },
+      dispose(this: FakeReferenceWidgetInstance): void {
+        hooks.dispose?.(this)
       }
     }
   }
@@ -54,6 +63,7 @@ describe('installMonacoPeekReferencesPreviewOptions', () => {
     referenceWidget.prototype._fillBody(document.createElement('div'))
 
     expect(preview.updateOptions).toHaveBeenCalledWith(peekPreviewOptions)
+    referenceWidget.prototype.dispose()
   })
 
   it('updates the embedded preview before revealing a reference', async () => {
@@ -94,5 +104,22 @@ describe('installMonacoPeekReferencesPreviewOptions', () => {
     await referenceWidget.prototype._revealReference('reference')
 
     expect(preview.updateOptions).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports the references widget lifecycle once', () => {
+    const closed = vi.fn()
+    const removeListener = onDidCloseMonacoPeekReferences(closed)
+    const referenceWidget = createReferenceWidgetConstructor({})
+    installMonacoPeekReferencesPreviewOptions(referenceWidget)
+
+    referenceWidget.prototype._fillBody(document.createElement('div'))
+    referenceWidget.prototype._fillBody(document.createElement('div'))
+    expect(hasOpenMonacoPeekReferences()).toBe(true)
+
+    referenceWidget.prototype.dispose()
+    referenceWidget.prototype.dispose()
+    expect(hasOpenMonacoPeekReferences()).toBe(false)
+    expect(closed).toHaveBeenCalledOnce()
+    removeListener()
   })
 })

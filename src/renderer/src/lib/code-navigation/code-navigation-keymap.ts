@@ -6,15 +6,25 @@ import { codeNavigationHistory } from './code-navigation-history'
 import { editorNavigationLocation } from './code-navigation-workspace'
 import { openNavigationTarget } from './code-navigation-editor-opener'
 import { installImplementationClick } from './code-navigation-implementation-click'
+import type { CodeNavigationActivation } from './code-navigation-activation'
+import type { CodeNavigationFeature } from '../../../../shared/code-navigation/code-navigation-types'
 
 type CodeEditor = Monaco.editor.ICodeEditor
 
-const MONACO_ACTIONS: Partial<Record<KeybindingActionId, string>> = {
-  'editor.goToDeclaration': 'editor.action.revealDefinition',
-  'editor.goToImplementation': 'editor.action.goToImplementation',
-  'editor.goToTypeDeclaration': 'editor.action.goToTypeDefinition',
-  'editor.findUsages': 'editor.action.goToReferences',
-  'editor.quickDocumentation': 'editor.action.showHover'
+type MonacoAction = { command: string; feature?: CodeNavigationFeature }
+
+const MONACO_ACTIONS: Partial<Record<KeybindingActionId, MonacoAction>> = {
+  'editor.goToDeclaration': { command: 'editor.action.revealDefinition', feature: 'definition' },
+  'editor.goToImplementation': {
+    command: 'editor.action.goToImplementation',
+    feature: 'implementation'
+  },
+  'editor.goToTypeDeclaration': {
+    command: 'editor.action.goToTypeDefinition',
+    feature: 'typeDefinition'
+  },
+  'editor.findUsages': { command: 'editor.action.goToReferences', feature: 'references' },
+  'editor.quickDocumentation': { command: 'editor.action.showHover' }
 }
 
 function locationOf(editor: CodeEditor) {
@@ -36,14 +46,21 @@ function navigate(editor: CodeEditor, direction: 'back' | 'forward'): void {
   openNavigationTarget(target, target.filePath, position)
 }
 
-function runAction(editor: CodeEditor, actionId: KeybindingActionId): void {
+function runAction(
+  editor: CodeEditor,
+  actionId: KeybindingActionId,
+  activation: CodeNavigationActivation
+): void {
   if (actionId === 'editor.navigateBack' || actionId === 'editor.navigateForward') {
     navigate(editor, actionId === 'editor.navigateBack' ? 'back' : 'forward')
     return
   }
   const monacoAction = MONACO_ACTIONS[actionId]
   if (monacoAction) {
-    editor.trigger('keyboard', monacoAction, null)
+    if (monacoAction.feature) {
+      activation.arm(editor, monacoAction.feature)
+    }
+    editor.trigger('keyboard', monacoAction.command, null)
   }
 }
 
@@ -52,7 +69,10 @@ function runAction(editor: CodeEditor, actionId: KeybindingActionId): void {
  * listener runs before Monaco's own bindings, so Cmd+[ navigates instead of outdenting; main is
  * told which editor has focus so it stops treating Cmd/Ctrl+B as the sidebar toggle there.
  */
-export function installCodeNavigationKeymap(monaco: Pick<typeof Monaco, 'editor'>): () => void {
+export function installCodeNavigationKeymap(
+  monaco: Pick<typeof Monaco, 'editor'>,
+  activation: CodeNavigationActivation
+): () => void {
   let focused: CodeEditor | null = null
   const setFocused = (editor: CodeEditor | null): void => {
     if ((focused === null) !== (editor === null)) {
@@ -97,7 +117,8 @@ export function installCodeNavigationKeymap(monaco: Pick<typeof Monaco, 'editor'
     })
     const removeImplementationClick = installImplementationClick(
       editor,
-      () => locationOf(editor) !== null
+      () => locationOf(editor) !== null,
+      () => activation.arm(editor, 'implementation')
     )
     editor.onDidDispose(() => {
       removeImplementationClick()
@@ -121,7 +142,7 @@ export function installCodeNavigationKeymap(monaco: Pick<typeof Monaco, 'editor'
     ) {
       return
     }
-    runAction(editor, actionId)
+    runAction(editor, actionId, activation)
   }
   window.addEventListener('keydown', onKeyDown, true)
 
