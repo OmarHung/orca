@@ -497,6 +497,7 @@
           "mimo_code_label": "MiMo Code",
           "muse_label": "Muse",
           "opencode2_label": "OpenCode 2",
+          "codebuddy_label": "CodeBuddy",
           "zcode_label": "ZCode"
         },
         "skill": {
@@ -1603,7 +1604,6 @@
         "reuseExistingBranchHint": "檢出已有分支，而不是從它建立新分支。",
         "createMultiple": "建立更多",
         "waitForSetupBeforeAgent": "等待設定完成後再啟動代理",
-        "waitForSetupBeforeAgentHelp": "如果設定會安裝依賴、MCP 伺服器或代理啟動時需要的設定檔，請開啟此選項。",
         "destroyDisabled": "已停用銷燬",
         "destroyConfigured": "已設定銷燬",
         "noDestroyConfigured": "未設定銷燬",
@@ -3034,6 +3034,7 @@
           },
           "TerminalContextMenu": {
             "b4cdd9314e": "清屏",
+            "resetTerminal": "重置終端機",
             "8c17d6786d": "關閉窗格",
             "copyTerminalId": "複製終端機 ID",
             "2cf85a6a55": "複製窗格 ID",
@@ -3069,7 +3070,9 @@
             "42b283ecfc": "Orca 無法安全地重新連線此終端機，因為主機無法驗證其儲存的會話。 Orca 保持儲存的會話不變。單擊“重試”立即嘗試重新連線。如果仍然無法重新連線，請開啟一個新終端機。",
             "e16012e31e": "擁有該會話的終端機守護程式已退出，因此該會話及其回滾無法恢復。開啟新終端機以繼續。",
             "sessionUnavailable": "Orca 無法重新連線到主機上此窗格的終端機會話。開啟新終端機以繼續。",
-            "sourceRestoring": "重新連線該終端機 — 正在重新建立其輸出。會話仍在進行。"
+            "sourceRestoring": "重新連線該終端機 — 正在重新建立其輸出。會話仍在進行。",
+            "ptyAllocationLimit": "系統無法再分配 pty 裝置。請在 Orca 或其他程式中關閉一些不用的終端機，然後重試。",
+            "terminalProcessLimit": "系統無法再啟動終端機程序。請關閉不用的終端機或退出不用的程序，然後重試。"
           },
           "TerminalProcessExitOverlay": {
             "capacityTitle": "已達到 Git Bash 主控台上限",
@@ -3242,6 +3245,9 @@
           "TerminalQuickCommandsSubmenu": {
             "3ccc7981bb": "主機不可用",
             "54f29b7c0d": "正在載入主機..."
+          },
+          "TerminalRestoringPlaceholder": {
+            "restoring": "正在恢復終端機…"
           }
         }
       },
@@ -7829,8 +7835,7 @@
           "81057d5f71": "儲存中...",
           "da37d6f10e": "複製",
           "3149964b66": "已複製",
-          "waitForSetupBeforeAgent": "等待設定完成後再啟動代理",
-          "waitForSetupBeforeAgentHelp": "如果設定會安裝依賴、MCP 伺服器或代理啟動時需要的設定檔，請開啟此選項。"
+          "waitForSetupBeforeAgent": "等待設定完成後再啟動代理"
         },
         "RepositoryIconPicker": {
           "2b7d27b93c": "使用 {{value0}} 儲存庫顏色",
@@ -17334,6 +17339,56 @@
   },
   "components": {
     "native-chat": {
+      "writeNotice": {
+        "notDoneReadHistory": "無法載入此聊天的歷史記錄。",
+        "notDoneSend": "您的訊息未傳送。",
+        "tryAgainComposerSend": "請重新發送。",
+        "notDoneStop": "代理未停止。",
+        "notDoneStopTask": "後台任務未停止。",
+        "notDoneStopTasks": "後台任務未停止。",
+        "notDoneAnswer": "您的回答未傳送。",
+        "notDoneOption": "設定未更改。",
+        "notDoneCommand": "命令未執行。",
+        "notDoneGoal": "目標未更改。",
+        "restartFailed": "代理無法重新啟動。",
+        "capacity": "Orca 在過去一天內收到的請求過多。",
+        "outcomeUnknown": "Orca 無法確認發生了什麼。請檢視聊天。",
+        "questionChanged": "此問題已被回答或已更改。",
+        "historyUnreadable": "Orca 無法讀取此聊天的已儲存歷史記錄。",
+        "historyUnusable": "無法載入此聊天。",
+        "historyUnavailable": "Orca 目前無法開啟此聊天的歷史記錄。",
+        "unsupported": "執行此聊天的 Orca 不支援此操作。請更新 Orca 後重試。",
+        "unreachable": "Orca 無法連線到代理。",
+        "recordFailed": "Orca 無法將其記錄到此聊天的歷史記錄中。",
+        "conversationCleared": "此對話已被清除。",
+        "openCurrentConversation": "請開啟目前對話以繼續。",
+        "clearUnfinished": "上一次 /clear 未完成。",
+        "commandRunning": "/compact 或 /clear 仍在執行。",
+        "waitForCommand": "請等待 /compact 或 /clear 完成。",
+        "agentStarting": "代理仍在啟動。",
+        "waitForStart": "請等待代理完成啟動。",
+        "turnActive": "代理仍在回覆。",
+        "waitForTurn": "請等待代理完成回覆，或將其停止。",
+        "promptPending": "代理正在等待您回答問題或審批。",
+        "answerFirst": "請先回答問題或審批。",
+        "backgroundTasksRunning": "後台任務仍在執行。",
+        "waitForBackgroundTasks": "請等待後台任務完成。",
+        "messagesUnsettled": "您之前傳送的一條訊息尚未確認。",
+        "settleEarlierMessage": "請等待之前的訊息送達，或重試該訊息。",
+        "optionRejected": "代理未接受此設定。",
+        "goalsUnsupported": "此代理不支援目標。",
+        "agentRefused": "代理拒絕了此請求。",
+        "ownerUnproven": "Orca 尚未確認此聊天之前的代理已停止。",
+        "reopenChat": "請重新開啟聊天以再次檢查。",
+        "terminalAgentHoldsChat": "此聊天仍在終端機代理中開啟。",
+        "quitTerminalAgent": "請退出該代理，以便在此處繼續聊天。",
+        "hostReconciling": "Orca 重啟後仍在檢查此聊天。",
+        "waitMoment": "請稍候。",
+        "recordUnreadable": "Orca 無法讀取此聊天的已儲存狀態。",
+        "chatNotFound": "執行此聊天的 Orca 沒有此聊天的記錄。",
+        "startNewChat": "請開始新的聊天以繼續。",
+        "tryAgain": "請重試。"
+      },
       "composer": {
         "imageUnsupported": "此代理不支援貼上圖片。",
         "send": "傳送",
@@ -17490,8 +17545,10 @@
         },
         "error": {
           "title": "無法載入對話",
-          "subtitle": "無法讀取記錄。請切回終端機繼續工作。"
+          "subtitle": "無法讀取記錄。請切回終端機繼續工作。",
+          "retryingSubtitle": "無法讀取記錄。Orca 會繼續嘗試載入。"
         },
+        "reconnecting": "正在重新連線此聊天…",
         "pairHost": "配對主機以檢視代理聊天記錄。",
         "notAgent": {
           "title": "這裡沒有對話",
@@ -17616,6 +17673,7 @@
       "railEmptyMessage": "資訊",
       "ask": {
         "awaiting": "等待使用者輸入：",
+        "awaitingUnnamed": "等待使用者輸入",
         "asked": "問：",
         "questionCount": "{{value0}} 問題"
       },
@@ -17639,7 +17697,9 @@
         "startedN": "啟動 {{value0}} 子代理",
         "ranOne": "Ran 1 子代理",
         "ranN": "Ran {{value0}} 子代理",
-        "tokens": "{{value0}} 代幣"
+        "tokens": "{{value0}} 代幣",
+        "unnamed": "子代理",
+        "writtenBy": "由子代理 {{value0}} 輸出"
       },
       "conversationCommand": {
         "pendingWork": "在使用此命令之前，請等待掛起的工作和訊息完成。",
@@ -18038,6 +18098,9 @@
           }
         }
       }
+    },
+    "agentChildRow": {
+      "ended": "已結束"
     }
   },
   "dashboardPopout": {
@@ -18264,6 +18327,7 @@
       "needsInput": "需要輸入",
       "working": "處理中",
       "stopped": "已停止",
+      "failed": "已失敗",
       "finished": "已完成"
     }
   },
