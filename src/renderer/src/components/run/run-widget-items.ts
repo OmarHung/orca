@@ -11,7 +11,14 @@ const LEGACY_DETECTED_KEY = 'detected'
 
 /** Everything the tab-bar Run widget can select, like JetBrains' configuration list. */
 export type RunWidgetItem =
-  | { kind: 'recent'; key: string; label: string; target: RunTarget }
+  | {
+      kind: 'recent'
+      key: string
+      label: string
+      target: RunTarget
+      /** The run of the saved configuration this temporary run was saved as; it runs as that. */
+      savedTarget?: RunTarget
+    }
   | {
       kind: 'configuration'
       key: string
@@ -80,17 +87,23 @@ export function isRemoteQuickCommandSelectionPending(
 export function runWidgetItems(options: {
   currentFile?: RunWidgetItem | null
   recent: readonly RunTarget[]
+  /** The saved configuration's run a recent run became, if any. */
+  savedTargetOf?: (target: RunTarget) => RunTarget | null
   configurations: readonly ListedRunConfiguration[]
   quickCommands: readonly HostedTerminalQuickCommand[]
 }): RunWidgetItem[] {
   return [
     ...(options.currentFile ? [options.currentFile] : []),
-    ...options.recent.map((target) => ({
-      kind: 'recent' as const,
-      key: recentItemKey(target.commandKey),
-      label: target.command.label,
-      target
-    })),
+    ...options.recent.map((target) => {
+      const savedTarget = options.savedTargetOf?.(target)
+      return {
+        kind: 'recent' as const,
+        key: recentItemKey(target.commandKey),
+        label: target.command.label,
+        target,
+        ...(savedTarget ? { savedTarget } : {})
+      }
+    }),
     ...options.configurations.map(({ configuration, source }) => ({
       kind: 'configuration' as const,
       key: configurationItemKey(configuration.id),
@@ -126,7 +139,6 @@ export function selectedRunWidgetItem(
 function runCommandKey(item: RunWidgetItem): string | null {
   switch (item.kind) {
     case 'recent':
-      return item.target.commandKey
     case 'detected':
       return (item.savedTarget ?? item.target).commandKey
     case 'current-file':
@@ -145,5 +157,7 @@ export function runWidgetItemForRun(
   items: readonly RunWidgetItem[],
   commandKey: string
 ): RunWidgetItem | null {
-  return items.find((item) => runCommandKey(item) === commandKey) ?? null
+  const owners = items.filter((item) => runCommandKey(item) === commandKey)
+  // Why: a recent run saved as a configuration shares its run; the configuration owns it.
+  return owners.find((item) => item.kind === 'configuration') ?? owners[0] ?? null
 }
