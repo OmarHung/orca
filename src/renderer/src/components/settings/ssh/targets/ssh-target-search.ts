@@ -9,10 +9,11 @@ type SearchableSshTarget = Pick<
   'label' | 'configHost' | 'host' | 'port' | 'username' | 'identityFile'
 >
 
-/** Targets whose card text contains every whitespace-separated term of the query. */
+/** Targets whose card text (plus any `extraText`) contains every whitespace-separated term. */
 export function filterSshTargetsBySearchQuery<T extends SearchableSshTarget>(
   targets: readonly T[],
-  rawQuery: string
+  rawQuery: string,
+  extraText?: (target: T) => string
 ): T[] {
   if (isClipboardTextByteLengthOverLimit(rawQuery, SSH_TARGET_SEARCH_QUERY_MAX_BYTES)) {
     return []
@@ -22,7 +23,10 @@ export function filterSshTargetsBySearchQuery<T extends SearchableSshTarget>(
     return [...targets]
   }
   return targets.filter((target) => {
-    const text = getSshTargetSearchText(target)
+    const extra = extraText?.(target)
+    const text = extra
+      ? `${getSshTargetSearchText(target)}\n${extra.toLowerCase()}`
+      : getSshTargetSearchText(target)
     return terms.every((term) => text.includes(term))
   })
 }
