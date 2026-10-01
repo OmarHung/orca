@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
+import { cn } from '@/lib/utils'
 import { stopConfiguration } from './run-configuration-control'
 import { rerunRunPanelSession } from './run-panel-actions'
 import { isRunSessionActive, runStopStage, type RunSession } from './run-session-store'
@@ -15,13 +16,15 @@ function ToolbarButton({
   label,
   testId,
   disabled,
-  onClick
+  onClick,
+  isStop = false
 }: {
   icon: LucideIcon
   label: string
   testId: string
   disabled: boolean
   onClick: () => void
+  isStop?: boolean
 }): React.JSX.Element {
   return (
     <Tooltip>
@@ -36,7 +39,7 @@ function ToolbarButton({
             disabled={disabled}
             onClick={onClick}
           >
-            <Icon />
+            <Icon className={cn(isStop && !disabled && 'text-destructive')} />
           </Button>
         </span>
       </TooltipTrigger>
@@ -76,6 +79,7 @@ export function RunPanelToolbar({ session }: { session: RunSession | null }): Re
         label={stop.label}
         testId="run-panel-stop"
         disabled={!active}
+        isStop
         onClick={() => {
           if (session) {
             stopConfiguration(session.worktreeId, session.commandKey)
