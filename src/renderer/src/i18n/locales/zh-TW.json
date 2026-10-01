@@ -18834,14 +18834,15 @@
       "dockerExport": {
         "stage": "階段",
         "cleanSection": "匯出前",
-        "cleanHint": "Docker 只會新增和覆蓋檔案，之前匯出的檔案會留下。在這台電腦上，資料夾會移到垃圾桶；在 SSH 主機上會直接刪除。",
+        "cleanHint": "Docker 只會新增和覆蓋檔案，之前匯出的檔案會留下。匯出前會先用 rm -rf 刪除這個資料夾；在 Windows 上則由 Orca 移到資源回收筒。",
         "clean": "清空輸出資料夾",
         "dockerfile": "Dockerfile",
         "context": "構建上下文",
         "contextHint": "留空則使用 Dockerfile 所在的資料夾。",
         "outputDir": "輸出資料夾",
         "extraArgsHint": "按原樣附加到命令末尾，例如 --build-arg VERSION=1.2.3",
-        "unsafe": "請選擇階段，並且路徑不能包含 \" $ ` % ! 或逗號。"
+        "unsafe": "請選擇階段，並且路徑不能包含 \" $ ` % ! 或逗號。",
+        "folderProblem": "這個資料夾不能清空，所以不會匯出：{{value0}}"
       }
     },
     "widget": {
