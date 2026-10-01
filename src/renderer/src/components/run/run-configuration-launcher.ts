@@ -10,6 +10,7 @@ import type {
   RunConfigurationDefinition
 } from '../../../../shared/run-configurations/run-configuration-definition'
 import type { RunConfigurationKind } from '../../../../shared/run-configurations/run-configuration-types'
+import { runsPosixShell } from '../../../../shared/run-configurations/host-shell'
 import {
   planRunConfiguration,
   type RunLaunchPlan
@@ -272,9 +273,11 @@ async function launchPlanned(
   const store = useRunConfigurationStore.getState()
   const shared = store.sharedByWorktree[options.worktreeId]?.configurations ?? []
   const listed = combineRunConfigurations(store.localByRepo[repo.id] ?? [], shared)
+  const posixShell = runsPosixShell(worktree.path)
   const result = planRunConfiguration(
     listed.map((entry) => entry.configuration),
-    options.reference
+    options.reference,
+    { posixShell }
   )
   if (!result.ok) {
     toast.error(planErrorMessage(result.error.code, result.error.reference))
@@ -297,7 +300,8 @@ async function launchPlanned(
     pending,
     emptyFirst: outputFoldersToEmpty(
       listed.map((entry) => entry.configuration),
-      { workspaceFolder: worktree.path }
+      { workspaceFolder: worktree.path },
+      { orcaDeletes: !posixShell }
     ),
     kinds: new Map(
       listed.flatMap(({ configuration }) => {

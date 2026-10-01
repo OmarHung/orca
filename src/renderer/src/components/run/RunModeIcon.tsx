@@ -5,7 +5,7 @@ import type { RunMode } from './run-mode'
 
 /**
  * A run's mode icon: in the mode's color while live (green run, orange debug, blue build, cyan
- * test, violet publish), muted once finished, red once failed.
+ * test, violet publish), muted once finished.
  */
 export function RunModeIcon({
   mode,
@@ -13,7 +13,7 @@ export function RunModeIcon({
   className
 }: {
   mode: RunMode
-  tone?: 'live' | 'finished' | 'failed'
+  tone?: 'live' | 'finished'
   className?: string
 }): React.JSX.Element {
   const Icon = RUN_MODE_ICONS[mode]
@@ -30,7 +30,6 @@ export function RunModeIcon({
         live && mode === 'test' && 'text-run-mode-test',
         live && mode === 'publish' && 'text-run-mode-publish',
         tone === 'finished' && 'text-muted-foreground',
-        tone === 'failed' && 'text-destructive',
         className
       )}
     />

@@ -1,6 +1,7 @@
 import type { ConfirmationDialogContextValue } from '@/components/confirmation-dialog-context'
 import { useAppStore } from '@/store'
 import { runQuickCommandInNewTab } from '@/lib/run-quick-command-in-new-tab'
+import { runsPosixShell } from '../../../../shared/run-configurations/host-shell'
 import { commandConfigurationOf } from '../../../../shared/run-configurations/run-configuration-plan'
 import { resolveCommandLaunch } from '../../../../shared/run-configurations/run-configuration-resolve'
 import { debugLaunchTarget } from '../debug/debug-launch'
@@ -53,7 +54,9 @@ export function runWidgetSessionTarget(
     case 'quick-command':
       return toRunTarget(item.entry, scope.worktreeId, scope.groupId)
     case 'configuration': {
-      const command = commandConfigurationOf(item.configuration)
+      const command = commandConfigurationOf(item.configuration, {
+        posixShell: runsPosixShell(scope.worktreePath)
+      })
       if (!command) {
         return null
       }

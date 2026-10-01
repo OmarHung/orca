@@ -87,7 +87,9 @@ export function RunSessionControls({
       data-run-status={session?.status ?? 'idle'}
       className="my-auto flex shrink-0 items-center gap-0.5"
     >
-      {status ? (
+      {/* Why live only: a finished or failed icon here read as another Run button; the Run panel
+          tab keeps the outcome. */}
+      {status && active ? (
         <span className="flex size-4 items-center justify-center" title={`${label}: ${status}`}>
           <RunStatusIcon tone={runStatusTone(session)} mode={runTargetMode(target)} />
         </span>
