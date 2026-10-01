@@ -1,11 +1,13 @@
 import React, { useLayoutEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
-import { useDebugStore } from './debug-store'
+import { debugOutput, useDebugStore, type DebugSession } from './debug-store'
 import { DebugConsoleInput } from './DebugConsoleInput'
 
-export function DebugConsole(): React.JSX.Element {
-  const output = useDebugStore((s) => s.output)
-  const lastError = useDebugStore((s) => s.lastError)
+const NO_OUTPUT: ReturnType<typeof debugOutput> = []
+
+export function DebugConsole({ session }: { session: DebugSession | null }): React.JSX.Element {
+  const output = useDebugStore((s) => (session ? debugOutput(s, session.id) : NO_OUTPUT))
+  const lastError = session?.lastError ?? null
   const scrollRef = useRef<HTMLDivElement | null>(null)
 
   // Why: keep following new output like a terminal.
@@ -35,7 +37,7 @@ export function DebugConsole(): React.JSX.Element {
         ))}
         {lastError ? <div className="text-destructive">{lastError}</div> : null}
       </div>
-      <DebugConsoleInput />
+      <DebugConsoleInput session={session} />
     </div>
   )
 }
