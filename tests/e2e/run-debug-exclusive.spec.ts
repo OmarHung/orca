@@ -8,7 +8,7 @@ import {
   createGoldenWorktree
 } from './helpers/golden-source-control'
 import { waitForSessionReady } from './helpers/store'
-import { getTerminalContent } from './helpers/terminal-pane-identity'
+import { getRunPanelTerminalContent } from './helpers/run-panel'
 
 const LABEL = 'web: dev'
 // Stays alive like a dev server, so the run is still active when Debug is pressed.
@@ -25,7 +25,7 @@ async function waitForServerUp(page: Page): Promise<void> {
   await expect
     .poll(
       async () =>
-        (await getTerminalContent(page, 20_000))
+        (await getRunPanelTerminalContent(page, 20_000))
           .replace(ANSI_ESCAPE, '')
           .trimEnd()
           .endsWith('server-up'),

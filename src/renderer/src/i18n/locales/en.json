@@ -19420,7 +19420,13 @@
       "search": "Filter runs",
       "noMatch": "No matching runs"
     },
-    "unsafeShellPath": "This file’s path contains characters that cannot be passed safely to a shell, such as \" $ ` % or !."
+    "unsafeShellPath": "This file’s path contains characters that cannot be passed safely to a shell, such as \" $ ` % or !.",
+    "toolWindow": "Run",
+    "panel": {
+      "empty": "Nothing has run here yet. Start a configuration from the Run button at the top right.",
+      "runs": "Runs",
+      "close": "Close '{{value0}}'"
+    }
   },
   "python": {
     "interpreter": {

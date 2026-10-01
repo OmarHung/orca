@@ -37,6 +37,12 @@ export function configurationCommandKey(id: string): string {
   return `config:${id}`
 }
 
+/** The saved configuration a run key belongs to; null for recent, detected and quick-command runs. */
+export function configurationIdOfCommandKey(commandKey: string): string | null {
+  const prefix = configurationCommandKey('')
+  return commandKey.startsWith(prefix) ? commandKey.slice(prefix.length) : null
+}
+
 export function configurationItemKey(id: string): string {
   return `config:${id}`
 }
