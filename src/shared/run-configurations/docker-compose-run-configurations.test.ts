@@ -49,9 +49,10 @@ describe('detectDockerComposeRunConfigurations', () => {
 
     expect(summary(configurations)).toEqual([
       ['docker-compose.yml', 'up', 'run', 'docker compose up'],
+      ['docker-compose.yml', 'up --build', 'run', 'docker compose up --build'],
       ['docker-compose.yml', 'up -d', 'run', 'docker compose up -d'],
-      ['docker-compose.yml', 'up db', 'run', 'docker compose up db'],
-      ['docker-compose.yml', 'up api', 'run', 'docker compose up api'],
+      ['docker-compose.yml', 'up --build db', 'run', 'docker compose up --build db'],
+      ['docker-compose.yml', 'up --build api', 'run', 'docker compose up --build api'],
       ['docker-compose.yml', 'build', 'build', 'docker compose build'],
       ['docker-compose.yml', 'down', 'other', 'docker compose down'],
       ['docker-compose.yml', 'logs -f', 'other', 'docker compose logs -f']
@@ -73,7 +74,7 @@ describe('detectDockerComposeRunConfigurations', () => {
       ]
     })
 
-    expect(configurations.map((configuration) => configuration.name)).toContain('up debug')
+    expect(configurations.map((configuration) => configuration.name)).toContain('up --build debug')
     expect(new Set(configurations.map((configuration) => configuration.projectName))).toEqual(
       new Set(['compose.yaml'])
     )
@@ -98,7 +99,7 @@ describe('detectDockerComposeRunConfigurations', () => {
       'docker compose -f docker-compose.yml -f docker-compose.windows.yml up'
     )
     expect(windows.map((configuration) => configuration.name)).toEqual(
-      expect.arrayContaining(['up db', 'up api', 'up nginx'])
+      expect.arrayContaining(['up --build db', 'up --build api', 'up --build nginx'])
     )
   })
 
@@ -125,8 +126,9 @@ describe('detectDockerComposeRunConfigurations', () => {
 
     expect(summary(configurations).map(([, name, , command]) => [name, command])).toEqual([
       ['up', 'docker compose -f compose.test.yaml up'],
+      ['up --build', 'docker compose -f compose.test.yaml up --build'],
       ['up -d', 'docker compose -f compose.test.yaml up -d'],
-      ['up runner', 'docker compose -f compose.test.yaml up runner'],
+      ['up --build runner', 'docker compose -f compose.test.yaml up --build runner'],
       ['build', 'docker compose -f compose.test.yaml build'],
       ['down', 'docker compose -f compose.test.yaml down'],
       ['logs -f', 'docker compose -f compose.test.yaml logs -f']
@@ -141,6 +143,7 @@ describe('detectDockerComposeRunConfigurations', () => {
 
     expect(configurations.map((configuration) => configuration.name)).toEqual([
       'up',
+      'up --build',
       'up -d',
       'build',
       'down',

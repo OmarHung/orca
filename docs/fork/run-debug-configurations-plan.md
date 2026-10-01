@@ -382,6 +382,13 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - **Dockerfile**（`dockerfile-run-configurations.ts`）：`Dockerfile`、`Dockerfile.<x>`、`<x>.Dockerfile`（排除 `Dockerfile.dockerignore`）。image 名稱取自資料夾名稱（變體會加上 `-<x>`）。Visual Studio 產生的 Dockerfile 會從方案資料夾 build，所以 COPY 的來源路徑如果以 Dockerfile 自己所在的資料夾路徑開頭，context 就往上推相同層數（`docker build -f Dockerfile -t api ../..`）。Run 只會發布最終 stage 及其基底 stage 的 `EXPOSE`；在 macOS、Linux、WSL、SSH 上會先 build 再 run（`&&`）。Windows 路徑則只有 `docker run`，因為 Windows PowerShell 5.1 不支援 `&&`
 - **共用**：`joinProjectPath` 從 .NET／Python 偵測器抽到 `project-path.ts`；`DetectedRunConfiguration.projectFile` 也會填入 compose 檔和 Dockerfile 的路徑。在檔案樹右鍵單一 compose 檔時，還是會一起讀同資料夾的所有 compose 檔（具名檔可能疊在預設檔上），再依檔名篩選出那個專案
 
+後續同一天：
+- **compose 的 `--build`**：使用者自己的文件都用 `up -d --build`，但希望不要加 `-d`，讓 log 留在 Run 視窗，按停止就停掉容器。所以 Run 底下多了整體的 `up --build`，每個 service 改成 `up --build <service>`；`up` 和 `up -d` 保留
+- **Docker「Export to Folder」**（新的設定類型 `docker-export`，`docker-export-configuration.ts`）：對應 `FROM scratch AS export-*` 這種只放部署檔的 stage，以及 `docker build --target <stage> -o <資料夾> .` 的用法。使用者選了「存成設定」，沒選「固定輸出位置的自動偵測」。沒有 CMD／ENTRYPOINT 的具名 scratch stage 就算 export stage（`dockerExportStages`）；偵測時掛在 Dockerfile 的 build run 上（`DetectedRunConfiguration.dockerExport`，含 build context）。如果最後一個 stage 本身就是 export stage，就不列 Run。Run 選單的 Publish 群組依序列出已存的 export（可編輯），然後是還沒存過的 stage（`export-web…`），最後是「New Export to Folder…」，都會開啟 `DockerExportDialog`。檔案樹右鍵有「Export '…' to Folder…」，Edit Configurations 也能新增和編輯，orca.yaml 同樣支援
+- **匯出前清空**（`cleanOutputDir`，新設定預設勾選）：`docker build -o` 只會新增和覆蓋檔案。清空不用 `rm -rf`，因為 Windows PowerShell 不支援，而是由 launcher 在執行前透過 Orca 的檔案 API 刪除（`run-output-folder-cleanup.ts`）：先停掉同一個設定前一次的執行，本機搬到垃圾桶（`shell.trashItem`，外部路徑先 `authorizeExternalPath`），SSH 主機上直接刪除。所有已存設定都會經過 launcher，包括 Run 面板的重新執行，所以每次都會清空。`output-folder-safety.ts` 會拒絕根目錄、頂層、家目錄、系統資料夾，以及包含工作區或 build context 的資料夾，並用 toast 說明原因
+- **重用**：`DotnetPublishDialog` 的外框抽成 `SavedRunConfigurationDialog`（名稱、錯誤、取消／儲存／執行），.NET 和 Docker 兩個對話框共用；資料夾欄位加 Browse 的部分抽成 `FolderPathInput`。共用對話框依 design system 移除了 `DialogTitle`／`DialogDescription` 的字級 class。launcher 為了不超過 300 行，把 pending launch 登記表拆到 `run-launch-pending.ts`
+- **已知限制**：Edit Configurations 裡的 stage 是文字欄位，只有從選單開啟的對話框會讀 Dockerfile 提供下拉選單。如果遠端 runtime 環境（配對的遠端 Orca）的輸出資料夾在工作區外，無法清空，會跳錯誤、不執行
+
 ## 7. 必須遵守的專案規則（摘自 AGENTS.md）
 
 - UI 依照 `docs/STYLEGUIDE.md`，使用 `main.css` 的 token 和 `components/ui/` 的 shadcn 元件；`pnpm run check:code-quality:changed` 必須通過

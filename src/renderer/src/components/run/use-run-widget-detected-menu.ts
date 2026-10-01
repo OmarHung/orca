@@ -2,6 +2,7 @@ import type { RunConfigurationDefinition } from '../../../../shared/run-configur
 import { detectedRunWidgetItem } from './detected-run-configuration'
 import { detectedRunHideKey, detectedRunMenu, type DetectedRunMenu } from './detected-run-menu'
 import { useDetectedRunVisibilityStore } from './detected-run-visibility-store'
+import { editDockerExportConfiguration, openDockerExportDialog } from './docker-export-dialog-store'
 import {
   editDotnetPublishConfiguration,
   openDotnetPublishDialog
@@ -45,9 +46,14 @@ export function useRunWidgetDetectedMenu(options: {
       savedItem: (id) => items.find((item) => item.key === configurationItemKey(id)) ?? null,
       onNewPublish: (run) =>
         void openDotnetPublishDialog(run, worktreeId, groupId, { asNew: true }),
+      onNewDockerExport: (run, stage) => openDockerExportDialog(run, worktreeId, groupId, stage),
       onEditPublish: (configuration) => {
         options.closeMenu()
-        editDotnetPublishConfiguration(configuration, worktreeId, groupId)
+        if (configuration.type === 'docker-export') {
+          void editDockerExportConfiguration(configuration, worktreeId, groupId)
+        } else {
+          editDotnetPublishConfiguration(configuration, worktreeId, groupId)
+        }
       },
       hideKeyOf: (run) => detectedRunHideKey(run, worktreePath),
       onHide: (key) => {

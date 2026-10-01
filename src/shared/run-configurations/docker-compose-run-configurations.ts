@@ -105,10 +105,13 @@ function composeRuns(options: {
   const compose = ['docker compose', ...fileArgs.map((arg) => `-f ${arg}`)].join(' ')
   const services = options.services.flatMap((name) => {
     const quoted = quoteShellArgument(name)
-    return quoted === null ? [] : [[`up ${name}`, 'run', `up ${quoted}`] as const]
+    return quoted === null ? [] : [[`up --build ${name}`, 'run', `up --build ${quoted}`] as const]
   })
+  // Why --build in the foreground: rebuilding after a code change is the usual run, and its
+  // logs stay in the Run panel where Stop ends the containers.
   const entries: (readonly [string, RunConfigurationKind, string])[] = [
     ['up', 'run', 'up'],
+    ['up --build', 'run', 'up --build'],
     ['up -d', 'run', 'up -d'],
     ...services,
     ['build', 'build', 'build'],
@@ -129,7 +132,7 @@ function composeRuns(options: {
 }
 
 /**
- * Up (whole stack, detached, or one service), build, down and logs for each compose file in a
+ * Up (whole stack, rebuilt, detached, or one service rebuilt), build, down and logs for each compose file in a
  * folder; named files such as `compose.prod.yaml` run layered onto the default one when they
  * cannot stand alone.
  */
