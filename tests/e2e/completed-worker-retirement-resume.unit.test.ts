@@ -19,6 +19,13 @@ import { buildWorkspaceSessionPayload } from '@/lib/workspace-session'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { resumeSleepingAgentSessionsForWorktree } from '@/lib/resume-sleeping-agent-session'
 
+// Fork: the first activation would open the project's initial agent tab; this matrix pins
+// provider resume authority, so no project initial tab applies.
+vi.mock('@/lib/project-initial-tab-startup', () => ({
+  buildProjectInitialTabStartup: () => undefined,
+  projectOpensPlainTerminal: () => false
+}))
+
 const PROVIDER_SESSION_ID = '019feb51-2269-71c2-89c6-faa8dc65c8dc'
 const ORIGINAL_TAB_ID = '1c897bc8-973b-47b4-9449-ac5fc6b726c3'
 const ORIGINAL_LEAF_ID = '0526f763-6729-49af-adf8-85ddbcf2b4e7'
