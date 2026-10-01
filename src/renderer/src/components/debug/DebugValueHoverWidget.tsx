@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { editor } from 'monaco-editor'
 import { Glasses } from 'lucide-react'
@@ -7,6 +7,7 @@ import { translate } from '@/i18n/i18n'
 import { refreshWatches } from './debug-evaluate'
 import { useDebugStore } from './debug-store'
 import { DebugValueHover, type DebugHoverValue } from './debug-value-hover'
+import { MAX_POPUP_HEIGHT_PX, placeValuePopup } from './debug-value-hover-placement'
 import { VariableRow } from './DebugVariablesTree'
 import { DEBUGGABLE_LANGUAGES } from './use-monaco-debug-decorations'
 import { useWatchStore } from './watch-store'
@@ -36,27 +37,63 @@ function DebugValuePopup({
   value: DebugHoverValue
   onPointerInside: (inside: boolean) => void
 }): React.JSX.Element {
+  const popupRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    const popup = popupRef.current
+    const content = contentRef.current
+    if (!popup || !content) {
+      return
+    }
+    // Positioned imperatively so growing (expanding a value) re-places it without a re-render.
+    const place = (): void => {
+      const borders = popup.offsetHeight - popup.clientHeight
+      const placement = placeValuePopup(
+        value.anchor,
+        { width: popup.offsetWidth, height: content.offsetHeight + borders },
+        { width: window.innerWidth, height: window.innerHeight }
+      )
+      popup.style.left = `${placement.left}px`
+      popup.style.top = `${placement.top}px`
+      popup.style.maxHeight = `${placement.maxHeight}px`
+    }
+    place()
+    const observer = new ResizeObserver(place)
+    observer.observe(content)
+    return () => observer.disconnect()
+  }, [value.anchor])
+
   return (
     <div
+      ref={popupRef}
       data-testid="debug-value-hover"
-      className="scrollbar-sleek max-h-80 max-w-[min(40rem,80vw)] min-w-48 overflow-auto rounded-md border bg-popover py-0.5 text-popover-foreground shadow-floating"
+      // Why fixed on body: inside the editor, panels below it clipped an expanded value.
+      className="scrollbar-sleek fixed z-50 w-max max-w-[min(40rem,80vw)] min-w-48 overflow-auto rounded-md border bg-popover text-popover-foreground shadow-floating"
+      style={{
+        left: value.anchor.left,
+        top: value.anchor.bottom,
+        maxHeight: MAX_POPUP_HEIGHT_PX
+      }}
       onPointerEnter={() => onPointerInside(true)}
       onPointerLeave={() => onPointerInside(false)}
       // Keeps focus (and Escape, typing) in the editor while rows expand, as JetBrains does.
       onMouseDown={(event) => event.preventDefault()}
     >
-      <VariableRow
-        // A new key per target so expansion state never leaks between names.
-        key={`${value.lineNumber}:${value.startColumn}:${value.expression}`}
-        depth={0}
-        variable={{
-          name: value.expression,
-          value: value.result.value,
-          type: value.result.type,
-          variablesReference: value.result.variablesReference
-        }}
-        trailing={<AddToWatchesButton expression={value.expression} />}
-      />
+      <div ref={contentRef} className="py-0.5">
+        <VariableRow
+          // A new key per target so expansion state never leaks between names.
+          key={`${value.lineNumber}:${value.startColumn}:${value.expression}`}
+          depth={0}
+          variable={{
+            name: value.expression,
+            value: value.result.value,
+            type: value.result.type,
+            variablesReference: value.result.variablesReference
+          }}
+          trailing={<AddToWatchesButton expression={value.expression} />}
+        />
+      </div>
     </div>
   )
 }
@@ -76,7 +113,6 @@ export function DebugValueHoverWidget({
       ? s.selectedFrameId
       : null
   )
-  const [domNode] = useState(() => document.createElement('div'))
   const [value, setValue] = useState<DebugHoverValue | null>(null)
   const controllerRef = useRef<DebugValueHover | null>(null)
 
@@ -85,13 +121,13 @@ export function DebugValueHoverWidget({
       return
     }
     // A fresh controller per paused frame, so values never outlive the frame they came from.
-    const controller = new DebugValueHover(codeEditor, domNode, setValue)
+    const controller = new DebugValueHover(codeEditor, setValue)
     controllerRef.current = controller
     return () => {
       controllerRef.current = null
       controller.dispose()
     }
-  }, [codeEditor, domNode, language, pausedFrameId])
+  }, [codeEditor, language, pausedFrameId])
 
   if (!value) {
     return null
@@ -101,6 +137,6 @@ export function DebugValueHoverWidget({
       value={value}
       onPointerInside={(inside) => controllerRef.current?.setPointerInPopup(inside)}
     />,
-    domNode
+    document.body
   )
 }
