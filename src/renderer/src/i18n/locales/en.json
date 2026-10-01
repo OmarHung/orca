@@ -20196,7 +20196,7 @@
       "manual": "You asked to connect this VPN.",
       "isolated": "It runs in a Docker container; the rest of this computer stays off the VPN.",
       "title": "Start VPN \"{{name}}\"?",
-      "tunnelNote": "Each SSH connection then runs `docker exec -i <container> nc -w 30 <host> <port>` to reach the host through the VPN.",
+      "tunnelNote": "Each SSH connection then runs `docker exec -i <container> nc <host> <port>` to reach the host through the VPN.",
       "start": "Start VPN"
     },
     "button": "VPN",
