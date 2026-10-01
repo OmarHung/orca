@@ -41,7 +41,10 @@ export function runWidgetSessionTarget(
 ): RunTarget | null {
   switch (item.kind) {
     case 'recent':
+      return item.target
     case 'detected':
+      return item.savedTarget ?? item.target
+    case 'current-file':
       return item.target
     case 'quick-command':
       return toRunTarget(item.entry, scope.worktreeId, scope.groupId)
@@ -60,6 +63,9 @@ export function runWidgetSessionTarget(
 
 /** Debug-only configurations have no plain run: their adapters always attach a debugger. */
 export function canRunWidgetItem(item: RunWidgetItem): boolean {
+  if (item.kind === 'current-file') {
+    return item.target !== null
+  }
   return !(item.kind === 'configuration' && item.configuration.type === 'debug')
 }
 
@@ -69,6 +75,9 @@ export function canDebugWidgetItem(item: RunWidgetItem): boolean {
   }
   if (item.kind === 'detected') {
     return Boolean(item.configuration.debug)
+  }
+  if (item.kind === 'current-file') {
+    return item.debug !== null
   }
   return item.kind === 'configuration' && item.configuration.type === 'debug'
 }
@@ -97,6 +106,11 @@ export async function runWidgetItem(
   switch (item.kind) {
     case 'recent':
       await runConfiguration({ ...item.target, groupId: scope.groupId })
+      return
+    case 'current-file':
+      if (item.target) {
+        await runConfiguration(item.target)
+      }
       return
     case 'configuration':
       await launchRunConfiguration({ ...scope, reference: item.configuration.id })
@@ -136,6 +150,16 @@ export async function debugWidgetItem(
   }
   if (item.kind === 'configuration') {
     await launchRunConfiguration({ ...scope, reference: item.configuration.id })
+    return
+  }
+  if (item.kind === 'current-file' && item.debug) {
+    await debugLaunchTarget({
+      worktreeId: scope.worktreeId,
+      cwd: item.debug.cwd,
+      title: item.target?.command.label ?? item.label,
+      target: item.debug.target,
+      sourceKey: item.key
+    })
     return
   }
   if (item.kind === 'recent' && item.target.debug && item.target.cwd) {

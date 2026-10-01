@@ -9,6 +9,7 @@ import {
   createGoldenWorktree
 } from './helpers/golden-source-control'
 import { waitForSessionReady } from './helpers/store'
+import { launchCurrentFile } from './helpers/run-panel'
 
 const PROGRAM = 'loop.py'
 const SOURCE = [
@@ -90,7 +91,7 @@ test('pauses only when a condition holds and logs without pausing at a logpoint'
   await editBreakpoint(orcaPage, editor, 4, 'Log message', 'at end total={total}')
   await expect(editor.locator('.orca-debug-logpoint')).toHaveCount(1)
 
-  await orcaPage.getByTestId('python-debug-file').click()
+  await launchCurrentFile(orcaPage, 'debug')
   const panel = orcaPage.getByTestId('debug-panel')
   const variables = panel.getByTestId('debug-variables')
   // Why the long timeout: the first run downloads debugpy.
