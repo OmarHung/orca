@@ -6,10 +6,14 @@ import { useDebugStore } from './debug-store'
 import { useBreakpointStore, type BreakpointSpec } from './breakpoint-store'
 import './monaco-debug-decorations.css'
 import { buildInlineValueHints } from './debug-inline-values'
-import { ensureDebugHoverProvider } from './monaco-debug-hover'
 
 /** Languages with a debug adapter wired up; the gutter stays untouched elsewhere. */
-const DEBUGGABLE_LANGUAGES = new Set(['python', 'javascript', 'typescript', 'csharp'])
+export const DEBUGGABLE_LANGUAGES: ReadonlySet<string> = new Set([
+  'python',
+  'javascript',
+  'typescript',
+  'csharp'
+])
 
 const NO_BREAKPOINTS: readonly BreakpointSpec[] = []
 const GUTTER_HOVER_CLASS = 'orca-debug-gutter-hover'
@@ -90,7 +94,6 @@ export function useMonacoDebugDecorations(
       return
     }
     mountedEditor.updateOptions({ glyphMargin: true })
-    ensureDebugHoverProvider(language)
     const mouseDown = mountedEditor.onMouseDown((event) => {
       const line = event.target.position?.lineNumber
       if (event.target.type !== monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN || !line) {
@@ -131,7 +134,7 @@ export function useMonacoDebugDecorations(
       collectionRef.current = null
       mountedEditor.updateOptions({ glyphMargin: false })
     }
-  }, [enabled, filePath, language, mountedEditor])
+  }, [enabled, filePath, mountedEditor])
 
   useEffect(() => {
     const model = mountedEditor?.getModel()
