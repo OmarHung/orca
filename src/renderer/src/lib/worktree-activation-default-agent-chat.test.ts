@@ -32,6 +32,12 @@ vi.mock('@/lib/empty-workspace-default-agent-chat', () => ({
   loadEmptyWorkspaceDefaultChatDetection: defaultChat.loadDetection
 }))
 
+// Fork: these cover upstream's default chat, so no project initial tab applies.
+vi.mock('@/lib/project-initial-tab-startup', () => ({
+  buildProjectInitialTabStartup: () => undefined,
+  projectOpensPlainTerminal: () => false
+}))
+
 const USER_OPEN = { navigationIntent: 'user-open' } as const
 const FOLDER_ID = 'folder-1'
 const FOLDER_KEY = folderWorkspaceKey(FOLDER_ID)
