@@ -1,17 +1,22 @@
 import { readEvaluateResult, type EvaluateResult } from './debug-protocol-readers'
-import { currentSessionId, dapRequest } from './debug-request'
-import { useDebugStore } from './debug-store'
+import { dapRequest, isLiveSessionId } from './debug-request'
+import { findDebugSession, useDebugStore } from './debug-store'
 import { useWatchStore, type WatchResult } from './watch-store'
 
 export type EvaluateContext = 'watch' | 'repl' | 'hover'
 
-/** Evaluates in the selected frame (when paused); throws with the adapter's message. */
+function selectedFrameId(sessionId: string): number | null {
+  return findDebugSession(useDebugStore.getState().sessions, sessionId)?.selectedFrameId ?? null
+}
+
+/** Evaluates in the session's selected frame (when paused); throws with the adapter's message. */
 export async function evaluateExpression(
+  sessionId: string,
   expression: string,
   context: EvaluateContext
 ): Promise<EvaluateResult> {
-  const frameId = useDebugStore.getState().selectedFrameId
-  const body = await dapRequest('evaluate', {
+  const frameId = selectedFrameId(sessionId)
+  const body = await dapRequest(sessionId, 'evaluate', {
     expression,
     context,
     ...(frameId !== null ? { frameId } : {})
@@ -23,17 +28,20 @@ export async function evaluateExpression(
   return result
 }
 
-/** Re-evaluates every watch against the selected frame; clears them when nothing is paused. */
-export async function refreshWatches(): Promise<void> {
+/** Re-evaluates every watch against the session's selected frame; clears them unless paused. */
+export async function refreshWatches(sessionId: string): Promise<void> {
   const store = useWatchStore.getState()
-  if (!currentSessionId() || useDebugStore.getState().selectedFrameId === null) {
-    store.setResults({})
+  if (!isLiveSessionId(sessionId) || selectedFrameId(sessionId) === null) {
+    store.setResults(sessionId, {})
     return
   }
   const entries = await Promise.all(
     store.expressions.map(async (expression): Promise<[string, WatchResult]> => {
       try {
-        return [expression, { ok: true, result: await evaluateExpression(expression, 'watch') }]
+        return [
+          expression,
+          { ok: true, result: await evaluateExpression(sessionId, expression, 'watch') }
+        ]
       } catch (error) {
         return [
           expression,
@@ -42,23 +50,35 @@ export async function refreshWatches(): Promise<void> {
       }
     })
   )
-  useWatchStore.getState().setResults(Object.fromEntries(entries))
+  useWatchStore.getState().setResults(sessionId, Object.fromEntries(entries))
 }
 
-/** Runs a Debug console line, echoing it and its value (or error) into the console. */
-export async function evaluateInConsole(expression: string): Promise<void> {
+/** Evaluates the watches in every paused session, e.g. after one was added. */
+export async function refreshAllWatches(): Promise<void> {
+  const paused = useDebugStore
+    .getState()
+    .sessions.filter((session) => session.selectedFrameId !== null)
+  await Promise.all(paused.map((session) => refreshWatches(session.id)))
+}
+
+/** Runs a Debug console line, echoing it and its value (or error) into the session's console. */
+export async function evaluateInConsole(sessionId: string, expression: string): Promise<void> {
   const trimmed = expression.trim()
   if (!trimmed) {
     return
   }
   const store = useDebugStore.getState()
-  store.appendOutput('orca', `> ${trimmed}\n`)
+  store.appendOutput(sessionId, 'orca', `> ${trimmed}\n`)
   try {
-    const result = await evaluateExpression(trimmed, 'repl')
-    useDebugStore.getState().appendOutput('stdout', `${result.value}\n`)
+    const result = await evaluateExpression(sessionId, trimmed, 'repl')
+    useDebugStore.getState().appendOutput(sessionId, 'stdout', `${result.value}\n`)
   } catch (error) {
     useDebugStore
       .getState()
-      .appendOutput('stderr', `${error instanceof Error ? error.message : String(error)}\n`)
+      .appendOutput(
+        sessionId,
+        'stderr',
+        `${error instanceof Error ? error.message : String(error)}\n`
+      )
   }
 }
