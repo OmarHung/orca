@@ -19973,6 +19973,12 @@
       "retry": "Retry",
       "empty": "This folder is empty."
     },
+    "summary": {
+      "items": "Items: {{total}}",
+      "selected": "Selected: {{selected}} of {{total}}",
+      "selectedSize": "Selected: {{selected}} of {{total}} · {{size}}",
+      "selectedSizeWithoutFolders": "Selected: {{selected}} of {{total}} · {{size}} (excluding folders)"
+    },
     "column": {
       "menu": "Show columns",
       "name": "Name",

@@ -14,6 +14,7 @@ import type { SftpFavoriteList } from './sftp-favorite-folders'
 import { SftpFileRow, SftpParentRow } from './SftpFileRow'
 import { localFolderName, remoteFolderName } from './sftp-paths'
 import { selectionModifiersFromEvent } from './sftp-selection'
+import { sftpPaneSummaryText } from './sftp-selection-summary'
 import type { SftpPaneDrag } from './use-sftp-pane-drag'
 import type { SftpPaneState } from './use-sftp-pane'
 
@@ -230,6 +231,14 @@ export function SftpFilePane({
           )}
         </div>
       </PaneContextMenu>
+      {pane.status === 'ready' ? (
+        <div
+          data-sftp-pane-summary
+          className="shrink-0 truncate border-t border-border px-3 py-1 text-xs text-muted-foreground tabular-nums"
+        >
+          {sftpPaneSummaryText(pane.entries, pane.selectedEntries)}
+        </div>
+      ) : null}
     </div>
   )
 }
