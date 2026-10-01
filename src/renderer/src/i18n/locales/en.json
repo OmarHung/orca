@@ -18813,6 +18813,12 @@
     "hover": {
       "addToWatches": "Add to Watches"
     },
+    "tab": {
+      "ended": "{{value0}} (finished)",
+      "paused": "{{value0}} (paused)",
+      "sessions": "Debug sessions",
+      "close": "Close '{{value0}}'"
+    },
     "consoleInput": {
       "input": "Evaluate expression",
       "inputHint": "Evaluate an expression in the selected frame",
@@ -18926,7 +18932,6 @@
         "missing": "No run configuration named '{{value0}}'",
         "cycle": "'{{value0}}' depends on itself through Before launch or a compound",
         "stepNotCommand": "Before launch can only run command configurations; '{{value0}}' is not one",
-        "multipleDebug": "Only one debug session can run at a time; remove '{{value0}}' or run it separately",
         "variable": "'{{value0}}' uses {{value1}}, which Orca cannot resolve here",
         "stepStopped": "Before launch '{{value0}}' was stopped",
         "stepFailed": "Before launch '{{value0}}' did not exit with 0 ({{value1}})",

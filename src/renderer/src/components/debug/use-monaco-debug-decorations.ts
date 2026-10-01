@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
 import * as monaco from 'monaco-editor'
 import type { editor } from 'monaco-editor'
-import { toggleDebugBreakpoint } from './breakpoint-sync'
-import { useDebugStore } from './debug-store'
+import { useShallow } from 'zustand/react/shallow'
+import { toggleDebugBreakpoint, verifiedLinesForFile } from './breakpoint-sync'
+import { pausedDebugSessionForFile, useDebugStore } from './debug-store'
 import { useBreakpointStore, type BreakpointSpec } from './breakpoint-store'
 import './monaco-debug-decorations.css'
 import { buildInlineValueHints } from './debug-inline-values'
@@ -78,15 +79,15 @@ export function useMonacoDebugDecorations(
 ): void {
   const enabled = DEBUGGABLE_LANGUAGES.has(language)
   const breakpoints = useBreakpointStore((s) => s.breakpointsByFile[filePath] ?? NO_BREAKPOINTS)
-  const verified = useBreakpointStore((s) => s.verifiedByFile[filePath])
-  const executionLine = useDebugStore((s) =>
-    s.executionLocation?.path === filePath ? s.executionLocation.line : null
-  )
+  const verified = useDebugStore(useShallow((s) => verifiedLinesForFile(s.sessions, filePath)))
+  // Each file follows the session paused in it, so a backend and a frontend can both pause.
+  const pausedSession = useDebugStore((s) => pausedDebugSessionForFile(s.sessions, filePath))
+  const executionLine = pausedSession?.executionLocation?.line ?? null
   // The paused frame's first cheap scope (its locals) feeds the inline values.
-  const locals = useDebugStore((s) => {
-    const scope = s.scopes.find((candidate) => !candidate.expensive)
-    return scope ? s.variablesByReference[scope.variablesReference] : undefined
-  })
+  const localsScope = pausedSession?.scopes.find((candidate) => !candidate.expensive)
+  const locals = localsScope
+    ? pausedSession?.variablesByReference[localsScope.variablesReference]
+    : undefined
   const collectionRef = useRef<editor.IEditorDecorationsCollection | null>(null)
 
   useEffect(() => {

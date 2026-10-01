@@ -26,12 +26,6 @@ export function planErrorMessage(code: RunPlanErrorCode, reference: string): str
         "Before launch can only run command configurations; '{{value0}}' is not one",
         { value0: reference }
       )
-    case 'multiple-debug':
-      return translate(
-        'run.configurations.error.multipleDebug',
-        "Only one debug session can run at a time; remove '{{value0}}' or run it separately",
-        { value0: reference }
-      )
   }
 }
 

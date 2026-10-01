@@ -18731,6 +18731,12 @@
     "hover": {
       "addToWatches": "添加到监视"
     },
+    "tab": {
+      "ended": "{{value0}}（已结束）",
+      "paused": "{{value0}}（已暂停）",
+      "sessions": "调试会话",
+      "close": "关闭 '{{value0}}'"
+    },
     "consoleInput": {
       "input": "求值表达式",
       "inputHint": "在所选帧中对表达式求值",
@@ -18792,7 +18798,6 @@
       "error": {
         "cycle": "'{{value0}}' 通过“启动前”或组合配置依赖了自己",
         "missing": "找不到名为 '{{value0}}' 的运行配置",
-        "multipleDebug": "同一时间只能有一个调试会话；请移除 '{{value0}}' 或单独运行它",
         "stepFailed": "启动前步骤 '{{value0}}' 没有以 0 退出（{{value1}}）",
         "stepNotCommand": "“启动前”只能运行命令配置；'{{value0}}' 不是命令配置",
         "stepStopped": "启动前步骤 '{{value0}}' 已被停止",

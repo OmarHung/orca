@@ -3,13 +3,18 @@ import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { translate } from '@/i18n/i18n'
-import { refreshWatches } from './debug-evaluate'
+import { refreshAllWatches } from './debug-evaluate'
+import type { DebugSession } from './debug-store'
 import { VariableRow } from './DebugVariablesTree'
 import { useWatchStore } from './watch-store'
 
-export function DebugWatchList(): React.JSX.Element {
+const NO_RESULTS = {}
+
+export function DebugWatchList({ session }: { session: DebugSession | null }): React.JSX.Element {
   const expressions = useWatchStore((s) => s.expressions)
-  const results = useWatchStore((s) => s.results)
+  const results = useWatchStore((s) =>
+    session ? (s.resultsBySession[session.id] ?? NO_RESULTS) : NO_RESULTS
+  )
   const add = useWatchStore((s) => s.add)
   const remove = useWatchStore((s) => s.remove)
   const [draft, setDraft] = useState('')
@@ -34,10 +39,11 @@ export function DebugWatchList(): React.JSX.Element {
               <X />
             </Button>
           )
-          if (result?.ok) {
+          if (session && result?.ok) {
             return (
               <VariableRow
                 key={expression}
+                sessionId={session.id}
                 depth={0}
                 variable={{
                   name: expression,
@@ -67,7 +73,7 @@ export function DebugWatchList(): React.JSX.Element {
             event.preventDefault()
             add(draft)
             setDraft('')
-            void refreshWatches()
+            void refreshAllWatches()
           }}
         >
           <Input
