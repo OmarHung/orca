@@ -25,6 +25,19 @@ describe('parseForkSyncEventLine', () => {
     ).toEqual({ type: 'done', manifestPath: '/r/dist/latest-mac.yml' })
   })
 
+  it('carries the dry-run list of conflicting commits', () => {
+    const commits = [{ sha: 'abc123', subject: 'feat: x', files: ['a.ts', 'b.ts'] }]
+    const line = `ORCA_SYNC_EVENT ${JSON.stringify({
+      type: 'conflict',
+      worktree: '/w',
+      baseTag: 'v1.4.211',
+      files: ['a.ts'],
+      commitSubject: 'feat: x',
+      conflictCommits: commits
+    })}`
+    expect(parseForkSyncEventLine(line)).toMatchObject({ conflictCommits: commits })
+  })
+
   it('ignores ordinary output, malformed JSON, and unknown stages', () => {
     expect(parseForkSyncEventLine('$ pnpm tc')).toBeNull()
     expect(parseForkSyncEventLine('ORCA_SYNC_EVENT {not json')).toBeNull()

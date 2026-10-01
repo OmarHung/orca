@@ -4,6 +4,8 @@ import { Button } from '../../ui/button'
 import { Progress } from '../../ui/progress'
 import { translate } from '@/i18n/i18n'
 import { launchForkSyncConflictAgent } from '@/lib/fork-sync-conflict-agent'
+import { ForkReleaseNotes } from './ForkReleaseNotes'
+import { ForkSyncConflictCommits } from './ForkSyncConflictCommits'
 import {
   FORK_SYNC_STAGES,
   type ForkSyncStage,
@@ -59,26 +61,14 @@ function CardHeader({
   )
 }
 
-function ConflictContent({
-  forkSync,
-  onRetry,
-  onCollapse
-}: {
-  forkSync: Extract<ForkSyncStatus, { phase: 'conflict' }>
-  onRetry: () => void
-  onCollapse: () => void
-}): React.JSX.Element {
+type ForkSyncConflict = Extract<ForkSyncStatus, { phase: 'conflict' }>
+
+/** Fallback when the dry run could not list every commit: the rebase's first stop. */
+function FirstConflict({ forkSync }: { forkSync: ForkSyncConflict }): React.JSX.Element {
   const listed = forkSync.files.slice(0, MAX_LISTED_FILES)
   const hidden = forkSync.files.length - listed.length
   return (
-    <div className="flex flex-col gap-3 p-4" data-testid="fork-sync-conflict">
-      <CardHeader
-        title={translate('forkSync.conflictTitle', 'Your changes conflict with {{value0}}', {
-          value0: forkSync.targetTag
-        })}
-        kind="minimize"
-        onClose={onCollapse}
-      />
+    <>
       <p className="text-xs text-muted-foreground">
         {forkSync.commitSubject
           ? translate(
@@ -103,6 +93,43 @@ function ConflictContent({
           </li>
         ) : null}
       </ul>
+    </>
+  )
+}
+
+function ConflictContent({
+  forkSync,
+  onRetry,
+  onCollapse
+}: {
+  forkSync: ForkSyncConflict
+  onRetry: () => void
+  onCollapse: () => void
+}): React.JSX.Element {
+  const conflictCommits = forkSync.conflictCommits ?? []
+  return (
+    <div className="flex flex-col gap-3 p-4" data-testid="fork-sync-conflict">
+      <CardHeader
+        title={translate('forkSync.conflictTitle', 'Your changes conflict with {{value0}}', {
+          value0: forkSync.targetTag
+        })}
+        kind="minimize"
+        onClose={onCollapse}
+      />
+      {conflictCommits.length > 0 ? (
+        <>
+          <p className="text-xs text-muted-foreground">
+            {translate(
+              'forkSync.conflictCommitCount',
+              '{{value0}} of your commits conflict with {{value1}}. The branch was left unchanged.',
+              { value0: conflictCommits.length, value1: forkSync.targetTag }
+            )}
+          </p>
+          <ForkSyncConflictCommits commits={conflictCommits} />
+        </>
+      ) : (
+        <FirstConflict forkSync={forkSync} />
+      )}
       <div className="flex flex-wrap gap-2">
         <Button size="sm" onClick={() => void launchForkSyncConflictAgent(forkSync)}>
           {translate('forkSync.resolveWithAgent', 'Resolve with AI')}
@@ -152,6 +179,9 @@ export function ForkSyncCardContent({
             { value0: forkSync.baseTag, value1: forkSync.targetTag }
           )}
         </p>
+        {forkSync.releaseNotes && forkSync.releaseNotes.length > 0 ? (
+          <ForkReleaseNotes notes={forkSync.releaseNotes} />
+        ) : null}
         <Button size="sm" className="self-start" onClick={onUpdate}>
           <GitMerge />
           {translate('forkSync.syncAndUpdate', 'Sync & update')}

@@ -33,14 +33,18 @@ an already-rebased branch is only verified, pushed, and built.
 
 A build made by `build-mac-local-arm64.mjs` stamps `orcaForkSource` (this checkout, branch, base
 tag) into its package.json. That build never offers official releases. Its update card instead
-reports a newer upstream release tag, and **Sync & update** runs
+reports a newer upstream release tag with the GitHub release notes of every release since the base
+(one unauthenticated `api.github.com` request per check), and **Sync & update** runs
 `sync-upstream.mjs <tag> --push --build --auto-worktree --events`, then installs the result through
 Orca's local-build installer (one confirmation dialog, then restart).
 
 `--auto-worktree` runs in whichever worktree has `omar/custom` checked out, creating
 `<checkout>-omar-custom` beside this one if none does, so the checkout you develop in is untouched.
-On a conflict the rebase is aborted (branch unchanged) and the card lists the files, with
-**Resolve with AI** (opens an agent in that worktree with the exact rebase to redo) and **Retry**.
+On a conflict the rebase is aborted (branch unchanged), a `git merge-tree` dry run
+(`rebase-conflict-preview.mjs`) replays every fork commit in memory, and the card lists each
+conflicting commit with its files (a Git too old for `merge-tree -X` shows just the first stop). The dry run continues past a conflict with the fork's side,
+so a hand resolution can still make a later commit conflict. Then **Resolve with AI** (opens an
+agent in that worktree with the exact rebase to redo and that list) or **Retry**.
 Code: `src/main/fork-source-update/`.
 
 ## Local build (Apple Silicon)
