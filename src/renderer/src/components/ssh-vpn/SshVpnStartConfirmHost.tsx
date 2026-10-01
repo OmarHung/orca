@@ -35,7 +35,7 @@ function StartConfirmListener(): null {
         notes: [
           translate(
             'sshVpn.confirm.tunnelNote',
-            'Each SSH connection then runs `docker exec -i <container> nc -w 30 <host> <port>` to reach the host through the VPN.'
+            'Each SSH connection then runs `docker exec -i <container> nc <host> <port>` to reach the host through the VPN.'
           )
         ],
         confirmLabel: translate('sshVpn.confirm.start', 'Start VPN')

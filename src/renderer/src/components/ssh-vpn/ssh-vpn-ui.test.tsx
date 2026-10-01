@@ -193,7 +193,7 @@ describe('borrowed VPN containers', () => {
 
     expect(container.querySelector('#ssh-vpn-profile-path')).toBeNull()
     expect(container.textContent).toContain(
-      'docker exec -i --user tunnel vpn-office-1 nc -w 30 <host> <port>'
+      'docker exec -i --user tunnel vpn-office-1 nc <host> <port>'
     )
     await act(async () => setInputValue('ssh-vpn-profile-name', 'Shared office'))
     await act(async () => {
