@@ -8,6 +8,7 @@ import {
   createGoldenWorktree
 } from './helpers/golden-source-control'
 import { waitForSessionReady } from './helpers/store'
+import { launchCurrentFile } from './helpers/run-panel'
 
 const PROGRAM = 'app.js'
 const SOURCE = 'let answer = 41\nanswer += 1\nconsole.log("answer=" + answer)\n'
@@ -64,7 +65,7 @@ test('debugs a JavaScript file and an npm script with js-debug', async ({
   await expect(editor.locator('.orca-debug-breakpoint')).toHaveCount(1)
 
   // The current file, from the tab bar.
-  await orcaPage.getByTestId('node-debug-file').click()
+  await launchCurrentFile(orcaPage, 'debug')
   await expectPausedOnLineTwo(orcaPage)
   await orcaPage.screenshot({ path: testInfo.outputPath('node-file-debugged.png') })
 

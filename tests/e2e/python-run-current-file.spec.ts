@@ -8,7 +8,7 @@ import {
   createGoldenWorktree
 } from './helpers/golden-source-control'
 import { waitForSessionReady } from './helpers/store'
-import { getRunPanelTerminalContent } from './helpers/run-panel'
+import { getRunPanelTerminalContent, launchCurrentFile } from './helpers/run-panel'
 
 const PROGRAM = path.join('scripts', 'where.py')
 // Why arithmetic: the printed marker must not match the echoed command line.
@@ -67,8 +67,8 @@ test('runs and debugs the current Python file with the project venv, or a chosen
   // Auto-detection picks the project's .venv.
   const trigger = orcaPage.getByTestId('python-interpreter-trigger')
   await expect(trigger).toContainText('(.venv)', { timeout: 20_000 })
-  await orcaPage.getByTestId('python-run-file').click()
-  const controls = orcaPage.getByTestId('python-run-controls')
+  await launchCurrentFile(orcaPage, 'run')
+  const controls = orcaPage.getByTestId('run-configurations-session')
   await expect(controls).toHaveAttribute('data-run-status', 'succeeded', { timeout: 30_000 })
   await expect
     .poll(async () => getRunPanelTerminalContent(orcaPage, 20_000), { timeout: 20_000 })
@@ -82,7 +82,7 @@ test('runs and debugs the current Python file with the project venv, or a chosen
     .first()
     .click()
   await expect(trigger).toContainText('(python3)')
-  await orcaPage.getByTestId('python-run-file').click()
+  await launchCurrentFile(orcaPage, 'run')
   await expect(controls).toHaveAttribute('data-run-status', 'succeeded', { timeout: 30_000 })
   const tabsForFile = await orcaPage.evaluate(() => {
     const state = window.__store?.getState()
@@ -91,7 +91,7 @@ test('runs and debugs the current Python file with the project venv, or a chosen
   })
   expect(tabsForFile).toBe(1)
 
-  await orcaPage.getByTestId('python-debug-file').click()
+  await launchCurrentFile(orcaPage, 'debug')
   const debugConsole = orcaPage.getByTestId('debug-console')
   await expect(debugConsole).toContainText('prefix-42:', { timeout: 120_000 })
   await expect(debugConsole).not.toContainText(venvPrefix)

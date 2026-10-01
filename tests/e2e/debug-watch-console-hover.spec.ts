@@ -8,6 +8,7 @@ import {
   createGoldenWorktree
 } from './helpers/golden-source-control'
 import { waitForSessionReady } from './helpers/store'
+import { launchCurrentFile } from './helpers/run-panel'
 
 const PROGRAM = 'loop.py'
 const SOURCE = [
@@ -61,7 +62,7 @@ test('shows watches, console results, hover values and inline values while pause
 
   // Watches are kept across sessions, so add one before debugging.
   const panel = orcaPage.getByTestId('debug-panel')
-  await orcaPage.getByTestId('python-debug-file').click()
+  await launchCurrentFile(orcaPage, 'debug')
   await expect(panel.getByTestId('debug-frames')).toContainText(`${PROGRAM}:3`, {
     timeout: 120_000
   })
