@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import type { Locator, Page } from '@playwright/test'
 import { test, expect } from './helpers/orca-app'
@@ -135,8 +135,8 @@ test('lists compose files and Dockerfiles under Docker', async ({
   await openRunMenu(orcaPage)
 
   await openKind(orcaPage, ['Docker', 'compose.yaml', 'Run'])
-  await expect(row(orcaPage, 'up api')).toBeVisible()
-  await expect(row(orcaPage, 'up db')).toBeVisible()
+  await expect(row(orcaPage, 'up --build api')).toBeVisible()
+  await expect(row(orcaPage, 'up --build db')).toBeVisible()
   await orcaPage.screenshot({ path: testInfo.outputPath('detected-docker-compose.png') })
 
   // Why reopened: the compose project's own Build entry stays mounted while its submenu fades.
@@ -147,4 +147,47 @@ test('lists compose files and Dockerfiles under Docker', async ({
   await openKind(orcaPage, ['Docker', 'Dockerfile', 'Build'])
   await expect(row(orcaPage, 'build')).toBeVisible()
   await expect(kind(orcaPage, /^(Run|Build)/)).toHaveCount(2)
+})
+
+test('exports a Dockerfile stage to a folder, emptying it first', async ({
+  orcaPage,
+  testRepoPath,
+  registerPostElectronShutdownCleanup
+}, testInfo) => {
+  test.setTimeout(180_000)
+  const fixture = createGoldenWorktree(testRepoPath, 'run-widget-docker-export')
+  registerPostElectronShutdownCleanup(async () => cleanupGoldenWorktree(testRepoPath, fixture))
+  const site = path.join(fixture.worktreePath, 'site')
+  mkdirSync(site)
+  writeFileSync(path.join(site, 'index.html'), '<p>new</p>\n')
+  // Why scratch only: exporting files needs no base image, so nothing is pulled.
+  writeFileSync(path.join(site, 'Dockerfile'), 'FROM scratch AS export-site\nCOPY index.html /\n')
+  const output = testInfo.outputPath('orca-e2e-docker-export')
+  mkdirSync(output, { recursive: true })
+  writeFileSync(path.join(output, 'stale.html'), 'old\n')
+
+  await waitForSessionReady(orcaPage)
+  await activateGoldenWorktree(orcaPage, testRepoPath, fixture.worktreePath)
+  await openRunMenu(orcaPage)
+  await openKind(orcaPage, ['Docker', 'Dockerfile', 'Publish'])
+  await orcaPage.getByTestId('run-widget-export-stage').filter({ hasText: 'export-site' }).click()
+
+  const dialog = orcaPage.getByTestId('docker-export-dialog')
+  await expect(dialog).toBeVisible()
+  await orcaPage.getByTestId('docker-export-output-dir').fill(output)
+  await expect(orcaPage.getByTestId('docker-export-command')).toHaveText(
+    `docker build --target export-site -o ${output} site`
+  )
+  await orcaPage.screenshot({ path: testInfo.outputPath('docker-export-dialog.png') })
+  await orcaPage.getByTestId('docker-export-run').click()
+
+  await expect
+    .poll(() => existsSync(path.join(output, 'index.html')), { timeout: 90_000 })
+    .toBe(true)
+  expect(existsSync(path.join(output, 'stale.html'))).toBe(false)
+
+  await openRunMenu(orcaPage)
+  await openKind(orcaPage, ['Docker', 'Dockerfile', 'Publish'])
+  await expect(row(orcaPage, 'Export export-site to folder')).toBeVisible()
+  await expect(orcaPage.getByTestId('run-widget-export-stage')).toHaveCount(0)
 })

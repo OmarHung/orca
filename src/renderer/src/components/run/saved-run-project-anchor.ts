@@ -13,7 +13,7 @@ import { resolveRunConfigurationPath } from '../../../../shared/run-configuratio
 export type SavedRunAnchor = {
   ecosystem: RunConfigurationEcosystem
   kind: RunConfigurationKind
-  /** .NET configurations name their project file; the others only a folder. */
+  /** .NET configurations and Docker exports name their project file; the others only a folder. */
   by: 'projectFile' | 'folder'
   /** Workspace-relative, compared with `comparablePath`. */
   path: string
@@ -77,6 +77,12 @@ export function savedRunAnchor(
       return path === null
         ? null
         : { ecosystem: 'dotnet', kind: 'publish', by: 'projectFile', path }
+    }
+    case 'docker-export': {
+      const path = workspaceRelative(configuration.dockerfile, worktreePath)
+      return path === null
+        ? null
+        : { ecosystem: 'docker', kind: 'publish', by: 'projectFile', path }
     }
     case 'debug':
       return debugAnchor(configuration, worktreePath)

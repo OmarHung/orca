@@ -22,6 +22,8 @@ export type DetectedRunConfiguration = {
   debug?: DebugLaunchTarget
   /** Program arguments the debug target needs, e.g. `runserver` for Django's manage.py. */
   debugOptions?: DebugLaunchOptions
+  /** On a Dockerfile's build: its build context and the stages that only hold files to export. */
+  dockerExport?: { contextDir: string; stages: string[] }
 }
 
 // Literal unquoted in POSIX shells, fish, PowerShell and cmd alike.

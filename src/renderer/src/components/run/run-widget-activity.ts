@@ -83,6 +83,7 @@ export function runWidgetFootprint(
       switch (item.configuration.type) {
         case 'command':
         case 'dotnet-publish':
+        case 'docker-export':
           return {
             commandKeys: [configurationCommandKey(item.configuration.id)],
             debugSourceKeys: []

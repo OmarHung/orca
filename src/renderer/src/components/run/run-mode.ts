@@ -22,7 +22,9 @@ export function asRunConfigurationKind(value: unknown): RunConfigurationKind | u
 export function runConfigurationKindOf(
   configuration: RunConfigurationDefinition
 ): RunConfigurationKind | undefined {
-  return configuration.type === 'dotnet-publish' ? 'publish' : undefined
+  return configuration.type === 'dotnet-publish' || configuration.type === 'docker-export'
+    ? 'publish'
+    : undefined
 }
 
 export function runTargetMode(target: Pick<RunTarget, 'kind'> | null | undefined): RunMode {
