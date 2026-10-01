@@ -148,7 +148,7 @@ describe('registerCodeNavigationProviders', () => {
     })
     expect(monaco.typescript.javascriptDefaults.setModeConfiguration).toHaveBeenCalled()
     expect([...providers.keys()].sort()).toEqual(
-      ['csharp', 'javascript', 'razor', 'typescript']
+      ['csharp', 'javascript', 'razor', 'typescript', 'vue']
         .flatMap((language) => [
           `${language}:definition`,
           `${language}:hover`,

@@ -19735,6 +19735,7 @@
   "codeNavigation": {
     "downloading": "正在下载 {{language}} 语言服务器…",
     "starting": "正在为代码跳转加载 {{language}} 项目…",
-    "failed": "{{language}} 代码跳转不可用：{{message}}"
+    "failed": "{{language}} 代码跳转不可用：{{message}}",
+    "nuxtTypesMissing": "这个 Nuxt 项目还没有生成类型，自动导入的名称无法跳转。请在 {{project}} 中运行 `nuxi prepare`。"
   }
 }

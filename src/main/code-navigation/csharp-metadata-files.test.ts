@@ -65,13 +65,18 @@ describe('writeCsharpMetadataFile', () => {
 })
 
 describe('isOrcaLanguageServerFilePath', () => {
-  it('covers decompiled C# and TypeScript lib files, not other paths', async () => {
+  it('covers decompiled C#, TypeScript lib and Vue server files, not other paths', async () => {
     const { isOrcaLanguageServerFilePath } =
       await import('../../shared/code-navigation/code-navigation-types')
     const base = '/Users/me/Library/Application Support/orca/language-servers'
     expect(isOrcaLanguageServerFilePath(`${base}/csharp-metadata/A-1/A.cs`)).toBe(true)
     expect(
       isOrcaLanguageServerFilePath(`${base}/typescript-native/7.0.2/package/lib/lib.dom.d.ts`)
+    ).toBe(true)
+    expect(
+      isOrcaLanguageServerFilePath(
+        `${base}/vue-vtsls/0.3.0/node_modules/typescript/lib/lib.dom.d.ts`
+      )
     ).toBe(true)
     expect(
       isOrcaLanguageServerFilePath(

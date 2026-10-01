@@ -1,6 +1,6 @@
 # 編輯器程式碼跳轉：Vue／Nuxt 支援計畫（fork 專屬）
 
-> 狀態：規劃完成（2026-10-01），尚未實作。§7 的決定已由使用者確認。
+> 狀態：已實作（2026-10-01，分支 `feat/code-navigation-vue`，§8）。§7 的決定已由使用者確認。
 > 前置：[`code-navigation-lsp-plan.md`](./code-navigation-lsp-plan.md)（TS／JS／C# 的跳轉、JetBrains 快捷鍵、明確跳轉才啟動伺服器）。本文件只寫 Vue／Nuxt 多出來的部分。
 > 對象：接手實作的人或新對話。本文件可獨立閱讀。
 
@@ -62,7 +62,8 @@ TypeScript 7（Go 原生版，Orca 目前用的 7.0.2）沒有 tsserver，也沒
 
 - `CodeNavigationServerKind` 加 `vue`；啟動方式同 JS debug adapter：`process.execPath` ＋ `ELECTRON_RUN_AS_NODE=1` 執行 `@vtsls/language-server/bin/vtsls.js --stdio`，不依賴使用者裝的 Node。
 - 設定（`workspace/configuration` 與 `initializationOptions`）：`vtsls.tsserver.globalPlugins = [{ name: '@vue/typescript-plugin', location: <安裝目錄>, languages: ['vue'], configNamespace: 'typescript', enableForWorkspaceTypeScriptVersions: true }]`、`vtsls.autoUseWorkspaceTsdk = true`。
-- 用戶端能力宣告 `window.workDoneProgress`；session 在第一個「Initializing」進度結束前讓查詢等待（有逾時）。
+- 載入等待：設定 `typescript.tsserver.useSyntaxServer: 'never'`，只留語意伺服器，第一個查詢會等專案載入完才回答（實測 Nuxt shop 2.6 秒後直接回完整結果），不需要追蹤 workDoneProgress。
+- vtsls 以 `section: ""` 要整份設定；session 對空 section 回傳整份 `configuration`（沒有設定的伺服器仍回 null）。
 
 ### 4.2 哪些檔案走 `vue`
 
@@ -101,13 +102,14 @@ TypeScript 7（Go 原生版，Orca 目前用的 7.0.2）沒有 tsserver，也沒
 
 - `@vue/language-server` 的 template 專屬功能（HTML／CSS 補全、標籤配對等）：與跳轉無關，不跑這個伺服器。
 - Vue 2：未測。Vue Language Tools 3 以 Vue 3 為主，Vue 2.7 專案不保證可用。
+- 專案沒裝相依套件（剛 clone、沒跑 install）時，template 裡的運算式（`@click="onSave"`、`{{ formatTotal() }}`）跳不到：實測要專案的 `node_modules/vue` 型別在才行；元件標籤與 script 不受影響。
 - SSH／WSL：同主計畫 Phase 3，未開始。
 - Nuxt 的 server 路由（`server/api/*`）與 `$fetch('/api/…')` 字串的對應：本計畫不做，可另立（類似 ASP.NET MVC 的字串對應）。
 
 ## 6. 實作階段與驗證
 
 1. 安裝器與 manifest（含產生腳本）→ 單元測試：integrity 驗證失敗、部分失敗不留半套。
-2. `vue` 種類、啟動、設定、載入等待 → 單元測試；整合測試（opt-in，`ORCA_TEST_VTSLS_DIR` 指向已安裝的目錄）：建一個 Vite＋Vue 小專案，驗 §3.1 的 template／script／`.ts` 找參照。
+2. `vue` 種類、啟動、設定、載入等待 → 單元測試；整合測試 `vue-navigation.integration.test.ts`（opt-in，`ORCA_TEST_VUE_SERVER_DIR` 為安裝目錄，第一次會從 npm 下載並驗證整套套件，之後重用）：建一個 Vite＋Vue 小專案（會 `npm install` 取得 vue 型別），驗 §3.1 的 template／script／`.ts` 找參照。
 3. §4.2 派送與 §4.3 根目錄 → 單元測試（package.json 判斷、快取失效、monorepo 兩個前端）。
 4. Nuxt 二次解析 → 單元測試（假 session）；整合測試用一個最小 Nuxt 專案需要 `nuxi prepare`，改用手寫的 `.nuxt/types/imports.d.ts` fixture。
 5. 編輯器端 → e2e（`ORCA_E2E_CODE_NAVIGATION=1`）：`.vue` 裡 ⌘B 元件標籤開到元件、⌘[ 回來；`.ts` Shift+F12 列出 `.vue` 用法。
@@ -120,3 +122,17 @@ TypeScript 7（Go 原生版，Orca 目前用的 7.0.2）沒有 tsserver，也沒
 | Q1 | 伺服器怎麼取得 | (a) 第一次用到時從 npm 下載 38 個套件並驗證；(b) 打包進 Orca app（app 大約多 38 MB） | **(a)**，與 TS／C# 伺服器一致，不影響 app 大小 |
 | Q2 | Vue 專案裡的 `.ts`／`.js` | (a) 改走 vtsls，找參照含 `.vue`；(b) 維持 TS 7（較快、較省記憶體），但查參照漏掉 `.vue` | **(a)** |
 | Q3 | `.nuxt/` 不存在時 | (a) 提示執行 `nuxi prepare`；(b) Orca 自動在背景執行；(c) 不處理 | **(a)**；(b) 會在使用者專案裡跑指令、寫檔 |
+
+## 8. 實作紀錄（2026-10-01）
+
+| 檔案 | 內容 |
+|---|---|
+| `main/code-navigation/npm-package-set-installer.ts` | 多個 npm tarball 的安裝器：逐一下載、SHA-256 驗證、解壓到 `node_modules/<路徑>`，暫存目錄全部成功才換上；出錯時等所有下載結束再清理 |
+| `config/scripts/fork-maintenance/generate-vue-language-server-manifest.mjs` → `main/code-navigation/vue-language-server-manifest.ts` | 產生並固定 38 個套件（核對 npm sha512 後記 SHA-256）；升級＝改腳本裡的版本再跑 |
+| `main/code-navigation/vue-language-server-launch.ts` | `process.execPath`＋`ELECTRON_RUN_AS_NODE` 跑 vtsls；Vue plugin、`autoUseWorkspaceTsdk`、`useSyntaxServer: never` |
+| `main/code-navigation/vue-project-locator.ts` | 最近的 `package.json` 決定是否為 Vue／Nuxt 專案（含 peerDependencies），快取到 `package.json` 變更 |
+| `main/code-navigation/code-navigation-routing.ts` | 把請求改派到 `vue`／專案根目錄；記住文件的派送以便關閉；每個缺 `.nuxt/` 的 Nuxt 專案提示一次 |
+| `main/code-navigation/nuxt-auto-imports.ts` | §4.5 的二次解析；references 去掉 `.nuxt/` 宣告 |
+| `main/code-navigation/code-navigation-server-locations.ts` | 從 service 搬出的結果處理（MVC、MediatR）＋ Nuxt 後處理 |
+| renderer | `.vue` → `vue`；狀態提示加 Vue 與 `nuxtTypesMissing`（獨立 toast，不會被「完成」關掉） |
+| e2e | `tests/e2e/code-navigation-vue.spec.ts`；共用的編輯器操作搬到 `tests/e2e/helpers/code-navigation-editor.ts` |
