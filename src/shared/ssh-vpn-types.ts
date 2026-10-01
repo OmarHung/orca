@@ -17,8 +17,15 @@ export const SSH_VPN_PASSWORD_STORAGE_MODES = ['forever', 'session', 'never'] as
 /** Same meanings as the database page: keychain, until Orca quits, or ask every time. */
 export type SshVpnPasswordStorage = (typeof SSH_VPN_PASSWORD_STORAGE_MODES)[number]
 
-export const sshVpnProfileDraftSchema = z.object({
-  name: z.string().trim().min(1).max(120),
+/** Docker's own rule for container names. */
+export const DOCKER_CONTAINER_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,254}$/
+
+const profileNameSchema = z.string().trim().min(1).max(120)
+
+const ovpnProfileDraftSchema = z.object({
+  // Why optional: profiles saved before borrowed containers existed have no kind.
+  kind: z.literal('ovpn').optional(),
+  name: profileNameSchema,
   ovpnPath: z.string().trim().min(1).max(4096).refine(isAbsoluteOvpnPath),
   /** Minutes without any connection through the VPN before it stops; 0 keeps it up until quit. */
   idleMinutes: z.number().int().min(0).max(MAX_SSH_VPN_IDLE_MINUTES),
@@ -27,14 +34,42 @@ export const sshVpnProfileDraftSchema = z.object({
   passwordStorage: z.enum(SSH_VPN_PASSWORD_STORAGE_MODES).optional()
 })
 
-export type SshVpnProfileDraft = z.infer<typeof sshVpnProfileDraftSchema>
-
-export const sshVpnProfileSchema = sshVpnProfileDraftSchema.extend({
-  id: sshVpnProfileIdSchema
+/** A VPN container someone else runs (e.g. openvpn-socks); Orca only `docker exec`s into it. */
+const containerProfileDraftSchema = z.object({
+  kind: z.literal('container'),
+  name: profileNameSchema,
+  containerName: z.string().trim().regex(DOCKER_CONTAINER_NAME_PATTERN)
 })
 
-/** An OpenVPN profile that SSH hosts can be routed through. Only the .ovpn path is stored. */
+export const sshVpnProfileDraftSchema = z.union([
+  containerProfileDraftSchema,
+  ovpnProfileDraftSchema
+])
+
+export type SshVpnProfileDraft = z.infer<typeof sshVpnProfileDraftSchema>
+export type SshVpnOvpnProfileDraft = Exclude<SshVpnProfileDraft, { kind: 'container' }>
+
+const sshVpnProfileIdField = { id: sshVpnProfileIdSchema }
+
+export const sshVpnProfileSchema = z.union([
+  containerProfileDraftSchema.extend(sshVpnProfileIdField),
+  ovpnProfileDraftSchema.extend(sshVpnProfileIdField)
+])
+
+/** A VPN that SSH hosts can be routed through: an .ovpn Orca runs, or a container it borrows. */
 export type SshVpnProfile = z.infer<typeof sshVpnProfileSchema>
+export type SshVpnOvpnProfile = Exclude<SshVpnProfile, { kind: 'container' }>
+export type SshVpnContainerProfile = Extract<SshVpnProfile, { kind: 'container' }>
+
+/** What a profile connects through; a change means the running VPN no longer matches it. */
+export function sshVpnProfileSource(profile: SshVpnProfileDraft): string {
+  return profile.kind === 'container'
+    ? `container:${profile.containerName}`
+    : `ovpn:${profile.ovpnPath}`
+}
+
+/** A running container the profile form offers to borrow. */
+export type SshVpnContainerCandidate = { name: string; image: string; status: string }
 
 export type SshVpnStatus = 'stopped' | 'starting' | 'ready' | 'stopping' | 'error'
 

@@ -197,6 +197,11 @@ export class SshVpnDocker {
     return result
   }
 
+  /** Runs a read-only command (inspect, ps) and hands back the result for the caller to judge. */
+  query(args: readonly string[]): Promise<ProcessResult> {
+    return this.run(args)
+  }
+
   async assertRunning(): Promise<void> {
     await this.runChecked(
       dockerInfoArgs(),

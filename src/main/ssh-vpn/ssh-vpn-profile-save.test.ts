@@ -2,14 +2,14 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SshVpnProfileDraft } from '../../shared/ssh-vpn-types'
+import type { SshVpnOvpnProfileDraft, SshVpnProfile } from '../../shared/ssh-vpn-types'
 import type { SecretStore } from '../../shared/secret-store'
 import { clearDurableWrites, queueDurableWrites } from '../durable-write-failures-test-support'
 import { SshVpnPasswordVault } from './ssh-vpn-password-vault'
 import { saveProfileWithPassword, saveSshVpnProfile } from './ssh-vpn-profile-save'
 import { SshVpnStore } from './ssh-vpn-store'
 
-const DRAFT: SshVpnProfileDraft = {
+const DRAFT: SshVpnOvpnProfileDraft = {
   name: 'Office',
   ovpnPath: '/vpn/office.ovpn',
   idleMinutes: 10,
@@ -17,6 +17,10 @@ const DRAFT: SshVpnProfileDraft = {
   passwordStorage: 'forever'
 }
 const DAMAGED = '{"version": 1,'
+
+function storageOf(profile: SshVpnProfile | null): string | undefined {
+  return profile?.kind === 'container' ? undefined : profile?.passwordStorage
+}
 
 vi.mock('../../shared/secure-file', async (importOriginal) => {
   const { withQueuedDurableWrites } = await import('../durable-write-failures-test-support')
@@ -52,7 +56,7 @@ describe('saveProfileWithPassword', () => {
   })
 
   const savedStorage = (id: string): string | undefined =>
-    new SshVpnStore(settingsPath).getProfile(id)?.passwordStorage
+    storageOf(new SshVpnStore(settingsPath).getProfile(id))
   const savedPassword = (id: string): string | null =>
     new SshVpnPasswordVault(passwordsPath, secretStore).get(id)
 
@@ -87,7 +91,7 @@ describe('saveProfileWithPassword', () => {
         )
       ).toThrow(passwordsPath)
 
-      expect(store.getProfile(saved.id)?.passwordStorage).toBe('forever')
+      expect(storageOf(store.getProfile(saved.id))).toBe('forever')
       expect(readFileSync(passwordsPath, 'utf8')).toBe(DAMAGED)
     }
   )
@@ -138,7 +142,7 @@ describe('saveProfileWithPassword', () => {
       )
     ).toThrow('keychain is locked or unavailable')
 
-    expect(store.getProfile(saved.id)?.passwordStorage).toBe('forever')
+    expect(storageOf(store.getProfile(saved.id))).toBe('forever')
     expect(readFileSync(passwordsPath, 'utf8')).toBe(onDisk)
     keychainOpen = true
     expect(vault.get(saved.id)).toBe('hunter2')
@@ -198,7 +202,7 @@ describe('saveProfileWithPassword', () => {
         )
       ).toThrow('disk full')
 
-      expect(store.getProfile(saved.id)?.passwordStorage).toBe('forever')
+      expect(storageOf(store.getProfile(saved.id))).toBe('forever')
       expect(new SshVpnPasswordVault(passwordsPath, secretStore).get(saved.id)).toBe('hunter2')
     }
   )
@@ -216,7 +220,7 @@ describe('saveProfileWithPassword', () => {
       passwordsPath
     )
 
-    expect(store.getProfile(saved.id)?.passwordStorage).toBe('never')
+    expect(storageOf(store.getProfile(saved.id))).toBe('never')
     expect(readFileSync(passwordsPath, 'utf8')).toBe(DAMAGED)
   })
 
@@ -319,13 +323,14 @@ describe('saveProfileWithPassword', () => {
     const inspectOvpn = async (): Promise<{ needsCredentials: boolean }> => ({
       needsCredentials: true
     })
+    const inspectContainer = vi.fn(async (): Promise<void> => undefined)
 
     it('renames a "Forever" profile while the keychain is locked, keeping its password', async () => {
       const saved = saveProfileWithPassword({ store, vault }, null, DRAFT, 'hunter2')
       keychainOpen = false
 
       await saveSshVpnProfile(
-        { store, vault, inspectOvpn },
+        { store, vault, inspectOvpn, inspectContainer },
         { id: saved.id, draft: { ...DRAFT, name: 'Renamed' } }
       )
 
@@ -340,7 +345,7 @@ describe('saveProfileWithPassword', () => {
 
       await expect(
         saveSshVpnProfile(
-          { store, vault, inspectOvpn },
+          { store, vault, inspectOvpn, inspectContainer },
           { id: saved.id, draft: { ...DRAFT, name: 'Renamed' }, password: 'new' }
         )
       ).rejects.toThrow('no secure password storage')
@@ -353,11 +358,46 @@ describe('saveProfileWithPassword', () => {
     it('checks the username before changing anything', async () => {
       await expect(
         saveSshVpnProfile(
-          { store, vault, inspectOvpn },
+          { store, vault, inspectOvpn, inspectContainer },
           { draft: { ...DRAFT, username: undefined }, password: 'typed' }
         )
       ).rejects.toThrow('Enter the username')
 
+      expect(store.listProfiles()).toEqual([])
+    })
+
+    it('checks a borrowed container instead of an .ovpn, and forgets the old password', async () => {
+      const saved = saveProfileWithPassword({ store, vault }, null, DRAFT, 'hunter2')
+      inspectContainer.mockClear()
+
+      await saveSshVpnProfile(
+        { store, vault, inspectOvpn, inspectContainer },
+        {
+          id: saved.id,
+          draft: { kind: 'container', name: 'Shared', containerName: 'vpn-office-1' },
+          password: 'ignored'
+        }
+      )
+
+      expect(inspectContainer).toHaveBeenCalledWith('vpn-office-1')
+      expect(store.getProfile(saved.id)).toEqual({
+        id: saved.id,
+        kind: 'container',
+        name: 'Shared',
+        containerName: 'vpn-office-1'
+      })
+      expect(vault.get(saved.id)).toBeNull()
+    })
+
+    it('saves nothing when the borrowed container fails its check', async () => {
+      inspectContainer.mockRejectedValueOnce(new Error('has no "tunnel" user'))
+
+      await expect(
+        saveSshVpnProfile(
+          { store, vault, inspectOvpn, inspectContainer },
+          { draft: { kind: 'container', name: 'Shared', containerName: 'vpn-office-1' } }
+        )
+      ).rejects.toThrow('has no "tunnel" user')
       expect(store.listProfiles()).toEqual([])
     })
   })

@@ -15,6 +15,7 @@ function subscribe<T>(channel: string, callback: (payload: T) => void): () => vo
 export const sshVpnApi = {
   snapshot: () => ipcRenderer.invoke('sshVpn:snapshot'),
   inspectOvpn: (ovpnPath) => ipcRenderer.invoke('sshVpn:inspectOvpn', ovpnPath),
+  listContainers: () => ipcRenderer.invoke('sshVpn:listContainers'),
   saveProfile: (request) => ipcRenderer.invoke('sshVpn:saveProfile', request),
   deleteProfile: (profileId) => ipcRenderer.invoke('sshVpn:deleteProfile', profileId),
   setAssignment: (request) => ipcRenderer.invoke('sshVpn:setAssignment', request),

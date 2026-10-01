@@ -19668,7 +19668,17 @@
       "cancel": "取消",
       "checking": "检查中…",
       "save": "保存",
-      "pathPlaceholder": "/路径/office.ovpn"
+      "pathPlaceholder": "/路径/office.ovpn",
+      "kind": "这个 VPN 的连接方式",
+      "kindOvpn": "OpenVPN 配置文件 (.ovpn)",
+      "kindContainer": "我已在运行的容器",
+      "container": "运行中的 VPN 容器",
+      "containerLoading": "正在查找容器…",
+      "containerPlaceholder": "选择容器",
+      "containerRefresh": "刷新",
+      "containerNone": "没有运行中的容器。请先启动你的 VPN 容器，再按刷新。",
+      "containerHelp": "Orca 不会启动、停止或删除这个容器。容器里必须有 \"tunnel\" 用户，且防火墙只允许它经由 VPN 连出去；Orca 每次连接前都会检查。",
+      "containerCommand": "每条连接会执行："
     },
     "row": {
       "idleNever": "保持连接到 Orca 关闭",
@@ -19682,7 +19692,10 @@
       "delete": "删除…",
       "deleteNote": "使用这个 VPN 的主机会改回直接连接。",
       "hideLog": "隐藏 OpenVPN 日志",
-      "showLog": "显示 OpenVPN 日志"
+      "showLog": "显示 OpenVPN 日志",
+      "container": "容器：{{name}}",
+      "borrowed": "由 Orca 以外的方式启动和停止",
+      "check": "检查"
     },
     "panel": {
       "add": "新增 VPN 配置文件",

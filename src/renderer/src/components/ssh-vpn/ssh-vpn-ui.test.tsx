@@ -38,7 +38,12 @@ const SNAPSHOT: SshVpnSnapshot = {
 const api = {
   snapshot: vi.fn(async () => ({ ok: true as const, value: SNAPSHOT })),
   inspectOvpn: vi.fn(async () => ({ ok: true as const, value: { needsCredentials: false } })),
+  listContainers: vi.fn(async () => ({
+    ok: true as const,
+    value: [{ name: 'vpn-office-1', image: 'openvpn-socks:local', status: 'Up 2 hours (healthy)' }]
+  })),
   saveProfile: vi.fn(),
+  connect: vi.fn(async () => ({ ok: true as const, value: undefined })),
   onState: vi.fn(() => () => undefined),
   onChanged: vi.fn(() => () => undefined),
   answerCredentials: vi.fn(async () => undefined),
@@ -149,6 +154,58 @@ describe('SshVpnProfilesPanel', () => {
       draft: { name: 'Office', ovpnPath: '/vpn/office.ovpn', idleMinutes: 10 }
     })
     expect(form?.textContent).toContain('This profile needs username/password login')
+  })
+})
+
+describe('borrowed VPN containers', () => {
+  const BORROWED: SshVpnProfile = {
+    id: 'profile-0002',
+    kind: 'container',
+    name: 'Office (shared)',
+    containerName: 'vpn-office-1'
+  }
+
+  // Why setState: the store syncs from the snapshot once per test file, already done above.
+  beforeEach(() => {
+    useSshVpnStore.setState({
+      loaded: true,
+      profiles: [BORROWED],
+      assignments: { 'fc-beta': BORROWED.id },
+      states: { [BORROWED.id]: { profileId: BORROWED.id, status: 'ready', logTail: [] } }
+    })
+  })
+
+  it('shows the container and offers a check instead of a disconnect', async () => {
+    await render(<SshVpnProfilesPanel />)
+
+    const row = container.querySelector(`[data-ssh-vpn-profile="${BORROWED.id}"]`)
+    expect(row?.textContent).toContain('Container: vpn-office-1')
+    expect(row?.textContent).toContain('Started and stopped outside Orca')
+    expect(buttonNamed('Disconnect')).toBeUndefined()
+    await act(async () => buttonNamed('Check')?.click())
+    expect(api.connect).toHaveBeenCalledWith(BORROWED.id)
+  })
+
+  it('edits a borrowed profile without asking for an .ovpn', async () => {
+    api.saveProfile.mockResolvedValue({ ok: true, value: BORROWED })
+    await render(<SshVpnProfilesPanel />)
+    await act(async () => buttonNamed('Edit')?.click())
+
+    expect(container.querySelector('#ssh-vpn-profile-path')).toBeNull()
+    expect(container.textContent).toContain(
+      'docker exec -i --user tunnel vpn-office-1 nc -w 30 <host> <port>'
+    )
+    await act(async () => setInputValue('ssh-vpn-profile-name', 'Shared office'))
+    await act(async () => {
+      container
+        .querySelector('[data-ssh-vpn-profile-form]')
+        ?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+
+    expect(api.saveProfile).toHaveBeenLastCalledWith({
+      id: BORROWED.id,
+      draft: { kind: 'container', name: 'Shared office', containerName: 'vpn-office-1' }
+    })
   })
 })
 
