@@ -1,6 +1,6 @@
 # 編輯器程式碼跳轉（LSP）：實作計畫（fork 專屬）
 
-> 狀態：Phase 1 完成（2026-09-30，§8）；Phase 2 完成（2026-09-30，§9）；JetBrains 快捷鍵（§10）；C# 速度（§11）；MediatR（§12）；Razor 與 ASP.NET MVC（2026-10-01，§13）；Phase 3 未開始
+> 狀態：Phase 1 完成（2026-09-30，§8）；Phase 2 完成（2026-09-30，§9）；JetBrains 快捷鍵（§10）；C# 速度（§11）；MediatR（§12）；Razor 與 ASP.NET MVC（2026-10-01，§13）；Vue／Nuxt 規劃中（[`code-navigation-vue-nuxt-plan.md`](./code-navigation-vue-nuxt-plan.md)）；Phase 3 未開始
 > 分支：`feat/code-navigation`（worktree `/Users/omar/myprojects/orca-code-nav`），完成後 fast-forward 回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
