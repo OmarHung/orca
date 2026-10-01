@@ -1,4 +1,5 @@
 import type {
+  SshVpnContainerCandidate,
   SshVpnCredentialRequest,
   SshVpnCredentials,
   SshVpnOvpnInspection,
@@ -15,6 +16,8 @@ export type SshVpnApi = {
   snapshot: () => Promise<SshVpnResult<SshVpnSnapshot>>
   /** Whether an .ovpn asks for a login, and whether Orca can use it at all. */
   inspectOvpn: (ovpnPath: string) => Promise<SshVpnResult<SshVpnOvpnInspection>>
+  /** Running containers a profile can borrow (Orca's own VPN containers left out). */
+  listContainers: () => Promise<SshVpnResult<SshVpnContainerCandidate[]>>
   saveProfile: (request: {
     id?: string
     draft: SshVpnProfileDraft
