@@ -347,6 +347,18 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 - 掛載點：`ssh-vpn-database-route.ts`（跟 `ssh-vpn-route.ts` 一樣的 seam，VPN runtime 在資料庫 handler 之後註冊）。`SshVpnService.connect` 多收一個連線名稱並回傳設定檔名稱。
 - 測試：單元（tunnel 7、session manager 4、表單 1、對話框 1）；Docker 整合 4 個（VPN 外連不到、經 VPN 的 DNS 名稱連到並在關閉後容器內沒有殘留 `nc`、連不到時的錯誤、VPN 停掉時結束連線）；e2e 1 個（MariaDB 10.5 放在只有 VPN 連得到的網路，走對話框選 VPN、測試、存檔、開 console 查詢）。測試內網多了 `startBehindVpn`。
 
+### 借用已在執行的 VPN 容器（2026-10-01，使用者要求）
+
+- 起因：使用者已經用 `~/myprojects/openvpn-socks` 在 Docker 裡跑辦公室 VPN（給 Chrome 走 SOCKS）。Orca 再用同一份 .ovpn 起一條，伺服器沒開 `duplicate-cn` 時兩邊會互踢。
+- 設定檔多一種 `kind: 'container'`，只存容器名稱（`containerName`）。原本的設定檔沒有 `kind`，一律當 .ovpn，檔案格式不用遷移。
+- 不走 SOCKS：三條路（ssh2、系統 ssh 的 ProxyCommand、資料庫）本來就是 `docker exec -i --user tunnel <容器> nc …`，借用容器只換容器名稱，連線程式碼不動。SOCKS 的話，SSH 頁終端機需要會講 SOCKS 的 nc（Windows 沒有），也無法確認 fail closed。
+- Orca 不啟動、停止、刪除借用的容器，也沒有閒置斷線；關閉 Orca 時不碰它（`runningContainers` 只列 Orca 自己的）。「Disconnect」只是讓 Orca 不再把它當 ready。
+- 每次 acquire 都重新檢查（`borrowed-container-check.ts`）：容器在執行；有 healthcheck 時要 healthy；有 `tunnel` 使用者；`iptables -S OUTPUT` 和 `ip6tables -S OUTPUT` 符合 Orca 自己的規則形狀（`borrowed-container-firewall.ts`：只認得 lo／tun+ 放行、到 /32、/128 的 DNS 放行，最後 REJECT 或 policy DROP；看不懂的規則一律當不安全）。已經 ready 時重新檢查不改狀態，因為資料庫通道在狀態離開 `ready` 時就會斷。另外每 60 秒自己檢查一次，容器停掉時轉成 error。
+- 存檔時也會檢查（不要求 healthy），所以容器沒照規則設定時存不進去。
+- 不跳啟動確認框（沒有東西要啟動）；表單直接顯示每條連線會跑的指令。
+- 程式碼：`ssh-vpn-borrowed-containers.ts`（狀態、重新檢查）由 `SshVpnManager` 依 `kind` 轉交；同一個 id 換種類時先停掉另一邊。介面：表單上方切換「OpenVPN 設定檔／我已在執行的容器」，`SshVpnContainerField.tsx` 列出 `docker ps`（排除 Orca 自己的容器）；列表列只有「檢查」按鈕。
+- openvpn-socks 那邊：Dockerfile 加 `iptables` 和 `tunnel` 使用者，`entrypoint.sh` 在啟動 OpenVPN 前跑 `tunnel-firewall.sh`（規則同 Orca；重啟時從 `/tmp/resolv.conf.orig` 讀 Docker 自己的 DNS）。要重新 build 容器才生效。
+
 ## 10. 使用說明與已知限制
 
 **需求**：Docker Desktop、OrbStack 或 Colima 正在執行。第一次連線會在本機建置 `orca-ssh-vpn:<雜湊>` 映像檔（需要連網，約數十秒）。
@@ -360,6 +372,8 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 - 每個設定檔一個容器（`orca-ssh-vpn-<實例>-<設定檔 id>`），不開任何 port；每條連線是一個 `docker exec -i --user tunnel <容器> nc -w 30 <主機> <埠>`，防火牆只允許它從 VPN 出去。
 - 沒有連線使用時，閒置設定的分鐘數（預設 10）後自動斷線；關閉 Orca 時一定移除容器。當機留下的容器會在下次啟動時清掉。
 - VPN 起不來、設定檔壞掉、或主機的 VPN 設定檔不見時，一律拒絕連線，不會改成直接連線。
+
+**借用已在執行的容器**：新增設定檔時選「我已在執行的容器」，再從清單選容器。容器裡要有 `tunnel` 使用者和上面那組防火牆規則（openvpn-socks 已內建），Orca 每次連線前都會檢查，不合就拒絕連線。容器的啟停由你自己管理。
 
 **資料庫連線**：新增或編輯資料庫連線時，在「VPN」欄位選設定檔即可（SQLite 沒有這個欄位）。主機和埠要填 VPN 內部看到的位址。連線期間 main 會開一個 `127.0.0.1` 的本機 port 接到 VPN，本機其他程式在這段時間也能連到它（跟資料庫的 SSH 通道一樣）。
 
