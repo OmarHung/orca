@@ -63,7 +63,6 @@ export function runWidgetFootprint(
 ): RunWidgetFootprint {
   switch (item.kind) {
     case 'recent':
-      return { commandKeys: [item.target.commandKey], debugSourceKeys: [item.key] }
     case 'detected':
       return {
         commandKeys: [(item.savedTarget ?? item.target).commandKey],
