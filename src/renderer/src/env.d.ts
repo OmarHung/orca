@@ -2,7 +2,7 @@
 
 import type { PaneManager } from '@/lib/pane-manager/pane-manager'
 import type { OnboardingFeatureSetupDeps } from '@/components/onboarding/onboarding-feature-setup'
-import type { json, languages } from 'monaco-editor'
+import type { editor, json, languages } from 'monaco-editor'
 import type { MonacoE2EProbe } from './components/editor/monaco-e2e-probe'
 import type { TerminalWorktreeParkingDebugVerdict } from './components/terminal-pane/terminal-parking-e2e-overrides'
 import type { TerminalPtyPreSpawnE2EBarrier } from './components/terminal-pane/terminal-pty-pre-spawn-e2e-barrier'
@@ -37,6 +37,21 @@ declare module 'monaco-editor/esm/vs/editor/browser/controller/editContext/clipb
       } | null
     }
   }
+}
+
+// Go to Definition/Type/Implementation/References and their Peek forms. Members are optional so a
+// Monaco upgrade that renames them disables the hook instead of breaking navigation.
+declare module 'monaco-editor/esm/vs/editor/contrib/gotoSymbol/browser/goToCommands.js' {
+  export class SymbolNavigationAction {
+    readonly desc?: { readonly id?: string }
+    runEditorCommand?(
+      this: SymbolNavigationAction,
+      accessor: unknown,
+      codeEditor: editor.ICodeEditor,
+      ...args: unknown[]
+    ): Promise<unknown>
+  }
+  export class DefinitionAction extends SymbolNavigationAction {}
 }
 
 // The same class the public `monaco.Uri` re-exports, reachable without loading the editor bundle.

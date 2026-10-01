@@ -1,12 +1,17 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 // The same module the public `monaco.Uri` re-exports, without loading the editor bundle.
 import { URI } from 'monaco-editor/esm/vs/base/common/uri.js'
 import {
   CODE_NAVIGATION_PREVIEW_SCHEME,
   filePathForNavigationUri,
+  installCodeNavigationPreviewModelCleanup,
   navigationUriForPath,
   sweepIdlePreviewModels
 } from './code-navigation-preview-models'
+import {
+  markMonacoPeekReferencesClosed,
+  markMonacoPeekReferencesOpen
+} from '../monaco-peek-references-lifecycle'
 
 type FakeModel = {
   uri: URI
@@ -86,6 +91,8 @@ describe('navigationUriForPath', () => {
   })
 })
 
+afterEach(() => vi.useRealTimers())
+
 describe('filePathForNavigationUri', () => {
   it('maps file and preview URIs back to the file path', () => {
     const file = URI.file('/repo/src/lib.ts')
@@ -114,5 +121,57 @@ describe('sweepIdlePreviewModels', () => {
       'shown',
       'tab'
     ])
+  })
+
+  it('sweeps an idle preview without waiting for another navigation query', () => {
+    vi.useFakeTimers()
+    const { monaco, models } = fakeMonaco()
+    const uri = navigationUriForPath(monaco, '/repo/idle.ts', 'idle')
+    const model = models.get(uri.toString())
+    if (!model) {
+      throw new Error('preview model was not created')
+    }
+
+    vi.advanceTimersByTime(5 * 60_000)
+
+    expect(model.disposed).toBe(true)
+  })
+
+  it('reschedules for the exact remaining idle time after a preview refresh', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const { monaco, models } = fakeMonaco()
+    const uri = navigationUriForPath(monaco, '/repo/refreshed.ts', 'v1')
+    const model = models.get(uri.toString())
+    if (!model) {
+      throw new Error('preview model was not created')
+    }
+
+    vi.advanceTimersByTime(4 * 60_000)
+    navigationUriForPath(monaco, '/repo/refreshed.ts', 'v2')
+    vi.advanceTimersByTime(4 * 60_000 + 59_999)
+    expect(model.disposed).toBe(false)
+
+    vi.advanceTimersByTime(1)
+    expect(model.disposed).toBe(true)
+  })
+
+  it('keeps every result alive until its peek window closes', () => {
+    vi.useFakeTimers()
+    const { monaco, models } = fakeMonaco()
+    const referenceWidget = {}
+    const disposeCleanup = installCodeNavigationPreviewModelCleanup(monaco)
+    const first = navigationUriForPath(monaco, '/repo/first.ts', 'first')
+    const second = navigationUriForPath(monaco, '/repo/second.ts', 'second')
+    markMonacoPeekReferencesOpen(referenceWidget)
+
+    vi.advanceTimersByTime(5 * 60_000)
+    expect(models.get(first.toString())?.disposed).toBe(false)
+    expect(models.get(second.toString())?.disposed).toBe(false)
+
+    markMonacoPeekReferencesClosed(referenceWidget)
+    expect(models.has(first.toString())).toBe(false)
+    expect(models.has(second.toString())).toBe(false)
+    disposeCleanup()
   })
 })
