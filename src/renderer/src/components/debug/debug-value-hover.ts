@@ -11,14 +11,6 @@ import type { HoverAnchor } from './debug-value-hover-placement'
 
 /** How long the pointer rests on a name before it is evaluated (Monaco's own hover delay). */
 const SHOW_DELAY_MS = 300
-/** Time to move the pointer from the name into the popup before it closes. */
-const HIDE_DELAY_MS = 300
-const MODIFIER_KEYS = new Set([
-  monaco.KeyCode.Ctrl,
-  monaco.KeyCode.Alt,
-  monaco.KeyCode.Meta,
-  monaco.KeyCode.Shift
-])
 
 type HoverTarget = HoverExpression & { lineNumber: number }
 export type DebugHoverValue = HoverTarget & { result: EvaluateResult; anchor: HoverAnchor }
@@ -47,17 +39,16 @@ function targetAt(
 /**
  * JetBrains-style value popup: resting the pointer on a name (or inside a selection) while
  * paused evaluates it; `onChange` renders the value (or null) as a popup at its anchor.
- * Attach only while paused in this file.
+ * Once shown it stays until `close()` (a click outside or Escape) or until its text leaves
+ * the view or changes. Attach only while paused in this file.
  */
 export class DebugValueHover implements IDisposable {
   private shown: DebugHoverValue | null = null
-  /** The target under the pointer; kept while the pointer is inside the popup. */
+  /** The target last under the pointer; not tracked while a popup is shown. */
   private pointerKey: string | null = null
   private failedKeys: ReadonlySet<string> = new Set()
-  private pointerInPopup = false
   private request = 0
   private showTimer: ReturnType<typeof setTimeout> | undefined
-  private hideTimer: ReturnType<typeof setTimeout> | undefined
   /** The editor's own hover setting while this popup holds it off, else null. */
   private suppressedHoverEnabled: boolean | null = null
   private readonly listeners: IDisposable[]
@@ -69,44 +60,38 @@ export class DebugValueHover implements IDisposable {
     this.listeners = this.listen()
   }
 
-  setPointerInPopup(inside: boolean): void {
-    this.pointerInPopup = inside
-    if (!inside) {
-      this.scheduleHide()
-      return
-    }
-    // Crossing another name on the way into the popup must not replace it.
+  close(): void {
     clearTimeout(this.showTimer)
-    clearTimeout(this.hideTimer)
     this.request++
-    this.pointerKey = this.shown ? keyOf(this.shown) : null
-  }
-
-  dispose(): void {
-    this.hide()
-    this.listeners.forEach((listener) => listener.dispose())
-  }
-
-  private hide(): void {
-    clearTimeout(this.showTimer)
-    clearTimeout(this.hideTimer)
-    this.request++
-    this.pointerKey = null
-    this.pointerInPopup = false
-    this.restoreEditorHover()
     if (this.shown) {
+      // Treated as still pointed at, so it reopens only after the pointer leaves and returns.
+      this.pointerKey = keyOf(this.shown)
       this.setShown(null)
     }
   }
 
-  /** The target's box in window coordinates; the popup lives outside the editor's DOM. */
+  dispose(): void {
+    this.close()
+    this.restoreEditorHover()
+    this.listeners.forEach((listener) => listener.dispose())
+  }
+
+  /** The target's box in window coordinates, or null when it is scrolled out of view. */
   private anchorOf(target: HoverTarget): HoverAnchor | null {
     const visible = this.codeEditor.getScrolledVisiblePosition({
       lineNumber: target.lineNumber,
       column: target.startColumn
     })
     const box = this.codeEditor.getDomNode()?.getBoundingClientRect()
-    if (!visible || !box) {
+    const layout = this.codeEditor.getLayoutInfo()
+    if (
+      !visible ||
+      !box ||
+      visible.top < 0 ||
+      visible.top + visible.height > layout.height ||
+      visible.left < layout.contentLeft ||
+      visible.left > layout.width
+    ) {
       return null
     }
     const top = box.top + visible.top
@@ -118,22 +103,25 @@ export class DebugValueHover implements IDisposable {
     return [
       codeEditor.onMouseMove((event) => this.onMouseMove(event)),
       codeEditor.onMouseLeave(() => this.pointTo(null)),
-      codeEditor.onMouseDown(() => this.hide()),
-      codeEditor.onKeyDown((event) => {
-        if (this.shown && !MODIFIER_KEYS.has(event.keyCode)) {
-          this.hide()
-        }
-      }),
-      codeEditor.onDidScrollChange((event) => {
-        if (event.scrollTopChanged || event.scrollLeftChanged) {
-          this.hide()
-        }
-      }),
-      // The anchor is a snapshot, so anything that moves the text closes the popup.
-      codeEditor.onDidLayoutChange(() => this.hide()),
-      codeEditor.onDidChangeModelContent(() => this.hide()),
-      codeEditor.onDidChangeModel(() => this.hide())
+      codeEditor.onDidScrollChange(() => this.followText()),
+      codeEditor.onDidLayoutChange(() => this.followText()),
+      // Edited text no longer matches the value.
+      codeEditor.onDidChangeModelContent(() => this.close()),
+      codeEditor.onDidChangeModel(() => this.close())
     ]
+  }
+
+  /** Keeps the popup on its text as the editor scrolls or resizes. */
+  private followText(): void {
+    if (!this.shown) {
+      return
+    }
+    const anchor = this.anchorOf(this.shown)
+    if (anchor) {
+      this.setShown({ ...this.shown, anchor })
+    } else {
+      this.close()
+    }
   }
 
   private onMouseMove(event: editor.IEditorMouseEvent): void {
@@ -146,7 +134,8 @@ export class DebugValueHover implements IDisposable {
 
   private pointTo(target: HoverTarget | null): void {
     const key = target ? keyOf(target) : null
-    if (key === this.pointerKey) {
+    // An open popup is pinned: other names wait until it is closed.
+    if (this.shown || key === this.pointerKey) {
       return
     }
     this.pointerKey = key
@@ -154,15 +143,9 @@ export class DebugValueHover implements IDisposable {
     this.request++
     if (!target || !key || this.failedKeys.has(key)) {
       this.restoreEditorHover()
-      this.scheduleHide()
       return
     }
     this.suppressEditorHover()
-    if (this.shown && keyOf(this.shown) === key) {
-      clearTimeout(this.hideTimer)
-      return
-    }
-    this.scheduleHide()
     const id = this.request
     this.showTimer = setTimeout(() => void this.evaluate(target, id), SHOW_DELAY_MS)
   }
@@ -172,7 +155,6 @@ export class DebugValueHover implements IDisposable {
       const result = await evaluateExpression(target.expression, 'hover')
       const anchor = this.anchorOf(target)
       if (id === this.request && anchor) {
-        clearTimeout(this.hideTimer)
         this.setShown({ ...target, result, anchor })
       }
     } catch {
@@ -183,19 +165,6 @@ export class DebugValueHover implements IDisposable {
         this.restoreEditorHover()
       }
     }
-  }
-
-  private scheduleHide(): void {
-    if (!this.shown) {
-      return
-    }
-    clearTimeout(this.hideTimer)
-    this.hideTimer = setTimeout(() => {
-      const pointerOnShown = this.shown !== null && this.pointerKey === keyOf(this.shown)
-      if (!this.pointerInPopup && !pointerOnShown) {
-        this.setShown(null)
-      }
-    }, HIDE_DELAY_MS)
   }
 
   private setShown(value: DebugHoverValue | null): void {
