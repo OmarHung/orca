@@ -87,3 +87,29 @@ describe('configurationIdOfCommandKey', () => {
     expect(configurationIdOfCommandKey('detected:dotnet:/w/api:run')).toBeNull()
   })
 })
+
+describe('recent runs saved as a configuration', () => {
+  const saved: RunTarget = {
+    worktreeId: 'wt',
+    groupId: null,
+    commandKey: configurationCommandKey('dev'),
+    command: { id: 'config:dev', label: 'web: dev', command: 'pnpm dev', appendEnter: true }
+  }
+  const recentRun: RunTarget = { ...saved, commandKey: 'detected:web:dev' }
+  const savedItems = runWidgetItems({
+    recent: [recentRun],
+    savedTargetOf: (target) => (target === recentRun ? saved : null),
+    configurations: [
+      {
+        source: 'local',
+        configuration: { type: 'command', id: 'dev', name: 'web: dev', command: 'pnpm dev' }
+      }
+    ],
+    quickCommands: []
+  })
+
+  it('stay listed but share the configuration run, which the configuration owns', () => {
+    expect(savedItems[0]).toMatchObject({ kind: 'recent', savedTarget: saved })
+    expect(runWidgetItemForRun(savedItems, saved.commandKey)?.kind).toBe('configuration')
+  })
+})

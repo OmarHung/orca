@@ -30,7 +30,7 @@ import {
   type RunWidgetActivity,
   type RunWidgetFootprint
 } from './run-widget-activity'
-import type { RunWidgetItem } from './run-widget-items'
+import { configurationIdOfCommandKey, type RunWidgetItem } from './run-widget-items'
 
 export type RunWidgetScope = { worktreeId: string; groupId: string | null; worktreePath: string }
 
@@ -41,7 +41,6 @@ export function runWidgetSessionTarget(
 ): RunTarget | null {
   switch (item.kind) {
     case 'recent':
-      return item.target
     case 'detected':
       return item.savedTarget ?? item.target
     case 'current-file':
@@ -104,9 +103,14 @@ export async function runWidgetItem(
     return
   }
   switch (item.kind) {
-    case 'recent':
-      await runConfiguration({ ...item.target, groupId: scope.groupId })
+    case 'recent': {
+      // Why the launcher: a run saved as a configuration runs as that one, once.
+      const savedId = item.savedTarget && configurationIdOfCommandKey(item.savedTarget.commandKey)
+      await (savedId
+        ? launchRunConfiguration({ ...scope, reference: savedId })
+        : runConfiguration({ ...item.target, groupId: scope.groupId }))
       return
+    }
     case 'current-file':
       if (item.target) {
         await runConfiguration(item.target)
