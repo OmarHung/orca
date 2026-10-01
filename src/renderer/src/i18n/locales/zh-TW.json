@@ -18670,6 +18670,9 @@
       "notPaused": "不可用",
       "add": "新增監視表示式"
     },
+    "hover": {
+      "addToWatches": "新增到監視"
+    },
     "consoleInput": {
       "input": "求值表示式",
       "inputHint": "在所選幀中對錶達式求值",
