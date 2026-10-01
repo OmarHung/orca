@@ -45,6 +45,8 @@ import {
 import { useWorktreeRunConfigurations } from './use-worktree-run-configurations'
 import { useCompoundQuickCommand } from './use-compound-quick-command'
 import { useFollowActiveRunTerminal } from './use-follow-active-run-terminal'
+import { savedCommandFor } from './saved-command-match'
+import { useCurrentFileRunItem } from './use-current-file-run-item'
 import { useRunWidgetActivity } from './use-run-widget-activity'
 import { useRunWidgetDetectedMenu } from './use-run-widget-detected-menu'
 import { runWidgetCascadeDirection } from './run-widget-cascade'
@@ -101,14 +103,22 @@ export function RunWidget({
   useTabBarQuickCommandsShortcut({ menuOpen, onOpenChange: onMenuOpenChange })
   // Why keyed by menuOpen: the file can appear or disappear between openings.
   const hasLaunchJson = useWorkspaceHasLaunchJson(worktreeId, menuOpen)
+  const configurations = (data?.listed ?? NO_CONFIGURATIONS).map((entry) => entry.configuration)
+  const currentFile = useCurrentFileRunItem(worktreeId, groupId)
   const items = runWidgetItems({
-    recent,
+    currentFile,
+    // Why: a temporary run saved as a configuration is that configuration now, as in JetBrains.
+    recent: data
+      ? recent.filter(
+          (target) =>
+            !savedCommandFor(target.command.command, target.cwd, configurations, data.worktreePath)
+        )
+      : recent,
     configurations: data?.listed ?? NO_CONFIGURATIONS,
     quickCommands: [...quick.repoCommands, ...quick.globalCommands]
   })
   const activity = useRunWidgetActivity(worktreeId)
   const confirm = useConfirmationDialog()
-  const configurations = (data?.listed ?? NO_CONFIGURATIONS).map((entry) => entry.configuration)
   const detected = useRunWidgetDetectedMenu({
     worktreeId,
     groupId,

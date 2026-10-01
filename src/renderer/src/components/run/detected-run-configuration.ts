@@ -12,7 +12,9 @@ import {
   stopRunBeforeDebug,
   type RunDebugLaunchContext
 } from './run-debug-exclusivity'
-import { recentItemKey, type RunWidgetItem } from './run-widget-items'
+import { launchRunConfiguration } from './run-configuration-launcher'
+import { configurationItemKey, recentItemKey, type DetectedRunWidgetItem } from './run-widget-items'
+import { storedSavedRunFor, type SavedRun } from './saved-command-match'
 
 export function detectedConfigurationLabel(configuration: DetectedRunConfiguration): string {
   return `${configuration.projectName}: ${configuration.name}`
@@ -47,7 +49,7 @@ export function detectedRunWidgetItem(
   configuration: DetectedRunConfiguration,
   worktreeId: string,
   groupId: string | null
-): RunWidgetItem {
+): DetectedRunWidgetItem {
   const target = toDetectedRunTarget(configuration, worktreeId, groupId)
   return {
     kind: 'detected',
@@ -58,8 +60,24 @@ export function detectedRunWidgetItem(
   }
 }
 
-/** Keeps the run as the worktree's temporary configuration and selects it in the Run widget. */
-export function selectDetectedRun(target: RunTarget): void {
+/** The saved configuration this run became, selected in the Run widget instead of a temporary one. */
+function selectSavedRun(target: RunTarget): SavedRun | null {
+  const match = storedSavedRunFor(target)
+  if (match) {
+    useRunConfigurationStore.getState().select(match.repoId, configurationItemKey(match.saved.id))
+  }
+  return match?.saved ?? null
+}
+
+/**
+ * Selects the run in the Run widget: the saved configuration it became, if any (returned),
+ * otherwise kept as the worktree's temporary configuration.
+ */
+export function selectDetectedRun(target: RunTarget): SavedRun | null {
+  const saved = selectSavedRun(target)
+  if (saved) {
+    return saved
+  }
   useRecentRunStore.getState().remember(target)
   const worktreesByRepo = useAppStore.getState().worktreesByRepo
   const repoId = worktreesByRepo
@@ -68,6 +86,7 @@ export function selectDetectedRun(target: RunTarget): void {
   if (repoId) {
     useRunConfigurationStore.getState().select(repoId, recentItemKey(target.commandKey))
   }
+  return null
 }
 
 function detectedLaunchContext(
@@ -111,10 +130,14 @@ export async function runDetectedConfiguration(
     return
   }
   const target = toDetectedRunTarget(configuration, worktreeId, groupId)
-  selectDetectedRun(target)
-  if (await stopDebuggingBeforeRun(detectedLaunchContext(target, confirm))) {
-    await runConfiguration(target)
+  const saved = selectDetectedRun(target)
+  if (!(await stopDebuggingBeforeRun(detectedLaunchContext(target, confirm)))) {
+    return
   }
+  // Why the launcher: the saved configuration's run is the one already running, if any.
+  await (saved
+    ? launchRunConfiguration({ worktreeId, groupId, reference: saved.id })
+    : runConfiguration(target))
 }
 
 /** Debugs a detected configuration and makes it the worktree's current one in the tab bar. */
@@ -128,9 +151,9 @@ export async function debugDetectedConfiguration(
     return
   }
   const target = toDetectedRunTarget(configuration, worktreeId, groupId)
-  selectDetectedRun(target)
+  const saved = selectDetectedRun(target)
   const context = detectedLaunchContext(target, confirm)
-  if (!(await stopRunBeforeDebug(context, target))) {
+  if (!(await stopRunBeforeDebug(context, saved?.target ?? target))) {
     return
   }
   await debugLaunchTarget({
