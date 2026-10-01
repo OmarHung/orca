@@ -137,6 +137,38 @@ describe('detectProjectRunConfigurations', () => {
     ])
   })
 
+  it('reads compose files together and limits a selected file to its own project', async () => {
+    const tree: Record<string, string[]> = {
+      '/w/stack': ['compose.yaml', 'compose.prod.yaml', 'Dockerfile', 'Dockerfile.dockerignore']
+    }
+    const text: Record<string, string> = {
+      '/w/stack/compose.yaml': 'services:\n  api:\n    build: .',
+      '/w/stack/compose.prod.yaml': 'services:\n  api:\n    restart: always',
+      '/w/stack/Dockerfile': 'FROM alpine\nEXPOSE 80'
+    }
+    const dockerFiles = {
+      listNames: async (dir: string) => tree[dir] ?? [],
+      listDirectories: async () => [],
+      readText: async (path: string) => text[path] ?? null
+    }
+
+    const all = await detectProjectRunConfigurations('wt', '/w/stack', true, dockerFiles)
+    const prod = await detectProjectRunConfigurations(
+      'wt',
+      '/w/stack/compose.prod.yaml',
+      false,
+      dockerFiles
+    )
+
+    expect(new Set(all.map((configuration) => configuration.projectName))).toEqual(
+      new Set(['compose.yaml', 'compose.prod.yaml', 'Dockerfile'])
+    )
+    expect(new Set(prod.map((configuration) => configuration.projectName))).toEqual(
+      new Set(['compose.prod.yaml'])
+    )
+    expect(prod[0].command).toBe('docker compose -f compose.yaml -f compose.prod.yaml up')
+  })
+
   it('finds nothing in a folder without projects or for an unknown worktree', async () => {
     await expect(detectProjectRunConfigurations('wt', '/w/docs', true, files)).resolves.toEqual([])
     await expect(detectProjectRunConfigurations('nope', '/w/app', true, files)).resolves.toEqual([])
@@ -149,6 +181,8 @@ describe('mayContainRunConfigurations', () => {
     expect(mayContainRunConfigurations('package.json', false)).toBe(true)
     expect(mayContainRunConfigurations('Api.csproj', false)).toBe(true)
     expect(mayContainRunConfigurations('pyproject.toml', false)).toBe(true)
+    expect(mayContainRunConfigurations('docker-compose.yml', false)).toBe(true)
+    expect(mayContainRunConfigurations('Dockerfile', false)).toBe(true)
     expect(mayContainRunConfigurations('main.py', false)).toBe(false)
     expect(mayContainRunConfigurations('main.ts', false)).toBe(false)
   })
