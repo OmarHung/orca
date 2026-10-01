@@ -5,6 +5,7 @@ import {
   sshVpnConfirmAnswerSchema,
   sshVpnCredentialAnswerSchema,
   sshVpnProfileIdSchema,
+  sshVpnProfileSource,
   sshVpnSaveProfileSchema,
   type SshVpnOvpnInspection,
   type SshVpnResult,
@@ -14,6 +15,7 @@ import { getSecretStore } from '../../shared/secret-store'
 import { getCurrentMainWindow } from '../ipc/ssh-ipc-context'
 import { resolveWithSshG } from '../ssh/ssh-config-parser'
 import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
+import { checkBorrowedContainer, listBorrowableContainers } from './borrowed-container-check'
 import { readOvpnProfileFile } from './ovpn-profile-files'
 import { prepareOvpnProfile } from './ovpn-profile-preparation'
 import { SshVpnStartDeclinedError } from './ssh-vpn-manager-types'
@@ -73,7 +75,13 @@ async function inspectOvpn(ovpnPath: string): Promise<SshVpnOvpnInspection> {
 
 function registerProfileHandlers(runtime: SshVpnRuntime): void {
   const { store, manager, vault } = runtime
+  // Why not healthy: saving should not depend on the container's VPN being up right now.
+  const inspectContainer = async (containerName: string): Promise<void> =>
+    checkBorrowedContainer(await runtime.docker(), containerName, { requireHealthy: false })
   ipcMain.handle('sshVpn:snapshot', () => respond(() => snapshot(runtime)))
+  ipcMain.handle('sshVpn:listContainers', () =>
+    respond(async () => listBorrowableContainers(await runtime.docker()))
+  )
   ipcMain.handle('sshVpn:inspectOvpn', (_event, raw: unknown) =>
     typeof raw === 'string' && isAbsoluteOvpnPath(raw)
       ? respond(() => inspectOvpn(raw))
@@ -86,10 +94,10 @@ function registerProfileHandlers(runtime: SshVpnRuntime): void {
     }
     return respond(async () => {
       const { previous, saved } = await saveSshVpnProfile(
-        { store, vault, inspectOvpn },
+        { store, vault, inspectOvpn, inspectContainer },
         request.data
       )
-      if (previous && previous.ovpnPath !== saved.ovpnPath) {
+      if (previous && sshVpnProfileSource(previous) !== sshVpnProfileSource(saved)) {
         await manager.stop(saved.id)
       }
       manager.updateProfile(saved)

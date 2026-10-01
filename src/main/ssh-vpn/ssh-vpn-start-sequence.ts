@@ -1,4 +1,4 @@
-import type { SshVpnCredentials, SshVpnProfile } from '../../shared/ssh-vpn-types'
+import type { SshVpnCredentials, SshVpnOvpnProfile } from '../../shared/ssh-vpn-types'
 import {
   CONTAINER_LOGIN_PATH,
   CONTAINER_PROFILE_PATH,
@@ -13,7 +13,7 @@ import { sshVpnStartCommands } from './ssh-vpn-start-commands'
 
 type LaunchInput = {
   docker: SshVpnDockerPort
-  profile: SshVpnProfile
+  profile: SshVpnOvpnProfile
   containerName: string
   instanceTag: string
   readFile: (filePath: string) => Promise<Buffer>
