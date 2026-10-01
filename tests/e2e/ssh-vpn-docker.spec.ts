@@ -58,6 +58,19 @@ async function acceptConfirm(page: Page, expectedCommand: string): Promise<void>
   await expect(dialog).toBeHidden()
 }
 
+function removeProfileContainers(profileIds: string[]): void {
+  for (const profileId of profileIds) {
+    spawnSync(
+      'sh',
+      [
+        '-c',
+        `docker ps -aq --filter label=dev.orca.ssh-vpn.profile=${profileId} | xargs docker rm -f`
+      ],
+      { stdio: 'ignore' }
+    )
+  }
+}
+
 async function readSshTabIds(page: Page): Promise<string[]> {
   return page.evaluate(
     (worktreeId) =>
@@ -126,6 +139,64 @@ test.describe('SSH hosts routed through a per-host OpenVPN container', () => {
           { stdio: 'ignore' }
         )
       }
+      await network.dispose()
+    }
+  })
+
+  test('switches the host to another VPN picked in the start confirmation', async ({
+    orcaPage
+  }, testInfo) => {
+    test.setTimeout(300_000)
+    const network = await startSshVpnTestNetwork()
+    const profileIds: string[] = []
+    try {
+      await waitForSessionReady(orcaPage)
+      const ids = await setUpVpnHost(orcaPage, network, {
+        name: 'E2E first VPN',
+        ovpnPath: network.ovpnPath,
+        idleMinutes: 10
+      })
+      profileIds.push(ids.profileId)
+      const picked = await orcaPage.evaluate(async (ovpnPath) => {
+        const saved = await window.api.sshVpn.saveProfile({
+          draft: { name: 'E2E picked VPN', ovpnPath, idleMinutes: 10 }
+        })
+        if (!saved.ok) {
+          throw new Error(saved.error.message)
+        }
+        return saved.value.id
+      }, network.ovpnPath)
+      profileIds.push(picked)
+
+      await orcaPage.evaluate((targetId) => {
+        // Why not awaited: it blocks on the start confirmation this test answers below.
+        Reflect.set(window, '__e2eVpnHome', window.api.sftp.home(targetId))
+      }, ids.targetId)
+      const dialog = orcaPage.locator('[data-ssh-vpn-start-confirm]')
+      await expect(dialog.locator('[data-command-list]')).toContainText(ids.profileId)
+      await dialog.locator('[data-ssh-vpn-start-picker]').click()
+      await orcaPage.getByRole('option', { name: 'E2E picked VPN' }).click()
+      // The list now shows the picked VPN's own container, and nothing of the first one.
+      await expect(dialog.locator('[data-command-list]')).toContainText(picked)
+      await expect(dialog.locator('[data-command-list]')).not.toContainText(ids.profileId)
+      await expect(dialog).toContainText('E2E picked VPN')
+      await orcaPage.screenshot({ path: testInfo.outputPath('vpn-start-confirm-switched.png') })
+      await dialog.locator('[data-command-confirm-accept]').click()
+      await expect(dialog).toBeHidden()
+
+      const home = await orcaPage.evaluate(() => Reflect.get(window, '__e2eVpnHome'))
+      expect(home).toEqual({ ok: true, value: '/root' })
+      const snapshot = await orcaPage.evaluate(() => window.api.sshVpn.snapshot())
+      if (!snapshot.ok) {
+        throw new Error(snapshot.error.message)
+      }
+      expect(snapshot.value.assignments[ids.targetId]).toBe(picked)
+      const statusOf = (profileId: string): string =>
+        snapshot.value.states.find((state) => state.profileId === profileId)?.status ?? 'stopped'
+      expect(statusOf(picked)).toBe('ready')
+      expect(statusOf(ids.profileId)).toBe('stopped')
+    } finally {
+      removeProfileContainers(profileIds)
       await network.dispose()
     }
   })
