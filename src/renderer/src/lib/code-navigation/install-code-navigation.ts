@@ -5,16 +5,22 @@ import { installCodeNavigationDocumentLifecycle } from './code-navigation-docume
 import { installCodeNavigationStatusToasts } from './code-navigation-status-toasts'
 import { installCodeNavigationKeymap } from './code-navigation-keymap'
 import { installCodeNavigationPrewarm } from './code-navigation-prewarm'
+import { CodeNavigationActivation } from './code-navigation-activation'
+import { installCodeNavigationPreviewModelCleanup } from './code-navigation-preview-models'
+import { installExplicitNavigationArming } from './code-navigation-explicit-commands'
 
 /** Go to definition / references / implementation across files, backed by language servers,
  * plus JetBrains-style navigation keys and Back/Forward history. */
 export function installCodeNavigation(monaco: typeof Monaco): () => void {
-  const providers = registerCodeNavigationProviders(monaco)
+  const activation = new CodeNavigationActivation()
+  const disposeExplicitArming = installExplicitNavigationArming(activation)
+  const providers = registerCodeNavigationProviders(monaco, activation)
   const opener = registerCodeNavigationEditorOpener(monaco)
   const disposeLifecycle = installCodeNavigationDocumentLifecycle(monaco)
   const disposeToasts = installCodeNavigationStatusToasts()
-  const disposeKeymap = installCodeNavigationKeymap(monaco)
-  const disposePrewarm = installCodeNavigationPrewarm(monaco)
+  const disposeKeymap = installCodeNavigationKeymap(monaco, activation)
+  const disposePrewarm = installCodeNavigationPrewarm(monaco, activation)
+  const disposePreviewCleanup = installCodeNavigationPreviewModelCleanup(monaco)
   return () => {
     for (const provider of providers) {
       provider.dispose()
@@ -24,5 +30,7 @@ export function installCodeNavigation(monaco: typeof Monaco): () => void {
     disposeToasts()
     disposeKeymap()
     disposePrewarm()
+    disposePreviewCleanup()
+    disposeExplicitArming()
   }
 }

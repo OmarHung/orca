@@ -65,6 +65,7 @@ function definitionAt(
     kind: 'csharp',
     root: project.root,
     feature,
+    userInitiated: true,
     document: {
       path: join(project.root, relativePath),
       languageId: relativePath.endsWith('.cshtml') ? 'razor' : 'csharp',

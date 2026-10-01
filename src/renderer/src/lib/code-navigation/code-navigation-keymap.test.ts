@@ -31,6 +31,7 @@ vi.mock('./code-navigation-workspace', () => ({
 
 import { installCodeNavigationKeymap } from './code-navigation-keymap'
 import { codeNavigationHistory } from './code-navigation-history'
+import { CodeNavigationActivation } from './code-navigation-activation'
 
 type Handler = () => void
 
@@ -51,6 +52,7 @@ function fakeEditor(path: string) {
     onDidDispose: on('dispose'),
     hasTextFocus: () => textFocus,
     getPosition: () => position,
+    getModel: () => ({ uri: { toString: () => `file://${path}` } }),
     setPosition: vi.fn((next: { lineNumber: number; column: number }) => {
       position = next
     }),
@@ -83,6 +85,8 @@ let keydown: ((event: KeyboardEvent) => void) | null = null
 const setCodeEditorFocused = vi.fn()
 
 function setup() {
+  const activation = new CodeNavigationActivation()
+  const arm = vi.spyOn(activation, 'arm')
   let onCreate: ((editor: unknown) => void) | null = null
   const fakeMonaco = {
     editor: {
@@ -93,13 +97,13 @@ function setup() {
     }
   }
   // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the keymap only uses onDidCreateEditor.
-  const dispose = installCodeNavigationKeymap(fakeMonaco as never)
+  const dispose = installCodeNavigationKeymap(fakeMonaco as never, activation)
   const create = (path: string) => {
     const editor = fakeEditor(path)
     onCreate?.(editor)
     return editor
   }
-  return { create, dispose }
+  return { arm, create, dispose }
 }
 
 function press(key: string, options: { repeat?: boolean } = {}) {
@@ -152,7 +156,7 @@ describe('installCodeNavigationKeymap', () => {
   })
 
   it('runs Monaco navigation for a claimed chord and swallows the key', () => {
-    const { create, dispose } = setup()
+    const { arm, create, dispose } = setup()
     const tab = create('/a.ts')
 
     expect(press('b').preventDefault).not.toHaveBeenCalled()
@@ -165,6 +169,7 @@ describe('installCodeNavigationKeymap', () => {
     expect(event.stopPropagation).toHaveBeenCalled()
     expect(tab.trigger).toHaveBeenCalledTimes(1)
     expect(tab.trigger).toHaveBeenCalledWith('keyboard', 'editor.action.revealDefinition', null)
+    expect(arm).toHaveBeenCalledWith(tab, 'definition')
     dispose()
   })
 

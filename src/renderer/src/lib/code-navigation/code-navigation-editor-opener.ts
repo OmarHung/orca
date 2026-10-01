@@ -11,7 +11,7 @@ import {
 } from './code-navigation-workspace'
 import { filePathForNavigationUri } from './code-navigation-preview-models'
 import { codeNavigationHistory } from './code-navigation-history'
-import { isCodeNavigationMetadataPath } from '../../../../shared/code-navigation/code-navigation-types'
+import { isOrcaLanguageServerFilePath } from '../../../../shared/code-navigation/code-navigation-types'
 
 type TargetPosition = { lineNumber: number; column: number }
 
@@ -75,8 +75,8 @@ export function openNavigationTarget(
     // Why: without it an outside file moves to whichever project contains it (a project at the
     // home folder holds Orca's own server files), switching projects and stranding Back.
     ...(relativePath === null ? { staysInOpeningWorkspace: true } : {}),
-    // Decompiled sources are read-only files Orca regenerates; edits could never be saved.
-    ...(isCodeNavigationMetadataPath(targetPath) ? { readOnly: true } : {})
+    // Orca owns these cached sources; edits would corrupt the installed server or be regenerated.
+    ...(isOrcaLanguageServerFilePath(targetPath) ? { readOnly: true } : {})
   }
   const fileId = store.openFile(
     {

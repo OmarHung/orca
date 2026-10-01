@@ -172,6 +172,19 @@ describe('registerCodeNavigationEditorOpener', () => {
     )
   })
 
+  it('opens TypeScript server libraries read-only', () => {
+    const opener = register()
+    const library =
+      '/Users/me/Library/Application Support/orca/language-servers/typescript-native/7.0.2/package/lib/lib.dom.d.ts'
+
+    opener.openCodeEditor(sourceEditor, URI.file(library), { lineNumber: 1, column: 1 })
+
+    expect(store.openFile).toHaveBeenCalledWith(
+      expect.objectContaining({ readOnly: true, staysInOpeningWorkspace: true }),
+      expect.anything()
+    )
+  })
+
   it('reuses the path of a tab that already shows the target', () => {
     const opener = register()
     workspace.openTab = { filePath: '/repo/src/Lib.ts' }

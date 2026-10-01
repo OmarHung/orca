@@ -9,7 +9,7 @@ import { isLocalDebugTarget } from '@/components/debug/debug-launch'
 import { toEditorModelUri } from '@/components/editor/editor-model-uri'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 import { folderWorkspaceKey, parseWorkspaceKey } from '../../../../shared/workspace-scope'
-import { isCodeNavigationMetadataPath } from '../../../../shared/code-navigation/code-navigation-types'
+import { isOrcaLanguageServerFilePath } from '../../../../shared/code-navigation/code-navigation-types'
 import {
   codeNavigationLanguageForPath,
   type CodeNavigationLanguage
@@ -110,7 +110,7 @@ export function resolveCodeNavigationContext(
     !tab ||
     tab.runtimeEnvironmentId ||
     tab.externalSshTargetId ||
-    isCodeNavigationMetadataPath(tab.filePath)
+    isOrcaLanguageServerFilePath(tab.filePath)
   ) {
     return null
   }
