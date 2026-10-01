@@ -1,6 +1,6 @@
 # 編輯器程式碼跳轉：Vue／Nuxt 支援計畫（fork 專屬）
 
-> 狀態：規劃中（2026-10-01），尚未實作。§7 有待使用者決定的事項。
+> 狀態：規劃完成（2026-10-01），尚未實作。§7 的決定已由使用者確認。
 > 前置：[`code-navigation-lsp-plan.md`](./code-navigation-lsp-plan.md)（TS／JS／C# 的跳轉、JetBrains 快捷鍵、明確跳轉才啟動伺服器）。本文件只寫 Vue／Nuxt 多出來的部分。
 > 對象：接手實作的人或新對話。本文件可獨立閱讀。
 
@@ -67,7 +67,7 @@ TypeScript 7（Go 原生版，Orca 目前用的 7.0.2）沒有 tsserver，也沒
 ### 4.2 哪些檔案走 `vue`
 
 - `.vue` 一律走 `vue`（Monaco 語言 `vue` 加入 `CODE_NAVIGATION_MONACO_LANGUAGES`，languageId `vue`）。
-- `.ts`／`.tsx`／`.js`／`.jsx`／`.mts`／`.cts`／`.mjs`／`.cjs`：檔案往上找到的第一個 `package.json` 若相依（dependencies／devDependencies）含 `vue` 或 `nuxt`，就走 `vue`；否則照舊走 TS 7。理由見 §3.1 最後一列：TS 7 找參照會漏掉 `.vue`。（待決定 Q2）
+- `.ts`／`.tsx`／`.js`／`.jsx`／`.mts`／`.cts`／`.mjs`／`.cjs`：檔案往上找到的第一個 `package.json` 若相依（dependencies／devDependencies）含 `vue` 或 `nuxt`，就走 `vue`；否則照舊走 TS 7。理由見 §3.1 最後一列：TS 7 找參照會漏掉 `.vue`。（Q2：使用者選此做法）
 - 判斷在 main 做（renderer 仍依副檔名送 `typescript`／新的 `vue` 請求，main 依專案改派），結果依 `package.json` 路徑快取，`package.json` 變更時失效。
 
 ### 4.3 根目錄
@@ -80,7 +80,7 @@ TypeScript 7（Go 原生版，Orca 目前用的 7.0.2）沒有 tsserver，也沒
 
 - 新增 `vue-language-server-manifest.ts`：由腳本從 `package-lock.json` 產生，每個套件記錄 `node_modules` 內路徑、registry tarball URL、npm 的 `integrity`（sha512）。
 - 安裝器逐一下載、驗證 integrity、解壓到 `language-servers/vue/<版本>/node_modules/<路徑>`，全部成功才寫入完成標記（失敗就整個目錄丟掉，下次重來）。
-- 升級版本＝重跑產生腳本。（安裝方式待決定 Q1）
+- 升級版本＝重跑產生腳本。（Q1：使用者選「第一次用到時下載」）
 
 ### 4.5 Nuxt 自動匯入的二次解析
 
@@ -88,7 +88,7 @@ TypeScript 7（Go 原生版，Orca 目前用的 7.0.2）沒有 tsserver，也沒
 
 1. 結果中位於 `<根目錄>/.nuxt/` 的位置，讀該行；若符合 `typeof import('…').Name`，在行尾 `Name` 上再對同一個 session 查一次定義。
 2. 得到 `.nuxt/` 以外的位置就取代原位置；同一次查詢有任何一筆解析成功時，丟掉其餘仍在 `.nuxt/` 裡的位置，以及像 `useCartStore` 那種落在 `node_modules` 型別、而另一筆已解析到專案原始碼的重複結果（只在二次解析有結果時才丟，避免把唯一的答案丟掉）。
-3. `.nuxt/` 不存在（專案沒跑過 `nuxi prepare`／`npm install`）時，自動匯入的名稱會查不到：顯示一次性提示。（處理方式待決定 Q3）
+3. `.nuxt/` 不存在（專案沒跑過 `nuxi prepare`／`npm install`）時，自動匯入的名稱會查不到：顯示一次性提示，請使用者執行 `nuxi prepare`（Q3：使用者選提示，不自動執行）。
 
 ### 4.6 編輯器端
 
@@ -113,10 +113,10 @@ TypeScript 7（Go 原生版，Orca 目前用的 7.0.2）沒有 tsserver，也沒
 5. 編輯器端 → e2e（`ORCA_E2E_CODE_NAVIGATION=1`）：`.vue` 裡 ⌘B 元件標籤開到元件、⌘[ 回來；`.ts` Shift+F12 列出 `.vue` 用法。
 6. 用 `ecommerce_project` 的 shop／admin 手動驗收後再發佈。
 
-## 7. 待決定
+## 7. 決定（使用者 2026-10-01 確認）
 
-| # | 問題 | 選項 | 建議 |
+| # | 問題 | 選項 | 決定 |
 |---|---|---|---|
-| Q1 | 伺服器怎麼取得 | (a) 第一次用到時從 npm 下載 38 個套件並驗證；(b) 打包進 Orca app（app 大約多 38 MB） | (a)，與 TS／C# 伺服器一致，不影響 app 大小 |
-| Q2 | Vue 專案裡的 `.ts`／`.js` | (a) 改走 vtsls，找參照含 `.vue`；(b) 維持 TS 7（較快、較省記憶體），但查參照漏掉 `.vue` | (a) |
-| Q3 | `.nuxt/` 不存在時 | (a) 提示執行 `nuxi prepare`；(b) Orca 自動在背景執行；(c) 不處理 | (a)；(b) 會在使用者專案裡跑指令、寫檔 |
+| Q1 | 伺服器怎麼取得 | (a) 第一次用到時從 npm 下載 38 個套件並驗證；(b) 打包進 Orca app（app 大約多 38 MB） | **(a)**，與 TS／C# 伺服器一致，不影響 app 大小 |
+| Q2 | Vue 專案裡的 `.ts`／`.js` | (a) 改走 vtsls，找參照含 `.vue`；(b) 維持 TS 7（較快、較省記憶體），但查參照漏掉 `.vue` | **(a)** |
+| Q3 | `.nuxt/` 不存在時 | (a) 提示執行 `nuxi prepare`；(b) Orca 自動在背景執行；(c) 不處理 | **(a)**；(b) 會在使用者專案裡跑指令、寫檔 |
