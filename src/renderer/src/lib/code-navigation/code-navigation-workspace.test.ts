@@ -137,17 +137,21 @@ describe('resolveCodeNavigationContext', () => {
       ).toBe('wt-home')
     })
 
-    it('never sends decompiled sources to a server, even inside the home-folder project', () => {
-      const metadataPath =
-        '/home/Library/Application Support/orca/language-servers/csharp-metadata/MediatR-1/MediatR.ISender.cs'
-      const state = {
-        ...nestedState({ worktreeId: 'wt-home' }),
-        openFiles: [{ ...tab('wt-home'), id: 'metadata', filePath: metadataPath }]
+    it('never sends language-server-owned sources to a server inside the home project', () => {
+      const paths = [
+        '/home/Library/Application Support/orca/language-servers/csharp-metadata/MediatR-1/MediatR.ISender.cs',
+        '/home/Library/Application Support/orca/language-servers/typescript-native/7/package/lib/lib.dom.d.ts'
+      ]
+      for (const filePath of paths) {
+        const state = {
+          ...nestedState({ worktreeId: 'wt-home' }),
+          openFiles: [{ ...tab('wt-home'), id: 'server-source', filePath }]
+        }
+        expect(
+          // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: as above.
+          resolveCodeNavigationContext(state as never, toEditorModelUri(filePath))
+        ).toBeNull()
       }
-      expect(
-        // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: as above.
-        resolveCodeNavigationContext(state as never, toEditorModelUri(metadataPath))
-      ).toBeNull()
     })
 
     it('roots the server at the innermost project, not the home folder', () => {

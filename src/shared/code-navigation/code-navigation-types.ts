@@ -25,11 +25,13 @@ export type CodeNavigationQuery = {
   kind: CodeNavigationServerKind
   root: string
   feature: CodeNavigationFeature
+  /** True only for a navigation command the renderer observed the user invoke. */
+  userInitiated: boolean
   document: CodeNavigationDocument
   position: CodeNavigationPosition
 }
 
-export type CodeNavigationHoverQuery = Omit<CodeNavigationQuery, 'feature'>
+export type CodeNavigationHoverQuery = Omit<CodeNavigationQuery, 'feature' | 'userInitiated'>
 
 export type CodeNavigationHover = {
   /** Markdown blocks, shown in order. */
@@ -80,27 +82,21 @@ export function isCodeNavigationWatchedPath(kind: CodeNavigationServerKind, path
   return WATCHED_EXTENSIONS[kind].some((extension) => lower.endsWith(extension))
 }
 
-/** Folder under Orca's language-server directory that holds decompiled C# sources. */
+export const LANGUAGE_SERVERS_DIR_NAME = 'language-servers'
 export const CSHARP_METADATA_DIR_NAME = 'csharp-metadata'
+export const TYPESCRIPT_LANGUAGE_SERVER_DIR_NAME = 'typescript-native'
 
-// Keep in step with CSHARP_METADATA_DIR_NAME.
-const METADATA_PATH_PATTERN = /[\\/]language-servers[\\/]csharp-metadata[\\/]/
-
-/**
- * Whether a file is decompiled source Orca wrote itself. Such files belong to no project: under a
- * project rooted at the home folder they would otherwise start a server over the whole home folder.
- */
-export function isCodeNavigationMetadataPath(path: string): boolean {
-  return METADATA_PATH_PATTERN.test(path)
-}
-
-const LANGUAGE_SERVER_FILE_PATTERN =
-  /[\\/]language-servers[\\/](?:csharp-metadata|typescript-native)[\\/]/
+const ORCA_OWNED_LANGUAGE_SERVER_DIRS = [
+  CSHARP_METADATA_DIR_NAME,
+  TYPESCRIPT_LANGUAGE_SERVER_DIR_NAME
+] as const
 
 /**
  * Whether a file is one Orca's language servers own (decompiled C#, TypeScript's lib files). They
  * belong to no project, so a tab showing one never moves to a project whose folder contains it.
  */
 export function isOrcaLanguageServerFilePath(path: string): boolean {
-  return LANGUAGE_SERVER_FILE_PATTERN.test(path)
+  const normalized = path.replaceAll('\\', '/')
+  const base = `/${LANGUAGE_SERVERS_DIR_NAME}/`
+  return ORCA_OWNED_LANGUAGE_SERVER_DIRS.some((dir) => normalized.includes(`${base}${dir}/`))
 }

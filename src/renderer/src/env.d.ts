@@ -53,6 +53,21 @@ declare module 'monaco-editor/esm/vs/editor/browser/controller/editContext/clipb
   }
 }
 
+// Go to Definition/Type/Implementation/References and their Peek forms. Members are optional so a
+// Monaco upgrade that renames them disables the hook instead of breaking navigation.
+declare module 'monaco-editor/esm/vs/editor/contrib/gotoSymbol/browser/goToCommands.js' {
+  export class SymbolNavigationAction {
+    readonly desc?: { readonly id?: string }
+    runEditorCommand?(
+      this: SymbolNavigationAction,
+      accessor: unknown,
+      codeEditor: editor.ICodeEditor,
+      ...args: unknown[]
+    ): Promise<unknown>
+  }
+  export class DefinitionAction extends SymbolNavigationAction {}
+}
+
 // The same class the public `monaco.Uri` re-exports, reachable without loading the editor bundle.
 declare module 'monaco-editor/esm/vs/base/common/uri.js' {
   export class URI {
