@@ -5,14 +5,16 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { translate } from '@/i18n/i18n'
 import { basename } from '@/lib/path'
 import { useAppStore } from '@/store'
+import { findWorktreeById } from '@/store/slices/worktree-helpers'
 import { useBreakpointStore, type BreakpointSpec } from './breakpoint-store'
 import {
   removeDebugBreakpoint,
   setDebugExceptionFilters,
   updateDebugBreakpoint
 } from './breakpoint-sync'
+import { isInDebugScope, type DebugBreakpointScope } from './debug-breakpoint-scope'
 import { revealDebugLocation } from './debug-editor-navigation'
-import { useDebugStore } from './debug-store'
+import type { DebugSession } from './debug-store'
 
 function describeSpec(spec: BreakpointSpec): string | null {
   if (spec.logMessage) {
@@ -21,28 +23,25 @@ function describeSpec(spec: BreakpointSpec): string | null {
   return spec.condition ?? (spec.hitCondition ? `hit ${spec.hitCondition}` : null)
 }
 
-function ExceptionFilters(): React.JSX.Element | null {
-  const options = useDebugStore((s) => s.exceptionFilterOptions)
-  const chosen = useBreakpointStore((s) =>
-    options ? s.exceptionFiltersByAdapter[options.adapterId] : undefined
-  )
-  if (!options || options.filters.length === 0) {
+function ExceptionFilters({ session }: { session: DebugSession }): React.JSX.Element | null {
+  const { adapterId, exceptionFilters: filters } = session
+  const chosen = useBreakpointStore((s) => s.exceptionFiltersByAdapter[adapterId])
+  if (filters.length === 0) {
     return null
   }
-  const active =
-    chosen ?? options.filters.filter((filter) => filter.default).map((filter) => filter.filter)
+  const active = chosen ?? filters.filter((filter) => filter.default).map((filter) => filter.filter)
   return (
     <div className="border-b border-border px-2 py-1.5" data-testid="debug-exception-filters">
       <div className="pb-1 text-xs text-muted-foreground">
         {translate('debug.breakpoints.exceptions', 'Pause on exceptions')}
       </div>
-      {options.filters.map((filter) => (
+      {filters.map((filter) => (
         <label key={filter.filter} className="flex items-center gap-2 py-0.5 text-xs">
           <Checkbox
             checked={active.includes(filter.filter)}
             onCheckedChange={(checked) =>
               setDebugExceptionFilters(
-                options.adapterId,
+                adapterId,
                 checked === true
                   ? [...active, filter.filter]
                   : active.filter((id) => id !== filter.filter)
@@ -56,14 +55,31 @@ function ExceptionFilters(): React.JSX.Element | null {
   )
 }
 
-export function DebugBreakpointsList(): React.JSX.Element {
+/**
+ * A session's breakpoints (its workspace, its language); with no session, the workspace's.
+ * Breakpoints of other workspaces never show, as JetBrains keeps them per project.
+ */
+export function DebugBreakpointsList({
+  session,
+  worktreeId: activeWorktreeId
+}: {
+  session: DebugSession | null
+  worktreeId: string | null
+}): React.JSX.Element {
   const breakpointsByFile = useBreakpointStore((s) => s.breakpointsByFile)
-  const worktreeId = useAppStore((s) => s.activeWorktreeId)
-  const files = Object.entries(breakpointsByFile).sort(([a], [b]) => a.localeCompare(b))
+  const worktreeId = session?.worktreeId ?? activeWorktreeId
+  const worktreePath = useAppStore(
+    (s) => findWorktreeById(s.worktreesByRepo, worktreeId ?? '')?.path ?? null
+  )
+  const scope: DebugBreakpointScope | null =
+    session ?? (worktreePath ? { rootPath: worktreePath } : null)
+  const files = Object.entries(breakpointsByFile)
+    .filter(([path]) => scope !== null && isInDebugScope(scope, path))
+    .sort(([a], [b]) => a.localeCompare(b))
 
   return (
     <div className="flex min-h-0 flex-1 flex-col" data-testid="debug-breakpoints">
-      <ExceptionFilters />
+      {session ? <ExceptionFilters session={session} /> : null}
       <div className="scrollbar-sleek min-h-0 flex-1 overflow-auto">
         {files.length === 0 ? (
           <div className="px-2 py-1 text-xs text-muted-foreground">

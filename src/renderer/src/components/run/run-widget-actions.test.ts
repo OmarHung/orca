@@ -68,7 +68,7 @@ describe('stopRunWidgetItem', () => {
           run('b', { status: 'stopping' }),
           run('c', { status: 'stopping' })
         ],
-        debug: null
+        debugSessions: []
       },
       'wt'
     )
@@ -84,17 +84,18 @@ describe('stopRunWidgetItem', () => {
 })
 
 describe('stopAllRunningProcesses', () => {
-  it('interrupts the running ones first, and stops the debug session', () => {
+  it('interrupts the running ones first, and stops every debug session', () => {
     const processes: RunningProcess[] = [
       { kind: 'run', key: 'k1', label: 'a', commandKey: 'a', stage: 'force' },
       { kind: 'run', key: 'k2', label: 'b', commandKey: 'b', stage: 'interrupt' },
-      { kind: 'debug', key: 'debug:1', label: 'Api' }
+      { kind: 'debug', key: 'debug:1', label: 'Api', sessionId: '1' },
+      { kind: 'debug', key: 'debug:2', label: 'Web', sessionId: '2' }
     ]
 
     stopAllRunningProcesses(processes, 'wt')
 
     expect(mocks.cancelPendingLaunches).toHaveBeenCalledWith('wt')
     expect(mocks.stopConfiguration.mock.calls).toEqual([['wt', 'b']])
-    expect(mocks.stopDebugSession).toHaveBeenCalledTimes(1)
+    expect(mocks.stopDebugSession.mock.calls).toEqual([['1'], ['2']])
   })
 })

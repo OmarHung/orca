@@ -113,7 +113,7 @@ describe('runWidgetFootprint', () => {
 })
 
 describe('worktreeRunActivity', () => {
-  it('keeps active runs with a live tab in this worktree, and a debug session that has not ended', () => {
+  it('keeps active runs with a live tab in this worktree, and debug sessions that have not ended', () => {
     const activity = worktreeRunActivity({
       worktreeId: 'wt',
       sessions: [
@@ -124,23 +124,19 @@ describe('worktreeRunActivity', () => {
         session('detected:api', { status: 'stopping' })
       ],
       liveLeafIds: new Set(['leaf-config:shop', 'leaf-config:admin', 'leaf-detected:api']),
-      debug: debugSession
+      debugSessions: [
+        debugSession,
+        { ...debugSession, id: 'd2', phase: 'ended' },
+        { ...debugSession, id: 'd3', worktreeId: 'wt2' }
+      ]
     })
     expect(activity.runs.map((run) => run.commandKey)).toEqual(['config:shop', 'detected:api'])
-    expect(activity.debug).toBe(debugSession)
-    expect(
-      worktreeRunActivity({
-        worktreeId: 'wt',
-        sessions: [],
-        liveLeafIds: new Set(),
-        debug: { ...debugSession, phase: 'ended' }
-      }).debug
-    ).toBeNull()
+    expect(activity.debugSessions).toEqual([debugSession])
   })
 })
 
 describe('footprint activity', () => {
-  const activity = { runs: [session('config:admin')], debug: debugSession }
+  const activity = { runs: [session('config:admin')], debugSessions: [debugSession] }
 
   it('reports the compound as active through any member', () => {
     expect(footprintRuns(footprint('Run:all'), activity).map((run) => run.commandKey)).toEqual([
@@ -149,7 +145,9 @@ describe('footprint activity', () => {
     expect(isFootprintDebugging(footprint('Run:all'), activity)).toBe(true)
     expect(isFootprintActive(footprint('shop:dev'), activity)).toBe(false)
     expect(isFootprintActive(footprint('Api'), activity)).toBe(true)
-    expect(isFootprintActive(footprint('Web'), { runs: [], debug: debugSession })).toBe(false)
+    expect(isFootprintActive(footprint('Web'), { runs: [], debugSessions: [debugSession] })).toBe(
+      false
+    )
   })
 
   it('lists runs, then the debug session, for the Stop menu', () => {
@@ -161,7 +159,7 @@ describe('footprint activity', () => {
         commandKey: 'config:admin',
         stage: 'interrupt'
       },
-      { kind: 'debug', key: 'debug:d1', label: 'Api' }
+      { kind: 'debug', key: 'debug:d1', label: 'Api', sessionId: 'd1' }
     ])
   })
 })

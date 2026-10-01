@@ -24,7 +24,7 @@ import {
   type RunWidgetActivity,
   type RunWidgetFootprint
 } from './run-widget-activity'
-import type { RunWidgetItem } from './run-widget-items'
+import { debugSourceKeyOf, type RunWidgetItem } from './run-widget-items'
 import { useLiveRunSession } from './use-live-run-session'
 
 function runLabel(item: RunWidgetItem, debugging: boolean): string {
@@ -107,7 +107,9 @@ function SingleRunActions({
   const target = runWidgetSessionTarget(item, scope)
   const runSession = useLiveRunSession(target)
   const running = runSession !== null && isRunSessionActive(runSession.status)
-  const debugging = useDebugStore((s) => isDebuggingSource(s.session, scope.worktreeId, item.key))
+  const debugging = useDebugStore((s) =>
+    isDebuggingSource(s.sessions, scope.worktreeId, debugSourceKeyOf(item))
+  )
   const debug = (): void => void debugWidgetItem(item, scope, confirm)
 
   return (
