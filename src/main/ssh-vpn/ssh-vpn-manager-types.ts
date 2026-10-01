@@ -48,6 +48,21 @@ export class SshVpnStartDeclinedError extends Error {
   override name = 'SshVpnStartDeclinedError'
 }
 
+/**
+ * The host was switched to another VPN instead of starting this one; the caller routes again.
+ * A decline to the manager, so the VPN that was asked about stays stopped without an error.
+ */
+export class SshVpnProfileSwitchedError extends SshVpnStartDeclinedError {
+  override name = 'SshVpnProfileSwitchedError'
+
+  constructor(
+    /** What the user saw and approved for the new VPN; null when nothing was approved yet. */
+    readonly approvedCommands: readonly string[] | null
+  ) {
+    super('The host switched to another VPN')
+  }
+}
+
 export type SshVpnStartOptions = {
   confirm?: SshVpnStartConfirm
   /** For profiles that ask for a login; null means the user cancelled. */

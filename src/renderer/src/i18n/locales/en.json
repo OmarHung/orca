@@ -19804,7 +19804,14 @@
       "isolated": "It runs in a Docker container; the rest of this computer stays off the VPN.",
       "title": "Start VPN \"{{name}}\"?",
       "tunnelNote": "Each SSH connection then runs `docker exec -i <container> nc <host> <port>` to reach the host through the VPN.",
-      "start": "Start VPN"
+      "start": "Start VPN",
+      "useTitle": "Connect through VPN \"{{name}}\"?",
+      "profile": "VPN",
+      "switchNote": "From now on {{host}} connects through this VPN.",
+      "loading": "Checking what this VPN needs…",
+      "alreadyUp": "This VPN is already connected; nothing needs to run.",
+      "borrowedNote": "This VPN runs in the container {{name}}, which is started and stopped outside Orca. Orca only checks it and connects through it.",
+      "connect": "Connect"
     },
     "button": "VPN",
     "login": {
