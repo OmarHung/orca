@@ -31,6 +31,7 @@ import {
   type RunWidgetFootprint
 } from './run-widget-activity'
 import { configurationIdOfCommandKey, type RunWidgetItem } from './run-widget-items'
+import { runConfigurationKindOf } from './run-mode'
 
 export type RunWidgetScope = { worktreeId: string; groupId: string | null; worktreePath: string }
 
@@ -54,7 +55,13 @@ export function runWidgetSessionTarget(
       }
       const launch = resolveCommandLaunch(command, { workspaceFolder: scope.worktreePath })
       return launch.ok
-        ? configurationRunTarget(command, launch.value, scope.worktreeId, scope.groupId)
+        ? configurationRunTarget(
+            command,
+            launch.value,
+            scope.worktreeId,
+            scope.groupId,
+            runConfigurationKindOf(item.configuration)
+          )
         : null
     }
   }

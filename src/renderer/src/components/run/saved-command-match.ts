@@ -45,7 +45,7 @@ export function savedCommandFor(
  * configuration, so the two share one single-instance terminal instead of running twice.
  */
 export function savedRunFor(
-  target: Pick<RunTarget, 'command' | 'cwd' | 'worktreeId' | 'groupId'>,
+  target: Pick<RunTarget, 'command' | 'cwd' | 'worktreeId' | 'groupId' | 'kind'>,
   configurations: readonly RunConfigurationDefinition[],
   worktreePath: string
 ): SavedRun | null {
@@ -54,14 +54,20 @@ export function savedRunFor(
   return saved && launch?.ok
     ? {
         id: saved.id,
-        target: configurationRunTarget(saved, launch.value, target.worktreeId, target.groupId)
+        target: configurationRunTarget(
+          saved,
+          launch.value,
+          target.worktreeId,
+          target.groupId,
+          target.kind
+        )
       }
     : null
 }
 
 /** `savedRunFor` with the workspace's configurations as currently stored. */
 export function storedSavedRunFor(
-  target: Pick<RunTarget, 'command' | 'cwd' | 'worktreeId' | 'groupId'>
+  target: Pick<RunTarget, 'command' | 'cwd' | 'worktreeId' | 'groupId' | 'kind'>
 ): { repoId: string; saved: SavedRun } | null {
   const { worktreesByRepo } = useAppStore.getState()
   const worktree = worktreesByRepo

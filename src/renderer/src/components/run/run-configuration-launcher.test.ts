@@ -60,7 +60,9 @@ beforeEach(() => {
           beforeLaunch: ['build']
         },
         { type: 'command', id: 'web', name: 'Web', command: 'pnpm dev' },
-        { type: 'compound', id: 'all', name: 'All', configurations: ['api', 'web'] }
+        { type: 'compound', id: 'all', name: 'All', configurations: ['api', 'web'] },
+        { type: 'dotnet-publish', id: 'ship', name: 'Ship', projectFile: 'api/Api.csproj' },
+        { type: 'compound', id: 'release', name: 'Release', configurations: ['web', 'ship'] }
       ]
     },
     selectedByRepo: {},
@@ -100,6 +102,16 @@ describe('launchRunConfiguration', () => {
     await launch('api')
     expect(mocks.debugLaunchTarget).not.toHaveBeenCalled()
     expect(mocks.toastError).toHaveBeenCalled()
+  })
+
+  it('marks a publish run as a publish, also inside a compound', async () => {
+    await launch('release')
+    expect(mocks.runConfiguration).toHaveBeenCalledWith(
+      expect.objectContaining({ commandKey: 'config:ship', kind: 'publish' })
+    )
+    expect(mocks.runConfiguration).toHaveBeenCalledWith(
+      expect.not.objectContaining({ kind: expect.anything() })
+    )
   })
 
   it('starts every compound member', async () => {

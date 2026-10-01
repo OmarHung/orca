@@ -1,5 +1,5 @@
 import React from 'react'
-import { Bug, Square } from 'lucide-react'
+import { Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
+import { RunModeIcon } from './RunModeIcon'
 import { ControlButton } from './RunSessionControls'
 import { gentlestStopStage } from './run-session-store'
 import {
@@ -66,7 +67,7 @@ function StopMenu({
               data-testid="run-stop"
               className="relative"
             >
-              <Square />
+              <Square className="text-destructive" />
               <span
                 aria-hidden
                 className="absolute -right-0.5 -bottom-0.5 flex h-3 min-w-3 items-center justify-center rounded-full bg-primary px-0.5 text-[9px] leading-none font-medium text-primary-foreground tabular-nums"
@@ -83,14 +84,18 @@ function StopMenu({
       <DropdownMenuContent align="end" className="min-w-52">
         {processes.map((process) => {
           const action = stopProcessAction(process)
-          const Icon = process.kind === 'debug' ? Bug : action.icon
+          const Icon = action.icon
           return (
             <DropdownMenuItem
               key={process.key}
               data-testid="run-stop-item"
               onSelect={() => stopRunningProcess(process, worktreeId)}
             >
-              <Icon />
+              {process.kind === 'debug' ? (
+                <RunModeIcon mode="debug" />
+              ) : (
+                <Icon className="text-destructive" />
+              )}
               <span className="truncate">{action.label}</span>
               {process.kind === 'run' && process.stage !== 'interrupt' ? (
                 <DropdownMenuShortcut>{stoppingLabel()}</DropdownMenuShortcut>
@@ -103,7 +108,7 @@ function StopMenu({
           data-testid="run-stop-all"
           onSelect={() => stopAllRunningProcesses(processes, worktreeId)}
         >
-          <StopAllIcon />
+          <StopAllIcon className="text-destructive" />
           {stopAll.label}
           <DropdownMenuShortcut>{count}</DropdownMenuShortcut>
         </DropdownMenuItem>
@@ -140,7 +145,8 @@ export function RunStopControl({
           action={{
             ...onlyAction,
             testId: 'run-stop',
-            onClick: () => stopRunningProcess(only, worktreeId)
+            onClick: () => stopRunningProcess(only, worktreeId),
+            isStop: true
           }}
         />
       ) : (
