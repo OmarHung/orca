@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Bug, ListTree } from 'lucide-react'
+import { Bug, ListTree, Upload } from 'lucide-react'
 import {
   ContextMenuItem,
   ContextMenuLabel,
@@ -24,6 +24,7 @@ import {
   detectProjectRunConfigurations,
   mayContainRunConfigurations
 } from './project-run-detection'
+import { openDockerExportDialog } from './docker-export-dialog-store'
 import { openDotnetPublishDialog } from './dotnet-publish-dialog-store'
 import { RUN_KIND_ICONS } from './run-configuration-icon'
 
@@ -127,6 +128,7 @@ export function ProjectRunContextMenuItems({
     void debugDetectedConfiguration(configuration, worktreeId, groupId, confirm)
   }
   const primaryDebug = configurations.find((configuration) => configuration.debug)
+  const exportFrom = configurations.find((configuration) => configuration.dockerExport)
   const primary = PRIMARY_KINDS.flatMap((kind) => {
     const first = configurations.find((configuration) => configuration.kind === kind)
     return first ? [first] : []
@@ -143,6 +145,16 @@ export function ProjectRunContextMenuItems({
           onRun={runPrimary}
         />
       ))}
+      {exportFrom ? (
+        <ContextMenuItem onSelect={() => openDockerExportDialog(exportFrom, worktreeId, groupId)}>
+          <Upload />
+          <span className="truncate">
+            {translate('run.menu.exportToFolder', "Export '{{value0}}' to Folder…", {
+              value0: exportFrom.projectName
+            })}
+          </span>
+        </ContextMenuItem>
+      ) : null}
       {primaryDebug ? (
         <ContextMenuItem onSelect={() => debug(primaryDebug)}>
           <Bug />

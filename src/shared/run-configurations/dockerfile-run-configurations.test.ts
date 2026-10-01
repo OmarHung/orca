@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { detectDockerfileRunConfigurations, isDockerfile } from './dockerfile-run-configurations'
+import {
+  detectDockerfileRunConfigurations,
+  dockerExportStages,
+  isDockerfile
+} from './dockerfile-run-configurations'
 
 const VISUAL_STUDIO = [
   'FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base',
@@ -106,5 +110,47 @@ describe('detectDockerfileRunConfigurations', () => {
 
     expect(commands(configurations).run).toBe('docker run --rm -it -p 80:80 api')
     expect(configurations[0].projectFile).toBe('C:\\w\\api\\Dockerfile')
+  })
+
+  it('offers export stages on the build, with the context they build from', () => {
+    const [run, build] = detectDockerfileRunConfigurations({
+      projectDir: '/w/src/Api',
+      workspaceRoot: '/w',
+      fileName: 'Dockerfile',
+      text: `${VISUAL_STUDIO}\nFROM scratch AS export-api\nCOPY --from=build /app/publish /\nFROM base AS final`
+    })
+
+    expect(run.dockerExport).toBeUndefined()
+    expect(build.dockerExport).toEqual({ contextDir: '/w', stages: ['export-api'] })
+  })
+
+  it('does not offer Run when the final stage only holds files to export', () => {
+    const configurations = detectDockerfileRunConfigurations({
+      projectDir: '/w/app',
+      workspaceRoot: '/w',
+      fileName: 'Dockerfile',
+      text: 'FROM node:20 AS build\nRUN npm run build\nFROM scratch AS export\nCOPY --from=build /out /'
+    })
+
+    expect(configurations.map((configuration) => configuration.name)).toEqual(['build'])
+  })
+})
+
+describe('dockerExportStages', () => {
+  it('lists named scratch stages that cannot run', () => {
+    expect(
+      dockerExportStages(
+        [
+          'FROM golang AS build',
+          'FROM scratch AS export-bin',
+          'COPY --from=build /out /',
+          'FROM scratch AS app',
+          'COPY --from=build /out/app /app',
+          'ENTRYPOINT ["/app"]',
+          'FROM scratch',
+          'COPY a /'
+        ].join('\n')
+      )
+    ).toEqual(['export-bin'])
   })
 })
