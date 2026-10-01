@@ -7,6 +7,7 @@ import type {
   DebugLaunchOptions,
   DebugLaunchTarget
 } from '../../../../shared/debug/debug-session-types'
+import type { RunConfigurationKind } from '../../../../shared/run-configurations/run-configuration-types'
 
 export type RunTarget = {
   worktreeId: string
@@ -18,6 +19,8 @@ export type RunTarget = {
   /** How to debug the same configuration, when an adapter supports it. */
   debug?: DebugLaunchTarget
   debugOptions?: DebugLaunchOptions
+  /** What the run does (build, publish…), for its mode icon; a plain run when omitted. */
+  kind?: RunConfigurationKind
 }
 
 /** Only shell commands are run configurations; agent prompts start agents and have no Stop/Rerun. */
