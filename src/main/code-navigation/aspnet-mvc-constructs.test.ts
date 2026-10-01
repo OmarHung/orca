@@ -88,6 +88,13 @@ describe('detectMvcConstruct in views', () => {
       area: null
     })
   })
+
+  it.each(['constructor', 'hasOwnProperty', 'toLocaleString', 'valueOf'])(
+    'ignores JavaScript calls named %s',
+    (name) => {
+      expect(at(VIEW, `<script>const value = n.${name}('en|-US')</script>`)).toBeNull()
+    }
+  )
 })
 
 describe('detectMvcConstruct in controllers', () => {
@@ -151,5 +158,33 @@ describe('detectMvcConstruct in controllers', () => {
       at(CONTROLLER, controller('    public IActionResult A() => RedirectToAction("A",| "B");'))
     ).toBeNull()
     expect(at(CONTROLLER, controller('    public object A() => model.Vi|ew();'))).toBeNull()
+  })
+
+  it('maps reordered named routing arguments by parameter name', () => {
+    expect(
+      at(
+        CONTROLLER,
+        controller(
+          '    public IActionResult A() => RedirectToAction(controllerName: "Ord|ers", actionName: "Index");'
+        )
+      )
+    ).toEqual({
+      kind: 'controller',
+      controller: 'Orders',
+      area: 'Admin'
+    })
+    expect(
+      at(
+        CONTROLLER,
+        controller(
+          '    public IActionResult A() => RedirectToAction(controllerName: "Orders", actionName: "Ind|ex");'
+        )
+      )
+    ).toEqual({
+      kind: 'action',
+      action: 'Index',
+      controller: 'Orders',
+      area: 'Admin'
+    })
   })
 })

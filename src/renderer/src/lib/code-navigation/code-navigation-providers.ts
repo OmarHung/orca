@@ -10,6 +10,7 @@ import { resolveCodeNavigationContext } from './code-navigation-workspace'
 import { navigationUriForPath, sweepIdlePreviewModels } from './code-navigation-preview-models'
 import { rememberSyncedDocument } from './code-navigation-document-lifecycle'
 import { inFileHover, inFileLocations } from './code-navigation-ts-worker-fallback'
+import type { CodeNavigationActivation } from './code-navigation-activation'
 
 type MonacoApi = typeof Monaco
 
@@ -28,10 +29,14 @@ function toMonacoRange(monaco: MonacoApi, range: CodeNavigationRange): Monaco.Ra
 /** The server request for this model and position, or null when Monaco's own worker must answer. */
 export function serverRequestFor(
   model: Monaco.editor.ITextModel,
-  position: Monaco.IPosition
+  position: Monaco.IPosition,
+  activation?: CodeNavigationActivation
 ): CodeNavigationHoverQuery | null {
   const context = resolveCodeNavigationContext(useAppStore.getState(), model.uri.toString())
   if (!window.api?.codeNavigation || !context) {
+    return null
+  }
+  if (activation && !activation.isWorkspaceActivated(context.kind, context.root)) {
     return null
   }
   if (model.getValueLength() > MAX_SYNCED_DOCUMENT_CHARS) {
@@ -61,14 +66,19 @@ async function provideLocations(
   feature: CodeNavigationFeature,
   model: Monaco.editor.ITextModel,
   position: Monaco.Position,
-  token: Monaco.CancellationToken
+  token: Monaco.CancellationToken,
+  activation: CodeNavigationActivation
 ): Promise<Monaco.languages.Location[] | undefined> {
-  const request = serverRequestFor(model, position)
+  const userInitiated = activation.consume(model, feature)
+  const request = serverRequestFor(model, position, userInitiated ? undefined : activation)
   const api = window.api?.codeNavigation
   if (!request || !api) {
     return inFileLocations(monaco, feature, model, position)
   }
-  const result = await api.query({ ...request, feature })
+  const result = await api.query({ ...request, feature, userInitiated })
+  if (userInitiated) {
+    activation.activateWorkspace(request.kind, request.root)
+  }
   if (token.isCancellationRequested || model.isDisposed()) {
     return undefined
   }
@@ -86,9 +96,10 @@ async function provideHover(
   monaco: MonacoApi,
   model: Monaco.editor.ITextModel,
   position: Monaco.Position,
-  token: Monaco.CancellationToken
+  token: Monaco.CancellationToken,
+  activation: CodeNavigationActivation
 ): Promise<Monaco.languages.Hover | undefined> {
-  const request = serverRequestFor(model, position)
+  const request = serverRequestFor(model, position, activation)
   const api = window.api?.codeNavigation
   if (!request || !api) {
     return inFileHover(monaco, model, position)
@@ -117,7 +128,10 @@ async function provideHover(
  * provider's results, and the worker's guesses (an import line as the "definition", `any` for
  * imported types) would sit next to the real answer.
  */
-export function registerCodeNavigationProviders(monaco: MonacoApi): Monaco.IDisposable[] {
+export function registerCodeNavigationProviders(
+  monaco: MonacoApi,
+  activation: CodeNavigationActivation
+): Monaco.IDisposable[] {
   for (const defaults of [
     monaco.typescript.typescriptDefaults,
     monaco.typescript.javascriptDefaults
@@ -132,22 +146,23 @@ export function registerCodeNavigationProviders(monaco: MonacoApi): Monaco.IDisp
   return CODE_NAVIGATION_MONACO_LANGUAGES.flatMap((language) => [
     monaco.languages.registerDefinitionProvider(language, {
       provideDefinition: (model, position, token) =>
-        provideLocations(monaco, 'definition', model, position, token)
+        provideLocations(monaco, 'definition', model, position, token, activation)
     }),
     monaco.languages.registerTypeDefinitionProvider(language, {
       provideTypeDefinition: (model, position, token) =>
-        provideLocations(monaco, 'typeDefinition', model, position, token)
+        provideLocations(monaco, 'typeDefinition', model, position, token, activation)
     }),
     monaco.languages.registerReferenceProvider(language, {
       provideReferences: (model, position, _context, token) =>
-        provideLocations(monaco, 'references', model, position, token)
+        provideLocations(monaco, 'references', model, position, token, activation)
     }),
     monaco.languages.registerImplementationProvider(language, {
       provideImplementation: (model, position, token) =>
-        provideLocations(monaco, 'implementation', model, position, token)
+        provideLocations(monaco, 'implementation', model, position, token, activation)
     }),
     monaco.languages.registerHoverProvider(language, {
-      provideHover: (model, position, token) => provideHover(monaco, model, position, token)
+      provideHover: (model, position, token) =>
+        provideHover(monaco, model, position, token, activation)
     })
   ])
 }

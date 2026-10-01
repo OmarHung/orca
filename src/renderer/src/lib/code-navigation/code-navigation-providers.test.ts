@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // The same module the public `monaco.Uri` re-exports, without loading the editor bundle.
 import { URI } from 'monaco-editor/esm/vs/base/common/uri.js'
 import { CODE_NAVIGATION_PREVIEW_SCHEME } from './code-navigation-preview-models'
+import { CodeNavigationActivation } from './code-navigation-activation'
+import type { CodeNavigationFeature } from '../../../../shared/code-navigation/code-navigation-types'
 
 const context = vi.hoisted((): { current: unknown } => ({ current: null }))
 
@@ -31,7 +33,7 @@ function fakeModel(path: string, language = 'typescript') {
     getLanguageId: () => language,
     getValueLength: () => TEXT.length,
     getVersionId: () => 7,
-    getValue: () => TEXT,
+    getValue: vi.fn(() => TEXT),
     isDisposed: () => false,
     getOffsetAt: () => 35,
     getPositionAt: (offset: number) => ({ lineNumber: 1, column: offset + 1 })
@@ -39,6 +41,7 @@ function fakeModel(path: string, language = 'typescript') {
 }
 
 function setup(workerEntries: unknown[] = []) {
+  const activation = new CodeNavigationActivation()
   const providers = new Map<string, Provider>()
   const models = new Map<string, unknown>()
   const register =
@@ -87,16 +90,28 @@ function setup(workerEntries: unknown[] = []) {
     }
   }
   // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the providers only use the members faked above.
-  registerCodeNavigationProviders(monaco as never)
+  registerCodeNavigationProviders(monaco as never, activation)
   const token = { isCancellationRequested: false }
-  const call = (language: string, feature: string, model: ReturnType<typeof fakeModel>) => {
+  const call = (
+    language: string,
+    feature: CodeNavigationFeature | 'hover',
+    model: ReturnType<typeof fakeModel>,
+    userInitiated = false
+  ) => {
     models.set(model.uri.toString(), model)
+    if (userInitiated && feature !== 'hover') {
+      activation.arm(modelEditor(model), feature)
+    }
     const provider = providers.get(`${language}:${feature}`)!
     return feature === 'references'
       ? provider(model, { lineNumber: 2, column: 2 }, {}, token)
       : provider(model, { lineNumber: 2, column: 2 }, token)
   }
-  return { monaco, providers, models, worker, call }
+  return { activation, monaco, providers, models, worker, call }
+}
+
+function modelEditor(model: ReturnType<typeof fakeModel>) {
+  return { getModel: () => model }
 }
 
 const query = vi.fn()
@@ -168,12 +183,13 @@ describe('registerCodeNavigationProviders', () => {
       previews: { '/repo/greeter.ts': 'export function greet() {}' }
     })
 
-    const locations = await call('typescript', 'definition', fakeModel('/repo/app.ts'))
+    const locations = await call('typescript', 'definition', fakeModel('/repo/app.ts'), true)
 
     expect(query).toHaveBeenCalledWith({
       kind: 'typescript',
       root: '/repo',
       feature: 'definition',
+      userInitiated: true,
       document: { path: '/repo/app.ts', languageId: 'typescript', version: 7, text: TEXT },
       position: { line: 1, character: 1 }
     })
@@ -213,7 +229,7 @@ describe('registerCodeNavigationProviders', () => {
     }
     query.mockResolvedValue({ ok: false, message: 'server exited' })
 
-    await call('typescript', 'definition', model)
+    await call('typescript', 'definition', model, true)
 
     expect(worker.getDefinitionAtPosition).toHaveBeenCalled()
   })
@@ -227,7 +243,7 @@ describe('registerCodeNavigationProviders', () => {
   })
 
   it('shows the language server hover as Markdown', async () => {
-    const { call } = setup()
+    const { activation, call } = setup()
     context.current = {
       kind: 'csharp',
       languageId: 'csharp',
@@ -241,6 +257,7 @@ describe('registerCodeNavigationProviders', () => {
         range: { start: { line: 1, character: 0 }, end: { line: 1, character: 5 } }
       }
     })
+    activation.activateWorkspace('csharp', '/repo')
 
     const result = await call('csharp', 'hover', fakeModel('/repo/App.cs', 'csharp'))
 
@@ -251,7 +268,7 @@ describe('registerCodeNavigationProviders', () => {
     })
   })
 
-  it('keeps the TS worker hover where no server runs or the server is not installed', async () => {
+  it('keeps the TS worker hover where no server runs or the workspace is not activated', async () => {
     const { call, worker } = setup()
     const remote = await call('typescript', 'hover', fakeModel('/remote/app.ts'))
 
@@ -261,10 +278,10 @@ describe('registerCodeNavigationProviders', () => {
       root: '/repo',
       tab: { filePath: '/repo/app.ts' }
     }
-    hover.mockResolvedValue({ ok: false, message: 'The language server is not installed' })
-    const notInstalled = await call('typescript', 'hover', fakeModel('/repo/app.ts'))
+    const inactive = await call('typescript', 'hover', fakeModel('/repo/app.ts'))
 
     expect(worker.getQuickInfoAtPosition).toHaveBeenCalledTimes(2)
+    expect(hover).not.toHaveBeenCalled()
     expect(remote).toEqual({
       range: new FakeRange(1, 10, 1, 15),
       contents: [
@@ -272,7 +289,23 @@ describe('registerCodeNavigationProviders', () => {
         { value: 'Says hi.\n\n*@param*`name` — who' }
       ]
     })
-    expect(notInstalled).toEqual(remote)
+    expect(inactive).toEqual(remote)
+  })
+
+  it('does not serialize a passive definition lookup before activation', async () => {
+    const model = fakeModel('/repo/app.ts')
+    const { call } = setup()
+    context.current = {
+      kind: 'typescript',
+      languageId: 'typescript',
+      root: '/repo',
+      tab: { filePath: '/repo/app.ts' }
+    }
+
+    await call('typescript', 'definition', model)
+
+    expect(query).not.toHaveBeenCalled()
+    expect(model.getValue).not.toHaveBeenCalled()
   })
 
   it('routes type definitions to the server', async () => {
@@ -285,7 +318,7 @@ describe('registerCodeNavigationProviders', () => {
     }
     query.mockResolvedValue({ ok: true, locations: [], previews: {} })
 
-    await call('typescript', 'typeDefinition', fakeModel('/repo/app.ts'))
+    await call('typescript', 'typeDefinition', fakeModel('/repo/app.ts'), true)
 
     expect(query).toHaveBeenCalledWith(expect.objectContaining({ feature: 'typeDefinition' }))
   })

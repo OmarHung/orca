@@ -141,6 +141,10 @@ function literalValue(arg: string | undefined): string | null {
   return match ? match[1] : null
 }
 
+function argumentName(arg: string | undefined): string | null {
+  return arg ? (/^([A-Za-z_]\w*)\s*:/.exec(arg)?.[1] ?? null) : null
+}
+
 type Tag = { name: string; text: string; attributeAtQuote: string | null }
 
 function tagAround(text: string, quoteIndex: number): Tag | null {
@@ -216,13 +220,43 @@ function fromTagHelper(tag: Tag, literal: Literal, context: MvcContext): MvcCons
     : null
 }
 
-/** Action/controller string arguments of the routing helpers, by helper name. */
-const ROUTE_ARGUMENTS: Record<string, { action: number; controller: number }> = {
-  RedirectToAction: { action: 0, controller: 1 },
-  RedirectToActionPermanent: { action: 0, controller: 1 },
-  Action: { action: 0, controller: 1 },
-  ActionLink: { action: 1, controller: 2 },
-  BeginForm: { action: 0, controller: 1 }
+type RouteArgument = { index: number; names: readonly string[] }
+type RouteArguments = { action: RouteArgument; controller: RouteArgument }
+
+const ACTION_NAMES = ['action', 'actionName']
+const CONTROLLER_NAMES = ['controller', 'controllerName']
+
+function routeArguments(actionIndex: number, controllerIndex: number): RouteArguments {
+  return {
+    action: { index: actionIndex, names: ACTION_NAMES },
+    controller: { index: controllerIndex, names: CONTROLLER_NAMES }
+  }
+}
+
+/** Action/controller arguments of the routing helpers, including reordered named arguments. */
+const STANDARD_ROUTE_ARGUMENTS = routeArguments(0, 1)
+const ROUTE_ARGUMENTS = new Map<string, RouteArguments>([
+  ['RedirectToAction', STANDARD_ROUTE_ARGUMENTS],
+  ['RedirectToActionPermanent', STANDARD_ROUTE_ARGUMENTS],
+  ['Action', STANDARD_ROUTE_ARGUMENTS],
+  ['ActionLink', routeArguments(1, 2)],
+  ['BeginForm', STANDARD_ROUTE_ARGUMENTS]
+])
+
+function argumentHasRole(arg: string | undefined, spec: RouteArgument, index: number): boolean {
+  const name = argumentName(arg)
+  return name ? spec.names.includes(name) : index === spec.index
+}
+
+function routeLiteral(args: readonly string[], spec: RouteArgument): string | null {
+  const named = args.find(
+    (arg, index) => argumentName(arg) !== null && argumentHasRole(arg, spec, index)
+  )
+  if (named) {
+    return literalValue(named)
+  }
+  const positional = args[spec.index]
+  return argumentName(positional) === null ? literalValue(positional) : null
 }
 
 function fromCall(
@@ -238,15 +272,15 @@ function fromCall(
   if (call.argIndex === 0 && PARTIAL_HELPERS.has(name)) {
     return { kind: 'view', name: literal.value, partial: true, context }
   }
-  const route = ROUTE_ARGUMENTS[name]
+  const route = ROUTE_ARGUMENTS.get(name)
   if (!route) {
     return null
   }
-  const controller = literalValue(call.args[route.controller]) ?? context.controller
-  if (call.argIndex === route.action) {
+  const controller = routeLiteral(call.args, route.controller) ?? context.controller
+  if (argumentHasRole(call.args[call.argIndex], route.action, call.argIndex)) {
     return { kind: 'action', action: literal.value, controller, area: context.area }
   }
-  return call.argIndex === route.controller
+  return argumentHasRole(call.args[call.argIndex], route.controller, call.argIndex)
     ? { kind: 'controller', controller: literal.value, area: context.area }
     : null
 }
