@@ -34,6 +34,7 @@ describe('installImplementationClick', () => {
   })
 
   function setup(options: { isEditorTab?: boolean; position?: unknown } = {}) {
+    const onNavigate = vi.fn()
     const listeners = new Map<string, (event: unknown) => void>()
     const node = {
       addEventListener: (type: string, listener: (event: unknown) => void) =>
@@ -51,8 +52,12 @@ describe('installImplementationClick', () => {
       focus: vi.fn(),
       trigger: vi.fn()
     }
-    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the handler only uses the members faked above.
-    const dispose = installImplementationClick(editor as never, () => options.isEditorTab ?? true)
+    const dispose = installImplementationClick(
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the handler only uses the members faked above.
+      editor as never,
+      () => options.isEditorTab ?? true,
+      onNavigate
+    )
     const fire = (type: string, extra: Record<string, unknown> = {}) => {
       const event = {
         ...click,
@@ -65,11 +70,11 @@ describe('installImplementationClick', () => {
       listeners.get(type)?.(event)
       return event
     }
-    return { editor, fire, dispose, listeners }
+    return { editor, fire, dispose, listeners, onNavigate }
   }
 
   it('jumps to the implementation under the pointer and swallows the whole gesture', () => {
-    const { editor, fire } = setup()
+    const { editor, fire, onNavigate } = setup()
 
     const down = fire('pointerdown')
     const mouseDown = fire('mousedown')
@@ -78,6 +83,7 @@ describe('installImplementationClick', () => {
 
     expect(editor.setPosition).toHaveBeenCalledWith({ lineNumber: 3, column: 5 })
     expect(editor.trigger).toHaveBeenCalledWith('mouse', 'editor.action.goToImplementation', null)
+    expect(onNavigate).toHaveBeenCalledOnce()
     for (const event of [down, mouseDown, up, mouseUp]) {
       expect(event.stopPropagation).toHaveBeenCalled()
     }

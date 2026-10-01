@@ -64,24 +64,6 @@ describe('writeCsharpMetadataFile', () => {
   })
 })
 
-describe('isCodeNavigationMetadataPath', () => {
-  it('recognizes decompiled files on every platform and nothing else', async () => {
-    const { isCodeNavigationMetadataPath } =
-      await import('../../shared/code-navigation/code-navigation-types')
-    expect(
-      isCodeNavigationMetadataPath(
-        '/Users/me/Library/Application Support/orca/language-servers/csharp-metadata/A-1/A.cs'
-      )
-    ).toBe(true)
-    expect(
-      isCodeNavigationMetadataPath(
-        'C:\\Users\\me\\AppData\\Roaming\\orca\\language-servers\\csharp-metadata\\A-1\\A.cs'
-      )
-    ).toBe(true)
-    expect(isCodeNavigationMetadataPath('/repo/csharp-metadata/A.cs')).toBe(false)
-  })
-})
-
 describe('isOrcaLanguageServerFilePath', () => {
   it('covers decompiled C# and TypeScript lib files, not other paths', async () => {
     const { isOrcaLanguageServerFilePath } =
@@ -90,6 +72,11 @@ describe('isOrcaLanguageServerFilePath', () => {
     expect(isOrcaLanguageServerFilePath(`${base}/csharp-metadata/A-1/A.cs`)).toBe(true)
     expect(
       isOrcaLanguageServerFilePath(`${base}/typescript-native/7.0.2/package/lib/lib.dom.d.ts`)
+    ).toBe(true)
+    expect(
+      isOrcaLanguageServerFilePath(
+        'C:\\Users\\me\\AppData\\Roaming\\orca\\language-servers\\csharp-metadata\\A-1\\A.cs'
+      )
     ).toBe(true)
     expect(isOrcaLanguageServerFilePath(`${base}/csharp-ls/0.28.0/tools/x.dll`)).toBe(false)
     expect(isOrcaLanguageServerFilePath('/repo/language-servers/notes.md')).toBe(false)
