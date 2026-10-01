@@ -19033,6 +19033,9 @@
       "empty": "Nothing has run here yet. Start a configuration from the Run button at the top right.",
       "runs": "Runs",
       "close": "Close '{{value0}}'"
+    },
+    "currentFile": {
+      "named": "Current File: {{value0}}"
     }
   },
   "python": {
