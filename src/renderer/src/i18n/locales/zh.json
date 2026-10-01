@@ -18945,7 +18945,13 @@
       "search": "筛选 run",
       "noMatch": "没有符合的 run"
     },
-    "unsafeShellPath": "此文件的路径包含无法安全传给 shell 的字符，例如 \" $ ` % 或 !。"
+    "unsafeShellPath": "此文件的路径包含无法安全传给 shell 的字符，例如 \" $ ` % 或 !。",
+    "toolWindow": "运行",
+    "panel": {
+      "empty": "这里还没有运行过任何内容。请从右上角的运行按钮启动一个配置。",
+      "runs": "运行",
+      "close": "关闭 '{{value0}}'"
+    }
   },
   "python": {
     "interpreter": {
