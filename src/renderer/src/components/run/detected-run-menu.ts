@@ -7,7 +7,7 @@ import type {
 } from '../../../../shared/run-configurations/run-configuration-types'
 import { comparablePath, savedRunAnchor, type SavedRunAnchor } from './saved-run-project-anchor'
 
-const ECOSYSTEM_ORDER: readonly RunConfigurationEcosystem[] = ['dotnet', 'node', 'python']
+const ECOSYSTEM_ORDER: readonly RunConfigurationEcosystem[] = ['dotnet', 'node', 'python', 'docker']
 
 /** The order kinds are listed in inside a project's submenu. */
 export const DETECTED_KIND_ORDER: readonly RunConfigurationKind[] = [

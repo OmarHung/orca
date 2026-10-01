@@ -1,4 +1,5 @@
 import { parse as parseJsonc } from 'jsonc-parser'
+import { joinProjectPath } from './project-path'
 import { quoteShellArgument, type DetectedRunConfiguration } from './run-configuration-types'
 
 export const DOTNET_PROJECT_EXTENSIONS = ['.csproj', '.fsproj', '.vbproj']
@@ -104,11 +105,6 @@ function withQuotedNames(names: readonly string[]): [string, string][] {
     }
   }
   return quoted
-}
-
-function joinProjectPath(dir: string, fileName: string): string {
-  const separator = dir.includes('\\') && !dir.includes('/') ? '\\' : '/'
-  return `${dir.replace(/[\\/]+$/, '')}${separator}${fileName}`
 }
 
 /** Build, then Run per launch profile and Publish per publish profile (or Test for test projects). */
