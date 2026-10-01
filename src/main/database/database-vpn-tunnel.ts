@@ -13,7 +13,7 @@ import {
 import type { SshVpnRoute } from '../ssh-vpn/ssh-vpn-manager-types'
 import type { OpenDatabaseVpnTunnel } from './database-session-manager'
 
-// `nc -w 30` gives up on final reads 30s after its stdin closes; past that the pipe is stuck.
+// After its stdin closes `nc` half-closes and exits once the server closes; past this it never will.
 const PIPE_EXIT_GRACE_MS = 35_000
 const PROBE_TIMEOUT_MS = 40_000
 
