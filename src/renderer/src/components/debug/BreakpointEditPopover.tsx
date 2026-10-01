@@ -30,7 +30,7 @@ function BreakpointForm({
 
   return (
     <form
-      className="flex flex-col gap-3"
+      className="flex flex-col gap-3 p-3"
       data-testid="breakpoint-editor"
       onSubmit={(event) => {
         event.preventDefault()
@@ -59,7 +59,7 @@ function BreakpointForm({
         </Label>
         <Input
           id="breakpoint-condition"
-          className="h-8 font-mono text-xs placeholder:font-sans"
+          className="h-8"
           autoFocus
           value={condition}
           placeholder={translate('debug.breakpoint.conditionHint', 'Pause when true, e.g. i > 10')}
@@ -72,7 +72,7 @@ function BreakpointForm({
         </Label>
         <Input
           id="breakpoint-hit"
-          className="h-8 font-mono text-xs placeholder:font-sans"
+          className="h-8"
           value={hitCondition}
           placeholder={translate('debug.breakpoint.hitCountHint', 'Pause on this hit, e.g. 3')}
           onChange={(event) => setHitCondition(event.target.value)}
@@ -84,7 +84,7 @@ function BreakpointForm({
         </Label>
         <Input
           id="breakpoint-log"
-          className="h-8 font-mono text-xs placeholder:font-sans"
+          className="h-8"
           value={logMessage}
           placeholder={translate(
             'debug.breakpoint.logMessageHint',
@@ -130,7 +130,7 @@ export function BreakpointEditPopover(): React.JSX.Element | null {
       <PopoverAnchor asChild>
         <span className="pointer-events-none fixed size-0" style={{ left: edit.x, top: edit.y }} />
       </PopoverAnchor>
-      <PopoverContent side="right" align="start" className="w-80 p-3">
+      <PopoverContent side="right" align="start" className="w-80">
         <BreakpointForm
           key={`${edit.path}:${edit.line}`}
           edit={edit}
