@@ -107,6 +107,10 @@
   --color-status-warning: var(--status-warning);
   --color-status-warning-background: var(--status-warning-background);
   --color-status-warning-border: var(--status-warning-border);
+  --color-run-mode-debug: var(--run-mode-debug);
+  --color-run-mode-build: var(--run-mode-build);
+  --color-run-mode-test: var(--run-mode-test);
+  --color-run-mode-publish: var(--run-mode-publish);
   --color-workspace-status-done: var(--workspace-status-done);
   --color-workspace-status-review: var(--workspace-status-review);
   --color-workspace-status-progress: var(--workspace-status-progress);
@@ -193,6 +197,11 @@
   --status-warning: #ca8a04;
   --status-warning-background: color-mix(in srgb, var(--status-warning) 10%, transparent);
   --status-warning-border: color-mix(in srgb, var(--status-warning) 25%, transparent);
+  /* Run widget modes; a plain run is --status-success and Stop is --destructive. */
+  --run-mode-debug: var(--color-orange-600);
+  --run-mode-build: var(--color-blue-600);
+  --run-mode-test: var(--color-cyan-600);
+  --run-mode-publish: var(--color-violet-600);
   /* Workspace PR-state tones: same hue in both themes so a status keeps its
      identity when the theme flips. */
   --workspace-status-done: #c7a594;
@@ -310,6 +319,10 @@
   --status-warning: #eab308;
   --status-warning-background: color-mix(in srgb, var(--status-warning) 10%, transparent);
   --status-warning-border: color-mix(in srgb, var(--status-warning) 25%, transparent);
+  --run-mode-debug: var(--color-orange-400);
+  --run-mode-build: var(--color-blue-400);
+  --run-mode-test: var(--color-cyan-400);
+  --run-mode-publish: var(--color-violet-400);
   --workspace-status-done: #c7a594;
   --workspace-status-review: #16a34a;
   --workspace-status-progress: #d4a300;

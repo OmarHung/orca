@@ -3,6 +3,7 @@ import { normalizeDebugLaunchTarget } from '../../../../shared/run-configuration
 import { asArgs, asEnv } from '../../../../shared/run-configurations/run-configuration-values'
 import type { DebugLaunchOptions } from '../../../../shared/debug/debug-session-types'
 import type { RunTarget } from './run-configuration-control'
+import { asRunConfigurationKind } from './run-mode'
 
 const STORAGE_KEY = 'orca.run.recentByWorktree.v1'
 /** JetBrains keeps five temporary configurations per project. */
@@ -41,6 +42,7 @@ export function readStoredRunTarget(value: unknown): RunTarget | null {
     return null
   }
   const debugOptions = debug ? readDebugOptions(record.debugOptions) : undefined
+  const kind = asRunConfigurationKind(record.kind)
   return {
     worktreeId: record.worktreeId,
     groupId: null,
@@ -53,7 +55,8 @@ export function readStoredRunTarget(value: unknown): RunTarget | null {
     },
     ...(typeof record.cwd === 'string' ? { cwd: record.cwd } : {}),
     ...(debug ? { debug } : {}),
-    ...(debugOptions ? { debugOptions } : {})
+    ...(debugOptions ? { debugOptions } : {}),
+    ...(kind ? { kind } : {})
   }
 }
 

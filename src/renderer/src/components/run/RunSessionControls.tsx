@@ -4,8 +4,10 @@ import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
-import { RunStatusDot } from './RunStatusDot'
+import { cn } from '@/lib/utils'
+import { RunStatusIcon } from './RunStatusIcon'
 import { rerunConfiguration, stopConfiguration, type RunTarget } from './run-configuration-control'
+import { runTargetMode } from './run-mode'
 import { describeRunStatus, runStatusTone } from './run-status-presentation'
 import { isRunSessionActive, runStopStage } from './run-session-store'
 import { runStopAction } from './run-stop-stage-presentation'
@@ -16,6 +18,8 @@ export type ControlAction = {
   label: string
   testId: string
   onClick: () => void
+  /** Stop actions are red, as in JetBrains. */
+  isStop?: boolean
 }
 
 export function ControlButton({ action }: { action: ControlAction }): React.JSX.Element {
@@ -30,7 +34,7 @@ export function ControlButton({ action }: { action: ControlAction }): React.JSX.
           data-testid={action.testId}
           onClick={action.onClick}
         >
-          <Icon />
+          <Icon className={cn(action.isStop && 'text-destructive')} />
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom" sideOffset={6}>
@@ -70,7 +74,8 @@ export function RunSessionControls({
       actions.push({
         ...runStopAction(runStopStage(session), label),
         testId: 'run-stop',
-        onClick: () => stopConfiguration(target.worktreeId, target.commandKey)
+        onClick: () => stopConfiguration(target.worktreeId, target.commandKey),
+        isStop: true
       })
     }
   }
@@ -84,7 +89,7 @@ export function RunSessionControls({
     >
       {status ? (
         <span className="flex size-4 items-center justify-center" title={`${label}: ${status}`}>
-          <RunStatusDot tone={runStatusTone(session)} />
+          <RunStatusIcon tone={runStatusTone(session)} mode={runTargetMode(target)} />
         </span>
       ) : null}
       {actions.map((action) => (

@@ -61,6 +61,22 @@ describe('useRecentRunStore', () => {
     expect(readStoredRecentRuns().wt?.[0]).toEqual({ ...django, groupId: null })
   })
 
+  it('keeps what the run does, so its mode icon survives a restart', () => {
+    useRecentRunStore.getState().remember(target('compile', { kind: 'build' }))
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ...JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}'),
+        other: [{ ...target('odd'), kind: 'deploy' }]
+      })
+    )
+
+    expect(readStoredRecentRuns()).toEqual({
+      wt: [{ ...target('compile', { kind: 'build' }), groupId: null }],
+      other: [{ ...target('odd'), groupId: null }]
+    })
+  })
+
   it('drops malformed stored entries', () => {
     window.localStorage.setItem(
       STORAGE_KEY,
