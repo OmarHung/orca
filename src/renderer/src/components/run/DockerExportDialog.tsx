@@ -38,6 +38,7 @@ function DockerExportDialog({
           configuration={draft}
           disabled={false}
           browseRoot={browseRoot}
+          worktreePath={request.worktreePath}
           stages={request.stages}
           onChange={update}
         />

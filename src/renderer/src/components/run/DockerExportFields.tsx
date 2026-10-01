@@ -12,16 +12,23 @@ import {
 import { translate } from '@/i18n/i18n'
 import {
   dockerExportCommand,
+  dockerExportContext,
   type DockerExportRunConfiguration
 } from '../../../../shared/run-configurations/docker-export-configuration'
+import { runsPosixShell } from '../../../../shared/run-configurations/host-shell'
+import { outputFolderEmptyingProblem } from '../../../../shared/run-configurations/output-folder-safety'
+import { resolveRunConfigurationPath } from '../../../../shared/run-configurations/run-configuration-variables'
 import { FolderPathInput } from './FolderPathInput'
 import { FormField } from './RunConfigurationFormField'
+import { outputFolderProblemMessage } from './run-output-folder-cleanup'
 
 type Props = {
   configuration: DockerExportRunConfiguration
   disabled: boolean
   /** The workspace root when its folders are on this machine, so Browse can pick one. */
   browseRoot: string | null
+  /** The workspace root on its host, for the command's shell and the folder check. */
+  worktreePath: string
   /** The Dockerfile's export stages; the stage is typed in when none are known. */
   stages: readonly string[]
   onChange: (configuration: DockerExportRunConfiguration) => void
@@ -69,14 +76,37 @@ function StageField({ configuration, disabled, stages, onChange }: Props): React
   )
 }
 
-function CleanOutputCheckbox({ configuration, disabled, onChange }: Props): React.JSX.Element {
+/** Why the output folder may not be emptied, shown before the export is refused for it. */
+function emptyingProblem(
+  configuration: DockerExportRunConfiguration,
+  worktreePath: string
+): ReturnType<typeof outputFolderEmptyingProblem> {
+  const context = { workspaceFolder: worktreePath }
+  const folder = resolveRunConfigurationPath(configuration.outputDir, context)
+  const contextDir = resolveRunConfigurationPath(dockerExportContext(configuration), context)
+  if (!configuration.cleanOutputDir || !configuration.outputDir || !folder.ok || !contextDir.ok) {
+    return null
+  }
+  return outputFolderEmptyingProblem(folder.value, {
+    workspaceRoot: worktreePath,
+    contextDir: contextDir.value
+  })
+}
+
+function CleanOutputCheckbox({
+  configuration,
+  disabled,
+  worktreePath,
+  onChange
+}: Props): React.JSX.Element {
   const id = useId()
+  const problem = emptyingProblem(configuration, worktreePath)
   return (
     <FormField
       label={translate('run.configurations.dockerExport.cleanSection', 'Before exporting')}
       description={translate(
         'run.configurations.dockerExport.cleanHint',
-        'Docker only adds and overwrites files, so files from an earlier export stay. On this computer the folder goes to the Trash; on an SSH host it is deleted.'
+        'Docker only adds and overwrites files, so files from an earlier export stay. The folder is deleted with rm -rf first; on Windows, Orca moves it to the Recycle Bin.'
       )}
     >
       <div className="flex items-center gap-2">
@@ -93,6 +123,15 @@ function CleanOutputCheckbox({ configuration, disabled, onChange }: Props): Reac
           {translate('run.configurations.dockerExport.clean', 'Empty the output folder')}
         </Label>
       </div>
+      {problem ? (
+        <p data-testid="docker-export-folder-problem" className="text-xs text-destructive">
+          {translate(
+            'run.configurations.dockerExport.folderProblem',
+            'This folder cannot be emptied, so the export will not run: {{value0}}',
+            { value0: outputFolderProblemMessage(problem) }
+          )}
+        </p>
+      ) : null}
     </FormField>
   )
 }
@@ -171,7 +210,9 @@ export function DockerExportFields(props: Props): React.JSX.Element {
           data-testid="docker-export-command"
           className="rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-xs leading-5 break-all select-text"
         >
-          {dockerExportCommand(configuration) ??
+          {dockerExportCommand(configuration, {
+            posixShell: runsPosixShell(props.worktreePath)
+          }) ??
             translate(
               'run.configurations.dockerExport.unsafe',
               'Choose a stage, and use paths without " $ ` % ! or commas.'
