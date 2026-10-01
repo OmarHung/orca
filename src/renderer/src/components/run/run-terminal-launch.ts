@@ -1,6 +1,5 @@
 import { useAppStore } from '@/store'
 import { sendRuntimePtyInputVerified } from '@/runtime/runtime-terminal-inspection'
-import { runQuickCommandInNewTab } from '@/lib/run-quick-command-in-new-tab'
 import { createBrowserUuid } from '@/lib/browser-uuid'
 import {
   ORCA_TERMINAL_COMMAND_FINISHED_EVENT,
@@ -12,6 +11,8 @@ import {
 } from '@/hooks/terminal-startup-bound-event'
 import { parsePaneKey } from '../../../../shared/stable-pane-id'
 import { flattenTerminalQuickCommand } from '../../../../shared/terminal-quick-commands'
+import { openRunTerminal } from './run-terminal-open'
+import { revealRunInPanel } from './run-panel-store'
 import { runSessionKey, useRunSessionStore, type RunSession } from './run-session-store'
 import { resolveRunTerminalBinding, type RunTerminalBinding } from './run-terminal-binding'
 import type { RunTarget } from './run-target'
@@ -105,8 +106,21 @@ function startSession(
   binding: Pick<RunTerminalBinding, 'tabId' | 'leafId'>,
   status: 'queued' | 'running'
 ): void {
-  useRunSessionStore.getState().upsertSession({
-    key: runSessionKey(target.worktreeId, target.commandKey),
+  const key = runSessionKey(target.worktreeId, target.commandKey)
+  const liveTabIds = new Set(
+    (useAppStore.getState().tabsByWorktree[target.worktreeId] ?? []).map((tab) => tab.id)
+  )
+  const sessions = useRunSessionStore.getState()
+  // Why here: a launch is when this workspace's tabs are surely loaded, so stored runs whose
+  // terminal was closed elsewhere can be dropped without guessing during startup.
+  sessions.retainSessions(
+    (session) =>
+      session.worktreeId !== target.worktreeId ||
+      session.key === key ||
+      liveTabIds.has(session.tabId)
+  )
+  sessions.upsertSession({
+    key,
     worktreeId: target.worktreeId,
     commandKey: target.commandKey,
     label: target.command.label,
@@ -114,21 +128,25 @@ function startSession(
     leafId: binding.leafId,
     attemptId: createBrowserUuid(),
     status,
-    exitCode: null
+    exitCode: null,
+    // Why no group: tab groups are per session; a rerun keeps the run's own terminal.
+    target: { ...target, groupId: null }
   })
 }
 
+/** Starts the run in a terminal the Run panel owns; it never joins the tab strip. */
 export function runInNewTerminal(target: RunTarget): void {
-  const result = runQuickCommandInNewTab({
-    command: target.command,
-    worktreeId: target.worktreeId,
-    groupId: target.groupId,
-    historyId: target.commandKey,
-    ...(target.cwd ? { startupCwd: target.cwd } : {})
-  })
-  if (result?.leafId) {
-    startSession(target, { tabId: result.tabId, leafId: result.leafId }, 'queued')
+  const opened = openRunTerminal(target, (ids) => startSession(target, ids, 'queued'))
+  if (!opened) {
+    return
   }
+  // The store mints another tab id when the hinted one is taken.
+  const session =
+    useRunSessionStore.getState().sessionsByKey[runSessionKey(target.worktreeId, target.commandKey)]
+  if (session?.tabId !== opened.tabId) {
+    startSession(target, opened, 'queued')
+  }
+  revealRunInPanel(target.worktreeId, target.commandKey)
 }
 
 /** Re-sends the command into the run's existing pane when its PTY accepts input. */
@@ -151,9 +169,7 @@ export async function runInExistingTerminal(
     return false
   }
   startSession(target, binding, 'running')
-  const store = useAppStore.getState()
-  store.setActiveTab(binding.tabId)
-  store.setActiveTabType('terminal', target.worktreeId)
+  revealRunInPanel(target.worktreeId, target.commandKey)
   return true
 }
 

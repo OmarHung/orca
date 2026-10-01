@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  configurationCommandKey,
+  configurationIdOfCommandKey,
   isRemoteQuickCommandSelectionPending,
   runWidgetItemForRun,
   runWidgetItems,
@@ -76,5 +78,12 @@ describe('runWidgetItemForRun', () => {
     expect(runWidgetItemForRun(items, 'config:b')?.label).toBe('Build')
     expect(runWidgetItemForRun(items, 'local:q1')?.label).toBe('Lint')
     expect(runWidgetItemForRun(items, 'unknown')).toBeNull()
+  })
+})
+
+describe('configurationIdOfCommandKey', () => {
+  it('reads the saved configuration back from its run key', () => {
+    expect(configurationIdOfCommandKey(configurationCommandKey('api'))).toBe('api')
+    expect(configurationIdOfCommandKey('detected:dotnet:/w/api:run')).toBeNull()
   })
 })
