@@ -19376,6 +19376,12 @@
       "retry": "重試",
       "empty": "此資料夾是空的。"
     },
+    "summary": {
+      "items": "共 {{total}} 項",
+      "selected": "已選取 {{selected}} / {{total}} 項",
+      "selectedSize": "已選取 {{selected}} / {{total}} 項 · {{size}}",
+      "selectedSizeWithoutFolders": "已選取 {{selected}} / {{total}} 項 · {{size}}（不含資料夾）"
+    },
     "column": {
       "menu": "顯示欄位",
       "name": "名稱",
