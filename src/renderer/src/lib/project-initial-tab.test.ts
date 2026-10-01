@@ -10,9 +10,19 @@ import {
 import type { Repo } from '../../../shared/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
 
+const openDefaultChat = vi.hoisted(() => vi.fn())
+
+vi.mock('@/lib/empty-workspace-default-agent-chat', () => ({
+  openDefaultAgentChatInEmptyWorkspace: openDefaultChat,
+  emptyWorkspaceDefaultChatAwaitsDetection: () => false,
+  loadEmptyWorkspaceDefaultChatDetection: async () => {}
+}))
+
+const USER_OPEN = { navigationIntent: 'user-open' } as const
 const initialAppStoreState = useAppStore.getState()
 
 afterEach(() => {
+  openDefaultChat.mockReset()
   vi.restoreAllMocks()
   useAppStore.setState(initialAppStoreState, true)
 })
@@ -110,6 +120,36 @@ describe('project initial tab', () => {
     await gate.mock.results[0]?.value
 
     expect(openedTab(worktree.id).tab?.launchAgent).toBe('claude')
+  })
+
+  it("opens the project agent instead of the user's default agent chat", () => {
+    const worktree = seedEmptyProject({ initialTab: 'codex' })
+
+    activateAndRevealWorktree(worktree.id, { ...USER_OPEN, notifyHostRuntime: false })
+
+    expect(openDefaultChat).not.toHaveBeenCalled()
+    expect(openedTab(worktree.id).tab?.launchAgent).toBe('codex')
+  })
+
+  it("keeps the shell over the user's default agent chat when the project chose Terminal", () => {
+    const worktree = seedEmptyProject({ initialTab: 'terminal' })
+
+    activateAndRevealWorktree(worktree.id, { ...USER_OPEN, notifyHostRuntime: false })
+
+    expect(openDefaultChat).not.toHaveBeenCalled()
+    expect(openedTab(worktree.id).startup).toBeUndefined()
+  })
+
+  it("lets the user's default agent chat open when the project's agent is disabled", () => {
+    const worktree = seedEmptyProject({})
+    useAppStore.setState({
+      settings: { ...useAppStore.getState().settings!, disabledTuiAgents: ['claude'] }
+    })
+    openDefaultChat.mockReturnValue({ primaryTabId: null })
+
+    activateAndRevealWorktree(worktree.id, { ...USER_OPEN, notifyHostRuntime: false })
+
+    expect(openDefaultChat).toHaveBeenCalledWith(worktree.id)
   })
 
   it('seeds the startup-hydration tab only when the project opens an agent', () => {
