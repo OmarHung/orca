@@ -148,6 +148,34 @@ describe.skipIf(!ENABLED)('SSH through a per-host OpenVPN container (Docker)', (
     }
   }, 300_000)
 
+  it('keeps a session with no keepalive open through more than a minute of silence', async () => {
+    const proxy = await service.prepare(TARGET, null)
+    if (!proxy) {
+      throw new Error('expected a VPN proxy for the assigned host')
+    }
+    const { process: proxyProcess, sock } = spawnProxyCommand(
+      proxy,
+      TARGET.host,
+      TARGET.port,
+      'root'
+    )
+    // Why no keepaliveInterval: the SSH page's ssh sends nothing while idle, like this client.
+    const client = await connectSsh2({
+      sock,
+      username: 'root',
+      privateKey: await readFile(network.privateKeyPath),
+      readyTimeout: 20_000
+    })
+    try {
+      // Why 75s: BusyBox `nc -w 30` ended a pipe after 60s with no traffic either way.
+      await new Promise((resolve) => setTimeout(resolve, 75_000))
+      await expect(exec(client, 'echo still-here')).resolves.toBe('still-here')
+    } finally {
+      client.end()
+      proxyProcess.kill()
+    }
+  }, 180_000)
+
   it('gives system ssh a ProxyCommand that works (the SSH page and FIDO2/GSSAPI path)', async () => {
     await service.prepare(TARGET, null)
     const proxyCommand = service.proxyCommand(TARGET)
