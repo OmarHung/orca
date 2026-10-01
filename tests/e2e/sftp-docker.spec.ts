@@ -215,6 +215,15 @@ test.describe('SFTP page against a Docker sshd', () => {
           `[data-sftp-entry="${path.join(inbox, 'hello.txt')}"] svg[data-extension="TXT"]`
         )
       ).toBeVisible()
+
+      // The pane footer adds up the selected files and leaves folders out.
+      const localSummary = localPane.locator('[data-sftp-pane-summary]')
+      await expect(localSummary).toHaveText('Items: 3')
+      await localPane.locator(`[data-sftp-entry="${path.join(inbox, 'hello.txt')}"]`).click()
+      await localPane
+        .locator(`[data-sftp-entry="${path.join(inbox, 'nested')}"]`)
+        .click({ modifiers: ['ControlOrMeta'] })
+      await expect(localSummary).toHaveText('Selected: 2 of 3 · 10 B (excluding folders)')
       await localPane.screenshot({ path: testInfo.outputPath('sftp-local-pane.png') })
 
       // Dragging a header divider resizes that column in both panes.
