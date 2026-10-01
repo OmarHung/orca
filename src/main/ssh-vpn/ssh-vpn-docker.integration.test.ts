@@ -7,7 +7,9 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { SshTarget } from '../../shared/ssh-types'
 import { runProcess } from '../../shared/child-process/run-process'
 import { spawnProxyCommand } from '../ssh/ssh-proxy-command'
+import { checkBorrowedContainer } from './borrowed-container-check'
 import { resolveDockerPath, SshVpnDocker } from './ssh-vpn-docker'
+import { SSH_VPN_IMAGE } from './ssh-vpn-image'
 import { SshVpnManager } from './ssh-vpn-manager'
 import { SshVpnService } from './ssh-vpn-service'
 import { SshVpnStore } from './ssh-vpn-store'
@@ -245,6 +247,75 @@ describe.skipIf(!ENABLED)('SSH through a per-host OpenVPN container (Docker)', (
       await loginManager.stopAll()
     }
   }, 180_000)
+
+  it('borrows a running VPN container it did not start, and leaves it running', async () => {
+    const [state] = manager.listStates()
+    const containerName = `orca-ssh-vpn-${instanceTag}-${state.profileId}`
+    const borrowing = new SshVpnManager({
+      docker: async () => docker,
+      instanceTag: `${instanceTag}b`,
+      readFile: (filePath) => readFile(filePath)
+    })
+    const route = await borrowing.acquire({
+      id: 'borrow-profile-0001',
+      kind: 'container',
+      name: 'Borrowed VPN',
+      containerName
+    })
+    const banner = await runProcess({
+      program: route.dockerPath,
+      args: [
+        'exec',
+        '-i',
+        '--user',
+        'tunnel',
+        route.containerName,
+        'nc',
+        '-w',
+        '10',
+        VPN_TEST_SSHD_NAME,
+        '22'
+      ],
+      input: '',
+      timeoutMs: 30_000
+    })
+    expect(banner.stdout).toContain('SSH-2.0-OpenSSH')
+
+    await borrowing.stopAll()
+    const running = await runProcess({
+      program: 'docker',
+      args: ['inspect', '--format', '{{.State.Running}}', containerName]
+    })
+    expect(running.stdout.trim()).toBe('true')
+  }, 120_000)
+
+  it('refuses to borrow a container whose tunnel user is not fenced in', async () => {
+    const name = `orca-borrow-open-${instanceTag}`
+    // Why Orca's image: it has the tunnel user, but nothing applied its firewall.
+    await runProcess({
+      program: 'docker',
+      args: [
+        'run',
+        '--detach',
+        '--rm',
+        '--cap-add',
+        'NET_ADMIN',
+        '--name',
+        name,
+        SSH_VPN_IMAGE,
+        'sleep',
+        'infinity'
+      ],
+      timeoutMs: 60_000
+    })
+    try {
+      await expect(checkBorrowedContainer(docker, name, { requireHealthy: true })).rejects.toThrow(
+        'does not keep the "tunnel" user on the VPN'
+      )
+    } finally {
+      await docker.remove(name)
+    }
+  }, 120_000)
 
   it('leaves the host network untouched', () => {
     expect(interfaceNames()).toEqual(interfacesBefore)

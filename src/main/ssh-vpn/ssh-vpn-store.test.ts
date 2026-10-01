@@ -153,4 +153,24 @@ describe('SshVpnStore', () => {
     expect(store.listAssignments()).toEqual({ a: 'profile-0001' })
     expect(JSON.parse(readFileSync(filePath, 'utf8')).version).toBe(1)
   })
+
+  it('keeps borrowed-container profiles next to .ovpn ones, and refuses bad container names', () => {
+    writeFileSync(
+      filePath,
+      JSON.stringify({
+        version: 1,
+        profiles: [
+          { id: 'profile-0001', ...DRAFT },
+          { id: 'profile-0002', kind: 'container', name: 'Shared', containerName: 'vpn-office-1' },
+          { id: 'profile-0003', kind: 'container', name: 'Bad', containerName: '-rm' }
+        ],
+        assignments: {}
+      })
+    )
+
+    expect(new SshVpnStore(filePath).listProfiles()).toEqual([
+      { id: 'profile-0001', ...DRAFT },
+      { id: 'profile-0002', kind: 'container', name: 'Shared', containerName: 'vpn-office-1' }
+    ])
+  })
 })

@@ -15,8 +15,9 @@ type SaveDeps = {
   vault: Pick<SshVpnPasswordVault, 'release' | 'keep' | 'remember' | 'rememberForSession'>
 }
 
+/** A borrowed container has no password of Orca's, so switching to one forgets the old one. */
 function storageOf(profile: SshVpnProfileDraft): SshVpnPasswordStorage {
-  return profile.passwordStorage ?? 'session'
+  return profile.kind === 'container' ? 'never' : (profile.passwordStorage ?? 'session')
 }
 
 /**
@@ -92,6 +93,8 @@ function saveNewProfile(
 
 type SaveProfileDeps = SaveDeps & {
   inspectOvpn: (ovpnPath: string) => Promise<SshVpnOvpnInspection>
+  /** Throws why connections through the container would not stay on its VPN. */
+  inspectContainer: (containerName: string) => Promise<void>
 }
 
 /** What the Settings form's save runs: check the profile, then save it with its password. */
@@ -101,12 +104,17 @@ export async function saveSshVpnProfile(
 ): Promise<{ previous: SshVpnProfile | null; saved: SshVpnProfile }> {
   const { draft } = request
   // Why before saving: a profile that cannot connect should fail here, not on first use.
-  const { needsCredentials } = await deps.inspectOvpn(draft.ovpnPath)
-  if (needsCredentials && !draft.username) {
-    throw new Error('This profile asks for a username and password. Enter the username.')
+  if (draft.kind === 'container') {
+    await deps.inspectContainer(draft.containerName)
+  } else {
+    const { needsCredentials } = await deps.inspectOvpn(draft.ovpnPath)
+    if (needsCredentials && !draft.username) {
+      throw new Error('This profile asks for a username and password. Enter the username.')
+    }
   }
   const previous = request.id ? deps.store.getProfile(request.id) : null
+  const password = draft.kind === 'container' ? undefined : request.password
   // Why no keychain check here: only sealing a new or in-memory password needs one, and that
   // step reports it, so renaming a "Forever" profile still works while the keychain is locked.
-  return { previous, saved: saveProfileWithPassword(deps, previous, draft, request.password) }
+  return { previous, saved: saveProfileWithPassword(deps, previous, draft, password) }
 }
