@@ -1,11 +1,15 @@
-import type { SshVpnCredentials, SshVpnProfile } from '../../shared/ssh-vpn-types'
+import type {
+  SshVpnCredentials,
+  SshVpnOvpnProfile,
+  SshVpnProfile
+} from '../../shared/ssh-vpn-types'
 import type { SshVpnStartOptions } from './ssh-vpn-manager-types'
 import type { SshVpnPasswordVault } from './ssh-vpn-password-vault'
 import type { SshVpnStore } from './ssh-vpn-store'
 
 /** Asks the user for a VPN login; null when they cancel. */
 export type SshVpnLoginPrompt = (request: {
-  profile: SshVpnProfile
+  profile: SshVpnOvpnProfile
   hostLabel: string | null
   error: string | null
 }) => Promise<SshVpnCredentials | null>
@@ -31,6 +35,10 @@ export class SshVpnLogins {
     profile: SshVpnProfile,
     hostLabel: string | null
   ): Pick<SshVpnStartOptions, 'credentials' | 'onLoginRejected'> {
+    // Why: a borrowed container logs in by itself; Orca never sees its VPN login.
+    if (profile.kind === 'container') {
+      return {}
+    }
     return {
       credentials: () => this.credentialsFor(profile, hostLabel),
       onLoginRejected: () => {
@@ -45,7 +53,7 @@ export class SshVpnLogins {
   }
 
   private async credentialsFor(
-    profile: SshVpnProfile,
+    profile: SshVpnOvpnProfile,
     hostLabel: string | null
   ): Promise<SshVpnCredentials | null> {
     const wasRejected = this.rejected.delete(profile.id)

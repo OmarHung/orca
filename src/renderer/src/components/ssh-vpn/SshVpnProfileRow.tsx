@@ -18,6 +18,17 @@ function idleSummary(minutes: number): string {
     : translate('sshVpn.row.idleMinutes', 'Disconnects after {{minutes}} min idle', { minutes })
 }
 
+function sourceSummary(profile: SshVpnProfile): { source: string; lifetime: string } {
+  return profile.kind === 'container'
+    ? {
+        source: translate('sshVpn.row.container', 'Container: {{name}}', {
+          name: profile.containerName
+        }),
+        lifetime: translate('sshVpn.row.borrowed', 'Started and stopped outside Orca')
+      }
+    : { source: profile.ovpnPath, lifetime: idleSummary(profile.idleMinutes) }
+}
+
 export function SshVpnProfileRow({
   profile,
   state,
@@ -27,7 +38,10 @@ export function SshVpnProfileRow({
   const [isLogOpen, setIsLogOpen] = useState(false)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const isBusy = state.status === 'starting' || state.status === 'stopping'
-  const isUp = state.status === 'ready'
+  const isBorrowed = profile.kind === 'container'
+  // Why: a borrowed container keeps running whatever Orca does, so its only action is a check.
+  const isUp = state.status === 'ready' && !isBorrowed
+  const { source, lifetime } = sourceSummary(profile)
 
   return (
     <li className="space-y-2 rounded-md border border-border p-3" data-ssh-vpn-profile={profile.id}>
@@ -40,12 +54,11 @@ export function SshVpnProfileRow({
               {describeSshVpnStatus(state.status)}
             </span>
           </div>
-          <p className="truncate text-xs text-muted-foreground" title={profile.ovpnPath}>
-            {profile.ovpnPath}
+          <p className="truncate text-xs text-muted-foreground" title={source}>
+            {source}
           </p>
           <p className="text-xs text-muted-foreground">
-            {translate('sshVpn.row.hosts', '{{count}} hosts', { count: hostCount })} ·{' '}
-            {idleSummary(profile.idleMinutes)}
+            {translate('sshVpn.row.hosts', '{{count}} hosts', { count: hostCount })} · {lifetime}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
@@ -58,9 +71,11 @@ export function SshVpnProfileRow({
               void (isUp ? sshVpnActions.disconnect(profile.id) : sshVpnActions.connect(profile.id))
             }
           >
-            {isUp
-              ? translate('sshVpn.row.disconnect', 'Disconnect')
-              : translate('sshVpn.row.connect', 'Connect')}
+            {isBorrowed
+              ? translate('sshVpn.row.check', 'Check')
+              : isUp
+                ? translate('sshVpn.row.disconnect', 'Disconnect')
+                : translate('sshVpn.row.connect', 'Connect')}
           </Button>
           <Button variant="ghost" size="xs" disabled={isBusy} onClick={onEdit}>
             {translate('sshVpn.row.edit', 'Edit')}

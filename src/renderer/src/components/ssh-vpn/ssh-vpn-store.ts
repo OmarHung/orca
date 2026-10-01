@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { create } from 'zustand'
 import type {
+  SshVpnContainerCandidate,
   SshVpnOvpnInspection,
   SshVpnProfile,
   SshVpnProfileDraft,
@@ -115,6 +116,12 @@ export const sshVpnActions = {
   ): Promise<{ inspection: SshVpnOvpnInspection } | { error: string }> => {
     const result = await window.api.sshVpn.inspectOvpn(ovpnPath)
     return result.ok ? { inspection: result.value } : { error: result.error.message }
+  },
+  listContainers: async (): Promise<
+    { containers: SshVpnContainerCandidate[] } | { error: string }
+  > => {
+    const result = await window.api.sshVpn.listContainers()
+    return result.ok ? { containers: result.value } : { error: result.error.message }
   },
   deleteProfile: (profileId: string) => run(() => window.api.sshVpn.deleteProfile(profileId)),
   setAssignment: (targetId: string, profileId: string | null) =>

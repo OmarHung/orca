@@ -1,5 +1,6 @@
 import { EventEmitter } from 'node:events'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ProcessResult } from '../../shared/child-process/process-spec'
 import type { SshVpnProfile, SshVpnProfileState } from '../../shared/ssh-vpn-types'
 import { SshVpnManager } from './ssh-vpn-manager'
 import type { SshVpnDockerPort } from './ssh-vpn-manager-types'
@@ -33,6 +34,13 @@ function createFakeDocker(script: string[][] = [[READY]]) {
     countTunnels: vi.fn(async () => 0),
     remove: vi.fn(async () => undefined),
     listContainers: vi.fn(async (): Promise<string[]> => []),
+    query: vi.fn(async (_args: readonly string[]): Promise<ProcessResult> => ({
+      code: 0,
+      signal: null,
+      stdout: '',
+      stderr: '',
+      timedOut: false
+    })),
     spawnOpenVpn: vi.fn(() => {
       const child = Object.assign(new EventEmitter(), {
         stdout: new EventEmitter(),
@@ -331,5 +339,63 @@ describe('SshVpnManager', () => {
     expect(docker.listContainers).toHaveBeenCalledWith('tag12345')
     expect(docker.remove).toHaveBeenCalledWith('old-a')
     expect(docker.remove).toHaveBeenCalledWith('old-b')
+  })
+})
+
+describe('SshVpnManager with a borrowed container', () => {
+  const BORROWED: SshVpnProfile = {
+    id: PROFILE.id,
+    kind: 'container',
+    name: 'Office (shared)',
+    containerName: 'vpn-office-1'
+  }
+  const RULES = [
+    '-P OUTPUT ACCEPT',
+    '-A OUTPUT -o tun+ -m owner --uid-owner 100 -j ACCEPT',
+    '-A OUTPUT -m owner --uid-owner 100 -j REJECT --reject-with icmp-port-unreachable'
+  ].join('\n')
+
+  function borrowableDocker() {
+    const fake = createFakeDocker()
+    fake.docker.query.mockImplementation(async (args: readonly string[]) => ({
+      code: 0,
+      signal: null,
+      stdout:
+        args[0] === 'container'
+          ? JSON.stringify({ Running: true, Status: 'running', Health: { Status: 'healthy' } })
+          : `100\n@@orca-section@@\n${RULES}\n@@orca-section@@\n${RULES}\n`,
+      stderr: '',
+      timedOut: false
+    }))
+    return fake
+  }
+
+  it('routes through the borrowed container and never starts, stops or removes one', async () => {
+    const { docker } = borrowableDocker()
+    const { manager } = createManager(docker)
+
+    await expect(manager.acquire(BORROWED)).resolves.toEqual({
+      dockerPath: '/usr/local/bin/docker',
+      containerName: 'vpn-office-1'
+    })
+    expect(manager.runningContainers()).toEqual([])
+    await manager.stop(BORROWED.id)
+
+    expect(docker.startContainer).not.toHaveBeenCalled()
+    expect(docker.spawnOpenVpn).not.toHaveBeenCalled()
+    expect(docker.remove).not.toHaveBeenCalled()
+    expect(manager.getState(BORROWED.id).status).toBe('stopped')
+  })
+
+  it("removes Orca's own container when a profile switches to a borrowed one", async () => {
+    const { docker } = borrowableDocker()
+    const { manager } = createManager(docker)
+    await manager.acquire(PROFILE)
+
+    await manager.acquire(BORROWED)
+
+    expect(docker.remove).toHaveBeenLastCalledWith(CONTAINER)
+    expect(manager.listStates()).toEqual([{ profileId: PROFILE.id, status: 'ready', logTail: [] }])
+    expect(manager.getReadyRoute(PROFILE.id)?.containerName).toBe('vpn-office-1')
   })
 })
