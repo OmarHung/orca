@@ -18583,7 +18583,10 @@
       "resizeBranches": "調整分支樹寬度",
       "resizeDetails": "調整提交詳情寬度",
       "resizeMessage": "調整提交訊息高度",
-      "resizeColumn": "調整 {{value0}} 列寬度"
+      "resizeColumn": "調整 {{value0}} 列寬度",
+      "markCherryPicks": "高亮已 cherry-pick 的提交",
+      "markCherryPicksUnavailable": "選擇一個分支以與目前分支比較",
+      "cherryPicked": "已 cherry-pick 到目前分支"
     }
   },
   "forkSync": {

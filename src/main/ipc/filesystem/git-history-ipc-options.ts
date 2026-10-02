@@ -8,6 +8,7 @@ export function readGitHistoryIpcOptions(args: GitHistoryOptions): GitHistoryOpt
     revision: typeof args.revision === 'string' ? args.revision : null,
     allBranches: args.allBranches === true,
     includeRefs: args.includeRefs === true,
-    path: typeof args.path === 'string' ? args.path : null
+    path: typeof args.path === 'string' ? args.path : null,
+    markCherryPicks: args.markCherryPicks === true
   }
 }

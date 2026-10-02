@@ -113,7 +113,8 @@ export class GitHandlerReadOperations extends GitHandlerOperationContext {
         revision: typeof params.revision === 'string' ? params.revision : null,
         allBranches: params.allBranches === true,
         includeRefs: params.includeRefs === true,
-        path: typeof params.path === 'string' ? params.path : null
+        path: typeof params.path === 'string' ? params.path : null,
+        markCherryPicks: params.markCherryPicks === true
       }
     )
     context?.signal?.throwIfAborted()

@@ -1,5 +1,7 @@
 import React from 'react'
+import { Cherry } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { translate } from '@/i18n/i18n'
 import type { GitHistoryItemViewModel } from '../../../../../shared/git-history-graph'
 import { dedupeRemoteTrackingRefs } from '../../../../../shared/git-history-ref-display'
 import { GitHistoryGraphSvg } from '../../right-sidebar/source-control/sync/git-history-graph-svg'
@@ -13,6 +15,8 @@ type GitLogTableRowProps = React.HTMLAttributes<HTMLButtonElement> & {
   selected: boolean
   /** Also on the checked-out branch; tinted in its graph color, like JetBrains. */
   inCurrentBranch: boolean
+  /** A copy of it is on the checked-out branch: tinted the same, plus a cherry mark. */
+  cherryPicked: boolean
   /** Lanes only make sense over the unfiltered, contiguous log. */
   showGraph: boolean
   gridTemplateColumns: string
@@ -25,6 +29,7 @@ export const GitLogTableRow = React.forwardRef<HTMLButtonElement, GitLogTableRow
       viewModel,
       selected,
       inCurrentBranch,
+      cherryPicked,
       showGraph,
       gridTemplateColumns,
       onSelectCommit,
@@ -45,12 +50,13 @@ export const GitLogTableRow = React.forwardRef<HTMLButtonElement, GitLogTableRow
         type="button"
         data-current={selected ? 'true' : undefined}
         data-current-branch={inCurrentBranch ? 'true' : undefined}
+        data-cherry-picked={cherryPicked ? 'true' : undefined}
         data-testid="git-log-row"
         className={cn(
           'grid h-6 w-full min-w-0 items-center gap-x-3 px-2 text-left text-xs',
           selected
             ? 'bg-accent'
-            : inCurrentBranch
+            : inCurrentBranch || cherryPicked
               ? 'bg-git-graph-ref/10 hover:bg-git-graph-ref/20'
               : 'hover:bg-accent/50',
           className
@@ -68,6 +74,17 @@ export const GitLogTableRow = React.forwardRef<HTMLButtonElement, GitLogTableRow
           ))}
           {hiddenRefCount > 0 ? (
             <span className="shrink-0 text-[10px] text-muted-foreground">+{hiddenRefCount}</span>
+          ) : null}
+          {cherryPicked ? (
+            <span
+              className="flex shrink-0"
+              title={translate(
+                'bottomPanel.gitLog.cherryPicked',
+                'Already cherry-picked into the current branch'
+              )}
+            >
+              <Cherry className="size-3 text-git-graph-ref" aria-hidden />
+            </span>
           ) : null}
           <span
             className="min-w-0 flex-1 truncate text-foreground"

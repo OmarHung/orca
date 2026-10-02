@@ -25,4 +25,10 @@ describe('bottom panel layout store', () => {
     useBottomPanelLayout.getState().setSize('authorColumnWidth', 230)
     expect(storedAuthorWidth()).toBe(230)
   })
+
+  it('persists the Git Log cherry-pick marks toggle', () => {
+    useBottomPanelLayout.getState().setMarkCherryPicks(true)
+    expect(useBottomPanelLayout.getState().markCherryPicks).toBe(true)
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}').markCherryPicks).toBe(true)
+  })
 })
