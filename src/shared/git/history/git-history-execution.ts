@@ -1,11 +1,6 @@
 import { loadGitHistoryRefs, validateHistoryRefs } from './git-history-revisions'
 import { gitHistoryTokens } from './git-history-token-store'
-import {
-  GIT_HISTORY_COMMIT_FORMAT,
-  gitHistoryRefFromFullName,
-  parseGitHistoryLog,
-  shortGitHash
-} from './git-history-log-parser'
+import { gitHistoryRefFromFullName, shortGitHash } from './git-history-log-parser'
 import {
   GIT_HISTORY_DEFAULT_LIMIT,
   GIT_HISTORY_MAX_LIMIT,
@@ -17,8 +12,9 @@ import {
 } from './git-history-types'
 import { getGitCurrentBranchName } from '../refs/git-current-branch'
 import { isBaseOfItself, resolveBranchRange } from './git-history-branch-range'
-import { isGitHistoryBranchRefName, loadGitHistoryBranches } from './git-history-branches'
-import { loadHeadMergeBases } from './git-history-head-merge-bases'
+import { loadGitHistoryBranches } from './git-history-branches'
+import { resolveLogTarget, runHistoryLog } from './git-history-log-target'
+import { loadCurrentBranchComparison } from './git-history-current-branch-comparison'
 
 function clampHistoryLimit(limit: number | undefined): number {
   if (!Number.isFinite(limit)) {
@@ -155,7 +151,7 @@ export async function loadGitHistoryFromExecutor(
   const limit = clampHistoryLimit(options.limit)
   const [branchList, logTarget] = await Promise.all([
     options.includeRefs ? loadGitHistoryBranches(git, cwd) : Promise.resolve(undefined),
-    resolveLogTarget(git, cwd, options)
+    resolveLogTarget(git, cwd, options, resolveCommit)
   ])
   const scoped = logTarget.scope !== 'head'
   const refs = options.branchOnly || scoped ? 'head' : (options.refs ?? 'head')
@@ -251,7 +247,7 @@ export async function loadGitHistoryFromExecutor(
   }
 
   const path = options.path?.trim() || undefined
-  const [parsed, headMergeBases] = await Promise.all([
+  const [parsed, currentBranchComparison] = await Promise.all([
     runHistoryLog(git, cwd, limit, historyRevisions, {
       skip,
       shortstat: Boolean(branchBase),
@@ -259,14 +255,17 @@ export async function loadGitHistoryFromExecutor(
       stdin: !scoped && (refs !== 'head' || Boolean(pinned)),
       path
     }).catch((error: unknown) => {
-      if (pinned && /bad object|unknown revision|invalid object|bad revision/i.test(String(error))) {
+      if (
+        pinned &&
+        /bad object|unknown revision|invalid object|bad revision/i.test(String(error))
+      ) {
         return null
       }
       throw error
     }),
     logTarget.scope === 'ref' && headOid
-      ? loadHeadMergeBases(git, cwd, headOid, logTarget.revisions)
-      : undefined
+      ? loadCurrentBranchComparison(git, cwd, headOid, logTarget.revisions, options)
+      : {}
   ])
   if (!parsed) {
     return { ...empty, ...echo, historyChanged: true }
@@ -296,71 +295,13 @@ export async function loadGitHistoryFromExecutor(
     limit,
     ...(branchBase ? { branch: branchBase.range } : {}),
     ...(options.skip !== undefined ? { skip } : {}),
-    ...(headMergeBases ? { headMergeBases } : {}),
+    ...currentBranchComparison,
     ...(path ? { path } : {})
   }
 }
 
 function clampHistorySkip(skip: number | undefined): number {
   return Number.isFinite(skip) ? Math.max(0, Math.trunc(skip ?? 0)) : 0
-}
-
-type LogTarget = { scope: 'head' } | { scope: 'ref' | 'all'; revisions: string[] }
-
-// Why resolve to oids: `git log` then never sees user-chosen text, so ref names can't smuggle options or ranges.
-async function resolveLogTarget(
-  git: GitHistoryExecutor,
-  cwd: string,
-  options: GitHistoryOptions
-): Promise<LogTarget> {
-  if (options.allBranches) {
-    return { scope: 'all', revisions: ['--branches', '--remotes', 'HEAD'] }
-  }
-  const revision = options.revision?.trim()
-  if (!revision) {
-    return { scope: 'head' }
-  }
-  if (!isGitHistoryBranchRefName(revision)) {
-    throw new Error(`Not a branch: ${revision}`)
-  }
-  const oid = await resolveCommit(git, cwd, revision)
-  if (!oid) {
-    throw new Error(`Branch not found: ${revision}`)
-  }
-  return { scope: 'ref', revisions: [oid] }
-}
-
-async function runHistoryLog(
-  git: GitHistoryExecutor,
-  cwd: string,
-  limit: number,
-  revisions: string[],
-  {
-    skip,
-    shortstat = false,
-    stdin = false,
-    path
-  }: { skip: number; shortstat?: boolean; stdin?: boolean; path?: string }
-) {
-  const { stdout } = await git(
-    [
-      'log',
-      '--no-show-signature',
-      '--no-color',
-      `--format=${GIT_HISTORY_COMMIT_FORMAT}`,
-      '-z',
-      '--topo-order',
-      '--decorate=full',
-      ...(shortstat ? ['--shortstat'] : []),
-      ...(skip > 0 ? [`--skip=${skip}`] : []),
-      `-n${limit + 1}`,
-      ...(stdin ? ['--stdin'] : revisions),
-      ...(path ? ['--', path] : [])
-    ],
-    cwd,
-    stdin ? `${revisions.join('\n')}\n` : undefined
-  )
-  return parseGitHistoryLog(stdout)
 }
 
 function withBranchList(branchList: GitHistoryBranchList | undefined): {
