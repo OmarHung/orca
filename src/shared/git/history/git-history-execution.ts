@@ -16,6 +16,7 @@ import {
 import { getGitCurrentBranchName } from '../refs/git-current-branch'
 import { isBaseOfItself, resolveBranchRange } from './git-history-branch-range'
 import { isGitHistoryBranchRefName, loadGitHistoryBranches } from './git-history-branches'
+import { loadHeadMergeBases } from './git-history-head-merge-bases'
 
 function clampHistoryLimit(limit: number | undefined): number {
   if (!Number.isFinite(limit)) {
@@ -206,11 +207,16 @@ export async function loadGitHistoryFromExecutor(
   }
 
   const path = options.path?.trim() || undefined
-  const parsed = await runHistoryLog(git, cwd, limit, historyRevisions, {
-    skip,
-    shortstat: Boolean(branchBase),
-    path
-  })
+  const [parsed, headMergeBases] = await Promise.all([
+    runHistoryLog(git, cwd, limit, historyRevisions, {
+      skip,
+      shortstat: Boolean(branchBase),
+      path
+    }),
+    logTarget.scope === 'ref'
+      ? loadHeadMergeBases(git, cwd, headOid, logTarget.revisions)
+      : undefined
+  ])
   const items = parsed.slice(0, limit)
   if (branchBase) {
     for (const item of items) {
@@ -236,6 +242,7 @@ export async function loadGitHistoryFromExecutor(
     ...(branchBase ? { branch: branchBase.range } : {}),
     ...(options.skip !== undefined ? { skip } : {}),
     revisionScope: logTarget.scope,
+    ...(headMergeBases ? { headMergeBases } : {}),
     ...withRefs(refs),
     ...(path ? { path } : {})
   }

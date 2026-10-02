@@ -103,15 +103,29 @@ test('switches the Git Log between branches from the branch tree', async ({
   await expect(rows.filter({ hasText: 'only on the side branch' })).toBeVisible()
   await expect(rows.filter({ hasText: 'second on the workspace branch' })).toHaveCount(0)
   await expect(panel.getByTestId('git-log-scope-label')).toContainText(sideBranch)
+  // Like JetBrains: rows the checked-out branch also has are tinted; the side branch forked at the root.
+  await expect(rows.last()).toHaveAttribute('data-current-branch', 'true')
+  await expect(rows.filter({ hasText: 'only on the side branch' })).not.toHaveAttribute(
+    'data-current-branch'
+  )
+  await orcaPage.screenshot({ path: testInfo.outputPath('git-log-side-branch.png') })
 
   await tree.getByRole('textbox', { name: 'Branch' }).fill('')
   await tree.getByRole('button', { name: 'All Branches' }).click()
   await expect(rows.filter({ hasText: 'only on the side branch' })).toBeVisible()
   await expect(rows.filter({ hasText: 'second on the workspace branch' })).toBeVisible()
+  await expect(rows.filter({ hasText: 'second on the workspace branch' })).toHaveAttribute(
+    'data-current-branch',
+    'true'
+  )
+  await expect(rows.filter({ hasText: 'only on the side branch' })).not.toHaveAttribute(
+    'data-current-branch'
+  )
   await orcaPage.screenshot({ path: testInfo.outputPath('git-log-all-branches.png') })
 
   await tree.getByRole('button', { name: 'HEAD (Current Branch)' }).click()
   await expect(rows.filter({ hasText: 'only on the side branch' })).toHaveCount(0)
+  await expect(panel.locator('[data-current-branch]')).toHaveCount(0)
 })
 
 test('toggles commit files between list and tree views', async ({

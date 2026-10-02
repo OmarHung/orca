@@ -3,12 +3,13 @@ import { loadGitHistoryFromExecutor, type GitHistoryExecutor } from './git-histo
 
 const HEAD_OID = 'a'.repeat(40)
 const OTHER_OID = 'd'.repeat(40)
+const BASE_OID = 'e'.repeat(40)
 
 function record(hash: string, message: string): string {
   return `${[hash, 'Ada', 'ada@example.com', '1700000000', '1700000000', '', '', '', message].join('\n')}\0`
 }
 
-function createExecutor(options: { unborn?: boolean } = {}): {
+function createExecutor(options: { unborn?: boolean; mergeBaseFails?: boolean } = {}): {
   executor: GitHistoryExecutor
   calls: string[][]
 } {
@@ -41,6 +42,12 @@ function createExecutor(options: { unborn?: boolean } = {}): {
           ['refs/heads/other', OTHER_OID, ' ', ''].join('\0')
         ].join('\n')
       }
+    }
+    if (command === 'merge-base' && args.includes('--all')) {
+      if (options.mergeBaseFails) {
+        throw new Error('exit 1')
+      }
+      return { stdout: `${BASE_OID}\n${HEAD_OID}\n` }
     }
     if (command === 'log') {
       return { stdout: record(args.includes(OTHER_OID) ? OTHER_OID : HEAD_OID, 'commit') }
@@ -79,6 +86,33 @@ describe('git history revision scope', () => {
     expect(logCall(calls)).toContain(OTHER_OID)
     expect(logCall(calls)).not.toContain('refs/heads/other')
     expect(result.items[0]?.id).toBe(OTHER_OID)
+  })
+
+  it('reports where a chosen branch meets HEAD', async () => {
+    const { executor, calls } = createExecutor()
+    const result = await loadGitHistoryFromExecutor(executor, '/repo', {
+      revision: 'refs/heads/other'
+    })
+    expect(calls).toContainEqual(['merge-base', '--all', HEAD_OID, OTHER_OID])
+    expect(result.headMergeBases).toEqual([BASE_OID, HEAD_OID])
+  })
+
+  it('claims no shared commits when merge-base fails', async () => {
+    const { executor } = createExecutor({ mergeBaseFails: true })
+    const result = await loadGitHistoryFromExecutor(executor, '/repo', {
+      revision: 'refs/heads/other'
+    })
+    expect(result.items[0]?.id).toBe(OTHER_OID)
+    expect(result).not.toHaveProperty('headMergeBases')
+  })
+
+  it('skips merge-base outside the branch scope', async () => {
+    for (const options of [{}, { allBranches: true }]) {
+      const { executor, calls } = createExecutor()
+      const result = await loadGitHistoryFromExecutor(executor, '/repo', options)
+      expect(calls.some((args) => args.includes('--all') && args[0] === 'merge-base')).toBe(false)
+      expect(result).not.toHaveProperty('headMergeBases')
+    }
   })
 
   it('logs every branch when allBranches wins over revision', async () => {
