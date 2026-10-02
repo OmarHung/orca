@@ -1,4 +1,8 @@
-import type { GitHistoryItem, GitHistoryResult } from '../../../../../shared/git-history'
+import type {
+  GitHistoryItem,
+  GitHistoryItemRef,
+  GitHistoryResult
+} from '../../../../../shared/git-history'
 import type { GitLogScope } from './git-log-scope'
 
 /**
@@ -13,6 +17,31 @@ export function collectGitLogCurrentBranchIds(
   return tips ? collectAncestorIds(result.items, tips) : null
 }
 
+/** Cherry-pick marks compare one chosen branch with the current one, like JetBrains. */
+export function canMarkGitLogCherryPicks(
+  scope: GitLogScope,
+  currentRef: GitHistoryItemRef | undefined
+): boolean {
+  return scope.kind === 'ref' && scope.fullName !== currentRef?.id
+}
+
+/** Branch-only commits HEAD already has as a cherry-pick; empty unless marks are on. */
+export function collectGitLogCherryPickedIds(
+  result: GitHistoryResult | undefined,
+  enabled: boolean
+): ReadonlySet<string> {
+  return new Set(enabled ? (result?.cherryPickedIds ?? []) : [])
+}
+
+function isOtherBranchLog(result: GitHistoryResult, scope: GitLogScope): boolean {
+  return (
+    result.revisionScope === 'ref' &&
+    scope.kind === 'ref' &&
+    Boolean(result.currentRef?.revision) &&
+    scope.fullName !== result.currentRef?.id
+  )
+}
+
 function currentBranchTips(
   result: GitHistoryResult,
   scope: GitLogScope
@@ -25,10 +54,7 @@ function currentBranchTips(
   if (result.revisionScope === 'all') {
     return [head.revision]
   }
-  if (result.revisionScope === 'ref' && scope.kind === 'ref' && scope.fullName !== head.id) {
-    return result.headMergeBases
-  }
-  return undefined
+  return isOtherBranchLog(result, scope) ? result.headMergeBases : undefined
 }
 
 // Why a walk over loaded rows suffices: the log is topo-ordered, so a loaded commit's
