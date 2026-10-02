@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { GitHistoryItem, GitHistoryResult } from '../../../../../shared/git-history'
-import { collectGitLogCurrentBranchIds } from './git-log-current-branch'
+import {
+  canMarkGitLogCherryPicks,
+  collectGitLogCherryPickedIds,
+  collectGitLogCurrentBranchIds
+} from './git-log-current-branch'
 import { ALL_GIT_LOG_SCOPE, HEAD_GIT_LOG_SCOPE, type GitLogScope } from './git-log-scope'
 
 const FEATURE_SCOPE: GitLogScope = { kind: 'ref', fullName: 'refs/heads/feature' }
@@ -85,5 +89,26 @@ describe('collectGitLogCurrentBranchIds', () => {
     expect(collectGitLogCurrentBranchIds(result({ items }), ALL_GIT_LOG_SCOPE)).toBeNull()
     const unborn = result({ items, revisionScope: 'all', currentRef: undefined })
     expect(collectGitLogCurrentBranchIds(unborn, ALL_GIT_LOG_SCOPE)).toBeNull()
+  })
+})
+
+describe('git log cherry-pick marks', () => {
+  const main = result({}).currentRef
+
+  it('compares only one chosen branch other than the current one', () => {
+    expect(canMarkGitLogCherryPicks(FEATURE_SCOPE, main)).toBe(true)
+    // While a newly chosen branch loads, the current branch is not known yet.
+    expect(canMarkGitLogCherryPicks(FEATURE_SCOPE, undefined)).toBe(true)
+    expect(canMarkGitLogCherryPicks({ kind: 'ref', fullName: 'refs/heads/main' }, main)).toBe(false)
+    expect(canMarkGitLogCherryPicks(HEAD_GIT_LOG_SCOPE, main)).toBe(false)
+    expect(canMarkGitLogCherryPicks(ALL_GIT_LOG_SCOPE, main)).toBe(false)
+  })
+
+  it('shows the host’s cherry-picked commits only while marks are on', () => {
+    const logged = result({ items: [F, E, B, A], revisionScope: 'ref', cherryPickedIds: ['e'] })
+    expect([...collectGitLogCherryPickedIds(logged, true)]).toEqual(['e'])
+    expect(collectGitLogCherryPickedIds(logged, false).size).toBe(0)
+    expect(collectGitLogCherryPickedIds(result({ items: [F] }), true).size).toBe(0)
+    expect(collectGitLogCherryPickedIds(undefined, true).size).toBe(0)
   })
 })
