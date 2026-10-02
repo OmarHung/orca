@@ -129,6 +129,8 @@ export type GitHistoryResult = {
   /** Echoes a requested skip so clients can tell paging hosts from older ones. */
   skip?: number
   revisionScope?: GitHistoryRevisionScope
+  /** Scope `ref` only: `merge-base --all HEAD <ref>`. They and their ancestors are the logged commits HEAD also has. */
+  headMergeBases?: string[]
   /** Present only when `includeRefs` was requested and the host supports it. */
   branchList?: GitHistoryBranchList
   /** Echoes the path the log was limited to; absent from a host that ignores `path`. */
