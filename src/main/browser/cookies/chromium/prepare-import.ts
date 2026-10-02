@@ -7,7 +7,10 @@ import {
 } from '../policy/cookie-import-exclusions'
 import { createChromiumCookieSnapshot } from './chromium-cookie-snapshot'
 import { planImportWrites } from '../browser-cookie-import-write'
-import { readChromiumRowPartition } from '../sources/browser-cookie-source-partition'
+import {
+  isBrowserInternalChromiumPartition,
+  readChromiumRowPartition
+} from '../sources/browser-cookie-source-partition'
 import { diag } from '../browser-cookie-import-diagnostics'
 import type { DetectedBrowser } from '../sources/browser-cookie-source-profiles'
 import type { CookieImportOptions } from '../imports/cookie-import-contracts'
@@ -62,7 +65,9 @@ export async function prepareChromiumCookieImport(
     const partitionCandidates = sourceRows.flatMap((sourceRow) => {
       const domain = sourceRow.host_key as string
       const name = sourceRow.name as string
-      return isGoogleSourceBoundCookie(name, domain) || isNonTransplantableCookieDomain(domain)
+      return isGoogleSourceBoundCookie(name, domain) ||
+        isNonTransplantableCookieDomain(domain) ||
+        isBrowserInternalChromiumPartition(sourceRow, sourceColumns)
         ? []
         : [{ sourceRow, domain, partition: readChromiumRowPartition(sourceRow, sourceColumns) }]
     })
@@ -96,6 +101,7 @@ export async function prepareChromiumCookieImport(
       targetSession,
       sourceSnapshot,
       sourceRows,
+      sourceColumns,
       nativePlan,
       plannedSourceRows,
       partitionBySourceRow,
