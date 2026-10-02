@@ -8,7 +8,8 @@ import {
   remoteJoin,
   remoteParent,
   remoteFolderName,
-  resolveRemotePath
+  resolveRemotePath,
+  splitNewFolderPath
 } from './sftp-paths'
 
 describe('sftp paths', () => {
@@ -64,5 +65,22 @@ describe('sftp paths', () => {
     expect(isRemotePathWithin('/srv/app', '/srv/app')).toBe(true)
     expect(isRemotePathWithin('/srv/apps', '/srv/app')).toBe(false)
     expect(isRemotePathWithin('/srv', '/')).toBe(true)
+  })
+
+  it('splits a typed new folder path into names, refusing anything that leaves the folder', () => {
+    expect(splitNewFolderPath('logs')).toEqual(['logs'])
+    expect(splitNewFolderPath(' public/assets/vendor/lib-1.2.3/css/ ')).toEqual([
+      'public',
+      'assets',
+      'vendor',
+      'lib-1.2.3',
+      'css'
+    ])
+    expect(splitNewFolderPath('a//b')).toEqual(['a', 'b'])
+    expect(splitNewFolderPath('')).toBeNull()
+    expect(splitNewFolderPath('/')).toBeNull()
+    expect(splitNewFolderPath('/srv/logs')).toBeNull()
+    expect(splitNewFolderPath('a/../b')).toBeNull()
+    expect(splitNewFolderPath('./a')).toBeNull()
   })
 })

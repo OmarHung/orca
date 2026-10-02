@@ -209,6 +209,29 @@ test.describe('SFTP page against a Docker sshd', () => {
       await expect.poll(() => existsSync(path.join(inbox, 'orca-sftp-visible.txt'))).toBe(true)
       await expect(orcaPage.locator('[data-slot="dialog-overlay"]')).toHaveCount(0)
 
+      // A typed path creates its missing parent folders too, like mkdir -p.
+      await remotePane.getByRole('button', { name: 'New folder', exact: true }).click()
+      await orcaPage.getByRole('textbox', { name: 'Name' }).fill('wwwroot/assets/css/')
+      await orcaPage.getByRole('button', { name: 'Create', exact: true }).click()
+      await expect(confirmDialog.locator('[data-command-list]')).toContainText(
+        '-mkdir "/root/wwwroot"'
+      )
+      await expect(confirmDialog.locator('[data-command-list]')).toContainText(
+        'mkdir "/root/wwwroot/assets/css"'
+      )
+      await orcaPage.screenshot({ path: testInfo.outputPath('sftp-nested-mkdir-confirm.png') })
+      await confirmDialog.getByRole('button', { name: 'Create', exact: true }).click()
+      const sshTarget = target
+      await expect
+        .poll(() =>
+          execDockerSshRelayTargetCommand(
+            sshTarget,
+            'test -d /root/wwwroot/assets/css && echo yes || echo no'
+          )
+        )
+        .toBe('yes')
+      await expect(remotePane.locator('[data-sftp-entry="/root/wwwroot"]')).toBeVisible()
+
       // Files show their extension on the icon.
       await expect(
         localPane.locator(
