@@ -1,16 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react'
-import { ChevronDown, GitBranch, RefreshCw, Search, User, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import {
   buildDefaultGitHistoryColorMap,
@@ -31,7 +20,13 @@ import { GitLogTableHeader, useGitLogGridTemplate } from './git-log-table-column
 import { useGitLogHistory } from './use-git-log-history'
 import { useGitLogWorktree } from './use-git-log-worktree'
 import { GitLogBranchTree } from './GitLogBranchTree'
-import { collectGitLogCurrentBranchIds } from './git-log-current-branch'
+import {
+  canMarkGitLogCherryPicks,
+  collectGitLogCherryPickedIds,
+  collectGitLogCurrentBranchIds
+} from './git-log-current-branch'
+import { GitLogToolbar } from './GitLogToolbar'
+import { useBottomPanelLayout } from '../bottom-panel-layout-store'
 import { HEAD_GIT_LOG_SCOPE, isGitLogScopeHonored, type GitLogScope } from './git-log-scope'
 import { useGitLogScope, useResetMissingGitLogScope } from './use-git-log-scope'
 import { ResizeHandle } from '../ResizeHandle'
@@ -45,7 +40,6 @@ import { openGitLogCompare } from './compare/open-git-log-compare'
 import { useGitLogCompareContext } from './compare/use-git-log-compare-context'
 import { GitLogRangeDetails } from './compare/GitLogRangeDetails'
 
-const ALL_AUTHORS_VALUE = '__all__'
 const noSplitTarget = (): undefined => undefined
 
 function describeGitLogScope(scope: GitLogScope, headName: string | undefined): string | undefined {
@@ -66,50 +60,12 @@ function GitLogEmptyState({ children }: { children: React.ReactNode }): React.JS
   )
 }
 
-function GitLogAuthorFilter({
-  authors,
-  value,
-  onChange
-}: {
-  authors: readonly string[]
-  value: string | null
-  onChange: (author: string | null) => void
-}): React.JSX.Element {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="xs">
-          <User />
-          <span className="max-w-[8rem] truncate">
-            {value ?? translate('bottomPanel.gitLog.userFilter', 'User')}
-          </span>
-          <ChevronDown />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="max-h-72">
-        <DropdownMenuRadioGroup
-          value={value ?? ALL_AUTHORS_VALUE}
-          onValueChange={(next) => onChange(next === ALL_AUTHORS_VALUE ? null : next)}
-        >
-          <DropdownMenuRadioItem value={ALL_AUTHORS_VALUE}>
-            {translate('bottomPanel.gitLog.allUsers', 'All users')}
-          </DropdownMenuRadioItem>
-          {authors.length > 0 ? <DropdownMenuSeparator /> : null}
-          {authors.map((author) => (
-            <DropdownMenuRadioItem key={author} value={author}>
-              {author}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
 export function GitLogView(): React.JSX.Element {
   const worktree = useGitLogWorktree()
   const { scope, setScope } = useGitLogScope(worktree.worktreeId)
-  const { state, branchList, refresh } = useGitLogHistory(worktree, scope, true)
+  const markCherryPicks = useBottomPanelLayout((s) => s.markCherryPicks)
+  const setMarkCherryPicks = useBottomPanelLayout((s) => s.setMarkCherryPicks)
+  const { state, branchList, refresh } = useGitLogHistory(worktree, scope, true, markCherryPicks)
   useResetMissingGitLogScope(scope, branchList, setScope)
   const commitActions = useGitHistoryCommitActions({
     activeWorktreeId: worktree.worktreeId,
@@ -143,6 +99,11 @@ export function GitLogView(): React.JSX.Element {
   const currentBranchIds = useMemo(
     () => (result ? collectGitLogCurrentBranchIds(result, scope) : null),
     [result, scope]
+  )
+  const cherryPicksAvailable = canMarkGitLogCherryPicks(scope, result?.currentRef)
+  const cherryPickedIds = useMemo(
+    () => collectGitLogCherryPickedIds(result, markCherryPicks && cherryPicksAvailable),
+    [cherryPicksAvailable, markCherryPicks, result]
   )
   const filterActive = isGitLogFilterActive(filter)
   const visibleViewModels = useMemo(() => {
@@ -270,6 +231,7 @@ export function GitLogView(): React.JSX.Element {
                     viewModel={viewModel}
                     selected={selection.isSelected(item.id)}
                     inCurrentBranch={currentBranchIds?.has(item.id) ?? false}
+                    cherryPicked={cherryPickedIds.has(item.id)}
                     showGraph={!filterActive}
                     gridTemplateColumns={gridTemplateColumns}
                     onSelectCommit={selection.handleClick}
@@ -322,53 +284,19 @@ export function GitLogView(): React.JSX.Element {
         />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex h-8 shrink-0 items-center gap-1 border-b border-border px-2">
-          <div className="flex h-6 w-64 min-w-0 items-center gap-1.5 rounded-md border border-input px-2 focus-within:border-ring">
-            <Search className="size-3.5 shrink-0 text-muted-foreground" />
-            <input
-              type="text"
-              value={filter.text}
-              onChange={(event) => setFilter((prev) => ({ ...prev, text: event.target.value }))}
-              placeholder={translate('bottomPanel.gitLog.searchPlaceholder', 'Text or hash')}
-              aria-label={translate('bottomPanel.gitLog.searchPlaceholder', 'Text or hash')}
-              className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60"
-            />
-            {filter.text ? (
-              <button
-                type="button"
-                className="text-muted-foreground hover:text-foreground"
-                aria-label={translate('bottomPanel.gitLog.clearSearch', 'Clear search')}
-                onClick={() => setFilter((prev) => ({ ...prev, text: '' }))}
-              >
-                <X className="size-3" />
-              </button>
-            ) : null}
-          </div>
-          <GitLogAuthorFilter
-            authors={authors}
-            value={filter.author}
-            onChange={(author) => setFilter((prev) => ({ ...prev, author }))}
-          />
-          {scopeLabel ? (
-            <span
-              className="ml-1 flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
-              data-testid="git-log-scope-label"
-            >
-              <GitBranch className="size-3.5 shrink-0" />
-              <span className="truncate">{scopeLabel}</span>
-            </span>
-          ) : null}
-          <div className="flex-1" />
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            aria-label={translate('bottomPanel.gitLog.refresh', 'Refresh log')}
-            title={translate('bottomPanel.gitLog.refresh', 'Refresh log')}
-            onClick={() => void refresh()}
-          >
-            <RefreshCw className={cn(loading && 'animate-spin')} />
-          </Button>
-        </div>
+        <GitLogToolbar
+          filter={filter}
+          onFilterChange={setFilter}
+          authors={authors}
+          scopeLabel={scopeLabel}
+          cherryPicks={{
+            available: cherryPicksAvailable,
+            pressed: markCherryPicks,
+            onPressedChange: setMarkCherryPicks
+          }}
+          loading={loading}
+          onRefresh={() => void refresh()}
+        />
         <div className="flex min-h-0 flex-1">
           <div className="flex min-w-0 flex-1 flex-col">
             {scopeHonored ? null : (

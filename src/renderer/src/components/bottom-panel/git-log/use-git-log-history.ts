@@ -27,12 +27,13 @@ type GitLogHistory = {
  * Loads the active worktree's commit log for `scope` while the Git Log is visible, and reloads it
  * after git operations made anywhere. Results are kept per worktree + scope so switching back
  * restores instantly; the branch list is kept per worktree so the tree doesn't blank while a newly
- * chosen branch loads.
+ * chosen branch loads. `markCherryPicks` asks a branch scope for `cherryPickedIds` too.
  */
 export function useGitLogHistory(
   worktree: GitLogWorktree,
   scope: GitLogScope,
-  isVisible: boolean
+  isVisible: boolean,
+  markCherryPicks = false
 ): GitLogHistory {
   const { repoId, worktreeId, worktreePath, isFolder, repoSettings, observedHead } = worktree
   const [stateByKey, setStateByKey] = useState<Record<string, GitHistoryPanelState>>({})
@@ -46,6 +47,8 @@ export function useGitLogHistory(
   const ownerHostKey = repoSettings?.activeRuntimeEnvironmentId?.trim() ?? ''
   const scopeKey = gitLogScopeKey(scope)
   const stateKey = worktreeId ? `${worktreeId}\n${scopeKey}` : null
+  const cherryPicksRequested = markCherryPicks && scope.kind === 'ref'
+  const cherryPicksRequestedRef = useRef(false)
 
   const refresh = useCallback(
     async (options?: GitLogRefreshOptions): Promise<void> => {
@@ -70,7 +73,8 @@ export function useGitLogHistory(
             limit: GIT_HISTORY_MAX_LIMIT,
             baseRef: null,
             includeRefs: true,
-            ...gitLogScopeToHistoryOptions(scope)
+            ...gitLogScopeToHistoryOptions(scope),
+            ...(cherryPicksRequested ? { markCherryPicks: true } : {})
           }
         )
         if (latestRequestByKeyRef.current[stateKey] !== requestId) {
@@ -105,7 +109,16 @@ export function useGitLogHistory(
         })
       }
     },
-    [isFolder, isVisible, repoSettings, scope, stateKey, worktreeId, worktreePath]
+    [
+      cherryPicksRequested,
+      isFolder,
+      isVisible,
+      repoSettings,
+      scope,
+      stateKey,
+      worktreeId,
+      worktreePath
+    ]
   )
 
   const refreshRef = useRef(refresh)
@@ -118,14 +131,17 @@ export function useGitLogHistory(
     if (!isVisible) {
       return
     }
-    void reloadSilently()
+    // Why a spinner when marks turn on: the patch-id pass can take seconds on diverged branches.
+    const cherryPicksTurnedOn = cherryPicksRequested && !cherryPicksRequestedRef.current
+    cherryPicksRequestedRef.current = cherryPicksRequested
+    void refreshRef.current({ silent: !cherryPicksTurnedOn })
     // Why: observedHead re-runs the load after commits/checkouts made anywhere (terminal, agents).
   }, [
+    cherryPicksRequested,
     isVisible,
     isFolder,
     observedHead,
     ownerHostKey,
-    reloadSilently,
     scopeKey,
     worktreeId,
     worktreePath

@@ -22,7 +22,8 @@ export function createGitHistoryApi(): Pick<PreloadApi['git'], 'history' | 'refs
       historyToken,
       revision,
       allBranches,
-      includeRefs
+      includeRefs,
+      markCherryPicks
     }) => {
       const worktree = await resolveRuntimeWorktreeByPath(worktreePath)
       return callRuntimeResult('git.history', {
@@ -35,7 +36,8 @@ export function createGitHistoryApi(): Pick<PreloadApi['git'], 'history' | 'refs
         skip,
         revision,
         allBranches,
-        includeRefs
+        includeRefs,
+        markCherryPicks
       })
     }
   }
