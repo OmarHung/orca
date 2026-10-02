@@ -12,6 +12,7 @@ import {
 import { databaseSameSite, deriveUrl, type ValidatedCookie } from './browser-cookie-validation'
 import type { DetectedBrowser } from './browser-cookie-detection-types'
 import { diag } from './browser-cookie-import-diagnostics'
+import { sourceCopyFailureReason } from './browser-cookie-source-access'
 
 // ---------------------------------------------------------------------------
 // Firefox import
@@ -39,12 +40,10 @@ export async function importCookiesFromFirefox(
         }
       }
     }
-  } catch {
+  } catch (err) {
     rmSync(tmpDir, { recursive: true, force: true })
-    return {
-      ok: false,
-      reason: 'Could not copy Firefox cookies database. Try closing Firefox first.'
-    }
+    diag(`  Firefox copy failed: ${String(err)}`)
+    return { ok: false, reason: sourceCopyFailureReason('Firefox', err) }
   }
 
   try {

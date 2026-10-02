@@ -517,6 +517,45 @@ describe('native Chromium import partition fidelity', () => {
     expect(setPendingCookieImportMock).not.toHaveBeenCalled()
   })
 
+  it('imports a family whose odd rows are partitioned under browser-internal pages', async () => {
+    const sourceCookiesPath = join(tmpDir, 'Chrome', 'Default', 'Network', 'Cookies')
+    createChromiumCookieTestDatabase(sourceCookiesPath, [
+      {
+        domain: '.youtube.com',
+        name: 'extension-partitioned',
+        value: 'unreachable',
+        isSecure: 1,
+        topFrameSiteKey: 'chrome-extension://gppongmhjkpfnbhagpmjfkannfbllamg',
+        hasCrossSiteAncestor: 1
+      },
+      {
+        domain: '.youtube.com',
+        name: 'whats-new-partitioned',
+        value: 'unreachable',
+        isSecure: 1,
+        topFrameSiteKey: 'chrome://whats-new',
+        hasCrossSiteAncestor: 1
+      },
+      { domain: '.youtube.com', name: 'LOGIN_INFO', value: 'keep-me', isSecure: 1 }
+    ]).close()
+    createChromiumCookieTestDatabase(
+      join(tmpDir, 'userData', 'Partitions', 'test', 'Network', 'Cookies'),
+      []
+    ).close()
+
+    const result = await importCookiesFromBrowser(chromeBrowser(sourceCookiesPath), 'persist:test')
+
+    expect(result.ok).toBe(true)
+    expect(cookieWriteMock).toHaveBeenCalledTimes(1)
+    expect(cookieWriteMock).toHaveBeenCalledWith(expect.objectContaining({ name: 'LOGIN_INFO' }))
+    expect(result.ok && result.summary).toMatchObject({
+      totalCookies: 3,
+      importedCookies: 1,
+      skippedCookies: 2
+    })
+    expect(result.ok && result.summary?.partitionSkippedCookies).toBeUndefined()
+  })
+
   // Why: without this, "disable staging on a skip" could be implemented as "disable staging
   // always" and no test would notice — a real regression to the restart path wearing the disguise
   // of a safety fix.
