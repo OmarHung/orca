@@ -128,6 +128,61 @@ test('switches the Git Log between branches from the branch tree', async ({
   await expect(panel.locator('[data-current-branch]')).toHaveCount(0)
 })
 
+test('marks a chosen branch’s commits already cherry-picked into the current branch', async ({
+  orcaPage,
+  testRepoPath,
+  registerPostElectronShutdownCleanup
+}, testInfo) => {
+  const fixture = createGoldenWorktree(testRepoPath, 'git-log-cherry')
+  registerPostElectronShutdownCleanup(async () => cleanupGoldenWorktree(testRepoPath, fixture))
+  const git = (...args: string[]): string =>
+    execFileSync('git', args, { cwd: fixture.worktreePath, encoding: 'utf8', stdio: 'pipe' })
+  const commitFile = (file: string, subject: string): void => {
+    writeFileSync(path.join(fixture.worktreePath, file), `${subject}\n`)
+    git('add', file)
+    git('commit', '-m', subject)
+  }
+  const pickBranch = `${fixture.branchName}-pick`
+  git('checkout', '-b', pickBranch)
+  commitFile('picked.txt', 'feat: picked into the workspace branch')
+  commitFile('left.txt', 'feat: left on the pick branch')
+  const pickedCommit = git('rev-parse', 'HEAD~1').trim()
+  git('checkout', fixture.branchName)
+  // Why diverge first: a pick straight onto its parent can recreate the identical commit.
+  commitFile('own.txt', 'feat: own work on the workspace branch')
+  git('cherry-pick', pickedCommit)
+
+  await waitForSessionReady(orcaPage)
+  await activateGoldenWorktree(orcaPage, testRepoPath, fixture.worktreePath)
+  await orcaPage.getByTestId('git-log-status-toggle').click()
+  const panel = orcaPage.getByTestId('bottom-panel')
+  const rows = panel.getByTestId('git-log-row')
+  const tree = panel.getByTestId('git-log-branch-tree')
+  const toggle = panel.getByTestId('git-log-cherry-pick-toggle')
+
+  await expect(rows.filter({ hasText: 'own work on the workspace branch' })).toBeVisible({
+    timeout: 20_000
+  })
+  await expect(toggle).toBeDisabled()
+
+  await tree.getByRole('textbox', { name: 'Branch' }).fill('-pick')
+  await tree.getByRole('button', { name: /-pick$/ }).click()
+  const picked = rows.filter({ hasText: 'picked into the workspace branch' })
+  const left = rows.filter({ hasText: 'left on the pick branch' })
+  await expect(left).toBeVisible()
+  await expect(picked).not.toHaveAttribute('data-cherry-picked')
+
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+  await expect(picked).toHaveAttribute('data-cherry-picked', 'true')
+  await expect(left).not.toHaveAttribute('data-cherry-picked')
+  await expect(left).not.toHaveAttribute('data-current-branch')
+  await orcaPage.screenshot({ path: testInfo.outputPath('git-log-cherry-picks.png') })
+
+  await toggle.click()
+  await expect(picked).not.toHaveAttribute('data-cherry-picked')
+})
+
 test('toggles commit files between list and tree views', async ({
   orcaPage,
   testRepoPath,

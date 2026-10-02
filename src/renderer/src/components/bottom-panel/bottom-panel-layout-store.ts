@@ -53,6 +53,8 @@ type PersistedBottomPanelLayout = BottomPanelSizes & {
   open: boolean
   activeTab: BottomPanelTab
   commitFilesViewMode: GitHistoryCommitFilesViewMode
+  /** Git Log: also mark a chosen branch's commits already cherry-picked into the current one. */
+  markCherryPicks: boolean
 }
 
 type BottomPanelLayoutState = PersistedBottomPanelLayout & {
@@ -66,6 +68,7 @@ type BottomPanelLayoutState = PersistedBottomPanelLayout & {
   /** Live size during a drag; not persisted until `setSize` on release. */
   previewSize: (key: BottomPanelSizeKey, size: number) => void
   setCommitFilesViewMode: (mode: GitHistoryCommitFilesViewMode) => void
+  setMarkCherryPicks: (markCherryPicks: boolean) => void
 }
 
 export function clampBottomPanelSize(key: BottomPanelSizeKey, size: unknown): number {
@@ -92,6 +95,7 @@ function readPersistedLayout(): PersistedBottomPanelLayout {
     activeTab:
       parsed.activeTab === 'debug' || parsed.activeTab === 'run' ? parsed.activeTab : 'git-log',
     commitFilesViewMode: parsed.commitFilesViewMode === 'tree' ? 'tree' : 'list',
+    markCherryPicks: parsed.markCherryPicks === true,
     height: clampBottomPanelSize('height', parsed.height),
     branchTreeWidth: clampBottomPanelSize('branchTreeWidth', parsed.branchTreeWidth),
     detailsWidth: clampBottomPanelSize('detailsWidth', parsed.detailsWidth),
@@ -111,6 +115,7 @@ function writePersistedLayout(state: PersistedBottomPanelLayout): void {
     open: state.open,
     activeTab: state.activeTab,
     commitFilesViewMode: state.commitFilesViewMode,
+    markCherryPicks: state.markCherryPicks,
     height: state.height,
     branchTreeWidth: state.branchTreeWidth,
     detailsWidth: state.detailsWidth,
@@ -160,6 +165,10 @@ export const useBottomPanelLayout = create<BottomPanelLayoutState>((set, get) =>
   },
   setCommitFilesViewMode: (commitFilesViewMode) => {
     set({ commitFilesViewMode })
+    writePersistedLayout(get())
+  },
+  setMarkCherryPicks: (markCherryPicks) => {
+    set({ markCherryPicks })
     writePersistedLayout(get())
   }
 }))

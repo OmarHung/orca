@@ -97,7 +97,7 @@ export function createGitApi(): NonNullable<Partial<PreloadApi>['git']> {
       skip,
       revision,
       allBranches,
-      includeRefs
+      ...options
     }) => {
       const worktree = await resolveRuntimeWorktreeByPath(worktreePath)
       return callRuntimeResult('git.history', {
@@ -108,7 +108,8 @@ export function createGitApi(): NonNullable<Partial<PreloadApi>['git']> {
         skip,
         revision,
         allBranches,
-        includeRefs
+        includeRefs: options.includeRefs,
+        markCherryPicks: options.markCherryPicks
       })
     },
     mutationInFlight: async ({ worktreePath }) => {

@@ -87,7 +87,8 @@ export const GIT_METHODS = [
         revision: params.revision,
         allBranches: params.allBranches,
         includeRefs: params.includeRefs,
-        path: params.path
+        path: params.path,
+        markCherryPicks: params.markCherryPicks
       })
   }),
   defineMethod({
