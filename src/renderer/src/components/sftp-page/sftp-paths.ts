@@ -44,6 +44,18 @@ export function isValidEntryName(name: string): boolean {
   return trimmed !== '' && trimmed !== '.' && trimmed !== '..' && !trimmed.includes('/')
 }
 
+/** Names of a typed new folder path ("a/b/c/") below the current folder; null if one is unusable. */
+export function splitNewFolderPath(value: string): string[] | null {
+  const trimmed = value.trim()
+  const names = trimmed
+    .split('/')
+    .map((name) => name.trim())
+    .filter((name) => name !== '')
+  return !trimmed.startsWith('/') && names.length > 0 && names.every(isValidEntryName)
+    ? names
+    : null
+}
+
 /** Resolves a typed remote path, absolute or relative to `base`, collapsing "." and "..". */
 export function resolveRemotePath(base: string, input: string): string {
   const trimmed = input.trim()
