@@ -83,7 +83,8 @@ export const GitHistory = WorktreeSelector.extend({
   revision: z.string().max(1024).nullable().optional(),
   allBranches: z.boolean().optional(),
   includeRefs: z.boolean().optional(),
-  path: z.string().max(4096).nullable().optional()
+  path: z.string().max(4096).nullable().optional(),
+  markCherryPicks: z.boolean().optional()
 })
 
 export const GitBranchDiff = GitFilePath.extend({
