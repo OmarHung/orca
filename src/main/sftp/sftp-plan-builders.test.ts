@@ -121,6 +121,41 @@ describe('draftSftpPlan', () => {
   })
 })
 
+describe('draftSftpPlan mkdir', () => {
+  const mkdir = (path: string): SftpPlanRequest => ({ kind: 'mkdir', targetId: 'web', path })
+
+  it('creates one folder in the current folder as before', async () => {
+    expect(await draftLines(remoteApp(), mkdir('/srv/app/logs'))).toEqual(['mkdir "/srv/app/logs"'])
+  })
+
+  it('creates the missing folders of a nested path, like mkdir -p', async () => {
+    const sftp = remoteApp().addDir('/srv/app/wwwroot')
+    const request = mkdir('/srv/app/wwwroot/assets/plugin/css')
+
+    expect(await draftLines(sftp, request)).toEqual([
+      '-mkdir "/srv/app/wwwroot/assets"',
+      '-mkdir "/srv/app/wwwroot/assets/plugin"',
+      'mkdir "/srv/app/wwwroot/assets/plugin/css"'
+    ])
+    await runSftpOperations(sftp, (await draftSftpPlan(sftp, request)).operations, () => {})
+    await expect(remoteIsDir(sftp, '/srv/app/wwwroot/assets/plugin/css')).resolves.toBe(true)
+  })
+
+  it('still refuses a folder that already exists, or a file in the way', async () => {
+    const sftp = remoteApp()
+    for (const target of ['/srv/app/sub', '/srv/app/a.txt/inner']) {
+      const plan = await draftSftpPlan(sftp, mkdir(target))
+      await expect(runSftpOperations(sftp, plan.operations, () => {})).rejects.toThrow()
+    }
+  })
+})
+
+function remoteIsDir(sftp: FakeSftp, target: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    sftp.stat(target, (err, stats) => resolve(!err && stats.isDirectory()))
+  })
+}
+
 describe('draftSftpPlan move', () => {
   function move(sources: string[], destinationDir: string): SftpPlanRequest {
     return { kind: 'move', targetId: 'web', sources, destinationDir }
