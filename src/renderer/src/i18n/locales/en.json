@@ -19116,7 +19116,10 @@
       "resizeBranches": "Resize branch tree",
       "resizeDetails": "Resize commit details",
       "resizeMessage": "Resize commit message",
-      "resizeColumn": "Resize {{value0}} column"
+      "resizeColumn": "Resize {{value0}} column",
+      "markCherryPicks": "Highlight commits already cherry-picked",
+      "markCherryPicksUnavailable": "Select a branch to compare with the current branch",
+      "cherryPicked": "Already cherry-picked into the current branch"
     }
   },
   "forkSync": {
