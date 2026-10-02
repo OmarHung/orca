@@ -7,13 +7,17 @@ import {
 } from '../browser-cookie-import-policy'
 import { createChromiumCookieSnapshot } from './chromium-cookie-snapshot'
 import { planImportWrites } from '../browser-cookie-import-write'
-import { readChromiumRowPartition } from '../sources/browser-cookie-source-partition'
+import {
+  isBrowserInternalChromiumPartition,
+  readChromiumRowPartition
+} from '../sources/browser-cookie-source-partition'
 import { diag } from '../browser-cookie-import-diagnostics'
 import type { DetectedBrowser } from '../sources/browser-cookie-source-profiles'
 import type { CookieImportOptions } from '../browser-cookie-import-pipeline'
 import type { ChromiumImportContext } from './import-context'
 import type { Session } from 'electron'
 import { getEncryptionKey } from '../sources/browser-cookie-key'
+import { sourceCopyFailure } from '../browser-cookie-source-access'
 
 export type ChromiumImportPreparation =
   | { context: ChromiumImportContext }
@@ -30,9 +34,7 @@ export async function prepareChromiumCookieImport(
     sourceSnapshot = createChromiumCookieSnapshot(browser.cookiesPath)
   } catch (err) {
     diag(`  Chromium snapshot failed: ${String(err)}`)
-    return {
-      result: browserCookieImportFailure('databaseCopyFailed', { browser: browser.label })
-    }
+    return { result: sourceCopyFailure(browser.label, err) }
   }
 
   let sourceDb: InstanceType<typeof DatabaseSync> | null = null
@@ -62,7 +64,9 @@ export async function prepareChromiumCookieImport(
     const partitionCandidates = sourceRows.flatMap((sourceRow) => {
       const domain = sourceRow.host_key as string
       const name = sourceRow.name as string
-      return isGoogleSourceBoundCookie(name, domain) || isNonTransplantableCookieDomain(domain)
+      return isGoogleSourceBoundCookie(name, domain) ||
+        isNonTransplantableCookieDomain(domain) ||
+        isBrowserInternalChromiumPartition(sourceRow, sourceColumns)
         ? []
         : [{ sourceRow, domain, partition: readChromiumRowPartition(sourceRow, sourceColumns) }]
     })
@@ -96,6 +100,7 @@ export async function prepareChromiumCookieImport(
       targetSession,
       sourceSnapshot,
       sourceRows,
+      sourceColumns,
       nativePlan,
       plannedSourceRows,
       partitionBySourceRow,

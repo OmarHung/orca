@@ -13,6 +13,7 @@ import {
 import { databaseSameSite, deriveUrl, type ValidatedCookie } from './browser-cookie-validation'
 import type { DetectedBrowser } from './browser-cookie-source-profiles'
 import { diag } from '../browser-cookie-import-diagnostics'
+import { sourceCopyFailure } from '../browser-cookie-source-access'
 
 export async function importCookiesFromFirefox(
   browser: DetectedBrowser,
@@ -36,9 +37,10 @@ export async function importCookiesFromFirefox(
         }
       }
     }
-  } catch {
+  } catch (err) {
     rmSync(tmpDir, { recursive: true, force: true })
-    return browserCookieImportFailure('databaseCopyFailed', { browser: 'Firefox' })
+    diag(`  Firefox copy failed: ${String(err)}`)
+    return sourceCopyFailure('Firefox', err)
   }
 
   try {

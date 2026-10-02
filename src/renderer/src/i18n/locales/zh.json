@@ -20271,6 +20271,7 @@
         "importFailedTryClosing": "无法从 {{browser}} 导入 Cookie。请先尝试关闭 {{browser}}。",
         "importFailedWithLog": "无法从 {{browser}} 导入 Cookie：{{detail}}。详细信息已写入 {{logPath}}。",
         "safariFullDiskAccess": "macOS 拒绝访问 Safari 的 Cookie。请在系统设置 → 隐私与安全 → 完全磁盘访问权限中授予 Orca 完全磁盘访问权限。",
+        "macFullDiskAccess": "macOS 拒绝访问 {{browser}} 的 Cookie。请在“系统设置 → 隐私与安全性 → 完全磁盘访问权限”中授予 Orca 完全磁盘访问权限，然后重新启动 Orca。",
         "connectionEnded": "导入期间与此服务器的连接已断开。请重新连接后重试。",
         "serverRepaired": "此服务器在导入期间已重新配对。请重试。"
       },

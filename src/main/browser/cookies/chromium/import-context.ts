@@ -26,6 +26,8 @@ export type ChromiumImportContext = {
   targetSession: Session
   sourceSnapshot: ChromiumCookieSnapshot
   sourceRows: ChromiumSourceRow[]
+  /** Columns present in the source table; partition reads depend on the Chromium version. */
+  sourceColumns: Set<string>
   nativePlan: ChromiumImportPlan
   plannedSourceRows: Set<ChromiumSourceRow>
   partitionBySourceRow: Map<ChromiumSourceRow, SourcePartitionRead>
