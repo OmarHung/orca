@@ -130,6 +130,11 @@ export class FakeSftp implements SftpOps {
       callback(Object.assign(new Error('Failure'), { code: 4 }))
       return
     }
+    // Why: like a real server, a folder needs an existing parent folder.
+    if (this.nodes.get(path.posix.dirname(dir))?.kind !== 'dir') {
+      callback(Object.assign(new Error('No such file'), { code: 2 }))
+      return
+    }
     this.nodes.set(dir, { kind: 'dir' })
     callback()
   }
