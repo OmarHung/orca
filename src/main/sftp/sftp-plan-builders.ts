@@ -223,6 +223,28 @@ async function draftRemoval(sftp: SftpOps, paths: readonly string[]): Promise<Sf
   return { operations: list.operations, totalBytes: 0, conflicts: [] }
 }
 
+// Why walk up: a typed "a/b/c" also creates its missing parents, like `mkdir -p`.
+async function draftMkdir(sftp: SftpOps, target: string): Promise<SftpPlanDraft> {
+  const missingParents: string[] = []
+  let dir = remotePath.dirname(target)
+  while (dir !== '/' && !(await remoteExists(sftp, dir))) {
+    missingParents.unshift(dir)
+    dir = remotePath.dirname(dir)
+  }
+  return {
+    operations: [
+      ...missingParents.map((parent) => ({
+        op: 'mkdir' as const,
+        path: parent,
+        keepExisting: true
+      })),
+      { op: 'mkdir', path: target, keepExisting: false }
+    ],
+    totalBytes: 0,
+    conflicts: []
+  }
+}
+
 /** Reads what the action would touch and lists every step it will run, in order. */
 export async function draftSftpPlan(
   sftp: SftpOps,
@@ -238,11 +260,7 @@ export async function draftSftpPlan(
     case 'move':
       return draftMove(sftp, request.sources, request.destinationDir)
     case 'mkdir':
-      return {
-        operations: [{ op: 'mkdir', path: request.path, keepExisting: false }],
-        totalBytes: 0,
-        conflicts: []
-      }
+      return draftMkdir(sftp, request.path)
     case 'rename':
       return {
         operations: [{ op: 'rename', from: request.from, to: request.to }],
