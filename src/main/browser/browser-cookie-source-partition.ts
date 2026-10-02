@@ -91,6 +91,31 @@ export function readChromiumRowPartition(
   return { status: 'partitioned', partitionKey: { topLevelSite, hasCrossSiteAncestor } }
 }
 
+// Why: Chromium partitions cookies under extension and chrome:// pages too, but no Orca tab can be
+// such a top-level page, so the cookie is unreachable there. Treating it as unreadable instead
+// suppressed its whole site family (e.g. every youtube.com cookie).
+const BROWSER_INTERNAL_PARTITION_SCHEMES = new Set([
+  'chrome:',
+  'chrome-extension:',
+  'chrome-untrusted:',
+  'devtools:'
+])
+
+export function isBrowserInternalChromiumPartition(
+  sourceRow: Record<string, unknown>,
+  sourceColumns: ReadonlySet<string>
+): boolean {
+  const rawSite = sourceRow[CHROMIUM_PARTITION_SITE_COLUMN]
+  if (!sourceColumns.has(CHROMIUM_PARTITION_SITE_COLUMN) || typeof rawSite !== 'string') {
+    return false
+  }
+  try {
+    return BROWSER_INTERNAL_PARTITION_SCHEMES.has(new URL(rawSite).protocol)
+  } catch {
+    return false
+  }
+}
+
 const FIREFOX_PARTITIONED_ATTRIBUTE_COLUMN = 'isPartitionedAttributeSet'
 
 /**

@@ -4,6 +4,7 @@ import { decodeSafariBinaryCookies } from './browser-cookie-safari-parser'
 import { importValidatedCookies, cookieImportTarget } from './browser-cookie-import-pipeline'
 import type { DetectedBrowser } from './browser-cookie-detection-types'
 import { diag } from './browser-cookie-import-diagnostics'
+import { isMacPrivacyDenial, macPrivacyDenialReason } from './browser-cookie-source-access'
 
 // ---------------------------------------------------------------------------
 // Safari import
@@ -21,14 +22,8 @@ export async function importCookiesFromSafari(
   } catch (err) {
     diag(`  Safari read failed: ${String(err)}`)
     // Why: Safari's Cookies.binarycookies is in a sandbox container; reading it needs Full Disk Access.
-    const isPermError =
-      err instanceof Error && 'code' in err && (err as NodeJS.ErrnoException).code === 'EPERM'
-    if (isPermError) {
-      return {
-        ok: false,
-        reason:
-          'macOS denied access to Safari cookies. Grant Full Disk Access to Orca in System Settings → Privacy & Security → Full Disk Access.'
-      }
+    if (isMacPrivacyDenial(err)) {
+      return { ok: false, reason: macPrivacyDenialReason('Safari') }
     }
     return { ok: false, reason: 'Could not read Safari cookies.' }
   }
