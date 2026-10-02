@@ -31,6 +31,7 @@ import { GitLogTableHeader, useGitLogGridTemplate } from './git-log-table-column
 import { useGitLogHistory } from './use-git-log-history'
 import { useGitLogWorktree } from './use-git-log-worktree'
 import { GitLogBranchTree } from './GitLogBranchTree'
+import { collectGitLogCurrentBranchIds } from './git-log-current-branch'
 import { HEAD_GIT_LOG_SCOPE, isGitLogScopeHonored, type GitLogScope } from './git-log-scope'
 import { useGitLogScope, useResetMissingGitLogScope } from './use-git-log-scope'
 import { ResizeHandle } from '../ResizeHandle'
@@ -139,6 +140,10 @@ export function GitLogView(): React.JSX.Element {
     )
   }, [result])
   const authors = useMemo(() => collectGitLogAuthors(result?.items ?? []), [result])
+  const currentBranchIds = useMemo(
+    () => (result ? collectGitLogCurrentBranchIds(result, scope) : null),
+    [result, scope]
+  )
   const filterActive = isGitLogFilterActive(filter)
   const visibleViewModels = useMemo(() => {
     if (!filterActive) {
@@ -264,6 +269,7 @@ export function GitLogView(): React.JSX.Element {
                     data-commit-id={item.id}
                     viewModel={viewModel}
                     selected={selection.isSelected(item.id)}
+                    inCurrentBranch={currentBranchIds?.has(item.id) ?? false}
                     showGraph={!filterActive}
                     gridTemplateColumns={gridTemplateColumns}
                     onSelectCommit={selection.handleClick}

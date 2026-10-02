@@ -101,6 +101,8 @@ export type GitHistoryResult = {
   hasMore: boolean
   limit: number
   revisionScope?: GitHistoryRevisionScope
+  /** Scope `ref` only: `merge-base --all HEAD <ref>`. They and their ancestors are the logged commits HEAD also has. */
+  headMergeBases?: string[]
   /** Present only when `includeRefs` was requested and the host supports it. */
   refs?: GitHistoryBranchList
   /** Echoes the path the log was limited to; absent from a host that ignores `path`. */

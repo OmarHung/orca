@@ -14,6 +14,7 @@ import {
   type GitHistoryResult
 } from './git-history-types'
 import { isGitHistoryBranchRefName, loadGitHistoryBranches } from './git-history-branches'
+import { loadHeadMergeBases } from './git-history-head-merge-bases'
 
 export type {
   GitHistoryBranch,
@@ -223,7 +224,12 @@ export async function loadGitHistoryFromExecutor(
   }
 
   const path = options.path?.trim() || undefined
-  const parsed = await runHistoryLog(git, cwd, limit, historyRevisions, path)
+  const [parsed, headMergeBases] = await Promise.all([
+    runHistoryLog(git, cwd, limit, historyRevisions, path),
+    logTarget.scope === 'ref'
+      ? loadHeadMergeBases(git, cwd, headOid, logTarget.revisions)
+      : undefined
+  ])
   const items = parsed.slice(0, limit)
   const hasIncomingChanges =
     Boolean(remoteRef?.revision && mergeBase) && remoteRef?.revision !== mergeBase
@@ -242,6 +248,7 @@ export async function loadGitHistoryFromExecutor(
     hasMore: parsed.length > limit,
     limit,
     revisionScope: logTarget.scope,
+    ...(headMergeBases ? { headMergeBases } : {}),
     ...withRefs(refs),
     ...(path ? { path } : {})
   }
