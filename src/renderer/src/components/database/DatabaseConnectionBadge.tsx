@@ -17,6 +17,15 @@ export function describeSessionState(state: DatabaseSessionState): string {
   }
 }
 
+function sessionDotClassName(state: DatabaseSessionState): string {
+  return cn(
+    'size-1.5 shrink-0 rounded-full bg-muted-foreground/40',
+    state === 'connected' && 'bg-status-success',
+    state === 'connecting' && 'animate-pulse bg-status-warning',
+    state === 'error' && 'bg-destructive'
+  )
+}
+
 export function DatabaseSessionDot({
   state,
   className
@@ -30,15 +39,47 @@ export function DatabaseSessionDot({
       role="img"
       aria-label={label}
       title={label}
-      className={cn(
-        'inline-block size-1.5 shrink-0 rounded-full bg-muted-foreground/40',
-        state === 'connected' && 'bg-status-success',
-        state === 'connecting' && 'animate-pulse bg-status-warning',
-        state === 'error' && 'bg-destructive',
-        className
-      )}
+      className={cn('inline-block', sessionDotClassName(state), className)}
     />
   )
+}
+
+/**
+ * An icon with the session state as a corner dot, as in DataGrip; disconnected shows none.
+ * Decorative: pair it with DatabaseSessionStateText after the name, where the row reads it.
+ */
+export function DatabaseSessionIcon({
+  state,
+  title,
+  children
+}: {
+  state: DatabaseSessionState
+  title?: string
+  children: React.ReactNode
+}): React.JSX.Element {
+  return (
+    <span aria-hidden title={title} className="relative flex shrink-0">
+      {children}
+      {state === 'disconnected' ? null : (
+        // Why ring-background: it cuts the dot out of the icon's strokes beneath it.
+        <span
+          className={cn(
+            'pointer-events-none absolute -right-0.5 -bottom-0.5 ring-1 ring-background',
+            sessionDotClassName(state)
+          )}
+        />
+      )}
+    </span>
+  )
+}
+
+/** The session state for assistive tech only, for rows whose icon shows it. */
+export function DatabaseSessionStateText({
+  state
+}: {
+  state: DatabaseSessionState
+}): React.JSX.Element {
+  return <span role="img" aria-label={describeSessionState(state)} className="sr-only" />
 }
 
 /** Connection name plus session state, for the console toolbar. */
