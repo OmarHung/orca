@@ -13,7 +13,10 @@ import { createChromiumCookieSnapshot } from './chromium-cookie-snapshot'
 import { resolveChromiumCookiesPath } from './chromium-cookie-path'
 import { copyFileWithWindowsRetry } from '../codex-accounts/fs-utils'
 import { planImportWrites } from './browser-cookie-import-write'
-import { readChromiumRowPartition } from './browser-cookie-source-partition'
+import {
+  isBrowserInternalChromiumPartition,
+  readChromiumRowPartition
+} from './browser-cookie-source-partition'
 import { diag } from './browser-cookie-import-diagnostics'
 import type { DetectedBrowser } from './browser-cookie-detection-types'
 import type { CookieImportOptions } from './browser-cookie-import-pipeline'
@@ -21,6 +24,7 @@ import type { ChromiumCookieColumnInfo } from './browser-cookie-sqlite'
 import type { ChromiumImportContext } from './browser-cookie-chromium-types'
 import type { Session } from 'electron'
 import { getEncryptionKey } from './browser-cookie-key'
+import { sourceCopyFailureReason } from './browser-cookie-source-access'
 
 export type ChromiumImportPreparation =
   | { context: ChromiumImportContext }
@@ -113,12 +117,7 @@ export async function prepareChromiumCookieImport(
       /* best-effort */
     }
     diag(`  Chromium snapshot failed: ${String(err)}`)
-    return {
-      result: {
-        ok: false,
-        reason: `Could not copy ${browser.label} cookies database. Try closing ${browser.label} first.`
-      }
-    }
+    return { result: { ok: false, reason: sourceCopyFailureReason(browser.label, err) } }
   }
 
   let sourceDb: InstanceType<typeof DatabaseSync> | null = null
@@ -199,7 +198,9 @@ export async function prepareChromiumCookieImport(
   const partitionCandidates = sourceRows.flatMap((sourceRow) => {
     const domain = sourceRow.host_key as string
     const name = sourceRow.name as string
-    return isGoogleSourceBoundCookie(name, domain) || isNonTransplantableCookieDomain(domain)
+    return isGoogleSourceBoundCookie(name, domain) ||
+      isNonTransplantableCookieDomain(domain) ||
+      isBrowserInternalChromiumPartition(sourceRow, sourceColumns)
       ? []
       : [{ sourceRow, domain, partition: readChromiumRowPartition(sourceRow, sourceColumns) }]
   })
