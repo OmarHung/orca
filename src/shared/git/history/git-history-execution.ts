@@ -18,6 +18,7 @@ import {
 import { getGitCurrentBranchName } from '../refs/git-current-branch'
 import { isBaseOfItself, resolveBranchRange } from './git-history-branch-range'
 import { isGitHistoryBranchRefName, loadGitHistoryBranches } from './git-history-branches'
+import { loadHeadMergeBases } from './git-history-head-merge-bases'
 
 function clampHistoryLimit(limit: number | undefined): number {
   if (!Number.isFinite(limit)) {
@@ -250,20 +251,25 @@ export async function loadGitHistoryFromExecutor(
   }
 
   const path = options.path?.trim() || undefined
-  let parsed: ReturnType<typeof parseGitHistoryLog>
-  try {
-    parsed = await runHistoryLog(git, cwd, limit, historyRevisions, {
+  const [parsed, headMergeBases] = await Promise.all([
+    runHistoryLog(git, cwd, limit, historyRevisions, {
       skip,
       shortstat: Boolean(branchBase),
       // Why: scoped revisions are oids or fixed pseudo-refs, but chosen ref catalogs can be long.
       stdin: !scoped && (refs !== 'head' || Boolean(pinned)),
       path
-    })
-  } catch (error) {
-    if (pinned && /bad object|unknown revision|invalid object|bad revision/i.test(String(error))) {
-      return { ...empty, ...echo, historyChanged: true }
-    }
-    throw error
+    }).catch((error: unknown) => {
+      if (pinned && /bad object|unknown revision|invalid object|bad revision/i.test(String(error))) {
+        return null
+      }
+      throw error
+    }),
+    logTarget.scope === 'ref' && headOid
+      ? loadHeadMergeBases(git, cwd, headOid, logTarget.revisions)
+      : undefined
+  ])
+  if (!parsed) {
+    return { ...empty, ...echo, historyChanged: true }
   }
   const items = parsed.slice(0, limit)
   if (branchBase) {
@@ -290,6 +296,7 @@ export async function loadGitHistoryFromExecutor(
     limit,
     ...(branchBase ? { branch: branchBase.range } : {}),
     ...(options.skip !== undefined ? { skip } : {}),
+    ...(headMergeBases ? { headMergeBases } : {}),
     ...(path ? { path } : {})
   }
 }

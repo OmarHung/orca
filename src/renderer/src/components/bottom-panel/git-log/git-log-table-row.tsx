@@ -11,6 +11,8 @@ const MAX_VISIBLE_REFS = 3
 type GitLogTableRowProps = React.HTMLAttributes<HTMLButtonElement> & {
   viewModel: GitHistoryItemViewModel
   selected: boolean
+  /** Also on the checked-out branch; tinted in its graph color, like JetBrains. */
+  inCurrentBranch: boolean
   /** Lanes only make sense over the unfiltered, contiguous log. */
   showGraph: boolean
   gridTemplateColumns: string
@@ -22,6 +24,7 @@ export const GitLogTableRow = React.forwardRef<HTMLButtonElement, GitLogTableRow
     {
       viewModel,
       selected,
+      inCurrentBranch,
       showGraph,
       gridTemplateColumns,
       onSelectCommit,
@@ -41,10 +44,15 @@ export const GitLogTableRow = React.forwardRef<HTMLButtonElement, GitLogTableRow
         ref={ref}
         type="button"
         data-current={selected ? 'true' : undefined}
+        data-current-branch={inCurrentBranch ? 'true' : undefined}
         data-testid="git-log-row"
         className={cn(
           'grid h-6 w-full min-w-0 items-center gap-x-3 px-2 text-left text-xs',
-          selected ? 'bg-accent' : 'hover:bg-accent/50',
+          selected
+            ? 'bg-accent'
+            : inCurrentBranch
+              ? 'bg-git-graph-ref/10 hover:bg-git-graph-ref/20'
+              : 'hover:bg-accent/50',
           className
         )}
         style={{ gridTemplateColumns }}
