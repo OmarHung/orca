@@ -28,7 +28,8 @@ import {
   localParent,
   remoteJoin,
   remoteParent,
-  resolveRemotePath
+  resolveRemotePath,
+  splitNewFolderPath
 } from './sftp-paths'
 import { runSftpAction, type SftpActionContext } from './sftp-plan-actions'
 import {
@@ -184,8 +185,14 @@ export function SftpWorkbench({
       title: translate('sftpPage.remote.newFolder', 'New folder'),
       confirmLabel: translate('sftpPage.remote.create', 'Create'),
       initialName: '',
-      onSubmit: (name) =>
-        runRemoteChange({ kind: 'mkdir', targetId: target.id, path: remoteJoin(remotePath, name) })
+      isValid: (value) => splitNewFolderPath(value) !== null,
+      onSubmit: (value) => {
+        const names = splitNewFolderPath(value)
+        if (names) {
+          const path = remoteJoin(remotePath, names.join('/'))
+          runRemoteChange({ kind: 'mkdir', targetId: target.id, path })
+        }
+      }
     })
   }
   const requestRename = (): void => {
