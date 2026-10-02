@@ -5,6 +5,7 @@ import {
   normalizeCookieImportDomain
 } from '../browser-cookie-import-policy'
 import { isExpiredImportRow } from '../browser-cookie-import-write'
+import { isBrowserInternalChromiumPartition } from '../sources/browser-cookie-source-partition'
 import { chromiumTimestampToUnix } from '../sources/browser-cookie-sqlite'
 import { databaseSameSite } from '../sources/browser-cookie-validation'
 import {
@@ -20,6 +21,7 @@ export function scanChromiumCookieRows(
   context: ChromiumImportContext
 ): BrowserCookieImportResult | null {
   const { sourceRows, sourceKey, plannedSourceRows, partitionBySourceRow } = context
+  let browserInternalSkipped = 0
 
   for (const sourceRow of sourceRows) {
     const domain = sourceRow.host_key as string
@@ -31,6 +33,11 @@ export function scanChromiumCookieRows(
     }
     if (isNonTransplantableCookieDomain(domain)) {
       context.nonTransplantableSkipped++
+      continue
+    }
+    if (isBrowserInternalChromiumPartition(sourceRow, context.sourceColumns)) {
+      browserInternalSkipped++
+      context.skipped++
       continue
     }
 
@@ -114,6 +121,9 @@ export function scanChromiumCookieRows(
   diag(
     `  skipped ${context.integritySkipped} Google integrity cookies (SIDCC/STRP/AEC) and ${context.nonTransplantableSkipped} non-transplantable-domain cookies`
   )
+  if (browserInternalSkipped > 0) {
+    diag(`  skipped ${browserInternalSkipped} cookies partitioned under browser-internal pages`)
+  }
   context.googleCookiesSkipped = context.integritySkipped + context.nonTransplantableSkipped
   context.undecryptableWarning = buildUndecryptableWarning({
     decryptFailed: context.decryptFailed,
