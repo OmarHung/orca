@@ -1,3 +1,5 @@
+import type { DatabaseSessionState } from '../../../../shared/database/database-session-types'
+
 type Groupable = { id: string; group?: string | null }
 
 export type DatabaseConnectionGroup = { name: string; connectionIds: string[] }
@@ -31,4 +33,14 @@ export function groupDatabaseConnections(connections: readonly Groupable[]): {
 export function normalizeDatabaseConnectionGroup(input: string): string | null {
   const name = input.trim()
   return name === '' ? null : name
+}
+
+/** A group's corner dot: connected wins, then connecting; failures show only on their own rows. */
+export function groupSessionState(
+  states: readonly (DatabaseSessionState | undefined)[]
+): DatabaseSessionState {
+  if (states.includes('connected')) {
+    return 'connected'
+  }
+  return states.includes('connecting') ? 'connecting' : 'disconnected'
 }

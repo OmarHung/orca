@@ -20,7 +20,12 @@ import {
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
-import { DatabaseSessionDot } from '../DatabaseConnectionBadge'
+import {
+  DatabaseSessionIcon,
+  DatabaseSessionStateText,
+  describeSessionState
+} from '../DatabaseConnectionBadge'
+import { groupSessionState } from '../database-connection-groups'
 import { useDatabaseConnectionColor } from '../database-connection-color'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
 import { DatabaseDriverIcon } from '../database-driver-icon'
@@ -42,11 +47,35 @@ function ConnectionIcon({ connectionId }: { connectionId: string }): React.JSX.E
   const driver = useDatabaseConnectionsStore(
     (state) => state.connections.find((entry) => entry.id === connectionId)?.driver
   )
+  const sessionState = useDatabaseConnectionsStore(
+    (state) => state.sessions[connectionId]?.state ?? 'disconnected'
+  )
   const style = color ? { color } : undefined
-  return driver ? (
-    <DatabaseDriverIcon driver={driver} className={ICON_CLASS} style={style} />
-  ) : (
-    <Database className={ICON_CLASS} style={style} />
+  return (
+    <DatabaseSessionIcon state={sessionState} title={describeSessionState(sessionState)}>
+      {driver ? (
+        <DatabaseDriverIcon driver={driver} className={ICON_CLASS} style={style} />
+      ) : (
+        <Database className={ICON_CLASS} style={style} />
+      )}
+    </DatabaseSessionIcon>
+  )
+}
+
+// Why: a collapsed group would otherwise hide that something inside it is connected.
+function GroupIcon({ group, expanded }: { group: string; expanded: boolean }): React.JSX.Element {
+  const sessionState = useDatabaseConnectionsStore((state) =>
+    groupSessionState(
+      state.connections
+        .filter((connection) => connection.group === group)
+        .map((connection) => state.sessions[connection.id]?.state)
+    )
+  )
+  const Icon = expanded ? FolderOpen : Folder
+  return (
+    <DatabaseSessionIcon state={sessionState}>
+      <Icon className={ICON_CLASS} />
+    </DatabaseSessionIcon>
   )
 }
 
@@ -102,7 +131,7 @@ function ConnectionLabel({ connectionId }: { connectionId: string }): React.JSX.
     <>
       <span>{connection?.name ?? ''}</span>
       {routeLabel ? <span className="text-muted-foreground">{routeLabel}</span> : null}
-      <DatabaseSessionDot state={session?.state ?? 'disconnected'} />
+      <DatabaseSessionStateText state={session?.state ?? 'disconnected'} />
       {/* Why capped: a long error would widen the whole tree; the title keeps all of it. */}
       {session?.state === 'error' && session.message ? (
         <span className="max-w-80 truncate text-destructive" title={session.message}>
@@ -324,7 +353,6 @@ export function DatabaseExplorerRow({
   }
   const common = { selected, dropTarget, onSelect, onMeasure }
   if (row.type === 'group') {
-    const Icon = row.expanded ? FolderOpen : Folder
     return (
       <TreeItem
         {...common}
@@ -332,7 +360,7 @@ export function DatabaseExplorerRow({
         expandable
         onToggle={() => onToggleGroup(row.group)}
         onActivate={() => onToggleGroup(row.group)}
-        icon={<Icon className={ICON_CLASS} />}
+        icon={<GroupIcon group={row.group} expanded={row.expanded} />}
         label={
           <>
             <span>{row.group}</span>
