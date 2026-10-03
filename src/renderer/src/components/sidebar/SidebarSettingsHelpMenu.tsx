@@ -35,6 +35,7 @@ import { lazyWithRetry } from '@/lib/lazy-with-retry'
 import type * as SidebarFeedbackDialogModule from './SidebarFeedbackDialog'
 import { translate } from '@/i18n/i18n'
 import { getUpdateCheckClickOptions, getUpdateCheckHint } from '@/lib/update-check-click-options'
+import { ForkUpdateChangelogMenuItem } from '../fork-update-changelog/ForkUpdateChangelogMenuItem'
 
 // Why lazy: the feedback form is only reachable from this menu's own item, so it does not
 // belong on the renderer boot graph. Shared with the menu-open warm below so both hit the
@@ -307,6 +308,7 @@ export function SidebarSettingsHelpMenu(): React.JSX.Element {
               url={CHANGELOG_URL}
               icon={<ScrollText className="size-3.5" />}
             />
+            <ForkUpdateChangelogMenuItem />
             <DropdownMenuSeparator />
             <ExternalMenuItem
               label={translate(
