@@ -895,6 +895,12 @@
       },
       "clipboardWriteFailure": {
         "tooLarge": "文字太大，無法複製。"
+      },
+      "dropSkipReason": {
+        "missing": "該檔案已不在原始路徑。",
+        "symlink": "無法附加符號連結。",
+        "permissionDenied": "沒有訪問許可權。",
+        "unsupported": "不支援的檔案類型。"
       }
     },
     "hooks": {
@@ -917,11 +923,7 @@
         "5f3d2c8a1b": "解析 MR 基礎分支失敗",
         "dropPartiallyAttached": "無法附加 {{count}} 項中的 {{failureCount}} 項。",
         "dropPartiallyAttached_one": "無法附加 {{count}} 專案的 {{failureCount}}。",
-        "dropPartiallyAttached_other": "無法附加 {{count}} 項中的 {{failureCount}} 項。",
-        "attachSkipMissing": "不再走原來的路。",
-        "attachSkipSymlink": "無法附加符號連結。",
-        "attachSkipPermissionDenied": "沒有許可權。",
-        "attachSkipUnsupported": "不支援的檔案類型。"
+        "dropPartiallyAttached_other": "無法附加 {{count}} 項中的 {{failureCount}} 項。"
       },
       "useGlobalFileDrop": {
         "38c9f034ff": "無法上傳刪除的檔案。",
@@ -3967,7 +3969,12 @@
             "checkLabel": "{{value0}} 個待檢查的聊天",
             "checkAriaOne": "恢復後有 1 個待檢查的聊天。點選檢視詳情。",
             "checkAria": "恢復後有 {{value0}} 個待檢查的聊天。點選檢視詳情。",
-            "checkTooltip": "重啟後 Orca 未能恢復或未能確認已恢復的聊天。點選檢視詳情。"
+            "checkTooltip": "重啟後 Orca 未能恢復或未能確認已恢復的聊天。點選檢視詳情。",
+            "resumingLabelOne": "正在恢復 1 個聊天",
+            "resumingLabel": "正在恢復 {{value0}} 個聊天",
+            "resumingAriaOne": "正在恢復 1 個聊天。點選檢視詳情。",
+            "resumingAria": "正在恢復 {{value0}} 個聊天。點選檢視詳情。",
+            "resumingTooltip": "正在恢復中斷的聊天並請它們繼續…"
           }
         }
       },
@@ -5922,13 +5929,11 @@
           }
         },
         "LinearAgentSkillSetupPrompt": {
-          "missingCliAndSkill": "缺少 Orca CLI 和 Linear 代理技能。",
           "modalTitle": "啟用 Linear ticket 訪問",
           "modalDescription": "從終端機安裝 Linear 技能。",
           "modalPrompt": "允許代理讀取和編輯已附加的 Linear ticket。",
           "dontShowAgain": "不再顯示",
           "missingBoth": "缺少 Orca CLI 和 Linear 代理技能。",
-          "missingCli": "缺少 Orca CLI。",
           "missingSkill": "缺少 Linear 代理技能。",
           "title": "設定 Linear 代理技能",
           "remoteCopy": "這會安裝主機設定；遠端代理環境可能需要單獨設定。",
@@ -5940,7 +5945,6 @@
           "panelDescription": "安裝主機代理技能，用於已連結 Linear 任務交接。",
           "terminalTitle": "安裝 Linear 代理技能",
           "terminalAria": "Linear 代理技能安裝終端機",
-          "install": "安裝 CLI 和技能",
           "successTitle": "Linear 議題訪問已就緒",
           "successDescription": "代理現在可以從此工作區讀取和更新已連結的 Linear 議題。",
           "successDescriptionWsl": "WSL 代理現在可以從此工作區使用已連結的 Linear 議題。",
@@ -5949,11 +5953,7 @@
           "done": "完成",
           "wslCopy": "為已連結 Linear 工作的 WSL 代理交接安裝此項。",
           "wslLabel": "WSL 預設值",
-          "toastMissingCliAndSkill": "缺少 Orca CLI 和 Linear 技能",
-          "toastMissingCli": "缺少 Orca CLI",
           "toastMissingSkill": "缺少 Linear 技能",
-          "toastInstallCliAndSkillDescription": "安裝 Orca CLI 和 Linear 技能，讓代理可以讀取並編輯 Linear 任務。",
-          "toastInstallCliDescription": "安裝 Orca CLI，讓代理可以讀取並編輯 Linear 任務。",
           "toastInstallSkillDescription": "安裝 Linear 技能，讓代理可以透過 Orca CLI 讀取並編輯 Linear 任務。",
           "toastRemoteDescription": "{{value0}} 遠端代理環境可能仍需要自己的設定。",
           "toastWslDescription": "{{value0}} 此設定會在所選 WSL 代理執行時中執行。"
@@ -6354,7 +6354,6 @@
           "SetupGuideModal": {
             "3598a3ca0c": "完成使 Orca 對於並行代理工作有用的核心工作流程。",
             "48a9e5ef2d": "入門",
-            "28cf59fcb4": "這將從側邊欄隱藏清單",
             "f3b5ffb2a6": "從側邊欄隱藏清單"
           },
           "SetupGuideProgressRing": {
@@ -6828,24 +6827,15 @@
           "af8c83ed61": "從 Chrome、Edge 或其他瀏覽器匯入 cookie，以便代理可以重複使用您的登入資訊。",
           "68ea76eb71": "安裝瀏覽器使用技能，以便代理可以操作 Orca 的瀏覽器。",
           "2d6ead9ab2": "安裝瀏覽器使用技能",
-          "e9f3f3b488": "安裝於",
-          "9fca1f7f5d": "註冊 Orca CLI 命令，以便代理可以從其 shell 編排瀏覽器。",
-          "c6065d205d": "啟用 Orca CLI",
-          "c79eff0213": "註冊 Orca CLI，以便代理可以驅動瀏覽器。",
-          "702488a5f7": "讓程式開發代理透過您的登入來驅動此瀏覽器。完成以下三個步驟。",
           "b8a1f2d84d": "代理瀏覽器使用",
           "96b91c6349": "讓程式開發代理透過您的登入來驅動此瀏覽器。",
           "2ea4617e3a": "從 {{value1}}{{value2}} 匯入 {{value0}} cookie。",
-          "721aee31b4": "在 PATH 中註冊 Orca CLI。",
-          "180a9abf3a": "無法載入 CLI 狀態。",
           "2ccfc9cff8": "匯入",
           "0462565413": "重新匯入",
           "de9b2f32f3": "啟用",
-          "ad8cb0ee22": "修復路徑",
-          "0289434ed6": "啟用",
-          "8b3054dac7": "註冊...",
           "8f2675c2f3": "已從檔案匯入 {{value0}} 個 Cookie。",
-          "5301857d88": "從 {{value0}}"
+          "5301857d88": "從 {{value0}}",
+          "finishSteps": "讓程式設計代理使用你的登入狀態操作此瀏覽器。請完成以下步驟。"
         },
         "BrowserUseSkillStep": {
           "0871b6998d": "使代理能夠在 Orca 瀏覽器中導航和驗證頁面。",
@@ -6866,7 +6856,6 @@
           "5dae812f50": "重新整理",
           "52e640f3a0": "重新整理 CLI 狀態",
           "38edbb5721": "Shell 命令",
-          "6930feda9e": "從終端機使用 Orca 開啟應用程式、管理工作樹並與 Orca 終端機互動。",
           "c5c0f2641d": "Orca CLI",
           "d77352f2df": "無法從 PATH 中刪除 `{{value0}}`。",
           "af5540930c": "從路徑中刪除了“{{value0}}”。",
@@ -6890,7 +6879,8 @@
           "cbe55e4d48": "在資源管理器中顯示",
           "9fd4023db0": "在檔案管理器中顯示",
           "installFailureUnknownReason": "Orca 無法完成 CLI 註冊，且未報告任何原因。",
-          "installFailureConflictRemedy": "刪除 {{value0}} 並在不再需要時重新註冊。"
+          "installFailureConflictRemedy": "刪除 {{value0}} 並在不再需要時重新註冊。",
+          "outsideOrcaDescription": "Orca 終端機已內建 `orca`。開啟後可在 Orca 以外的其他終端機中使用 `orca`。"
         },
         "CliSkillRuntimeSetup": {
           "04325573f8": "WSL",
@@ -7476,15 +7466,9 @@
           "c7f3fe0a6e": "常用模擬器命令",
           "d94ca6a623": "使代理能夠使用 Orca CLI 命令，包括手機模擬器控制。",
           "67e19ee03c": "Orca CLI 技能",
-          "aaf62a3dd2": "安裝於",
-          "2fef055608": "註冊 Orca CLI 命令，以便代理可以從其 shell 控制活動模擬器。",
-          "4f2205f3b6": "啟用 Orca CLI",
           "ff4b7e65d6": "讓程式開發代理使用 Orca CLI 命令控制活動手機模擬器。",
           "2a674aa810": "代理手機模擬器控制",
-          "cdeaed9e37": "在 PATH 中註冊 Orca CLI。",
-          "3d34423e88": "正在註冊 Orca CLI",
-          "3be27641c9": "以便代理 shell 可以執行模擬器命令。",
-          "3941719a56": "開啟技能設定前正在檢查 Orca CLI。"
+          "cdeaed9e37": "在 PATH 中註冊 Orca CLI。"
         },
         "MobileEmulatorExamples": {
           "edf13dd03b": "複製",
@@ -8958,6 +8942,9 @@
             "0d1c334987": "合蓋",
             "ff8de8a2ad": "顯示器",
             "0d752916f8": "鉤子",
+            "agent-trust-trust": "信任",
+            "agent-trust-folder": "資料夾",
+            "agent-trust-worktree": "工作樹",
             "6984d4291a": "狀態",
             "13b20636a6": "等待",
             "8599603496": "完成",
@@ -9316,16 +9303,7 @@
               "9d97446873": "代理",
               "a2d489263e": "技能",
               "a7e82445fa": "安裝瀏覽器使用技能，以便代理可以操作 Orca 的瀏覽器。",
-              "a1414dcefb": "安裝瀏覽器使用技能",
-              "e56c7b55c9": "設定",
-              "034c5e8d7f": "啟用",
-              "7e0dcb257a": "Shell",
-              "3ffafc9b95": "命令",
-              "30c74aaa1f": "路徑",
-              "ff05cbc344": "orca",
-              "85fab5e12c": "CLI",
-              "890ddf943d": "註冊 Orca CLI，以便代理可以驅動瀏覽器。",
-              "50f0860e18": "啟用 Orca CLI"
+              "a1414dcefb": "安裝瀏覽器使用技能"
             }
           }
         },
@@ -9501,7 +9479,8 @@
               "openclaude": "開放克勞德",
               "omp": "奧普",
               "terminal": "終端機",
-              "agent": "代理"
+              "agent": "代理",
+              "queue": "佇列"
             },
             "agentDashboard": {
               "title": "代理儀表盤",
@@ -10728,6 +10707,10 @@
         "agent-status-hooks-copy": {
           "7707c15abb": "代理狀態鉤子",
           "a68a642835": "在 Orca 中顯示工作中、等待中和完成狀態。關閉後將移除 Orca 管理的鉤子並停止重新安裝。"
+        },
+        "agent-workspace-trust-copy": {
+          "title": "Orca 啟動代理時信任該資料夾",
+          "description": "Orca 啟動的代理會跳過“Do you trust this folder?”提示，因此專案的代理鉤子和設定會立即執行。若關閉此項，每個代理在某個資料夾中首次執行時都會詢問。在你沒有看著時執行的代理（例如編排工作程序、自動化以及從手機啟動的代理）會停在該提問處等待，直到你在它們的終端機中作答。已信任的資料夾仍保持信任。"
         },
         "agent-generated-tab-title-copy": {
           "19ad21615a": "自動生成分頁標題",
@@ -13647,9 +13630,8 @@
           "1eee1c7bd8": "PATH 中未檢測到代理。可選擇一個稍後安裝，或使用空白終端機繼續。",
           "hideAgents": "隱藏代理",
           "showMoreAgents": "顯示另外 {{value0}} 個代理→",
-          "yoloPermissionsLabel": "Yolo / 危險地跳過許可權檢查",
-          "yoloPermissionsInfo": "代理許可權資訊",
-          "yoloPermissionsTooltip": "跳過代理許可權檢查，減少打斷"
+          "yoloModeLabel": "Yolo 模式",
+          "yoloPermissionsDescription": "代理會在不詢問的情況下執行命令和編輯檔案，部分代理還會繞過沙箱。僅在你信任的專案中使用。"
         },
         "FeatureSetupInlineTerminal": {
           "789b59936e": "按 Enter 執行命令並在詢問時確認 npx。您也可以稍後在“設定”中進行設定。",
@@ -13684,7 +13666,6 @@
         "NotificationStep": {
           "3bede04483": "傳送測試通知",
           "dc897423e1": "選擇通知聲音",
-          "53aaffe49a": "通知聲音",
           "0fe570690c": "選擇傳送桌面通知後 Orca 播放的警報。",
           "0af746e41f": "選擇聲音",
           "8124d085a6": "開啟 Mac 設定",
@@ -14208,7 +14189,8 @@
             "3a59452a67": "技能命令已複製並插入到下方以供審查。",
             "c605f51f2b": "能力設定就緒",
             "1aa657d8f4": "一些能力設定需要注意",
-            "c89534cbe9": "安裝 CLI 和技能"
+            "allInstalled": "所有技能均已安裝",
+            "installSkills": "安裝技能"
           },
           "AiCommitPrSettingsCard": {
             "8d4152701a": "例如llama 執行 llama3.1 {{value0}}",
@@ -14301,7 +14283,6 @@
             "1a6a7d6c80": "設定",
             "713cc529a5": "里程碑",
             "b1f1981c5e": "檢視任務",
-            "0235b268b2": "還沒有完成",
             "13294d3405": "完成"
           },
           "FeatureWallSetupWorkflowActions": {
@@ -14412,13 +14393,13 @@
               "setup": {
                 "status": {
                   "8eccfcb314": "已安裝",
-                  "21d4f79c93": "單擊安裝 CLI 和技能以開啟 macOS 訪問設定",
                   "5c9293e51a": "檢查應用程式訪問許可權",
-                  "aae94eeb52": "單擊安裝 CLI 和技能",
                   "aa8e143a2f": "無法檢查安裝",
                   "9b33e7fb13": "檢查安裝",
-                  "4c8e1f92a7": "在此 Mac 上開啟 Orca Desktop",
-                  "6d2b0a84e1": "此版本不可用"
+                  "6d2b0a84e1": "此版本不可用",
+                  "needsMacAccess": "需要 macOS 訪問許可權",
+                  "notInstalled": "未安裝",
+                  "requiresOrcaDesktop": "需要 Orca Desktop"
                 }
               }
             }
@@ -14436,7 +14417,6 @@
                 "checklist": {
                   "localized": {
                     "copy": {
-                      "ec0a363633": "多工",
                       "62bac8f43c": "同時在 2 個不同的工作樹中工作。每個專案都是獨立的（即使在同一個專案中）。非常適合同時處理 2 個功能。",
                       "908898c3ee": "使用 Orca 瀏覽器",
                       "43781563c3": "無需離開 Orca 即可瀏覽您的網路應用程式。抓取任何元素，然後一鍵將其確切的來源和樣式傳送給代理。",
@@ -14444,14 +14424,15 @@
                       "71bd9a8c95": "瞭解代理完成、需要關注或被阻止的時刻。",
                       "46db810da8": "選擇您的預設代理",
                       "b8e5bae17f": "透過已選擇的首選代理，更快地開始新工作。",
-                      "fee5557b02": "啟用 Orca CLI",
-                      "7bcb4097fa": "註冊 Orca shell 命令並安裝瀏覽器、電腦和編排工作流程的代理技能。",
                       "ad342dd4c6": "連線整合",
                       "06fe30fdb0": "一鍵從任務啟動代理並檢視 PR 狀態。",
                       "eddc532e58": "自動化工作區設定",
                       "56049b74c2": "自動執行安裝和設定命令，以便每個新工作樹都為代理做好準備。",
                       "2cf795433b": "在多個儲存庫中開始工作",
-                      "42525ba8a4": "將您的關鍵儲存庫帶入 Orca，這樣您就可以開始代理工作，而無需尋找資料夾。"
+                      "42525ba8a4": "將您的關鍵儲存庫帶入 Orca，這樣您就可以開始代理工作，而無需尋找資料夾。",
+                      "workOnTwoTasks": "同時處理兩項任務",
+                      "agentSkillsName": "為代理提供 Orca 技能",
+                      "agentSkillsDescription": "安裝代理用於操作 Orca 瀏覽器、控制你的電腦以及協調多步驟工作的技能。"
                     }
                   }
                 }
@@ -14564,8 +14545,7 @@
             "d6d15077df": "技能命令已複製並插入到下方供檢視。",
             "78e65f19d9": "瀏覽器設定失敗",
             "b7345c18db": "發生了意外錯誤。",
-            "5f97caf76b": "正在安裝…",
-            "c2df599513": "安裝 CLI 和技能"
+            "5f97caf76b": "正在安裝…"
           },
           "ConnectIntegrationsList": {
             "3dddb2d565": "已連線，可用於任務",
@@ -14707,17 +14687,9 @@
                 "agent": {
                   "setup": {
                     "state": {
-                      "fdcca1ec75": "正在註冊...",
-                      "69fb2c2289": "已啟用",
-                      "c6705092ba": "修復 PATH",
-                      "7c1b6bdb1e": "啟用",
-                      "51074ccb05": "無法載入 CLI 狀態。",
                       "35dea1ae12": "代理控制已就緒。",
-                      "9dff3a6338": "技能已安裝。啟用 Orca CLI 以完成設定。",
-                      "15986a1080": "Orca CLI 已就緒。安裝技能以完成設定。",
-                      "4c26913def": "尚未設定完成。請完成兩個步驟以啟用代理控制。",
                       "c94ff11e91": "無法重新檢查設定狀態。",
-                      "2b519eed94": "已在 PATH 中註冊 Orca CLI。"
+                      "skillNotInstalled": "Orca CLI 技能尚未安裝。"
                     }
                   }
                 },
@@ -14735,23 +14707,18 @@
             "2fda9ff015": "設定代理控制",
             "0ac0fef514": "代理控制已就緒。",
             "2bdfff8763": "代理控制（可選）。",
-            "72736b051f": "當您希望代理控制此模擬器時，設定 Orca CLI + 技能。",
             "d10ae98046": "完成",
             "3756cbeca7": "暫不",
             "6d950431d2": "隱藏",
             "ebceac65a4": "設定",
-            "3f003507f4": "在設定中開啟完整設定"
+            "3f003507f4": "在設定中開啟完整設定",
+            "installSkillPrompt": "如需讓代理操作此模擬器，請安裝 Orca CLI 技能。"
           },
           "MobileEmulatorAgentSetupGuideSteps": {
-            "9b49d892e3": "啟用 Orca CLI",
-            "3d8dc52c93": "在代理 shell 中註冊用於模擬器控制的 orca 命令。",
             "21f5687c07": "Orca CLI 技能",
             "64fb057667": "教授代理此工作區的 orca 模擬器命令。",
             "5c59ea96ca": "移動端模擬器 Orca CLI 技能設定",
-            "bff5341ac3": "移動端模擬器 Orca CLI 技能安裝終端機",
-            "3d34423e88": "正在註冊 Orca CLI",
-            "3be27641c9": "以便代理 shell 可以執行模擬器命令。",
-            "3941719a56": "開啟技能設定前正在檢查 Orca CLI。"
+            "bff5341ac3": "移動端模擬器 Orca CLI 技能安裝終端機"
           },
           "MobileEmulatorTabIntroCallout": {
             "1924982130": "關閉",
@@ -17357,6 +17324,8 @@
         "historyUnreadable": "Orca 無法讀取此聊天的已儲存歷史記錄。",
         "historyUnusable": "無法載入此聊天。",
         "historyUnavailable": "Orca 目前無法開啟此聊天的歷史記錄。",
+        "savedByNewerOrca": "這些聊天由更新版本的 Orca 儲存。",
+        "updateOrcaToKeepUsing": "請更新 Orca 以繼續使用這些聊天。",
         "unsupported": "執行此聊天的 Orca 不支援此操作。請更新 Orca 後重試。",
         "unreachable": "Orca 無法連線到代理。",
         "recordFailed": "Orca 無法將其記錄到此聊天的歷史記錄中。",
@@ -17405,6 +17374,7 @@
         "pastedImageLabel": "貼上的圖片",
         "imagePasteFailed": "圖片貼上失敗。",
         "worktreeNotReady": "工作樹未就緒 — 請稍後重試。",
+        "pasteUnavailable": "無法貼上 — 此聊天目前不接受輸入。",
         "uploadingAttachments": "正在將 {{value0}} 個檔案上傳到遠端…",
         "model": "模型",
         "effort": "推理強度",
@@ -17698,8 +17668,7 @@
         "ranOne": "Ran 1 子代理",
         "ranN": "Ran {{value0}} 子代理",
         "tokens": "{{value0}} 代幣",
-        "unnamed": "子代理",
-        "writtenBy": "由子代理 {{value0}} 輸出"
+        "unnamed": "子代理"
       },
       "conversationCommand": {
         "pendingWork": "在使用此命令之前，請等待掛起的工作和訊息完成。",
@@ -17735,6 +17704,32 @@
         "label": "上下文 {{used}}/{{window}} token，已用 {{percent}}%",
         "title": "上下文",
         "estimated": "根據上一次回應的估算值。"
+      },
+      "dismissDeliveryNotice": "關閉",
+      "messageNotSent": "訊息未傳送",
+      "deliveryUnconfirmed": "無法確認送達 — 重試前請檢查聊天",
+      "queuedMessages": {
+        "alreadySent": "此訊息已傳送。",
+        "editAlreadySent": "已傳送 — 你的文本仍在輸入框中。",
+        "listLabel": "排隊的訊息",
+        "behindReturnedHold": "等待中 — 前面有一條訊息需要處理",
+        "awaitingAnswerHold": "等待你的回答",
+        "steer": "立即傳送",
+        "send": "傳送",
+        "steerHint": "提交且不中斷模型",
+        "sendHint": "立即傳送此訊息",
+        "delete": "刪除",
+        "moreActions": "更多操作",
+        "editMessage": "編輯訊息",
+        "turnOffQueueing": "關閉排隊",
+        "withdrawnHold": "在傳送前已停止",
+        "pausedSendFailed": "無法傳送。點按傳送以重試。",
+        "paused": "已暫停",
+        "queuePausedStopped": "因你中斷了操作，佇列已暫停",
+        "queuePausedRestarted": "因 Orca 重新啟動，佇列已暫停",
+        "queuePausedCleared": "清除對話後，佇列已暫停",
+        "queuePaused": "佇列已暫停",
+        "resume": "繼續"
       }
     },
     "tab": {
@@ -18097,6 +18092,11 @@
             "spaces": "空間"
           }
         }
+      },
+      "nativeChat": {
+        "queueFollowUpsTitle": "將後續訊息加入佇列",
+        "queueFollowUpsCopy": "Agent 工作時傳送的訊息會以卡片形式等待，你可以立即傳送、編輯或刪除。帶圖片的訊息會立即傳送。",
+        "queueFollowUpsToggleLabel": "切換後續訊息佇列"
       }
     },
     "agentChildRow": {
@@ -18519,6 +18519,64 @@
   },
   "common": {
     "retry": "重試"
+  },
+  "fileExplorer": {
+    "root": {
+      "label": "檔案瀏覽器根目錄",
+      "full": "儲存庫根目錄",
+      "viewing": "目前檢視：{{path}}",
+      "back": "返回 {{path}}",
+      "searchScope": "搜尋範圍：工作區檔案",
+      "retry": "重試",
+      "omittedFiles": "稀疏檢出中排除的檔案不會被搜尋。",
+      "viewOnly": "稀疏檢出 · 更改檢視不會更改已檢出的檔案。",
+      "sparseStatus": "稀疏檢出",
+      "scopeDetails": "關於稀疏檢出範圍",
+      "scopeExplanation": "資料夾選擇器只改變顯示範圍，不會改變檢出的檔案。儲存庫根目錄檢視也會顯示根目錄和上級資料夾中已檢出的檔案。",
+      "searchExplanation": "“名稱”篩選目前檢視的資料夾。“內容”搜尋整個工作區。稀疏檢出排除的檔案不會被搜尋。",
+      "findInFolder": "在 {{path}} 中查詢",
+      "folderLoadError": "無法載入此資料夾：",
+      "emptyFolder": "此資料夾中沒有檔案"
+    }
+  },
+  "sparsePreset": {
+    "nameRequired": "請輸入名稱。",
+    "nameTooLong": "名稱不能超過80個字元。",
+    "nameExists": "名為“{{name}}”的預設已存在。",
+    "name": "名稱",
+    "namePlaceholder": "Web應用與共享UI",
+    "directories": "目錄",
+    "pathHelp": "每行輸入一個相對於儲存庫的目錄。路徑中的空格會保留。",
+    "coneHelp": "Git還會保留儲存庫根目錄以及這些目錄的父資料夾中的檔案。",
+    "cancel": "取消",
+    "save": "儲存預設",
+    "new": "新增稀疏檢出預設",
+    "edit": "編輯稀疏檢出預設",
+    "description": "選擇新工作區要檢出的資料夾。",
+    "saveFailed": "無法儲存預設。請重試。",
+    "loading": "正在載入預設...",
+    "details": "會檢出哪些檔案？",
+    "finishEditing": "儲存或取消預設後，即可繼續建立工作區。",
+    "pathInstructions": "每行輸入一個資料夾，使用相對於儲存庫根目錄的路徑。",
+    "retryLoad": "重試載入預設",
+    "fullCheckout": "完整檢出",
+    "checkoutPreset": "檢出預設",
+    "search": "查詢預設…",
+    "noMatches": "沒有匹配的預設。",
+    "allFiles": "儲存庫中的所有檔案",
+    "editNamed": "編輯 {{name}}",
+    "addPath": "Add a folder",
+    "findPath": "Find a folder…",
+    "noPathMatches": "No folders found.",
+    "repositoryRoot": "Repository root",
+    "loadingPaths": "Reading folders…",
+    "pathsUnavailable": "Could not read this folder. Type the path instead.",
+    "pathAdded": "Added",
+    "openFolder": "Open {{name}}",
+    "findOrTypePath": "Find a folder, or type any path…",
+    "addTypedPath": "Add",
+    "noDirectories": "No folders added yet.",
+    "removePath": "Remove {{name}}"
   },
   "bottomPanel": {
     "error": {
