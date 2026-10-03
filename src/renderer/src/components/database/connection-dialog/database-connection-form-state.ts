@@ -31,6 +31,8 @@ export type DatabaseConnectionFormState = {
   sshTargetId: string
   /** VPN profile to connect through, or `NO_VPN`; ignored while an SSH tunnel is picked. */
   vpnProfileId: string
+  /** VPN picked here for the tunnel's SSH host (a host-wide setting); null keeps the host's own. */
+  sshHostVpn: { targetId: string; profileId: string } | null
 }
 
 // Why not '': the select primitive reserves the empty value.
@@ -71,7 +73,8 @@ export function initialConnectionForm(
     sslMode: 'prefer',
     filePath: '',
     sshTargetId: NO_SSH_TUNNEL,
-    vpnProfileId: NO_VPN
+    vpnProfileId: NO_VPN,
+    sshHostVpn: null
   }
   if (!existing) {
     return base
