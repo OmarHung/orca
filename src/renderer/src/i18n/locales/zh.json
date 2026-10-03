@@ -19471,7 +19471,7 @@
       "vpnEmpty": "还没有 VPN 配置文件，请到设置 → SSH 新增。",
       "vpnHint": "主机和端口以 VPN 内部看到的为准。这台电脑的其他连接不会走 VPN。",
       "vpnRemoved": "已删除的 VPN 配置文件",
-      "vpnViaSsh": "使用 SSH 隧道时，以该 SSH 主机自己的 VPN 设置为准。"
+      "vpnViaSsh": "使用 SSH 隧道时，这里设置的是该 SSH 主机自己的 VPN，Orca 连接该主机时都会使用。"
     },
     "console": {
       "cancel": "取消正在执行的语句",
