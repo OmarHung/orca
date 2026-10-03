@@ -19907,5 +19907,18 @@
     "starting": "Loading the {{language}} project for code navigation…",
     "failed": "{{language}} code navigation is unavailable: {{message}}",
     "nuxtTypesMissing": "This Nuxt project has no generated types yet, so auto-imports cannot be followed. Run `nuxi prepare` in {{project}}."
+  },
+  "forkUpdateChangelog": {
+    "title": "Orca updated to {{value0}}",
+    "description": "Changes since {{value0}}",
+    "descriptionReady": "Changes since {{value0}}, summarized by {{value1}}",
+    "generating": "Summarizing the changes with AI…",
+    "failed": "Could not summarize the changes.",
+    "retry": "Try again",
+    "releaseNotes": "Upstream release notes ({{value0}})",
+    "forkCommits": "Fork commits ({{value0}})",
+    "regenerate": "Summarize again",
+    "done": "Got it",
+    "menuItem": "What's new in {{value0}}"
   }
 }

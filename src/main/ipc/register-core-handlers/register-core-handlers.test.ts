@@ -27,6 +27,7 @@ const {
   registerDatabaseHandlersMock,
   registerSftpHandlersMock,
   registerSshVpnHandlersMock,
+  registerForkUpdateChangelogHandlersMock,
   registerSessionHandlersMock,
   registerUIHandlersMock,
   setTrustedUIRendererWebContentsIdMock,
@@ -99,6 +100,7 @@ const {
   registerDatabaseHandlersMock: vi.fn(),
   registerSftpHandlersMock: vi.fn(),
   registerSshVpnHandlersMock: vi.fn(),
+  registerForkUpdateChangelogHandlersMock: vi.fn(),
   registerSessionHandlersMock: vi.fn(),
   registerUIHandlersMock: vi.fn(),
   setTrustedUIRendererWebContentsIdMock: vi.fn(),
@@ -293,6 +295,10 @@ vi.mock('../../ssh-vpn/ssh-vpn-ipc', () => ({
   registerSshVpnHandlers: registerSshVpnHandlersMock
 }))
 
+vi.mock('../../fork-source-update/fork-update-changelog-ipc', () => ({
+  registerForkUpdateChangelogHandlers: registerForkUpdateChangelogHandlersMock
+}))
+
 vi.mock('../pet', () => ({
   registerPetHandlers: registerPetHandlersMock
 }))
@@ -463,6 +469,7 @@ describe('registerCoreHandlers', () => {
     registerDatabaseHandlersMock.mockReset()
     registerSftpHandlersMock.mockReset()
     registerSshVpnHandlersMock.mockReset()
+    registerForkUpdateChangelogHandlersMock.mockReset()
     registerSessionHandlersMock.mockReset()
     registerUIHandlersMock.mockReset()
     setTrustedUIRendererWebContentsIdMock.mockReset()
@@ -578,6 +585,7 @@ describe('registerCoreHandlers', () => {
     expect(registerDatabaseHandlersMock).toHaveBeenCalled()
     expect(registerSftpHandlersMock).toHaveBeenCalled()
     expect(registerSshVpnHandlersMock).toHaveBeenCalled()
+    expect(registerForkUpdateChangelogHandlersMock).toHaveBeenCalledWith(store)
     expect(registerClaudeAccountHandlersMock).toHaveBeenCalledWith(claudeAccounts)
     expect(registerMiniMaxCredentialsHandlersMock).toHaveBeenCalledWith(rateLimits)
     expect(registerGrokAccountHandlersMock).toHaveBeenCalled()
