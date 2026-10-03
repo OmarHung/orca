@@ -54,6 +54,7 @@ import { registerCodeNavigationHandlers } from '../../code-navigation/code-navig
 import { registerDatabaseHandlers } from '../../database/database-ipc'
 import { registerSftpHandlers } from '../../sftp/sftp-ipc'
 import { registerSshVpnHandlers } from '../../ssh-vpn/ssh-vpn-ipc'
+import { registerForkUpdateChangelogHandlers } from '../../fork-source-update/fork-update-changelog-ipc'
 import { registerPluginHandlers } from '../plugins'
 import { registerUIHandlers, setTrustedUIRendererWebContentsId } from '../ui'
 import { registerEmulatorFrameStreamHandlers } from '../emulator-frame-stream'
@@ -217,6 +218,7 @@ export function registerCoreHandlers(
   registerDatabaseHandlers()
   registerSftpHandlers()
   registerSshVpnHandlers()
+  registerForkUpdateChangelogHandlers(store)
   registerSessionHandlers(store, runtime)
   registerUIHandlers(store, { isDashboardPopoutRenderer })
   registerEmulatorFrameStreamHandlers()

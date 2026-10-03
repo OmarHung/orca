@@ -20232,5 +20232,18 @@
     "starting": "正在为代码跳转加载 {{language}} 项目…",
     "failed": "{{language}} 代码跳转不可用：{{message}}",
     "nuxtTypesMissing": "这个 Nuxt 项目还没有生成类型，自动导入的名称无法跳转。请在 {{project}} 中运行 `nuxi prepare`。"
+  },
+  "forkUpdateChangelog": {
+    "title": "Orca 已更新至 {{value0}}",
+    "description": "自 {{value0}} 以来的变更",
+    "descriptionReady": "自 {{value0}} 以来的变更，由 {{value1}} 整理",
+    "generating": "正在用 AI 整理变更…",
+    "failed": "无法整理这些变更。",
+    "retry": "重试",
+    "releaseNotes": "上游更新内容（{{value0}}）",
+    "forkCommits": "Fork 提交（{{value0}}）",
+    "regenerate": "重新整理",
+    "done": "知道了",
+    "menuItem": "{{value0}} 更新内容"
   }
 }
