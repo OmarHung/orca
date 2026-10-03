@@ -19064,7 +19064,7 @@
       "vpnEmpty": "還沒有 VPN 設定檔，請到設定 → SSH 新增。",
       "vpnHint": "主機和埠以 VPN 內部看到的為準。這台電腦的其他連線不會走 VPN。",
       "vpnRemoved": "已刪除的 VPN 設定檔",
-      "vpnViaSsh": "使用 SSH 隧道時，以該 SSH 主機自己的 VPN 設定為準。"
+      "vpnViaSsh": "使用 SSH 隧道時，這裡設定的是該 SSH 主機自己的 VPN，Orca 連線該主機時都會使用。"
     },
     "console": {
       "cancel": "取消正在執行的語句",

@@ -343,7 +343,7 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 - 一樣 fail closed：VPN 起不來、被拒絕、設定檔被刪掉，或連線途中 VPN 斷掉（監聽 manager 的狀態），連線就失敗或結束，不會改成直接連線。VPN 沒有 `ready` 時進來的連線直接關掉，不會 spawn。
 - 啟動 VPN 用同一個確認框和登入框，說明文字是「Connecting to <連線名稱> needs this VPN.」。
 - 關閉時只關掉 `nc` 的 stdin（`nc` 會半關閉連線，等伺服器關掉後結束；35 秒內沒結束才 kill），不直接 kill `docker exec`，否則 `nc` 會留在容器裡，被閒置檢查當成使用中。
-- 跟 SSH 通道擇一：選了 SSH 通道時 VPN 欄位停用，因為 SSH 通道本來就會套用那台 SSH 主機自己的 VPN 設定；兩者同時存在的舊資料會被 main 拒絕。
+- 跟 SSH 通道擇一：SSH 通道本來就會套用那台 SSH 主機自己的 VPN 設定，所以選了 SSH 通道時，VPN 欄位顯示並改的是該主機的 VPN（主機層級設定，按「測試連線」或「儲存」時才寫入，該主機的其他連線也會跟著用）；連線本身的 `vpnProfileId` 存成 null。兩者同時存在的舊資料會被 main 拒絕。
 - 掛載點：`ssh-vpn-database-route.ts`（跟 `ssh-vpn-route.ts` 一樣的 seam，VPN runtime 在資料庫 handler 之後註冊）。`SshVpnService.connect` 多收一個連線名稱並回傳設定檔名稱。
 - 測試：單元（tunnel 7、session manager 4、表單 1、對話框 1）；Docker 整合 4 個（VPN 外連不到、經 VPN 的 DNS 名稱連到並在關閉後容器內沒有殘留 `nc`、連不到時的錯誤、VPN 停掉時結束連線）；e2e 1 個（MariaDB 10.5 放在只有 VPN 連得到的網路，走對話框選 VPN、測試、存檔、開 console 查詢）。測試內網多了 `startBehindVpn`。
 
