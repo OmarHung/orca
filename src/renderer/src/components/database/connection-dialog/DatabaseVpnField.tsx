@@ -4,14 +4,14 @@ import { useSshVpnStore, useSshVpnSync } from '../../ssh-vpn/ssh-vpn-store'
 import { NO_VPN } from './database-connection-form-state'
 import { SelectField } from './database-form-controls'
 
-/** Picks one of Orca's VPN profiles (Settings → SSH) to reach the server through, or none. */
+/** Picks one of Orca's VPN profiles (Settings → SSH) to reach the server, or the SSH tunnel host, through. */
 export function DatabaseVpnField({
   value,
   viaSshTunnel,
   onChange
 }: {
   value: string
-  /** An SSH tunnel is picked; its SSH host's own VPN setting applies instead. */
+  /** An SSH tunnel is picked, so `value` is that SSH host's own VPN. */
   viaSshTunnel: boolean
   onChange: (value: string) => void
 }): React.JSX.Element {
@@ -28,28 +28,28 @@ export function DatabaseVpnField({
           }
         ]
       : []
-  const hint = viaSshTunnel
-    ? translate(
-        'database.connectionForm.vpnViaSsh',
-        'With an SSH tunnel, the SSH host’s own VPN setting applies.'
-      )
-    : value !== NO_VPN
+  const hint =
+    value === NO_VPN && profiles.length === 0
       ? translate(
-          'database.connectionForm.vpnHint',
-          'Host and port are as seen from inside the VPN. The rest of this computer stays off it.'
+          'database.connectionForm.vpnEmpty',
+          'No VPN profiles yet. Add one in Settings → SSH.'
         )
-      : profiles.length === 0
+      : viaSshTunnel
         ? translate(
-            'database.connectionForm.vpnEmpty',
-            'No VPN profiles yet. Add one in Settings → SSH.'
+            'database.connectionForm.vpnViaSsh',
+            'With an SSH tunnel, this sets the SSH host’s own VPN, used everywhere Orca connects to that host.'
           )
-        : null
+        : value !== NO_VPN
+          ? translate(
+              'database.connectionForm.vpnHint',
+              'Host and port are as seen from inside the VPN. The rest of this computer stays off it.'
+            )
+          : null
   return (
     <div className="space-y-1.5">
       <SelectField
         label={translate('database.connectionForm.vpn', 'VPN')}
-        value={viaSshTunnel ? NO_VPN : value}
-        disabled={viaSshTunnel}
+        value={value}
         options={[
           {
             value: NO_VPN,

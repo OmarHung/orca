@@ -6,10 +6,12 @@ import {
   type DatabasePasswordStorage
 } from '../../../../../shared/database/database-connection-types'
 import type { DatabaseEncryptionStatus } from '../../../../../shared/database/database-session-types'
+import { useSshVpnStore } from '../../ssh-vpn/ssh-vpn-store'
 import { NO_SSH_TUNNEL, type DatabaseConnectionFormState } from './database-connection-form-state'
 import { SelectField, TextField } from './database-form-controls'
 import { DatabaseSshTunnelField } from './DatabaseSshTunnelField'
 import { DatabaseVpnField } from './DatabaseVpnField'
+import { shownVpnProfileId } from './database-ssh-host-vpn'
 
 type ServerFieldsProps = {
   form: DatabaseConnectionFormState
@@ -80,6 +82,8 @@ function PasswordFields({
 export function DatabaseServerFields(props: ServerFieldsProps): React.JSX.Element {
   const { form, invalid, onChange, onAddSshHost } = props
   const sslModes = form.driver === 'sqlserver' ? SQLSERVER_SSL_MODES : DATABASE_SSL_MODES
+  const sshVpnAssignments = useSshVpnStore((state) => state.assignments)
+  const viaSshTunnel = form.sshTargetId !== NO_SSH_TUNNEL
   return (
     <>
       <div className="grid grid-cols-2 items-start gap-3">
@@ -89,9 +93,15 @@ export function DatabaseServerFields(props: ServerFieldsProps): React.JSX.Elemen
           onAddSshHost={onAddSshHost}
         />
         <DatabaseVpnField
-          value={form.vpnProfileId}
-          viaSshTunnel={form.sshTargetId !== NO_SSH_TUNNEL}
-          onChange={(vpnProfileId) => onChange({ vpnProfileId })}
+          value={shownVpnProfileId(form, sshVpnAssignments)}
+          viaSshTunnel={viaSshTunnel}
+          onChange={(profileId) =>
+            onChange(
+              viaSshTunnel
+                ? { sshHostVpn: { targetId: form.sshTargetId, profileId } }
+                : { vpnProfileId: profileId }
+            )
+          }
         />
       </div>
       <div className="grid grid-cols-[1fr_6rem] gap-3">

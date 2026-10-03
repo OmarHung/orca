@@ -26,6 +26,7 @@ import {
   passwordToSave,
   type DatabaseConnectionFormState
 } from './database-connection-form-state'
+import { applySshHostVpn } from './database-ssh-host-vpn'
 
 type TestState =
   | { status: 'idle' }
@@ -126,6 +127,12 @@ export function DatabaseConnectionDialog({
       return
     }
     setTest({ status: 'testing' })
+    // Why first: the test must reach the server the way the VPN shown in the form says.
+    const vpnError = await applySshHostVpn(form)
+    if (vpnError) {
+      setTest({ status: 'failed', message: vpnError })
+      return
+    }
     const result = asDatabaseResult(
       await window.api.database.testConnection({
         draft: parsed.draft,
@@ -148,6 +155,13 @@ export function DatabaseConnectionDialog({
       return
     }
     setSaving(true)
+    // Why before the connection: a failure then saves nothing, so Save can simply be retried.
+    const vpnError = await applySshHostVpn(form)
+    if (vpnError) {
+      setSaving(false)
+      setSaveError(vpnError)
+      return
+    }
     const result = asDatabaseResult(
       await window.api.database.saveConnection({
         id: existing?.id,
