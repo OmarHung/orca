@@ -16,18 +16,26 @@ const RELEASE_NOTES_MARKDOWN = cn(
 )
 
 /** The repo a release page belongs to, so `#123` in its notes links to that repo's PRs. */
-function releaseRepo(url: string): { owner: string; repo: string } | null {
+export function releaseRepo(url: string): { owner: string; repo: string } | null {
   const match = GITHUB_RELEASE_URL.exec(url)
   return match ? { owner: match[1], repo: match[2] } : null
 }
 
 /** Upstream release notes between the fork's base and the offered tag, newest first. */
-export function ForkReleaseNotes({ notes }: { notes: ForkReleaseNote[] }): React.JSX.Element {
+export function ForkReleaseNotes({
+  notes,
+  showHeading = true
+}: {
+  notes: ForkReleaseNote[]
+  showHeading?: boolean
+}): React.JSX.Element {
   return (
     <section className="flex flex-col gap-1.5" data-testid="fork-sync-release-notes">
-      <h4 className="text-xs font-medium">
-        {translate('forkSync.releaseNotesTitle', "What's new upstream")}
-      </h4>
+      {showHeading ? (
+        <h4 className="text-xs font-medium">
+          {translate('forkSync.releaseNotesTitle', "What's new upstream")}
+        </h4>
+      ) : null}
       <div className="scrollbar-sleek flex max-h-72 flex-col gap-4 overflow-y-auto rounded-md border border-border p-2.5">
         {notes.map((note) => (
           <article key={note.tag} className="flex flex-col gap-1">

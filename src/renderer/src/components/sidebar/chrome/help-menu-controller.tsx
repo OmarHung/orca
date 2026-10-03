@@ -27,6 +27,7 @@ import {
   getUpdateCheckHint
 } from '@/app-shell/updates/update-check-click-options'
 import { openHelpLink } from './help-link-open'
+import { ForkUpdateChangelogMenuItem } from '../fork-update-changelog/ForkUpdateChangelogMenuItem'
 
 // Keep feedback off the boot graph; menu warming and selection share the same lazy module entry.
 const loadSidebarFeedbackDialog = (): Promise<typeof SidebarFeedbackDialogModule> =>
@@ -211,6 +212,7 @@ export function useHelpMenuController(milestones: SetupMilestones | null): HelpM
           url={CHANGELOG_URL}
           icon={<ScrollText className="size-3.5" />}
         />
+        <ForkUpdateChangelogMenuItem />
         <DropdownMenuSeparator />
         <ExternalMenuItem
           label={t('auto.components.sidebar.SidebarSettingsHelpMenu.5687ab246a', 'GitHub')}
