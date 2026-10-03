@@ -106,6 +106,7 @@ import type { PluginService } from '../../plugins/plugin-service'
 import type { PluginMarketplaceHandlerServices } from '../plugins/plugin-marketplaces'
 import { getRuntimeEnvironmentRegistryRoot } from '../runtime-environments/catalog/runtime-environment-registry-root'
 import {
+import { registerForkUpdateChangelogHandlers } from '../../fork-source-update/fork-update-changelog-ipc'
   closeNotificationDismissalsBeforeRelaunch,
   type CoreHandlerLifecycleOptions
 } from './core-handler-lifecycle'
@@ -214,6 +215,7 @@ export async function registerCoreHandlers(
     registerSftpHandlers()
     registerSshVpnHandlers()
     registerCodeNavigationHandlers()
+    registerForkUpdateChangelogHandlers(store)
     registerSessionHandlers(store, runtime)
     registerUIHandlers(store, { isDashboardPopoutRenderer })
     registerEmulatorFrameStreamHandlers()

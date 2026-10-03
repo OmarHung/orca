@@ -15,6 +15,7 @@ import { RevisionComparePicker } from '../components/editor/revision-compare/Rev
 import { DockerExportDialogHost } from '../components/run/DockerExportDialog'
 import { DotnetPublishDialogHost } from '../components/run/DotnetPublishDialog'
 import { SshVpnStartConfirmHost } from '../components/ssh-vpn/SshVpnStartConfirmHost'
+import { ForkUpdateChangelogHost } from '../components/fork-update-changelog/ForkUpdateChangelogHost'
 import { SkillFreshnessUpdateDialog } from '../components/skills/freshness/SkillFreshnessUpdateDialog'
 import { StarNagAgentValueMomentObserver } from '../components/star-nag/StarNagAgentValueMomentObserver'
 import { NativeChatResumeOnRestartModal } from '../components/native-chat-recovery/NativeChatResumeRuntimeModal'
@@ -345,6 +346,7 @@ export const AppRootSurfaces = memo(function AppRootSurfaces(props: {
         <DotnetPublishDialogHost />
         <DockerExportDialogHost />
         <SshVpnStartConfirmHost />
+        <ForkUpdateChangelogHost />
       </ModalBoundary>
       <RecoverableRenderErrorBoundary
         boundaryId="modal.crash-report"
