@@ -39,6 +39,7 @@ import {
   getUpdateCheckHint
 } from '@/app-shell/updates/update-check-click-options'
 import { openAppHttpLink } from '@/lib/browser/navigation/app-http-link-open'
+import { ForkUpdateChangelogMenuItem } from '../fork-update-changelog/ForkUpdateChangelogMenuItem'
 
 // Keep feedback off the boot graph; menu warming and selection share the same lazy module entry.
 const loadSidebarFeedbackDialog = (): Promise<typeof SidebarFeedbackDialogModule> =>
@@ -285,6 +286,7 @@ export function SidebarSettingsHelpMenu(): React.JSX.Element {
               url={CHANGELOG_URL}
               icon={<ScrollText className="size-3.5" />}
             />
+            <ForkUpdateChangelogMenuItem />
             <DropdownMenuSeparator />
             <ExternalMenuItem
               label={t('auto.components.sidebar.SidebarSettingsHelpMenu.5687ab246a', 'GitHub')}
