@@ -19825,5 +19825,18 @@
     "starting": "正在為程式碼跳轉載入 {{language}} 專案…",
     "failed": "{{language}} 程式碼跳轉不可用：{{message}}",
     "nuxtTypesMissing": "這個 Nuxt 專案還沒有生成型別，自動匯入的名稱無法跳轉。請在 {{project}} 中執行 `nuxi prepare`。"
+  },
+  "forkUpdateChangelog": {
+    "title": "Orca 已更新至 {{value0}}",
+    "description": "自 {{value0}} 以來的變更",
+    "descriptionReady": "自 {{value0}} 以來的變更，由 {{value1}} 整理",
+    "generating": "正在用 AI 整理變更…",
+    "failed": "無法整理這些變更。",
+    "retry": "重試",
+    "releaseNotes": "上游更新內容（{{value0}}）",
+    "forkCommits": "Fork 提交（{{value0}}）",
+    "regenerate": "重新整理",
+    "done": "知道了",
+    "menuItem": "{{value0}} 更新內容"
   }
 }
