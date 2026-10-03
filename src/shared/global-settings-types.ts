@@ -19,6 +19,7 @@ import type { PersistedNativeChatSessionOptions } from './native-chat/input/nati
 import type { AgentChatPermissionMode } from './agent-launch/permissions/agent-chat-permission-mode'
 import type { ComputerAwakeMode } from './computer-awake-mode'
 import type { CommitMessageAiSettings } from './source-control/ai/generation/commit-message-ai-types'
+import type { GitEditorIntegrationSettings } from './git-editor-integration-settings-types'
 import type { HostSettingOverrides } from './host-setting-overrides'
 import type {
   ClaudeManagedAccount,
@@ -243,16 +244,6 @@ export type GlobalSettings = GlobalSettingsBase & {
   sourceControlGroupOrder: SourceControlGroupOrder
   /** Compare base defaults to the branch upstream instead of the repo default; affects only the compare/diff view, not the PR/rebase target. Per-user. */
   sourceControlCompareAgainstUpstream: boolean
-  /** Status-bar segment with the active workspace's branch, ahead/behind and change count. */
-  gitBranchStatusBarEnabled: boolean
-  /** Periodically runs `git fetch` for the active workspace's repository. */
-  gitAutoFetchEnabled: boolean
-  /** Minutes between automatic fetches of one repository. */
-  gitAutoFetchIntervalMinutes: number
-  /** GitLens-style author/date/summary after the caret line in file editors. */
-  gitInlineBlameEnabled: boolean
-  /** JetBrains-style gutter bars for lines that differ from HEAD in file editors. */
-  editorChangeMarkersEnabled: boolean
   /** Whether to show the Orca app name in the titlebar. */
   showTitlebarAppName: boolean
   /** Hides the Tasks sidebar button (also removes it from keyboard navigation). */
@@ -507,6 +498,6 @@ export type GlobalSettings = GlobalSettingsBase & {
   voiceDictationModeDefaultedToAuto?: boolean
   /** Transcript full-text search consent + retention. Absent means off; nothing indexes until the user opts in. */
   aiVaultSearch?: AiVaultSearchSettings
-}
+} & GitEditorIntegrationSettings
 
 export type { OrcaWorkspaceLayout } from './orca-workspace-layout'
