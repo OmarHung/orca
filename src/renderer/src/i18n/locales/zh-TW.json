@@ -11,6 +11,12 @@
     "retrying": "正在重試..."
   },
   "settings": {
+    "terminal": {
+      "optionLayoutAlt": "ABC 或 U.S. — Option 鍵傳送 Alt/Esc 序列",
+      "optionLayoutCompose": "此佈局使用 Option 鍵輸入 @、€、[、] 等字元",
+      "optionLayoutUnknown": "未知佈局 — Option 鍵輸入字元（安全的預設設定）",
+      "optionShortcutHint": "選擇“兩個都”使用 Option 快捷鍵，選擇“關”輸入重音字元和符號，或選擇“左邊”/“右邊”讓兩個 Option 鍵各司其職。"
+    },
     "appearance": {
       "language": {
         "title": "語言",
@@ -901,6 +907,17 @@
         "symlink": "無法附加符號連結。",
         "permissionDenied": "沒有訪問許可權。",
         "unsupported": "不支援的檔案類型。"
+      },
+      "dropTempCopyFailure": {
+        "changed": "Orca 複製時檔案發生了變化。請重新拖放。",
+        "outOfSpace": "磁碟空間不足，無法複製拖放的檔案。",
+        "storageUnavailable": "Orca 無法為拖放的檔案建立儲存位置。",
+        "storageNotPrivate": "Orca 用於拖放檔案的儲存位置可被其他使用者讀取，因此未複製任何內容。",
+        "timedOut": "複製耗時過長。請重新拖放。",
+        "busy": "仍有太多拖放正在複製。請稍候再試。",
+        "tooLarge": "檔案太大，無法複製，因此 Orca 無法將其交給代理。",
+        "storageFull": "Orca 用於拖放檔案的儲存空間已滿，因此 Orca 無法將其交給代理。",
+        "generic": "請重新拖放。"
       }
     },
     "hooks": {
@@ -935,7 +952,10 @@
         "nativeDropPathsTooLarge": "拖放的路徑列表過大。",
         "ownerChanged": "無法確認哪個主機擁有此工作區。請在它重新連線後重試。",
         "nativeDropUnresolvedPathsDescription": "首先將它們儲存到磁碟，然後刪除儲存的檔案。",
-        "nativeDropUnresolvedPaths": "Orca 無法讀取已刪除檔案的路徑。"
+        "nativeDropUnresolvedPaths": "Orca 無法讀取已刪除檔案的路徑。",
+        "nativeDropTempCopyFailed": "Orca 無法複製 {{count}} 個拖放的檔案。",
+        "nativeDropTempCopyFailed_one": "Orca 無法複製 {{count}} 個拖放的檔案。",
+        "nativeDropTempCopyFailed_other": "Orca 無法複製 {{count}} 個拖放的檔案。"
       },
       "useIpcEvents": {
         "0e3cf53060": "未找到瀏覽器分頁 {{value0}}",
@@ -5362,6 +5382,7 @@
           "bdd23b4e07": "GitHub 議題",
           "44713a5d04": "Linear 議題",
           "jiraIssues": "Jira 議題",
+          "host": "主機",
           "cc17bd443b": "詳細的",
           "0f9b959b31": "PR",
           "e029a2d775": "狀態",
@@ -7072,7 +7093,7 @@
             "shellEnvCopy": "Codex 和 Claude 聊天啟動時會帶上登入 shell 匯出的所有變數，與終端機一致。關閉後可選擇傳遞哪些變數。",
             "shellEnvToggleLabel": "切換使用 shell 環境",
             "structuredTitle": "使用更新的結構化本機聊天",
-            "structuredCopy": "選擇加入 Codex 和 Claude 的主機擁有的結構化聊天執行時。關閉會保留現有的終端機支援的聊天路徑。",
+            "structuredCopy": "將新的 Codex 和 Claude 代理作為結構化聊天開啟。關閉時會在終端機支援的聊天中開啟。已有的聊天保持不變。",
             "structuredScope": "目前僅限本地會話。 WSL 和遠端執行主機（包括 SSH）繼續使用終端機聊天，Windows 會回退到它，除非 Orca 可以讀取程序啟動時間。",
             "structuredToggleLabel": "切換更新的結構化本機聊天",
             "resumeTitle": "重啟後自動恢復工作聊天",
@@ -7117,9 +7138,9 @@
           "80c454e8a6": "將此與您的提供商的快取 TTL 相匹配。"
         },
         "GeneralEditorSettingsSection": {
-          "f80603d293": "在富文本編輯器模式和代理切換操作中顯示本地 Markdown 註釋控制元件。",
+          "f80603d293": "在所有 Markdown 檢視中顯示 Markdown 註釋控制元件，並在代理切換操作中包含這些註釋。",
           "4edc104f0f": "Markdown 審查筆記",
-          "5f02e6fb21": "在富文本編輯器模式下顯示本地 Markdown 審查筆記控制元件。",
+          "5f02e6fb21": "在 Markdown 檔案中顯示本地 Markdown 審查筆記控制元件。",
           "51161d1647": "編輯檔案時顯示小地圖概述。",
           "6690b1ffb9": "小地圖",
           "5a1ea6eaa2": "隱藏",
@@ -8543,7 +8564,7 @@
           "19f4935159": "JIS 日元 (¥) 至 反斜槓 (\\\\)",
           "1c337bef4a": "控制按 JIS 日元 (¥) 鍵是否傳送反斜槓 (\\\\)。",
           "3fe1c5bfe0": "關",
-          "c73d510938": "正確的",
+          "c73d510938": "右邊",
           "e7aec1fd60": "左邊",
           "badb1219fc": "兩個都",
           "43c2ff7b0e": "自動",
@@ -15781,6 +15802,7 @@
             "4300f38145": "從 {{value0}}{{value1}} 下載",
             "31375046b7": "從 {{value0}} 下載",
             "acbe79fd01": "抓取頁面元素 ({{value0}})",
+            "cc4a071d3a": "註釋頁面元素 ({{value0}})",
             "572046436a": "遠端瀏覽器",
             "b313a7275b": "開啟遠端瀏覽器",
             "5f66313863": "註釋",
@@ -16514,6 +16536,7 @@
             "done": "完成",
             "idle": "空閒",
             "unverifiable": "暫無近期更新",
+            "unconfirmed": "無法確認",
             "permission": "需注意"
           },
           "filtersSection": "篩選",
@@ -17306,6 +17329,72 @@
   },
   "components": {
     "native-chat": {
+      "contextMenu": {
+        "copyOrcaSessionId": "複製 Orca 會話 ID",
+        "orcaSessionIdCopied": "已複製 Orca 會話 ID",
+        "orcaSessionIdCopyFailed": "無法複製 Orca 會話 ID",
+        "orcaSessionIdTooltip": "Orca 為此聊天分配的 ID，獨立於代理 CLI 自身的會話 ID。代理透過 Orca 用它來相互指代。"
+      },
+      "failureWords": {
+        "theAgent": "代理",
+        "providerStartFailed": "{{agent}} 在完成啟動前已停止。",
+        "runCommandAgain": "請重新執行 /{{command}}。",
+        "sendToTryAgain": "請傳送您的訊息以重試。",
+        "couldNotStart": "{{agent}} 無法啟動。",
+        "couldNotRestart": "{{agent}} 無法重新啟動。",
+        "notSignedIn": "{{agent}} 未使用所選帳戶登入。",
+        "signInFirst": "請先登入。",
+        "signInThenRunCommand": "請登入，然後重新執行 /{{command}}。",
+        "signInThenSend": "請登入，然後重新發送您的訊息。",
+        "historyTooLarge": "此對話的歷史記錄過大，無法在此恢復。",
+        "managedAccountEnvOverride": "此次 Claude 啟動設定了自己的 Anthropic 登入變數。請移除這些變數以使用受管理的 Claude 帳戶。",
+        "accountSwitchInProgress": "正在切換 Claude 帳戶。請在切換完成後重試。",
+        "managedAccountUnsupported": "當 WSL 中添加了 Claude 帳戶時，Claude 聊天需要 Windows Claude 帳戶。",
+        "chooseClaudeAccount": "請在 Claude 帳戶設定中選擇或新增一個。",
+        "chooseClaudeAccountThenRunCommand": "請在 Claude 帳戶設定中選擇或新增一個，然後重新執行 /{{command}}。",
+        "chooseClaudeAccountThenSend": "請在 Claude 帳戶設定中選擇或新增一個，然後重新發送您的訊息。",
+        "providerExitedRow": "{{agent}} 在生成此回覆時停止了。您可以在此對話中繼續。",
+        "providerExitedRejection": "{{agent}} 在傳送此訊息前已停止。",
+        "providerRejected": "提供商未接受此訊息。",
+        "providerRejectedQuoted": "提供商未接受此訊息：{{detail}}。",
+        "attachmentEmpty": "此訊息中的一張圖片為空，因此訊息未傳送。",
+        "attachmentTooLarge": "此訊息中的一張圖片過大，因此訊息未傳送。",
+        "attachmentLargerThan": "此訊息中的一張圖片超過 {{size}} MB，因此訊息未傳送。",
+        "attachmentTooMany": "此訊息包含的圖片過多，因此未傳送。",
+        "attachmentAtMost": "{{agent}} 每條訊息最多接受 {{limit}} 張圖片，因此此訊息未傳送。",
+        "attachmentTotalTooLarge": "此訊息中的圖片總大小過大，因此訊息未傳送。",
+        "attachmentTotalMoreThan": "此訊息中的圖片總計超過 {{size}} MB，因此訊息未傳送。",
+        "attachmentUnsupportedType": "{{agent}} 僅接受 PNG、JPEG、GIF 和 WebP 圖片，因此此訊息未傳送。",
+        "attachmentNotAFile": "此訊息中的一張圖片不是檔案，因此訊息未傳送。",
+        "attachmentNoSource": "此訊息中的一張圖片沒有可傳送的檔案，因此訊息未傳送。",
+        "attachmentInvalid": "此訊息中的附件無法傳送給代理。",
+        "attachmentUnreadable": "無法讀取此訊息中的附件，因此訊息未傳送。",
+        "emptyMessage": "此訊息為空，因此未傳送。",
+        "queueFull": "等待代理處理的訊息過多，因此此訊息未傳送。",
+        "writeFailed": "Orca 無法將此訊息交給代理，因此訊息未傳送。",
+        "cancelled": "此訊息在代理開始處理前已撤回。",
+        "chatClosed": "此訊息傳送前聊天已關閉。",
+        "hostRestarted": "此訊息傳送前 Orca 已重新啟動。",
+        "notDelivered": "此訊息未送達。",
+        "notDeliveredSendAgain": "此訊息未送達。請重新發送以繼續。",
+        "commandRefused": "此命令未執行。",
+        "commandRefusedTryAgain": "此命令未執行。請重試。",
+        "compactionFailed": "壓縮失敗。",
+        "compactionFailedQuoted": "壓縮失敗：{{detail}}。",
+        "compactionUnconfirmed": "未確認壓縮是否完成。",
+        "cancelUnconfirmed": "未確認取消。",
+        "stopRefused": "{{agent}} 未停止。",
+        "stopRefusedQuoted": "{{agent}} 未停止：{{detail}}。",
+        "noTurnToStop": "{{agent}} 沒有正在執行的輪次可停止。",
+        "answerUnconfirmed": "您的回答已記錄，但代理未確認。",
+        "hostFault": "Orca 遇到問題，因此此操作未完成。",
+        "hostFaultTryAgain": "Orca 遇到問題，因此此操作未完成。請重試。",
+        "hostStopped": "{{agent}} 始終未完成啟動，因此 Orca 已將其停止。",
+        "providerRateLimited": "{{agent}} 已被限流，正在重試。",
+        "providerRetrying": "{{agent}} 遇到臨時問題，正在重試。",
+        "providerRetryingQuoted": "{{agent}} 正在重試：{{detail}}。",
+        "previousExitUnverifiable": "Orca 無法確認 {{agent}} 的上一個程序已結束。在 Orca 確認其已結束之前，訊息會等待發送。"
+      },
       "writeNotice": {
         "notDoneReadHistory": "無法載入此聊天的歷史記錄。",
         "notDoneSend": "您的訊息未傳送。",
@@ -17501,6 +17590,8 @@
         "thinking": "思維",
         "workingFor": "已工作 {{value0}}",
         "workedFor": "工作了 {{value0}}",
+        "interruptedAfter": "{{value0}} 後中斷",
+        "failedAfter": "{{value0}} 後失敗",
         "toggleDetails": "切換回合詳情"
       },
       "jumpToLatest": "跳到最新訊息",
@@ -17516,7 +17607,8 @@
         "error": {
           "title": "無法載入對話",
           "subtitle": "無法讀取記錄。請切回終端機繼續工作。",
-          "retryingSubtitle": "無法讀取記錄。Orca 會繼續嘗試載入。"
+          "retryingSubtitle": "無法讀取記錄。Orca 會繼續嘗試載入。",
+          "keepsTrying": "Orca 會繼續嘗試載入。"
         },
         "reconnecting": "正在重新連線此聊天…",
         "pairHost": "配對主機以檢視代理聊天記錄。",
@@ -17671,8 +17763,7 @@
         "unnamed": "子代理"
       },
       "conversationCommand": {
-        "pendingWork": "在使用此命令之前，請等待掛起的工作和訊息完成。",
-        "unconfirmed": "對話操作未確認。"
+        "pendingWork": "在使用此命令之前，請等待掛起的工作和訊息完成。"
       },
       "drop": {
         "title": "拖放以附加到此聊天",
@@ -17984,6 +18075,12 @@
           "unknown": "未知主機",
           "candidateName": "{{value0}} 在 {{value1}} 上"
         }
+      },
+      "creation": {
+        "worktreeReadyToast": "工作樹 {{name}} 已就緒",
+        "workspaceReadyToast": "工作區 {{name}} 已就緒",
+        "goToWorktree": "轉到工作樹",
+        "goToWorkspace": "轉到工作區"
       }
     },
     "agentSessionContinuation": {
@@ -18346,6 +18443,11 @@
     },
     "fileLoad": {
       "hostUnresolved": "主機找不到該檔案的工作區。它可能已被刪除，或者主機可能還不知道。重試，或從分頁欄中關閉此分頁。"
+    },
+    "markdownPreview": {
+      "tooLarge": "檔案超過 {{limit}} 預覽限制。請開啟檔案檢視原始碼。",
+      "tooLargeInDiff": "檔案超過 {{limit}} 預覽限制。請切換到原始碼模式檢視差異。",
+      "renderAnyway": "仍然渲染"
     }
   },
   "featureTips": {
@@ -18433,7 +18535,12 @@
     "genericDetail": "這通常是圖形驅動程式或安裝問題。重新載入以重試，或退出並重新啟動 Orca。",
     "title": "Orca 一直無法載入",
     "stalledMessage": "崩潰後重新載入時應用程式視窗停止回應。",
-    "crashLoopMessage": "應用程式視窗反覆崩潰並自動停止重新載入。"
+    "crashLoopMessage": "應用程式視窗反覆崩潰並自動停止重新載入。",
+    "tryAgain": "重試",
+    "launchFailedMessage": "Orca 無法啟動繪製其視窗的程序。",
+    "launchFailedDetail": "Orca 重試了 {{recoveryCount}} 次，但未成功。",
+    "processLimitDetail": "由於你的使用者帳戶已達到程序數上限，系統拒絕建立新程序。這通常由失控的終端機、開發伺服器或代理導致。請關閉其中一些，然後點選“重試”。",
+    "launchFailedGenericDetail": "系統拒絕啟動它。請釋放記憶體或關閉其他應用，然後點選“重試”。如果問題持續出現，請重新安裝 Orca。"
   },
   "sessionSearch": {
     "panel": {
