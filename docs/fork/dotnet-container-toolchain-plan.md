@@ -156,12 +156,13 @@ Code review 後的修正（2026-10-05）：
 - launcher 新增模式：`--orca-where`（印出 container／native）、`--orca-ensure`（只叫醒容器）、`--orca-exec <程式…>`（在容器裡執行任意程式）、`--orca-shell`
 - agent：Claude Code 等 agent 自己開的 shell 會讀使用者的 `~/.zshenv`，那裡把 `~/.dotnet` 放在前面。需要在 dotfile 最後加一行 `[ -n "$ORCA_DOTNET_LAUNCHER_DIR" ] && export PATH="$ORCA_DOTNET_LAUNCHER_DIR:$PATH"`（要使用者同意才改）
 
-### Phase 4：Mac 切換成原生 arm64（已備妥，等使用者確認）
+### Phase 4：Mac 切換成原生 arm64（已完成，2026-10-06）
 
 - 已安裝在 `~/.dotnet-arm64`：SDK 10.0.201、ASP.NET Core runtime 8.0.25 與 6.0.36
 - 切換：`mv ~/.dotnet ~/.dotnet-x64 && mv ~/.dotnet-arm64 ~/.dotnet`，再重新安裝 global tools（dotnet-ef、dotnet-fm、dotnet-gcdump、ilspycmd、security-scan）。要先安裝含 Phase 1–3 的 Orca 版本再切換
 - `dotnet ef`：舊專案的 migration 會用 startup project 自己的 runtime 執行，Mac arm64 沒有 3.1，所以映像內建 dotnet-ef 3.1.32（NuGet 套件，sha512 與 NuGet catalog 的 packageHash 相同，只從本機 feed 安裝）。launcher 對 `dotnet ef` 改看 startup project（`-s`／`--startup-project`，沒給就是目前資料夾的專案），因為 `--project` 常是 netstandard 類別庫；其他指令的 `-s` 是 `--source`，不受影響。驗證（2026-10-06）：EF Core 3.1 與 2.2（資料專案 netstandard2.0）的 `migrations add`、`database update` 都成功，從方案根目錄指定 `-s`、以及 global.json 鎖 SDK 3.1 也都可以
 - 其他 global tools 改裝 arm64：dotnet-gcdump（net8）、dotnet-fm（net10）、ilspycmd（net10）直接重裝；security-scan 5.6.7 是 net5.0，要設定 roll forward 到新版 runtime 才能跑
+- 切換結果（2026-10-06，安裝 Orca `1.4.220-local.1791217728213.a7a9bcc7f707` 之後）：`~/.dotnet` 是 arm64（SDK 10.0.201，runtime 6.0.36／8.0.25／10.0.5），原本的 x64 留在 `~/.dotnet-x64`（還原：兩個資料夾換回來）。global tools 重裝成 arm64：dotnet-ef 10.0.12（.NET 6 以後的專案；舊專案走容器的 3.1.32）、dotnet-gcdump、dotnet-fm、ilspycmd、security-scan（套件另有 net6.0 版，直接跑在 6.0.36，不需要 roll forward）。驗證：一般 shell 找到 arm64 dotnet；net10 經 launcher 原生執行（Arm64）、netcoreapp3.1 進容器；dev 憑證仍受信任；沒有 workload 要重裝
 - netcoredbg 依 dotnet 執行檔的架構挑版本（`executable-arch.ts`），會自動改抓 osx-arm64 3.2.0；csharp-ls 變成原生執行
 - csharp-ls：global.json 鎖 3.1 的 repo 現在（x64）就已經無法載入，切換後一樣，不算退步；其他 repo 在 arm64 上載入較快
 
