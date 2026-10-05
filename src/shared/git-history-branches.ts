@@ -9,8 +9,26 @@ export const GIT_HISTORY_BRANCH_LIMIT = 1000
 
 const LOCAL_PREFIX = 'refs/heads/'
 const REMOTE_PREFIX = 'refs/remotes/'
-// Why %(HEAD) and %(upstream:short): both predate the Git 2.25 baseline.
-const BRANCH_FORMAT = '%(refname)%00%(objectname)%00%(HEAD)%00%(upstream:short)'
+// Why these atoms: %(HEAD), %(upstream:short) and %(upstream:track,nobracket) (2.13) all predate
+// the Git 2.25 baseline. Older Orca clients ignore the extra field.
+const BRANCH_FORMAT =
+  '%(refname)%00%(objectname)%00%(HEAD)%00%(upstream:short)%00%(upstream:track,nobracket)'
+const TRACK_COUNT_PATTERN = /\b(ahead|behind) (\d+)/g
+
+type GitHistoryBranchTracking = Pick<GitHistoryBranch, 'ahead' | 'behind' | 'upstreamGone'>
+
+/** Reads `ahead 2, behind 1`, `ahead 2`, `gone` or an empty (in sync) track field. */
+export function parseGitHistoryBranchTrack(track: string | undefined): GitHistoryBranchTracking {
+  const value = track?.trim() ?? ''
+  if (value === 'gone') {
+    return { upstreamGone: true }
+  }
+  const tracking: GitHistoryBranchTracking = {}
+  for (const [, direction, count] of value.matchAll(TRACK_COUNT_PATTERN)) {
+    tracking[direction === 'ahead' ? 'ahead' : 'behind'] = Number(count)
+  }
+  return tracking
+}
 
 /** A ref name the log may be scoped to: a branch namespace, no range or option syntax. */
 export function isGitHistoryBranchRefName(ref: string): boolean {
@@ -29,7 +47,7 @@ export function isGitHistoryBranchRefName(ref: string): boolean {
 export function parseGitHistoryBranches(stdout: string): GitHistoryBranch[] {
   const branches: GitHistoryBranch[] = []
   for (const rawLine of stdout.split('\n')) {
-    const [fullName, revision, head, upstream] = rawLine.replace(/\r$/, '').split('\0')
+    const [fullName, revision, head, upstream, track] = rawLine.replace(/\r$/, '').split('\0')
     if (!fullName || !revision) {
       continue
     }
@@ -49,6 +67,7 @@ export function parseGitHistoryBranches(stdout: string): GitHistoryBranch[] {
     const upstreamName = upstream?.trim()
     if (isLocal && upstreamName) {
       branch.upstream = upstreamName
+      Object.assign(branch, parseGitHistoryBranchTrack(track))
     }
     branches.push(branch)
   }

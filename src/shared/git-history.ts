@@ -14,6 +14,7 @@ import {
   type GitHistoryResult
 } from './git-history-types'
 import { isGitHistoryBranchRefName, loadGitHistoryBranches } from './git-history-branches'
+import { loadUnpushedIds } from './git-history-unpushed'
 import { loadCurrentBranchComparison } from './git-history-current-branch-comparison'
 
 export type {
@@ -224,11 +225,12 @@ export async function loadGitHistoryFromExecutor(
   }
 
   const path = options.path?.trim() || undefined
-  const [parsed, currentBranchComparison] = await Promise.all([
+  const [parsed, currentBranchComparison, unpushedIds] = await Promise.all([
     runHistoryLog(git, cwd, limit, historyRevisions, path),
     logTarget.scope === 'ref'
       ? loadCurrentBranchComparison(git, cwd, headOid, logTarget.revisions, options)
-      : {}
+      : {},
+    options.markUnpushed === true ? loadUnpushedIds(git, cwd, historyRevisions) : undefined
   ])
   const items = parsed.slice(0, limit)
   const hasIncomingChanges =
@@ -249,6 +251,7 @@ export async function loadGitHistoryFromExecutor(
     limit,
     revisionScope: logTarget.scope,
     ...currentBranchComparison,
+    ...(unpushedIds ? { unpushedIds } : {}),
     ...withRefs(refs),
     ...(path ? { path } : {})
   }

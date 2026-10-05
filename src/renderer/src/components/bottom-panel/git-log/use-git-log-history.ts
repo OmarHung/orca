@@ -73,6 +73,7 @@ export function useGitLogHistory(
             limit: GIT_HISTORY_MAX_LIMIT,
             baseRef: null,
             includeRefs: true,
+            markUnpushed: true,
             ...gitLogScopeToHistoryOptions(scope),
             ...(cherryPicksRequested ? { markCherryPicks: true } : {})
           }

@@ -11,10 +11,9 @@ import {
 import { ALL_GIT_LOG_SCOPE, HEAD_GIT_LOG_SCOPE, type GitLogScope } from './git-log-scope'
 import type { GitLogBranchListState } from './use-git-log-history'
 import type { GitHistoryBranch } from '../../../../../shared/git-history'
-import {
-  GitLogBranchCompareMenu,
-  type GitLogCompareHandler
-} from './compare/GitLogCompareMenuItems'
+import type { GitLogCompareHandler } from './compare/GitLogCompareMenuItems'
+import { GitLogBranchMenu } from './actions/GitLogBranchMenu'
+import { describeGitLogBranch, GitLogBranchSyncBadge } from './git-log-branch-sync'
 
 const NO_BRANCHES: readonly GitHistoryBranch[] = []
 const INDENT_PX = 12
@@ -81,6 +80,7 @@ export function GitLogBranchTree({
     [branchList]
   )
   const isFiltering = query.trim().length > 0
+  const hasRemotes = branches.some((branch) => branch.kind === 'remote')
   const rows = useMemo(
     () =>
       flattenGitLogBranchTree(buildGitLogBranchTree(branches, query), collapsedKeys, {
@@ -135,11 +135,7 @@ export function GitLogBranchTree({
               <TreeRow
                 depth={depth}
                 selected={selected}
-                title={
-                  node.branch.upstream
-                    ? `${node.branch.name} → ${node.branch.upstream}`
-                    : node.branch.name
-                }
+                title={describeGitLogBranch(node.branch, hasRemotes)}
                 onClick={() => onScopeChange({ kind: 'ref', fullName: node.branch.fullName })}
               >
                 {node.branch.isHead ? (
@@ -151,13 +147,10 @@ export function GitLogBranchTree({
                   <GitBranch className="size-3.5 shrink-0 text-muted-foreground" />
                 )}
                 <span className="truncate">{node.label}</span>
+                <GitLogBranchSyncBadge branch={node.branch} hasRemotes={hasRemotes} />
               </TreeRow>
             </ContextMenuTrigger>
-            <GitLogBranchCompareMenu
-              branch={node.branch}
-              branches={branches}
-              onCompare={onCompare}
-            />
+            <GitLogBranchMenu branch={node.branch} branches={branches} onCompare={onCompare} />
           </ContextMenu>
         )
       }
