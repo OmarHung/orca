@@ -8,6 +8,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { translate } from '@/i18n/i18n'
 import { TabBarQuickCommandHostLoadStatus } from '../tab-bar/TabBarQuickCommandHostLoadStatus'
+import { isWindowsUserAgent } from '../terminal-pane/pane-helpers'
+import { DotnetContainerMenuItem } from './DotnetContainerMenuItem'
 import { isDetectedRunMenuEmpty, type DetectedRunMenu } from './detected-run-menu'
 import { RunWidgetDetectedSection, type DetectedSectionActions } from './RunWidgetDetectedSection'
 import { RUN_WIDGET_CONTENT_STYLE } from './run-widget-cascade'
@@ -137,6 +139,8 @@ export function RunWidgetMenu({
         <SlidersHorizontal />
         {translate('run.widget.manageQuickCommands', 'Manage Quick Commands…')}
       </DropdownMenuItem>
+      {/* Why not on Windows: the container shares folders at the same path, which Windows cannot. */}
+      {isWindowsUserAgent() ? null : <DotnetContainerMenuItem />}
     </DropdownMenuContent>
   )
 }
