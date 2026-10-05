@@ -77,7 +77,17 @@ export class MondayScheduleLoader {
     await this.ensureColumns(request.boardIds)
     const queries = request.boardIds.flatMap((boardId) => {
       const entry = this.boards.get(boardId)
-      return entry ? [{ boardId, roles: entry.roles, onlyMine: request.onlyMine, entry }] : []
+      return entry
+        ? [
+            {
+              boardId,
+              roles: entry.roles,
+              personId: request.personId,
+              includeUnassigned: request.includeUnassigned,
+              entry
+            }
+          ]
+        : []
     })
     if (queries.length === 0) {
       return { boards: [], fetchedAt: this.now() }

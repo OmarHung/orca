@@ -20092,6 +20092,7 @@
       "otherColumns": "其他欄位",
       "people": "人員",
       "priority": "優先順序",
+      "replies": "回覆（{{value0}}）",
       "status": "狀態",
       "subitems": "子任務（{{value0}}）",
       "timeline": "時程",
@@ -20110,9 +20111,7 @@
     },
     "filter": {
       "hideDone": "隱藏已完成",
-      "hideDoneHint": "隱藏狀態標為完成的任務",
-      "onlyMine": "只看我的",
-      "onlyMineHint": "指派給你的任務，加上沒有指派人的任務"
+      "hideDoneHint": "隱藏狀態標為完成的任務"
     },
     "hover": {
       "due": "Due {{value0}}",
@@ -20135,6 +20134,14 @@
     "page": {
       "desktopOnly": "monday 僅在桌面版提供。",
       "title": "monday"
+    },
+    "person": {
+      "everyone": "全部人",
+      "includeUnassigned": "也顯示沒有指派人的任務",
+      "loading": "正在讀取人員…",
+      "search": "搜尋人員…",
+      "tokenAccount": "token 帳戶",
+      "trigger": "只顯示：{{value0}}"
     },
     "status": {
       "fetchedAt": "{{value0}} 讀取",
