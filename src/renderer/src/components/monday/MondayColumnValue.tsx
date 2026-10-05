@@ -4,6 +4,10 @@ import { MondayLabelBadge } from './MondayScheduleVisuals'
 
 const HTTP_URL = /^https?:\/\/\S+$/i
 
+export function isMondayWebAddress(text: string): boolean {
+  return HTTP_URL.test(text.trim())
+}
+
 /** One column's value: status as its colored label, a web address as a link, else plain text. */
 export function MondayColumnValue({
   column
@@ -14,7 +18,7 @@ export function MondayColumnValue({
     return <MondayLabelBadge label={{ label: column.text, color: column.color }} />
   }
   const text = column.text.trim()
-  if (HTTP_URL.test(text)) {
+  if (isMondayWebAddress(text)) {
     return (
       <button
         type="button"
