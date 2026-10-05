@@ -362,6 +362,26 @@ describe.skipIf(process.platform === 'win32')('dotnet container launcher', () =>
     expect(dockerCalls()).toEqual([])
   })
 
+  it('routes dotnet ef by the startup project, which runs the migrations', async () => {
+    const web = project('solution/Web', { 'Web.csproj': csproj('netcoreapp3.1') })
+    project('solution/Data', { 'Data.csproj': csproj('netstandard2.0') })
+    project('solution/Modern', { 'Modern.csproj': csproj('net8.0') })
+    const solution = join(work, 'solution')
+    const where = (cwd: string, args: string[]) =>
+      runLauncher(cwd, ['--orca-where', ...args]).then((result) => result.stdout.trim())
+    expect(await where(web, ['ef', 'migrations', 'add', 'Init', '-p', '../Data/Data.csproj'])).toBe(
+      'container'
+    )
+    expect(
+      await where(join(solution, 'Modern'), ['ef', 'database', 'update', '-s', '../Web/Web.csproj'])
+    ).toBe('container')
+    expect(
+      await where(web, ['ef', 'database', 'update', '--startup-project=../Modern/Modern.csproj'])
+    ).toBe('native')
+    // Why: outside ef, -s is --source and must not pick the project.
+    expect(await where(join(solution, 'Modern'), ['build', '-s', '../Web'])).toBe('native')
+  })
+
   it('prepares the container without running anything for --orca-ensure', async () => {
     const result = await runLauncher(legacyProject(), ['--orca-ensure'], {
       FAKE_IMAGE_PRESENT: '1'
