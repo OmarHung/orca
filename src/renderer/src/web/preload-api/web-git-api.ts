@@ -3,6 +3,7 @@ import { callAbortableRuntimeEnvironment } from '../../runtime/abortable-runtime
 import { toRuntimeWorktreeSelector } from '../../runtime/runtime-worktree-selector'
 import { translate } from '@/i18n/i18n'
 import { callRuntimeResult } from './web-runtime-calls'
+import { runWebGitBranchAction } from './web-git-branch-action-api'
 import { requireActiveEnvironment, updateEnvironmentFromResponse } from './web-runtime-session'
 import {
   resolveRuntimeFilePath,
@@ -96,7 +97,8 @@ export function createGitApi(): NonNullable<Partial<PreloadApi>['git']> {
         revision,
         allBranches,
         includeRefs: options.includeRefs,
-        markCherryPicks: options.markCherryPicks
+        markCherryPicks: options.markCherryPicks,
+        markUnpushed: options.markUnpushed
       })
     },
     conflictOperation: async ({ worktreePath }) => {
@@ -200,6 +202,7 @@ export function createGitApi(): NonNullable<Partial<PreloadApi>['git']> {
         baseRef
       })
     },
+    branchAction: runWebGitBranchAction,
     branchDiff: async ({ worktreePath, filePath, compare, oldPath }) => {
       const file = await resolveRuntimeFilePath(filePath, worktreePath)
       return callRuntimeResult('git.branchDiff', {

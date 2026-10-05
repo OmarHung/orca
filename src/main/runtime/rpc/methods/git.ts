@@ -1,6 +1,7 @@
 import { defineMethod } from '../core'
 import { GIT_COMMIT_MESSAGE_GENERATION_METHODS } from './git-commit-message-generation-methods'
 import { GIT_DIFF_METHODS } from './git-diff-methods'
+import { GitBranchActionParams } from '../../../../shared/rpc-contract/git-branch-action-params'
 import {
   GitBranchCompare,
   GitBulkPaths,
@@ -80,7 +81,8 @@ export const GIT_METHODS = [
         allBranches: params.allBranches,
         includeRefs: params.includeRefs,
         path: params.path,
-        markCherryPicks: params.markCherryPicks
+        markCherryPicks: params.markCherryPicks,
+        markUnpushed: params.markUnpushed
       })
   }),
   defineMethod({
@@ -176,6 +178,12 @@ export const GIT_METHODS = [
         params.pushTarget,
         params.forceWithLease
       )
+  }),
+  defineMethod({
+    name: 'git.branchAction',
+    params: GitBranchActionParams,
+    handler: async (params, { runtime }) =>
+      runtime.runRuntimeGitBranchAction(params.worktree, params.action)
   }),
   defineMethod({
     name: 'git.commit',

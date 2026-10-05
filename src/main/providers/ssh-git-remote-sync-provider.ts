@@ -1,6 +1,11 @@
 import type { GitForkSyncExpectedUpstream, GitForkSyncResult } from '../../shared/git-fork-sync'
 import type { GitPushTarget } from '../../shared/worktree/types'
 import { REBASE_FROM_BASE_RPC_TIMEOUT_MS } from '../../shared/git-rebase-source'
+import type {
+  GitBranchAction,
+  GitBranchActionResult
+} from '../../shared/git-branch-action/git-branch-action-types'
+import { parseGitBranchActionResult } from '../../shared/git-branch-action/git-branch-action-result'
 import { SshGitWorkingTreeProvider } from './ssh-git-working-tree-provider'
 
 export class SshGitRemoteSyncProvider extends SshGitWorkingTreeProvider {
@@ -43,6 +48,22 @@ export class SshGitRemoteSyncProvider extends SshGitWorkingTreeProvider {
         { timeoutMs: REBASE_FROM_BASE_RPC_TIMEOUT_MS }
       )
     })
+  }
+
+  async runBranchAction(
+    worktreePath: string,
+    action: GitBranchAction
+  ): Promise<GitBranchActionResult> {
+    return this.runWithGitReadInvalidation(async () =>
+      parseGitBranchActionResult(
+        // Why: a rebase or fetch can run as long as rebaseFromBase, so share its deadline.
+        await this.mux.request(
+          'git.branchAction',
+          { worktreePath, action },
+          { timeoutMs: REBASE_FROM_BASE_RPC_TIMEOUT_MS }
+        )
+      )
+    )
   }
 
   async fetchRemote(worktreePath: string, pushTarget?: GitPushTarget): Promise<void> {

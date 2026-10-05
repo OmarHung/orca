@@ -196,6 +196,7 @@ import {
   FolderWorkspaceSelector,
   FolderWorkspaceUpdate
 } from './folder-workspace-params'
+import { GitBranchActionParams } from './git-branch-action-params'
 import {
   GitBranchCompare,
   GitBranchDiff,
@@ -807,6 +808,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'folderWorkspace.update': FolderWorkspaceUpdate,
   'git.abortMerge': WorktreeSelectorOfGitParams,
   'git.abortRebase': WorktreeSelectorOfGitParams,
+  'git.branchAction': GitBranchActionParams,
   'git.branchCompare': GitBranchCompare,
   'git.branchDiff': GitBranchDiff,
   'git.bulkDiscard': GitBulkPaths,

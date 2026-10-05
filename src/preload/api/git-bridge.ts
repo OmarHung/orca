@@ -3,6 +3,10 @@ import type { GitForkSyncExpectedUpstream, GitForkSyncResult } from '../../share
 import type { GitStagingArea, GitUpstreamStatus } from '../../shared/git-status-types'
 import type { GitPushTarget } from '../../shared/worktree/types'
 import type { GitHistoryOptions, GitHistoryResult } from '../../shared/git-history'
+import type {
+  GitBranchAction,
+  GitBranchActionResult
+} from '../../shared/git-branch-action/git-branch-action-types'
 import type { PreloadApi } from '../api-types'
 
 export const gitApi = {
@@ -107,6 +111,11 @@ export const gitApi = {
     baseRef: string
     connectionId?: string
   }): Promise<void> => ipcRenderer.invoke('git:rebaseFromBase', args),
+  branchAction: (args: {
+    worktreePath: string
+    action: GitBranchAction
+    connectionId?: string
+  }): Promise<GitBranchActionResult> => ipcRenderer.invoke('git:branchAction', args),
   branchDiff: (args: {
     worktreePath: string
     compare: { baseRef: string; baseOid: string; headOid: string; mergeBase: string }
