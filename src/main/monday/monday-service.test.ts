@@ -251,11 +251,189 @@ describe('MondayService', () => {
     await service.connect('secret-token')
     const detail = await service.getItem('2000000001')
     expect(detail.columns).toEqual([
-      { id: 'person', title: 'Owner', type: 'people', text: 'Alice, Omar' }
+      { id: 'person', title: 'Owner', type: 'people', text: 'Alice, Omar', color: null }
     ])
     expect(detail.descriptionText).toBe('規格說明')
     expect(detail.subitems).toEqual([{ id: '5', name: 'Sub', statusText: 'Done' }])
     expect(detail.updates[0]).toMatchObject({ creatorName: 'Alice', bodyHtml: '<p>請確認</p>' })
     expect(detail.updates[0].replies[0]).toMatchObject({ creatorName: 'Omar', bodyHtml: '好' })
+  })
+
+  it('falls back to display values for links it cannot expand and mirror columns', async () => {
+    const graphql = createFakeMondayGraphql((query) =>
+      query.includes('me {')
+        ? { me: ME }
+        : {
+            items: [
+              {
+                id: '2000000002',
+                name: '活動頁製作',
+                url: 'https://acme.monday.com/boards/1000000001/pulses/2000000002',
+                created_at: null,
+                updated_at: null,
+                creator: null,
+                board: { id: '1000000001', name: 'Client Projects' },
+                group: null,
+                description: null,
+                column_values: [
+                  {
+                    id: 'board_relation_aaaa1111',
+                    type: 'board_relation',
+                    text: null,
+                    display_value: '範例股份有限公司',
+                    column: { title: 'Client CRM' }
+                  },
+                  {
+                    id: 'mirror',
+                    type: 'mirror',
+                    text: null,
+                    display_value: '',
+                    column: { title: 'Client' }
+                  }
+                ],
+                subitems: null,
+                updates: null
+              }
+            ]
+          }
+    )
+    const service = new MondayService({
+      dataDir,
+      secretStore: () => secretStore(true),
+      graphql: graphql.call
+    })
+    await service.connect('secret-token')
+    const detail = await service.getItem('2000000002')
+    expect(detail.columns).toEqual([
+      {
+        id: 'board_relation_aaaa1111',
+        title: 'Client CRM',
+        type: 'board_relation',
+        text: '範例股份有限公司',
+        color: null
+      }
+    ])
+    expect(detail.relations).toEqual([])
+    const itemQuery = graphql.mock.mock.calls
+      .map((call) => call[1])
+      .find((query) => query.includes('items('))
+    expect(itemQuery).toContain('linked_items')
+    expect(itemQuery).toContain('... on MirrorValue { display_value }')
+    expect(itemQuery).toContain('... on DependencyValue { display_value }')
+  })
+
+  it('expands linked items into cards without their links back', async () => {
+    const graphql = createFakeMondayGraphql((query) =>
+      query.includes('me {')
+        ? { me: ME }
+        : {
+            items: [
+              {
+                id: '2000000003',
+                name: '彈窗功能',
+                url: 'https://acme.monday.com/boards/1000000001/pulses/2000000003',
+                created_at: null,
+                updated_at: null,
+                creator: null,
+                board: { id: '1000000001', name: 'Client Projects' },
+                group: null,
+                description: null,
+                column_values: [
+                  {
+                    id: 'board_relation_aaaa1111',
+                    type: 'board_relation',
+                    text: null,
+                    display_value: '範例網站',
+                    column: { title: 'Client CRM' },
+                    linked_items: [
+                      {
+                        id: '2000000004',
+                        name: '範例網站',
+                        url: 'https://acme.monday.com/boards/1000000002/pulses/2000000004',
+                        board: { name: 'Client CRM' },
+                        column_values: [
+                          {
+                            id: 'subitems',
+                            type: 'subtasks',
+                            text: null,
+                            column: { title: 'Subitems' }
+                          },
+                          {
+                            id: 'status',
+                            type: 'status',
+                            text: 'Online',
+                            label_style: { color: '#00c875' },
+                            column: { title: '上線狀態' }
+                          },
+                          {
+                            id: 'text',
+                            type: 'text',
+                            text: 'https://www.example.com/',
+                            column: { title: 'Website' }
+                          },
+                          {
+                            id: 'text0',
+                            type: 'text',
+                            text: '203.0.113.20',
+                            column: { title: 'IP' }
+                          },
+                          { id: 'text3', type: 'text', text: '', column: { title: '備註' } },
+                          {
+                            id: 'board_relation_bbbb2222',
+                            type: 'board_relation',
+                            text: null,
+                            display_value: '彈窗功能',
+                            column: { title: 'link to Client Projects' }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                subitems: null,
+                updates: null
+              }
+            ]
+          }
+    )
+    const service = new MondayService({
+      dataDir,
+      secretStore: () => secretStore(true),
+      graphql: graphql.call
+    })
+    await service.connect('secret-token')
+    const detail = await service.getItem('2000000003')
+    expect(detail.columns).toEqual([])
+    expect(detail.relations).toEqual([
+      {
+        columnId: 'board_relation_aaaa1111',
+        title: 'Client CRM',
+        items: [
+          {
+            id: '2000000004',
+            name: '範例網站',
+            url: 'https://acme.monday.com/boards/1000000002/pulses/2000000004',
+            boardName: 'Client CRM',
+            columns: [
+              {
+                id: 'status',
+                title: '上線狀態',
+                type: 'status',
+                text: 'Online',
+                color: '#00c875'
+              },
+              {
+                id: 'text',
+                title: 'Website',
+                type: 'text',
+                text: 'https://www.example.com/',
+                color: null
+              },
+              { id: 'text0', title: 'IP', type: 'text', text: '203.0.113.20', color: null }
+            ]
+          }
+        ]
+      }
+    ])
   })
 })

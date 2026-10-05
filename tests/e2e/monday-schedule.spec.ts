@@ -48,6 +48,13 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
     await expect(panel.getByRole('heading', { name: '首頁改版' })).toBeVisible()
     await expect(panel.getByText('Due 2 day(s) before the timeline ends')).toBeVisible()
     await expect(panel.getByText('需求說明：先完成首頁，再做內頁。')).toBeVisible()
+    // The task's Client CRM record gets its own card; its link back to the task is left out.
+    const crm = panel.getByTestId('monday-linked-item')
+    await expect(panel.getByTestId('monday-relation')).toContainText('Client CRM')
+    await expect(crm).toContainText('範例官網')
+    await expect(crm.getByRole('button', { name: 'https://www.example.org/' })).toBeVisible()
+    await expect(crm).toContainText('web-server-1')
+    await expect(crm).not.toContainText('link to Client Projects')
     await expect(panel.getByText('請確認首頁的連結')).toBeVisible()
     await expect(panel.getByText('已更新')).toBeVisible()
     await expect(panel.getByText('Replies (3)')).toBeVisible()
