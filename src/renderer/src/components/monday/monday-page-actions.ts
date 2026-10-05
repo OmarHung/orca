@@ -1,5 +1,9 @@
 import { localIsoDate } from '../../../../shared/monday/monday-schedule'
-import type { MondayError, MondaySchedule } from '../../../../shared/monday/monday-types'
+import type {
+  MondayConnectionStatus,
+  MondayError,
+  MondaySchedule
+} from '../../../../shared/monday/monday-types'
 import { monthOf, shiftMonth } from './monday-calendar-model'
 import { useMondayPageStore, type MondayPageState } from './monday-page-store'
 import { writeMondayViewPrefs, type MondayViewPrefs } from './monday-view-prefs'
@@ -18,8 +22,17 @@ function set(patch: Partial<MondayPageState>): void {
   useMondayPageStore.setState(patch)
 }
 
-function scheduleKey(prefs: MondayViewPrefs): string {
-  return `${[...prefs.boardIds].sort().join(',')}|${prefs.onlyMine}`
+/** The person to filter by: the saved choice, or the connected account when none was made. */
+export function resolveMondayPersonId(
+  prefs: MondayViewPrefs,
+  connection: MondayConnectionStatus | null
+): string | null {
+  return prefs.personId === undefined ? (connection?.account?.userId ?? null) : prefs.personId
+}
+
+function scheduleKey(prefs: MondayViewPrefs, personId: string | null): string {
+  const boards = [...prefs.boardIds].sort().join(',')
+  return `${boards}|${personId ?? '*'}|${prefs.includeUnassigned}`
 }
 
 function resetMondayData(): void {
@@ -29,6 +42,8 @@ function resetMondayData(): void {
   set({
     boards: null,
     boardsError: null,
+    users: null,
+    usersError: null,
     schedule: null,
     scheduleError: null,
     scheduleLoading: false,
@@ -68,15 +83,21 @@ export async function loadMondayBoards(): Promise<void> {
   set(result.ok ? { boards: result.value, boardsError: null } : { boardsError: result.error })
 }
 
+export async function loadMondayUsers(): Promise<void> {
+  const result = await window.api.monday.listUsers()
+  set(result.ok ? { users: result.value, usersError: null } : { usersError: result.error })
+}
+
 export async function loadMondaySchedule(options: { refresh: boolean }): Promise<void> {
-  const { prefs } = get()
+  const { prefs, connection } = get()
+  const personId = resolveMondayPersonId(prefs, connection)
   if (prefs.boardIds.length === 0) {
     scheduleRequest += 1
     shownScheduleKey = null
     set({ schedule: null, scheduleError: null, scheduleLoading: false })
     return
   }
-  const key = scheduleKey(prefs)
+  const key = scheduleKey(prefs, personId)
   const cached = scheduleCache.get(key)
   if (cached && !options.refresh) {
     scheduleRequest += 1
@@ -94,7 +115,8 @@ export async function loadMondaySchedule(options: { refresh: boolean }): Promise
   })
   const result = await window.api.monday.loadSchedule({
     boardIds: prefs.boardIds,
-    onlyMine: prefs.onlyMine,
+    personId,
+    includeUnassigned: prefs.includeUnassigned,
     refresh: options.refresh
   })
   if (request !== scheduleRequest) {
@@ -113,7 +135,7 @@ export function updateMondayPrefs(patch: Partial<MondayViewPrefs>): void {
   const prefs = { ...get().prefs, ...patch }
   writeMondayViewPrefs(prefs)
   set({ prefs })
-  if (patch.boardIds !== undefined || patch.onlyMine !== undefined) {
+  if ('boardIds' in patch || 'personId' in patch || 'includeUnassigned' in patch) {
     void loadMondaySchedule({ refresh: false })
   }
 }

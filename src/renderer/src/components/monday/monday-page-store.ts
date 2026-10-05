@@ -5,7 +5,8 @@ import type {
   MondayConnectionStatus,
   MondayError,
   MondayItemDetail,
-  MondaySchedule
+  MondaySchedule,
+  MondayUser
 } from '../../../../shared/monday/monday-types'
 import { monthOf } from './monday-calendar-model'
 import { readMondayViewPrefs, type MondayViewPrefs } from './monday-view-prefs'
@@ -22,6 +23,8 @@ export type MondayPageState = {
   connectionError: MondayError | null
   boards: MondayBoardSummary[] | null
   boardsError: MondayError | null
+  users: MondayUser[] | null
+  usersError: MondayError | null
   /** Kept while a reload runs so the calendar doesn't blank out. */
   schedule: MondaySchedule | null
   scheduleLoading: boolean
@@ -39,6 +42,8 @@ export const useMondayPageStore = create<MondayPageState>(() => ({
   connectionError: null,
   boards: null,
   boardsError: null,
+  users: null,
+  usersError: null,
   schedule: null,
   scheduleLoading: false,
   scheduleError: null,
