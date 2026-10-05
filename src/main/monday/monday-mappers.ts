@@ -7,7 +7,8 @@ import type {
   MondayLabel,
   MondayScheduleItem,
   MondayUpdate,
-  MondayUpdateReply
+  MondayUpdateReply,
+  MondayUser
 } from '../../shared/monday/monday-types'
 
 /** monday's grey for an empty label. */
@@ -18,6 +19,15 @@ export type RawMe = {
   name: string
   email: string
   account: { slug: string; name: string }
+}
+
+export type RawUser = {
+  id: string
+  name: string
+  email: string
+  kind: string | null
+  status: string | null
+  is_deleted: boolean | null
 }
 
 export type RawBoardSummary = {
@@ -92,6 +102,18 @@ export function mapBoardSummaries(boards: RawBoardSummary[]): MondayBoardSummary
       name: board.name,
       workspaceName: board.workspace?.name ?? null
     }))
+}
+
+/** People who can be assigned work: active, not deleted, and not monday's AI agents. */
+export function mapUsers(users: RawUser[]): MondayUser[] {
+  return users
+    .filter(
+      (user) =>
+        !user.is_deleted &&
+        (user.status === null || user.status === 'ACTIVE') &&
+        !(user.kind ?? '').includes('agent')
+    )
+    .map((user) => ({ id: user.id, name: user.name, email: user.email }))
 }
 
 function labelOf(value: RawColumnValue | undefined): MondayLabel | null {
