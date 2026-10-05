@@ -23,6 +23,8 @@ type PasteTerminalClipboardDeps = {
   protectedMultilineTextPasteOptions?: TerminalPasteTextOptions
   onTextPasteError?: (error: unknown) => void
   onImagePasteError?: (error: unknown) => void
+  /** Receives the saved image path once it reached the terminal. */
+  onImagePasted?: (filePath: string) => void
 }
 
 export type TerminalClipboardPasteResult =
@@ -47,7 +49,8 @@ export async function pasteTerminalClipboard({
   forceBracketedMultilineTextPaste = false,
   protectedMultilineTextPasteOptions,
   onTextPasteError,
-  onImagePasteError
+  onImagePasteError,
+  onImagePasted
 }: PasteTerminalClipboardDeps): Promise<TerminalClipboardPasteResult> {
   let text = ''
   try {
@@ -90,6 +93,7 @@ export async function pasteTerminalClipboard({
     if (result === false) {
       return { status: 'skipped', reason: 'image-paste-rejected' }
     }
+    onImagePasted?.(filePath)
     return { status: 'pasted', kind: 'image-path' }
   } catch (error) {
     onImagePasteError?.(error)

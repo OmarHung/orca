@@ -3,6 +3,10 @@ import type {
   NativeChatMessage,
   NativeChatTurnLifecycle
 } from '../../shared/native-chat-types'
+import type {
+  ClaudePastedImageLookupArgs,
+  ClaudePastedImageLookupResult
+} from '../../shared/claude-pasted-image'
 
 // notFound marks a not-yet-on-disk miss (retry-worthy) vs a real read/parse error (#8401).
 export type NativeChatReadSessionResult =
@@ -71,4 +75,9 @@ export type NativeChatApi = {
     args: NativeChatSubscribeArgs,
     onFrame: (frame: NativeChatSubscriptionFrame) => void
   ) => () => void
+  /** Finds the submitted image behind a Claude `[Image #N]` chip. Desktop-only:
+   *  web and remote-runtime clients omit it and fall back to recorded pastes. */
+  findClaudePastedImage?: (
+    args: ClaudePastedImageLookupArgs
+  ) => Promise<ClaudePastedImageLookupResult>
 }

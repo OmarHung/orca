@@ -22,6 +22,7 @@ import { joinRuntimeTerminalDropDir } from './terminal-drop-worktree-path'
 import type { captureTerminalDropTransportOwner } from './terminal-drop-transport-owner'
 import { toLocalWslDropPath } from './terminal-drop-local-wsl'
 import { runtimeTargetForOwnerEnvironment } from '@/runtime/runtime-client-target'
+import { recordTerminalImageDrops } from './terminal-image-paste-history'
 
 export async function deliverNativeTerminalFileDrop(
   args: NativeDropFlowArgs & {
@@ -113,6 +114,8 @@ export type NativeDropFlowArgs = {
   pane: { id: number; leafId: string }
   tabId: string
   worktreePath: string
+  /** SSH target the dropped paths resolve on; absent or null for local and runtime drops. */
+  connectionId?: string | null
   expectedSshTargetId?: string
   expectedSshConnectionGeneration?: number
   expectedExecutionHostId?: 'local' | `ssh:${string}`
@@ -156,7 +159,12 @@ async function uploadRuntimeDropPaths(
         ? result.destPath.replace(/\//g, '\\')
         : result.destPath
     )
-    await pasteResolvedDropPaths({ ...args, paths: importedPaths, targetShell })
+    await pasteResolvedDropPaths({
+      ...args,
+      connectionId: null,
+      paths: importedPaths,
+      targetShell
+    })
     reportTerminalDropUploadSkipsAndFailures(
       results.filter((result) => result.status === 'skipped'),
       results.filter((result) => result.status === 'failed')
@@ -249,5 +257,6 @@ async function pasteResolvedDropPaths(
   showTerminalDropWriteFailure(writeResult.failureReason)
   if (writeResult.sentAnyPath) {
     recordTerminalUserInputForLeaf(args.tabId, args.pane.leafId)
+    recordTerminalImageDrops(args, writeResult.pathsWritten)
   }
 }

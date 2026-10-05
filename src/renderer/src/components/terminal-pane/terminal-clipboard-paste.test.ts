@@ -247,17 +247,35 @@ describe('terminal clipboard paste', () => {
 
   it('reports rejected image-path paste without treating it as image extraction failure', async () => {
     const onImagePasteError = vi.fn()
+    const onImagePasted = vi.fn()
     const result = await pasteTerminalClipboard({
       readClipboardText: vi.fn().mockResolvedValue(''),
       saveClipboardImageAsTempFile: vi
         .fn()
         .mockResolvedValue('/tmp/orca-paste-1760000000000-id.png'),
       pasteText: vi.fn().mockResolvedValue(false),
-      onImagePasteError
+      onImagePasteError,
+      onImagePasted
     })
 
     expect(onImagePasteError).not.toHaveBeenCalled()
+    expect(onImagePasted).not.toHaveBeenCalled()
     expect(result).toEqual({ status: 'skipped', reason: 'image-paste-rejected' })
+  })
+
+  it('hands the pasted image path to the caller once it reached the terminal', async () => {
+    const onImagePasted = vi.fn()
+    const result = await pasteTerminalClipboard({
+      readClipboardText: vi.fn().mockResolvedValue(''),
+      saveClipboardImageAsTempFile: vi
+        .fn()
+        .mockResolvedValue('/tmp/orca-paste-1760000000000-id.png'),
+      pasteText: vi.fn().mockResolvedValue(true),
+      onImagePasted
+    })
+
+    expect(onImagePasted).toHaveBeenCalledWith('/tmp/orca-paste-1760000000000-id.png')
+    expect(result).toEqual({ status: 'pasted', kind: 'image-path' })
   })
 
   it('reports image extraction failures without attempting image-path paste', async () => {
