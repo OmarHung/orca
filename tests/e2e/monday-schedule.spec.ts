@@ -50,7 +50,7 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
     await expect(panel.getByText('需求說明：先完成首頁，再做內頁。')).toBeVisible()
     // The task's Client CRM record gets its own card; its link back to the task is left out.
     const crm = panel.getByTestId('monday-linked-item')
-    await expect(panel.getByTestId('monday-relation')).toContainText('Client CRM')
+    await expect(panel.getByText('Client CRM', { exact: true })).toBeVisible()
     await expect(crm.getByRole('button', { name: 'https://www.example.org/' })).toBeVisible()
     // Only the website shows until the card is expanded.
     await expect(crm.getByText('web-server-1')).toBeHidden()
