@@ -20144,7 +20144,7 @@
       "trigger": "只顯示：{{value0}}"
     },
     "status": {
-      "fetchedAt": "{{value0}} 讀取",
+      "syncedAt": "{{value0}} 已同步",
       "items": "{{value0}} 個任務有日期",
       "truncated": "{{value0}}：只顯示前 {{value1}} 個任務",
       "undated": "{{value0}} 個沒有日期"

@@ -4,6 +4,7 @@ import { getIntlLocale, translate } from '@/i18n/i18n'
 import type { MondaySchedule } from '../../../../shared/monday/monday-types'
 import type { MondayCalendarEntry } from './monday-calendar-model'
 import { selectMondayItem } from './monday-page-actions'
+import { useMondayPageStore } from './monday-page-store'
 import { MondayDueFlag } from './MondayScheduleVisuals'
 
 function UndatedItems({ entries }: { entries: readonly MondayCalendarEntry[] }): React.JSX.Element {
@@ -70,8 +71,9 @@ export function MondayStatusBar(props: {
 }): React.JSX.Element {
   const { schedule, scheduledCount, unscheduled } = props
   const truncated = schedule.boards.filter((board) => board.truncated)
-  const fetchedAt = new Intl.DateTimeFormat(getIntlLocale(), { timeStyle: 'short' }).format(
-    schedule.fetchedAt
+  const syncedAt = useMondayPageStore((state) => state.syncedAt)
+  const syncedTime = new Intl.DateTimeFormat(getIntlLocale(), { timeStyle: 'short' }).format(
+    syncedAt ?? schedule.fetchedAt
   )
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-t border-border px-4 py-1.5 text-[11px] text-muted-foreground">
@@ -96,7 +98,7 @@ export function MondayStatusBar(props: {
       <div className="ml-auto flex items-center gap-4">
         <Legend />
         <span>
-          {translate('monday.status.fetchedAt', 'Read at {{value0}}', { value0: fetchedAt })}
+          {translate('monday.status.syncedAt', 'Synced {{value0}}', { value0: syncedTime })}
         </span>
       </div>
     </div>

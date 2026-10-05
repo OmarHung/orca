@@ -8,5 +8,6 @@ export const mondayApi = {
   listBoards: () => ipcRenderer.invoke('monday:listBoards'),
   listUsers: () => ipcRenderer.invoke('monday:listUsers'),
   loadSchedule: (request) => ipcRenderer.invoke('monday:loadSchedule', request),
+  boardsUpdatedAt: (boardIds) => ipcRenderer.invoke('monday:boardsUpdatedAt', boardIds),
   getItem: (itemId) => ipcRenderer.invoke('monday:getItem', itemId)
 } satisfies PreloadApi['monday']
