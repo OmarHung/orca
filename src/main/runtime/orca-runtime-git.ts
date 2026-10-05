@@ -3,6 +3,7 @@ import { RuntimeGitGenerationCommands } from './runtime-git-generation-commands'
 import { RuntimeGitStagingCommands } from './runtime-git-staging-commands'
 import { RuntimeGitStatusCommands } from './runtime-git-status-commands'
 import { RuntimeGitSyncCommands } from './runtime-git-sync-commands'
+import { RuntimeGitBranchActionCommands } from './runtime-git-branch-action-commands'
 import type { RuntimeGitCommandHost } from './runtime-git-command-target'
 
 export type {
@@ -35,6 +36,7 @@ export class RuntimeGitCommands {
   readonly rebaseRuntimeGitFromBase: RuntimeGitSyncCommands['rebaseRuntimeGitFromBase']
   readonly pushRuntimeGit: RuntimeGitSyncCommands['pushRuntimeGit']
   readonly commitRuntimeGit: RuntimeGitSyncCommands['commitRuntimeGit']
+  readonly runRuntimeGitBranchAction: RuntimeGitBranchActionCommands['runRuntimeGitBranchAction']
   readonly generateRuntimeCommitMessage: RuntimeGitGenerationCommands['generateRuntimeCommitMessage']
   readonly cancelRuntimeGenerateCommitMessage: RuntimeGitGenerationCommands['cancelRuntimeGenerateCommitMessage']
   readonly generateRuntimePullRequestFields: RuntimeGitGenerationCommands['generateRuntimePullRequestFields']
@@ -78,6 +80,8 @@ export class RuntimeGitCommands {
     this.rebaseRuntimeGitFromBase = sync.rebaseRuntimeGitFromBase.bind(sync)
     this.pushRuntimeGit = sync.pushRuntimeGit.bind(sync)
     this.commitRuntimeGit = sync.commitRuntimeGit.bind(sync)
+    const branchActions = new RuntimeGitBranchActionCommands(host)
+    this.runRuntimeGitBranchAction = branchActions.runRuntimeGitBranchAction.bind(branchActions)
     this.generateRuntimeCommitMessage = generation.generateRuntimeCommitMessage.bind(generation)
     this.cancelRuntimeGenerateCommitMessage =
       generation.cancelRuntimeGenerateCommitMessage.bind(generation)

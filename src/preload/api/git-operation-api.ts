@@ -1,4 +1,8 @@
 import type { GitForkSyncExpectedUpstream, GitForkSyncResult } from '../../shared/git-fork-sync'
+import type {
+  GitBranchAction,
+  GitBranchActionResult
+} from '../../shared/git-branch-action/git-branch-action-types'
 import type { TuiAgent } from '../../shared/tui-agent'
 import type { GitPushTarget } from '../../shared/worktree/types'
 import type { GitStageWorktreeScope } from '../../shared/git-stage-worktree-scope'
@@ -42,6 +46,11 @@ export type GitOperationApi = {
     baseRef: string
     connectionId?: string
   }) => Promise<void>
+  branchAction: (args: {
+    worktreePath: string
+    action: GitBranchAction
+    connectionId?: string
+  }) => Promise<GitBranchActionResult>
   commit: (args: {
     worktreePath: string
     message: string
