@@ -158,6 +158,8 @@ Code review 後的修正（2026-10-05）：
 ### Phase 4：Mac 切換成原生 arm64（已備妥，等使用者確認）
 
 - 先把 arm64 版的 SDK 與需要的 runtime 裝到另一個資料夾，再跟 `~/.dotnet` 對調（原本的 x64 留著，換回來就能還原），然後重新安裝 global tools。要先安裝含 Phase 1–3 的 Orca 版本再切換
+- `dotnet ef`：舊專案的 migration 會用 startup project 自己的 runtime 執行，Mac arm64 沒有 3.1，所以映像內建 dotnet-ef 3.1.32（NuGet 套件，sha512 與 NuGet catalog 的 packageHash 相同，只從本機 feed 安裝）。launcher 對 `dotnet ef` 改看 startup project（`-s`／`--startup-project`，沒給就是目前資料夾的專案），因為 `--project` 常是 netstandard 類別庫；其他指令的 `-s` 是 `--source`，不受影響。驗證：EF Core 3.1 與 2.2 的 `migrations add`、`database update` 都成功，從方案根目錄指定 `-s`、以及 global.json 鎖 SDK 3.1 也都可以
+- 其他 global tools 改裝 arm64：target net8 以上的直接重裝；target net5.0 的要設定 roll forward 到新版 runtime 才能跑
 - netcoredbg 依 dotnet 執行檔的架構挑版本（`executable-arch.ts`），會自動改抓 osx-arm64 3.2.0；csharp-ls 變成原生執行
 - csharp-ls：global.json 鎖 3.1 的專案在 x64 上就已經無法載入，切換後一樣，不算退步；其他專案在 arm64 上載入較快
 
