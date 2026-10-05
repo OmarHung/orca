@@ -10,7 +10,7 @@
 //   latest-mac.yml are what Orca's in-app local-build installer consumes;
 // - reuses node_modules/electron/dist instead of re-downloading Electron from GitHub.
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { chmodSync, lstatSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { getLocalBuildIdentity } from '../build-mac-local.mjs'
 
@@ -42,6 +42,15 @@ if (bundledElectron !== requiredElectron) {
     `[build-mac-local-arm64] node_modules/electron/dist is ${bundledElectron}, expected ${requiredElectron}. Run pnpm install.`
   )
   process.exit(1)
+}
+
+// Why: pnpm can leave Electron's unpacked dist read-only; electron-builder copies those modes into
+// the app it assembles and then fails writing a helper's Info.plist (EACCES).
+for (const entry of readdirSync(electronDist, { recursive: true, withFileTypes: true })) {
+  const entryPath = path.join(entry.parentPath, entry.name)
+  if (!entry.isSymbolicLink()) {
+    chmodSync(entryPath, lstatSync(entryPath).mode | 0o200)
+  }
 }
 
 const identity = getLocalBuildIdentity()
