@@ -5,10 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
-import { RunStatusIcon } from './RunStatusIcon'
 import { rerunConfiguration, stopConfiguration, type RunTarget } from './run-configuration-control'
-import { runTargetMode } from './run-mode'
-import { describeRunStatus, runStatusTone } from './run-status-presentation'
 import { isRunSessionActive, runStopStage } from './run-session-store'
 import { runStopAction } from './run-stop-stage-presentation'
 import { useLiveRunSession } from './use-live-run-session'
@@ -44,7 +41,7 @@ export function ControlButton({ action }: { action: ControlAction }): React.JSX.
   )
 }
 
-/** JetBrains-style run controls: status, Rerun and Stop for one run configuration. */
+/** JetBrains-style run controls: Rerun and Stop for one run configuration. */
 export function RunSessionControls({
   target,
   testId = 'run-session-controls',
@@ -79,21 +76,12 @@ export function RunSessionControls({
       })
     }
   }
-  const status = describeRunStatus(session)
-
   return (
     <div
       data-testid={testId}
       data-run-status={session?.status ?? 'idle'}
       className="my-auto flex shrink-0 items-center gap-0.5"
     >
-      {/* Why live only: a finished or failed icon here read as another Run button; the Run panel
-          tab keeps the outcome. */}
-      {status && active ? (
-        <span className="flex size-4 items-center justify-center" title={`${label}: ${status}`}>
-          <RunStatusIcon tone={runStatusTone(session)} mode={runTargetMode(target)} />
-        </span>
-      ) : null}
       {actions.map((action) => (
         <ControlButton key={action.testId} action={action} />
       ))}
