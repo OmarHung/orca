@@ -1,6 +1,6 @@
 import { useAppStore } from '@/store'
 import { createBrowserUuid } from '@/lib/browser-uuid'
-import { flattenTerminalQuickCommand } from '../../../../shared/terminal-quick-commands'
+import { runCommandText } from './run-dotnet-launcher'
 import type { RunTarget } from './run-target'
 
 export type RunTerminalIds = { tabId: string; leafId: string }
@@ -14,7 +14,7 @@ export function openRunTerminal(
   target: RunTarget,
   beforeCreate: (ids: RunTerminalIds) => void
 ): RunTerminalIds | null {
-  const command = flattenTerminalQuickCommand(target.command).command
+  const command = runCommandText(target)
   if (!command.trim()) {
     return null
   }
