@@ -133,17 +133,23 @@ if [ "$orca_mode" = dotnet ] || [ "$orca_mode" = where ]; then
     ''|-*|dev-certs|workload|sdk|help) orca_target= ;;
     *)
       orca_target=.
+      orca_startup=
       orca_prev=
       for orca_arg in "$@"; do
         case "$orca_prev" in
           --project|-p) [ -e "$orca_arg" ] && orca_target=$orca_arg ;;
+          --startup-project|-s) [ -e "$orca_arg" ] && orca_startup=$orca_arg ;;
         esac
         case "$orca_arg" in
           --project=*) orca_target=\${orca_arg#--project=} ;;
+          --startup-project=*) orca_startup=\${orca_arg#--startup-project=} ;;
           *.csproj|*.fsproj|*.vbproj|*.sln|*.slnx|*.slnf) [ -e "$orca_arg" ] && orca_target=$orca_arg ;;
         esac
         orca_prev=$orca_arg
       done
+      # Why: EF runs on the startup project's runtime (default: the current folder's project), and
+      # --project is often a netstandard library. Elsewhere -s means --source.
+      [ "$1" != ef ] || orca_target=\${orca_startup:-.}
       ;;
   esac
   if [ -n "$orca_target" ] && orca_wants_container; then orca_where=container; else orca_where=native; fi

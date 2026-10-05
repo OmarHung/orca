@@ -64,3 +64,14 @@ export const CONTAINER_NETCOREDBG: Record<DotnetContainerArch, { url: string; sh
     sha256: '0eab16af3a54513803eb89266adaa9a9a0c5bc52a42d5659e381d664665f353e'
   }
 }
+
+/**
+ * `dotnet ef` for 2.x/3.1 projects: migrations run the startup project on its own runtime, which
+ * only the container has. The nupkg is any-CPU; its hash is NuGet's catalog packageHash.
+ */
+export const CONTAINER_DOTNET_EF = {
+  version: '3.1.32',
+  url: 'https://api.nuget.org/v3-flatcontainer/dotnet-ef/3.1.32/dotnet-ef.3.1.32.nupkg',
+  sha512:
+    'e06ff7055cfa50445e3e404b0c3fbf4292937c21929fd411d7c30027cf5de2db4b47f9d5d39f2c0d5b355f6da0667169266e89ae2041736050fa70bba69294ee'
+}
