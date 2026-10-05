@@ -128,3 +128,4 @@ export type TopLevelView =
   | 'database'
   | 'ssh'
   | 'sftp'
+  | 'monday'

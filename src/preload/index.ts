@@ -54,6 +54,7 @@ import { petApi } from './api/pet-bridge'
 import { debugApi } from './api/debug-bridge'
 import { codeNavigationApi } from './api/code-navigation-bridge'
 import { databaseApi } from './api/database-bridge'
+import { mondayApi } from './api/monday-bridge'
 import { forkUpdateChangelogApi } from './api/fork-update-changelog-bridge'
 import { sftpApi } from './api/sftp-bridge'
 import { sshVpnApi } from './api/ssh-vpn-bridge'
@@ -162,6 +163,7 @@ const api = {
   debug: debugApi,
   codeNavigation: codeNavigationApi,
   database: databaseApi,
+  monday: mondayApi,
   forkUpdateChangelog: forkUpdateChangelogApi,
   sftp: sftpApi,
   sshVpn: sshVpnApi,
