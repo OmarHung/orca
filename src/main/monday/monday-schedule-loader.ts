@@ -93,13 +93,13 @@ export class MondayScheduleLoader {
       return { boards: [], fetchedAt: this.now() }
     }
     const { query, variables } = buildFirstSchedulePageQuery(queries)
-    const data = await this.graphql<Record<string, { items_page: RawItemsPage }[] | null>>(
-      query,
-      variables
-    )
+    const data = await this.graphql<
+      Record<string, { updated_at: string | null; items_page: RawItemsPage }[] | null>
+    >(query, variables)
     const boards: MondayBoardSchedule[] = []
     for (const [index, board] of queries.entries()) {
-      const firstPage = data[`b${index}`]?.[0]?.items_page ?? { cursor: null, items: [] }
+      const boardData = data[`b${index}`]?.[0]
+      const firstPage = boardData?.items_page ?? { cursor: null, items: [] }
       const { items, truncated } = await this.collectPages(firstPage, board)
       boards.push({
         boardId: board.boardId,
@@ -107,7 +107,8 @@ export class MondayScheduleLoader {
         roles: board.roles,
         roleTitles: board.entry.roleTitles,
         items: items.map((item) => mapScheduleItem(item, board.boardId, board.roles)),
-        truncated
+        truncated,
+        updatedAt: boardData?.updated_at ?? null
       })
     }
     return { boards, fetchedAt: this.now() }

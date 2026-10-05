@@ -17,5 +17,7 @@ export type MondayApi = {
   /** Active people in the account, for the "show whose items" picker. */
   listUsers: () => Promise<MondayResult<MondayUser[]>>
   loadSchedule: (request: MondayLoadScheduleRequest) => Promise<MondayResult<MondaySchedule>>
+  /** Board id → last-change time: one cheap call to tell whether a reload is needed. */
+  boardsUpdatedAt: (boardIds: string[]) => Promise<MondayResult<Record<string, string>>>
   getItem: (itemId: string) => Promise<MondayResult<MondayItemDetail>>
 }

@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import { app, ipcMain } from 'electron'
 import { getSecretStore } from '../../shared/secret-store'
 import {
+  mondayBoardIdsSchema,
   mondayConnectSchema,
   mondayIdSchema,
   mondayLoadScheduleSchema,
@@ -54,6 +55,10 @@ export function registerMondayHandlers(): void {
   ipcMain.handle('monday:loadSchedule', (_event, input: unknown) => {
     const parsed = mondayLoadScheduleSchema.safeParse(input)
     return parsed.success ? respond(() => service.loadSchedule(parsed.data)) : INVALID_REQUEST
+  })
+  ipcMain.handle('monday:boardsUpdatedAt', (_event, input: unknown) => {
+    const parsed = mondayBoardIdsSchema.safeParse(input)
+    return parsed.success ? respond(() => service.boardsUpdatedAt(parsed.data)) : INVALID_REQUEST
   })
   ipcMain.handle('monday:getItem', (_event, input: unknown) => {
     const parsed = mondayIdSchema.safeParse(input)
