@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import type {
   SshVpnCredentialRequest,
@@ -11,13 +10,10 @@ import type {
 } from '../../shared/ssh-vpn-types'
 import { runProcessSync } from '../../shared/child-process/run-process'
 import type { SecretStore } from '../../shared/secret-store'
+import { resolveDockerPath } from '../docker/docker-cli-location'
+import { dockerInstanceTag } from '../docker/docker-instance-tag'
 import { readOvpnProfileFile } from './ovpn-profile-files'
-import {
-  dockerRemoveArgs,
-  resolveDockerPath,
-  SshVpnDocker,
-  SshVpnDockerError
-} from './ssh-vpn-docker'
+import { dockerRemoveArgs, SshVpnDocker, SshVpnDockerError } from './ssh-vpn-docker'
 import { SshVpnLogins } from './ssh-vpn-logins'
 import { SshVpnManager } from './ssh-vpn-manager'
 import type { SshVpnDockerPort } from './ssh-vpn-manager-types'
@@ -83,8 +79,7 @@ export function createSshVpnRuntime(options: SshVpnRuntimeOptions): SshVpnRuntim
   )
   const stateWatchers = new Set<(state: SshVpnProfileState) => void>()
   const docker = createDockerResolver()
-  // Why: scopes containers to this profile directory, so a dev build never removes the app's.
-  const instanceTag = createHash('sha256').update(options.userDataPath).digest('hex').slice(0, 8)
+  const instanceTag = dockerInstanceTag(options.userDataPath)
   const manager = new SshVpnManager({
     docker,
     instanceTag,
