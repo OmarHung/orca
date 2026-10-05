@@ -2,6 +2,7 @@ import type { RunConfigurationDefinition } from '../../../../shared/run-configur
 import { planRunConfiguration } from '../../../../shared/run-configurations/run-configuration-plan'
 import { isTerminalAgentQuickCommand } from '../../../../shared/terminal-quick-commands'
 import type { DebugSessionView } from '../debug/debug-store'
+import { runWidgetItemMode, type RunMode } from './run-mode'
 import {
   isRunSessionActive,
   runStopStage,
@@ -146,6 +147,21 @@ export function isFootprintActive(
   activity: RunWidgetActivity
 ): boolean {
   return footprintRuns(footprint, activity).length > 0 || isFootprintDebugging(footprint, activity)
+}
+
+/** What the widget trigger shows beside the selected item's name while it is live. */
+export type RunWidgetLiveStatus = { mode: RunMode; run: RunSession | null }
+
+export function runWidgetLiveStatus(
+  item: RunWidgetItem,
+  footprint: RunWidgetFootprint,
+  activity: RunWidgetActivity
+): RunWidgetLiveStatus | null {
+  const [run] = footprintRuns(footprint, activity)
+  if (run) {
+    return { mode: runWidgetItemMode(item), run }
+  }
+  return isFootprintDebugging(footprint, activity) ? { mode: 'debug', run: null } : null
 }
 
 /** One entry in the Stop menu: a run's terminal or a debug session. */

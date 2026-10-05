@@ -8,6 +8,7 @@ import {
   isFootprintDebugging,
   runningProcesses,
   runWidgetFootprint,
+  runWidgetLiveStatus,
   worktreeRunActivity
 } from './run-widget-activity'
 import { runWidgetItems } from './run-widget-items'
@@ -148,6 +149,19 @@ describe('footprint activity', () => {
     expect(isFootprintActive(footprint('Web'), { runs: [], debugSessions: [debugSession] })).toBe(
       false
     )
+  })
+
+  it('gives the trigger the oldest run, else the debug session, else nothing', () => {
+    const run = session('config:admin')
+    expect(runWidgetLiveStatus(itemByLabel('Run:all'), footprint('Run:all'), activity)).toEqual({
+      mode: 'run',
+      run
+    })
+    expect(runWidgetLiveStatus(itemByLabel('Api'), footprint('Api'), activity)).toEqual({
+      mode: 'debug',
+      run: null
+    })
+    expect(runWidgetLiveStatus(itemByLabel('shop:dev'), footprint('shop:dev'), activity)).toBe(null)
   })
 
   it('lists runs, then the debug session, for the Stop menu', () => {
