@@ -94,6 +94,8 @@ export const NEXT_SCHEDULE_PAGE_QUERY = `query ($cursor: String!, $columns: [Str
   }
 }`
 
+// Why display_value: connected-board, mirror and dependency columns return an empty `text`.
+// Linked items come with their own columns so the panel can show e.g. the task's Web CRM record.
 export const ITEM_DETAIL_QUERY = `query ($ids: [ID!]) {
   items(ids: $ids) {
     id name url created_at updated_at
@@ -101,7 +103,23 @@ export const ITEM_DETAIL_QUERY = `query ($ids: [ID!]) {
     board { id name }
     group { title color }
     description { blocks { type content } }
-    column_values { id type text column { title } }
+    column_values {
+      id type text column { title }
+      ... on StatusValue { label_style { color } }
+      ... on BoardRelationValue {
+        display_value
+        linked_items {
+          id name url board { name }
+          column_values {
+            id type text column { title }
+            ... on StatusValue { label_style { color } }
+            ... on MirrorValue { display_value }
+          }
+        }
+      }
+      ... on MirrorValue { display_value }
+      ... on DependencyValue { display_value }
+    }
     subitems { id name column_values { type text } }
     updates(limit: 50) {
       id body created_at creator { name }

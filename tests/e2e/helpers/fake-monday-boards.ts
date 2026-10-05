@@ -121,3 +121,51 @@ export const FAKE_MONDAY_BOARDS = [
     ] satisfies FakeItem[]
   }
 ]
+
+/** The "Web CRM" record a Project Cases task links to, shaped like the real board's columns. */
+export const FAKE_WEB_CRM_RELATION = {
+  id: 'board_relation_mm394pb1',
+  type: 'board_relation',
+  text: null,
+  display_value: '海發中心 官網',
+  column: { title: 'Web CRM' },
+  linked_items: [
+    {
+      id: '3070049341',
+      name: '海發中心 官網',
+      url: 'https://autrontech.monday.com/boards/414475727/pulses/3070049341',
+      board: { name: 'Web CRM' },
+      column_values: [
+        { id: 'person', type: 'people', text: 'Heather海瑟', column: { title: 'PM Manager' } },
+        {
+          id: 'status',
+          type: 'status',
+          text: 'Online',
+          label_style: { color: '#00c875' },
+          column: { title: '上線狀態Status' }
+        },
+        {
+          id: 'text',
+          type: 'text',
+          text: 'https://www.example.org/',
+          column: { title: 'Website' }
+        },
+        { id: 'text0', type: 'text', text: '34.81.133.222', column: { title: 'IP' } },
+        {
+          id: 'status7',
+          type: 'status',
+          text: 'p2-web-server-apple',
+          label_style: { color: '#00c875' },
+          column: { title: '伺服器位置Server' }
+        },
+        { id: 'date9', type: 'date', text: '2027-09-19', column: { title: '到期日Expire Date' } },
+        {
+          id: 'board_relation_mm39rrra',
+          type: 'board_relation',
+          text: null,
+          column: { title: 'link to Project Cases' }
+        }
+      ]
+    }
+  ]
+}

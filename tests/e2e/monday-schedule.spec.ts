@@ -48,6 +48,13 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
     await expect(panel.getByRole('heading', { name: '海發中心 零信任串接' })).toBeVisible()
     await expect(panel.getByText('Due 2 day(s) before the timeline ends')).toBeVisible()
     await expect(panel.getByText('串接規格：SSO 走 OIDC，測試環境先行。')).toBeVisible()
+    // The task's Web CRM record gets its own card; its link back to the task is left out.
+    const crm = panel.getByTestId('monday-linked-item')
+    await expect(panel.getByTestId('monday-relation')).toContainText('Web CRM')
+    await expect(crm).toContainText('海發中心 官網')
+    await expect(crm.getByRole('button', { name: 'https://www.example.org/' })).toBeVisible()
+    await expect(crm).toContainText('p2-web-server-apple')
+    await expect(crm).not.toContainText('link to Project Cases')
     await expect(panel.getByText('請確認 /en 的導轉規則')).toBeVisible()
     await expect(panel.getByText('已移除路徑快取設定')).toBeVisible()
     await expect(panel.getByText('Replies (3)')).toBeVisible()

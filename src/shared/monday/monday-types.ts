@@ -88,7 +88,25 @@ export type MondayBoardSchedule = {
 
 export type MondaySchedule = { boards: MondayBoardSchedule[]; fetchedAt: number }
 
-export type MondayItemColumnValue = { id: string; title: string; type: string; text: string }
+export type MondayItemColumnValue = {
+  id: string
+  title: string
+  type: string
+  text: string
+  /** Label color, for status columns. */
+  color: string | null
+}
+
+/** An item linked through a connect-boards column (e.g. the task's Web CRM record). */
+export type MondayLinkedItem = {
+  id: string
+  name: string
+  url: string
+  boardName: string
+  columns: MondayItemColumnValue[]
+}
+
+export type MondayItemRelation = { columnId: string; title: string; items: MondayLinkedItem[] }
 
 export type MondayUpdateReply = {
   id: string
@@ -113,6 +131,7 @@ export type MondayItemDetail = {
   createdAt: string | null
   updatedAt: string | null
   columns: MondayItemColumnValue[]
+  relations: MondayItemRelation[]
   descriptionText: string | null
   subitems: MondaySubitem[]
   updates: MondayUpdate[]

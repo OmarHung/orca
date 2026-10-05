@@ -3,7 +3,9 @@ import type {
   MondayAccount,
   MondayBoardSummary,
   MondayColumnRoles,
+  MondayItemColumnValue,
   MondayItemDetail,
+  MondayItemRelation,
   MondayLabel,
   MondayScheduleItem,
   MondayUpdate,
@@ -47,6 +49,7 @@ export type RawColumnValue = {
   label?: string | null
   is_done?: boolean | null
   label_style?: { color?: string | null } | null
+  display_value?: string | null
 }
 
 export type RawScheduleItem = {
@@ -66,6 +69,18 @@ type RawUpdateReply = {
   creator: { name: string } | null
 }
 
+type RawDetailColumnValue = RawColumnValue & { column: { title: string } | null }
+
+type RawLinkedItem = {
+  id: string
+  name: string
+  url: string
+  board: { name: string } | null
+  column_values: RawDetailColumnValue[] | null
+}
+
+type RawItemColumnValue = RawDetailColumnValue & { linked_items?: RawLinkedItem[] | null }
+
 export type RawItemDetail = {
   id: string
   name: string
@@ -76,7 +91,7 @@ export type RawItemDetail = {
   board: { id: string; name: string } | null
   group: { title: string; color: string | null } | null
   description: { blocks: { type: string | null; content: string | null }[] | null } | null
-  column_values: (RawColumnValue & { column: { title: string } | null })[]
+  column_values: RawItemColumnValue[]
   subitems:
     | { id: string; name: string; column_values: { type: string; text: string | null }[] }[]
     | null
@@ -199,6 +214,44 @@ function mapUpdate(raw: RawUpdateReply & { replies: RawUpdateReply[] | null }): 
 // Subitems are listed on their own; the rest show only when they hold something.
 const HIDDEN_DETAIL_COLUMN_TYPES = new Set(['name', 'subtasks'])
 
+function hasLinkedItems(value: RawItemColumnValue): boolean {
+  return (value.linked_items ?? []).length > 0
+}
+
+function mapDetailColumns(values: RawItemColumnValue[]): MondayItemColumnValue[] {
+  return (
+    values
+      // Linked items get their own cards; a link whose items we cannot read keeps its names here.
+      .filter((value) => !HIDDEN_DETAIL_COLUMN_TYPES.has(value.type) && !hasLinkedItems(value))
+      .map((value) => ({ value, text: value.text || value.display_value || '' }))
+      .filter(({ text }) => text)
+      .map(({ value, text }) => ({
+        id: value.id,
+        title: value.column?.title ?? value.id,
+        type: value.type,
+        text,
+        color: value.type === 'status' ? (value.label_style?.color ?? null) : null
+      }))
+  )
+}
+
+function mapRelations(values: RawItemColumnValue[]): MondayItemRelation[] {
+  return values.filter(hasLinkedItems).map((value) => ({
+    columnId: value.id,
+    title: value.column?.title ?? value.id,
+    items: (value.linked_items ?? []).map((item) => ({
+      id: item.id,
+      name: item.name,
+      url: item.url,
+      boardName: item.board?.name ?? '',
+      columns: mapDetailColumns(
+        // A linked item's own links point back here (e.g. "link to Project Cases").
+        (item.column_values ?? []).filter((column) => column.type !== 'board_relation')
+      )
+    }))
+  }))
+}
+
 export function mapItemDetail(raw: RawItemDetail): MondayItemDetail {
   return {
     id: raw.id,
@@ -211,14 +264,8 @@ export function mapItemDetail(raw: RawItemDetail): MondayItemDetail {
     creatorName: raw.creator?.name ?? null,
     createdAt: raw.created_at,
     updatedAt: raw.updated_at,
-    columns: raw.column_values
-      .filter((value) => !HIDDEN_DETAIL_COLUMN_TYPES.has(value.type) && value.text)
-      .map((value) => ({
-        id: value.id,
-        title: value.column?.title ?? value.id,
-        type: value.type,
-        text: value.text ?? ''
-      })),
+    columns: mapDetailColumns(raw.column_values),
+    relations: mapRelations(raw.column_values),
     descriptionText: mapDescription(raw.description),
     subitems: (raw.subitems ?? []).map((subitem) => ({
       id: subitem.id,

@@ -251,11 +251,189 @@ describe('MondayService', () => {
     await service.connect('secret-token')
     const detail = await service.getItem('13123057182')
     expect(detail.columns).toEqual([
-      { id: 'person', title: 'Owner', type: 'people', text: 'Heather, Omar' }
+      { id: 'person', title: 'Owner', type: 'people', text: 'Heather, Omar', color: null }
     ])
     expect(detail.descriptionText).toBe('規格說明')
     expect(detail.subitems).toEqual([{ id: '5', name: 'Sub', statusText: 'Done' }])
     expect(detail.updates[0]).toMatchObject({ creatorName: 'Heather', bodyHtml: '<p>請確認</p>' })
     expect(detail.updates[0].replies[0]).toMatchObject({ creatorName: 'Omar', bodyHtml: '好' })
+  })
+
+  it('falls back to display values for links it cannot expand and mirror columns', async () => {
+    const graphql = createFakeMondayGraphql((query) =>
+      query.includes('me {')
+        ? { me: ME }
+        : {
+            items: [
+              {
+                id: '13101378112',
+                name: 'HTML上稿及動態資料開發',
+                url: 'https://autrontech.monday.com/boards/382737576/pulses/13101378112',
+                created_at: null,
+                updated_at: null,
+                creator: null,
+                board: { id: '382737576', name: 'Project Cases' },
+                group: null,
+                description: null,
+                column_values: [
+                  {
+                    id: 'board_relation_mm394pb1',
+                    type: 'board_relation',
+                    text: null,
+                    display_value: '兆利科技工業有限公司',
+                    column: { title: 'Web CRM' }
+                  },
+                  {
+                    id: 'mirror',
+                    type: 'mirror',
+                    text: null,
+                    display_value: '',
+                    column: { title: 'Client' }
+                  }
+                ],
+                subitems: null,
+                updates: null
+              }
+            ]
+          }
+    )
+    const service = new MondayService({
+      dataDir,
+      secretStore: () => secretStore(true),
+      graphql: graphql.call
+    })
+    await service.connect('secret-token')
+    const detail = await service.getItem('13101378112')
+    expect(detail.columns).toEqual([
+      {
+        id: 'board_relation_mm394pb1',
+        title: 'Web CRM',
+        type: 'board_relation',
+        text: '兆利科技工業有限公司',
+        color: null
+      }
+    ])
+    expect(detail.relations).toEqual([])
+    const itemQuery = graphql.mock.mock.calls
+      .map((call) => call[1])
+      .find((query) => query.includes('items('))
+    expect(itemQuery).toContain('linked_items')
+    expect(itemQuery).toContain('... on MirrorValue { display_value }')
+    expect(itemQuery).toContain('... on DependencyValue { display_value }')
+  })
+
+  it('expands linked items into cards without their links back', async () => {
+    const graphql = createFakeMondayGraphql((query) =>
+      query.includes('me {')
+        ? { me: ME }
+        : {
+            items: [
+              {
+                id: '13189163479',
+                name: '凌群AI網站 彈窗開發',
+                url: 'https://autrontech.monday.com/boards/382737576/pulses/13189163479',
+                created_at: null,
+                updated_at: null,
+                creator: null,
+                board: { id: '382737576', name: 'Project Cases' },
+                group: null,
+                description: null,
+                column_values: [
+                  {
+                    id: 'board_relation_mm394pb1',
+                    type: 'board_relation',
+                    text: null,
+                    display_value: '凌羣電腦 - AI網站',
+                    column: { title: 'Web CRM' },
+                    linked_items: [
+                      {
+                        id: '11455763775',
+                        name: '凌羣電腦 - AI網站',
+                        url: 'https://autrontech.monday.com/boards/414475727/pulses/11455763775',
+                        board: { name: 'Web CRM' },
+                        column_values: [
+                          {
+                            id: 'subitems',
+                            type: 'subtasks',
+                            text: null,
+                            column: { title: 'Subitems' }
+                          },
+                          {
+                            id: 'status',
+                            type: 'status',
+                            text: 'Online',
+                            label_style: { color: '#00c875' },
+                            column: { title: '上線狀態Status' }
+                          },
+                          {
+                            id: 'text',
+                            type: 'text',
+                            text: 'https://ai.syscom.com.tw/',
+                            column: { title: 'Website' }
+                          },
+                          {
+                            id: 'text0',
+                            type: 'text',
+                            text: '35.236.150.160',
+                            column: { title: 'IP' }
+                          },
+                          { id: 'text3', type: 'text', text: '', column: { title: '備註Note' } },
+                          {
+                            id: 'board_relation_mm39rrra',
+                            type: 'board_relation',
+                            text: null,
+                            display_value: '凌群AI網站 彈窗開發',
+                            column: { title: 'link to Project Cases' }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                subitems: null,
+                updates: null
+              }
+            ]
+          }
+    )
+    const service = new MondayService({
+      dataDir,
+      secretStore: () => secretStore(true),
+      graphql: graphql.call
+    })
+    await service.connect('secret-token')
+    const detail = await service.getItem('13189163479')
+    expect(detail.columns).toEqual([])
+    expect(detail.relations).toEqual([
+      {
+        columnId: 'board_relation_mm394pb1',
+        title: 'Web CRM',
+        items: [
+          {
+            id: '11455763775',
+            name: '凌羣電腦 - AI網站',
+            url: 'https://autrontech.monday.com/boards/414475727/pulses/11455763775',
+            boardName: 'Web CRM',
+            columns: [
+              {
+                id: 'status',
+                title: '上線狀態Status',
+                type: 'status',
+                text: 'Online',
+                color: '#00c875'
+              },
+              {
+                id: 'text',
+                title: 'Website',
+                type: 'text',
+                text: 'https://ai.syscom.com.tw/',
+                color: null
+              },
+              { id: 'text0', title: 'IP', type: 'text', text: '35.236.150.160', color: null }
+            ]
+          }
+        ]
+      }
+    ])
   })
 })

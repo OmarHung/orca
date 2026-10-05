@@ -1,5 +1,10 @@
 import { createServer, type IncomingMessage, type Server } from 'node:http'
-import { dayOffset, FAKE_MONDAY_BOARDS, type FakeItem } from './fake-monday-boards'
+import {
+  dayOffset,
+  FAKE_MONDAY_BOARDS,
+  FAKE_WEB_CRM_RELATION,
+  type FakeItem
+} from './fake-monday-boards'
 
 function peopleText(item: FakeItem): string {
   return item.mine === null ? '' : item.mine ? 'Omar' : 'Vivian'
@@ -117,7 +122,8 @@ function itemDetail(itemId: string): unknown {
           ...columnValue(column, item),
           column: { title: column.title }
         })),
-        { id: 'link', type: 'link', text: 'https://example.com/spec', column: { title: '連結' } }
+        { id: 'link', type: 'link', text: 'https://example.com/spec', column: { title: '連結' } },
+        ...(board.id === '382737576' ? [FAKE_WEB_CRM_RELATION] : [])
       ],
       subitems: [
         { id: '9001', name: '測試環境驗證', column_values: [{ type: 'status', text: 'Done' }] }
