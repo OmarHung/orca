@@ -55,6 +55,7 @@ import type { DebugApi } from './api/debug-api'
 import type { PluginsApi } from './api/plugins/plugin-host-api'
 import type { CodeNavigationApi } from './api/code-navigation-api'
 import type { DatabaseApi } from './api/database-api'
+import type { MondayApi } from './api/monday-api'
 import type { ForkUpdateChangelogApi } from './api/fork-update-changelog-api'
 import type { SftpApi } from './api/sftp-api'
 import type { SshVpnApi } from './api/ssh-vpn-api'
@@ -163,6 +164,7 @@ export type PreloadApi = {
   debug: DebugApi
   codeNavigation: CodeNavigationApi
   database: DatabaseApi
+  monday: MondayApi
   forkUpdateChangelog: ForkUpdateChangelogApi
   sftp: SftpApi
   sshVpn: SshVpnApi

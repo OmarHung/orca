@@ -15,6 +15,7 @@ export const TopLevelViewSchema = z
     'mobile',
     'database',
     'ssh',
-    'sftp'
+    'sftp',
+    'monday'
   ])
   .transform((view) => (view === 'botTemplates' ? 'terminal' : view))

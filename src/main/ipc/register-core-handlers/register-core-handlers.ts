@@ -107,6 +107,7 @@ import type { PluginMarketplaceHandlerServices } from '../plugins/plugin-marketp
 import { getRuntimeEnvironmentRegistryRoot } from '../runtime-environments/catalog/runtime-environment-registry-root'
 import {
 import { registerForkUpdateChangelogHandlers } from '../../fork-source-update/fork-update-changelog-ipc'
+import { registerMondayHandlers } from '../../monday/monday-ipc'
   closeNotificationDismissalsBeforeRelaunch,
   type CoreHandlerLifecycleOptions
 } from './core-handler-lifecycle'
@@ -216,6 +217,7 @@ export async function registerCoreHandlers(
     registerSshVpnHandlers()
     registerCodeNavigationHandlers()
     registerForkUpdateChangelogHandlers(store)
+    registerMondayHandlers()
     registerSessionHandlers(store, runtime)
     registerUIHandlers(store, { isDashboardPopoutRenderer })
     registerEmulatorFrameStreamHandlers()

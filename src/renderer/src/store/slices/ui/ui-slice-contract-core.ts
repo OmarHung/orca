@@ -142,6 +142,7 @@ export type UiViewHistory =
   | 'database'
   | 'ssh'
   | 'sftp'
+  | 'monday'
 
 export type UISliceCore = {
   sidebarOpen: boolean
