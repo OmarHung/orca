@@ -16,6 +16,10 @@ import {
 import { abortWhenRendererGone } from './renderer-lifetime-abort'
 import { agentHookServer } from '../agent-hooks/server'
 import { nativeChatTranscriptPathOnExecutionHost } from '../native-chat/ssh-transcript-path'
+import {
+  findClaudePastedImage,
+  parseClaudePastedImageLookupArgs
+} from '../native-chat/claude-pasted-image-lookup'
 
 // Re-export so existing test imports of `clearNativeChatTranscriptCache` from
 // this module keep working after the cache moved to transcript-read-cache.ts.
@@ -335,5 +339,11 @@ export function registerNativeChatHandlers(): void {
   })
   ipcMain.on('nativeChat:unsubscribe', (event, args: { subscriptionId: string }) => {
     teardownSubscription(event.sender.id, args.subscriptionId)
+  })
+  ipcMain.handle('nativeChat:findClaudePastedImage', (_event, args: unknown) => {
+    const parsed = parseClaudePastedImageLookupArgs(args)
+    return parsed
+      ? findClaudePastedImage(parsed)
+      : { status: 'unavailable', message: 'Invalid image lookup request.' }
   })
 }

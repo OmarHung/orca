@@ -18116,6 +18116,15 @@
         "copySessionId": "複製會話 ID",
         "copySessionIdSuccess": "已複製會話 ID",
         "copySessionIdError": "複製會話 ID 失敗"
+      },
+      "imagePreview": {
+        "title": "[Image #{{pasteId}}]",
+        "loading": "正在載入圖片…",
+        "notFound": "找不到這張圖片。請從這個終端機貼過的圖片中挑選。",
+        "unsubmittedHint": "尚未送出，依貼上順序比對。如果不是這張，請從下方改選。",
+        "linkHintWithActions": "按一下顯示動作，或按 {{shortcut}} 預覽",
+        "linkHint": "按 {{shortcut}} 預覽",
+        "previewAction": "預覽圖片"
       }
     },
     "onboarding": {
