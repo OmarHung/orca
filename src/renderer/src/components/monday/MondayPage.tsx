@@ -7,6 +7,7 @@ import type { MondayError, MondaySchedule } from '../../../../shared/monday/mond
 import { buildMondayEntries } from './monday-calendar-model'
 import { mondayErrorMessage } from './monday-error-message'
 import {
+  checkMondayForChanges,
   disconnectMonday,
   loadMondayConnection,
   loadMondaySchedule,
@@ -115,10 +116,22 @@ function ScheduleArea(): React.JSX.Element {
   const error = useMondayPageStore((state) => state.scheduleError)
 
   useEffect(() => {
-    if (boardIds.length > 0 && !useMondayPageStore.getState().schedule) {
+    if (boardIds.length === 0) {
+      return
+    }
+    // Coming back to the page: reload only if monday changed since the last read.
+    if (useMondayPageStore.getState().schedule) {
+      void checkMondayForChanges()
+    } else {
       void loadMondaySchedule({ refresh: false })
     }
   }, [boardIds.length])
+
+  useEffect(() => {
+    const onFocus = (): void => void checkMondayForChanges()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [])
 
   if (boardIds.length === 0) {
     return (

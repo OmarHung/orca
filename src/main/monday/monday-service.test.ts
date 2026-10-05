@@ -197,6 +197,30 @@ describe('MondayService', () => {
     expect(graphql.mock).toHaveBeenCalledTimes(2)
   })
 
+  it("reads each board's last-change time in one call", async () => {
+    const graphql = createFakeMondayGraphql((query) =>
+      query.includes('me {')
+        ? { me: ME }
+        : {
+            boards: [
+              { id: '1000000001', updated_at: '2026-10-05T09:04:03Z' },
+              { id: '1000000003', updated_at: null }
+            ]
+          }
+    )
+    const service = new MondayService({
+      dataDir,
+      secretStore: () => secretStore(true),
+      graphql: graphql.call
+    })
+    await service.connect('secret-token')
+    await expect(service.boardsUpdatedAt(['1000000001', '1000000003'])).resolves.toEqual({
+      '1000000001': '2026-10-05T09:04:03Z',
+      '1000000003': ''
+    })
+    expect(graphql.mock.mock.calls.at(-1)?.[2]).toEqual({ ids: ['1000000001', '1000000003'] })
+  })
+
   it('maps item details with updates, replies and subitems', async () => {
     const graphql = createFakeMondayGraphql((query) =>
       query.includes('me {')

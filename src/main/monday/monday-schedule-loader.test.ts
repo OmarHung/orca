@@ -51,7 +51,7 @@ function fakeGraphql(pages: { cursor: string | null; items: RawScheduleItem[] }[
     page += 1
     return query.includes('next_items_page')
       ? { next_items_page: current }
-      : { b0: [{ items_page: current }] }
+      : { b0: [{ updated_at: '2026-10-05T09:04:03Z', items_page: current }] }
   })
 }
 
@@ -70,6 +70,7 @@ describe('MondayScheduleLoader', () => {
     })
 
     expect(schedule.fetchedAt).toBe(42)
+    expect(schedule.boards[0].updatedAt).toBe('2026-10-05T09:04:03Z')
     expect(schedule.boards).toHaveLength(1)
     const [board] = schedule.boards
     expect(board.roleTitles).toMatchObject({
