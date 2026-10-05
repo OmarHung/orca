@@ -7,7 +7,6 @@ import { translate } from '@/i18n/i18n'
 import { useDebugStore } from '../debug/debug-store'
 import { DebugSessionControls } from './DebugSessionControls'
 import { ControlButton, RunSessionControls } from './RunSessionControls'
-import { RunStatusIcon } from './RunStatusIcon'
 import { isDebuggingSource } from './run-debug-exclusivity'
 import { isRunSessionActive } from './run-session-store'
 import {
@@ -162,7 +161,6 @@ function CompoundRunActions({
 }): React.JSX.Element {
   const confirm = useConfirmationDialog()
   const run = (): void => void runWidgetItem(item, scope, confirm)
-  const status = translate('run.status.running', 'Running')
   return (
     <>
       {live ? null : (
@@ -189,22 +187,14 @@ function CompoundRunActions({
         className="my-auto flex shrink-0 items-center gap-0.5"
       >
         {live ? (
-          <>
-            <span
-              className="flex size-4 items-center justify-center"
-              title={`${item.label}: ${status}`}
-            >
-              <RunStatusIcon tone="running" mode="run" />
-            </span>
-            <ControlButton
-              action={{
-                icon: RotateCcw,
-                label: translate('run.action.rerun', "Rerun '{{value0}}'", { value0: item.label }),
-                testId: 'run-rerun',
-                onClick: run
-              }}
-            />
-          </>
+          <ControlButton
+            action={{
+              icon: RotateCcw,
+              label: translate('run.action.rerun', "Rerun '{{value0}}'", { value0: item.label }),
+              testId: 'run-rerun',
+              onClick: run
+            }}
+          />
         ) : null}
       </div>
     </>
