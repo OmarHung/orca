@@ -36,6 +36,43 @@
   border-left: 8px solid var(--git-decoration-modified);
 }
 
+/* Paused on a breakpoint: one glyph, the arrow carrying the breakpoint's dot, never two stacked. */
+.monaco-editor .orca-debug-execution-arrow-on-breakpoint::after {
+  width: 14px;
+  height: 12px;
+  border: 0;
+  background: var(--git-decoration-modified);
+  clip-path: polygon(0 0, 55% 0, 100% 50%, 55% 100%, 0 100%);
+}
+
+.monaco-editor .orca-debug-execution-arrow-on-breakpoint::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: calc(50% - 3px);
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  background: var(--destructive);
+}
+
+.monaco-editor .orca-debug-paused-mark-logpoint::before {
+  border-radius: 0;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.monaco-editor .orca-debug-paused-mark-unverified::before,
+.monaco-editor .orca-debug-paused-mark-disabled::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--destructive);
+}
+
+.monaco-editor .orca-debug-paused-mark-disabled::before {
+  box-shadow: inset 0 0 0 1.5px var(--muted-foreground);
+}
+
 /* Conditional: a dot with a white bar across it. */
 .monaco-editor .orca-debug-breakpoint-conditional::after {
   content: '';
