@@ -32,6 +32,24 @@ export function breakpointGlyphClass(spec: BreakpointSpec, verified: boolean | u
   return verified === false ? `${kindClass} orca-debug-breakpoint-unverified` : kindClass
 }
 
+/** The paused-line arrow; on a breakpoint's line it carries that breakpoint's mark instead of overlapping it. */
+export function executionArrowGlyphClass(
+  spec: BreakpointSpec | undefined,
+  verified: boolean | undefined
+): string {
+  if (!spec) {
+    return 'orca-debug-execution-arrow'
+  }
+  const mark = !spec.enabled
+    ? ' orca-debug-paused-mark-disabled'
+    : verified === false
+      ? ' orca-debug-paused-mark-unverified'
+      : spec.logMessage
+        ? ' orca-debug-paused-mark-logpoint'
+        : ''
+  return `orca-debug-execution-arrow orca-debug-execution-arrow-on-breakpoint${mark}`
+}
+
 function breakpointHover(spec: BreakpointSpec): string | undefined {
   const parts = [
     spec.condition ? `Condition: \`${spec.condition}\`` : null,
@@ -47,24 +65,29 @@ export function buildDebugDecorations(
   verified: Record<number, boolean> | undefined,
   executionLine: number | null
 ): editor.IModelDeltaDecoration[] {
-  const decorations: editor.IModelDeltaDecoration[] = breakpoints.map((spec) => {
-    const hover = breakpointHover(spec)
-    return {
-      range: new monaco.Range(spec.line, 1, spec.line, 1),
-      options: {
-        glyphMarginClassName: breakpointGlyphClass(spec, verified?.[spec.line]),
-        ...(hover ? { glyphMarginHoverMessage: { value: hover } } : {}),
-        stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+  const pausedOn = breakpoints.find((spec) => spec.line === executionLine)
+  const decorations: editor.IModelDeltaDecoration[] = breakpoints
+    .filter((spec) => spec !== pausedOn)
+    .map((spec) => {
+      const hover = breakpointHover(spec)
+      return {
+        range: new monaco.Range(spec.line, 1, spec.line, 1),
+        options: {
+          glyphMarginClassName: breakpointGlyphClass(spec, verified?.[spec.line]),
+          ...(hover ? { glyphMarginHoverMessage: { value: hover } } : {}),
+          stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+        }
       }
-    }
-  })
+    })
   if (executionLine !== null) {
+    const hover = pausedOn ? breakpointHover(pausedOn) : undefined
     decorations.push({
       range: new monaco.Range(executionLine, 1, executionLine, 1),
       options: {
         isWholeLine: true,
         className: 'orca-debug-execution-line',
-        glyphMarginClassName: 'orca-debug-execution-arrow'
+        glyphMarginClassName: executionArrowGlyphClass(pausedOn, verified?.[executionLine]),
+        ...(hover ? { glyphMarginHoverMessage: { value: hover } } : {})
       }
     })
   }

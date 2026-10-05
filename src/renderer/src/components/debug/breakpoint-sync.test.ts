@@ -16,7 +16,11 @@ import {
   readVerified,
   verifiedLinesForFile
 } from './breakpoint-sync'
-import { breakpointGlyphClass } from './use-monaco-debug-decorations'
+import {
+  breakpointGlyphClass,
+  buildDebugDecorations,
+  executionArrowGlyphClass
+} from './use-monaco-debug-decorations'
 
 beforeEach(() => {
   window.localStorage.clear()
@@ -124,5 +128,41 @@ describe('breakpointGlyphClass', () => {
     expect(breakpointGlyphClass({ line: 1, enabled: true }, false)).toContain(
       'orca-debug-breakpoint-unverified'
     )
+  })
+})
+
+describe('executionArrowGlyphClass', () => {
+  it('carries the breakpoint it paused on instead of drawing over it', () => {
+    expect(executionArrowGlyphClass(undefined, undefined)).toBe('orca-debug-execution-arrow')
+    expect(executionArrowGlyphClass({ line: 3, enabled: true }, true)).toBe(
+      'orca-debug-execution-arrow orca-debug-execution-arrow-on-breakpoint'
+    )
+    expect(executionArrowGlyphClass({ line: 3, enabled: false }, true)).toContain(
+      'orca-debug-paused-mark-disabled'
+    )
+    expect(executionArrowGlyphClass({ line: 3, enabled: true }, false)).toContain(
+      'orca-debug-paused-mark-unverified'
+    )
+    expect(executionArrowGlyphClass({ line: 3, enabled: true, logMessage: 'x' }, true)).toContain(
+      'orca-debug-paused-mark-logpoint'
+    )
+  })
+
+  it('leaves the paused line with a single gutter glyph', () => {
+    const decorations = buildDebugDecorations(
+      [
+        { line: 3, enabled: true, condition: 'x > 1' },
+        { line: 5, enabled: true }
+      ],
+      undefined,
+      3
+    )
+    expect(decorations.map((decoration) => decoration.options.glyphMarginClassName)).toEqual([
+      'orca-debug-breakpoint',
+      'orca-debug-execution-arrow orca-debug-execution-arrow-on-breakpoint'
+    ])
+    expect(decorations[1]?.options.glyphMarginHoverMessage).toEqual({
+      value: 'Condition: `x > 1`'
+    })
   })
 })
