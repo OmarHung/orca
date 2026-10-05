@@ -39,6 +39,7 @@ const WorkspaceSpacePage = lazy(() => import('../components/workspace-space/Work
 const MobilePage = lazy(() => import('../components/mobile/MobilePage'))
 const Terminal = lazy(() => import('../components/terminal/workbench/Terminal'))
 const DatabasePage = lazy(() => import('../components/database/DatabasePage'))
+const MondayPage = lazy(() => import('../components/monday/MondayPage'))
 const BottomPanel = lazy(() =>
   import('../components/bottom-panel/BottomPanel').then((module) => ({
     default: module.BottomPanel
@@ -109,6 +110,7 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
       {activeView === 'space' ? <WorkspaceSpacePage /> : null}
       {activeView === 'mobile' ? <MobilePage /> : null}
       {activeView === 'database' ? <DatabasePage /> : null}
+      {activeView === 'monday' ? <MondayPage /> : null}
       {activeView === 'terminal' && creationLayoutActive && activePendingCreationId ? (
         <PendingCreationSurface
           creationId={activePendingCreationId}
