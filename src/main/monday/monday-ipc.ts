@@ -50,6 +50,7 @@ export function registerMondayHandlers(): void {
   })
   ipcMain.handle('monday:disconnect', () => respond(() => service.disconnect()))
   ipcMain.handle('monday:listBoards', () => respond(() => service.listBoards()))
+  ipcMain.handle('monday:listUsers', () => respond(() => service.listUsers()))
   ipcMain.handle('monday:loadSchedule', (_event, input: unknown) => {
     const parsed = mondayLoadScheduleSchema.safeParse(input)
     return parsed.success ? respond(() => service.loadSchedule(parsed.data)) : INVALID_REQUEST
