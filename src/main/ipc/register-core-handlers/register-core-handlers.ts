@@ -255,7 +255,7 @@ export function registerCoreHandlers(
   registerBrowserHandlers(store)
   registerShellHandlers(store)
   registerPetHandlers()
-  registerDebugHandlers()
+  registerDebugHandlers(() => store.getSettings())
   registerCodeNavigationHandlers()
   registerDatabaseHandlers()
   registerSftpHandlers()

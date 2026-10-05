@@ -40,6 +40,7 @@ export function getLocalZshWrapperSpec(): ZshStartupHookSpec {
     restores: {
       managedWslCli: true,
       agentTeamsPath: true,
+      dotnetLauncherPath: true,
       remoteCliBinDir: false,
       codexHome: true
     }

@@ -8,6 +8,11 @@ import type {
   WorkspacePortProbe,
   WorkspacePortScanResult
 } from '../../shared/workspace-ports'
+import {
+  forwardedContainerListener,
+  isDockerDesktopForwarder,
+  stopForwardedContainerListener
+} from '../dotnet-container/dotnet-container-ports'
 import { scanWorkspacePorts } from './local-workspace-port-scanner'
 import type { WorkspacePortScanOptions } from './local-workspace-port-scan-state'
 
@@ -102,6 +107,16 @@ export async function killWorkspacePort(
   }
   if (pid === process.pid) {
     return { ok: false, reason: 'Orca cannot stop its own process.' }
+  }
+  // Why: this pid is Docker Desktop's backend, which forwards the port; SIGTERM would stop Docker.
+  const containerListener = forwardedContainerListener(pid, port.port)
+  if (containerListener) {
+    return (await stopForwardedContainerListener(containerListener))
+      ? { ok: true }
+      : { ok: false, reason: "Could not stop the program in Orca's .NET container." }
+  }
+  if (isDockerDesktopForwarder(port)) {
+    return { ok: false, reason: 'Docker forwards this port; stop its container instead.' }
   }
 
   try {

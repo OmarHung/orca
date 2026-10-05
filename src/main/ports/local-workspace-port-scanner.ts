@@ -17,6 +17,7 @@ import {
   warnWorkspacePortScanFailure,
   type WorkspacePortScanOptions
 } from './local-workspace-port-scan-state'
+import { resolveDotnetContainerListeners } from '../dotnet-container/dotnet-container-ports'
 const MAX_PORTS = 200
 
 export async function scanWorkspacePorts(
@@ -34,7 +35,9 @@ export async function scanWorkspacePorts(
   }
 
   try {
-    const { ports: rawPorts, metadataAvailable } = await scanPlatformListeningPorts(options)
+    const scanned = await scanPlatformListeningPorts(options)
+    const { metadataAvailable } = scanned
+    const rawPorts = await resolveDotnetContainerListeners(scanned.ports)
     recordWorkspacePortScanSuccess()
     const { probes: normalizedWorktrees, complete } = await resolveWorkspacePortProbes(
       worktrees,

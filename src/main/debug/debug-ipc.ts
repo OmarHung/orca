@@ -8,6 +8,8 @@ import {
 } from '../../shared/debug/debug-session-types'
 import { DebugSessionManager, defaultDebugAdaptersDir } from './debug-session-manager'
 import { registerPythonHandlers } from '../python/python-ipc'
+import type { GlobalSettings } from '../../shared/global-settings-types'
+import { installDotnetContainerLauncher } from '../dotnet-container/dotnet-container-install'
 import { registerDotnetContainerHandlers } from '../dotnet-container/dotnet-container-ipc'
 
 // Why: renderer input is untrusted — it chooses what program runs and what the adapter receives.
@@ -75,10 +77,13 @@ const StartRequestSchema = z.object({
 
 const RequestArgsSchema = z.record(z.string(), z.unknown())
 
-export function registerDebugHandlers(): void {
+export function registerDebugHandlers(getSettings: () => GlobalSettings | null = () => null): void {
   registerPythonHandlers()
-  registerDotnetContainerHandlers()
-  const sessions = new DebugSessionManager(defaultDebugAdaptersDir(app.getPath('userData')))
+  registerDotnetContainerHandlers(getSettings)
+  const userDataPath = app.getPath('userData')
+  const sessions = new DebugSessionManager(defaultDebugAdaptersDir(userDataPath), async () =>
+    getSettings()?.dotnetContainerToolchain ? installDotnetContainerLauncher(userDataPath) : null
+  )
 
   ipcMain.handle(
     'debug:start',

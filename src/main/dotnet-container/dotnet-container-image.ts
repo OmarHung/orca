@@ -8,7 +8,11 @@ import {
   ORCA_EXEC_PATH,
   ORCA_EXEC_SCRIPT
 } from './dotnet-container-assets'
-import { DOTNET_CONTAINER_DOWNLOADS, type DotnetContainerArch } from './dotnet-container-downloads'
+import {
+  CONTAINER_NETCOREDBG,
+  DOTNET_CONTAINER_DOWNLOADS,
+  type DotnetContainerArch
+} from './dotnet-container-downloads'
 
 // Why 20.04: .NET Core 3.1 needs OpenSSL 1.1, which later Ubuntu releases dropped.
 const BASE_IMAGE =
@@ -75,6 +79,9 @@ export function buildDotnetContainerDockerfile(arch: DotnetContainerArch): strin
       ' && rm -rf /var/lib/apt/lists/*',
     `RUN mkdir -p /usr/share/dotnet${continuation}${downloadCommands(arch).join(continuation)}` +
       `${continuation}ln -s /usr/share/dotnet/dotnet /usr/local/bin/dotnet`,
+    `RUN curl -fsSL ${CONTAINER_NETCOREDBG[arch].url} -o /tmp/netcoredbg.tgz` +
+      ` && echo "${CONTAINER_NETCOREDBG[arch].sha256}  /tmp/netcoredbg.tgz" | sha256sum -c -` +
+      ' && tar -xzf /tmp/netcoredbg.tgz -C /usr/local/lib && rm /tmp/netcoredbg.tgz',
     `COPY --from=ipv4only /tmp/orca-ipv4only.so ${IPV4_ONLY_LIBRARY_PATH}`,
     `RUN ${writeFileCommand(ORCA_EXEC_PATH, ORCA_EXEC_SCRIPT, '755')}` +
       `${continuation}mkdir -p ${posix.dirname(LEGACY_ASPNET_TARGETS_PATH)}` +

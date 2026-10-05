@@ -34,6 +34,8 @@ export type BuildPtyHostEnvOptions = {
   routeBrowserOpensToClient?: boolean
   /** The daemon reapplies the Git credential guard after merging its inherited env, so askpass reflects the final pane env. */
   deferGitConfigGuardToDaemon?: boolean
+  /** Fork setting: route `dotnet` for .NET 5-and-older projects through the container launcher. */
+  dotnetContainerToolchain?: boolean
 }
 
 export type CodexHomeLaunchContext = {

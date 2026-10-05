@@ -40,6 +40,7 @@ const PANE_IDENTITY_ENV_KEYS = [
   // Not identity but equally per-spawn: an inherited copy names another launch's CLI.
   'ORCA_WSL_CLI_DIR',
   'JCODE_RUNTIME_DIR',
+  'ORCA_DOTNET_LAUNCHER_DIR',
   // Per-viewer: an Orca started from a remote viewer's pane must not mark its own local panes.
   REMOTE_VIEWER_CLIPBOARD_ENV,
   // A server's own launch env; a user's `orcad` in this shell is not that server.
