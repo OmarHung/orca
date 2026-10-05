@@ -29,6 +29,8 @@ type PasteTerminalClipboardDeps = {
   onTextPasteError?: (error: unknown) => void
   onImagePasteError?: (error: unknown) => void
   onLocalImagePasted?: (filePath: string) => void
+  /** Receives the saved image path once it reached the terminal. */
+  onImagePasted?: (filePath: string) => void
 }
 
 export type TerminalClipboardPasteResult =
@@ -54,7 +56,8 @@ export async function pasteTerminalClipboard({
   protectedMultilineTextPasteOptions,
   onTextPasteError,
   onImagePasteError,
-  onLocalImagePasted
+  onLocalImagePasted,
+  onImagePasted
 }: PasteTerminalClipboardDeps): Promise<TerminalClipboardPasteResult> {
   let text = ''
   // File-manager copies carry the file names as text; read the file list beside it.
@@ -111,6 +114,7 @@ export async function pasteTerminalClipboard({
     if (!connectionId && !runtimeEnvironmentId) {
       onLocalImagePasted?.(filePath)
     }
+    onImagePasted?.(filePath)
     return { status: 'pasted', kind: 'image-path' }
   } catch (error) {
     onImagePasteError?.(error)

@@ -13,6 +13,7 @@ import PinnedTabCloseDialog from './components/terminal-pane/layout/close/Pinned
 import RunningTerminalCloseDialog from './components/terminal-pane/layout/close/RunningTerminalCloseDialog'
 import WorktreeBaseFallbackDialog from './components/sidebar/workspace-creation/base-ref-update/WorktreeBaseFallbackDialog'
 import ClaudeAccountSwitchDialog from './components/provider-accounts/claude/ClaudeAccountSwitchDialog'
+import { TerminalImagePreviewDialog } from './components/terminal-pane/TerminalImagePreviewDialog'
 import { AppBackgroundServices } from './app-shell/AppBackgroundServices'
 import { AppRootSurfaces } from './app-shell/AppRootSurfaces'
 import { AppWorkspaceShell } from './app-shell/AppWorkspaceShell'
@@ -135,6 +136,7 @@ function App(): React.JSX.Element {
       <ClaudeAccountSwitchDialog />
       <PinnedTabCloseDialog />
       <RunningTerminalCloseDialog />
+      <TerminalImagePreviewDialog />
       {/* Electron drag hit-testing follows DOM order, ignoring z-index; render controls last to keep them clickable. */}
       {hasCustomTitleBar && <WindowControls closeOnly={tilingWindowMode} />}
     </div>

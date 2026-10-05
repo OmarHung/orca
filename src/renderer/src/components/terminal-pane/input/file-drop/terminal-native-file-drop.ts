@@ -26,6 +26,7 @@ import type { captureTerminalDropTransportOwner } from './terminal-drop-transpor
 import { toLocalWslDropPath } from './terminal-drop-local-wsl'
 import { terminalFileDropErrorMessage } from './terminal-native-file-drop-error'
 import { recordRecentTerminalImage } from '../recent-terminal-images'
+import { recordTerminalImageDrops } from '../../terminal-image-paste-history'
 
 export async function deliverNativeTerminalFileDrop(
   args: NativeDropFlowArgs & {
@@ -117,6 +118,8 @@ export type NativeDropFlowArgs = {
   pane: { id: number; leafId: string }
   tabId: string
   worktreePath: string
+  /** SSH target the dropped paths resolve on; absent or null for local and runtime drops. */
+  connectionId?: string | null
   expectedSshTargetId?: string
   expectedSshConnectionGeneration?: number
   expectedExecutionHostId?: 'local' | `ssh:${string}`
@@ -153,6 +156,7 @@ async function uploadRuntimeDropPaths(
     )
     await pasteResolvedDropPaths({
       ...args,
+      connectionId: null,
       paths: staged.map(({ hostPath }) => hostPath),
       uploaded: true,
       targetShell
@@ -277,5 +281,6 @@ async function pasteResolvedDropPaths(
         }
       }
     }
+    recordTerminalImageDrops(args, writeResult.pathsWritten)
   }
 }

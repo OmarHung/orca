@@ -21,6 +21,7 @@ import { resolveProtectedMultilinePasteOptionsForPane } from './terminal-agent-p
 import { resolveTerminalInputHostPlatform } from '../terminal-input-host-platform'
 import { recordTerminalUserInputForLeaf } from '../terminal-input-activity'
 import { recordRecentTerminalImage } from '../recent-terminal-images'
+import { recordTerminalImagePastesForLeaf } from '../../terminal-image-paste-history'
 
 export type TerminalPaneMenuPasteContext = {
   managerRef: React.RefObject<PaneManager | null>
@@ -143,7 +144,14 @@ export const pasteTerminalPaneMenuClipboard = async (
     onImagePasteError: (error) => {
       const detail = error instanceof Error ? error.message : String(error)
       onPasteError(`Image paste failed: ${detail}`)
-    }
+    },
+    onImagePasted: (filePath) =>
+      recordTerminalImagePastesForLeaf({
+        tabId,
+        leafId: pane.leafId,
+        paths: [filePath],
+        connectionId
+      })
   })
   if (result.status !== 'pasted') {
     return

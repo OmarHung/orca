@@ -11,6 +11,10 @@ import {
   NATIVE_CHAT_VISUAL_GUEST_THEME_PUBLISH,
   type NativeChatVisualTheme
 } from '../../../shared/native-chat/visuals/native-chat-visual-shell'
+import type {
+  ClaudePastedImageLookupArgs,
+  ClaudePastedImageLookupResult
+} from '../../../shared/claude-pasted-image'
 
 export const nativeChatApi = {
   // Acknowledge the in-memory snapshot before guest creation can start its preload.
@@ -56,5 +60,9 @@ export const nativeChatApi = {
     }
   },
   getConversationNameFailureOutput: (sessionId: string): Promise<string | null> =>
-    ipcRenderer.invoke('nativeChat:conversationNameFailureOutput', sessionId)
+    ipcRenderer.invoke('nativeChat:conversationNameFailureOutput', sessionId),
+  findClaudePastedImage: (
+    args: ClaudePastedImageLookupArgs
+  ): Promise<ClaudePastedImageLookupResult> =>
+    ipcRenderer.invoke('nativeChat:findClaudePastedImage', args)
 } satisfies PreloadApi['nativeChat']

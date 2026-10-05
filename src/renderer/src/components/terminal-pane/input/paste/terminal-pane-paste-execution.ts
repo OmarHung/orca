@@ -21,6 +21,7 @@ import { pasteTerminalClipboard } from '../../clipboard/terminal-clipboard-paste
 import { createTerminalClipboardCopiedFiles } from '../../clipboard/terminal-clipboard-copied-files'
 import type { ReadClipboardTextOptions } from '../../../../../../shared/clipboard/clipboard-text'
 import type { TerminalPaneCloseController } from '../../layout/close/use-terminal-pane-close-actions'
+import { recordTerminalImagePastesForLeaf } from '../../terminal-image-paste-history'
 import { resolveProtectedMultilinePasteOptionsForPane } from './terminal-agent-paste-bracketing'
 import { resolveTerminalInputHostPlatform } from '../terminal-input-host-platform'
 
@@ -143,6 +144,16 @@ export function createTerminalPanePasteExecution(
       pane
     })
 
+  const recordImagePaste =
+    (pane: ManagedPane, connectionId: string | null) =>
+    (filePath: string): void =>
+      recordTerminalImagePastesForLeaf({
+        tabId,
+        leafId: pane.leafId,
+        paths: [filePath],
+        connectionId
+      })
+
   const pasteFromClipboard = (
     pane: ManagedPane,
     source: Extract<TerminalPasteSource, 'keyboard' | 'paste-event'>,
@@ -168,7 +179,8 @@ export function createTerminalPanePasteExecution(
         executePanePasteText(pane, source, activeElementAtDispatch, text, options),
       onTextPasteError: () =>
         setTerminalError('Paste failed: clipboard text is too large for a safe terminal paste.'),
-      onImagePasteError: (error) => setTerminalError(formatClipboardImagePasteError(error))
+      onImagePasteError: (error) => setTerminalError(formatClipboardImagePasteError(error)),
+      onImagePasted: recordImagePaste(pane, connectionId)
     }).catch(() => {
       setTerminalError('Paste failed.')
     })
@@ -178,6 +190,7 @@ export function createTerminalPanePasteExecution(
     createPaneClipboardCopiedFiles,
     executePanePasteText,
     pasteFromClipboard,
-    resolvePaneProtectedMultilinePasteOptions
+    resolvePaneProtectedMultilinePasteOptions,
+    recordImagePaste
   }
 }
