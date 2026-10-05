@@ -10,7 +10,7 @@ import {
   type TerminalStartupBoundEventDetail
 } from '@/hooks/terminal-startup-bound-event'
 import { parsePaneKey } from '../../../../shared/stable-pane-id'
-import { flattenTerminalQuickCommand } from '../../../../shared/terminal-quick-commands'
+import { runCommandText } from './run-dotnet-launcher'
 import { openRunTerminal } from './run-terminal-open'
 import { revealRunInPanel } from './run-panel-store'
 import { runSessionKey, useRunSessionStore, type RunSession } from './run-session-store'
@@ -158,7 +158,7 @@ export async function runInExistingTerminal(
   if (!binding?.ptyId) {
     return false
   }
-  const text = `${flattenTerminalQuickCommand(target.command).command}\r`
+  const text = `${runCommandText(target)}\r`
   try {
     if (
       !(await sendRuntimePtyInputVerified(
