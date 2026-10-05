@@ -35,6 +35,7 @@ import {
 } from './monday-page-actions'
 import { useMondayPageStore } from './monday-page-store'
 import { MondayBoardPicker } from './MondayBoardPicker'
+import { MondayPersonPicker } from './MondayPersonPicker'
 
 function LabeledSwitch(props: {
   id: string
@@ -158,16 +159,7 @@ export function MondayToolbar({
         <h1 className="text-sm font-semibold">{translate('monday.page.title', 'monday')}</h1>
       </div>
       <MondayBoardPicker />
-      <LabeledSwitch
-        id="monday-only-mine"
-        label={translate('monday.filter.onlyMine', 'Only mine')}
-        hint={translate(
-          'monday.filter.onlyMineHint',
-          'Items assigned to you, plus items with no one assigned'
-        )}
-        checked={prefs.onlyMine}
-        onChange={(onlyMine) => updateMondayPrefs({ onlyMine })}
-      />
+      <MondayPersonPicker account={account} />
       <LabeledSwitch
         id="monday-hide-done"
         label={translate('monday.filter.hideDone', 'Hide done')}
