@@ -14,6 +14,7 @@ import { SidebarTaskNavButton } from './SidebarTaskNavButton'
 import { HideSidebarMenu } from './sidebar-nav-controls'
 import { SshSidebarNavEntries } from '../ssh-page/SshSidebarNavEntries'
 import { DatabaseSidebarNavEntry } from '../database/DatabaseSidebarNavEntry'
+import { MondaySidebarNavEntry } from '../monday/MondaySidebarNavEntry'
 import { translate } from '@/i18n/i18n'
 import { lazyWithRetry } from '@/lib/lazy-with-retry'
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
@@ -210,6 +211,7 @@ const SidebarNav = React.memo(function SidebarNav() {
       ) : null}
       <SshSidebarNavEntries />
       <DatabaseSidebarNavEntry />
+      <MondaySidebarNavEntry />
       {showAgentDashboardButton ? (
         <React.Suspense fallback={null}>
           <AgentDashboardSidebarEntry />
