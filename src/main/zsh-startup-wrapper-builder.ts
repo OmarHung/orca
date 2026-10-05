@@ -29,6 +29,7 @@ import { MANAGED_DATA_ACCOUNT_POSIX_RESTORE } from '../shared/managed-data-accou
  * time, so defining them first makes them immune; `emulate -L zsh` inside the
  * hook restores zsh option semantics for the body at call time.
  */
+import { DOTNET_LAUNCHER_PATH_RESTORE } from './dotnet-launcher-path-restore'
 import { getPosixOmpShellWrapper } from './pty/omp-shell-wrapper'
 import { WSL_MANAGED_CLI_PATH_RESTORE } from './wsl-managed-cli-path-restore'
 import { getPosixCodexShellLaunchPreflight } from '../shared/codex-shell-function'
@@ -51,6 +52,8 @@ export type ZshWrapperRestoreSpec = {
   managedWslCli: boolean
   /** Orca's agent-teams shim dir back onto PATH. */
   agentTeamsPath: boolean
+  /** The .NET container launcher dir first on PATH — Orca's own hosts only. */
+  dotnetLauncherPath: boolean
   /** Remote CLI bin dir onto PATH — relay hosts only. */
   remoteCliBinDir: boolean
   /** Orca's runtime CODEX_HOME. */
@@ -132,6 +135,7 @@ function getOverlayRestoreBlocks(spec: ZshStartupHookSpec): (string | null)[] {
     OPENCODE_CONFIG_DIR_RESTORE,
     MANAGED_DATA_ACCOUNT_POSIX_RESTORE,
     MIMOCODE_HOME_RESTORE,
+    spec.restores.dotnetLauncherPath ? DOTNET_LAUNCHER_PATH_RESTORE : null,
     spec.restores.remoteCliBinDir ? REMOTE_CLI_BIN_DIR_RESTORE : null,
     getPosixOmpShellWrapper(),
     spec.restores.codexHome ? CODEX_HOME_RESTORE : null

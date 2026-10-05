@@ -17,7 +17,7 @@ const IMAGE = 'orca-dotnet:abc123'
 const CONTAINER = 'orca-dotnet-test'
 const CONFIG = 'cfg123'
 
-// A docker that keeps one container's state ("running config execs") in $FAKE_STATE.
+// A docker that keeps one container's state ("running config") in $FAKE_STATE.
 const FAKE_DOCKER = `#!/bin/sh
 printf '%s\\n' "$*" >> "$FAKE_DOCKER_LOG"
 state=$FAKE_STATE
@@ -29,16 +29,18 @@ case "$1" in
   run)
     [ -n "$FAKE_RUN_ERROR" ] && { echo "$FAKE_RUN_ERROR" >&2; exit 125; }
     mkdir "$state.name" 2>/dev/null || { echo 'Conflict: the container name is already in use' >&2; exit 125; }
-    echo "false ${CONFIG} 0" > "$state"
+    echo "false ${CONFIG}" > "$state"
     sleep "\${FAKE_CREATE_DELAY:-0}"
-    echo "true ${CONFIG} 0" > "$state"
+    echo "true ${CONFIG}" > "$state"
     exit 0 ;;
   start) sed 's/^false/true/' "$state" > "$state.tmp" && mv "$state.tmp" "$state"; exit 0 ;;
   rm) rm -rf "$state" "$state.name"; exit 0 ;;
   exec)
     case "$*" in
-      *--list*) for id in $FAKE_RUN_IDS; do echo "$id"; done; exit 0 ;;
-      *--kill*) exit 0 ;;
+      *--list*)
+        for id in $FAKE_RUN_IDS; do grep -qx "$id" "$state.killed" 2>/dev/null || echo "$id"; done
+        exit 0 ;;
+      *--kill*) echo "$5" >> "$state.killed"; exit 0 ;;
     esac
     [ -t 0 ] && echo 'stdin is a tty' >> "$FAKE_DOCKER_LOG"
     [ -n "$FAKE_EXEC_SLEEP" ] && sleep "$FAKE_EXEC_SLEEP"
@@ -163,7 +165,7 @@ describe.skipIf(process.platform === 'win32')('dotnet container launcher', () =>
 
   it('execs a netcoreapp3.1 project in the running container from its own directory', async () => {
     const dir = legacyProject()
-    setState(`true ${CONFIG} 0`)
+    setState(`true ${CONFIG}`)
     const result = await runLauncher(dir, ['run', '--launch-profile', 'Dev'])
     expect(result.code).toBe(0)
     expect(result.stdout).toContain('exec-ran')
@@ -181,7 +183,7 @@ describe.skipIf(process.platform === 'win32')('dotnet container launcher', () =>
   })
 
   it('uses the container when global.json pins SDK 3, but not for pins the image cannot honor', async () => {
-    setState(`true ${CONFIG} 0`)
+    setState(`true ${CONFIG}`)
     project('pinned3', { 'global.json': '{ "sdk": { "version": "3.1.426" } }' })
     const pinned3 = project('pinned3/App', { 'App.csproj': csproj('net8.0') })
     expect((await runLauncher(pinned3, ['build'])).stdout).toContain('exec-ran')
@@ -191,7 +193,7 @@ describe.skipIf(process.platform === 'win32')('dotnet container launcher', () =>
   })
 
   it('follows --project to a legacy project from elsewhere', async () => {
-    setState(`true ${CONFIG} 0`)
+    setState(`true ${CONFIG}`)
     project('repo/src/Web', { 'Web.csproj': csproj('netcoreapp2.2') })
     const result = await runLauncher(join(work, 'repo'), ['run', '--project', 'src/Web/Web.csproj'])
     expect(result.stdout).toContain('exec-ran')
@@ -212,7 +214,7 @@ describe.skipIf(process.platform === 'win32')('dotnet container launcher', () =>
     const dir = project('legacy', { 'App.csproj': csproj('net5.0') })
     const result = await runLauncher(dir, ['build'])
     expect(result.code).toBe(0)
-    expect(verbs()).toEqual(['info', 'container', 'image', 'build', 'run', 'exec'])
+    expect(verbs()).toEqual(['info', 'container', 'image', 'build', 'run', 'exec', 'exec'])
     expect(result.stderr).toContain('building the .NET container image')
   })
 
@@ -230,23 +232,31 @@ describe.skipIf(process.platform === 'win32')('dotnet container launcher', () =>
 
   it('starts a stopped container instead of recreating it', async () => {
     const dir = legacyProject()
-    setState(`false ${CONFIG} 0`)
+    setState(`false ${CONFIG}`)
     await runLauncher(dir, ['build'])
-    expect(verbs()).toEqual(['info', 'container', 'start', 'exec'])
+    expect(verbs()).toEqual(['info', 'container', 'start', 'exec', 'exec'])
   })
 
   it('replaces an idle container created with other settings', async () => {
     const dir = legacyProject()
-    setState('true old 0')
+    setState('true old')
     await runLauncher(dir, ['build'], { FAKE_IMAGE_PRESENT: '1' })
+    expect(dockerCalls()).toContain(`rm --force ${CONTAINER}`)
+    expect(verbs()).toContain('run')
+  })
+
+  it('replaces an out-of-date container once only orphans were left in it', async () => {
+    const dir = legacyProject()
+    setState('true old')
+    await runLauncher(dir, ['build'], { FAKE_IMAGE_PRESENT: '1', FAKE_RUN_IDS: '999999.1' })
     expect(dockerCalls()).toContain(`rm --force ${CONTAINER}`)
     expect(verbs()).toContain('run')
   })
 
   it('keeps an out-of-date container while programs still run in it', async () => {
     const dir = legacyProject()
-    setState('true old 2')
-    const result = await runLauncher(dir, ['build'])
+    setState('true old')
+    const result = await runLauncher(dir, ['build'], { FAKE_RUN_IDS: `${process.pid}.1` })
     expect(verbs()).not.toContain('rm')
     expect(result.stderr).toContain('out of date')
     expect(result.stdout).toContain('exec-ran')
@@ -254,11 +264,22 @@ describe.skipIf(process.platform === 'win32')('dotnet container launcher', () =>
 
   it('stops programs whose launcher is gone, and only those', async () => {
     const dir = legacyProject()
-    setState(`true ${CONFIG} 2`)
+    setState(`true ${CONFIG}`)
     // Why 999999: above every platform's PID limit, so it is never a live process.
     await runLauncher(dir, ['build'], { FAKE_RUN_IDS: `999999.1 ${process.pid}.2` })
     const kills = dockerCalls().filter((call) => call.includes('--kill'))
-    expect(kills).toEqual([`exec ${CONTAINER} /usr/local/bin/orca-exec --kill 999999.1`])
+    expect(kills[0]).toBe(`exec ${CONTAINER} /usr/local/bin/orca-exec --kill 999999.1`)
+    expect(kills.some((call) => call.includes(`--kill ${process.pid}.2`))).toBe(false)
+  })
+
+  it("stops what the run left behind once docker exec returns, even if the program's client died", async () => {
+    const dir = legacyProject()
+    setState(`true ${CONFIG}`)
+    await runLauncher(dir, ['run'])
+    const calls = dockerCalls()
+    const runId = /orca-exec (\d+\.\d+) dotnet run$/.exec(calls.at(-2) ?? '')?.[1]
+    expect(runId).toBeDefined()
+    expect(calls.at(-1)).toBe(`exec ${CONTAINER} /usr/local/bin/orca-exec --kill ${runId}`)
   })
 
   it("shows docker's reason when the container cannot be created", async () => {
@@ -273,7 +294,7 @@ describe.skipIf(process.platform === 'win32')('dotnet container launcher', () =>
 
   it('warns when Docker Desktop host networking is off', async () => {
     const dir = legacyProject()
-    setState(`true ${CONFIG} 0`)
+    setState(`true ${CONFIG}`)
     writeFileSync(dockerSettings, '{"HostNetworkingEnabled": false}')
     const result = await runLauncher(dir, ['run'])
     expect(result.stderr).toContain('host networking is off')
@@ -281,7 +302,7 @@ describe.skipIf(process.platform === 'win32')('dotnet container launcher', () =>
 
   it('exports the Mac development certificate once and hands it to Kestrel by name', async () => {
     const dir = legacyProject()
-    setState(`true ${CONFIG} 0`)
+    setState(`true ${CONFIG}`)
     await runLauncher(dir, ['run'])
     await runLauncher(dir, ['run'])
     const exports = readFileSync(join(root, 'dotnet.log'), 'utf8').trim().split('\n')
@@ -301,7 +322,7 @@ describe.skipIf(process.platform === 'win32')('dotnet container launcher', () =>
 
   it("keeps the user's own certificate and warns when the export fails", async () => {
     const dir = legacyProject()
-    setState(`true ${CONFIG} 0`)
+    setState(`true ${CONFIG}`)
     await runLauncher(dir, ['run'], { ASPNETCORE_Kestrel__Certificates__Default__Path: '/c.pfx' })
     expect(() => readFileSync(join(root, 'dotnet.log'), 'utf8')).toThrow()
     const failed = await runLauncher(dir, ['run'], { FAKE_DEVCERTS_FAIL: '1' })
@@ -318,7 +339,7 @@ describe.skipIf(process.platform === 'win32')('dotnet container launcher', () =>
         `orca_cert_dir=${join(root, 'https')}`
       )
     )
-    setState(`true ${CONFIG} 0`)
+    setState(`true ${CONFIG}`)
     const result = await runProcess({
       program: '/bin/sh',
       args: [outsideLauncher, 'run'],
@@ -327,6 +348,59 @@ describe.skipIf(process.platform === 'win32')('dotnet container launcher', () =>
     })
     expect(result.stderr).toContain('is not shared with the .NET container')
     expect(result.stdout).toContain('exec-ran')
+  })
+
+  it('reports where a project would run without touching Docker', async () => {
+    const legacy = legacyProject()
+    const modern = project('modern', { 'App.csproj': csproj('net8.0') })
+    const where = (cwd: string, args: string[]) =>
+      runLauncher(cwd, ['--orca-where', ...args]).then((result) => result.stdout.trim())
+    expect(await where(work, [join(legacy, 'App.csproj')])).toBe('container')
+    expect(await where(work, [join(modern, 'App.csproj')])).toBe('native')
+    expect(await where(legacy, ['build'])).toBe('container')
+    expect(await where(legacy, ['--info'])).toBe('native')
+    expect(dockerCalls()).toEqual([])
+  })
+
+  it('prepares the container without running anything for --orca-ensure', async () => {
+    const result = await runLauncher(legacyProject(), ['--orca-ensure'], {
+      FAKE_IMAGE_PRESENT: '1'
+    })
+    expect(result.code).toBe(0)
+    expect(verbs()).toEqual(['info', 'container', 'image', 'run'])
+  })
+
+  it('refuses --orca-ensure on an out-of-date container that is still busy', async () => {
+    setState('true old')
+    const result = await runLauncher(legacyProject(), ['--orca-ensure'], {
+      FAKE_RUN_IDS: `${process.pid}.1`
+    })
+    expect(result.code).toBe(1)
+    expect(result.stderr).toContain('out of date and still running programs')
+    expect(verbs()).not.toContain('rm')
+  })
+
+  it('runs another program in the container for --orca-exec, whatever the project', async () => {
+    setState(`true ${CONFIG}`)
+    const modern = project('modern', { 'App.csproj': csproj('net8.0') })
+    const result = await runLauncher(modern, [
+      '--orca-exec',
+      '/usr/local/lib/netcoredbg/netcoredbg',
+      '--interpreter=vscode'
+    ])
+    expect(result.stdout).toContain('exec-ran')
+    const exec = dockerCalls().find((call) => call.startsWith('exec -i')) ?? ''
+    expect(exec).toMatch(
+      /orca-exec \d+\.\d+ \/usr\/local\/lib\/netcoredbg\/netcoredbg --interpreter=vscode$/
+    )
+    expect((await runLauncher(modern, ['--orca-exec'])).stderr).toContain('needs a program')
+  })
+
+  it('opens a plain bash in the container for --orca-shell', async () => {
+    setState(`true ${CONFIG}`)
+    await runLauncher(legacyProject(), ['--orca-shell'])
+    const exec = dockerCalls().find((call) => call.startsWith('exec -i')) ?? ''
+    expect(exec).toContain('env PS1=(.NET container) \\w \\$  bash --noprofile --norc')
   })
 
   it('refuses a folder the container cannot see', async () => {
@@ -346,13 +420,13 @@ describe.skipIf(process.platform === 'win32')('dotnet container launcher', () =>
   })
 
   it("returns the program's exit code", async () => {
-    setState(`true ${CONFIG} 0`)
+    setState(`true ${CONFIG}`)
     const result = await runLauncher(legacyProject(), ['test'], { FAKE_EXEC_STATUS: '3' })
     expect(result.code).toBe(3)
   })
 
   it('passes ASP.NET settings by name and nothing host-specific', async () => {
-    setState(`true ${CONFIG} 0`)
+    setState(`true ${CONFIG}`)
     await runLauncher(legacyProject(), ['run'], {
       ASPNETCORE_ENVIRONMENT: 'Development',
       ConnectionStrings__Default: 'Server=localhost',
@@ -367,7 +441,7 @@ describe.skipIf(process.platform === 'win32')('dotnet container launcher', () =>
 
   it('hands the terminal to docker exec -t when run in one', async () => {
     const dir = legacyProject()
-    setState(`true ${CONFIG} 0`)
+    setState(`true ${CONFIG}`)
     // Why `script`: it gives the launcher a real pseudo-terminal, as Orca's run panes do. Its own
     // stdin must be a file: macOS `script` refuses the socket Node pipes in.
     const script =
@@ -387,7 +461,7 @@ describe.skipIf(process.platform === 'win32')('dotnet container launcher', () =>
 
   it('stops the program inside the container when the launcher is terminated', async () => {
     const dir = legacyProject()
-    setState(`true ${CONFIG} 0`)
+    setState(`true ${CONFIG}`)
     const child = spawnProcess({
       program: '/bin/sh',
       args: [launcher, 'run'],

@@ -18,3 +18,6 @@ if test "$__orca_codex_type" = file
   end
 end
 set -e __orca_codex_type
+if set -q ORCA_DOTNET_LAUNCHER_DIR; and test "$PATH[1]" != "$ORCA_DOTNET_LAUNCHER_DIR"
+    set -gx PATH "$ORCA_DOTNET_LAUNCHER_DIR" $PATH
+end

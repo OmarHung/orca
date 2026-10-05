@@ -4,6 +4,7 @@
  * Why: bash gets a single `--rcfile` wrapper (not a ZDOTDIR tree), so the login
  * startup-file chain, OSC 133 hooks, and the shell-ready marker all live here.
  */
+import { DOTNET_LAUNCHER_PATH_RESTORE } from '../dotnet-launcher-path-restore'
 import { BASH_PROMPT_COMMAND_COMPOSITION_BLOCK } from '../bash-prompt-command-composition'
 import { ORCA_CLI_POSIX_PATH_RESTORE } from '../../shared/orca-cli-shell-path'
 import { MANAGED_DATA_ACCOUNT_POSIX_RESTORE } from '../../shared/managed-data-account-shell'
@@ -49,6 +50,7 @@ __orca_restore_agent_teams_path() {
 }
 __orca_restore_agent_teams_path
 ${ORCA_CLI_POSIX_PATH_RESTORE}
+${DOTNET_LAUNCHER_PATH_RESTORE}
 ${WSL_MANAGED_CLI_PATH_RESTORE}
 # Why: user startup files may set the default OpenCode config after Orca's
 # spawn env; restore the Orca-managed config dir before the first prompt.

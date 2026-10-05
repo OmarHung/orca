@@ -36,6 +36,8 @@ export type BuildPtyHostEnvOptions = {
   routeBrowserOpensToClient?: boolean
   /** Keep indexed Git config off the sparse daemon wire; the daemon appends guard entries after merging its inherited env. */
   deferGitConfigGuardToDaemon?: boolean
+  /** Fork setting: route `dotnet` for .NET 5-and-older projects through the container launcher. */
+  dotnetContainerToolchain?: boolean
 }
 
 export type CodexHomeLaunchContext = {

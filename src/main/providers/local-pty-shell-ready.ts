@@ -4,6 +4,7 @@
  * Why: startup commands must wait until the shell has fully initialized. Picks the args/env
  * that point each shell at its Orca wrapper (which emits the OSC 777 marker the scanner detects).
  */
+import { FISH_DOTNET_LAUNCHER_PATH_RESTORE } from '../dotnet-launcher-path-restore'
 import { basename, win32 as pathWin32 } from 'node:path'
 import {
   encodePowerShellCommand,
@@ -147,7 +148,7 @@ export function getShellLaunchConfig(
           SHELL_READY_MARKER_ESCAPED,
           features.includes('ready'),
           startupCommand !== undefined
-        )}\n${getFishCodexShellLaunchPreflight()}`
+        )}\n${getFishCodexShellLaunchPreflight()}\n${FISH_DOTNET_LAUNCHER_PATH_RESTORE}`
       ],
       env:
         startupCommand !== undefined ? { [POSIX_SHELL_STARTUP_COMMAND_ENV]: startupCommand } : {},

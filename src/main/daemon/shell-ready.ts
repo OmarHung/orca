@@ -1,3 +1,4 @@
+import { FISH_DOTNET_LAUNCHER_PATH_RESTORE } from '../dotnet-launcher-path-restore'
 import { tmpdir } from 'node:os'
 import { basename, join, win32 as pathWin32 } from 'node:path'
 import { statSync } from 'node:fs'
@@ -190,7 +191,7 @@ export function getShellLaunchConfig(
       args: [
         '-l',
         '-C',
-        `${getFishShellReadyInitCommand(SHELL_READY_MARKER, features.includes('ready'))}\n${getFishCodexShellLaunchPreflight()}`
+        `${getFishShellReadyInitCommand(SHELL_READY_MARKER, features.includes('ready'))}\n${getFishCodexShellLaunchPreflight()}\n${FISH_DOTNET_LAUNCHER_PATH_RESTORE}`
       ],
       env: {},
       supportsReadyMarker: features.includes('ready')

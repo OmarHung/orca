@@ -103,7 +103,7 @@ docker run -d --name orca-dotnet-<instanceTag> --platform linux/arm64 --init \
 
 ### Phase 1：容器管理與 Run 路徑
 
-設計（2026-10-05 定案）：**一個 host 端的 `dotnet` launcher（POSIX sh）**，由 Orca 產生在 `<userData>/dotnet-container/dotnet`。它依目標專案自己決定走容器或原生，並負責叫醒容器；所有判斷邏輯都在這支腳本裡，TS 只負責產生它。
+設計（2026-10-05 定案）：**一個 host 端的 `dotnet` launcher（POSIX sh）**，由 Orca 產生在 `<userData>/dotnet-container/bin/dotnet`（資料夾裡只有它，終端機才能把整個資料夾放上 PATH）。它依目標專案自己決定走容器或原生，並負責叫醒容器；所有判斷邏輯都在這支腳本裡，TS 只負責產生它。
 
 - 為什麼不靠 PATH：Orca 的 shell 整合在使用者 rc 檔**之前**執行，而常見的 `.zshenv`／`.zshrc`（dotnet 官方安裝說明的寫法）會再把 `~/.dotnet` 放到 PATH 最前面，shim 會被蓋掉
 - 判斷規則：`ORCA_DOTNET_TOOLCHAIN=container|native` 優先；否則看目標（`--project`、指令中的 `.csproj`／`.sln`，或目前目錄）。往上找 `global.json`，鎖 SDK 2／3／5 就走容器；目標是專案檔就看它的 TFM，是目錄就往下最多 3 層找 csproj（略過 bin／obj／node_modules／.git）。只要有 `netcoreapp*` 或 `net5.0` 就走容器，否則 exec 原生 dotnet
@@ -117,39 +117,51 @@ Code review 後的修正（2026-10-05）：
 
 - dash 會在背景指令自己的重導向之前把 stdin 換成 /dev/null，導致 `docker exec -t` 失敗：改成 `exec 3<&0`，再用 `<&3 3<&- &`
 - 同時啟動多個（compound）時會競爭建立／替換容器：在 `$TMPDIR/<container>.lock` 用 `mkdir` 上鎖；持有者已不存在，或 6 秒沒寫入 PID，就視為過期的鎖
-- 容器是否過期改用 label `dev.orca.dotnet-container.config`（`docker run` 參數的 hash）判斷，不只看映像；是否閒置改用 `{{len .ExecIDs}}`（包含 client 已死、但程式還在跑的 exec），取代 `orca-exec --busy`
+- 容器是否過期改用 label `dev.orca.dotnet-container.config`（`docker run` 參數的 hash）判斷，不只看映像。是否閒置：先收掉孤兒，再看 `orca-exec --list` 是否還有執行中的 run（Phase 1 原本用 `{{len .ExecIDs}}`，但 client 在 exec 開始前就被殺掉時，那個 exec 會永遠留在清單裡，容器就再也換不掉）
 - launcher 被 SIGKILL 時 trap 不會執行：每次啟動時用 `orca-exec --list` 列出 run id（開頭是 launcher 的 PID），用 `ps -p` 確認發起者已經不在的，就以 `--kill` 終止
 - global.json 只轉送鎖定 SDK 3 的（映像裡唯一的舊版 SDK 是 3.1.426）
 - 顯示 `docker run`／`docker start` 的錯誤原因；macOS 上讀 Docker Desktop 的 `settings-store.json`，host networking 關閉時給出警告
 - renderer：先準備 launcher 再讀取 run session（避免連按兩次開出兩個終端機）；PowerShell 用 `& '路徑'`，Nushell 用 `^'路徑'`
 - 已知限制：多行指令只轉送第一行開頭的 `dotnet`
+- launcher 在 `docker exec` 結束後一律再送一次 `orca-exec --kill <run id>`：偵錯器當掉或 docker client 死掉時，容器裡的程式不會留到下一次啟動才被收掉
+- 已知限制：建置時啟動的 Roslyn 編譯伺服器（VBCSCompiler）留在該次執行的 process group 裡，所以 `orca-exec --list` 會繼續把那次執行算成存活，下一次啟動 launcher 時會被一起收掉（只是少了編譯快取，不影響正確性；每次執行結束時的 `--kill` 也會一併收掉它）
 - HTTPS 開發憑證（Phase 0 驗證過、Phase 1 原本漏做，使用者實測時發現）：launcher 在 `<userData>/dotnet-container/https/` 用 Mac 原生 dotnet 匯出 `aspnetcore-dev.pfx`（隨機密碼，權限 600，每天重新匯出；憑證和密碼一起替換，匯出失敗就保留舊的一組），再以 `ASPNETCORE_Kestrel__Certificates__Default__Path`／`__Password`（只傳名稱）交給容器。匯出要在憑證資料夾裡執行，因為專案的 global.json 若鎖定 SDK 3.1，它的 `dev-certs` 在 macOS 上會要求 sudo。使用者自己設定了這兩個變數時不覆蓋；憑證資料夾不在掛載範圍內時給出說明。另設 `DOCKER_CLI_HINTS=false`，關掉 docker exec 失敗時的 Docker Debug 廣告
 
 步驟：
 
 1. 把 `resolveDockerPath` 從 `src/main/ssh-vpn/ssh-vpn-docker.ts` 搬到 `src/main/docker/`，ssh-vpn 改用它
 2. `src/main/dotnet-container/`：Dockerfile 產生器（pinned URL＋sha512，依 host 架構選 linux-arm64／linux-x64；內嵌 orca-exec、IPv4 shim 原始碼、legacy targets）、launcher 產生器、寫檔（內容不變就不重寫）、IPC 回傳 launcher 路徑
-3. 設定開關（GlobalSettings），預設關閉
+3. 設定開關：`GlobalSettings.dotnetContainerToolchain`，預設關閉（Phase 1 曾放在 renderer 的 localStorage，main 端的偵錯與終端讀不到，已改掉，沒有搬移舊值）
 4. Run 入口改寫指令（見上）
-5. Port 歸屬：Docker 對外的 port 由 `com.docker.backend` 持有，`local-workspace-port-attribution.ts` 會把它標成 `container`。只比對 PTY 印出的網址不夠，因為有些網站（例如 air）不印網址。要到容器內讀 `/proc/net/tcp*`，找出監聽的程序，再用它的 cwd 和 orca-exec 的 run id 對回 workspace
-6. 設定頁：狀態、映像版本、重建映像、掛載清單、開容器 shell
+5. Port 歸屬（已完成，只認 Docker Desktop 的 forwarder（`com.docker.backend`／vpnkit），不是任何名稱含 container 的程序；`--ports` 用一次 `find` 加一次 `awk`，約 50ms；2026-10-05 用 w31 實測：5000／5001 歸到正確的 workspace，Stop 讓網站正常關閉，Docker 不受影響）：Docker 對外的 port 由 `com.docker.backend` 持有。`orca-exec --ports` 讀容器內的 `/proc/net/tcp*` 與 `/proc/*/fd`，列出監聽中的 port、PID、cwd、指令列；`dotnet-container-ports.ts` 在 macOS、開關打開時，把 Docker 持有的 port 換成容器內程式的 cwd，所以會歸到正確的 workspace（不必靠 PTY 印出的網址）。Stop 對這種 port 改成 `docker exec <容器> kill -TERM <容器內 PID>`，**絕不**對 Docker 的 backend 送訊號（那會把 Docker 關掉）
+6. 容器控制（已完成，放在 Run 選單的「.NET Container」子選單，而不是設定頁）：開關、狀態（Docker 未安裝／未啟動、容器不存在／停止／執行中）、在容器中開終端、停止容器、移除容器與映像（只刪 `orca-dotnet:*`）。開關打開時、以及 Orca 啟動時開關已打開，就先安裝 launcher
 
-### Phase 2：偵錯
+### Phase 2：偵錯（已完成）
 
-- `netcoredbg-adapter.ts` 的 `buildDotnetProject` 改走容器（同路徑，所以輸出解析不用改）
-- `netcoredbg-launch.ts`：容器模式時改成 spawn `docker exec -i -w <cwd> … orca-exec <sessionId> <netcoredbg> --interpreter=vscode`；`adapter-manifest.ts` 加一個容器專用的 netcoredbg 項目（§5）
-- launch request 的 env 要帶 `DOTNET_ROLL_FORWARD=Major`（2.x）；結束時送 DAP disconnect，再用 `orca-exec --kill` 補刀
-- 注意：netcoredbg 會**在回應 `initialize` 之前**就送出 `initialized` 事件（現有 DAP client 若有相同假設要確認）
+- 映像內建 netcoredbg 3.1.0-1031（`/usr/local/lib/netcoredbg/netcoredbg`；3.1.1 之後需要比 Ubuntu 20.04 新的 glibc），下載網址與 sha256 見 §5，x64 映像用 linux-amd64 版
+- `netcoredbg-launch.ts`：開關打開時先判斷目標是否走容器（專案用 launcher 的 `--orca-where`；程式用它旁邊的 `*.runtimeconfig.json`，framework 主版本小於 6 或 TFM 是 `netcoreapp*`／`net5.0` 就走容器），否則完全維持原本的原生流程
+- 走容器時：用 launcher 建置（同路徑，輸出解析不用改）、`--orca-ensure` 叫醒容器（失敗時把最後一行錯誤顯示給使用者），再以 `launcher --orca-exec <netcoredbg> --interpreter=vscode` 當 DAP transport。關閉偵錯時 launcher 的 trap 會呼叫 `orca-exec --kill`
+- `buildDotnetProject` 改在專案資料夾執行（launcher 要從 cwd 找 global.json）
+- launcher 壞掉（安裝失敗、無法執行）時退回原生偵錯，不讓 .NET 6 以後的專案也跟著不能偵錯；apphost（沒有副檔名）也會讀旁邊的 `.runtimeconfig.json`
+- 容器過期又還有程式在跑時，`--orca-ensure` 直接失敗並說明原因（舊映像沒有 netcoredbg）
+- 驗證（2026-10-05）：`debug-session.netcoredbg-container.integration.test.ts`（設定 `ORCA_TEST_DOTNET_CONTAINER_LAUNCHER`、`ORCA_TEST_DOTNET_CONTAINER_WORKDIR` 才會跑）在 netcoreapp2.1 與 3.1 都能停在中斷點並讀到區域變數，結束後容器內沒有殘留程序
 
-### Phase 3：終端與 agent
+### Phase 3：終端與 agent（已完成，agent 部分待使用者決定）
 
-- 互動式終端與 agent 也要用 Phase 1 的 launcher。單靠 PATH 不行（見 Phase 1），候選做法：在 Orca 的 zsh／bash／fish 整合裡定義 `dotnet` shell 函式（函式優先於 PATH，且使用者 rc 通常只改 PATH）；agent 自己開的非互動 shell 不會讀到 Orca 的整合，需另外處理
-- 新增「在 .NET 容器中開終端」的動作
+- 改用 PATH 而不是 shell 函式：開關打開且 launcher 已安裝時，本機終端（不含 WSL、Windows、SSH）的 PATH 最前面放 launcher 資料夾，並設 `ORCA_DOTNET_LAUNCHER_DIR`。launcher 只把舊專案送進容器，其他 `dotnet` 指令照樣交給原生 SDK
+- 使用者 rc 檔（以及 macOS 的 path_helper）會把 `~/.dotnet` 放回前面，所以 zsh／bash／fish 的 shell-ready 整合會在 rc 檔之後再把 launcher 資料夾放回第一位（`dotnet-launcher-path-restore.ts`；zsh 在第一個 precmd、bash 在 rcfile 結尾、fish 在 `-C` init 或 vendor_conf 的第一個 fish_prompt）。SSH relay 的 wrapper 不加
+- 開關關閉時，也會把 PATH 上任何 launcher 資料夾（包含從另一個 Orca 繼承來的）拿掉
+- 沒有升 daemon 協定版本：舊 daemon 仍會把環境變數傳下去，只是在它重啟之前，新分頁少了 rc 檔之後的還原
+- 「在容器中開終端」：launcher 的 `--orca-shell`，在目前 worktree 的資料夾開 `bash --noprofile --norc`
+- launcher 新增模式：`--orca-where`（印出 container／native）、`--orca-ensure`（只叫醒容器）、`--orca-exec <程式…>`（在容器裡執行任意程式）、`--orca-shell`
+- agent：Claude Code 等 agent 自己開的 shell 會讀使用者的 `~/.zshenv`，那裡把 `~/.dotnet` 放在前面。需要在 dotfile 最後加一行 `[ -n "$ORCA_DOTNET_LAUNCHER_DIR" ] && export PATH="$ORCA_DOTNET_LAUNCHER_DIR:$PATH"`（要使用者同意才改）
 
-### Phase 4：Mac 切換成原生 arm64
+### Phase 4：Mac 切換成原生 arm64（已備妥，等使用者確認）
 
-- `~/.dotnet` 改名為 `~/.dotnet-x64`，保留到升級 macOS 28 前；在 `~/.dotnet` 安裝 arm64 SDK 10 加 runtime 8／6；重新安裝 `~/.dotnet/tools`
+- 已安裝在 `~/.dotnet-arm64`：SDK 10.0.201、ASP.NET Core runtime 8.0.25 與 6.0.36
+- 切換：`mv ~/.dotnet ~/.dotnet-x64 && mv ~/.dotnet-arm64 ~/.dotnet`，再重新安裝 global tools（dotnet-ef、dotnet-fm、dotnet-gcdump、ilspycmd、security-scan）。要先安裝含 Phase 1–3 的 Orca 版本再切換
 - netcoredbg 依 dotnet 執行檔的架構挑版本（`executable-arch.ts`），會自動改抓 osx-arm64 3.2.0；csharp-ls 變成原生執行
+- csharp-ls：global.json 鎖 3.1 的 repo 現在（x64）就已經無法載入，切換後一樣，不算退步；其他 repo 在 arm64 上載入較快
 
 ## 7. 未決事項與待驗證
 

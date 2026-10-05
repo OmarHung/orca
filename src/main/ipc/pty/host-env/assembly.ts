@@ -16,6 +16,7 @@ import { mergePersistedWindowsPath } from '../../../pty/windows-environment-path
 import { resolveCodexShellLaunchPreflightCommand } from '../../../pty/codex-shell-launch-preflight'
 import { buildConfiguredProxyEnv } from '../../../../shared/network-proxy'
 import { isTuiAgentEnabled } from '../../../../shared/tui-agent-selection'
+import { applyDotnetContainerLauncherEnv } from './dotnet-container-env'
 import type { BuildPtyHostEnvOptions } from './types'
 import { stripInheritedOrcaCodexHomeOverride } from './codex-home'
 import {
@@ -277,6 +278,7 @@ export function buildPtyHostEnv(
     userDataPath: opts.userDataPath,
     resourcesPath: opts.resourcesPath
   })
+  applyDotnetContainerLauncherEnv(baseEnv, opts)
 
   if (
     opts.routeBrowserOpensToClient === true &&

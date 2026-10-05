@@ -61,7 +61,10 @@ export class DebugSessionManager {
   /** Preparing sessions whose stop arrived early; already reported ended, they never launch. */
   private readonly stoppedWhilePreparing = new Set<string>()
 
-  constructor(private readonly adaptersDir: string) {}
+  constructor(
+    private readonly adaptersDir: string,
+    private readonly dotnetContainerLauncher?: () => Promise<string | null>
+  ) {}
 
   async start(
     sessionId: string,
@@ -83,6 +86,7 @@ export class DebugSessionManager {
       prepared = await prepareAdapter(request.target, {
         adaptersDir: this.adaptersDir,
         cwd: request.cwd,
+        dotnetContainerLauncher: this.dotnetContainerLauncher,
         onInstalling: () =>
           sendWhileLive({ kind: 'phase', sessionId, phase: 'installing-adapter' }),
         onOutput: (output, category) =>
