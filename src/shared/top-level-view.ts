@@ -14,7 +14,8 @@ const TOP_LEVEL_VIEW_LOOKUP: Record<TopLevelView, true> = {
   mobile: true,
   database: true,
   ssh: true,
-  sftp: true
+  sftp: true,
+  monday: true
 }
 
 export function isTopLevelView(value: unknown): value is TopLevelView {
