@@ -18,6 +18,7 @@ import { importWorkspaceLaunchJson, useWorkspaceHasLaunchJson } from './launch-j
 import { RunStopControl } from './RunStopControl'
 import { RunWidgetActions } from './RunWidgetActions'
 import { RunWidgetMenu } from './RunWidgetMenu'
+import { RunWidgetTriggerStatus } from './RunWidgetTriggerStatus'
 import type { RunWidgetRowActions } from './RunWidgetMenuRow'
 import { loadSharedRunConfigurations } from './run-configuration-launcher'
 import { useRunConfigurationStore, type ListedRunConfiguration } from './run-configuration-store'
@@ -188,7 +189,14 @@ export function RunWidget({
             className="flex h-6 max-w-52 min-w-0 items-center gap-1 rounded-md px-1.5 text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground"
           >
             {selected ? (
-              <span className="truncate">{selected.label}</span>
+              <>
+                <RunWidgetTriggerStatus
+                  item={selected}
+                  footprint={footprintOf(selected)}
+                  activity={activity}
+                />
+                <span className="truncate">{selected.label}</span>
+              </>
             ) : (
               <>
                 <ListVideo className="size-3.5 shrink-0" />
