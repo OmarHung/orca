@@ -12,7 +12,7 @@ import { mondayErrorMessage } from './monday-error-message'
 import { mondayScheduleWarnings } from './MondayItemHoverSummary'
 import { MondayColumnValue } from './MondayColumnValue'
 import { MondayItemUpdates } from './MondayItemUpdates'
-import { MondayLinkedItems } from './MondayLinkedItems'
+import { MondayLinkedItemRows } from './MondayLinkedItems'
 import { MondayDueFlag, MondayLabelBadge, mondayDueNeedsAttention } from './MondayScheduleVisuals'
 
 export const MONDAY_DETAIL_PANEL_WIDTH = 440
@@ -53,7 +53,7 @@ function spanSourceLabel(
   return entry.schedule.spanSource === 'start' ? (start ?? null) : null
 }
 
-function ScheduleFields(props: {
+function ScheduleRows(props: {
   entry: MondayCalendarEntry
   board: MondayBoardSchedule | null
   today: string
@@ -62,7 +62,7 @@ function ScheduleFields(props: {
   const { schedule, item } = entry
   const warnings = mondayScheduleWarnings(entry, today)
   return (
-    <dl className="grid grid-cols-[88px_1fr] gap-x-3 gap-y-2 text-xs">
+    <>
       <FieldRow label={translate('monday.detail.timeline', 'Timeline')}>
         {schedule.span ? (
           <div>
@@ -113,7 +113,7 @@ function ScheduleFields(props: {
       {item.peopleText ? (
         <FieldRow label={translate('monday.detail.people', 'People')}>{item.peopleText}</FieldRow>
       ) : null}
-    </dl>
+    </>
   )
 }
 
@@ -128,7 +128,6 @@ function ItemActivity({
   const otherColumns = detail.columns.filter((column) => !shown.has(column.id))
   return (
     <>
-      <MondayLinkedItems relations={detail.relations} />
       {otherColumns.length > 0 ? (
         <section>
           <SectionTitle>{translate('monday.detail.otherColumns', 'Other columns')}</SectionTitle>
@@ -287,10 +286,12 @@ export function MondayItemDetailPanel(props: {
         </IconAction>
       </header>
       <div className="scrollbar-sleek min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-3">
-        {entry ? (
-          <section>
-            <ScheduleFields entry={entry} board={board} today={today} />
-          </section>
+        {entry || (detail?.relations.length ?? 0) > 0 ? (
+          <dl className="grid grid-cols-[88px_1fr] gap-x-3 gap-y-2 text-xs">
+            {entry ? <ScheduleRows entry={entry} board={board} today={today} /> : null}
+            {/* Linked records (e.g. Web CRM) arrive with the item details, a moment later. */}
+            <MondayLinkedItemRows relations={detail?.relations ?? []} />
+          </dl>
         ) : null}
         <DetailBody itemId={itemId} board={board} />
       </div>

@@ -50,7 +50,7 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
     await expect(panel.getByText('串接規格：SSO 走 OIDC，測試環境先行。')).toBeVisible()
     // The task's Web CRM record gets its own card; its link back to the task is left out.
     const crm = panel.getByTestId('monday-linked-item')
-    await expect(panel.getByTestId('monday-relation')).toContainText('Web CRM')
+    await expect(panel.getByText('Web CRM', { exact: true })).toBeVisible()
     await expect(crm.getByRole('button', { name: 'https://www.example.org/' })).toBeVisible()
     // Only the website shows until the card is expanded.
     await expect(crm.getByText('p2-web-server-apple')).toBeHidden()
