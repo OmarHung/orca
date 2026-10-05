@@ -21,6 +21,7 @@ import {
 } from './monday-mappers'
 import {
   BOARDS_QUERY,
+  BOARDS_UPDATED_AT_QUERY,
   ITEM_DETAIL_QUERY,
   ME_QUERY,
   USERS_PAGE_SIZE,
@@ -126,6 +127,17 @@ export class MondayService {
       }
     }
     return mapUsers(users)
+  }
+
+  /** Board id → monday's last-change time, for boards the token can still see. */
+  async boardsUpdatedAt(boardIds: string[]): Promise<Record<string, string>> {
+    const data = await this.call<{ boards: { id: string; updated_at: string | null }[] | null }>(
+      BOARDS_UPDATED_AT_QUERY,
+      { ids: boardIds }
+    )
+    return Object.fromEntries(
+      (data.boards ?? []).map((board) => [board.id, board.updated_at ?? ''])
+    )
   }
 
   loadSchedule(request: MondayLoadScheduleRequest): Promise<MondaySchedule> {

@@ -17,6 +17,11 @@ export const USERS_QUERY = `query ($page: Int!) {
   users(limit: ${USERS_PAGE_SIZE}, page: $page) { id name email kind status is_deleted }
 }`
 
+/** One cheap call that tells whether any of the boards changed since they were read. */
+export const BOARDS_UPDATED_AT_QUERY = `query ($ids: [ID!]) {
+  boards(ids: $ids) { id updated_at }
+}`
+
 export const BOARD_COLUMNS_QUERY = `query ($ids: [ID!]) {
   boards(ids: $ids) { id name columns { id title type } }
 }`
@@ -73,6 +78,7 @@ export function buildFirstSchedulePageQuery(boards: ScheduleBoardQuery[]): {
     declarations.push(`$b${index}: [ID!]`, `$c${index}: [String!]`, `$q${index}: ItemsQuery`)
     selections.push(
       `b${index}: boards(ids: $b${index}) {
+        updated_at
         items_page(limit: ${ITEMS_PAGE_LIMIT}, query_params: $q${index}) {
           ${SCHEDULE_ITEM_FIELDS(`$c${index}`)}
         }

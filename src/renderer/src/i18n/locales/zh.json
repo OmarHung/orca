@@ -20444,7 +20444,7 @@
       "trigger": "只显示：{{value0}}"
     },
     "status": {
-      "fetchedAt": "{{value0}} 读取",
+      "syncedAt": "{{value0}} 已同步",
       "items": "{{value0}} 个任务有日期",
       "truncated": "{{value0}}：只显示前 {{value1}} 个任务",
       "undated": "{{value0}} 个没有日期"

@@ -20512,7 +20512,7 @@
       "trigger": "Show: {{value0}}"
     },
     "status": {
-      "fetchedAt": "Read at {{value0}}",
+      "syncedAt": "Synced {{value0}}",
       "items": "{{value0}} items with dates",
       "truncated": "{{value0}}: only the first {{value1}} items are shown",
       "undated": "{{value0}} without dates"

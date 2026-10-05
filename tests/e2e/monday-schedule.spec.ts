@@ -88,6 +88,21 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
     await expect(gantt.getByRole('button', { name: '海發中心 零信任串接' }).first()).toBeVisible()
     await expect(gantt.getByRole('button', { name: 'Vivian 的設計稿' }).first()).toBeVisible()
 
+    // An edit on monday shows after leaving the page and coming back; no polling.
+    server.renameItem('101', '海發中心 零信任串接（已更新）')
+    // Why wait: checks closer than 3s to the last read are folded into it.
+    await orcaPage.waitForTimeout(3_200)
+    await orcaPage.getByTestId('database-sidebar-nav').click()
+    // The Database page loads lazily; leave for real before coming back.
+    await expect(orcaPage.getByTestId('monday-page')).toHaveCount(0)
+    await orcaPage.getByTestId('monday-sidebar-nav').click()
+    await expect(
+      orcaPage
+        .getByTestId('monday-gantt-view')
+        .getByRole('button', { name: '海發中心 零信任串接（已更新）' })
+        .first()
+    ).toBeVisible()
+
     // The token only ever goes to the monday endpoint, from the main process.
     expect(new Set(server.tokens)).toEqual(new Set(['test-token']))
   } finally {
