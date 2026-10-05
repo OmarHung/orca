@@ -18548,6 +18548,15 @@
         "copySessionId": "Copy Session ID",
         "copySessionIdSuccess": "Session ID copied",
         "copySessionIdError": "Unable to copy session ID"
+      },
+      "imagePreview": {
+        "title": "[Image #{{pasteId}}]",
+        "loading": "Loading image…",
+        "notFound": "Couldn’t find this image. Pick it from the images pasted into this terminal.",
+        "unsubmittedHint": "Not sent yet — matched by paste order. If it’s the wrong image, pick another below.",
+        "linkHintWithActions": "Click for actions or {{shortcut}} to preview",
+        "linkHint": "{{shortcut}} to preview",
+        "previewAction": "Preview image"
       }
     },
     "settings": {

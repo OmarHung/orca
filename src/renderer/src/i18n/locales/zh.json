@@ -18295,6 +18295,15 @@
         "copySessionId": "复制会话 ID",
         "copySessionIdSuccess": "已复制会话 ID",
         "copySessionIdError": "复制会话 ID 失败"
+      },
+      "imagePreview": {
+        "title": "[Image #{{pasteId}}]",
+        "loading": "正在加载图片…",
+        "notFound": "找不到这张图片。请从这个终端粘贴过的图片中选择。",
+        "unsubmittedHint": "尚未发送，按粘贴顺序匹配。如果不是这张，请从下方改选。",
+        "linkHintWithActions": "单击显示操作，或按 {{shortcut}} 预览",
+        "linkHint": "按 {{shortcut}} 预览",
+        "previewAction": "预览图片"
       }
     },
     "onboarding": {

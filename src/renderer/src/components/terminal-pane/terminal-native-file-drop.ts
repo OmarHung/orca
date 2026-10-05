@@ -28,6 +28,7 @@ import {
   resolveTerminalDropWorktreePath
 } from './terminal-drop-worktree-path'
 import { captureRuntimeTerminalDropOwner } from './terminal-drop-runtime-owner'
+import { recordTerminalImageDrops } from './terminal-image-paste-history'
 
 export type NativeTerminalFileDropArgs = {
   manager: PaneManager
@@ -163,6 +164,8 @@ type NativeDropFlowArgs = {
   pane: ReturnType<typeof resolveNativeTerminalDropPane> & {}
   tabId: string
   worktreePath: string
+  /** SSH target the dropped paths resolve on; absent for local drops. */
+  connectionId?: string
   expectedSshTargetId?: string
   expectedSshConnectionGeneration?: number
   expectedExecutionHostId?: 'local' | `ssh:${string}`
@@ -299,6 +302,7 @@ async function pasteResolvedDropPaths(
   showTerminalDropWriteFailure(writeResult.failureReason)
   if (writeResult.sentAnyPath) {
     recordTerminalUserInputForLeaf(args.tabId, args.pane.leafId)
+    recordTerminalImageDrops(args, writeResult.pathsWritten)
   }
   if (writeResult.targetCurrent) {
     args.pane.terminal.focus()

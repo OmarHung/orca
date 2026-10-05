@@ -8,6 +8,7 @@ import { readWorkspaceFileDragPaths } from '@/lib/workspace-file-drag'
 import { captureTerminalDropTarget } from './terminal-drop-target'
 import { resolveTerminalDropTargetShell } from './terminal-drop-shell'
 import { writeTerminalDropPathsToCapturedTarget } from './terminal-drop-path-writer'
+import { recordTerminalImageDrops } from './terminal-image-paste-history'
 import { resolveInternalTerminalDropPane } from './terminal-drop-pane-resolution'
 import { getTerminalPasteSshRemotePlatform } from './terminal-paste-ssh-platform'
 import { showTerminalDropWriteFailure } from './terminal-drop-write-failure'
@@ -103,6 +104,10 @@ export async function handleInternalTerminalFileDrop({
   showTerminalDropWriteFailure(writeResult.failureReason)
   if (writeResult.sentAnyPath) {
     recordTerminalUserInputForLeaf(tabId, pane.leafId)
+    recordTerminalImageDrops(
+      { tabId, pane, paths, connectionId: runtimeEnvironmentId ? null : connectionId },
+      writeResult.pathsWritten
+    )
   }
   if (writeResult.targetCurrent) {
     pane.terminal.focus()

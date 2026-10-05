@@ -151,6 +151,7 @@ export function createTerminalPaneCreatedHandler(
     })
     installTerminalPaneLinkHandling({
       pane,
+      tabId: deps.tabId,
       managerRef,
       settingsRef,
       refs,
