@@ -8,6 +8,7 @@ import {
 } from '../../shared/debug/debug-session-types'
 import { DebugSessionManager, defaultDebugAdaptersDir } from './debug-session-manager'
 import { registerPythonHandlers } from '../python/python-ipc'
+import { registerDotnetContainerHandlers } from '../dotnet-container/dotnet-container-ipc'
 
 // Why: renderer input is untrusted — it chooses what program runs and what the adapter receives.
 const SessionIdSchema = z.string().regex(/^[A-Za-z0-9-]{8,64}$/)
@@ -76,6 +77,7 @@ const RequestArgsSchema = z.record(z.string(), z.unknown())
 
 export function registerDebugHandlers(): void {
   registerPythonHandlers()
+  registerDotnetContainerHandlers()
   const sessions = new DebugSessionManager(defaultDebugAdaptersDir(app.getPath('userData')))
 
   ipcMain.handle(
