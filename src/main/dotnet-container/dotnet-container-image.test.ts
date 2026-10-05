@@ -32,6 +32,18 @@ describe('buildDotnetContainerDockerfile', () => {
     expect(dockerfile).toContain('tar -xzf /tmp/netcoredbg.tgz -C /usr/local/lib')
   })
 
+  it('installs dotnet ef 3.1 from the verified package only', () => {
+    const dockerfile = buildDotnetContainerDockerfile('arm64')
+    expect(dockerfile).toContain('dotnet-ef/3.1.32/dotnet-ef.3.1.32.nupkg -o /tmp/ef/')
+    expect(dockerfile).toContain(
+      'echo "e06ff7055cfa50445e3e404b0c3fbf4292937c21929fd411d7c30027cf5de2db4b47f9d5d39f2c0d5b355f6da0667169266e89ae2041736050fa70bba69294ee  /tmp/ef/dotnet-ef.3.1.32.nupkg" | sha512sum -c -'
+    )
+    expect(dockerfile).toContain('--configfile /tmp/ef/nuget.config --version 3.1.32 dotnet-ef')
+    expect(dockerfile).toContain(
+      'ln -s /usr/local/lib/orca-dotnet-tools/dotnet-ef /usr/local/bin/dotnet-ef'
+    )
+  })
+
   it('uses the x64 archives for an x64 host', () => {
     const dockerfile = buildDotnetContainerDockerfile('x64')
     expect(dockerfile).toContain('dotnet-sdk-10.0.201-linux-x64.tar.gz')
