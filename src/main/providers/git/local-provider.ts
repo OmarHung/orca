@@ -11,6 +11,7 @@ import { getRemoteCommitUrl, getRemoteFileUrl } from '../../git/remotes/repo-rem
 import { isGitRepo } from '../../git/repositories/discovery/repo-detection'
 import { awaitWindowsHostGitEnvironmentReady } from '../../git/command-runner/host-routing/windows-host-git-environment'
 import { gitExecFileAsync } from '../../git/command-runner/git-exec-file'
+import { runLocalGitBranchAction } from '../../git/git-branch-action'
 import {
   abortMerge,
   abortRebase,
@@ -148,6 +149,7 @@ export function createLocalGitProvider(options: LocalGitProviderOptions = {}): L
       gitFastForward(worktreePath, pushTarget, interactive),
     rebaseFromBase: (worktreePath, baseRef) =>
       gitPullRebaseFromBase(worktreePath, baseRef, interactive),
+    runBranchAction: (worktreePath, action) => runLocalGitBranchAction(worktreePath, action, base),
     fetchRemote: (worktreePath, pushTarget) => gitFetch(worktreePath, pushTarget, interactive),
     syncForkDefaultBranch: (worktreePath, expectedUpstream) =>
       gitSyncForkDefaultBranch(worktreePath, expectedUpstream, interactive),

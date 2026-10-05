@@ -32,6 +32,10 @@ import type { BranchSwitchCreation } from '../../../shared/git/branch-switch-tar
 import type { RuntimeGitLocalBranches } from '../../../shared/worktree/catalog/runtime-worktree-contracts'
 import type { GitAdmissionTier } from '../../../shared/rpc-contract/source-control/git-admission-tier-params'
 import type { GitBlameResult } from '../../../shared/git/blame/git-blame-types'
+import type {
+  GitBranchAction,
+  GitBranchActionResult
+} from '../../../shared/git-branch-action/git-branch-action-types'
 
 export type IGitProvider = {
   getStatus(worktreePath: string, options?: GitProviderStatusOptions): Promise<GitStatusResult>
@@ -115,6 +119,7 @@ export type IGitProvider = {
   pullBranch(worktreePath: string, pushTarget?: GitPushTarget): Promise<void>
   fastForwardBranch(worktreePath: string, pushTarget?: GitPushTarget): Promise<void>
   rebaseFromBase(worktreePath: string, baseRef: string): Promise<void>
+  runBranchAction(worktreePath: string, action: GitBranchAction): Promise<GitBranchActionResult>
   fetchRemote(worktreePath: string, pushTarget?: GitPushTarget): Promise<void>
   syncForkDefaultBranch(
     worktreePath: string,

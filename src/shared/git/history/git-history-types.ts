@@ -77,6 +77,8 @@ export type GitHistoryOptions = {
   path?: string | null
   /** With `revision`: also report `cherryPickedIds`. Opt-in because it diffs every branch-only commit. */
   markCherryPicks?: boolean
+  /** Also report `unpushedIds`: logged commits that no remote-tracking branch contains. */
+  markUnpushed?: boolean
 }
 
 export type GitHistoryBranchRange = {
@@ -104,6 +106,11 @@ export type GitHistoryBranch = {
   isHead: boolean
   /** Short upstream name for local branches, e.g. `origin/main`. */
   upstream?: string
+  /** Commits the upstream lacks / has beyond this branch; absent when in sync or from older hosts. */
+  ahead?: number
+  behind?: number
+  /** The upstream is configured but its remote-tracking branch no longer exists. */
+  upstreamGone?: boolean
 }
 
 export type GitHistoryBranchList = {
@@ -135,6 +142,8 @@ export type GitHistoryResult = {
   headMergeBases?: string[]
   /** Present when `markCherryPicks` was honored: branch-only commits HEAD already has as a cherry-pick. */
   cherryPickedIds?: string[]
+  /** Present when `markUnpushed` was honored and the repo has remote-tracking branches. */
+  unpushedIds?: string[]
   /** Present only when `includeRefs` was requested and the host supports it. */
   branchList?: GitHistoryBranchList
   /** Echoes the path the log was limited to; absent from a host that ignores `path`. */

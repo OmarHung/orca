@@ -33,6 +33,7 @@ type RuntimeGitCommandName =
   | 'sequencerAbortRuntimeGit'
   | 'sequencerContinueRuntimeGit'
   | 'completeRuntimeGitMerge'
+  | 'runRuntimeGitBranchAction'
   | 'generateRuntimeCommitMessage'
   | 'discoverRuntimeCommitMessageModels'
   | 'cancelRuntimeGenerateCommitMessage'
@@ -89,6 +90,7 @@ export function installRuntimeGitCommandSurface(
     sequencerAbortRuntimeGit: commands.sequencerAbortRuntimeGit.bind(commands),
     sequencerContinueRuntimeGit: commands.sequencerContinueRuntimeGit.bind(commands),
     completeRuntimeGitMerge: commands.completeRuntimeGitMerge.bind(commands),
+    runRuntimeGitBranchAction: commands.runRuntimeGitBranchAction.bind(commands),
     generateRuntimeCommitMessage: commands.generateRuntimeCommitMessage.bind(commands),
     discoverRuntimeCommitMessageModels: commands.discoverRuntimeCommitMessageModels.bind(commands),
     cancelRuntimeGenerateCommitMessage: commands.cancelRuntimeGenerateCommitMessage.bind(commands),

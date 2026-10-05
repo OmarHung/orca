@@ -296,6 +296,7 @@ import {
   SlugIssueUpdate,
   SlugPullRequestUpdate
 } from './github/github-project-params'
+import { GitBranchActionParams } from './git-branch-action-params'
 import {
   PRCommentReaction,
   PrForBranch,
@@ -1158,6 +1159,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'git.abortRebase': WorktreeSelectorOfGitParams,
   'git.atRiskLocalFiles': WorktreeSelectorOfGitParams,
   'git.blame': GitBlame,
+  'git.branchAction': GitBranchActionParams,
   'git.branchCompare': GitBranchCompare,
   'git.branchDiff': GitBranchDiff,
   'git.bulkDiscard': GitBulkPaths,

@@ -19,6 +19,10 @@ import type {
   GitHistoryResult
 } from '../../../shared/git/history/git-history-types'
 import type { PreloadApi } from '../../api-types'
+import type {
+  GitBranchAction,
+  GitBranchActionResult
+} from '../../../shared/git-branch-action/git-branch-action-types'
 
 export const gitApi = {
   status: (args: {
@@ -141,6 +145,11 @@ export const gitApi = {
     baseRef: string
     connectionId?: string
   }): Promise<void> => ipcRenderer.invoke('git:rebaseFromBase', args),
+  branchAction: (args: {
+    worktreePath: string
+    action: GitBranchAction
+    connectionId?: string
+  }): Promise<GitBranchActionResult> => ipcRenderer.invoke('git:branchAction', args),
   branchDiff: (args: {
     worktreePath: string
     compare: { baseRef: string; baseOid: string; headOid: string; mergeBase: string }
