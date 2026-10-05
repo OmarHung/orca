@@ -7,6 +7,10 @@ import type {
   GitForkSyncResult
 } from '../../shared/git/remotes/git-fork-sync'
 import type { TuiAgent } from '../../shared/agent-launch/catalog/tui-agent'
+import type {
+  GitBranchAction,
+  GitBranchActionResult
+} from '../../shared/git-branch-action/git-branch-action-types'
 import type { GitPushTarget } from '../../shared/worktree/types'
 import type { GitStageWorktreeScope } from '../../shared/git/paths/git-stage-worktree-scope'
 import type { ConflictResolution } from '../../shared/source-control/listing/source-control-entry-actions'
@@ -51,6 +55,11 @@ export type GitOperationApi = {
     baseRef: string
     connectionId?: string
   }) => Promise<void>
+  branchAction: (args: {
+    worktreePath: string
+    action: GitBranchAction
+    connectionId?: string
+  }) => Promise<GitBranchActionResult>
   commit: (args: {
     worktreePath: string
     message: string

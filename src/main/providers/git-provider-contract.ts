@@ -26,6 +26,10 @@ import type {
   GitHistoryResult
 } from '../../shared/git/history/git-history-types'
 import type { GitBlameResult } from '../../shared/git-blame'
+import type {
+  GitBranchAction,
+  GitBranchActionResult
+} from '../../shared/git-branch-action/git-branch-action-types'
 import type { CommitMessageDraftContext } from '../../shared/source-control/ai/generation/commit-message-generation'
 import type { ConflictResolution } from '../../shared/source-control/listing/source-control-entry-actions'
 import type { GitProviderStatusOptions } from './git-provider-status-options'
@@ -117,6 +121,7 @@ export type IGitProvider = {
   pullBranch(worktreePath: string, pushTarget?: GitPushTarget): Promise<void>
   fastForwardBranch(worktreePath: string, pushTarget?: GitPushTarget): Promise<void>
   rebaseFromBase(worktreePath: string, baseRef: string): Promise<void>
+  runBranchAction(worktreePath: string, action: GitBranchAction): Promise<GitBranchActionResult>
   fetchRemote(worktreePath: string, pushTarget?: GitPushTarget): Promise<void>
   syncForkDefaultBranch(
     worktreePath: string,

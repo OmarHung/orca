@@ -7,6 +7,8 @@ import { dedupeRemoteTrackingRefs } from '../../../../../shared/git-history-ref-
 import { GitHistoryGraphSvg } from '../../right-sidebar/source-control/sync/git-history-graph-svg'
 import { GitHistoryRefBadge } from '../../right-sidebar/source-control/sync/git-history-row'
 import { formatGitLogDate, formatGitLogFullDate } from './git-log-format'
+import { collectFoldedRemoteRefs } from './git-log-ref-sync'
+import { GitLogRemoteAlsoHereMark, GitLogUnpushedMark } from './git-log-push-marks'
 
 const MAX_VISIBLE_REFS = 3
 
@@ -17,6 +19,8 @@ type GitLogTableRowProps = React.HTMLAttributes<HTMLButtonElement> & {
   inCurrentBranch: boolean
   /** A copy of it is on the checked-out branch: tinted the same, plus a cherry mark. */
   cherryPicked: boolean
+  /** No remote-tracking branch contains it yet. */
+  unpushed: boolean
   /** Lanes only make sense over the unfiltered, contiguous log. */
   showGraph: boolean
   gridTemplateColumns: string
@@ -30,6 +34,7 @@ export const GitLogTableRow = React.forwardRef<HTMLButtonElement, GitLogTableRow
       selected,
       inCurrentBranch,
       cherryPicked,
+      unpushed,
       showGraph,
       gridTemplateColumns,
       onSelectCommit,
@@ -39,7 +44,9 @@ export const GitLogTableRow = React.forwardRef<HTMLButtonElement, GitLogTableRow
     ref
   ): React.JSX.Element {
     const item = viewModel.historyItem
-    const refs = dedupeRemoteTrackingRefs(item.references ?? [])
+    const allRefs = item.references ?? []
+    const refs = dedupeRemoteTrackingRefs(allRefs)
+    const foldedRemotes = collectFoldedRemoteRefs(allRefs, refs)
     const visibleRefs = refs.slice(0, MAX_VISIBLE_REFS)
     const hiddenRefCount = refs.length - visibleRefs.length
 
@@ -51,6 +58,7 @@ export const GitLogTableRow = React.forwardRef<HTMLButtonElement, GitLogTableRow
         data-current={selected ? 'true' : undefined}
         data-current-branch={inCurrentBranch ? 'true' : undefined}
         data-cherry-picked={cherryPicked ? 'true' : undefined}
+        data-unpushed={unpushed ? 'true' : undefined}
         data-testid="git-log-row"
         className={cn(
           'grid h-6 w-full min-w-0 items-center gap-x-3 px-2 text-left text-xs',
@@ -69,12 +77,19 @@ export const GitLogTableRow = React.forwardRef<HTMLButtonElement, GitLogTableRow
           data-git-log-col="subject"
         >
           {showGraph ? <GitHistoryGraphSvg viewModel={viewModel} /> : null}
-          {visibleRefs.map((itemRef) => (
-            <GitHistoryRefBadge key={itemRef.id} itemRef={itemRef} />
-          ))}
+          {visibleRefs.map((itemRef) => {
+            const remoteName = foldedRemotes.get(itemRef.id)
+            return (
+              <React.Fragment key={itemRef.id}>
+                <GitHistoryRefBadge itemRef={itemRef} />
+                {remoteName ? <GitLogRemoteAlsoHereMark remoteName={remoteName} /> : null}
+              </React.Fragment>
+            )
+          })}
           {hiddenRefCount > 0 ? (
             <span className="shrink-0 text-[10px] text-muted-foreground">+{hiddenRefCount}</span>
           ) : null}
+          {unpushed ? <GitLogUnpushedMark /> : null}
           {cherryPicked ? (
             <span
               className="flex shrink-0"

@@ -3,6 +3,7 @@ import { RuntimeGitGenerationCommands } from './runtime-git-generation-commands'
 import { RuntimeGitStagingCommands } from './runtime-git-staging-commands'
 import { RuntimeGitStatusCommands } from './runtime-git-status-commands'
 import { RuntimeGitSyncCommands } from './runtime-git-sync-commands'
+import { RuntimeGitBranchActionCommands } from './runtime-git-branch-action-commands'
 import type { RuntimeGitCommandHost } from './runtime-git-command-target'
 
 export class RuntimeGitCommands {
@@ -39,6 +40,7 @@ export class RuntimeGitCommands {
   readonly sequencerAbortRuntimeGit: RuntimeGitSyncCommands['sequencerAbortRuntimeGit']
   readonly sequencerContinueRuntimeGit: RuntimeGitSyncCommands['sequencerContinueRuntimeGit']
   readonly completeRuntimeGitMerge: RuntimeGitSyncCommands['completeRuntimeGitMerge']
+  readonly runRuntimeGitBranchAction: RuntimeGitBranchActionCommands['runRuntimeGitBranchAction']
   readonly generateRuntimeCommitMessage: RuntimeGitGenerationCommands['generateRuntimeCommitMessage']
   readonly cancelRuntimeGenerateCommitMessage: RuntimeGitGenerationCommands['cancelRuntimeGenerateCommitMessage']
   readonly generateRuntimePullRequestFields: RuntimeGitGenerationCommands['generateRuntimePullRequestFields']
@@ -92,6 +94,8 @@ export class RuntimeGitCommands {
     this.sequencerAbortRuntimeGit = sync.sequencerAbortRuntimeGit.bind(sync)
     this.sequencerContinueRuntimeGit = sync.sequencerContinueRuntimeGit.bind(sync)
     this.completeRuntimeGitMerge = sync.completeRuntimeGitMerge.bind(sync)
+    const branchActions = new RuntimeGitBranchActionCommands(host)
+    this.runRuntimeGitBranchAction = branchActions.runRuntimeGitBranchAction.bind(branchActions)
     this.generateRuntimeCommitMessage = generation.generateRuntimeCommitMessage.bind(generation)
     this.cancelRuntimeGenerateCommitMessage =
       generation.cancelRuntimeGenerateCommitMessage.bind(generation)

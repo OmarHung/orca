@@ -1,5 +1,6 @@
 import type { FilesystemHandlerContext } from './filesystem-handler-context'
 import { registerGitRemoteBranchMutationHandlers } from './git-remote/branch-mutation-handlers'
+import { registerGitBranchActionHandlers } from './git-remote/branch-action-handlers'
 import { registerGitRemoteCompareHandlers } from './git-remote/compare-handlers'
 import { registerGitRemoteSyncHandlers } from './git-remote/sync-handlers'
 
@@ -7,4 +8,5 @@ export function registerFilesystemGitRemoteHandlers(context: FilesystemHandlerCo
   registerGitRemoteCompareHandlers(context)
   registerGitRemoteSyncHandlers(context)
   registerGitRemoteBranchMutationHandlers(context)
+  registerGitBranchActionHandlers(context)
 }
