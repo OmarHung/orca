@@ -12,6 +12,7 @@ export function getDaemonZshWrapperSpec(): ZshStartupHookSpec {
     restores: {
       managedWslCli: false,
       agentTeamsPath: true,
+      dotnetLauncherPath: true,
       remoteCliBinDir: false,
       codexHome: true
     }

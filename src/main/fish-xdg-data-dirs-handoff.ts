@@ -1,4 +1,5 @@
 /** Use vendor_conf.d to restore XDG_DATA_DIRS and defer agent hooks until after user config. */
+import { FISH_DOTNET_LAUNCHER_PATH_RESTORE } from './dotnet-launcher-path-restore'
 import { getFishCodexShellLaunchPreflight } from '../shared/codex-shell-function'
 import { getFishClaudeShellFunction } from '../shared/claude-shell-function'
 import { MANAGED_DATA_ACCOUNT_FISH_RESTORE } from '../shared/managed-data-account-shell'
@@ -45,6 +46,7 @@ export function getFishXdgDataDirsLaunchEnv(
 
 // Scope temporary variables to the function; only the restored env and hooks should survive.
 // Wait for fish_prompt so user-defined functions and PATH changes take precedence.
+// The .NET launcher waits too, so config.fish cannot put ~/.dotnet ahead of it.
 export function getFishVendorConfSnippet(): string {
   return `# Orca-generated. Loaded only because Orca put this directory on
 # XDG_DATA_DIRS for one fish launch; the first thing it does is take it off.
@@ -66,6 +68,7 @@ function __orca_fish_xdg_handoff
         functions -e __orca_define_codex
 ${MANAGED_DATA_ACCOUNT_FISH_RESTORE}
 ${getFishCodexShellLaunchPreflight()}${getFishClaudeShellFunction()}
+${FISH_DOTNET_LAUNCHER_PATH_RESTORE}
     end
 end
 __orca_fish_xdg_handoff

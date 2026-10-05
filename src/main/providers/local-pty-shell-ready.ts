@@ -1,3 +1,4 @@
+import { FISH_DOTNET_LAUNCHER_PATH_RESTORE } from '../dotnet-launcher-path-restore'
 import { basename, win32 as pathWin32 } from 'node:path'
 import {
   encodePowerShellCommand,
@@ -135,7 +136,7 @@ export function getShellLaunchConfig(
           SHELL_READY_MARKER_ESCAPED,
           features.includes('ready'),
           startupCommand !== undefined
-        )}\n${getFishCodexShellLaunchPreflight() + getFishClaudeShellFunction()}`
+        )}\n${getFishCodexShellLaunchPreflight() + getFishClaudeShellFunction()}\n${FISH_DOTNET_LAUNCHER_PATH_RESTORE}`
       ],
       env:
         startupCommand !== undefined ? { [POSIX_SHELL_STARTUP_COMMAND_ENV]: startupCommand } : {},

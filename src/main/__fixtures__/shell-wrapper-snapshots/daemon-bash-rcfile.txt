@@ -32,6 +32,8 @@ if [ -n "${ORCA_CLI_BIN_DIR:-}" ]; then
     *) export PATH="$ORCA_CLI_BIN_DIR${PATH:+:$PATH}" ;;
   esac
 fi
+# Why: rc files often prepend ~/.dotnet; the .NET container launcher must stay ahead of it.
+[[ -n "${ORCA_DOTNET_LAUNCHER_DIR:-}" ]] && case "$PATH" in "${ORCA_DOTNET_LAUNCHER_DIR}"|"${ORCA_DOTNET_LAUNCHER_DIR}:"*) ;; *) export PATH="${ORCA_DOTNET_LAUNCHER_DIR}:$PATH" ;; esac
 # Restore the managed OpenCode config after user profiles may have replaced it.
 [[ -n "${ORCA_OPENCODE_CONFIG_DIR:-}" ]] && export OPENCODE_CONFIG_DIR="${ORCA_OPENCODE_CONFIG_DIR}"
 if [[ -n "${ORCA_DATA_ACCOUNT_DATA_HOME:-}" ]]; then

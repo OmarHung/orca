@@ -53,3 +53,7 @@ if test -n "$ORCA_CLAUDE_PROFILE_POINTER"; and test "$__orca_claude_type" = file
   end
 end
 set -e __orca_claude_type
+
+if set -q ORCA_DOTNET_LAUNCHER_DIR; and test "$PATH[1]" != "$ORCA_DOTNET_LAUNCHER_DIR"
+    set -gx PATH "$ORCA_DOTNET_LAUNCHER_DIR" $PATH
+end

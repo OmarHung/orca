@@ -105,6 +105,7 @@ export function configureLocalPtyProvider(args: {
         wslDistro: ctx?.wslDistro ?? null,
         agentStatusHooksEnabled: isAgentStatusHooksEnabled(ptySettings),
         claudeSubagentNavigationEnabled: ptySettings?.claudeSubagentNavigationEnabled,
+        dotnetContainerToolchain: ptySettings?.dotnetContainerToolchain === true,
         terminalInlineImages: ptySettings?.terminalInlineImages,
         disabledTuiAgents: ptySettings?.disabledTuiAgents,
         networkProxySettings: ptySettings,

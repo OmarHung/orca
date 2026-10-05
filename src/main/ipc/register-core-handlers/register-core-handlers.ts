@@ -249,7 +249,7 @@ export function registerCoreHandlers(
   registerBrowserHandlers()
   registerShellHandlers(store)
   registerPetHandlers()
-  registerDebugHandlers()
+  registerDebugHandlers(() => store.getSettings())
   registerCodeNavigationHandlers()
   registerDatabaseHandlers()
   registerSftpHandlers()

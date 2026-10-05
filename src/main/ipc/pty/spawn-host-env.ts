@@ -228,6 +228,7 @@ export async function resolvePtySpawnHostEnv(args: PtySpawnHostEnvArgs): Promise
       wslDistro,
       agentStatusHooksEnabled: isAgentStatusHooksEnabled(ptySettings),
       claudeSubagentNavigationEnabled: ptySettings?.claudeSubagentNavigationEnabled,
+      dotnetContainerToolchain: ptySettings?.dotnetContainerToolchain === true,
       terminalInlineImages: ptySettings?.terminalInlineImages,
       disabledTuiAgents: ptySettings?.disabledTuiAgents,
       networkProxySettings: ptySettings,

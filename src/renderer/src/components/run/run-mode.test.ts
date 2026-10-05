@@ -9,7 +9,12 @@ function target(extra: Partial<RunTarget> = {}): RunTarget {
     worktreeId: 'wt',
     groupId: null,
     commandKey: 'detected:api',
-    command: { id: 'detected:api', label: 'Api: build', command: 'dotnet build', appendEnter: true },
+    command: {
+      id: 'detected:api',
+      label: 'Api: build',
+      command: 'dotnet build',
+      appendEnter: true
+    },
     ...extra
   }
 }

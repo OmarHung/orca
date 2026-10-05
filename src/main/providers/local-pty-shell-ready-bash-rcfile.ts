@@ -1,4 +1,5 @@
 /** Bash has one --rcfile wrapper, so login startup, OSC hooks and readiness share this file. */
+import { DOTNET_LAUNCHER_PATH_RESTORE } from '../dotnet-launcher-path-restore'
 import { BASH_PROMPT_COMMAND_COMPOSITION_BLOCK } from '../bash-prompt-command-composition'
 import { ORCA_CLI_POSIX_PATH_RESTORE } from '../../shared/orca-cli-shell-path'
 import { MANAGED_DATA_ACCOUNT_POSIX_RESTORE } from '../../shared/managed-data-account-shell'
@@ -39,6 +40,7 @@ __orca_restore_agent_teams_path() {
 }
 __orca_restore_agent_teams_path
 ${ORCA_CLI_POSIX_PATH_RESTORE}
+${DOTNET_LAUNCHER_PATH_RESTORE}
 ${WSL_MANAGED_CLI_PATH_RESTORE}
 # Restore Orca-managed config after user startup files may override it.
 [[ -n "\${ORCA_OPENCODE_CONFIG_DIR:-}" ]] && export OPENCODE_CONFIG_DIR="\${ORCA_OPENCODE_CONFIG_DIR}"
