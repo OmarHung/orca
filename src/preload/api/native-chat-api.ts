@@ -3,6 +3,10 @@ import type {
   NativeChatMessage,
   NativeChatTurnLifecycle
 } from '../../shared/native-chat-types'
+import type {
+  ClaudePastedImageLookupArgs,
+  ClaudePastedImageLookupResult
+} from '../../shared/claude-pasted-image'
 
 // notFound marks a not-yet-on-disk miss (retry-worthy) vs a real read/parse error (#8401).
 export type NativeChatReadSessionResult =
@@ -67,4 +71,9 @@ export type NativeChatApi = {
   ) => () => void
   /** A local structured chat's last failed naming output; null when none or not local. */
   getConversationNameFailureOutput: (sessionId: string) => Promise<string | null>
+  /** Finds the submitted image behind a Claude `[Image #N]` chip. Desktop-only:
+   *  web and remote-runtime clients omit it and fall back to recorded pastes. */
+  findClaudePastedImage?: (
+    args: ClaudePastedImageLookupArgs
+  ) => Promise<ClaudePastedImageLookupResult>
 }

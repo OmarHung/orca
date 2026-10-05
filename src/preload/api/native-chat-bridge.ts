@@ -6,6 +6,10 @@ import type {
   PreloadApi
 } from '../api-types'
 import type { AgentType } from '../../shared/native-chat-types'
+import type {
+  ClaudePastedImageLookupArgs,
+  ClaudePastedImageLookupResult
+} from '../../shared/claude-pasted-image'
 
 export const nativeChatApi = {
   readSession: (
@@ -38,5 +42,9 @@ export const nativeChatApi = {
     }
   },
   getConversationNameFailureOutput: (sessionId: string): Promise<string | null> =>
-    ipcRenderer.invoke('nativeChat:conversationNameFailureOutput', sessionId)
+    ipcRenderer.invoke('nativeChat:conversationNameFailureOutput', sessionId),
+  findClaudePastedImage: (
+    args: ClaudePastedImageLookupArgs
+  ): Promise<ClaudePastedImageLookupResult> =>
+    ipcRenderer.invoke('nativeChat:findClaudePastedImage', args)
 } satisfies PreloadApi['nativeChat']

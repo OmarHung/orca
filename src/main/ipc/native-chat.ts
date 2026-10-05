@@ -17,6 +17,10 @@ import { abortWhenRendererGone } from './renderer-lifetime-abort'
 import { agentHookServer } from '../agent-hooks/server'
 import { nativeChatTranscriptPathOnExecutionHost } from '../native-chat/ssh-transcript-path'
 import { getStructuredAgentSessionHost } from '../native-chat/agent-session-wire/structured-agent-session-registry'
+import {
+  findClaudePastedImage,
+  parseClaudePastedImageLookupArgs
+} from '../native-chat/claude-pasted-image-lookup'
 
 export { clearNativeChatTranscriptCache }
 
@@ -329,5 +333,11 @@ export function registerNativeChatHandlers(): void {
   ipcMain.handle('nativeChat:conversationNameFailureOutput', (_event, sessionId: unknown) => {
     const naming = getStructuredAgentSessionHost()?.deps.conversationNaming
     return typeof sessionId === 'string' ? (naming?.failureOutput(sessionId) ?? null) : null
+  })
+  ipcMain.handle('nativeChat:findClaudePastedImage', (_event, args: unknown) => {
+    const parsed = parseClaudePastedImageLookupArgs(args)
+    return parsed
+      ? findClaudePastedImage(parsed)
+      : { status: 'unavailable', message: 'Invalid image lookup request.' }
   })
 }
