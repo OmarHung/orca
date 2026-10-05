@@ -1,7 +1,6 @@
 import React from 'react'
 import { CircleDot, GitCompareArrows } from 'lucide-react'
 import {
-  ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuSub,
@@ -81,8 +80,8 @@ export function GitLogCommitCompareItems({
   )
 }
 
-/** Right-click menu for a branch in the Git Log branch tree. */
-export function GitLogBranchCompareMenu({
+/** Compare entries of the branch tree's right-click menu. */
+export function GitLogBranchCompareItems({
   branch,
   branches,
   onCompare
@@ -95,7 +94,7 @@ export function GitLogBranchCompareMenu({
   const head = branches.find((candidate) => candidate.isHead)
   const others = branches.filter((candidate) => candidate.fullName !== branch.fullName)
   return (
-    <ContextMenuContent className="w-60">
+    <>
       <ContextMenuItem
         disabled={!head || branch.isHead}
         onSelect={() => head && onCompare(branchCompareTarget(head), target)}
@@ -124,6 +123,6 @@ export function GitLogBranchCompareMenu({
       </ContextMenuSub>
       <ContextMenuSeparator />
       <SelectAndCompareItems target={target} onCompare={onCompare} />
-    </ContextMenuContent>
+    </>
   )
 }

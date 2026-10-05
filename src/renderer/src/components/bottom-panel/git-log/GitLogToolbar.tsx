@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import type { GitLogFilter } from './git-log-filter'
+import { GitLogFetchButton } from './actions/GitLogFetchButton'
 
 const ALL_AUTHORS_VALUE = '__all__'
 
@@ -148,6 +149,7 @@ export function GitLogToolbar({
       ) : null}
       <div className="flex-1" />
       <GitLogCherryPickToggle {...cherryPicks} />
+      <GitLogFetchButton />
       <Button
         variant="ghost"
         size="icon-xs"

@@ -16,6 +16,7 @@ import {
 import { getGitCurrentBranchName } from '../refs/git-current-branch'
 import { isBaseOfItself, resolveBranchRange } from './git-history-branch-range'
 import { isGitHistoryBranchRefName, loadGitHistoryBranches } from './git-history-branches'
+import { loadUnpushedIds } from './git-history-unpushed'
 import { loadCurrentBranchComparison } from './git-history-current-branch-comparison'
 
 function clampHistoryLimit(limit: number | undefined): number {
@@ -207,7 +208,7 @@ export async function loadGitHistoryFromExecutor(
   }
 
   const path = options.path?.trim() || undefined
-  const [parsed, currentBranchComparison] = await Promise.all([
+  const [parsed, currentBranchComparison, unpushedIds] = await Promise.all([
     runHistoryLog(git, cwd, limit, historyRevisions, {
       skip,
       shortstat: Boolean(branchBase),
@@ -215,7 +216,8 @@ export async function loadGitHistoryFromExecutor(
     }),
     logTarget.scope === 'ref'
       ? loadCurrentBranchComparison(git, cwd, headOid, logTarget.revisions, options)
-      : {}
+      : {},
+    options.markUnpushed === true ? loadUnpushedIds(git, cwd, historyRevisions) : undefined
   ])
   const items = parsed.slice(0, limit)
   if (branchBase) {
@@ -243,6 +245,7 @@ export async function loadGitHistoryFromExecutor(
     ...(options.skip !== undefined ? { skip } : {}),
     revisionScope: logTarget.scope,
     ...currentBranchComparison,
+    ...(unpushedIds ? { unpushedIds } : {}),
     ...withRefs(refs),
     ...(path ? { path } : {})
   }
