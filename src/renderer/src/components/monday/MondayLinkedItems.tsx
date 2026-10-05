@@ -1,48 +1,85 @@
-import type React from 'react'
-import { ExternalLink } from 'lucide-react'
+import React, { useState } from 'react'
+import { ChevronRight, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
-import type { MondayItemRelation, MondayLinkedItem } from '../../../../shared/monday/monday-types'
-import { MondayColumnValue } from './MondayColumnValue'
+import { cn } from '@/lib/utils'
+import type {
+  MondayItemColumnValue,
+  MondayItemRelation,
+  MondayLinkedItem
+} from '../../../../shared/monday/monday-types'
+import { isMondayWebAddress, MondayColumnValue } from './MondayColumnValue'
+
+const WEBSITE_TITLE = /website|網站|网站|網址|网址|官網|官网|url/i
+
+/** The web address shown without expanding: a Website-titled link column, else the first link. */
+function websiteColumn(columns: MondayItemColumnValue[]): MondayItemColumnValue | undefined {
+  const links = columns.filter((column) => !column.color && isMondayWebAddress(column.text))
+  return links.find((column) => WEBSITE_TITLE.test(column.title)) ?? links[0]
+}
 
 function LinkedItemCard({ item }: { item: MondayLinkedItem }): React.JSX.Element {
+  const [open, setOpen] = useState(false)
   const openLabel = translate('monday.detail.openInMonday', 'Open in monday')
+  const website = websiteColumn(item.columns)
+  const details = item.columns.filter((column) => column !== website)
   return (
-    <article className="rounded-lg border border-border bg-card" data-testid="monday-linked-item">
-      <header className="flex items-start gap-1 border-b border-border py-1.5 pl-3 pr-1.5">
-        <div className="min-w-0 flex-1 py-1">
-          <div className="break-words text-sm font-semibold">{item.name}</div>
-        </div>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={openLabel}
-              onClick={() => void window.api.shell.openUrl(item.url)}
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <article className="rounded-lg border border-border bg-card" data-testid="monday-linked-item">
+        <div className="flex items-start gap-1 p-1.5">
+          <CollapsibleTrigger asChild disabled={details.length === 0}>
+            <button
+              type="button"
+              className="flex min-w-0 flex-1 items-start gap-1.5 rounded-md px-1.5 py-1 text-left outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:hover:bg-transparent"
             >
-              <ExternalLink />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="top" sideOffset={4}>
-            {openLabel}
-          </TooltipContent>
-        </Tooltip>
-      </header>
-      {item.columns.length > 0 ? (
-        <dl className="grid grid-cols-[112px_1fr] gap-x-3 gap-y-2 p-3 text-xs">
-          {item.columns.map((column) => (
-            <div key={column.id} className="contents">
-              <dt className="break-words text-muted-foreground">{column.title}</dt>
-              <dd className="min-w-0">
-                <MondayColumnValue column={column} />
-              </dd>
-            </div>
-          ))}
-        </dl>
-      ) : null}
-    </article>
+              <ChevronRight
+                aria-hidden
+                className={cn(
+                  'mt-0.5 size-3.5 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none',
+                  open && 'rotate-90',
+                  details.length === 0 && 'invisible'
+                )}
+              />
+              <span className="break-words text-sm font-semibold">{item.name}</span>
+            </button>
+          </CollapsibleTrigger>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={openLabel}
+                onClick={() => void window.api.shell.openUrl(item.url)}
+              >
+                <ExternalLink />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={4}>
+              {openLabel}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+        {website ? (
+          <div className="pb-2.5 pl-8 pr-3 text-xs">
+            <MondayColumnValue column={website} />
+          </div>
+        ) : null}
+        <CollapsibleContent>
+          <dl className="grid grid-cols-[112px_1fr] gap-x-3 gap-y-2 border-t border-border p-3 text-xs">
+            {details.map((column) => (
+              <div key={column.id} className="contents">
+                <dt className="break-words text-muted-foreground">{column.title}</dt>
+                <dd className="min-w-0">
+                  <MondayColumnValue column={column} />
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </CollapsibleContent>
+      </article>
+    </Collapsible>
   )
 }
 

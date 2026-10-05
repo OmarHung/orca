@@ -51,9 +51,11 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
     // The task's Web CRM record gets its own card; its link back to the task is left out.
     const crm = panel.getByTestId('monday-linked-item')
     await expect(panel.getByTestId('monday-relation')).toContainText('Web CRM')
-    await expect(crm).toContainText('海發中心 官網')
     await expect(crm.getByRole('button', { name: 'https://www.example.org/' })).toBeVisible()
-    await expect(crm).toContainText('p2-web-server-apple')
+    // Only the website shows until the card is expanded.
+    await expect(crm.getByText('p2-web-server-apple')).toBeHidden()
+    await crm.getByRole('button', { name: '海發中心 官網' }).click()
+    await expect(crm.getByText('p2-web-server-apple')).toBeVisible()
     await expect(crm).not.toContainText('link to Project Cases')
     await expect(panel.getByText('請確認 /en 的導轉規則')).toBeVisible()
     await expect(panel.getByText('已移除路徑快取設定')).toBeVisible()
