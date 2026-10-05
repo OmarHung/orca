@@ -36,13 +36,46 @@ function columnValue(
   return { ...base, text: '' }
 }
 
+const OMAR_ID = '30000001'
+const BELLA_ID = '30000003'
+
+type PersonFilter = { personId: string; includeUnassigned: boolean } | null
+
+/** Reads the `person-<id>` rule (plus optional `is_empty`) Orca sends as query_params. */
+function personFilter(params: unknown): PersonFilter {
+  if (
+    !params ||
+    typeof params !== 'object' ||
+    !('rules' in params) ||
+    !Array.isArray(params.rules)
+  ) {
+    return null
+  }
+  const values = params.rules.flatMap((rule: unknown) =>
+    rule && typeof rule === 'object' && 'compare_value' in rule
+      ? stringList(rule.compare_value)
+      : []
+  )
+  const person = values.find((value) => value.startsWith('person-'))
+  return person
+    ? { personId: person.slice('person-'.length), includeUnassigned: params.rules.length > 1 }
+    : null
+}
+
+function ownerId(item: FakeItem): string | null {
+  return item.mine === null ? null : item.mine ? OMAR_ID : BELLA_ID
+}
+
 function itemsPage(
   board: (typeof FAKE_MONDAY_BOARDS)[number],
   columnIds: string[],
-  onlyMine: boolean
+  filter: PersonFilter
 ): unknown {
   const columns = board.columns.filter((column) => columnIds.includes(column.id))
-  const items = board.items.filter((item) => !onlyMine || item.mine !== false)
+  const items = board.items.filter((item) => {
+    const owner = ownerId(item)
+    return !filter || owner === filter.personId || (owner === null && filter.includeUnassigned)
+  })
   return {
     cursor: null,
     items: items.map((item) => ({
@@ -101,6 +134,18 @@ function itemDetail(itemId: string): unknown {
               body: '<p>已更新</p>',
               created_at: '2026-09-30T02:58:09.000Z',
               creator: { name: 'Omar' }
+            },
+            {
+              id: '5003',
+              body: '<p>@Omar 第三點已確認<br>照原本的做法就可以</p>',
+              created_at: '2026-10-01T05:33:00.000Z',
+              creator: { name: 'Alice愛麗絲' }
+            },
+            {
+              id: '5004',
+              body: '<p>好，我再通知大家</p>',
+              created_at: '2026-10-01T09:34:00.000Z',
+              creator: { name: 'Omar' }
             }
           ]
         }
@@ -137,6 +182,36 @@ function respond(request: GraphqlRequest): unknown {
         email: 'omar@example.com',
         account: { slug: 'acme', name: 'Acme' }
       }
+    }
+  }
+  if (query.includes('users(limit:')) {
+    return {
+      users: [
+        {
+          id: OMAR_ID,
+          name: 'Omar',
+          email: 'omar@example.com',
+          kind: 'guest',
+          status: 'ACTIVE',
+          is_deleted: false
+        },
+        {
+          id: BELLA_ID,
+          name: 'Bella',
+          email: 'bella@example.com',
+          kind: 'guest',
+          status: 'ACTIVE',
+          is_deleted: false
+        },
+        {
+          id: '30000004',
+          name: 'Assistant',
+          email: 'a@agent.monday.com',
+          kind: 'personal_agent_member',
+          status: 'ACTIVE',
+          is_deleted: false
+        }
+      ]
     }
   }
   if (query.includes('boards(limit: 100')) {
@@ -179,7 +254,7 @@ function respond(request: GraphqlRequest): unknown {
     )
     const columnIds = stringList(variables[`c${index}`])
     data[`b${index}`] = board
-      ? [{ items_page: itemsPage(board, columnIds, variables[`q${index}`] !== null) }]
+      ? [{ items_page: itemsPage(board, columnIds, personFilter(variables[`q${index}`])) }]
       : []
   }
   return data
