@@ -42,7 +42,8 @@ export function registerTerminalPanePasteListeners({
     createPaneClipboardCopiedFiles,
     executePanePasteText,
     pasteFromClipboard,
-    resolvePaneProtectedMultilinePasteOptions
+    resolvePaneProtectedMultilinePasteOptions,
+    recordImagePaste
   } = execution
   let suppressNextNativePaste = false
   let pasteSuppressionTimerId: number | null = null
@@ -194,7 +195,8 @@ export function registerTerminalPanePasteListeners({
         executePanePasteText(pane, 'app-menu', activeElementAtDispatch, text, options),
       onTextPasteError: () =>
         setTerminalError('Paste failed: clipboard text is too large for a safe terminal paste.'),
-      onImagePasteError: (error) => setTerminalError(formatClipboardImagePasteError(error))
+      onImagePasteError: (error) => setTerminalError(formatClipboardImagePasteError(error)),
+      onImagePasted: recordImagePaste(pane, connectionId)
     }).catch(() => setTerminalError('Paste failed.'))
   }
 

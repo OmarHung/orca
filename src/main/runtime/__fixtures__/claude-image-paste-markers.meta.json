@@ -1,0 +1,9 @@
+{
+  "capturedAt": "2026-10-05T16:06:57.242Z",
+  "platform": "darwin",
+  "command": ["claude"],
+  "cols": 100,
+  "rows": 30,
+  "note": "Claude Code 2.1.289, macOS; two bracketed-paste image paths into the prompt, never submitted",
+  "exitCode": 129
+}

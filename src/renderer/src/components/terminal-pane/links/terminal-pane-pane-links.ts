@@ -18,6 +18,8 @@ import { createTerminalHandleLinkProvider } from './handles/terminal-handle-link
 import { installTerminalLinkifierClickPriming } from './gestures/terminal-linkifier-click-priming'
 import { installTerminalLinkPointerGesture } from './gestures/terminal-link-pointer-gesture'
 import { installHttpLinkClickFallback } from './http/terminal-url-link-hit-testing'
+import { createClaudeImageMarkerLinkProvider } from '../claude-image-marker-links'
+import { makePaneKey } from '../../../../../shared/workspace-layout/stable-pane-id'
 import { handleOscLink } from './terminal-osc-link-routing'
 import { copyTerminalSelection } from '../clipboard/terminal-selection-copy'
 import { readTerminalClipboardSelection } from '../clipboard/terminal-clipboard-selection-text'
@@ -33,12 +35,14 @@ import { seedStartupSessionRestoredBanner } from '../session-restore/session-res
 
 type PaneLinkContext = {
   pane: ManagedPane
+  tabId: string
   managerRef: React.RefObject<PaneManager | null>
   settingsRef: React.RefObject<GlobalSettings | null | undefined>
   refs: Pick<
     TerminalPaneLifecycleRefs,
     | 'linkProviderDisposablesRef'
     | 'terminalHandleLinkDisposablesRef'
+    | 'imageMarkerLinkDisposablesRef'
     | 'linkifierClickPrimingDisposablesRef'
     | 'linkPointerGesturesRef'
     | 'fileLinkClickFallbackDisposablesRef'
@@ -60,9 +64,18 @@ type PaneLinkContext = {
   ptyStartup: Parameters<typeof seedStartupSessionRestoredBanner>[0]
 }
 
+function paneKeyForLinks(tabId: string, leafId: string): string | null {
+  try {
+    return makePaneKey(tabId, leafId)
+  } catch {
+    return null
+  }
+}
+
 export function installTerminalPaneLinkHandling(context: PaneLinkContext): void {
   const {
     pane,
+    tabId,
     managerRef,
     settingsRef,
     refs,
@@ -93,6 +106,20 @@ export function installTerminalPaneLinkHandling(context: PaneLinkContext): void 
           managerRef.current?.getPanes().find((candidate) => candidate.id === pane.id)?.terminal ??
           null,
         getRuntimeEnvironmentId: () => linkDeps.getRuntimeEnvironmentIdForPane?.(pane.id) ?? null,
+        linkTooltip: pane.linkTooltip,
+        getLinkActionContext: () => getLinkActionContext(pane.id)
+      })
+    )
+  )
+  refs.imageMarkerLinkDisposablesRef.current.set(
+    pane.id,
+    pane.terminal.registerLinkProvider(
+      createClaudeImageMarkerLinkProvider({
+        getTerminal: () =>
+          managerRef.current?.getPanes().find((candidate) => candidate.id === pane.id)?.terminal ??
+          null,
+        getPaneKey: () => paneKeyForLinks(tabId, pane.leafId),
+        isRuntimeOwned: () => getHttpLinkSourceOwnerForPane(pane.id).kind === 'runtime',
         linkTooltip: pane.linkTooltip,
         getLinkActionContext: () => getLinkActionContext(pane.id)
       })

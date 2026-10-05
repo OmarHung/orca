@@ -36,4 +36,19 @@ describe('terminal clipboard paste', () => {
     expect(observedIgnoreBracketedPasteMode).toEqual([false])
     expect(terminal.options.ignoreBracketedPasteMode).toBe(false)
   })
+
+  it('hands the pasted image path to the caller once it reached the terminal', async () => {
+    const onImagePasted = vi.fn()
+    const result = await pasteTerminalClipboard({
+      readClipboardText: vi.fn().mockResolvedValue(''),
+      saveClipboardImageAsTempFile: vi
+        .fn()
+        .mockResolvedValue('/tmp/orca-paste-1760000000000-id.png'),
+      pasteText: vi.fn().mockResolvedValue(true),
+      onImagePasted
+    })
+
+    expect(onImagePasted).toHaveBeenCalledWith('/tmp/orca-paste-1760000000000-id.png')
+    expect(result).toEqual({ status: 'pasted', kind: 'image-path' })
+  })
 })
