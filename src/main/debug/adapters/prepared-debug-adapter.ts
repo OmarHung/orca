@@ -19,6 +19,8 @@ export type AdapterPreparation = {
   onInstalling: () => void
   /** Streams preparation output (e.g. a build) to the Debug console. */
   onOutput: (text: string, category: 'stdout' | 'stderr' | 'console') => void
+  /** The .NET container launcher when that toolchain is on, else null (see dotnet-container/). */
+  dotnetContainerLauncher?: () => Promise<string | null>
 }
 
 export class DebugPreparationError extends Error {}

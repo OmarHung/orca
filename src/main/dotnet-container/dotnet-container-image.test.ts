@@ -23,6 +23,15 @@ describe('buildDotnetContainerDockerfile', () => {
     expect(downloads.at(-1)?.name).toBe('SDK 10.0.201')
   })
 
+  it('bakes in the netcoredbg build that runs on its base image, verified', () => {
+    const dockerfile = buildDotnetContainerDockerfile('arm64')
+    expect(dockerfile).toContain('3.1.0-1031/netcoredbg-linux-arm64.tar.gz')
+    expect(dockerfile).toContain(
+      'echo "2419a6b34c7d25541a4bca9f140c137bdd6f6a3b5693d2f79bc04c930061ffa3  /tmp/netcoredbg.tgz" | sha256sum -c -'
+    )
+    expect(dockerfile).toContain('tar -xzf /tmp/netcoredbg.tgz -C /usr/local/lib')
+  })
+
   it('uses the x64 archives for an x64 host', () => {
     const dockerfile = buildDotnetContainerDockerfile('x64')
     expect(dockerfile).toContain('dotnet-sdk-10.0.201-linux-x64.tar.gz')
@@ -33,6 +42,7 @@ describe('buildDotnetContainerDockerfile', () => {
     const files = decodedFiles(buildDotnetContainerDockerfile('arm64'))
     expect(files['/usr/local/bin/orca-exec']).toContain('orca-exec --kill RUN_ID')
     expect(files['/usr/local/bin/orca-exec']).toContain('orca-exec --list')
+    expect(files['/usr/local/bin/orca-exec']).toContain('orca-exec --ports')
     expect(files['/tmp/orca-ipv4only.c']).toContain(
       'domain == AF_INET6 && (type & 0xf) == SOCK_DGRAM'
     )

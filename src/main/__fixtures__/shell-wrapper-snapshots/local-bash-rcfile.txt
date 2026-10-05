@@ -39,6 +39,8 @@ if [ -n "${ORCA_CLI_BIN_DIR:-}" ]; then
     *) export PATH="$ORCA_CLI_BIN_DIR${PATH:+:$PATH}" ;;
   esac
 fi
+# Why: rc files often prepend ~/.dotnet; the .NET container launcher must stay ahead of it.
+[[ -n "${ORCA_DOTNET_LAUNCHER_DIR:-}" ]] && case "$PATH" in "${ORCA_DOTNET_LAUNCHER_DIR}"|"${ORCA_DOTNET_LAUNCHER_DIR}:"*) ;; *) export PATH="${ORCA_DOTNET_LAUNCHER_DIR}:$PATH" ;; esac
 if [ -n "${ORCA_WSL_CLI_DIR:-}" ]; then
   if [ -x "$ORCA_WSL_CLI_DIR/${ORCA_CLI_COMMAND:-}" ]; then
     export PATH="$ORCA_WSL_CLI_DIR${PATH:+:$PATH}"
