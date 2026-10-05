@@ -20392,6 +20392,7 @@
       "otherColumns": "其他字段",
       "people": "人员",
       "priority": "优先顺序",
+      "replies": "回复（{{value0}}）",
       "status": "状态",
       "subitems": "子任务（{{value0}}）",
       "timeline": "时程",
@@ -20410,9 +20411,7 @@
     },
     "filter": {
       "hideDone": "隐藏已完成",
-      "hideDoneHint": "隐藏状态标为完成的任务",
-      "onlyMine": "只看我的",
-      "onlyMineHint": "指派给你的任务，加上没有指派人的任务"
+      "hideDoneHint": "隐藏状态标为完成的任务"
     },
     "hover": {
       "due": "Due {{value0}}",
@@ -20435,6 +20434,14 @@
     "page": {
       "desktopOnly": "monday 仅在桌面版提供。",
       "title": "monday"
+    },
+    "person": {
+      "everyone": "全部人",
+      "includeUnassigned": "也显示没有指派人的任务",
+      "loading": "正在读取人员…",
+      "search": "搜索人员…",
+      "tokenAccount": "token 账户",
+      "trigger": "只显示：{{value0}}"
     },
     "status": {
       "fetchedAt": "{{value0}} 读取",

@@ -11,6 +11,12 @@ export const BOARDS_QUERY = `query ($page: Int!) {
   }
 }`
 
+export const USERS_PAGE_SIZE = 100
+
+export const USERS_QUERY = `query ($page: Int!) {
+  users(limit: ${USERS_PAGE_SIZE}, page: $page) { id name email kind status is_deleted }
+}`
+
 export const BOARD_COLUMNS_QUERY = `query ($ids: [ID!]) {
   boards(ids: $ids) { id name columns { id title type } }
 }`
@@ -29,22 +35,29 @@ const SCHEDULE_ITEM_FIELDS = (columnsVariable: string): string => `cursor items 
 export type ScheduleBoardQuery = {
   boardId: string
   roles: MondayColumnRoles
-  onlyMine: boolean
+  personId: string | null
+  includeUnassigned: boolean
 }
 
-// Why unassigned too: personal boards ("Omars's Task") leave most items without a person, so
-// "assigned to me" alone would hide nearly all of them.
+// Why a person id, not monday's `assigned_to_me`: that means the token's owner, who may not be
+// the person using Orca. Unassigned items matter because personal boards ("Omars's Task") leave
+// most items without a person.
 function itemsQueryParams(board: ScheduleBoardQuery): Record<string, unknown> | null {
   const column = board.roles.peopleColumnId
-  if (!board.onlyMine || !column) {
+  if (!board.personId || !column) {
     return null
+  }
+  const person = {
+    column_id: column,
+    compare_value: [`person-${board.personId}`],
+    operator: 'any_of'
+  }
+  if (!board.includeUnassigned) {
+    return { rules: [person] }
   }
   return {
     operator: 'or',
-    rules: [
-      { column_id: column, compare_value: ['assigned_to_me'], operator: 'any_of' },
-      { column_id: column, compare_value: [], operator: 'is_empty' }
-    ]
+    rules: [person, { column_id: column, compare_value: [], operator: 'is_empty' }]
   }
 }
 

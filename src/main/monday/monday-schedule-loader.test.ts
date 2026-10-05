@@ -62,7 +62,12 @@ describe('MondayScheduleLoader', () => {
       (query, variables) => graphql.call('token', query, variables),
       () => 42
     )
-    const schedule = await loader.load({ boardIds: ['382737576'], onlyMine: true, refresh: false })
+    const schedule = await loader.load({
+      boardIds: ['382737576'],
+      personId: '69175796',
+      includeUnassigned: true,
+      refresh: false
+    })
 
     expect(schedule.fetchedAt).toBe(42)
     expect(schedule.boards).toHaveLength(1)
@@ -80,7 +85,29 @@ describe('MondayScheduleLoader', () => {
     })
     const firstPageVariables = graphql.mock.mock.calls[1][2]
     expect(firstPageVariables.c0).toEqual(['status8', 'person', 'timeline', 'date5'])
-    expect(firstPageVariables.q0).toMatchObject({ operator: 'or' })
+    expect(firstPageVariables.q0).toEqual({
+      operator: 'or',
+      rules: [
+        { column_id: 'person', compare_value: ['person-69175796'], operator: 'any_of' },
+        { column_id: 'person', compare_value: [], operator: 'is_empty' }
+      ]
+    })
+  })
+
+  it('filters to one person without unassigned items when asked', async () => {
+    const graphql = fakeGraphql([{ cursor: null, items: [] }])
+    const loader = new MondayScheduleLoader((query, variables) =>
+      graphql.call('token', query, variables)
+    )
+    await loader.load({
+      boardIds: ['382737576'],
+      personId: '63803784',
+      includeUnassigned: false,
+      refresh: false
+    })
+    expect(graphql.mock.mock.calls[1][2].q0).toEqual({
+      rules: [{ column_id: 'person', compare_value: ['person-63803784'], operator: 'any_of' }]
+    })
   })
 
   it('reuses board columns until a refresh', async () => {
@@ -92,10 +119,25 @@ describe('MondayScheduleLoader', () => {
     const loader = new MondayScheduleLoader((query, variables) =>
       graphql.call('token', query, variables)
     )
-    await loader.load({ boardIds: ['382737576'], onlyMine: false, refresh: false })
-    await loader.load({ boardIds: ['382737576'], onlyMine: false, refresh: false })
+    await loader.load({
+      boardIds: ['382737576'],
+      personId: null,
+      includeUnassigned: true,
+      refresh: false
+    })
+    await loader.load({
+      boardIds: ['382737576'],
+      personId: null,
+      includeUnassigned: true,
+      refresh: false
+    })
     expect(graphql.mock).toHaveBeenCalledTimes(3)
-    await loader.load({ boardIds: ['382737576'], onlyMine: false, refresh: true })
+    await loader.load({
+      boardIds: ['382737576'],
+      personId: null,
+      includeUnassigned: true,
+      refresh: true
+    })
     expect(graphql.mock).toHaveBeenCalledTimes(5)
     expect(graphql.mock.mock.calls[2][2].q0).toBeNull()
   })
@@ -112,7 +154,12 @@ describe('MondayScheduleLoader', () => {
     const loader = new MondayScheduleLoader((query, variables) =>
       graphql.call('token', query, variables)
     )
-    const schedule = await loader.load({ boardIds: ['382737576'], onlyMine: false, refresh: false })
+    const schedule = await loader.load({
+      boardIds: ['382737576'],
+      personId: null,
+      includeUnassigned: true,
+      refresh: false
+    })
     expect(schedule.boards[0].items).toHaveLength(MAX_ITEMS_PER_BOARD)
     expect(schedule.boards[0].truncated).toBe(true)
   })
@@ -122,7 +169,12 @@ describe('MondayScheduleLoader', () => {
     const loader = new MondayScheduleLoader((query, variables) =>
       graphql.call('token', query, variables)
     )
-    const schedule = await loader.load({ boardIds: ['1'], onlyMine: true, refresh: false })
+    const schedule = await loader.load({
+      boardIds: ['1'],
+      personId: '69175796',
+      includeUnassigned: true,
+      refresh: false
+    })
     expect(schedule.boards).toEqual([])
     expect(graphql.mock).toHaveBeenCalledTimes(1)
   })

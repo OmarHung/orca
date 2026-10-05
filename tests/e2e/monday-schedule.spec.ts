@@ -37,7 +37,8 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
     await expect(
       month.getByTestId('monday-calendar-bar').filter({ hasText: 'FC SEO 欄位開發建置' }).first()
     ).toBeVisible()
-    // "Only mine" hides other people's items; undated items are counted, not drawn.
+    // Shows the connected account's items (plus unassigned) until someone else is picked.
+    await expect(orcaPage.getByTestId('monday-person-picker')).toContainText('Show: Omar')
     await expect(month.getByText('Vivian 的設計稿')).toHaveCount(0)
     await expect(orcaPage.getByText('1 without dates')).toBeVisible()
     await orcaPage.screenshot({ path: testInfo.outputPath('monday-month.png') })
@@ -49,6 +50,8 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
     await expect(panel.getByText('串接規格：SSO 走 OIDC，測試環境先行。')).toBeVisible()
     await expect(panel.getByText('請確認 /en 的導轉規則')).toBeVisible()
     await expect(panel.getByText('已移除路徑快取設定')).toBeVisible()
+    await expect(panel.getByText('Replies (3)')).toBeVisible()
+    await expect(panel.getByTestId('monday-update-entry')).toHaveCount(4)
     await expect(panel.getByRole('link', { name: '[Image]' })).toBeVisible()
     await expect(panel.getByText('測試環境驗證')).toBeVisible()
     expect(await orcaPage.evaluate(() => Reflect.get(window, '__mondayXss'))).toBeUndefined()
@@ -61,7 +64,19 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
     await expect(gantt.getByTestId('monday-gantt-flag').first()).toBeVisible()
     await orcaPage.screenshot({ path: testInfo.outputPath('monday-gantt.png') })
 
-    await orcaPage.getByLabel('Only mine').click()
+    const picker = orcaPage.getByTestId('monday-person-picker')
+    await picker.click()
+    const vivian = orcaPage.getByRole('option', { name: /^Vivian/ })
+    await expect(vivian).toBeVisible()
+    // monday's AI agents are not people you assign work to.
+    await expect(orcaPage.getByRole('option', { name: /Aurora/ })).toHaveCount(0)
+    await vivian.click()
+    await expect(picker).toContainText('Show: Vivian')
+    await expect(gantt.getByRole('button', { name: 'Vivian 的設計稿' }).first()).toBeVisible()
+    await expect(gantt.getByRole('button', { name: '海發中心 零信任串接' })).toHaveCount(0)
+    await picker.click()
+    await orcaPage.getByRole('option', { name: 'Everyone' }).click()
+    await expect(gantt.getByRole('button', { name: '海發中心 零信任串接' }).first()).toBeVisible()
     await expect(gantt.getByRole('button', { name: 'Vivian 的設計稿' }).first()).toBeVisible()
 
     // The token only ever goes to the monday endpoint, from the main process.

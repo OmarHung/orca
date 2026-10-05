@@ -20460,6 +20460,7 @@
       "otherColumns": "Other columns",
       "people": "People",
       "priority": "Priority",
+      "replies": "Replies ({{value0}})",
       "status": "Status",
       "subitems": "Subitems ({{value0}})",
       "timeline": "Timeline",
@@ -20478,9 +20479,7 @@
     },
     "filter": {
       "hideDone": "Hide done",
-      "hideDoneHint": "Hide items whose status is marked done",
-      "onlyMine": "Only mine",
-      "onlyMineHint": "Items assigned to you, plus items with no one assigned"
+      "hideDoneHint": "Hide items whose status is marked done"
     },
     "hover": {
       "due": "Due {{value0}}",
@@ -20503,6 +20502,14 @@
     "page": {
       "desktopOnly": "monday is available in the desktop app only.",
       "title": "monday"
+    },
+    "person": {
+      "everyone": "Everyone",
+      "includeUnassigned": "Also show items with no one assigned",
+      "loading": "Loading people…",
+      "search": "Search people…",
+      "tokenAccount": "token account",
+      "trigger": "Show: {{value0}}"
     },
     "status": {
       "fetchedAt": "Read at {{value0}}",

@@ -134,6 +134,69 @@ describe('MondayService', () => {
     ])
   })
 
+  it('lists assignable people once per connection', async () => {
+    const graphql = createFakeMondayGraphql((query) =>
+      query.includes('me {')
+        ? { me: ME }
+        : {
+            users: [
+              {
+                id: '69175796',
+                name: 'Omar',
+                email: 'o@example.com',
+                kind: 'guest',
+                status: 'ACTIVE',
+                is_deleted: false
+              },
+              {
+                id: '28766460',
+                name: 'Heather海瑟',
+                email: 'h@example.com',
+                kind: 'admin',
+                status: 'ACTIVE',
+                is_deleted: false
+              },
+              {
+                id: '1',
+                name: 'Gone',
+                email: 'g@example.com',
+                kind: 'member',
+                status: 'ACTIVE',
+                is_deleted: true
+              },
+              {
+                id: '2',
+                name: 'Off',
+                email: 'x@example.com',
+                kind: 'member',
+                status: 'INACTIVE',
+                is_deleted: false
+              },
+              {
+                id: '117170086',
+                name: 'Aurora',
+                email: 'a@agent.monday.com',
+                kind: 'personal_agent_member',
+                status: 'ACTIVE',
+                is_deleted: false
+              }
+            ]
+          }
+    )
+    const service = new MondayService({
+      dataDir,
+      secretStore: () => secretStore(true),
+      graphql: graphql.call
+    })
+    await service.connect('secret-token')
+    await expect(service.listUsers()).resolves.toEqual([
+      { id: '69175796', name: 'Omar', email: 'o@example.com' },
+      { id: '28766460', name: 'Heather海瑟', email: 'h@example.com' }
+    ])
+    await service.listUsers()
+    expect(graphql.mock).toHaveBeenCalledTimes(2)
+  })
+
   it('maps item details with updates, replies and subitems', async () => {
     const graphql = createFakeMondayGraphql((query) =>
       query.includes('me {')

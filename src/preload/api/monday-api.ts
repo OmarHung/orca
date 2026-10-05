@@ -4,7 +4,8 @@ import type {
   MondayItemDetail,
   MondayLoadScheduleRequest,
   MondayResult,
-  MondaySchedule
+  MondaySchedule,
+  MondayUser
 } from '../../shared/monday/monday-types'
 
 export type MondayApi = {
@@ -13,6 +14,8 @@ export type MondayApi = {
   connect: (token: string) => Promise<MondayResult<MondayConnectionStatus>>
   disconnect: () => Promise<MondayResult<MondayConnectionStatus>>
   listBoards: () => Promise<MondayResult<MondayBoardSummary[]>>
+  /** Active people in the account, for the "show whose items" picker. */
+  listUsers: () => Promise<MondayResult<MondayUser[]>>
   loadSchedule: (request: MondayLoadScheduleRequest) => Promise<MondayResult<MondaySchedule>>
   getItem: (itemId: string) => Promise<MondayResult<MondayItemDetail>>
 }
