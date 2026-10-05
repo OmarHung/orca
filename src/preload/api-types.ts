@@ -56,6 +56,7 @@ import type { ForkUpdateChangelogApi } from './api/fork-update-changelog-api'
 import type { SftpApi } from './api/sftp-api'
 import type { SshVpnApi } from './api/ssh-vpn-api'
 import type { PythonApi } from './api/python-api'
+import type { DotnetContainerApi } from './api/dotnet-container-api'
 import type { PluginsApi } from './api/plugin-host-api'
 import type { PreflightApi } from './api/preflight-api'
 import type { PtyApi } from './api/pty-api'
@@ -134,6 +135,7 @@ export type PreloadApi = {
   sftp: SftpApi
   sshVpn: SshVpnApi
   python: PythonApi
+  dotnetContainer: DotnetContainerApi
   browser: BrowserApi
   emulator: EmulatorApi
   hooks: HooksApi

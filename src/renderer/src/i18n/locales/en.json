@@ -19490,6 +19490,7 @@
       "quickCommands": "Quick commands",
       "addQuickCommand": "Add Quick Command…",
       "manageQuickCommands": "Manage Quick Commands…",
+      "dotnetContainer": "Run .NET 5 and older in Docker",
       "stopAll": "Stop All",
       "stopRunning": "Stop ({{value0}} running)",
       "forceStopAll": "Force Stop All",

@@ -19122,6 +19122,7 @@
       "quickCommands": "快速命令",
       "addQuickCommand": "新增快速命令…",
       "manageQuickCommands": "管理快速命令…",
+      "dotnetContainer": "在 Docker 中執行 .NET 5 以前的專案",
       "stopAll": "全部停止",
       "stopRunning": "停止（{{value0}} 個正在執行）",
       "forceStopAll": "全部強制停止",
