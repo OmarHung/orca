@@ -29,6 +29,8 @@ export type MondayPageState = {
   schedule: MondaySchedule | null
   scheduleLoading: boolean
   scheduleError: MondayError | null
+  /** When the shown schedule was last read or confirmed unchanged (ms). */
+  syncedAt: number | null
   prefs: MondayViewPrefs
   /** `YYYY-MM-01` of the month both views show. */
   anchorMonth: string
@@ -47,6 +49,7 @@ export const useMondayPageStore = create<MondayPageState>(() => ({
   schedule: null,
   scheduleLoading: false,
   scheduleError: null,
+  syncedAt: null,
   prefs: readMondayViewPrefs(),
   anchorMonth: monthOf(localIsoDate(new Date())),
   selectedItemId: null,

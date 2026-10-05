@@ -43,7 +43,15 @@ function entries(items: MondayScheduleItem[], hideDone = false): MondayCalendarE
   const schedule: MondaySchedule = {
     fetchedAt: 0,
     boards: [
-      { boardId: 'b1', boardName: 'Board', roles: ROLES, roleTitles: {}, items, truncated: false }
+      {
+        boardId: 'b1',
+        boardName: 'Board',
+        roles: ROLES,
+        roleTitles: {},
+        items,
+        truncated: false,
+        updatedAt: null
+      }
     ]
   }
   return buildMondayEntries(schedule, hideDone, TODAY).scheduled
@@ -74,7 +82,15 @@ describe('buildMondayEntries', () => {
     const schedule: MondaySchedule = {
       fetchedAt: 0,
       boards: [
-        { boardId: 'b1', boardName: 'Board', roles: ROLES, roleTitles: {}, items, truncated: false }
+        {
+          boardId: 'b1',
+          boardName: 'Board',
+          roles: ROLES,
+          roleTitles: {},
+          items,
+          truncated: false,
+          updatedAt: null
+        }
       ]
     }
     const all = buildMondayEntries(schedule, false, TODAY)
