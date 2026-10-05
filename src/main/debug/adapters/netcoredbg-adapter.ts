@@ -42,11 +42,13 @@ export function splitCommandLineArgs(value: string | null): string[] {
 export function buildDotnetProject(options: {
   dotnet: string
   projectFile: string
+  cwd: string
   onOutput: (text: string) => void
 }): Promise<string> {
   const child = spawnProcess({
     program: options.dotnet,
     args: ['build', options.projectFile, '-c', 'Debug', '-nologo'],
+    cwd: options.cwd,
     stdio: ['ignore', 'pipe', 'pipe'],
     timeoutMs: BUILD_TIMEOUT_MS
   })

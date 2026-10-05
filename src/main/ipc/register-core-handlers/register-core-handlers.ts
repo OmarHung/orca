@@ -211,7 +211,7 @@ export async function registerCoreHandlers(
     registerBrowserHandlers(store)
     registerShellHandlers(store)
     registerPetHandlers()
-    registerDebugHandlers()
+    registerDebugHandlers(() => store.getSettings())
     registerDatabaseHandlers()
     registerSftpHandlers()
     registerSshVpnHandlers()

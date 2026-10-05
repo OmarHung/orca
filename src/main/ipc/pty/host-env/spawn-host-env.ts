@@ -261,6 +261,7 @@ async function resolvePtySpawnHostEnvForAct(args: PtySpawnHostEnvArgs): Promise<
       agentStatusHooksEnabled,
       agentsOnPath,
       claudeSubagentNavigationEnabled: ptySettings?.claudeSubagentNavigationEnabled,
+      dotnetContainerToolchain: ptySettings?.dotnetContainerToolchain === true,
       terminalInlineImages: ptySettings?.terminalInlineImages,
       disabledTuiAgents: ptySettings?.disabledTuiAgents,
       networkProxySettings: ptySettings,

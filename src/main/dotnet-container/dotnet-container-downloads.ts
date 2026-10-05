@@ -49,3 +49,18 @@ export const DOTNET_CONTAINER_DOWNLOADS: Record<DotnetContainerArch, readonly Do
     }
   ]
 }
+
+/**
+ * netcoredbg baked into the image. Why 3.1.0-1031: later builds need glibc 2.32+, and the image
+ * is Ubuntu 20.04 (2.31) because .NET Core 3.1 needs its OpenSSL 1.1.
+ */
+export const CONTAINER_NETCOREDBG: Record<DotnetContainerArch, { url: string; sha256: string }> = {
+  arm64: {
+    url: 'https://github.com/Samsung/netcoredbg/releases/download/3.1.0-1031/netcoredbg-linux-arm64.tar.gz',
+    sha256: '2419a6b34c7d25541a4bca9f140c137bdd6f6a3b5693d2f79bc04c930061ffa3'
+  },
+  x64: {
+    url: 'https://github.com/Samsung/netcoredbg/releases/download/3.1.0-1031/netcoredbg-linux-amd64.tar.gz',
+    sha256: '0eab16af3a54513803eb89266adaa9a9a0c5bc52a42d5659e381d664665f353e'
+  }
+}
