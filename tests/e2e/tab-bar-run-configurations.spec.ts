@@ -81,6 +81,9 @@ test('runs, reruns and stops a quick command as a single-instance run configurat
     { quickLabel: QUICK_LABEL, longLabel: LONG_LABEL, longCommand: LONG_COMMAND }
   )
   const controls = orcaPage.getByTestId('run-configurations-session')
+  const triggerStatus = orcaPage
+    .getByTestId('run-configurations-trigger')
+    .getByTestId('run-configurations-trigger-status')
 
   // No .vscode/launch.json in this workspace, so the menu offers no import.
   await orcaPage.getByTestId('run-configurations-trigger').click()
@@ -108,6 +111,8 @@ test('runs, reruns and stops a quick command as a single-instance run configurat
   await expect(controls).toHaveAttribute('data-run-status', 'running')
   // While it runs, Rerun and Stop replace Run, as in JetBrains.
   await expect(orcaPage.getByTestId('run-configurations-launch')).toHaveCount(0)
+  // The live status sits beside the name; among the buttons it read as another Run button.
+  await expect(triggerStatus).toBeVisible()
   await waitForLongRunStarts(orcaPage, 1)
   await orcaPage.screenshot({ path: testInfo.outputPath('run-configuration-running.png') })
 
@@ -123,6 +128,7 @@ test('runs, reruns and stops a quick command as a single-instance run configurat
   await showRunInPanel(orcaPage, QUICK_LABEL)
   await expect(trigger).toContainText(QUICK_LABEL)
   await expect(controls).toHaveAttribute('data-run-status', 'succeeded')
+  await expect(triggerStatus).toHaveCount(0)
   await showRunInPanel(orcaPage, LONG_LABEL)
   await expect(trigger).toContainText(LONG_LABEL)
   await expect(controls).toHaveAttribute('data-run-status', 'running')
