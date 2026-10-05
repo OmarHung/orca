@@ -84,6 +84,8 @@ export type MondayBoardSchedule = {
   items: MondayScheduleItem[]
   /** The board had more matching items than Orca reads in one load. */
   truncated: boolean
+  /** monday's last-change time when this was read; a newer one means the board changed. */
+  updatedAt: string | null
 }
 
 export type MondaySchedule = { boards: MondayBoardSchedule[]; fetchedAt: number }
@@ -141,6 +143,8 @@ export type MondayItemDetail = {
 export const mondayIdSchema = z.string().regex(/^\d{1,20}$/)
 
 export const mondayConnectSchema = z.object({ token: z.string().trim().min(1).max(4096) })
+
+export const mondayBoardIdsSchema = z.array(mondayIdSchema).min(1).max(MONDAY_MAX_SCHEDULE_BOARDS)
 
 export const mondayLoadScheduleSchema = z.object({
   boardIds: z.array(mondayIdSchema).min(1).max(MONDAY_MAX_SCHEDULE_BOARDS),
