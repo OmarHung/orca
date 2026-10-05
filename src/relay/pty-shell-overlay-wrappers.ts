@@ -36,6 +36,7 @@ function getRelayZshWrapperSpec(): ZshStartupHookSpec {
     restores: {
       managedWslCli: false,
       agentTeamsPath: false,
+      dotnetLauncherPath: false,
       remoteCliBinDir: true,
       codexHome: false
     }

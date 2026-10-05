@@ -56,6 +56,29 @@ function isCurrent(path: string, content: string, executable: boolean): boolean 
   }
 }
 
+export type DotnetContainerPaths = {
+  dir: string
+  /** Holds only the launcher, so terminals can put it first on PATH. */
+  binDir: string
+  launcherPath: string
+  dockerfilePath: string
+  httpsCertificateDir: string
+  containerName: string
+}
+
+export function dotnetContainerPaths(userDataPath: string): DotnetContainerPaths {
+  const dir = join(userDataPath, 'dotnet-container')
+  const binDir = join(dir, 'bin')
+  return {
+    dir,
+    binDir,
+    launcherPath: join(binDir, 'dotnet'),
+    dockerfilePath: join(dir, 'Dockerfile'),
+    httpsCertificateDir: join(dir, 'https'),
+    containerName: `orca-dotnet-${dockerInstanceTag(userDataPath)}`
+  }
+}
+
 /**
  * Writes the `dotnet` launcher Orca's runs call for legacy .NET, and the Dockerfile it builds
  * from. Null where the container cannot run: Windows (no same-path mounts) or another CPU.
@@ -69,13 +92,11 @@ export async function installDotnetContainerLauncher(
   if ((host.platform !== 'darwin' && host.platform !== 'linux') || !arch || !mounts) {
     return null
   }
-  const dir = join(userDataPath, 'dotnet-container')
-  const dockerfilePath = join(dir, 'Dockerfile')
-  const launcherPath = join(dir, 'dotnet')
+  const { dockerfilePath, launcherPath, httpsCertificateDir, containerName } =
+    dotnetContainerPaths(userDataPath)
   const dockerfile = buildDotnetContainerDockerfile(arch)
   const image = dotnetContainerImageTag(dockerfile)
   const instanceTag = dockerInstanceTag(userDataPath)
-  const containerName = `orca-dotnet-${instanceTag}`
   const platform = arch === 'arm64' ? 'linux/arm64' : 'linux/amd64'
   const launcher = buildDotnetContainerLauncher({
     // Why fall back to a bare name: Docker installed after Orca started is then still found.
@@ -100,7 +121,7 @@ export async function installDotnetContainerLauncher(
       host.platform === 'darwin'
         ? join(host.home, 'Library', 'Group Containers', 'group.com.docker', 'settings-store.json')
         : null,
-    httpsCertificateDir: join(dir, 'https')
+    httpsCertificateDir
   })
   // Why skip unchanged files: a run may be starting the launcher while another call rewrites it.
   if (isCurrent(dockerfilePath, dockerfile, false) && isCurrent(launcherPath, launcher, true)) {

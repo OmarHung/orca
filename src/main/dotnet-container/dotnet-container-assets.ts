@@ -3,12 +3,15 @@
 export const ORCA_EXEC_PATH = '/usr/local/bin/orca-exec'
 export const IPV4_ONLY_LIBRARY_PATH = '/usr/local/lib/orca-ipv4only.so'
 export const LEGACY_ASPNET_TARGETS_PATH = '/usr/local/share/orca/orca-legacy-aspnet.targets'
+/** The image unpacks netcoredbg's archive (a `netcoredbg/` folder) into /usr/local/lib. */
+export const CONTAINER_NETCOREDBG_PATH = '/usr/local/lib/netcoredbg/netcoredbg'
 
 /** Records each run's process group: `docker exec` leaves the program running when its client dies. */
 export const ORCA_EXEC_SCRIPT = `#!/bin/sh
 # orca-exec RUN_ID CMD...        run CMD as its own process group, recorded for --kill
 # orca-exec --kill RUN_ID [SIG]  signal that group
 # orca-exec --list               print the RUN_IDs whose group is still alive
+# orca-exec --ports              print listening TCP ports: port, pid, cwd, command line (tab-separated)
 set -eu
 STATE=/tmp/orca-exec
 case "\${1:-}" in
@@ -21,9 +24,23 @@ case "\${1:-}" in
     ;;
   --list)
     for f in "$STATE"/*.pgid; do
-      [ -f "$f" ] || continue
-      if kill -s 0 -- "-$(cat "$f")" 2>/dev/null; then basename "$f" .pgid; else rm -f "$f"; fi
+      # Why read once: a concurrent --kill can remove the file between a test and a read.
+      pgid=$(cat "$f" 2>/dev/null) || continue
+      if kill -s 0 -- "-$pgid" 2>/dev/null; then basename "$f" .pgid; else rm -f "$f"; fi
     done
+    exit 0
+    ;;
+  --ports)
+    # Why here: on Docker Desktop the Mac only sees the VM's forwarder, not the program behind a port.
+    # Why one find and one awk: a readlink per open file is thousands of forks per scan.
+    find /proc/[0-9]*/fd -lname 'socket:*' -printf '%l %h\\n' 2>/dev/null |
+      awk 'FILENAME == "-" { split($2, d, "/"); owner[$1] = d[3]; next }
+        FNR > 1 && $4 == "0A" { split($2, a, ":"); s = "socket:[" $10 "]"; if (s in owner) print a[2], owner[s] }' \
+        - /proc/net/tcp /proc/net/tcp6 2>/dev/null |
+      while read -r hex pid; do
+        printf '%d\\t%s\\t%s\\t%s\\n' "0x$hex" "$pid" "$(readlink "/proc/$pid/cwd" 2>/dev/null || true)" \
+          "$(tr '\\000' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+      done
     exit 0
     ;;
 esac

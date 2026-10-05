@@ -209,6 +209,8 @@ export function RunWidget({
           </button>
         </DropdownMenuTrigger>
         <RunWidgetMenu
+          worktreeId={worktreeId}
+          groupId={groupId}
           items={items}
           selectedKey={selected?.key ?? null}
           onSelect={(item) =>

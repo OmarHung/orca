@@ -8,7 +8,7 @@ export function startsWithDotnet(command: string): boolean {
 }
 
 /** A quoted path is only a command in POSIX shells; PowerShell needs `&` and Nushell `^`. */
-function invokePath(path: string, shell: string): string {
+export function invokePath(path: string, shell: string): string {
   const quoted = quotePosixArg(path)
   const name = basename(shell.trim())
     .toLowerCase()

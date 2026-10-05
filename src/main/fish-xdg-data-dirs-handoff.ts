@@ -3,6 +3,7 @@
  * starts: the spawn env prepends an Orca data dir to XDG_DATA_DIRS, fish sources
  * that dir's fish/vendor_conf.d, and the snippet's first act is to undo it.
  */
+import { FISH_DOTNET_LAUNCHER_PATH_RESTORE } from './dotnet-launcher-path-restore'
 import { getFishCodexShellLaunchPreflight } from '../shared/codex-shell-function'
 import { getFishClaudeShellFunction } from '../shared/claude-shell-function'
 import { MANAGED_DATA_ACCOUNT_FISH_RESTORE } from '../shared/managed-data-account-shell'
@@ -52,6 +53,7 @@ export function getFishXdgDataDirsLaunchEnv(
 // restored XDG_DATA_DIRS and the codex and claude hooks outlives this file.
 // Why they wait for fish_prompt: config.fish has not run yet, and the user's
 // own codex/claude function or PATH entry must be seen first, as in wrapped panes.
+// The .NET launcher waits too, so config.fish cannot put ~/.dotnet ahead of it.
 export function getFishVendorConfSnippet(): string {
   return `# Orca-generated. Loaded only because Orca put this directory on
 # XDG_DATA_DIRS for one fish launch; the first thing it does is take it off.
@@ -73,6 +75,7 @@ function __orca_fish_xdg_handoff
         functions -e __orca_define_codex
 ${MANAGED_DATA_ACCOUNT_FISH_RESTORE}
 ${getFishCodexShellLaunchPreflight()}${getFishClaudeShellFunction()}
+${FISH_DOTNET_LAUNCHER_PATH_RESTORE}
     end
 end
 __orca_fish_xdg_handoff
