@@ -121,3 +121,51 @@ export const FAKE_MONDAY_BOARDS = [
     ] satisfies FakeItem[]
   }
 ]
+
+/** The "Client CRM" record a Client Projects task links to, shaped like the real board's columns. */
+export const FAKE_WEB_CRM_RELATION = {
+  id: 'board_relation_aaaa1111',
+  type: 'board_relation',
+  text: null,
+  display_value: '範例官網',
+  column: { title: 'Client CRM' },
+  linked_items: [
+    {
+      id: '2000000005',
+      name: '範例官網',
+      url: 'https://acme.monday.com/boards/1000000002/pulses/2000000005',
+      board: { name: 'Client CRM' },
+      column_values: [
+        { id: 'person', type: 'people', text: 'Alice愛麗絲', column: { title: '負責人' } },
+        {
+          id: 'status',
+          type: 'status',
+          text: 'Online',
+          label_style: { color: '#00c875' },
+          column: { title: '上線狀態' }
+        },
+        {
+          id: 'text',
+          type: 'text',
+          text: 'https://www.example.org/',
+          column: { title: 'Website' }
+        },
+        { id: 'text0', type: 'text', text: '203.0.113.21', column: { title: 'IP' } },
+        {
+          id: 'status7',
+          type: 'status',
+          text: 'web-server-1',
+          label_style: { color: '#00c875' },
+          column: { title: '主機' }
+        },
+        { id: 'date9', type: 'date', text: '2027-09-19', column: { title: '到期日' } },
+        {
+          id: 'board_relation_bbbb2222',
+          type: 'board_relation',
+          text: null,
+          column: { title: 'link to Client Projects' }
+        }
+      ]
+    }
+  ]
+}
