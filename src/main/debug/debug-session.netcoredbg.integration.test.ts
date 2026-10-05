@@ -46,6 +46,7 @@ describe.skipIf(!netcoredbgDir)('debug session against real netcoredbg', () => {
     const assembly = await buildDotnetProject({
       dotnet: dotnet!,
       projectFile: join(workdir, 'Demo.csproj'),
+      cwd: workdir,
       onOutput: (text) => buildOutput.push(text)
     })
     expect(assembly).toMatch(/Demo\.dll$/)

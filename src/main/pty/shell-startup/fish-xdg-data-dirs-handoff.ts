@@ -3,6 +3,7 @@ import { FISH_CWD_REPORT_BLOCK } from '../../../shared/shell/fish-cwd-report'
 import { getFishCodexShellLaunchPreflight } from '../../../shared/shell/launch/agents/codex-shell-function'
 import { getFishClaudeShellFunction } from '../../../shared/shell/launch/agents/claude-shell-function'
 import { MANAGED_DATA_ACCOUNT_FISH_RESTORE } from '../../../shared/shell/launch/agents/managed-data-account-shell'
+import { FISH_DOTNET_LAUNCHER_PATH_RESTORE } from './dotnet-launcher-path-restore'
 import type { ShellWrapperFile } from './shell-wrapper-file-writer'
 
 /** Exactly what Orca prepended, so the snippet can remove that and nothing else. */
@@ -46,6 +47,7 @@ export function getFishXdgDataDirsLaunchEnv(
 
 // Scope temporary variables to the function; only the restored env and hooks should survive.
 // Wait for fish_prompt so user-defined functions and PATH changes take precedence.
+// The .NET launcher waits too, so config.fish cannot put ~/.dotnet ahead of it.
 export function getFishVendorConfSnippet(): string {
   return `# Orca-generated. Loaded only because Orca put this directory on
 # XDG_DATA_DIRS for one fish launch; the first thing it does is take it off.
@@ -68,6 +70,7 @@ ${FISH_CWD_REPORT_BLOCK}
         functions -e __orca_define_codex
 ${MANAGED_DATA_ACCOUNT_FISH_RESTORE}
 ${getFishCodexShellLaunchPreflight()}${getFishClaudeShellFunction()}
+${FISH_DOTNET_LAUNCHER_PATH_RESTORE}
     end
 end
 __orca_fish_xdg_handoff

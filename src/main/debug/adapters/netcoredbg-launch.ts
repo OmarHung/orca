@@ -5,11 +5,17 @@ import {
   type LaunchProfileDetails
 } from '../../../shared/run-configurations/dotnet-run-configurations'
 import { resolveCommandOnLocalPath } from '../../ipc/command-path-resolver'
+import { CONTAINER_NETCOREDBG_PATH } from '../../dotnet-container/dotnet-container-assets'
 import { isExecutableFile } from '../../python/python-interpreters'
 import { startStdioDapTransport } from '../dap-transport-stdio'
 import { ensureDebugAdapterInstalled } from './adapter-installer'
 import { netcoredbgArtifactFor } from './adapter-manifest'
 import { readExecutableArch } from './executable-arch'
+import {
+  ensureDotnetContainer,
+  runsInDotnetContainer,
+  type NetcoredbgTarget
+} from './netcoredbg-container-target'
 import {
   buildDotnetProject,
   buildNetcoredbgLaunchArguments,
@@ -32,7 +38,7 @@ async function readOptionalText(path: string): Promise<string | null> {
   }
 }
 
-export type NetcoredbgTarget = { projectFile: string; launchProfile?: string } | { program: string }
+export type { NetcoredbgTarget }
 
 /** A project is built first and runs from its folder; a prebuilt program runs as given. */
 async function resolveNetcoredbgProgram(
@@ -48,6 +54,7 @@ async function resolveNetcoredbgProgram(
   const program = await buildDotnetProject({
     dotnet,
     projectFile: target.projectFile,
+    cwd: projectDir,
     onOutput: (text) => context.onOutput(text, 'stdout')
   })
   const profile = target.launchProfile
@@ -59,10 +66,42 @@ async function resolveNetcoredbgProgram(
   return { program, cwd: projectDir, profile }
 }
 
+/** Builds through the launcher and runs the image's netcoredbg in the container, over stdio. */
+async function prepareContainerNetcoredbg(
+  context: AdapterPreparation,
+  launcher: string,
+  target: NetcoredbgTarget
+): Promise<PreparedDebugAdapter> {
+  context.onOutput("Debugging in Orca's .NET container\n", 'console')
+  const { program, cwd, profile } = await resolveNetcoredbgProgram(context, launcher, target)
+  await ensureDotnetContainer(launcher, cwd, (text) => context.onOutput(text, 'console'))
+  let stderr = ''
+  return {
+    adapterId: 'coreclr',
+    transport: startStdioDapTransport({
+      program: launcher,
+      args: ['--orca-exec', CONTAINER_NETCOREDBG_PATH, '--interpreter=vscode'],
+      cwd,
+      env: process.env,
+      onStderr: (text) => {
+        stderr = (stderr + text).slice(-MAX_STDERR_CHARS)
+      }
+    }),
+    launchArguments: buildNetcoredbgLaunchArguments({ program, cwd, profile }),
+    diagnostics: () => stderr.trim(),
+    dispose: () => {}
+  }
+}
+
 export async function prepareNetcoredbg(
   context: AdapterPreparation,
   target: NetcoredbgTarget
 ): Promise<PreparedDebugAdapter> {
+  // Why catch: a broken launcher must not stop .NET 6+ projects from debugging natively.
+  const launcher = await context.dotnetContainerLauncher?.().catch(() => null)
+  if (launcher && (await runsInDotnetContainer(launcher, target).catch(() => false))) {
+    return prepareContainerNetcoredbg(context, launcher, target)
+  }
   const dotnet = await resolveCommandOnLocalPath('dotnet')
   if (!dotnet) {
     throw new DebugPreparationError('The dotnet SDK was not found on PATH')

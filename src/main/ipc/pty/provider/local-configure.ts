@@ -110,6 +110,7 @@ export function configureLocalPtyProvider(args: {
       agentStatusHooksEnabled,
       agentsOnPath,
       claudeSubagentNavigationEnabled: ptySettings?.claudeSubagentNavigationEnabled,
+      dotnetContainerToolchain: ptySettings?.dotnetContainerToolchain === true,
       disabledTuiAgents: ptySettings?.disabledTuiAgents,
       networkProxySettings: ptySettings,
       routeBrowserOpensToClient: runtime?.shouldRelayTerminalBrowserOpens?.()

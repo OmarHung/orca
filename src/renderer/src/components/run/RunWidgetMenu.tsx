@@ -9,7 +9,7 @@ import {
 import { translate } from '@/i18n/i18n'
 import { TabBarQuickCommandHostLoadStatus } from '../tab-bar/TabBarQuickCommandHostLoadStatus'
 import { isWindowsUserAgent } from '../terminal-pane/pane-helpers'
-import { DotnetContainerMenuItem } from './DotnetContainerMenuItem'
+import { DotnetContainerMenu } from './DotnetContainerMenu'
 import { isDetectedRunMenuEmpty, type DetectedRunMenu } from './detected-run-menu'
 import { RunWidgetDetectedSection, type DetectedSectionActions } from './RunWidgetDetectedSection'
 import { RUN_WIDGET_CONTENT_STYLE } from './run-widget-cascade'
@@ -65,9 +65,13 @@ export function RunWidgetMenu({
   detectedActions,
   cascadeLeft,
   quickCommandHostPending,
-  quickCommandHostLoadFailed
+  quickCommandHostLoadFailed,
+  worktreeId,
+  groupId
 }: RowProps & {
   items: readonly RunWidgetItem[]
+  worktreeId: string
+  groupId: string | null
   /** null until the workspace's first scan finishes. */
   detected: DetectedRunMenu | null
   detectedActions: DetectedSectionActions
@@ -140,7 +144,9 @@ export function RunWidgetMenu({
         {translate('run.widget.manageQuickCommands', 'Manage Quick Commands…')}
       </DropdownMenuItem>
       {/* Why not on Windows: the container shares folders at the same path, which Windows cannot. */}
-      {isWindowsUserAgent() ? null : <DotnetContainerMenuItem />}
+      {isWindowsUserAgent() ? null : (
+        <DotnetContainerMenu worktreeId={worktreeId} groupId={groupId} cascadeLeft={cascadeLeft} />
+      )}
     </DropdownMenuContent>
   )
 }
