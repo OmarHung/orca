@@ -100,6 +100,7 @@ import type {
   SparsePresetsApi,
   WorktreeApi
 } from './api/workspaces/worktree-api'
+import type { DotnetContainerApi } from './api/dotnet-container-api'
 
 // Flattens contracts that share one PreloadApi key: an intersection is not type-identical to the flat shape.
 type Merged<T> = { [K in keyof T]: T[K] }
@@ -169,6 +170,7 @@ export type PreloadApi = {
   sftp: SftpApi
   sshVpn: SshVpnApi
   python: PythonApi
+  dotnetContainer: DotnetContainerApi
   browser: BrowserApi
   browserPasswords: BrowserPasswordsApi
   emulator: EmulatorApi
