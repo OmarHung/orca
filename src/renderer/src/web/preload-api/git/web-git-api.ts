@@ -12,6 +12,7 @@ import {
   requireActiveEnvironment,
   updateEnvironmentFromResponse
 } from '../../runtime/client/web-runtime-session'
+import { runWebGitBranchAction } from '../web-git-branch-action-api'
 import {
   resolveRuntimeFilePath,
   resolveRuntimeWorktreeByPath
@@ -201,6 +202,7 @@ export function createGitApi(): NonNullable<Partial<PreloadApi>['git']> {
         baseRef
       })
     },
+    branchAction: runWebGitBranchAction,
     branchDiff: async ({ worktreePath, filePath, compare, oldPath }) => {
       const file = await resolveRuntimeFilePath(filePath, worktreePath)
       return callRuntimeResult('git.branchDiff', {

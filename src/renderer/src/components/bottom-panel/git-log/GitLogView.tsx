@@ -39,6 +39,10 @@ import {
 import { openGitLogCompare } from './compare/open-git-log-compare'
 import { useGitLogCompareContext } from './compare/use-git-log-compare-context'
 import { GitLogRangeDetails } from './compare/GitLogRangeDetails'
+import { GitLogActionsContext } from './actions/git-log-actions-context'
+import { useGitLogBranchActions } from './actions/use-git-log-branch-actions'
+import { GitLogActionDialogs } from './actions/GitLogActionDialogs'
+import { GitLogCommitActionItems } from './actions/GitLogCommitActionItems'
 
 const noSplitTarget = (): undefined => undefined
 
@@ -67,6 +71,15 @@ export function GitLogView(): React.JSX.Element {
   const setMarkCherryPicks = useBottomPanelLayout((s) => s.setMarkCherryPicks)
   const { state, branchList, refresh } = useGitLogHistory(worktree, scope, true, markCherryPicks)
   useResetMissingGitLogScope(scope, branchList, setScope)
+  const currentBranchName =
+    (typeof branchList === 'object'
+      ? branchList.branches.find((branch) => branch.isHead && branch.kind === 'local')?.name
+      : state.result?.currentRef?.name) ?? null
+  const reloadAfterAction = useCallback(() => void refresh({ silent: true }), [refresh])
+  const branchActions = useGitLogBranchActions(worktree, currentBranchName, reloadAfterAction)
+  const actionsAvailable = Boolean(
+    worktree.worktreeId && worktree.worktreePath && !worktree.isFolder
+  )
   const commitActions = useGitHistoryCommitActions({
     activeWorktreeId: worktree.worktreeId,
     worktreePath: worktree.worktreePath,
@@ -105,6 +118,7 @@ export function GitLogView(): React.JSX.Element {
     () => collectGitLogCherryPickedIds(result, markCherryPicks && cherryPicksAvailable),
     [cherryPicksAvailable, markCherryPicks, result]
   )
+  const unpushedIds = useMemo(() => new Set(result?.unpushedIds ?? []), [result])
   const filterActive = isGitLogFilterActive(filter)
   const visibleViewModels = useMemo(() => {
     if (!filterActive) {
@@ -232,6 +246,7 @@ export function GitLogView(): React.JSX.Element {
                     selected={selection.isSelected(item.id)}
                     inCurrentBranch={currentBranchIds?.has(item.id) ?? false}
                     cherryPicked={cherryPickedIds.has(item.id)}
+                    unpushed={unpushedIds.has(item.id)}
                     showGraph={!filterActive}
                     gridTemplateColumns={gridTemplateColumns}
                     onSelectCommit={selection.handleClick}
@@ -242,12 +257,19 @@ export function GitLogView(): React.JSX.Element {
                   item={item}
                   onAction={commitActions.handleCommitAction}
                   extraItems={
-                    <GitLogCommitCompareItems
-                      item={item}
-                      selectedPair={selection.selectedPair}
-                      logOrder={logOrder}
-                      onCompare={handleCompare}
-                    />
+                    <>
+                      <GitLogCommitActionItems
+                        item={item}
+                        selectedIds={selection.orderedIds}
+                        isOnCurrentBranch={(id) => currentBranchIds?.has(id) ?? true}
+                      />
+                      <GitLogCommitCompareItems
+                        item={item}
+                        selectedPair={selection.selectedPair}
+                        logOrder={logOrder}
+                        onCompare={handleCompare}
+                      />
+                    </>
                   }
                 />
               </ContextMenu>
@@ -266,71 +288,74 @@ export function GitLogView(): React.JSX.Element {
   }
 
   return (
-    <div ref={rootRef} className="flex h-full min-h-0">
-      <div
-        className="relative shrink-0 border-r border-border"
-        style={{ width: branchTreeResize.size, maxWidth: '40%' }}
-      >
-        <ResizeHandle
-          edge="right"
-          label={translate('bottomPanel.gitLog.resizeBranches', 'Resize branch tree')}
-          handleProps={branchTreeResize.handleProps}
-        />
-        <GitLogBranchTree
-          branchList={branchList}
-          scope={scope}
-          onScopeChange={setScope}
-          onCompare={handleCompare}
-        />
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <GitLogToolbar
-          filter={filter}
-          onFilterChange={setFilter}
-          authors={authors}
-          scopeLabel={scopeLabel}
-          cherryPicks={{
-            available: cherryPicksAvailable,
-            pressed: markCherryPicks,
-            onPressedChange: setMarkCherryPicks
-          }}
-          loading={loading}
-          onRefresh={() => void refresh()}
-        />
-        <div className="flex min-h-0 flex-1">
-          <div className="flex min-w-0 flex-1 flex-col">
-            {scopeHonored ? null : (
-              <div className="shrink-0 border-b border-border px-3 py-1 text-[11px] text-muted-foreground">
-                {translate(
-                  'bottomPanel.gitLog.scopeUnsupported',
-                  'This host runs an older Orca that can only show the current branch.'
-                )}
-              </div>
-            )}
-            {renderBody()}
-          </div>
-          <div
-            className="relative shrink-0 border-l border-border"
-            style={{ width: detailsResize.size, maxWidth: '60%' }}
-          >
-            <ResizeHandle
-              edge="left"
-              label={translate('bottomPanel.gitLog.resizeDetails', 'Resize commit details')}
-              handleProps={detailsResize.handleProps}
-            />
-            {selectedItems.length > 1 ? (
-              <GitLogRangeDetails items={selectedItems} context={compareContext} />
-            ) : (
-              <GitLogCommitDetails
-                item={selectedItem}
-                loadCommitFiles={commitActions.loadCommitFiles}
-                onOpenFile={commitActions.openCommitFile}
-                onOpenAll={(item) => void commitActions.openHistoryCommitDiff(item)}
+    <GitLogActionsContext.Provider value={actionsAvailable ? branchActions : null}>
+      <div ref={rootRef} className="flex h-full min-h-0">
+        <div
+          className="relative shrink-0 border-r border-border"
+          style={{ width: branchTreeResize.size, maxWidth: '40%' }}
+        >
+          <ResizeHandle
+            edge="right"
+            label={translate('bottomPanel.gitLog.resizeBranches', 'Resize branch tree')}
+            handleProps={branchTreeResize.handleProps}
+          />
+          <GitLogBranchTree
+            branchList={branchList}
+            scope={scope}
+            onScopeChange={setScope}
+            onCompare={handleCompare}
+          />
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <GitLogToolbar
+            filter={filter}
+            onFilterChange={setFilter}
+            authors={authors}
+            scopeLabel={scopeLabel}
+            cherryPicks={{
+              available: cherryPicksAvailable,
+              pressed: markCherryPicks,
+              onPressedChange: setMarkCherryPicks
+            }}
+            loading={loading}
+            onRefresh={() => void refresh()}
+          />
+          <div className="flex min-h-0 flex-1">
+            <div className="flex min-w-0 flex-1 flex-col">
+              {scopeHonored ? null : (
+                <div className="shrink-0 border-b border-border px-3 py-1 text-[11px] text-muted-foreground">
+                  {translate(
+                    'bottomPanel.gitLog.scopeUnsupported',
+                    'This host runs an older Orca that can only show the current branch.'
+                  )}
+                </div>
+              )}
+              {renderBody()}
+            </div>
+            <div
+              className="relative shrink-0 border-l border-border"
+              style={{ width: detailsResize.size, maxWidth: '60%' }}
+            >
+              <ResizeHandle
+                edge="left"
+                label={translate('bottomPanel.gitLog.resizeDetails', 'Resize commit details')}
+                handleProps={detailsResize.handleProps}
               />
-            )}
+              {selectedItems.length > 1 ? (
+                <GitLogRangeDetails items={selectedItems} context={compareContext} />
+              ) : (
+                <GitLogCommitDetails
+                  item={selectedItem}
+                  loadCommitFiles={commitActions.loadCommitFiles}
+                  onOpenFile={commitActions.openCommitFile}
+                  onOpenAll={(item) => void commitActions.openHistoryCommitDiff(item)}
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      <GitLogActionDialogs />
+    </GitLogActionsContext.Provider>
   )
 }

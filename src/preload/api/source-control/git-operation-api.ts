@@ -14,6 +14,10 @@ import type { HostedReviewProvider } from '../../../shared/source-control/hosted
 import type { ResolvedSourceControlAiGenerationParams } from '../../../shared/source-control/ai/source-control-ai-operation-resolution'
 import type { SourceControlAiSettings } from '../../../shared/source-control/ai/settings/source-control-ai-settings-types'
 import type { TextGenerationFailureFields } from '../../../shared/text-generation/text-generation-failure-copy'
+import type {
+  GitBranchAction,
+  GitBranchActionResult
+} from '../../../shared/git-branch-action/git-branch-action-types'
 
 export type GitOperationApi = {
   appendGitignore: (args: { worktreePath: string; folderName: string }) => Promise<boolean>
@@ -51,6 +55,11 @@ export type GitOperationApi = {
     baseRef: string
     connectionId?: string
   }) => Promise<void>
+  branchAction: (args: {
+    worktreePath: string
+    action: GitBranchAction
+    connectionId?: string
+  }) => Promise<GitBranchActionResult>
   commit: (args: {
     worktreePath: string
     message: string
