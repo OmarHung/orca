@@ -3,6 +3,7 @@ import type { GitRuntimeOptions } from '../git/git-runtime-options'
 import { checkIgnoredPaths } from '../git/check-ignored-paths'
 import { checkoutBranch, listLocalBranches } from '../git/checkout'
 import { getBlame } from '../git/blame'
+import { runLocalGitBranchAction } from '../git/git-branch-action'
 import { getHistory } from '../git/history'
 import { gitFastForward, gitFetch, gitPull, gitPullRebaseFromBase, gitPush } from '../git/remote'
 import { getRemoteCommitUrl, getRemoteFileUrl, isGitRepo } from '../git/repo'
@@ -120,6 +121,7 @@ export function createLocalGitProvider(options: LocalGitProviderOptions = {}): L
       gitFastForward(worktreePath, pushTarget, interactive),
     rebaseFromBase: (worktreePath, baseRef) =>
       gitPullRebaseFromBase(worktreePath, baseRef, interactive),
+    runBranchAction: (worktreePath, action) => runLocalGitBranchAction(worktreePath, action, base),
     fetchRemote: (worktreePath, pushTarget) => gitFetch(worktreePath, pushTarget, interactive),
     syncForkDefaultBranch: (worktreePath, expectedUpstream) =>
       gitSyncForkDefaultBranch(worktreePath, expectedUpstream, interactive),

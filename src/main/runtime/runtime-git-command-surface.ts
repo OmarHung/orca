@@ -24,6 +24,7 @@ type RuntimeGitCommandName =
   | 'getRuntimeGitBranchDiff'
   | 'getRuntimeGitCommitDiff'
   | 'commitRuntimeGit'
+  | 'runRuntimeGitBranchAction'
   | 'generateRuntimeCommitMessage'
   | 'discoverRuntimeCommitMessageModels'
   | 'cancelRuntimeGenerateCommitMessage'
@@ -68,6 +69,7 @@ export function installRuntimeGitCommandSurface(
     getRuntimeGitBranchDiff: commands.getRuntimeGitBranchDiff.bind(commands),
     getRuntimeGitCommitDiff: commands.getRuntimeGitCommitDiff.bind(commands),
     commitRuntimeGit: commands.commitRuntimeGit.bind(commands),
+    runRuntimeGitBranchAction: commands.runRuntimeGitBranchAction.bind(commands),
     generateRuntimeCommitMessage: commands.generateRuntimeCommitMessage.bind(commands),
     discoverRuntimeCommitMessageModels: commands.discoverRuntimeCommitMessageModels.bind(commands),
     cancelRuntimeGenerateCommitMessage: commands.cancelRuntimeGenerateCommitMessage.bind(commands),

@@ -5,6 +5,7 @@ import { translate } from '@/i18n/i18n'
 import { callRuntimeResult } from './web-runtime-calls'
 import { mutateGitPath, mutateGitPaths } from './web-git-mutations'
 import { requireGitStageWorktreeScopeReceipt } from '../../../../shared/git-stage-worktree-scope'
+import { runWebGitBranchAction } from './web-git-branch-action-api'
 import { requireActiveEnvironment, updateEnvironmentFromResponse } from './web-runtime-session'
 import {
   resolveRuntimeFilePath,
@@ -98,7 +99,8 @@ export function createGitApi(): NonNullable<Partial<PreloadApi>['git']> {
         revision,
         allBranches,
         includeRefs: options.includeRefs,
-        markCherryPicks: options.markCherryPicks
+        markCherryPicks: options.markCherryPicks,
+        markUnpushed: options.markUnpushed
       })
     },
     mutationInFlight: async ({ worktreePath }) => {
@@ -208,6 +210,7 @@ export function createGitApi(): NonNullable<Partial<PreloadApi>['git']> {
         baseRef
       })
     },
+    branchAction: runWebGitBranchAction,
     branchDiff: async ({ worktreePath, filePath, compare, oldPath }) => {
       const file = await resolveRuntimeFilePath(filePath, worktreePath)
       return callRuntimeResult('git.branchDiff', {
