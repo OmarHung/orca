@@ -1,7 +1,12 @@
 import path from 'node:path'
 import { z } from 'zod'
+import { MAX_PLAN_OPERATIONS } from './sftp-plan-builders'
 
-const MAX_SOURCES = 1000
+export const INVALID_SFTP_REQUEST_MESSAGE = 'Invalid SFTP request'
+
+// Why: each picked item plans at least one operation, so the plan's own cap is the real limit.
+const MAX_SOURCES = MAX_PLAN_OPERATIONS
+const TOO_MANY_SOURCES = `This selection has more than ${MAX_SOURCES.toLocaleString('en-US')} items. Pick fewer items.`
 
 const TargetId = z.string().min(1)
 const RemotePath = z
@@ -24,7 +29,7 @@ export const SftpPlanRequestSchema = z.discriminatedUnion('kind', [
     .object({
       kind: z.literal('upload'),
       targetId: TargetId,
-      sources: z.array(LocalPath).min(1).max(MAX_SOURCES),
+      sources: z.array(LocalPath).min(1).max(MAX_SOURCES, TOO_MANY_SOURCES),
       destinationDir: RemotePath
     })
     .strict(),
@@ -32,7 +37,7 @@ export const SftpPlanRequestSchema = z.discriminatedUnion('kind', [
     .object({
       kind: z.literal('download'),
       targetId: TargetId,
-      sources: z.array(RemotePath).min(1).max(MAX_SOURCES),
+      sources: z.array(RemotePath).min(1).max(MAX_SOURCES, TOO_MANY_SOURCES),
       destinationDir: LocalPath
     })
     .strict(),
@@ -44,7 +49,7 @@ export const SftpPlanRequestSchema = z.discriminatedUnion('kind', [
     .object({
       kind: z.literal('move'),
       targetId: TargetId,
-      sources: z.array(RemotePath).min(1).max(MAX_SOURCES),
+      sources: z.array(RemotePath).min(1).max(MAX_SOURCES, TOO_MANY_SOURCES),
       destinationDir: RemotePath
     })
     .strict(),
@@ -52,10 +57,17 @@ export const SftpPlanRequestSchema = z.discriminatedUnion('kind', [
     .object({
       kind: z.literal('remove'),
       targetId: TargetId,
-      paths: z.array(RemotePath).min(1).max(MAX_SOURCES)
+      paths: z.array(RemotePath).min(1).max(MAX_SOURCES, TOO_MANY_SOURCES)
     })
     .strict()
 ])
+
+// Why: the item cap is the one rejection a click can cause, so name it; anything else is malformed.
+export function sftpPlanRequestRejection(error: z.ZodError): string {
+  return (
+    error.issues.find((issue) => issue.code === 'too_big')?.message ?? INVALID_SFTP_REQUEST_MESSAGE
+  )
+}
 
 export const SftpExecuteRequestSchema = z
   .object({ planId: SftpPlanIdSchema, transferId: z.string().min(1) })
