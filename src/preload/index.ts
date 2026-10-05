@@ -57,6 +57,7 @@ import { forkUpdateChangelogApi } from './api/fork-update-changelog-bridge'
 import { sftpApi } from './api/sftp-bridge'
 import { sshVpnApi } from './api/ssh-vpn-bridge'
 import { pythonApi } from './api/python-bridge'
+import { dotnetContainerApi } from './api/dotnet-container-bridge'
 import { browserApi } from './api/browser-bridge'
 import { emulatorApi } from './api/emulator-bridge'
 import { hooksApi } from './api/hooks-bridge'
@@ -166,6 +167,7 @@ const api = {
   sftp: sftpApi,
   sshVpn: sshVpnApi,
   python: pythonApi,
+  dotnetContainer: dotnetContainerApi,
   browser: browserApi,
   emulator: emulatorApi,
   hooks: hooksApi,

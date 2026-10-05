@@ -18,6 +18,7 @@ import {
   waitForRunFinish,
   type RunExit
 } from './run-terminal-launch'
+import { prepareDotnetLauncher } from './run-dotnet-launcher'
 import type { RunTarget } from './run-target'
 
 const CTRL_C = '\x03'
@@ -32,6 +33,12 @@ const rerunOperations = new Map<string, Promise<void>>()
 /** Runs one instance per configuration, restarting an active one. */
 export async function runConfiguration(target: RunTarget): Promise<void> {
   ensureRunTerminalListeners()
+  // Why before reading the session: a second click during the wait must see the first launch.
+  // Why only when needed: an unconditional await would delay every launch by a tick.
+  const preparing = prepareDotnetLauncher(target)
+  if (preparing) {
+    await preparing
+  }
   const session = liveRunSession(target.worktreeId, target.commandKey)
   if (!session) {
     runInNewTerminal(target)
@@ -153,12 +160,13 @@ async function endRun(session: RunSession): Promise<boolean> {
 async function rerunConfigurationOnce(target: RunTarget): Promise<void> {
   ensureRunTerminalListeners()
   const session = liveRunSession(target.worktreeId, target.commandKey)
-  if (!session) {
-    runInNewTerminal(target)
-    return
+  // Why after endRun: Rerun's Ctrl-C must not wait for the .NET launcher to be written.
+  const terminalReusable = session ? await endRun(session) : false
+  const preparing = prepareDotnetLauncher(target)
+  if (preparing) {
+    await preparing
   }
-  const terminalReusable = await endRun(session)
-  if (!terminalReusable || !(await runInExistingTerminal(target, session))) {
+  if (!session || !terminalReusable || !(await runInExistingTerminal(target, session))) {
     runInNewTerminal(target)
   }
 }
