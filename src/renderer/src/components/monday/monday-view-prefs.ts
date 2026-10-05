@@ -3,18 +3,23 @@ import { MONDAY_MAX_SCHEDULE_BOARDS } from '../../../../shared/monday/monday-typ
 
 export type MondayView = 'month' | 'gantt'
 
+const MONDAY_ID = /^\d{1,20}$/
+
+// Why per-field fallbacks: a saved shape from an older build keeps its boards instead of resetting.
 const prefsSchema = z.object({
-  boardIds: z.array(z.string().regex(/^\d{1,20}$/)).max(MONDAY_MAX_SCHEDULE_BOARDS),
-  onlyMine: z.boolean(),
-  hideDone: z.boolean(),
-  view: z.enum(['month', 'gantt'])
+  boardIds: z.array(z.string().regex(MONDAY_ID)).max(MONDAY_MAX_SCHEDULE_BOARDS).catch([]),
+  /** Whose items to show: unset means the connected account, null means everyone. */
+  personId: z.string().regex(MONDAY_ID).nullable().optional().catch(undefined),
+  includeUnassigned: z.boolean().catch(true),
+  hideDone: z.boolean().catch(false),
+  view: z.enum(['month', 'gantt']).catch('month')
 })
 
 export type MondayViewPrefs = z.infer<typeof prefsSchema>
 
 export const DEFAULT_MONDAY_VIEW_PREFS: MondayViewPrefs = {
   boardIds: [],
-  onlyMine: true,
+  includeUnassigned: true,
   hideDone: false,
   view: 'month'
 }

@@ -34,6 +34,8 @@ export type MondayConnectionStatus = {
   tokenKeptForSessionOnly: boolean
 }
 
+export type MondayUser = { id: string; name: string; email: string }
+
 export type MondayBoardSummary = {
   id: string
   name: string
@@ -123,7 +125,10 @@ export const mondayConnectSchema = z.object({ token: z.string().trim().min(1).ma
 
 export const mondayLoadScheduleSchema = z.object({
   boardIds: z.array(mondayIdSchema).min(1).max(MONDAY_MAX_SCHEDULE_BOARDS),
-  onlyMine: z.boolean(),
+  /** Only items whose people column has this user; null shows everyone's. */
+  personId: mondayIdSchema.nullable(),
+  /** With a person, also items nobody is assigned to. */
+  includeUnassigned: z.boolean(),
   refresh: z.boolean()
 })
 
