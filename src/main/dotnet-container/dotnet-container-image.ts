@@ -9,6 +9,7 @@ import {
   ORCA_EXEC_SCRIPT
 } from './dotnet-container-assets'
 import {
+  CONTAINER_DOTNET_EF,
   CONTAINER_NETCOREDBG,
   DOTNET_CONTAINER_DOWNLOADS,
   type DotnetContainerArch
@@ -47,10 +48,27 @@ const IMAGE_ENVIRONMENT = [
   `LD_PRELOAD=${IPV4_ONLY_LIBRARY_PATH}`
 ]
 
+const DOTNET_EF_TOOL_PATH = '/usr/local/lib/orca-dotnet-tools'
+
 /** Base64 keeps quotes and `$` in the file out of the Dockerfile's shell. */
 function writeFileCommand(path: string, content: string, mode: string): string {
   const encoded = Buffer.from(content, 'utf8').toString('base64')
   return `echo ${encoded} | base64 -d > ${path} && chmod ${mode} ${path}`
+}
+
+/** Installs the verified dotnet-ef package from a local feed, so nothing else is fetched. */
+function dotnetEfCommand(continuation: string): string {
+  const { version, url, sha512 } = CONTAINER_DOTNET_EF
+  const feedConfig =
+    '<configuration><packageSources><clear /><add key="local" value="/tmp/ef" /></packageSources></configuration>'
+  return [
+    `mkdir -p /tmp/ef && curl -fsSL ${url} -o /tmp/ef/dotnet-ef.${version}.nupkg`,
+    `echo "${sha512}  /tmp/ef/dotnet-ef.${version}.nupkg" | sha512sum -c -`,
+    `${writeFileCommand('/tmp/ef/nuget.config', feedConfig, '644')}`,
+    `DOTNET_CLI_HOME=/tmp/ef-home DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1 dotnet tool install --tool-path ${DOTNET_EF_TOOL_PATH} --configfile /tmp/ef/nuget.config --version ${version} dotnet-ef`,
+    `ln -s ${DOTNET_EF_TOOL_PATH}/dotnet-ef /usr/local/bin/dotnet-ef`,
+    'rm -rf /tmp/ef /tmp/ef-home'
+  ].join(continuation)
 }
 
 function downloadCommands(arch: DotnetContainerArch): string[] {
@@ -82,6 +100,7 @@ export function buildDotnetContainerDockerfile(arch: DotnetContainerArch): strin
     `RUN curl -fsSL ${CONTAINER_NETCOREDBG[arch].url} -o /tmp/netcoredbg.tgz` +
       ` && echo "${CONTAINER_NETCOREDBG[arch].sha256}  /tmp/netcoredbg.tgz" | sha256sum -c -` +
       ' && tar -xzf /tmp/netcoredbg.tgz -C /usr/local/lib && rm /tmp/netcoredbg.tgz',
+    `RUN ${dotnetEfCommand(continuation)}`,
     `COPY --from=ipv4only /tmp/orca-ipv4only.so ${IPV4_ONLY_LIBRARY_PATH}`,
     `RUN ${writeFileCommand(ORCA_EXEC_PATH, ORCA_EXEC_SCRIPT, '755')}` +
       `${continuation}mkdir -p ${posix.dirname(LEGACY_ASPNET_TARGETS_PATH)}` +
