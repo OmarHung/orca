@@ -15,7 +15,8 @@ const RIGHT_SIDEBAR_SUPPRESSED_VIEWS = new Set<ActiveView>([
   'mobile',
   'database',
   'ssh',
-  'sftp'
+  'sftp',
+  'monday'
 ])
 
 export function canShowRightSidebarForView(activeView: ActiveView): boolean {

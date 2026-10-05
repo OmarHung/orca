@@ -20417,5 +20417,106 @@
     "regenerate": "Summarize again",
     "done": "Got it",
     "menuItem": "What's new in {{value0}}"
+  },
+  "monday": {
+    "account": {
+      "disconnect": "Disconnect",
+      "menu": "monday account",
+      "open": "Open monday",
+      "sessionOnly": "No system keychain: the token is kept only until Orca quits."
+    },
+    "action": {
+      "reconnect": "Connect again",
+      "refresh": "Refresh from monday",
+      "retry": "Retry"
+    },
+    "boards": {
+      "choose": "Choose boards",
+      "count": "{{value0}} board(s)",
+      "empty": "No boards match.",
+      "limit": "{{value0}} of {{value1}} selected",
+      "loading": "Loading boards…",
+      "search": "Search boards…"
+    },
+    "connect": {
+      "description": "See timelines and due dates together, and open any item without leaving the calendar. Orca only reads monday.",
+      "docs": "About monday API tokens",
+      "storage": "The token stays on this computer and is only sent to monday.",
+      "submit": "Connect",
+      "title": "Connect monday",
+      "tokenHelp": "In monday, open your avatar menu → Developers → My access tokens, then copy the token.",
+      "tokenLabel": "Personal API token"
+    },
+    "detail": {
+      "close": "Close",
+      "days": "{{value0}} day(s)",
+      "description": "Description",
+      "due": "Due date",
+      "imageLink": "[Image]",
+      "loading": "Loading updates…",
+      "noUpdates": "No updates yet.",
+      "none": "None",
+      "openInMonday": "Open in monday",
+      "otherColumns": "Other columns",
+      "people": "People",
+      "priority": "Priority",
+      "status": "Status",
+      "subitems": "Subitems ({{value0}})",
+      "timeline": "Timeline",
+      "updates": "Updates ({{value0}})"
+    },
+    "empty": {
+      "noBoards": "Choose the monday boards whose schedule you want to see."
+    },
+    "error": {
+      "api": "monday returned an error: {{value0}}",
+      "dailyLimit": "Today's monday API limit is used up. Everyone in your monday account shares it; it resets at midnight UTC.",
+      "network": "Could not reach monday. Check your network and try again.",
+      "notConnected": "monday is not connected.",
+      "rateLimited": "monday is limiting requests right now. Try again in a minute.",
+      "unauthorized": "monday rejected the token. Connect again with a new personal API token."
+    },
+    "filter": {
+      "hideDone": "Hide done",
+      "hideDoneHint": "Hide items whose status is marked done",
+      "onlyMine": "Only mine",
+      "onlyMineHint": "Items assigned to you, plus items with no one assigned"
+    },
+    "hover": {
+      "due": "Due {{value0}}",
+      "span": "Timeline {{value0}} → {{value1}}"
+    },
+    "legend": {
+      "attention": "Overdue, or due before the timeline ends",
+      "due": "Due date",
+      "timeline": "Timeline"
+    },
+    "loading": {
+      "schedule": "Reading schedule from monday…"
+    },
+    "nav": {
+      "label": "monday",
+      "next": "Next month",
+      "previous": "Previous month",
+      "today": "Today"
+    },
+    "page": {
+      "desktopOnly": "monday is available in the desktop app only.",
+      "title": "monday"
+    },
+    "status": {
+      "fetchedAt": "Read at {{value0}}",
+      "items": "{{value0}} items with dates",
+      "truncated": "{{value0}}: only the first {{value1}} items are shown",
+      "undated": "{{value0}} without dates"
+    },
+    "view": {
+      "gantt": "Gantt",
+      "month": "Calendar"
+    },
+    "warning": {
+      "dueBeforeEnd": "Due {{value0}} day(s) before the timeline ends",
+      "overdue": "Overdue by {{value0}} day(s)"
+    }
   }
 }

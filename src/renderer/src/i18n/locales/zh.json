@@ -20349,5 +20349,106 @@
     "regenerate": "重新整理",
     "done": "知道了",
     "menuItem": "{{value0}} 更新内容"
+  },
+  "monday": {
+    "account": {
+      "disconnect": "断开连接",
+      "menu": "monday 账户",
+      "open": "打开 monday",
+      "sessionOnly": "这台电脑无法加密保存 token，只会保留到 Orca 关闭为止。"
+    },
+    "action": {
+      "reconnect": "重新连接",
+      "refresh": "从 monday 重新读取",
+      "retry": "重试"
+    },
+    "boards": {
+      "choose": "选择 board",
+      "count": "{{value0}} 个 board",
+      "empty": "没有符合的 board。",
+      "limit": "已选 {{value0}}／{{value1}} 个",
+      "loading": "正在读取 board…",
+      "search": "搜索 board…"
+    },
+    "connect": {
+      "description": "同时看到时程和 Due date，在行事历上点一下就能看任务内容。Orca 不会修改 monday 上的资料。",
+      "docs": "关于 monday API token",
+      "storage": "token 只保存在这台电脑，只会发送给 monday。",
+      "submit": "连接",
+      "title": "连接 monday",
+      "tokenHelp": "在 monday 点头像 → Developers → My access tokens，复制 token。",
+      "tokenLabel": "个人 API token"
+    },
+    "detail": {
+      "close": "关闭",
+      "days": "{{value0}} 天",
+      "description": "描述",
+      "due": "Due date",
+      "imageLink": "[图片]",
+      "loading": "正在读取 updates…",
+      "noUpdates": "还没有 update。",
+      "none": "无",
+      "openInMonday": "在 monday 打开",
+      "otherColumns": "其他字段",
+      "people": "人员",
+      "priority": "优先顺序",
+      "status": "状态",
+      "subitems": "子任务（{{value0}}）",
+      "timeline": "时程",
+      "updates": "Updates（{{value0}}）"
+    },
+    "empty": {
+      "noBoards": "选择要查看时程的 monday board。"
+    },
+    "error": {
+      "api": "monday 回报错误：{{value0}}",
+      "dailyLimit": "今天的 monday API 额度已用完。这个额度由整个 monday 账户共用，UTC 午夜重置。",
+      "network": "无法连接 monday。请检查网络后重试。",
+      "notConnected": "尚未连接 monday。",
+      "rateLimited": "monday 目前限制请求次数，请一分钟后再试。",
+      "unauthorized": "monday 拒绝了这个 token。请用新的个人 API token 重新连接。"
+    },
+    "filter": {
+      "hideDone": "隐藏已完成",
+      "hideDoneHint": "隐藏状态标为完成的任务",
+      "onlyMine": "只看我的",
+      "onlyMineHint": "指派给你的任务，加上没有指派人的任务"
+    },
+    "hover": {
+      "due": "Due {{value0}}",
+      "span": "时程 {{value0}} → {{value1}}"
+    },
+    "legend": {
+      "attention": "已逾期，或 Due 早于时程结束",
+      "due": "Due date",
+      "timeline": "时程"
+    },
+    "loading": {
+      "schedule": "正在从 monday 读取时程…"
+    },
+    "nav": {
+      "label": "monday",
+      "next": "下个月",
+      "previous": "上个月",
+      "today": "今天"
+    },
+    "page": {
+      "desktopOnly": "monday 仅在桌面版提供。",
+      "title": "monday"
+    },
+    "status": {
+      "fetchedAt": "{{value0}} 读取",
+      "items": "{{value0}} 个任务有日期",
+      "truncated": "{{value0}}：只显示前 {{value1}} 个任务",
+      "undated": "{{value0}} 个没有日期"
+    },
+    "view": {
+      "gantt": "甘特图",
+      "month": "月历"
+    },
+    "warning": {
+      "dueBeforeEnd": "Due 比时程结束早 {{value0}} 天",
+      "overdue": "已逾期 {{value0}} 天"
+    }
   }
 }
