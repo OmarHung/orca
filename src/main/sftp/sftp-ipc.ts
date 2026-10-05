@@ -5,19 +5,21 @@ import { getCurrentMainWindow } from '../ipc/ssh-ipc-context'
 import { SshConnection } from '../ssh/ssh-connection'
 import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
 import {
+  INVALID_SFTP_REQUEST_MESSAGE,
   SftpExecuteRequestSchema,
   SftpLocalPathSchema,
   SftpPathRequestSchema,
   SftpPlanIdSchema,
   SftpPlanRequestSchema,
-  SftpTargetSchema
+  SftpTargetSchema,
+  sftpPlanRequestRejection
 } from './sftp-ipc-schemas'
 import { listLocalDirectory, localHomeDirectory } from './sftp-local-fs'
 import { SftpSessionManager } from './sftp-session-manager'
 
 const INVALID_REQUEST: SftpResult<never> = {
   ok: false,
-  error: { message: 'Invalid SFTP request' }
+  error: { message: INVALID_SFTP_REQUEST_MESSAGE }
 }
 
 function broadcastProgress(progress: SftpTransferProgress): void {
@@ -67,7 +69,9 @@ export function registerSftpHandlers(): void {
   // Why: changes only run as plan → user confirms the listed steps → execute that stored plan.
   ipcMain.handle('sftp:plan', (_event, raw: unknown) => {
     const request = SftpPlanRequestSchema.safeParse(raw)
-    return request.success ? respond(() => sessions.plan(request.data)) : INVALID_REQUEST
+    return request.success
+      ? respond(() => sessions.plan(request.data))
+      : { ok: false, error: { message: sftpPlanRequestRejection(request.error) } }
   })
   ipcMain.handle('sftp:execute', (_event, raw: unknown) => {
     const request = SftpExecuteRequestSchema.safeParse(raw)

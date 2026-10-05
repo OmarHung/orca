@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest'
 import {
   SftpExecuteRequestSchema,
   SftpPathRequestSchema,
-  SftpPlanRequestSchema
+  SftpPlanRequestSchema,
+  sftpPlanRequestRejection
 } from './sftp-ipc-schemas'
+import { MAX_PLAN_OPERATIONS } from './sftp-plan-builders'
 
 const localFile = path.resolve('/tmp', 'report.csv')
 const upload = {
@@ -62,5 +64,29 @@ describe('SFTP IPC schemas', () => {
         operations: [{ op: 'rm', path: '/' }]
       }).success
     ).toBe(false)
+  })
+
+  it('takes any selection the plan itself could hold, not just the first thousand', () => {
+    const download = (count: number): unknown => ({
+      kind: 'download',
+      targetId: 'web',
+      sources: Array.from({ length: count }, (_, i) => `/srv/uploads/${i}.png`),
+      destinationDir: path.resolve('/tmp')
+    })
+    expect(SftpPlanRequestSchema.safeParse(download(1036)).success).toBe(true)
+    expect(SftpPlanRequestSchema.safeParse(download(MAX_PLAN_OPERATIONS)).success).toBe(true)
+
+    const tooMany = SftpPlanRequestSchema.safeParse(download(MAX_PLAN_OPERATIONS + 1))
+    expect(tooMany.success).toBe(false)
+    expect(tooMany.error && sftpPlanRequestRejection(tooMany.error)).toBe(
+      'This selection has more than 50,000 items. Pick fewer items.'
+    )
+  })
+
+  it('keeps malformed requests behind the generic rejection', () => {
+    const malformed = SftpPlanRequestSchema.safeParse({ ...upload, sources: ['report.csv'] })
+    expect(malformed.error && sftpPlanRequestRejection(malformed.error)).toBe(
+      'Invalid SFTP request'
+    )
   })
 })
