@@ -10,7 +10,9 @@ import { loadMondayItemDetail, selectMondayItem } from './monday-page-actions'
 import { useMondayPageStore } from './monday-page-store'
 import { mondayErrorMessage } from './monday-error-message'
 import { mondayScheduleWarnings } from './MondayItemHoverSummary'
+import { MondayColumnValue } from './MondayColumnValue'
 import { MondayItemUpdates } from './MondayItemUpdates'
+import { MondayLinkedItems } from './MondayLinkedItems'
 import { MondayDueFlag, MondayLabelBadge, mondayDueNeedsAttention } from './MondayScheduleVisuals'
 
 export const MONDAY_DETAIL_PANEL_WIDTH = 440
@@ -126,13 +128,14 @@ function ItemActivity({
   const otherColumns = detail.columns.filter((column) => !shown.has(column.id))
   return (
     <>
+      <MondayLinkedItems relations={detail.relations} />
       {otherColumns.length > 0 ? (
         <section>
           <SectionTitle>{translate('monday.detail.otherColumns', 'Other columns')}</SectionTitle>
           <dl className="grid grid-cols-[88px_1fr] gap-x-3 gap-y-2 text-xs">
             {otherColumns.map((column) => (
               <FieldRow key={column.id} label={column.title}>
-                <span className="break-words">{column.text}</span>
+                <MondayColumnValue column={column} />
               </FieldRow>
             ))}
           </dl>
