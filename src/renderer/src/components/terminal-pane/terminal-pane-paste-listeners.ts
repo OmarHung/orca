@@ -37,8 +37,12 @@ export function registerTerminalPanePasteListeners({
   shortcutPlatform: NodeJS.Platform
 }): () => void {
   const { keybindings, managerRef, paneTransportsRef, setTerminalError, worktreeId } = controller
-  const { executePanePasteText, pasteFromClipboard, resolvePaneProtectedMultilinePasteOptions } =
-    execution
+  const {
+    executePanePasteText,
+    pasteFromClipboard,
+    resolvePaneProtectedMultilinePasteOptions,
+    recordImagePaste
+  } = execution
   let suppressNextNativePaste = false
   let pasteSuppressionTimerId: number | null = null
   const shouldSuppressNativePaste = (event: KeyboardEvent): boolean => {
@@ -188,7 +192,8 @@ export function registerTerminalPanePasteListeners({
         executePanePasteText(pane, 'app-menu', activeElementAtDispatch, text, options),
       onTextPasteError: () =>
         setTerminalError('Paste failed: clipboard text is too large for a safe terminal paste.'),
-      onImagePasteError: (error) => setTerminalError(formatClipboardImagePasteError(error))
+      onImagePasteError: (error) => setTerminalError(formatClipboardImagePasteError(error)),
+      onImagePasted: recordImagePaste(pane, connectionId)
     }).catch(() => setTerminalError('Paste failed.'))
   }
 
