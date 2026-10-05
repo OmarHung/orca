@@ -34,7 +34,7 @@ describe('installDotnetContainerLauncher', () => {
 
   it('writes an executable launcher next to the Dockerfile it builds from', async () => {
     const launcher = await installDotnetContainerLauncher(userData, host())
-    expect(launcher).toBe(join(userData, 'dotnet-container', 'dotnet'))
+    expect(launcher).toBe(join(userData, 'dotnet-container', 'bin', 'dotnet'))
     expect(() => accessSync(launcher ?? '', constants.X_OK)).not.toThrow()
     const script = readFileSync(launcher ?? '', 'utf8')
     expect(script).toContain('orca_docker=/usr/local/bin/docker')
