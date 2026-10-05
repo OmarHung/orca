@@ -13,6 +13,10 @@ import { writeMondayViewPrefs, type MondayViewPrefs } from './monday-view-prefs'
 const scheduleCache = new Map<string, MondaySchedule>()
 let shownScheduleKey: string | null = null
 let scheduleRequest = 0
+let changeCheckRunning = false
+
+/** Opening the page and focusing the window often fire together; one check covers both. */
+const MIN_CHANGE_CHECK_GAP_MS = 3_000
 
 function get(): MondayPageState {
   return useMondayPageStore.getState()
@@ -125,7 +129,7 @@ export async function loadMondaySchedule(options: { refresh: boolean }): Promise
   if (result.ok) {
     scheduleCache.set(key, result.value)
     shownScheduleKey = key
-    set({ schedule: result.value, scheduleLoading: false })
+    set({ schedule: result.value, scheduleLoading: false, syncedAt: Date.now() })
   } else {
     set({ scheduleError: result.error, scheduleLoading: false })
   }
@@ -175,4 +179,36 @@ export async function refreshMonday(): Promise<void> {
     loadMondaySchedule({ refresh: true }),
     selected ? loadMondayItemDetail(selected) : Promise.resolve()
   ])
+}
+
+/**
+ * Re-reads the schedule only when monday says a shown board changed: one cheap call when nothing
+ * did. Runs when the page opens and when the window regains focus, instead of polling.
+ */
+export async function checkMondayForChanges(): Promise<void> {
+  const { schedule, scheduleLoading, syncedAt } = get()
+  if (!schedule || schedule.boards.length === 0 || scheduleLoading || changeCheckRunning) {
+    return
+  }
+  if (syncedAt !== null && Date.now() - syncedAt < MIN_CHANGE_CHECK_GAP_MS) {
+    return
+  }
+  changeCheckRunning = true
+  try {
+    const result = await window.api.monday.boardsUpdatedAt(
+      schedule.boards.map((board) => board.boardId)
+    )
+    if (!result.ok) {
+      set({ scheduleError: result.error })
+      return
+    }
+    const changed = schedule.boards.some((board) => result.value[board.boardId] !== board.updatedAt)
+    if (changed) {
+      await refreshMonday()
+    } else {
+      set({ syncedAt: Date.now() })
+    }
+  } finally {
+    changeCheckRunning = false
+  }
 }
