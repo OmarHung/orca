@@ -65,6 +65,7 @@ test('edits run configurations, chains Before launch steps, imports launch.json 
 
   // Edit Configurations: Serve runs only after Build exits 0.
   await openMenu(orcaPage)
+  await orcaPage.getByTestId('run-widget-manage').click()
   await orcaPage.getByTestId('run-configurations-edit').click()
   const dialog = orcaPage.getByTestId('edit-run-configurations-dialog')
   await expect(dialog).toBeVisible()
@@ -86,6 +87,7 @@ test('edits run configurations, chains Before launch steps, imports launch.json 
 
   // A failing Before launch step stops the chain.
   await openMenu(orcaPage)
+  await orcaPage.getByTestId('run-widget-manage').click()
   await orcaPage.getByTestId('run-configurations-edit').click()
   await dialog.getByTestId('run-configuration-list-item').filter({ hasText: 'Build' }).click()
   // Why a subshell: a bare `exit` in the reused shell would end the shell, not the command.
@@ -101,6 +103,9 @@ test('edits run configurations, chains Before launch steps, imports launch.json 
 
   // launch.json import adds the supported launch configurations.
   await openMenu(orcaPage)
+  await orcaPage.getByTestId('run-widget-manage').click()
+  await expect(orcaPage.getByTestId('run-configurations-import')).toBeVisible()
+  await orcaPage.screenshot({ path: testInfo.outputPath('run-widget-manage-menu.png') })
   await orcaPage.getByTestId('run-configurations-import').click()
   await expect(orcaPage.getByText('Imported 1 new and 0 updated configurations')).toBeVisible()
   await openMenu(orcaPage)

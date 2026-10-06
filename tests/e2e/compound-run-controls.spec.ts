@@ -80,6 +80,7 @@ test('manages each running member of a compound from the Run and Stop menus', as
   await activateGoldenWorktree(orcaPage, testRepoPath, fixture.worktreePath)
 
   await openRunMenu(orcaPage)
+  await orcaPage.getByTestId('run-widget-manage').click()
   await orcaPage.getByTestId('run-widget-add-quick-command').click()
   const dialog = orcaPage.getByRole('dialog')
   await dialog.getByPlaceholder('Start dev server').fill('Run:all')

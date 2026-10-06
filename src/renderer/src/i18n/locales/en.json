@@ -19503,6 +19503,7 @@
       "quickCommands": "Quick commands",
       "addQuickCommand": "Add Quick Command…",
       "manageQuickCommands": "Manage Quick Commands…",
+      "manageMenu": "Manage",
       "dotnetContainer": "Run .NET 5 and older in Docker",
       "dotnetContainerMenu": ".NET Container",
       "dotnetContainerChecking": "Checking…",
