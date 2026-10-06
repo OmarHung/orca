@@ -12,6 +12,8 @@ const prefsSchema = z.object({
   personId: z.string().regex(MONDAY_ID).nullable().optional().catch(undefined),
   includeUnassigned: z.boolean().catch(true),
   hideDone: z.boolean().catch(false),
+  /** Status labels to show; empty shows every status. */
+  statusLabels: z.array(z.string()).catch([]),
   view: z.enum(['month', 'gantt']).catch('month')
 })
 
@@ -21,6 +23,7 @@ export const DEFAULT_MONDAY_VIEW_PREFS: MondayViewPrefs = {
   boardIds: [],
   includeUnassigned: true,
   hideDone: false,
+  statusLabels: [],
   view: 'month'
 }
 
