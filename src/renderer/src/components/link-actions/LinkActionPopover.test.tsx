@@ -52,8 +52,18 @@ vi.mock('@/components/ui/popover', () => ({
       </div>
     ) : null,
   PopoverAnchor: () => null,
-  PopoverContent: ({ children, className }: { children: ReactNode; className?: string }) => (
-    <div className={className}>{children}</div>
+  PopoverContent: ({
+    children,
+    className,
+    onMouseDown
+  }: {
+    children: ReactNode
+    className?: string
+    onMouseDown?: (event: React.MouseEvent) => void
+  }) => (
+    <div className={className} onMouseDown={onMouseDown}>
+      {children}
+    </div>
   )
 }))
 
@@ -66,6 +76,25 @@ afterEach(() => {
 })
 
 describe('LinkActionPopover', () => {
+  it('leaves focus on the terminal while a row is pressed', () => {
+    vi.stubGlobal('navigator', { userAgent: 'Macintosh' })
+    const request: LinkActionRequest = {
+      anchorX: 100,
+      anchorY: 200,
+      destination: 'https://example.com',
+      kind: 'url',
+      primary: { external: false, label: 'Orca Browser', run: vi.fn() },
+      alternate: { external: true, label: 'System Browser', run: vi.fn() },
+      restoreFocus: vi.fn()
+    }
+
+    render(<LinkActionPopover request={request} onClose={vi.fn()} />)
+
+    // fireEvent returns false when the default (moving focus) was prevented.
+    expect(fireEvent.mouseDown(screen.getByText('Orca Browser'))).toBe(false)
+    expect(fireEvent.mouseDown(screen.getByRole('button', { name: 'Copy link' }))).toBe(false)
+  })
+
   it('ignores duplicate copy clicks while the clipboard write is in flight', async () => {
     vi.stubGlobal('navigator', { userAgent: 'Macintosh' })
     Object.assign(window, { api: { ui: { writeClipboardText: mocks.writeClipboardText } } })
