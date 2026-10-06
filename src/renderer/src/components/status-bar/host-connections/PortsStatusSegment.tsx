@@ -18,6 +18,7 @@ import { SelectedTextCopyMenu } from '@/components/clipboard/SelectedTextCopyMen
 import { STATUS_BAR_CONTEXT_MENU_EXEMPT_PROPS } from '../composition/status-bar-context-menu-policy'
 import { PortRow, WorkspaceGroupRows } from './ports-status-popover-rows'
 import { useTranslate } from '@/i18n/use-translate'
+import { NgrokPopoverSection } from '../ngrok/NgrokSection'
 
 export function PortsStatusSegment(): React.JSX.Element {
   const t = useTranslate()
@@ -235,6 +236,8 @@ export function PortsStatusSegment(): React.JSX.Element {
                   </div>
                 )}
               </section>
+
+              <NgrokPopoverSection />
             </div>
           )}
         </SelectedTextCopyMenu>

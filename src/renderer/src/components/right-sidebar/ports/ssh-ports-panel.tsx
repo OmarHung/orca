@@ -19,6 +19,7 @@ import { SshUnrestoredPortRow } from './ssh-unrestored-port-row'
 import { SshDetectedPortRow } from './ssh-detected-port-row'
 import { SshPortForwardDialog, type PortForwardDialogState } from './ssh-port-forward-dialog'
 import { portForwardKey, portForwardRemoteHost } from './port-forward-remote-host'
+import { NgrokSection } from '../../ngrok/NgrokSection'
 
 const NO_UNRESTORED: readonly UnrestoredPortForward[] = []
 
@@ -231,6 +232,8 @@ export function SshPortsPanel({
             ))}
         </div>
       )}
+
+      <NgrokSection />
 
       {allForwards.length === 0 && unrestoredForwards.length === 0 && allDetected.length === 0 && (
         <div className="flex flex-col items-center justify-center flex-1 px-4 text-center text-muted-foreground">
