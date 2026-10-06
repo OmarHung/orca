@@ -25,6 +25,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import type { MondayAccount } from '../../../../shared/monday/monday-types'
+import { openMondayLink } from './monday-browser-actions'
 import { formatMondayMonth } from './monday-date-format'
 import {
   disconnectMonday,
@@ -125,9 +126,7 @@ function AccountMenu({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onSelect={() =>
-            void window.api.shell.openUrl(`https://${account.accountSlug}.monday.com`)
-          }
+          onSelect={() => openMondayLink(`https://${account.accountSlug}.monday.com`)}
         >
           <ExternalLink />
           {translate('monday.account.open', 'Open monday')}

@@ -49,7 +49,8 @@ beforeEach(() => {
       includeUnassigned: true,
       hideDone: false,
       statusLabels: [],
-      view: 'month'
+      view: 'month',
+      browserWidth: 720
     },
     schedule: schedule('2026-10-05T09:00:00Z'),
     scheduleLoading: false,

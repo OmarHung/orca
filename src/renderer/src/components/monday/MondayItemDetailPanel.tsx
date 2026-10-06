@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
 import type { MondayBoardSchedule, MondayItemDetail } from '../../../../shared/monday/monday-types'
+import { openMondayLink } from './monday-browser-actions'
 import type { MondayCalendarEntry } from './monday-calendar-model'
 import { daysBetween, formatMondayDay } from './monday-date-format'
 import { loadMondayItemDetail, selectMondayItem } from './monday-page-actions'
@@ -211,7 +212,7 @@ function DetailBody({
 
 function IconAction(props: {
   label: string
-  onClick: () => void
+  onClick: (event: React.MouseEvent) => void
   children: React.ReactNode
 }): React.JSX.Element {
   return (
@@ -273,7 +274,7 @@ export function MondayItemDetailPanel(props: {
         {url ? (
           <IconAction
             label={translate('monday.detail.openInMonday', 'Open in monday')}
-            onClick={() => void window.api.shell.openUrl(url)}
+            onClick={(event) => openMondayLink(url, { systemBrowser: event.shiftKey })}
           >
             <ExternalLink />
           </IconAction>
