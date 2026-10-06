@@ -3,6 +3,7 @@ import type * as AgentStatusModule from '@/lib/agent-status'
 import type { BrowserPage } from '../../../../shared/browser-workspace-types'
 import '../../../../shared/constants'
 import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../shared/layout-owner-switch'
+import { MONDAY_BROWSER_WORKTREE_ID } from '../../../../shared/local-synthetic-workspace'
 import {
   RemoteBrowserPageSession,
   type RemoteBrowserPageSessionDeps
@@ -23,6 +24,35 @@ vi.mock('@/lib/agent-status', async (importOriginal) => {
 })
 
 createStoreSessionMockApi()
+
+describe('hydrateBrowserSession', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('restores the monday page browser, which has no repo worktree either', () => {
+    const store = createTestStore()
+
+    store.getState().hydrateBrowserSession({
+      activeRepoId: null,
+      activeWorktreeId: null,
+      activeTabId: null,
+      tabsByWorktree: {},
+      terminalLayoutsByTabId: {},
+      browserTabsByWorktree: {
+        [MONDAY_BROWSER_WORKTREE_ID]: [
+          makeBrowserTab({
+            id: 'monday-browser-1',
+            worktreeId: MONDAY_BROWSER_WORKTREE_ID,
+            url: 'https://acme.monday.com/boards/1'
+          })
+        ]
+      }
+    })
+
+    expect(store.getState().browserTabsByWorktree[MONDAY_BROWSER_WORKTREE_ID]).toHaveLength(1)
+  })
+})
 
 describe('hydrateBrowserSession remote page handle seeding', () => {
   const WT = 'repo1::/path/wt1'

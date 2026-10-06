@@ -5,6 +5,9 @@ export type MondayView = 'month' | 'gantt'
 
 const MONDAY_ID = /^\d{1,20}$/
 
+export const MONDAY_BROWSER_MIN_WIDTH = 360
+const DEFAULT_BROWSER_WIDTH = 720
+
 // Why per-field fallbacks: a saved shape from an older build keeps its boards instead of resetting.
 const prefsSchema = z.object({
   boardIds: z.array(z.string().regex(MONDAY_ID)).max(MONDAY_MAX_SCHEDULE_BOARDS).catch([]),
@@ -14,7 +17,8 @@ const prefsSchema = z.object({
   hideDone: z.boolean().catch(false),
   /** Status labels to show; empty shows every status. */
   statusLabels: z.array(z.string()).catch([]),
-  view: z.enum(['month', 'gantt']).catch('month')
+  view: z.enum(['month', 'gantt']).catch('month'),
+  browserWidth: z.number().min(MONDAY_BROWSER_MIN_WIDTH).catch(DEFAULT_BROWSER_WIDTH)
 })
 
 export type MondayViewPrefs = z.infer<typeof prefsSchema>
@@ -24,7 +28,8 @@ export const DEFAULT_MONDAY_VIEW_PREFS: MondayViewPrefs = {
   includeUnassigned: true,
   hideDone: false,
   statusLabels: [],
-  view: 'month'
+  view: 'month',
+  browserWidth: DEFAULT_BROWSER_WIDTH
 }
 
 // Per-viewer convenience only: losing it just means picking boards again.

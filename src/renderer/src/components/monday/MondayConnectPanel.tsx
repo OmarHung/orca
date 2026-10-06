@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { translate } from '@/i18n/i18n'
 import { MONDAY_TOKEN_HELP_URL, type MondayError } from '../../../../shared/monday/monday-types'
+import { openMondayLink } from './monday-browser-actions'
 import { connectMonday } from './monday-page-actions'
 import { mondayErrorMessage } from './monday-error-message'
 
@@ -81,7 +82,9 @@ export function MondayConnectPanel(): React.JSX.Element {
           <button
             type="button"
             className="inline-flex items-center gap-1 text-sm text-primary underline-offset-4 hover:underline"
-            onClick={() => void window.api.shell.openUrl(MONDAY_TOKEN_HELP_URL)}
+            onClick={(event) =>
+              openMondayLink(MONDAY_TOKEN_HELP_URL, { systemBrowser: event.shiftKey })
+            }
           >
             {translate('monday.connect.docs', 'About monday API tokens')}
             <ExternalLink className="size-3" />
