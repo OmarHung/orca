@@ -1,10 +1,13 @@
 import React from 'react'
-import { FileInput, Plus, Settings2, SlidersHorizontal } from 'lucide-react'
+import { ChevronLeft, FileInput, Plus, Settings, Settings2, SlidersHorizontal } from 'lucide-react'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger
 } from '@/components/ui/dropdown-menu'
 import { translate } from '@/i18n/i18n'
 import { TabBarQuickCommandHostLoadStatus } from '../tab-bar/TabBarQuickCommandHostLoadStatus'
@@ -47,6 +50,67 @@ function Section({
         />
       ))}
     </>
+  )
+}
+
+type ManageSubmenuProps = {
+  cascadeLeft: boolean
+  worktreeId: string
+  groupId: string | null
+  onEditConfigurations: () => void
+  onImportLaunchJson: (() => void) | null
+  onAddQuickCommand: (() => void) | null
+  onManageQuickCommands: () => void
+}
+
+/** The configuration and quick-command management actions, kept out of the runnable list. */
+function ManageSubmenu({
+  cascadeLeft,
+  worktreeId,
+  groupId,
+  onEditConfigurations,
+  onImportLaunchJson,
+  onAddQuickCommand,
+  onManageQuickCommands
+}: ManageSubmenuProps): React.JSX.Element {
+  return (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger data-testid="run-widget-manage" hideChevron={cascadeLeft}>
+        <Settings />
+        {translate('run.widget.manageMenu', 'Manage')}
+        {cascadeLeft ? <ChevronLeft className="ml-auto size-4" /> : null}
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent style={RUN_WIDGET_CONTENT_STYLE} className="min-w-56">
+        <DropdownMenuItem data-testid="run-configurations-edit" onSelect={onEditConfigurations}>
+          <Settings2 />
+          {translate('run.configurations.edit', 'Edit Configurations…')}
+        </DropdownMenuItem>
+        {onImportLaunchJson ? (
+          <DropdownMenuItem data-testid="run-configurations-import" onSelect={onImportLaunchJson}>
+            <FileInput />
+            {translate('run.configurations.importLaunchJson', 'Import .vscode/launch.json')}
+          </DropdownMenuItem>
+        ) : null}
+        {onAddQuickCommand ? (
+          <DropdownMenuItem data-testid="run-widget-add-quick-command" onSelect={onAddQuickCommand}>
+            <Plus />
+            {translate('run.widget.addQuickCommand', 'Add Quick Command…')}
+          </DropdownMenuItem>
+        ) : null}
+        <DropdownMenuItem onSelect={onManageQuickCommands}>
+          <SlidersHorizontal />
+          {translate('run.widget.manageQuickCommands', 'Manage Quick Commands…')}
+        </DropdownMenuItem>
+        {/* Why not on Windows: the container shares folders at the same path, which Windows cannot. */}
+        {isWindowsUserAgent() ? null : (
+          <DotnetContainerMenu
+            worktreeId={worktreeId}
+            groupId={groupId}
+            cascadeLeft={cascadeLeft}
+          />
+        )}
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
   )
 }
 
@@ -123,30 +187,15 @@ export function RunWidgetMenu({
       {items.length > 0 || !detected || !isDetectedRunMenuEmpty(detected) ? (
         <DropdownMenuSeparator />
       ) : null}
-      <DropdownMenuItem data-testid="run-configurations-edit" onSelect={onEditConfigurations}>
-        <Settings2 />
-        {translate('run.configurations.edit', 'Edit Configurations…')}
-      </DropdownMenuItem>
-      {onImportLaunchJson ? (
-        <DropdownMenuItem data-testid="run-configurations-import" onSelect={onImportLaunchJson}>
-          <FileInput />
-          {translate('run.configurations.importLaunchJson', 'Import .vscode/launch.json')}
-        </DropdownMenuItem>
-      ) : null}
-      {onAddQuickCommand ? (
-        <DropdownMenuItem data-testid="run-widget-add-quick-command" onSelect={onAddQuickCommand}>
-          <Plus />
-          {translate('run.widget.addQuickCommand', 'Add Quick Command…')}
-        </DropdownMenuItem>
-      ) : null}
-      <DropdownMenuItem onSelect={onManageQuickCommands}>
-        <SlidersHorizontal />
-        {translate('run.widget.manageQuickCommands', 'Manage Quick Commands…')}
-      </DropdownMenuItem>
-      {/* Why not on Windows: the container shares folders at the same path, which Windows cannot. */}
-      {isWindowsUserAgent() ? null : (
-        <DotnetContainerMenu worktreeId={worktreeId} groupId={groupId} cascadeLeft={cascadeLeft} />
-      )}
+      <ManageSubmenu
+        cascadeLeft={cascadeLeft}
+        worktreeId={worktreeId}
+        groupId={groupId}
+        onEditConfigurations={onEditConfigurations}
+        onImportLaunchJson={onImportLaunchJson}
+        onAddQuickCommand={onAddQuickCommand}
+        onManageQuickCommands={onManageQuickCommands}
+      />
     </DropdownMenuContent>
   )
 }

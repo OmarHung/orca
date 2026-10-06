@@ -19227,6 +19227,7 @@
       "quickCommands": "快速命令",
       "addQuickCommand": "新增快速命令…",
       "manageQuickCommands": "管理快速命令…",
+      "manageMenu": "管理",
       "dotnetContainer": "在 Docker 中執行 .NET 5 及更早的專案",
       "dotnetContainerMenu": ".NET 容器",
       "dotnetContainerChecking": "檢查中…",
