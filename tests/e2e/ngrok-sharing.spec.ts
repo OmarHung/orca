@@ -231,6 +231,7 @@ test('a run configuration set to share with ngrok shares its port and stops with
 
   await expect(orcaPage.getByRole('menu')).toHaveCount(0)
   await orcaPage.getByTestId('run-configurations-trigger').first().click()
+  await orcaPage.getByTestId('run-widget-manage').click()
   await orcaPage.getByTestId('run-configurations-edit').click()
   const dialog = orcaPage.getByTestId('edit-run-configurations-dialog')
   await dialog.getByTestId('run-configuration-add-command').click()
