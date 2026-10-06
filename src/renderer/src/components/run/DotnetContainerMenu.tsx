@@ -15,6 +15,7 @@ import { useAppStore } from '@/store'
 import type { DotnetContainerStatus } from '../../../../shared/dotnet-container-types'
 import { useDotnetContainerStore } from './dotnet-container-store'
 import { openDotnetContainerShell } from './run-dotnet-launcher'
+import { RUN_WIDGET_CONTENT_STYLE } from './run-widget-cascade'
 
 function statusText(status: DotnetContainerStatus | null): string {
   if (!status) {
@@ -85,7 +86,7 @@ export function DotnetContainerMenu({
         {translate('run.widget.dotnetContainerMenu', '.NET Container')}
         {cascadeLeft ? <ChevronLeft className="ml-auto size-4" /> : null}
       </DropdownMenuSubTrigger>
-      <DropdownMenuSubContent>
+      <DropdownMenuSubContent style={RUN_WIDGET_CONTENT_STYLE}>
         <DropdownMenuCheckboxItem
           checked={enabled}
           onCheckedChange={(checked) => reportFailure(setEnabled(checked === true))}
