@@ -133,6 +133,9 @@ export function LinkActionPopover<TRequest extends LinkActionRequest>({
           data-terminal-link-action-popover
           onOpenAutoFocus={(event) => event.preventDefault()}
           onCloseAutoFocus={(event) => event.preventDefault()}
+          // Why: a press must not pull focus off the terminal; the Run panel treats that
+          // as deactivating its terminal, which closes this popover before the click lands.
+          onMouseDown={(event) => event.preventDefault()}
           onEscapeKeyDown={() => request.restoreFocus()}
         >
           <div className="mb-0.5 flex items-center gap-1 overflow-hidden border-b border-border px-1.5 py-0.5 font-mono text-xs text-muted-foreground">

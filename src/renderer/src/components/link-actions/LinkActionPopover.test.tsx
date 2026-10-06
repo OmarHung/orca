@@ -53,8 +53,18 @@ vi.mock('@/components/ui/popover', () => ({
       </div>
     ) : null,
   PopoverAnchor: () => null,
-  PopoverContent: ({ children, className }: { children: ReactNode; className?: string }) => (
-    <div className={className}>{children}</div>
+  PopoverContent: ({
+    children,
+    className,
+    onMouseDown
+  }: {
+    children: ReactNode
+    className?: string
+    onMouseDown?: (event: React.MouseEvent) => void
+  }) => (
+    <div className={className} onMouseDown={onMouseDown}>
+      {children}
+    </div>
   )
 }))
 
@@ -103,6 +113,25 @@ describe('LinkActionPopover', () => {
     expect(onClose).toHaveBeenCalledOnce()
     expect(restoreFocus).toHaveBeenCalledOnce()
     expect(run).toHaveBeenCalledOnce()
+  })
+
+  it('leaves focus on the terminal while a row is pressed', () => {
+    vi.stubGlobal('navigator', { userAgent: 'Macintosh' })
+    const request: LinkActionRequest = {
+      anchorX: 100,
+      anchorY: 200,
+      destination: 'https://example.com',
+      kind: 'url',
+      primary: { external: false, label: 'Orca Browser', run: vi.fn() },
+      alternate: { external: true, label: 'System Browser', run: vi.fn() },
+      restoreFocus: vi.fn()
+    }
+
+    render(<LinkActionPopover request={request} onClose={vi.fn()} />)
+
+    // fireEvent returns false when the default (moving focus) was prevented.
+    expect(fireEvent.mouseDown(screen.getByText('Orca Browser'))).toBe(false)
+    expect(fireEvent.mouseDown(screen.getByRole('button', { name: 'Copy link' }))).toBe(false)
   })
 
   it('identifies the dismissed request so a newer request can survive', () => {
