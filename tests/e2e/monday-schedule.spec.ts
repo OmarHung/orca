@@ -88,6 +88,22 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
     await expect(gantt.getByRole('button', { name: '海發中心 零信任串接' }).first()).toBeVisible()
     await expect(gantt.getByRole('button', { name: 'Vivian 的設計稿' }).first()).toBeVisible()
 
+    // The status filter works on the items already read, so it costs no monday call.
+    const requestsBeforeFilter = server.tokens.length
+    const statusPicker = orcaPage.getByTestId('monday-status-picker')
+    await statusPicker.click()
+    await orcaPage.getByRole('option', { name: /^Stuck/ }).click()
+    await orcaPage.screenshot({ path: testInfo.outputPath('monday-status-filter.png') })
+    await orcaPage.keyboard.press('Escape')
+    await expect(statusPicker).toContainText('Status: Stuck')
+    await expect(gantt.getByRole('button', { name: '兆利 HTML 上稿' }).first()).toBeVisible()
+    await expect(gantt.getByRole('button', { name: '海發中心 零信任串接' })).toHaveCount(0)
+    await statusPicker.click()
+    await orcaPage.getByRole('option', { name: 'All statuses' }).click()
+    await orcaPage.keyboard.press('Escape')
+    await expect(gantt.getByRole('button', { name: '海發中心 零信任串接' }).first()).toBeVisible()
+    expect(server.tokens.length).toBe(requestsBeforeFilter)
+
     // An edit on monday shows after leaving the page and coming back; no polling.
     server.renameItem('101', '海發中心 零信任串接（已更新）')
     // Why wait: checks closer than 3s to the last read are folded into it.

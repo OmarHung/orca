@@ -20500,7 +20500,12 @@
     },
     "filter": {
       "hideDone": "Hide done",
-      "hideDoneHint": "Hide items whose status is marked done"
+      "hideDoneHint": "Hide items whose status is marked done",
+      "statusAll": "All",
+      "statusEmpty": "No statuses on the shown boards.",
+      "statusNone": "No status",
+      "statusShowAll": "All statuses",
+      "statusTrigger": "Status: {{value0}}"
     },
     "hover": {
       "due": "Due {{value0}}",

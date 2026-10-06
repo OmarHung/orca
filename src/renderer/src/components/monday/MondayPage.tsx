@@ -60,8 +60,13 @@ function ScheduleWorkspace({ schedule }: { schedule: MondaySchedule }): React.JS
   const selectedItemId = useMondayPageStore((state) => state.selectedItemId)
   const today = useMondayToday()
   const { scheduled, unscheduled } = useMemo(
-    () => buildMondayEntries(schedule, prefs.hideDone, today),
-    [schedule, prefs.hideDone, today]
+    () =>
+      buildMondayEntries(
+        schedule,
+        { hideDone: prefs.hideDone, statusLabels: prefs.statusLabels },
+        today
+      ),
+    [schedule, prefs.hideDone, prefs.statusLabels, today]
   )
   const selectedEntry = useMemo(
     () => [...scheduled, ...unscheduled].find((entry) => entry.item.id === selectedItemId) ?? null,

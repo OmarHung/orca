@@ -44,7 +44,13 @@ beforeEach(() => {
   monday.getItem.mockReset()
   useMondayPageStore.setState({
     connection: { account: null, tokenKeptForSessionOnly: false },
-    prefs: { boardIds: ['382737576'], includeUnassigned: true, hideDone: false, view: 'month' },
+    prefs: {
+      boardIds: ['382737576'],
+      includeUnassigned: true,
+      hideDone: false,
+      statusLabels: [],
+      view: 'month'
+    },
     schedule: schedule('2026-10-05T09:00:00Z'),
     scheduleLoading: false,
     scheduleError: null,

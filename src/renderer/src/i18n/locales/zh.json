@@ -20432,7 +20432,12 @@
     },
     "filter": {
       "hideDone": "隐藏已完成",
-      "hideDoneHint": "隐藏状态标为完成的任务"
+      "hideDoneHint": "隐藏状态标为完成的任务",
+      "statusAll": "全部",
+      "statusEmpty": "这些 board 上没有状态。",
+      "statusNone": "没有状态",
+      "statusShowAll": "全部状态",
+      "statusTrigger": "状态：{{value0}}"
     },
     "hover": {
       "due": "Due {{value0}}",

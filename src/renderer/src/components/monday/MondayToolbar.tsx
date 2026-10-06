@@ -36,6 +36,7 @@ import {
 import { useMondayPageStore } from './monday-page-store'
 import { MondayBoardPicker } from './MondayBoardPicker'
 import { MondayPersonPicker } from './MondayPersonPicker'
+import { MondayStatusPicker } from './MondayStatusPicker'
 
 function LabeledSwitch(props: {
   id: string
@@ -160,6 +161,7 @@ export function MondayToolbar({
       </div>
       <MondayBoardPicker />
       <MondayPersonPicker account={account} />
+      <MondayStatusPicker />
       <LabeledSwitch
         id="monday-hide-done"
         label={translate('monday.filter.hideDone', 'Hide done')}
