@@ -54,7 +54,7 @@ function entries(items: MondayScheduleItem[], hideDone = false): MondayCalendarE
       }
     ]
   }
-  return buildMondayEntries(schedule, hideDone, TODAY).scheduled
+  return buildMondayEntries(schedule, { hideDone, statusLabels: [] }, TODAY).scheduled
 }
 
 describe('month grid', () => {
@@ -93,12 +93,17 @@ describe('buildMondayEntries', () => {
         }
       ]
     }
-    const all = buildMondayEntries(schedule, false, TODAY)
+    const all = buildMondayEntries(schedule, { hideDone: false, statusLabels: [] }, TODAY)
     expect(all.scheduled.map((entry) => entry.item.id)).toEqual(['1', '3'])
     expect(all.unscheduled.map((entry) => entry.item.id)).toEqual(['2'])
     expect(
-      buildMondayEntries(schedule, true, TODAY).scheduled.map((entry) => entry.item.id)
+      buildMondayEntries(schedule, { hideDone: true, statusLabels: [] }, TODAY).scheduled.map(
+        (entry) => entry.item.id
+      )
     ).toEqual(['1'])
+    const done = buildMondayEntries(schedule, { hideDone: false, statusLabels: ['Done'] }, TODAY)
+    expect(done.scheduled.map((entry) => entry.item.id)).toEqual(['3'])
+    expect(done.unscheduled).toEqual([])
   })
 })
 
