@@ -16,6 +16,7 @@ import { DebugTargetFields } from './DebugTargetFields'
 import { DockerExportFields } from './DockerExportFields'
 import { DotnetPublishFields } from './DotnetPublishFields'
 import { FormField } from './RunConfigurationFormField'
+import { RunConfigurationNgrokField } from './RunConfigurationNgrokField'
 import {
   formatArgs,
   formatEnv,
@@ -110,6 +111,7 @@ function CommandFields(props: FormProps<CommandRunConfiguration>): React.JSX.Ele
       </FormField>
       <CwdField {...props} />
       <BeforeLaunchField {...props} />
+      <RunConfigurationNgrokField {...props} />
     </>
   )
 }
@@ -158,6 +160,7 @@ function DebugFields(props: FormProps<DebugRunConfiguration>): React.JSX.Element
       </FormField>
       <CwdField {...props} />
       <BeforeLaunchField {...props} />
+      <RunConfigurationNgrokField {...props} />
     </>
   )
 }

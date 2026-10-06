@@ -20,6 +20,7 @@ import { STATUS_BAR_CONTEXT_MENU_EXEMPT_PROPS } from './status-bar-context-menu-
 import { PortRow, WorkspaceGroupRows } from './ports-status-popover-rows'
 import { translate } from '@/i18n/i18n'
 import type { WorkspacePortScanResult } from '../../../../shared/workspace-ports'
+import { NgrokPopoverSection } from '../ngrok/NgrokSection'
 
 type PortsStatusSegmentProps = {
   compact?: boolean
@@ -281,6 +282,8 @@ export function PortsStatusSegment({ iconOnly }: PortsStatusSegmentProps): React
                   </div>
                 )}
               </section>
+
+              <NgrokPopoverSection />
             </div>
           )}
         </SelectedTextCopyMenu>
