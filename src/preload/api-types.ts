@@ -57,6 +57,7 @@ import type { MondayApi } from './api/monday-api'
 import type { ForkUpdateChangelogApi } from './api/fork-update-changelog-api'
 import type { SftpApi } from './api/sftp-api'
 import type { SshVpnApi } from './api/ssh-vpn-api'
+import type { NgrokApi } from './api/ngrok-api'
 import type { PythonApi } from './api/python-api'
 import type { DotnetContainerApi } from './api/dotnet-container-api'
 import type { PluginsApi } from './api/plugin-host-api'
@@ -144,6 +145,7 @@ export type PreloadApi = {
   forkUpdateChangelog: ForkUpdateChangelogApi
   sftp: SftpApi
   sshVpn: SshVpnApi
+  ngrok: NgrokApi
   python: PythonApi
   dotnetContainer: DotnetContainerApi
   browser: BrowserApi
