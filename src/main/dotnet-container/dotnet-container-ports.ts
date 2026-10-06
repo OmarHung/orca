@@ -41,11 +41,16 @@ export function configureDotnetContainerPorts(options: {
   }
 }
 
-/** Docker Desktop's forwarder, which holds every container port on the Mac (lsof cuts names to 9 chars). */
-export function isDockerDesktopForwarder(
+/**
+ * The Docker engine's forwarder, which holds every container port on the Mac: Docker Desktop
+ * (lsof cuts its name to 9 chars), OrbStack, Lima/Colima and Podman.
+ */
+export function isContainerPortForwarder(
   port: Pick<RawListeningPort, 'processName' | 'commandLine'>
 ): boolean {
-  return /\bcom\.docke|\bvpnkit/.test(`${port.processName ?? ''} ${port.commandLine ?? ''}`)
+  return /\bcom\.docke|\bvpnkit|\borbstack|\blimactl|\bgvproxy/i.test(
+    `${port.processName ?? ''} ${port.commandLine ?? ''}`
+  )
 }
 
 /** Reads `orca-exec --ports` lines: port, pid, cwd, command line, tab-separated. */
@@ -60,7 +65,7 @@ export function parseContainerListeners(output: string): ContainerListener[] {
 }
 
 /**
- * Docker Desktop's backend owns every port the container listens on, so attribution would see
+ * The Docker engine's forwarder owns every port the container listens on, so attribution would see
  * Docker instead of the program. Substitutes the program's cwd and command line (container paths
  * equal host paths) for those ports; anything unexpected leaves the ports as scanned.
  */
@@ -68,7 +73,7 @@ export async function resolveDotnetContainerListeners(
   ports: RawListeningPort[],
   current: DotnetContainerPortsDeps | null = deps
 ): Promise<RawListeningPort[]> {
-  const candidates = ports.filter((port) => isDockerDesktopForwarder(port))
+  const candidates = ports.filter((port) => isContainerPortForwarder(port))
   if (!current || current.platform !== 'darwin' || !current.isEnabled() || !candidates.length) {
     forwarded = new Map()
     return ports
@@ -77,7 +82,7 @@ export async function resolveDotnetContainerListeners(
   const byPort = new Map(parseContainerListeners(output ?? '').map((l) => [l.port, l]))
   const next = new Map<string, ContainerListener>()
   const resolved = ports.map((port) => {
-    const listener = isDockerDesktopForwarder(port) ? byPort.get(port.port) : undefined
+    const listener = isContainerPortForwarder(port) ? byPort.get(port.port) : undefined
     if (!listener) {
       return port
     }
@@ -93,7 +98,7 @@ export function forwardedContainerListener(pid: number, port: number): Container
   return forwarded.get(`${pid}:${port}`) ?? null
 }
 
-/** Signals the program inside the container; the Mac-side pid is Docker's own backend. */
+/** Signals the program inside the container; the Mac-side pid is the Docker engine's forwarder. */
 export async function stopForwardedContainerListener(
   listener: ContainerListener,
   current: DotnetContainerPortsDeps | null = deps
