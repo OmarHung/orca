@@ -20183,6 +20183,12 @@
       "loading": "正在讀取 board…",
       "search": "搜尋 board…"
     },
+    "browser": {
+      "close": "關閉瀏覽器",
+      "moveToFloating": "移到浮動視窗",
+      "openExternal": "用系統瀏覽器開啟",
+      "resize": "調整瀏覽器寬度"
+    },
     "connect": {
       "description": "同時看到時程和 Due date，在行事曆上點一下就能看任務內容。Orca 不會修改 monday 上的資料。",
       "docs": "關於 monday API token",

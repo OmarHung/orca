@@ -20459,6 +20459,12 @@
       "loading": "Loading boards…",
       "search": "Search boards…"
     },
+    "browser": {
+      "close": "Close browser",
+      "moveToFloating": "Move to floating window",
+      "openExternal": "Open in system browser",
+      "resize": "Resize browser"
+    },
     "connect": {
       "description": "See timelines and due dates together, and open any item without leaving the calendar. Orca only reads monday.",
       "docs": "About monday API tokens",

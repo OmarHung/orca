@@ -39,6 +39,18 @@
 - 開著「隱藏已完成」時，完成的狀態不列出來。
 - 選擇存在 view prefs（`statusLabels`），存的是名稱；換了 board 後不存在的名稱仍列在選單裡（數量 0），才能取消。
 
+## 內嵌瀏覽器（2026-10-06）
+
+頁面裡的連結（在 monday 開啟、開啟 monday、Web CRM 網址、欄位與 update 裡的連結、token 說明）都開在 monday 頁右側的 Orca 瀏覽器，不切離頁面；**Shift+點擊**改用系統瀏覽器，面板標題列也有「用系統瀏覽器開啟」。
+
+- 瀏覽器分頁一定要屬於某個 workspace，所以加了第三個本機虛擬 workspace `global-monday-browser`（`MONDAY_BROWSER_WORKTREE_ID`，和浮動終端機、SSH 頁同一張清單），路由、清理、paired web client 同步都照虛擬 workspace 處理。桌面版的虛擬 workspace 本來就能開瀏覽器（只有 paired web client 不行），浮動面板就是先例；面板直接重用 `FloatingBrowserSlot`。
+- 面板顯示與否＝這個 workspace 裡有沒有瀏覽器分頁，不另存狀態；關閉面板就是關掉那個分頁。同一個網址已經開著就切過去，否則在同一個瀏覽器裡多開一頁。只接受 http(s)。
+- 寬度可拖曳，存在 view prefs（`browserWidth`，最小 360px，月曆至少留 480px）。
+- 標題列「移到浮動視窗」：把各頁網址依原順序在浮動 workspace 開成一個瀏覽器（保留原本正在看的那頁），再關掉頁內的面板，並打開浮動面板（浮動功能關著就順便開啟，同 OS「開啟檔案」那條路）。guest 不能換 workspace，所以頁面會重新載入；兩邊同一個 browser profile，登入不掉。
+- 上游 `browser-hydration-actions.ts` 原本只放行浮動 id，改成 `addLocalSyntheticWorkspaceIds()`，重開 Orca 後 monday 的瀏覽器才會還原（unified tab 那邊本來就會保留，不改會留下懸空的分頁）。
+- monday 頁離開時會卸載，回來時 guest 會重新掛上（登入 cookie 在預設的 browser profile，不受影響）。Orca 瀏覽器的登入和系統瀏覽器分開，第一次要在裡面登入 monday。
+- 已知：焦點在 monday 瀏覽器裡時，Cmd+W 會關掉這個瀏覽器（依來源找到所屬 workspace）；新分頁、切換分頁等快捷鍵仍作用在目前的專案 workspace。
+
 ## 架構
 
 | 位置 | 內容 |
@@ -48,7 +60,7 @@
 | `src/preload/api/monday-*` | `window.api.monday` |
 | `src/renderer/src/components/monday/` | 頁面、獨立 zustand store（不碰上游的 app store）、月曆／甘特版面模型、詳情面板、board 選擇器 |
 
-上游檔案只加一行分支：`TopLevelView`／`isTopLevelView`／`UiViewHistory`／`TopLevelViewSchema`、右側欄隱藏清單、`AppWorkspaceShell`、`SidebarNav`、`register-core-handlers`、preload 的 `api-types`／`index`。
+上游檔案只加一行分支：`TopLevelView`／`isTopLevelView`／`UiViewHistory`／`TopLevelViewSchema`、右側欄隱藏清單、`AppWorkspaceShell`、`SidebarNav`、`register-core-handlers`、preload 的 `api-types`／`index`；內嵌瀏覽器另改了 `browser-hydration-actions.ts` 兩行（見上）。
 
 ## API 用量
 

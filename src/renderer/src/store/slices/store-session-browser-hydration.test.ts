@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type * as AgentStatusModule from '@/lib/agent-status'
 import type { BrowserPage } from '../../../../shared/browser-workspace-types'
 import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
+import { MONDAY_BROWSER_WORKTREE_ID } from '../../../../shared/local-synthetic-workspace'
 import {
   RemoteBrowserPageSession,
   type RemoteBrowserPageSessionDeps
@@ -184,6 +185,29 @@ describe('hydrateBrowserSession', () => {
     const s = store.getState()
     expect(s.browserTabsByWorktree[FLOATING_TERMINAL_WORKTREE_ID]).toHaveLength(1)
     expect(s.activeBrowserTabIdByWorktree[FLOATING_TERMINAL_WORKTREE_ID]).toBe('floating-browser-1')
+  })
+
+  it('restores the monday page browser, which has no repo worktree either', () => {
+    const store = createTestStore()
+
+    store.getState().hydrateBrowserSession({
+      activeRepoId: null,
+      activeWorktreeId: null,
+      activeTabId: null,
+      tabsByWorktree: {},
+      terminalLayoutsByTabId: {},
+      browserTabsByWorktree: {
+        [MONDAY_BROWSER_WORKTREE_ID]: [
+          makeBrowserTab({
+            id: 'monday-browser-1',
+            worktreeId: MONDAY_BROWSER_WORKTREE_ID,
+            url: 'https://autrontech.monday.com/boards/1'
+          })
+        ]
+      }
+    })
+
+    expect(store.getState().browserTabsByWorktree[MONDAY_BROWSER_WORKTREE_ID]).toHaveLength(1)
   })
 
   it('restores activeTabTypeByWorktree for browser worktrees when hydrateEditorSession was a no-op', () => {

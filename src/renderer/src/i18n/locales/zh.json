@@ -20391,6 +20391,12 @@
       "loading": "正在读取 board…",
       "search": "搜索 board…"
     },
+    "browser": {
+      "close": "关闭浏览器",
+      "moveToFloating": "移到浮动窗口",
+      "openExternal": "用系统浏览器打开",
+      "resize": "调整浏览器宽度"
+    },
     "connect": {
       "description": "同时看到时程和 Due date，在行事历上点一下就能看任务内容。Orca 不会修改 monday 上的资料。",
       "docs": "关于 monday API token",

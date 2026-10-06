@@ -10,6 +10,7 @@ import type {
   MondayItemRelation,
   MondayLinkedItem
 } from '../../../../shared/monday/monday-types'
+import { openMondayLink } from './monday-browser-actions'
 import { isMondayWebAddress, MondayColumnValue } from './MondayColumnValue'
 
 const WEBSITE_TITLE = /website|網站|网站|網址|网址|官網|官网|url/i
@@ -29,7 +30,7 @@ function OpenInMonday({ url }: { url: string }): React.JSX.Element {
           variant="ghost"
           size="icon-xs"
           aria-label={label}
-          onClick={() => void window.api.shell.openUrl(url)}
+          onClick={(event) => openMondayLink(url, { systemBrowser: event.shiftKey })}
         >
           <ExternalLink />
         </Button>

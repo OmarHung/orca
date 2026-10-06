@@ -1,6 +1,37 @@
+import type { Page } from '@stablyai/playwright-test'
 import { startFakeMondayServer } from './helpers/fake-monday-server'
 import { test, expect } from './helpers/orca-app'
 import { waitForSessionReady } from './helpers/store'
+
+const MONDAY_BROWSER_WORKTREE_ID = 'global-monday-browser'
+const FLOATING_TERMINAL_WORKTREE_ID = 'global-floating-terminal'
+
+function mondayBrowserUrls(page: Page): Promise<string[]> {
+  return page.evaluate(
+    (worktreeId) =>
+      (window.__store!.getState().browserTabsByWorktree[worktreeId] ?? []).map((tab) => tab.url),
+    MONDAY_BROWSER_WORKTREE_ID
+  )
+}
+
+function activeWorkspaceTabCount(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const state = window.__store!.getState()
+    return state.activeWorktreeId
+      ? (state.unifiedTabsByWorktree[state.activeWorktreeId] ?? []).length
+      : 0
+  })
+}
+
+function mondayBrowserLoading(page: Page): Promise<boolean> {
+  return page.evaluate(
+    (worktreeId) =>
+      (window.__store!.getState().browserTabsByWorktree[worktreeId] ?? []).some(
+        (tab) => tab.loading
+      ),
+    MONDAY_BROWSER_WORKTREE_ID
+  )
+}
 
 test('connects monday, draws timeline bars with due flags, and opens an item from the calendar', async ({
   orcaPage,
@@ -118,6 +149,78 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
         .getByRole('button', { name: '海發中心 零信任串接（已更新）' })
         .first()
     ).toBeVisible()
+
+    // Links open in Orca's browser docked beside the schedule, and it survives leaving the page.
+    await orcaPage
+      .getByTestId('monday-gantt-view')
+      .getByRole('button', { name: '海發中心 零信任串接（已更新）' })
+      .first()
+      .click()
+    await orcaPage
+      .getByTestId('monday-linked-item')
+      .getByRole('button', { name: 'https://www.example.org/' })
+      .click()
+    const browserPanel = orcaPage.getByTestId('monday-browser-panel')
+    await expect(browserPanel).toBeVisible()
+    await expect.poll(() => mondayBrowserUrls(orcaPage)).toEqual(['https://www.example.org/'])
+    await expect.poll(() => mondayBrowserLoading(orcaPage), { timeout: 15_000 }).toBe(false)
+    // Page screenshots leave guest pixels out, so check the guest is laid out inside the panel.
+    await expect(browserPanel.locator('webview')).toBeVisible()
+    await orcaPage.screenshot({ path: testInfo.outputPath('monday-browser.png') })
+    await orcaPage.getByTestId('database-sidebar-nav').click()
+    await expect(orcaPage.getByTestId('monday-page')).toHaveCount(0)
+    await orcaPage.getByTestId('monday-sidebar-nav').click()
+    await expect(browserPanel.locator('webview')).toBeVisible()
+    await browserPanel.getByRole('button', { name: 'Close browser' }).click()
+    await expect(browserPanel).toHaveCount(0)
+    await expect.poll(() => mondayBrowserUrls(orcaPage)).toEqual([])
+
+    // Cmd+W in the guest reaches the renderer as a close carrying the page id: it must close this
+    // browser, never a tab of the project workspace hidden behind the page.
+    await orcaPage
+      .getByTestId('monday-linked-item')
+      .getByRole('button', { name: 'https://www.example.org/' })
+      .click()
+    await expect(browserPanel).toBeVisible()
+    const pageId = await orcaPage.evaluate(
+      (worktreeId) =>
+        window.__store!.getState().browserTabsByWorktree[worktreeId]?.[0]?.activePageId ?? '',
+      MONDAY_BROWSER_WORKTREE_ID
+    )
+    const projectTabsBefore = await activeWorkspaceTabCount(orcaPage)
+    expect(projectTabsBefore).toBeGreaterThan(0)
+    await electronApp.evaluate(({ BrowserWindow }, sourceId) => {
+      for (const window of BrowserWindow.getAllWindows()) {
+        window.webContents.send('ui:closeActiveTab', { sourceId })
+      }
+    }, pageId)
+    await expect(browserPanel).toHaveCount(0)
+    expect(await activeWorkspaceTabCount(orcaPage)).toBe(projectTabsBefore)
+    await expect(orcaPage.getByTestId('monday-page')).toBeVisible()
+
+    // The browser can move to the floating window, which stays over every page.
+    await orcaPage
+      .getByTestId('monday-linked-item')
+      .getByRole('button', { name: 'https://www.example.org/' })
+      .click()
+    await browserPanel.getByRole('button', { name: 'Move to floating window' }).click()
+    await expect(browserPanel).toHaveCount(0)
+    const floatingPanel = orcaPage.locator('[data-floating-terminal-panel][aria-hidden="false"]')
+    await expect(floatingPanel).toBeVisible()
+    await expect(floatingPanel.locator('webview')).toBeVisible()
+    await expect
+      .poll(() =>
+        orcaPage.evaluate(
+          (worktreeId) =>
+            (window.__store!.getState().browserTabsByWorktree[worktreeId] ?? []).map(
+              (tab) => tab.url
+            ),
+          FLOATING_TERMINAL_WORKTREE_ID
+        )
+      )
+      .toContain('https://www.example.org/')
+    expect(await mondayBrowserUrls(orcaPage)).toEqual([])
+    await orcaPage.screenshot({ path: testInfo.outputPath('monday-floating.png') })
 
     // The token only ever goes to the monday endpoint, from the main process.
     expect(new Set(server.tokens)).toEqual(new Set(['test-token']))
