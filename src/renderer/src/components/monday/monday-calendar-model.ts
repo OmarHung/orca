@@ -5,6 +5,7 @@ import {
   type MondayItemSchedule
 } from '../../../../shared/monday/monday-schedule'
 import type { MondaySchedule, MondayScheduleItem } from '../../../../shared/monday/monday-types'
+import { matchesMondayStatusFilter } from './monday-status-filter'
 
 export type MondayCalendarEntry = {
   item: MondayScheduleItem
@@ -12,16 +13,21 @@ export type MondayCalendarEntry = {
   schedule: MondayItemSchedule
 }
 
+export type MondayEntryFilters = { hideDone: boolean; statusLabels: readonly string[] }
+
 export function buildMondayEntries(
   schedule: MondaySchedule,
-  hideDone: boolean,
+  filters: MondayEntryFilters,
   today: string
 ): { scheduled: MondayCalendarEntry[]; unscheduled: MondayCalendarEntry[] } {
   const scheduled: MondayCalendarEntry[] = []
   const unscheduled: MondayCalendarEntry[] = []
   for (const board of schedule.boards) {
     for (const item of board.items) {
-      if (hideDone && item.status?.isDone) {
+      if (
+        (filters.hideDone && item.status?.isDone) ||
+        !matchesMondayStatusFilter(item, filters.statusLabels)
+      ) {
         continue
       }
       const entry = {
