@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import type { MondayUpdate, MondayUpdateReply } from '../../../../shared/monday/monday-types'
+import { openMondayLink } from './monday-browser-actions'
 import { formatMondayTimestamp } from './monday-date-format'
 import { mondayLinkFromClick, sanitizeMondayHtml } from './monday-update-html'
 
@@ -50,7 +51,7 @@ function openClickedLink(event: React.MouseEvent): void {
   const href = mondayLinkFromClick(event.target)
   if (href) {
     event.preventDefault()
-    void window.api.shell.openUrl(href)
+    openMondayLink(href, { systemBrowser: event.shiftKey })
   }
 }
 

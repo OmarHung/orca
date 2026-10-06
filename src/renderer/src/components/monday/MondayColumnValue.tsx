@@ -1,5 +1,6 @@
 import type React from 'react'
 import type { MondayItemColumnValue } from '../../../../shared/monday/monday-types'
+import { openMondayLink } from './monday-browser-actions'
 import { MondayLabelBadge } from './MondayScheduleVisuals'
 
 const HTTP_URL = /^https?:\/\/\S+$/i
@@ -23,7 +24,7 @@ export function MondayColumnValue({
       <button
         type="button"
         className="break-all text-left text-primary underline underline-offset-2"
-        onClick={() => void window.api.shell.openUrl(text)}
+        onClick={(event) => openMondayLink(text, { systemBrowser: event.shiftKey })}
       >
         {text}
       </button>
