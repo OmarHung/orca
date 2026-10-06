@@ -14,6 +14,7 @@ import {
   refreshMonday
 } from './monday-page-actions'
 import { useMondayPageStore } from './monday-page-store'
+import { MondayBrowserPanel } from './MondayBrowserPanel'
 import { MondayConnectPanel } from './MondayConnectPanel'
 import { MondayGanttView } from './MondayGanttView'
 import { MondayItemDetailPanel } from './MondayItemDetailPanel'
@@ -202,15 +203,21 @@ export default function MondayPage(): React.JSX.Element {
   useEffect(() => {
     void loadMondayConnection()
   }, [])
-  return (
-    <div className="flex h-full min-h-0 flex-col bg-background" data-testid="monday-page">
-      {isWebClientLocation() ? (
+  if (isWebClientLocation()) {
+    return (
+      <div className="flex h-full min-h-0 flex-col bg-background" data-testid="monday-page">
         <CenteredMessage>
           {translate('monday.page.desktopOnly', 'monday is available in the desktop app only.')}
         </CenteredMessage>
-      ) : (
+      </div>
+    )
+  }
+  return (
+    <div className="flex h-full min-h-0 bg-background" data-testid="monday-page">
+      <div className="flex min-w-0 flex-1 flex-col">
         <ConnectedPage />
-      )}
+      </div>
+      <MondayBrowserPanel />
     </div>
   )
 }

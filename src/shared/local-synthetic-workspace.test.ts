@@ -3,13 +3,15 @@ import { FLOATING_TERMINAL_WORKTREE_ID } from './constants'
 import {
   addLocalSyntheticWorkspaceIds,
   isLocalSyntheticWorkspaceId,
+  MONDAY_BROWSER_WORKTREE_ID,
   SSH_SESSIONS_WORKTREE_ID
 } from './local-synthetic-workspace'
 
 describe('isLocalSyntheticWorkspaceId', () => {
-  it('recognizes the floating and SSH session workspaces', () => {
+  it('recognizes the floating, SSH session and monday browser workspaces', () => {
     expect(isLocalSyntheticWorkspaceId(FLOATING_TERMINAL_WORKTREE_ID)).toBe(true)
     expect(isLocalSyntheticWorkspaceId(SSH_SESSIONS_WORKTREE_ID)).toBe(true)
+    expect(isLocalSyntheticWorkspaceId(MONDAY_BROWSER_WORKTREE_ID)).toBe(true)
   })
 
   it('rejects repo worktrees, folder workspaces and empty ids', () => {
@@ -32,7 +34,12 @@ describe('addLocalSyntheticWorkspaceIds', () => {
     addLocalSyntheticWorkspaceIds(ids)
 
     expect([...ids].sort()).toEqual(
-      ['repo-1::/Users/dev/repo', FLOATING_TERMINAL_WORKTREE_ID, SSH_SESSIONS_WORKTREE_ID].sort()
+      [
+        'repo-1::/Users/dev/repo',
+        FLOATING_TERMINAL_WORKTREE_ID,
+        SSH_SESSIONS_WORKTREE_ID,
+        MONDAY_BROWSER_WORKTREE_ID
+      ].sort()
     )
   })
 })
