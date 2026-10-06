@@ -70,6 +70,30 @@ describe('regular terminal focus ownership', () => {
     expect(blur).not.toHaveBeenCalled()
   })
 
+  it('keeps ownership for pointerdowns inside the portaled terminal link popover', () => {
+    const pane = appendPane()
+    const helper = appendHelper(pane)
+    const popover = document.createElement('div')
+    popover.setAttribute('data-terminal-link-action-popover', '')
+    const row = document.createElement('button')
+    popover.appendChild(row)
+    document.body.appendChild(popover)
+    const syncFocused = vi.fn()
+    const blur = vi.spyOn(helper, 'blur')
+    helper.focus()
+
+    const released = releaseTerminalFocusForOutsidePointerDown({
+      container: pane,
+      activeElement: document.activeElement,
+      pointerTarget: row,
+      syncFocused
+    })
+
+    expect(released).toBe(false)
+    expect(syncFocused).not.toHaveBeenCalled()
+    expect(blur).not.toHaveBeenCalled()
+  })
+
   it("does not clear another pane's active helper ownership", () => {
     const pane = appendPane()
     const otherPane = appendPane()
