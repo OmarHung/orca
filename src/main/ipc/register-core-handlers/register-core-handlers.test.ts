@@ -27,6 +27,8 @@ const {
   registerDatabaseHandlersMock,
   registerSftpHandlersMock,
   registerSshVpnHandlersMock,
+  registerNgrokHandlersMock,
+  registerMondayHandlersMock,
   registerForkUpdateChangelogHandlersMock,
   registerSessionHandlersMock,
   registerUIHandlersMock,
@@ -102,6 +104,8 @@ const {
   registerDatabaseHandlersMock: vi.fn(),
   registerSftpHandlersMock: vi.fn(),
   registerSshVpnHandlersMock: vi.fn(),
+  registerNgrokHandlersMock: vi.fn(),
+  registerMondayHandlersMock: vi.fn(),
   registerForkUpdateChangelogHandlersMock: vi.fn(),
   registerSessionHandlersMock: vi.fn(),
   registerUIHandlersMock: vi.fn(),
@@ -299,6 +303,14 @@ vi.mock('../../ssh-vpn/ssh-vpn-ipc', () => ({
   registerSshVpnHandlers: registerSshVpnHandlersMock
 }))
 
+vi.mock('../../ngrok/ngrok-ipc', () => ({
+  registerNgrokHandlers: registerNgrokHandlersMock
+}))
+
+vi.mock('../../monday/monday-ipc', () => ({
+  registerMondayHandlers: registerMondayHandlersMock
+}))
+
 vi.mock('../../fork-source-update/fork-update-changelog-ipc', () => ({
   registerForkUpdateChangelogHandlers: registerForkUpdateChangelogHandlersMock
 }))
@@ -481,6 +493,8 @@ describe('registerCoreHandlers', () => {
     registerDatabaseHandlersMock.mockReset()
     registerSftpHandlersMock.mockReset()
     registerSshVpnHandlersMock.mockReset()
+    registerNgrokHandlersMock.mockReset()
+    registerMondayHandlersMock.mockReset()
     registerForkUpdateChangelogHandlersMock.mockReset()
     registerSessionHandlersMock.mockReset()
     registerUIHandlersMock.mockReset()
@@ -599,6 +613,7 @@ describe('registerCoreHandlers', () => {
     expect(registerDatabaseHandlersMock).toHaveBeenCalled()
     expect(registerSftpHandlersMock).toHaveBeenCalled()
     expect(registerSshVpnHandlersMock).toHaveBeenCalled()
+    expect(registerNgrokHandlersMock).toHaveBeenCalled()
     expect(registerForkUpdateChangelogHandlersMock).toHaveBeenCalledWith(store)
     expect(registerClaudeAccountHandlersMock).toHaveBeenCalledWith(claudeAccounts)
     expect(registerOpenCodeGoCredentialsHandlersMock).toHaveBeenCalledWith(rateLimits)

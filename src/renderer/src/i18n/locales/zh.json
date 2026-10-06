@@ -19357,7 +19357,11 @@
         "pythonPath": "解释器",
         "pythonPathAuto": "自动检测（优先 .venv）",
         "remove": "移除",
-        "script": "脚本"
+        "script": "脚本",
+        "ngrok": "运行时用 ngrok 公开分享",
+        "ngrokPort": "端口（可选）",
+        "ngrokHint": "程序开始监听后，它的端口会获得公开网址并自动复制；停止运行时一并关闭。端口留空表示分享它打开的最小端口号。",
+        "ngrokLabel": "ngrok"
       },
       "import": {
         "done": "已导入 {{value0}} 个新配置，更新 {{value1}} 个",
@@ -20495,5 +20499,30 @@
       "dueBeforeEnd": "Due 比时程结束早 {{value0}} 天",
       "overdue": "已逾期 {{value0}} 天"
     }
+  },
+  "ngrok": {
+    "share": "用 ngrok 公开分享",
+    "shareMenu": "用 ngrok 公开分享",
+    "shared": ":{{value0}} 已公开于 {{value1}}",
+    "copied": "链接已复制到剪贴板。",
+    "shareFailed": "无法用 ngrok 分享 :{{value0}}",
+    "stopSharing": "停止分享 {{value0}}",
+    "stopSharingShort": "停止分享",
+    "stopFailed": "无法停止 ngrok endpoint",
+    "openPublic": "打开 {{value0}}",
+    "copyPublic": "复制公开网址",
+    "inspect": "查看请求记录",
+    "ownerOrca": "Orca",
+    "ownerExternal": "{{value0}} 上的 ngrok",
+    "starting": "正在启动 ngrok…",
+    "stopAgent": "停止 Orca 的 ngrok 以及它分享的所有网址",
+    "empty": "目前没有分享任何端口。在端口上点分享按钮即可获得公开网址。",
+    "title": "ngrok",
+    "desktopOnly": "ngrok 只能在桌面版使用",
+    "started": "{{value0}} 已公开于 {{value1}}",
+    "startFailed": "无法启动 {{value0}}",
+    "startConfigured": "启动 {{value0}}",
+    "fromConfig": "ngrok.yml · {{value0}} · 未启动",
+    "shareConfigured": "分享到 {{value0}}（ngrok.yml）"
   }
 }

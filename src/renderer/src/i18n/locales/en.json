@@ -19423,7 +19423,11 @@
         "envHint": "One NAME=value per line.",
         "name": "Name",
         "members": "Configurations to start",
-        "membersHint": "Before launch steps of all members run first. At most one may be a debug configuration."
+        "membersHint": "Before launch steps of all members run first. At most one may be a debug configuration.",
+        "ngrok": "Share publicly with ngrok when it runs",
+        "ngrokPort": "Port (optional)",
+        "ngrokHint": "Once the program listens, its port gets a public URL, which is copied for you; it stops when the run stops. Leave the port empty to share the lowest port it opens.",
+        "ngrokLabel": "ngrok"
       },
       "dialogTitle": "Run/Debug Configurations",
       "dialogDescription": "Configurations under This machine are saved locally for this repository. Shared ones come from orca.yaml.",
@@ -20563,5 +20567,30 @@
       "dueBeforeEnd": "Due {{value0}} day(s) before the timeline ends",
       "overdue": "Overdue by {{value0}} day(s)"
     }
+  },
+  "ngrok": {
+    "share": "Share publicly with ngrok",
+    "shareMenu": "Share Publicly with ngrok",
+    "shared": ":{{value0}} is public at {{value1}}",
+    "copied": "The link is on your clipboard.",
+    "shareFailed": "Could not share :{{value0}} with ngrok",
+    "stopSharing": "Stop sharing {{value0}}",
+    "stopSharingShort": "Stop Sharing",
+    "stopFailed": "Could not stop the ngrok endpoint",
+    "openPublic": "Open {{value0}}",
+    "copyPublic": "Copy Public URL",
+    "inspect": "Inspect requests",
+    "ownerOrca": "Orca",
+    "ownerExternal": "ngrok at {{value0}}",
+    "starting": "Starting ngrok…",
+    "stopAgent": "Stop Orca's ngrok and everything it shares",
+    "empty": "Nothing is shared. Use the share button on a port to get a public URL.",
+    "title": "ngrok",
+    "desktopOnly": "ngrok is only available in the desktop app",
+    "started": "{{value0}} is public at {{value1}}",
+    "startFailed": "Could not start {{value0}}",
+    "startConfigured": "Start {{value0}}",
+    "fromConfig": "ngrok.yml · {{value0}} · not running",
+    "shareConfigured": "Share at {{value0}} (ngrok.yml)"
   }
 }

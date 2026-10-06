@@ -12,6 +12,7 @@ import { openWorkspaceBrowserTab } from '@/lib/workspace-browser-tab-open'
 import { SshForwardedPortRow } from './ssh-forwarded-port-row'
 import { SshDetectedPortRow } from './ssh-detected-port-row'
 import { SshPortForwardDialog, type PortForwardDialogState } from './ssh-port-forward-dialog'
+import { NgrokSection } from '../ngrok/NgrokSection'
 
 // Why: forwarded SSH ports and detected remote ports may report the same loopback
 // endpoint using different textual hosts. Normalize for deduping only.
@@ -217,6 +218,8 @@ export function SshPortsPanel(): React.JSX.Element {
             ))}
         </div>
       )}
+
+      <NgrokSection />
 
       {/* Empty state */}
       {allForwards.length === 0 && allDetected.length === 0 && (

@@ -54,6 +54,7 @@ import { registerCodeNavigationHandlers } from '../../code-navigation/code-navig
 import { registerDatabaseHandlers } from '../../database/database-ipc'
 import { registerSftpHandlers } from '../../sftp/sftp-ipc'
 import { registerSshVpnHandlers } from '../../ssh-vpn/ssh-vpn-ipc'
+import { registerNgrokHandlers } from '../../ngrok/ngrok-ipc'
 import { registerMondayHandlers } from '../../monday/monday-ipc'
 import { registerForkUpdateChangelogHandlers } from '../../fork-source-update/fork-update-changelog-ipc'
 import { registerPluginHandlers } from '../plugins'
@@ -219,6 +220,7 @@ export function registerCoreHandlers(
   registerDatabaseHandlers()
   registerSftpHandlers()
   registerSshVpnHandlers()
+  registerNgrokHandlers()
   registerMondayHandlers()
   registerForkUpdateChangelogHandlers(store)
   registerSessionHandlers(store, runtime)
