@@ -43,7 +43,8 @@ export function releaseTerminalFocusForOutsidePointerDown(args: {
 
   if (
     (isNode(args.pointerTarget) && args.container.contains(args.pointerTarget)) ||
-    isFocusKeepingPress(args.pointerTarget)
+    isFocusKeepingPress(args.pointerTarget) ||
+    isTerminalLinkActionPopoverTarget(args.pointerTarget)
   ) {
     return false
   }
@@ -51,6 +52,12 @@ export function releaseTerminalFocusForOutsidePointerDown(args: {
   args.syncFocused(false)
   activeHelper.blur()
   return true
+}
+
+// Why: the link popover portals to body but acts for the terminal; blurring on its press lets
+// the Run panel (whose terminal is active only while focused) close it before the click lands.
+function isTerminalLinkActionPopoverTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest('[data-terminal-link-action-popover]') !== null
 }
 
 export function releaseTerminalFocusForWindowBlur(args: {
