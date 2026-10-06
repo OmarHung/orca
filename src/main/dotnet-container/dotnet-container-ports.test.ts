@@ -37,7 +37,7 @@ describe('parseContainerListeners', () => {
 })
 
 describe('resolveDotnetContainerListeners', () => {
-  it('only treats Docker Desktop as the forwarder, not any process mentioning a container', async () => {
+  it('only treats the Docker engine as the forwarder, not any process mentioning a container', async () => {
     const ports: RawListeningPort[] = [
       {
         host: '127.0.0.1',
@@ -68,6 +68,22 @@ describe('resolveDotnetContainerListeners', () => {
     expect(resolved[2]).toEqual(ports[2])
     expect(forwardedContainerListener(900, 5000)).toMatchObject({ pid: 412 })
     expect(forwardedContainerListener(900, 1433)).toBeNull()
+  })
+
+  it('recognizes OrbStack, Lima and Podman forwarders as well as Docker Desktop', async () => {
+    const forwarders = [
+      { processName: 'OrbStack Helper', commandLine: undefined },
+      { processName: 'limactl', commandLine: '/opt/homebrew/bin/limactl hostagent colima' },
+      { processName: 'gvproxy', commandLine: '/opt/podman/bin/gvproxy -listen-vfkit unixgram' }
+    ]
+    for (const forwarder of forwarders) {
+      const ports: RawListeningPort[] = [{ host: '127.0.0.1', port: 50080, pid: 45, ...forwarder }]
+      const resolved = await resolveDotnetContainerListeners(
+        ports,
+        deps('50080\t1050\t/repo/Project3\t/repo/Project3/bin/Debug/netcoreapp3.1/Project3\n')
+      )
+      expect(resolved[0]).toMatchObject({ cwd: '/repo/Project3' })
+    }
   })
 
   it('leaves ports alone off macOS, with the toolchain off, or when the container cannot answer', async () => {

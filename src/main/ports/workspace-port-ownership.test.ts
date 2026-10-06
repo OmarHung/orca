@@ -8,7 +8,7 @@ const containerPorts = vi.hoisted(() => ({
     (_pid: number, _port: number): ContainerListener | null => null
   ),
   stopForwardedContainerListener: vi.fn(async () => true),
-  isDockerDesktopForwarder: vi.fn(
+  isContainerPortForwarder: vi.fn(
     (port: { processName?: string }) => port.processName === 'com.docker.backend'
   )
 }))
