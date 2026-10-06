@@ -20224,7 +20224,12 @@
     },
     "filter": {
       "hideDone": "隱藏已完成",
-      "hideDoneHint": "隱藏狀態標為完成的任務"
+      "hideDoneHint": "隱藏狀態標為完成的任務",
+      "statusAll": "全部",
+      "statusEmpty": "這些 board 上沒有狀態。",
+      "statusNone": "沒有狀態",
+      "statusShowAll": "全部狀態",
+      "statusTrigger": "狀態：{{value0}}"
     },
     "hover": {
       "due": "Due {{value0}}",
