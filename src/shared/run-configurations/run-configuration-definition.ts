@@ -10,6 +10,9 @@ import {
 } from './dotnet-publish-configuration'
 import { asArgs, asEnv, asRecord, asText, asTextList } from './run-configuration-values'
 
+/** Shares the session's port publicly with ngrok once it listens: `port`, else the lowest it opens. */
+export type RunConfigurationNgrok = { port?: number }
+
 /**
  * A saved run configuration. Paths may be relative to the workspace root and may use
  * VS Code variables such as `${workspaceFolder}`; both resolve when it runs.
@@ -22,6 +25,7 @@ export type CommandRunConfiguration = {
   cwd?: string
   /** Command configurations that must exit 0, in order, before this one starts. */
   beforeLaunch?: string[]
+  ngrok?: RunConfigurationNgrok
 }
 
 export type DebugRunConfiguration = {
@@ -33,6 +37,7 @@ export type DebugRunConfiguration = {
   args?: string[]
   env?: Record<string, string>
   beforeLaunch?: string[]
+  ngrok?: RunConfigurationNgrok
 }
 
 /** What a sequential compound waits for after starting a member, before starting the next. */
@@ -120,6 +125,21 @@ export function normalizeDebugLaunchTarget(value: unknown): DebugLaunchTarget | 
   }
 }
 
+/** `ngrok: true` or `ngrok: { port: 5016 }`; anything else leaves sharing off. */
+function asNgrok(value: unknown): RunConfigurationNgrok | undefined {
+  if (value === true) {
+    return {}
+  }
+  const record = asRecord(value)
+  if (!record) {
+    return undefined
+  }
+  const port = record.port
+  return typeof port === 'number' && Number.isInteger(port) && port >= 1 && port <= 65_535
+    ? { port }
+    : {}
+}
+
 function asMemberWait(value: unknown): CompoundMemberWait | undefined {
   const record = asRecord(value)
   if (record?.kind === 'exit') {
@@ -184,6 +204,7 @@ function normalizeOne(value: unknown): RunConfigurationDefinition | string {
   const id = asText(record.id, MAX_NAME_LENGTH) ?? name
   const cwd = asText(record.cwd)
   const beforeLaunch = asTextList(record.beforeLaunch)
+  const ngrok = asNgrok(record.ngrok)
   switch (inferType(record)) {
     case 'command': {
       const command = asText(record.command)
@@ -196,7 +217,8 @@ function normalizeOne(value: unknown): RunConfigurationDefinition | string {
         name,
         command,
         ...(cwd ? { cwd } : {}),
-        ...(beforeLaunch ? { beforeLaunch } : {})
+        ...(beforeLaunch ? { beforeLaunch } : {}),
+        ...(ngrok ? { ngrok } : {})
       }
     }
     case 'debug': {
@@ -214,7 +236,8 @@ function normalizeOne(value: unknown): RunConfigurationDefinition | string {
         ...(cwd ? { cwd } : {}),
         ...(args ? { args } : {}),
         ...(env ? { env } : {}),
-        ...(beforeLaunch ? { beforeLaunch } : {})
+        ...(beforeLaunch ? { beforeLaunch } : {}),
+        ...(ngrok ? { ngrok } : {})
       }
     }
     case 'dotnet-publish':

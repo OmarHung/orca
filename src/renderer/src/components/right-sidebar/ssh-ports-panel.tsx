@@ -17,6 +17,7 @@ import { SshForwardedPortRow } from './ssh-forwarded-port-row'
 import { SshUnrestoredPortRow } from './ssh-unrestored-port-row'
 import { SshDetectedPortRow } from './ssh-detected-port-row'
 import { SshPortForwardDialog, type PortForwardDialogState } from './ssh-port-forward-dialog'
+import { NgrokSection } from '../ngrok/NgrokSection'
 
 // Normalize loopback aliases only for deduplication across detected and forwarded ports.
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0', '::'])
@@ -237,6 +238,8 @@ export function SshPortsPanel({
             ))}
         </div>
       )}
+
+      <NgrokSection />
 
       {allForwards.length === 0 && unrestoredForwards.length === 0 && allDetected.length === 0 && (
         <div className="flex flex-col items-center justify-center flex-1 px-4 text-center text-muted-foreground">
