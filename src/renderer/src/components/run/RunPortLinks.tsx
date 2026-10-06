@@ -10,6 +10,8 @@ import { openWorkspacePortInBrowser } from '@/lib/workspace-port-actions'
 import { resolveLocalhostLabelRouteForPort } from '@/lib/workspace-port-localhost-label-selector'
 import { addressForPort } from '@/lib/workspace-port-urls'
 import type { WorkspacePort } from '../../../../shared/workspace-ports'
+import { RunPortNgrokLink } from '../ngrok/RunPortNgrokLink'
+import { shareTargetForPort } from '../ngrok/ngrok-port-targets'
 import { liveClaimedPorts } from './run-port-claims'
 import { isHiddenRunPort, useRunPortStore } from './run-port-store'
 import { worktreeRuntimeTarget } from './run-port-tracking'
@@ -109,9 +111,20 @@ export function RunPortLinks({
       data-testid="run-port-links"
       className="my-auto flex shrink-0 items-center gap-0.5"
     >
-      {ports.map((port) => (
-        <RunPortLink key={port.port} port={port} compact={compact} />
-      ))}
+      {ports.map((port) => {
+        // Why local only: Orca's ngrok agent cannot reach another host's loopback.
+        const ngrokTarget =
+          port.kind === 'workspace' &&
+          worktreeRuntimeTarget(port.owner.worktreeId)?.kind === 'local'
+            ? shareTargetForPort(port)
+            : null
+        return (
+          <React.Fragment key={port.port}>
+            <RunPortLink port={port} compact={compact} />
+            {ngrokTarget ? <RunPortNgrokLink target={ngrokTarget} compact={compact} /> : null}
+          </React.Fragment>
+        )
+      })}
     </div>
   )
 }

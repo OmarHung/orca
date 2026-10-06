@@ -19149,7 +19149,11 @@
         "pythonPath": "直譯器",
         "pythonPathAuto": "自動檢測（優先 .venv）",
         "remove": "移除",
-        "script": "指令碼"
+        "script": "指令碼",
+        "ngrok": "執行時用 ngrok 公開分享",
+        "ngrokPort": "埠（可選）",
+        "ngrokHint": "程式開始監聽後，它的埠會獲得公開網址並自動複製；停止執行時一併關閉。埠留空表示分享它開啟的最小埠號。",
+        "ngrokLabel": "ngrok"
       },
       "import": {
         "done": "已匯入 {{value0}} 個新設定，更新 {{value1}} 個",
@@ -19321,9 +19325,9 @@
     },
     "port": {
       "open": "在瀏覽器中開啟 {{value0}}",
-      "orcaBrowserHint": "{{value0}}+點擊改用 Orca 內建瀏覽器開啟",
+      "orcaBrowserHint": "{{value0}}+點選改用 Orca 內建瀏覽器開啟",
       "openFailed": "無法開啟瀏覽器",
-      "listening": "監聽中的埠"
+      "listening": "正在監聽的埠"
     }
   },
   "python": {
@@ -20287,5 +20291,30 @@
       "dueBeforeEnd": "Due 比時程結束早 {{value0}} 天",
       "overdue": "已逾期 {{value0}} 天"
     }
+  },
+  "ngrok": {
+    "share": "用 ngrok 公開分享",
+    "shareMenu": "用 ngrok 公開分享",
+    "shared": ":{{value0}} 已公開於 {{value1}}",
+    "copied": "連結已複製到剪貼簿。",
+    "shareFailed": "無法用 ngrok 分享 :{{value0}}",
+    "stopSharing": "停止分享 {{value0}}",
+    "stopSharingShort": "停止分享",
+    "stopFailed": "無法停止 ngrok endpoint",
+    "openPublic": "開啟 {{value0}}",
+    "copyPublic": "複製公開網址",
+    "inspect": "檢視請求記錄",
+    "ownerOrca": "Orca",
+    "ownerExternal": "{{value0}} 上的 ngrok",
+    "starting": "正在啟動 ngrok…",
+    "stopAgent": "停止 Orca 的 ngrok 以及它分享的所有網址",
+    "empty": "目前沒有分享任何埠。在埠上點分享按鈕即可獲得公開網址。",
+    "title": "ngrok",
+    "desktopOnly": "ngrok 只能在桌面版使用",
+    "started": "{{value0}} 已公開於 {{value1}}",
+    "startFailed": "無法啟動 {{value0}}",
+    "startConfigured": "啟動 {{value0}}",
+    "fromConfig": "ngrok.yml · {{value0}} · 未啟動",
+    "shareConfigured": "分享到 {{value0}}（ngrok.yml）"
   }
 }
