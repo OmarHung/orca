@@ -108,6 +108,7 @@ import { getRuntimeEnvironmentRegistryRoot } from '../runtime-environments/catal
 import {
 import { registerForkUpdateChangelogHandlers } from '../../fork-source-update/fork-update-changelog-ipc'
 import { registerMondayHandlers } from '../../monday/monday-ipc'
+import { registerNgrokHandlers } from '../../ngrok/ngrok-ipc'
   closeNotificationDismissalsBeforeRelaunch,
   type CoreHandlerLifecycleOptions
 } from './core-handler-lifecycle'
@@ -218,6 +219,7 @@ export async function registerCoreHandlers(
     registerCodeNavigationHandlers()
     registerForkUpdateChangelogHandlers(store)
     registerMondayHandlers()
+    registerNgrokHandlers()
     registerSessionHandlers(store, runtime)
     registerUIHandlers(store, { isDashboardPopoutRenderer })
     registerEmulatorFrameStreamHandlers()

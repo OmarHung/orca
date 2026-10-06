@@ -22,6 +22,8 @@ import { useAppStore } from '@/store/index'
 import type { WorkspacePort } from '../../../../../shared/workspace/ports/workspace-ports'
 import { translate } from '@/i18n/i18n'
 import { useTranslate } from '@/i18n/use-translate'
+import { NgrokPublicUrlLine, useNgrokShareAction } from '../ngrok/NgrokPortActions'
+import { shareTargetForPort } from '../ngrok/ngrok-port-targets'
 
 function PortAction({
   label,
@@ -96,6 +98,10 @@ export function PortRow({
       ? `PID ${port.pid}`
       : t('auto.components.status.bar.ports.status.popover.rows.unknownProcess', 'Unknown process'))
   const canStop = canStopWorkspacePort(port)
+  // Why local only: Orca's ngrok agent cannot reach another host's loopback.
+  const ngrokAction = useNgrokShareAction(
+    runtimeTarget?.kind === 'local' ? shareTargetForPort(port) : null
+  )
   const openBrowserLabel = t(
     'auto.components.status.bar.ports.status.popover.rows.085f4f0334',
     'Open in Browser'
@@ -251,6 +257,18 @@ export function PortRow({
             >
               <Copy className="size-3" />
             </PortAction>
+            {ngrokAction && (
+              <PortAction
+                label={ngrokAction.label}
+                disabled={ngrokAction.busy}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  ngrokAction.run()
+                }}
+              >
+                {ngrokAction.icon}
+              </PortAction>
+            )}
             <PortAction
               label={t(
                 'auto.components.status.bar.ports.status.popover.rows.0e72c8d9fb',
@@ -266,6 +284,7 @@ export function PortRow({
         <div className="select-text truncate text-[10px] text-muted-foreground/70">
           {external ? port.kind : addressForPort(port)}
         </div>
+        {ngrokAction && <NgrokPublicUrlLine port={port.port} />}
       </div>
     </div>
   )

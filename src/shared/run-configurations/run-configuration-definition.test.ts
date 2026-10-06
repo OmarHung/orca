@@ -156,3 +156,24 @@ describe('findRunConfiguration', () => {
     expect(findRunConfiguration(configurations, 'missing')).toBeNull()
   })
 })
+
+describe('the ngrok option', () => {
+  it('turns on for true or a mapping, with an optional port', () => {
+    const { configurations, problems } = normalizeRunConfigurationDefinitions([
+      { name: 'web', command: 'pnpm dev', ngrok: true },
+      { name: 'api', command: 'dotnet run', ngrok: { port: 5016 } },
+      {
+        name: 'debug',
+        target: { kind: 'node-file', filePath: 'server.js' },
+        ngrok: { port: 'nope' }
+      },
+      { name: 'off', command: 'make', ngrok: false }
+    ])
+    expect(problems).toEqual([])
+    expect(
+      configurations.map((configuration) =>
+        'ngrok' in configuration ? configuration.ngrok : 'absent'
+      )
+    ).toEqual([{}, { port: 5016 }, {}, 'absent'])
+  })
+})
