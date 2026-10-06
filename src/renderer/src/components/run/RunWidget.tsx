@@ -15,6 +15,7 @@ import { useTabBarQuickCommandsShortcut } from '../tab-bar/tab-bar-quick-command
 import { EditRunConfigurationsDialog } from './EditRunConfigurationsDialog'
 import { selectDetectedRun } from './detected-run-configuration'
 import { importWorkspaceLaunchJson, useWorkspaceHasLaunchJson } from './launch-json-import-action'
+import { RunPortLinks } from './RunPortLinks'
 import { RunStopControl } from './RunStopControl'
 import { RunWidgetActions } from './RunWidgetActions'
 import { RunWidgetMenu } from './RunWidgetMenu'
@@ -32,6 +33,7 @@ import {
   type RunWidgetScope
 } from './run-widget-actions'
 import {
+  footprintPortOwnerKeys,
   footprintRuns,
   isFootprintDebugging,
   runWidgetFootprint,
@@ -263,6 +265,9 @@ export function RunWidget({
         />
       ) : null}
       <RunStopControl worktreeId={worktreeId} activity={activity} />
+      {selected ? (
+        <RunPortLinks ownerKeys={footprintPortOwnerKeys(footprintOf(selected), activity)} compact />
+      ) : null}
       {editorOpen ? (
         <EditRunConfigurationsDialog
           worktreeId={worktreeId}
