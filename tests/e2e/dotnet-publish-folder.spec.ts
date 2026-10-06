@@ -91,6 +91,7 @@ test('publishes a .NET project to a chosen folder and keeps it as a run configur
   // It is an ordinary configuration in Edit Configurations.
   await expect(orcaPage.getByRole('menu')).toHaveCount(0)
   await trigger.click()
+  await orcaPage.getByTestId('run-widget-manage').click()
   await orcaPage.getByTestId('run-configurations-edit').click()
   const editor = orcaPage.getByTestId('edit-run-configurations-dialog')
   await expect(editor.getByTestId('dotnet-publish-output-dir')).toHaveValue('artifacts/demo app')

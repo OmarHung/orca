@@ -87,6 +87,7 @@ test('runs, reruns and stops a quick command as a single-instance run configurat
 
   // No .vscode/launch.json in this workspace, so the menu offers no import.
   await orcaPage.getByTestId('run-configurations-trigger').click()
+  await orcaPage.getByTestId('run-widget-manage').click()
   await expect(orcaPage.getByTestId('run-configurations-edit')).toBeVisible()
   await expect(orcaPage.getByTestId('run-configurations-import')).toHaveCount(0)
   await orcaPage.keyboard.press('Escape')

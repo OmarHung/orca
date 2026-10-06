@@ -73,6 +73,7 @@ test('builds a sequential compound from detected runs and starts members in orde
 
   // Add Quick Command → Compound: detected runs, migrate must exit 0 before dev starts.
   await openMenu(orcaPage)
+  await orcaPage.getByTestId('run-widget-manage').click()
   await orcaPage.getByTestId('run-widget-add-quick-command').click()
   const dialog = orcaPage.getByRole('dialog')
   await dialog.getByPlaceholder('Start dev server').fill('Run:All')
@@ -117,6 +118,7 @@ test('builds a sequential compound from detected runs and starts members in orde
 
   // Edit Configurations shows the same members and lets a new compound pick detected runs.
   await openMenu(orcaPage)
+  await orcaPage.getByTestId('run-widget-manage').click()
   await orcaPage.getByTestId('run-configurations-edit').click()
   const editor = orcaPage.getByTestId('edit-run-configurations-dialog')
   await editor.getByTestId('run-configuration-list-item').filter({ hasText: 'Run:All' }).click()
