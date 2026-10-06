@@ -9,6 +9,8 @@ import {
 } from '@/lib/workspace-port-urls'
 import type { PortForwardEntry } from '../../../../shared/ssh-types'
 import { translate } from '@/i18n/i18n'
+import { NgrokPublicUrlLine, NgrokShareButton } from '../ngrok/NgrokPortActions'
+import { shareTargetForForward } from '../ngrok/ngrok-port-targets'
 
 export function SshForwardedPortRow({
   entry,
@@ -86,6 +88,8 @@ export function SshForwardedPortRow({
   )
 
   const advertisedBrowserUrl = advertisedBrowserUrlForForwardedRow(entry)
+  // Why: the forward's local end is on this machine, where Orca's ngrok agent can reach it.
+  const ngrokTarget = shareTargetForForward(entry)
   const openBrowserLabel = translate(
     'auto.components.right.sidebar.PortsPanel.b22b128b2a',
     'Open in Browser'
@@ -125,6 +129,7 @@ export function SshForwardedPortRow({
             })}
           </div>
         )}
+        <NgrokPublicUrlLine port={ngrokTarget.port} />
       </div>
       <div className="flex items-center gap-0.5 can-hover:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
         <button
@@ -147,6 +152,7 @@ export function SshForwardedPortRow({
         >
           <Copy size={13} />
         </button>
+        <NgrokShareButton target={ngrokTarget} muted />
         <button
           type="button"
           className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"

@@ -58,6 +58,7 @@ import { mondayApi } from './api/monday-bridge'
 import { forkUpdateChangelogApi } from './api/fork-update-changelog-bridge'
 import { sftpApi } from './api/sftp-bridge'
 import { sshVpnApi } from './api/ssh-vpn-bridge'
+import { ngrokApi } from './api/ngrok-bridge'
 import { pythonApi } from './api/python-bridge'
 import { dotnetContainerApi } from './api/dotnet-container-bridge'
 import { browserApi } from './api/browser-bridge'
@@ -168,6 +169,7 @@ const api = {
   forkUpdateChangelog: forkUpdateChangelogApi,
   sftp: sftpApi,
   sshVpn: sshVpnApi,
+  ngrok: ngrokApi,
   python: pythonApi,
   dotnetContainer: dotnetContainerApi,
   browser: browserApi,
