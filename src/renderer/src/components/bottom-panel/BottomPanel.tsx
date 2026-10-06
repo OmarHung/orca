@@ -38,6 +38,11 @@ const DebugPanel = lazy(() =>
     default: module.DebugPanel
   }))
 )
+const RunPanelPorts = lazy(() =>
+  import('../run/RunPanelPorts').then((module) => ({
+    default: module.RunPanelPorts
+  }))
+)
 
 function BottomPanelTabButton({
   tab,
@@ -121,6 +126,11 @@ export function BottomPanel(): React.JSX.Element {
           </Suspense>
         ) : null}
         <div className="flex-1" />
+        {activeTab === 'run' || activeTab === 'debug' ? (
+          <Suspense fallback={null}>
+            <RunPanelPorts tab={activeTab} />
+          </Suspense>
+        ) : null}
         <Button
           variant="ghost"
           size="icon-xs"
