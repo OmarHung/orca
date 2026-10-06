@@ -3,6 +3,7 @@ import { useCallback, useEffect } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { X, Minimize2, Pin } from 'lucide-react'
 import { stripLeadingAgentTitleDecoration } from '../../../../shared/agent-status/title/agent-title-decoration'
+import { isTuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent-config'
 import { getAgentLabel } from '@/lib/agent-catalog/agent-catalog'
 import { basename } from '@/lib/path'
 import { Input } from '@/components/ui/input'
@@ -312,7 +313,8 @@ export default function SortableTab({
           <Minimize2 className="w-3 h-3" />
         </button>
       )}
-      {tabAgent && !isEditing && (
+      {/* Why the guard: a recognized-only agent (e.g. dsb) has no known /clear command. */}
+      {isTuiAgent(tabAgent) && !isEditing && (
         <AgentTabClearButton
           tabId={tab.id}
           tabTitle={tabTitle}
