@@ -19594,6 +19594,12 @@
       "notAbsolute": "its path could not be resolved",
       "systemFolder": "it is a root, home or system folder",
       "containsSources": "it holds the workspace or the build context"
+    },
+    "port": {
+      "open": "Open {{value0}} in your browser",
+      "orcaBrowserHint": "{{value0}}+click opens it in Orca's browser",
+      "openFailed": "Failed to open browser",
+      "listening": "Listening ports"
     }
   },
   "python": {

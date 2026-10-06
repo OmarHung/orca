@@ -19318,6 +19318,12 @@
       "notAbsolute": "無法解析它的路徑",
       "systemFolder": "它是根目錄、主目錄或系統資料夾",
       "containsSources": "它包含工作區或構建上下文"
+    },
+    "port": {
+      "open": "在瀏覽器中開啟 {{value0}}",
+      "orcaBrowserHint": "{{value0}}+點擊改用 Orca 內建瀏覽器開啟",
+      "openFailed": "無法開啟瀏覽器",
+      "listening": "監聽中的埠"
     }
   },
   "python": {

@@ -7,6 +7,8 @@ export const debugApi = {
   request: (sessionId, command, args) =>
     ipcRenderer.invoke('debug:request', sessionId, command, args),
   stop: (sessionId) => ipcRenderer.invoke('debug:stop', sessionId),
+  isDebuggerPort: (args) => ipcRenderer.invoke('debug:isDebuggerPort', args),
+  listenerTerminals: (pids) => ipcRenderer.invoke('debug:listenerTerminals', pids),
   onEvent: (callback) => {
     const listener = (_event: Electron.IpcRendererEvent, event: DebugSessionEvent) =>
       callback(event)

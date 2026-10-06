@@ -393,6 +393,19 @@ Publish 類的設定**執行前一定要先確認**，因為它會對外發布�
 - **清空改成真的 `rm -rf`**：使用者看到勾了「清空」，但預覽沒有 `rm -rf`，以為沒作用。兩個選項中，使用者選了「改成真的 rm -rf 指令」，沒選「預覽多一行說明由 Orca 清空」。現在 POSIX shell（macOS、Linux、SSH、WSL；`host-shell.ts` 的 `runsPosixShell` 依工作區路徑判斷，Dockerfile 偵測的 `&&` 也共用它）的指令是 `rm -rf <資料夾> && docker build …`，預覽和 Run 視窗都看得到，不會進垃圾桶。Windows 本機維持由 Orca 移到資源回收筒（`orcaDeletes`）。`planRunConfiguration`／`commandConfigurationOf` 多了選填的 `{ posixShell }`，預設是 false，也就是不寫 shell 專屬步驟；只有 launcher 和預覽會傳入真實值。安全檢查照舊在 launcher 執行前做，不安全就不執行；對話框裡也會用紅字預先提示。保護範圍另外加上掛載點（`/Volumes/<名稱>`、`/mnt/<名稱>`、`/media/<使用者>/<名稱>`），因為 `rm -rf` 刪了就救不回來
 - **失敗圖示**：失敗時整個模式圖示變紅，結果 ▷ 變成紅色 ▷，在工具列看起來像第三顆執行按鈕。使用者選了「工具列不顯示，只留 Run 面板」：`RunSessionControls` 只在執行中顯示狀態圖示；Run 面板分頁的失敗狀態改成灰色模式圖示加右下角紅色 ✕（`RunStatusIcon`），`RunModeIcon` 拿掉 `failed` tone
 
+### 後續：顯示 Run／Debug 監聽的 port（2026-10-06）
+
+使用者要求 Run 或 Debug 啟動後自動顯示程式監聽的 port，並提供在瀏覽器開啟的按鈕：預設用外部瀏覽器，按住 ⌘（Windows／Linux 為 Ctrl）點擊才用 Orca 內建瀏覽器。
+
+- **歸屬判定**（`run-port-claims.ts`）：沿用既有的工作區 port 掃描（`workspacePortScansByKey`，本機、遠端 runtime、.NET 容器都已依 cwd 歸到工作區）。每個 listener 再由 main 查出它跑在哪個本機終端機底下（`listener-terminals.ts`，IPC `debug:listenerTerminals`）：從 port 的 pid 沿 ppid 往上找到某個 PTY 的根行程。POSIX 用 `ps`，Windows 用 `windows-process-table`。WSL、SSH 終端機不算，因為它們的 pid 屬於別台主機
+  - 在某個終端機底下：只屬於那個終端機的 Run。同一工作區同時跑多個 Run 時就靠這條分開；被別的終端機持有的 port 也會從原本的認領中撤掉
+  - 不在任何終端機底下（OrbStack／Docker 的轉發程序、debuggee、遠端主機）：改用時間判斷。每個 listener（id 含 pid）記錄第一次被看見的時間，某主機第一次掃描就存在的視為早已存在；attempt 開始之後才出現的才算。重新執行會換 attemptId，所以會重新認領
+- **追蹤**（`run-port-tracking.ts`、`run-port-store.ts`）：獨立的 zustand store，訂閱 app store 的掃描結果與 PTY 綁定、Run session store 和 debug store。session 剛開始、還沒看到 port 時，會對它的主機加快掃描（1 秒起，逐步放慢到 10 秒，最多 2 分鐘），視窗不可見時不掃。認領、開始時間和每個 listener 的首次出現時間都存在 localStorage。renderer 若在 2 分鐘內重載（Vite 重載、⌘R），就從存檔接續；隔得更久則只保留已認領的 port，開始時間視為未知，之後只認領自己終端機底下的 port
+- **容器轉發**：`isContainerPortForwarder`（原 `isDockerDesktopForwarder`）除了 Docker Desktop，也認得 OrbStack、Lima／Colima（`limactl`）和 Podman（`gvproxy`）。實測 OrbStack 下 .NET 容器的 port 由 `OrbStack Helper` 持有，之前被歸成 `external`。停止 port 時也同樣不會對這些轉發程序送 SIGTERM
+- **Debug 的 inspector**：js-debug 會在每個 Node debuggee 裡開一個 inspector port，和程式自己的 port 同一個 pid、同一個 cwd。只有 Debug session 認領的本機 loopback port 會由 main 用 `GET /json/version` 探測一次（`debug-inspector-probe.ts`，IPC `debug:isDebuggerPort`，zod 只允許 loopback）。回應帶 `Protocol-Version` 的就隱藏，探測完成前也先不顯示。一般 Run 不探測，避免在使用者 dev server 的 log 留下奇怪的請求
+- **UI**（`RunPortLinks.tsx`）：Run widget 在停止鈕右邊顯示選取項目的 `🌐 :5173`；底部面板 Run／Debug 分頁的標題列右側顯示目前分頁的 `🌐 127.0.0.1:5173`。開啟沿用 `openWorkspacePortInBrowser`（含 localhost 標籤路由），遠端 runtime 一律在 Orca 內建瀏覽器開
+- **已知限制**：同一工作區同時跑的多個「容器內」Run 只能靠時間區分。直連 SSH 的工作區不在工作區 port 掃描範圍內，所以不顯示。dev 版的 terminal daemon 是 dev Electron 的子行程，重啟 dev 會結束裡面的 Run
+
 ## 7. 必須遵守的專案規則（摘自 AGENTS.md）
 
 - UI 依照 `docs/STYLEGUIDE.md`，使用 `main.css` 的 token 和 `components/ui/` 的 shadcn 元件；`pnpm run check:code-quality:changed` 必須通過

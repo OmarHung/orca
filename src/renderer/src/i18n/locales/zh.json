@@ -19526,6 +19526,12 @@
       "notAbsolute": "无法解析它的路径",
       "systemFolder": "它是根目录、主目录或系统文件夹",
       "containsSources": "它包含工作区或构建上下文"
+    },
+    "port": {
+      "open": "在浏览器中打开 {{value0}}",
+      "orcaBrowserHint": "{{value0}}+点击改用 Orca 内置浏览器打开",
+      "openFailed": "无法打开浏览器",
+      "listening": "正在监听的端口"
     }
   },
   "python": {

@@ -2,6 +2,7 @@ import type { RunConfigurationDefinition } from '../../../../shared/run-configur
 import { planRunConfiguration } from '../../../../shared/run-configurations/run-configuration-plan'
 import { isTerminalAgentQuickCommand } from '../../../../shared/terminal-quick-commands'
 import type { DebugSessionView } from '../debug/debug-store'
+import { debugPortOwnerKey, runPortOwnerKey } from './run-port-claims'
 import { runWidgetItemMode, type RunMode } from './run-mode'
 import {
   isRunSessionActive,
@@ -133,6 +134,17 @@ export function footprintDebugSessions(
     (session) =>
       session.sourceKey !== undefined && footprint.debugSourceKeys.includes(session.sourceKey)
   )
+}
+
+/** The run and debug sessions whose listening ports the item's Run widget shows. */
+export function footprintPortOwnerKeys(
+  footprint: RunWidgetFootprint,
+  activity: RunWidgetActivity
+): string[] {
+  return [
+    ...footprintRuns(footprint, activity).map((run) => runPortOwnerKey(run.key)),
+    ...footprintDebugSessions(footprint, activity).map((session) => debugPortOwnerKey(session.id))
+  ]
 }
 
 export function isFootprintDebugging(
