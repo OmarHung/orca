@@ -7,7 +7,6 @@ const mocks = vi.hoisted(() => {
     fileContext,
     pathExists: vi.fn(async () => true),
     deletePath: vi.fn(async () => {}),
-    authorizeExternalPath: vi.fn(async () => {}),
     stopConfigurationAndWait: vi.fn(async () => {}),
     toastError: vi.fn()
   }
@@ -41,7 +40,6 @@ const OUT = { folder: '/Users/me/deploy/web', contextDir: '/repo/wt', orcaDelete
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.fileContext.connectionId = undefined
-  vi.stubGlobal('window', { api: { fs: { authorizeExternalPath: mocks.authorizeExternalPath } } })
 })
 
 describe('outputFoldersToEmpty', () => {
@@ -79,7 +77,6 @@ describe('outputFoldersToEmpty', () => {
 describe('emptyOutputFolder', () => {
   it('moves an existing folder away on the workspace host', async () => {
     await expect(emptyOutputFolder('wt', 'Export', OUT)).resolves.toBe(true)
-    expect(mocks.authorizeExternalPath).toHaveBeenCalledWith({ targetPath: OUT.folder })
     expect(mocks.deletePath).toHaveBeenCalledWith(mocks.fileContext, OUT.folder, true)
   })
 
@@ -89,11 +86,10 @@ describe('emptyOutputFolder', () => {
     expect(mocks.deletePath).not.toHaveBeenCalled()
   })
 
-  it('needs no local permission on an SSH host', async () => {
+  it('deletes on an SSH host through the same file context', async () => {
     mocks.fileContext.connectionId = 'ssh-1'
     await emptyOutputFolder('wt', 'Export', OUT)
-    expect(mocks.authorizeExternalPath).not.toHaveBeenCalled()
-    expect(mocks.deletePath).toHaveBeenCalled()
+    expect(mocks.deletePath).toHaveBeenCalledWith(mocks.fileContext, OUT.folder, true)
   })
 
   it('refuses a folder holding the workspace, and says why', async () => {
