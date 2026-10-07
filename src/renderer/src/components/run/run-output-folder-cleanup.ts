@@ -103,10 +103,7 @@ export async function emptyOutputFolder(
   }
   const context = getTabEntryFileOperationContext(state, worktreeId, worktree.path)
   try {
-    if (!context.connectionId) {
-      // Why: this computer only touches folders outside its workspaces once allowed to.
-      await window.api.fs.authorizeExternalPath({ targetPath: target.folder })
-    }
+    // Why: locally main deletes only inside a project; a folder outside one fails and is reported.
     if (await runtimePathExists(context, target.folder)) {
       await deleteRuntimePath(context, target.folder, true)
     }
