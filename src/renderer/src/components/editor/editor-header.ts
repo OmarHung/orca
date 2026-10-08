@@ -85,8 +85,10 @@ export function getEditorHeaderOpenFileState(
   if (file.diffSource === 'branch') {
     return { canOpen: branchEntry?.status !== 'deleted' || !branchEntry }
   }
+  // Why: opens the working-tree file, which may differ from (or no longer
+  // match) the commit snapshot; a since-deleted path shows the load-error view.
   if (file.diffSource === 'commit') {
-    return { canOpen: false }
+    return { canOpen: true }
   }
 
   // Why: diff tabs can outlive the current Source Control snapshot. If the

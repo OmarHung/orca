@@ -165,6 +165,18 @@ describe('getEditorHeaderOpenFileState', () => {
     ).toEqual({ canOpen: true })
   })
 
+  it('enables opening the working-tree file from a commit diff', () => {
+    expect(
+      getEditorHeaderOpenFileState(
+        makeOpenFile({
+          id: 'wt-1::diff::commit::v1::file.ts',
+          mode: 'diff',
+          diffSource: 'commit'
+        })
+      )
+    ).toEqual({ canOpen: true })
+  })
+
   it('keeps the action enabled when live uncommitted metadata has already disappeared', () => {
     expect(
       getEditorHeaderOpenFileState(
