@@ -156,22 +156,33 @@ export function claimedPortEntries(
     .filter((port) => claim.ports.includes(port.port))
 }
 
+const LOOPBACK_PAIR = ['127.0.0.1', '::1']
+
+function rowForListeners(listeners: readonly WorkspacePort[]): WorkspacePort {
+  const row = listeners.reduce(preferredPort)
+  const hosts = new Set(listeners.map((port) => port.connectHost))
+  // Why: binding `localhost` (Kestrel, Node) opens one socket per loopback family; naming the
+  // row after either half reads as a different host than the one the server was given.
+  return LOOPBACK_PAIR.includes(row.connectHost) && LOOPBACK_PAIR.every((host) => hosts.has(host))
+    ? { ...row, connectHost: 'localhost' }
+    : row
+}
+
 /** The claimed ports still listening, one row per port number even when bound on IPv4 and IPv6. */
 export function liveClaimedPorts(
   claims: readonly RunPortClaim[],
   scansByKey: Readonly<Record<string, WorkspacePortScanResult>>,
   isHidden: (port: WorkspacePort) => boolean = () => false
 ): WorkspacePort[] {
-  const byPort = new Map<number, WorkspacePort>()
+  const byPort = new Map<number, WorkspacePort[]>()
   for (const claim of claims) {
     for (const port of claimedPortEntries(claim, scansByKey)) {
       if (!isHidden(port)) {
-        const current = byPort.get(port.port)
-        byPort.set(port.port, current ? preferredPort(current, port) : port)
+        byPort.set(port.port, [...(byPort.get(port.port) ?? []), port])
       }
     }
   }
-  return [...byPort.values()].sort((a, b) => a.port - b.port)
+  return [...byPort.values()].map(rowForListeners).sort((a, b) => a.port - b.port)
 }
 
 /**
