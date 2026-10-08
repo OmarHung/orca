@@ -21,7 +21,7 @@ function workspacePort(
   return {
     id: `${bindHost}:${port}:${pid}`,
     bindHost,
-    connectHost: bindHost === '127.0.0.1' ? '127.0.0.1' : 'localhost',
+    connectHost: bindHost === '0.0.0.0' || bindHost === '::' ? 'localhost' : bindHost,
     port,
     pid,
     protocol: 'http',
@@ -214,6 +214,23 @@ describe('liveClaimedPorts', () => {
     const ports = liveClaimedPorts([claim({ ports: [5173, 9000] })], scans)
 
     expect(ports).toEqual([advertised])
+  })
+
+  it('labels a port bound on both IPv4 and IPv6 loopback as localhost', () => {
+    const v6 = workspacePort(5016, { bindHost: '::1' })
+    const v4 = workspacePort(5016, { bindHost: '127.0.0.1' })
+    const scans = { [HOST]: scan(v6, v4) }
+
+    const ports = liveClaimedPorts([claim({ ports: [5016] })], scans)
+
+    expect(ports).toEqual([{ ...v6, connectHost: 'localhost' }])
+  })
+
+  it('keeps the bind address of a port bound on one loopback family only', () => {
+    const v6 = workspacePort(5016, { bindHost: '::1' })
+    const scans = { [HOST]: scan(v6) }
+
+    expect(liveClaimedPorts([claim({ ports: [5016] })], scans)).toEqual([v6])
   })
 })
 
