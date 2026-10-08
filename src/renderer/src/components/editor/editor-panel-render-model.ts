@@ -200,7 +200,8 @@ export function getEditorPanelRenderModel({
     canOpenPreviewToSide:
       canOpenWorkspaceFileBrowser &&
       canPreviewLanguage(viewerLanguage) &&
-      (activeFile.mode === 'edit' || (isSingleDiff && openFileState.canOpen)),
+      (activeFile.mode === 'edit' ||
+        (isSingleDiff && openFileState.canOpen && activeFile.diffSource !== 'commit')),
     mdViewMode,
     hasViewModeToggle,
     availableEditorToggleModes,

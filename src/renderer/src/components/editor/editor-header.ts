@@ -86,8 +86,10 @@ export function getEditorHeaderOpenFileState(
   if (file.diffSource === 'branch') {
     return { canOpen: branchEntry?.status !== 'deleted' || !branchEntry }
   }
+  // Why: opens the working-tree file, which may differ from (or no longer
+  // match) the commit snapshot; a since-deleted path shows the load-error view.
   if (file.diffSource === 'commit') {
-    return { canOpen: false }
+    return { canOpen: true }
   }
 
   // Diff snapshots outlive status rows; missing live entries must not hide an otherwise valid open-file action.
