@@ -1,5 +1,4 @@
 import { TOGGLE_FLOATING_TERMINAL_EVENT } from '@/lib/floating-terminal'
-import { isFloatingWorkspacePanelVisible } from '@/lib/floating-workspace-terminal-actions'
 import { useAppStore } from '@/store'
 import type { BrowserPage, BrowserWorkspace } from '../../../../shared/browser-workspace-types'
 import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
@@ -78,6 +77,10 @@ export function openMondayLink(url: string, options: { systemBrowser?: boolean }
     case 'add-page':
       state.createBrowserPage(plan.tabId, plan.url, { activate: true })
   }
+}
+
+function isFloatingWorkspacePanelVisible(): boolean {
+  return Boolean(document.querySelector('[data-floating-terminal-panel][aria-hidden="false"]'))
 }
 
 export function closeMondayBrowser(): void {

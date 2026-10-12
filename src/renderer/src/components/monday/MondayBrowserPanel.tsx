@@ -2,7 +2,6 @@ import React, { useRef } from 'react'
 import { ExternalLink, Globe, PictureInPicture2, X } from 'lucide-react'
 import { ResizeHandle } from '@/components/bottom-panel/ResizeHandle'
 import { useDragResize } from '@/components/bottom-panel/use-drag-resize'
-import { FloatingBrowserSlot } from '@/components/floating-terminal/FloatingBrowserSlot'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
@@ -13,6 +12,7 @@ import {
   moveMondayBrowserToFloating,
   selectMondayBrowserTab
 } from './monday-browser-actions'
+import { MondayBrowserSlot } from './MondayBrowserSlot'
 import { updateMondayPrefs } from './monday-page-actions'
 import { useMondayPageStore } from './monday-page-store'
 import { MONDAY_BROWSER_MIN_WIDTH } from './monday-view-prefs'
@@ -107,7 +107,7 @@ export function MondayBrowserPanel(): React.JSX.Element | null {
       />
       <BrowserHeader tab={tab} />
       <div className="relative flex min-h-0 flex-1">
-        <FloatingBrowserSlot browserTab={tab} isActive />
+        <MondayBrowserSlot browserTab={tab} isActive />
       </div>
     </div>
   )
