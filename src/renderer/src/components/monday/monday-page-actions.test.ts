@@ -49,6 +49,7 @@ beforeEach(() => {
       includeUnassigned: true,
       hideDone: false,
       statusLabels: [],
+      showUndated: true,
       view: 'month',
       browserWidth: 720
     },

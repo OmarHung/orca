@@ -23404,6 +23404,10 @@
       "truncated": "{{value0}}: only the first {{value1}} items are shown",
       "undated": "{{value0}} without dates"
     },
+    "undated": {
+      "hide": "Hide items without dates",
+      "title": "No dates"
+    },
     "view": {
       "gantt": "Gantt",
       "month": "Calendar"

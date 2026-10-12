@@ -4,6 +4,7 @@ import type { MondaySchedule, MondayScheduleItem } from '../../../../shared/mond
 import {
   buildMondayEntries,
   buildMonthGrid,
+  groupMondayUndatedEntries,
   isWeekendDay,
   mondayWeekdayIndex,
   publicHolidayName,
@@ -121,6 +122,46 @@ describe('buildMondayEntries', () => {
     const done = buildMondayEntries(schedule, { hideDone: false, statusLabels: ['Done'] }, TODAY)
     expect(done.scheduled.map((entry) => entry.item.id)).toEqual(['3'])
     expect(done.unscheduled).toEqual([])
+  })
+})
+
+describe('groupMondayUndatedEntries', () => {
+  const DONE = { label: 'Done', color: '#0f0', isDone: true }
+
+  it('groups by board in picker order and moves done work to the end', () => {
+    const schedule: MondaySchedule = {
+      fetchedAt: 0,
+      boards: [
+        {
+          boardId: 'b1',
+          boardName: 'Board one',
+          roles: ROLES,
+          roleTitles: {},
+          items: [item('a', { status: DONE }), item('b', {}), item('c', {})],
+          truncated: false,
+          updatedAt: null
+        },
+        {
+          boardId: 'b2',
+          boardName: 'Board two',
+          roles: ROLES,
+          roleTitles: {},
+          items: [item('d', { boardId: 'b2' })],
+          truncated: false,
+          updatedAt: null
+        }
+      ]
+    }
+    const { unscheduled } = buildMondayEntries(
+      schedule,
+      { hideDone: false, statusLabels: [] },
+      TODAY
+    )
+    const groups = groupMondayUndatedEntries(unscheduled, ['b2', 'b1'])
+    expect(groups.map((group) => [group.boardName, group.entries.map((e) => e.item.id)])).toEqual([
+      ['Board two', ['d']],
+      ['Board one', ['b', 'c', 'a']]
+    ])
   })
 })
 

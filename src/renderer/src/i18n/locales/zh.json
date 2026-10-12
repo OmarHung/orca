@@ -23037,6 +23037,10 @@
       "truncated": "{{value0}}：只显示前 {{value1}} 个任务",
       "undated": "{{value0}} 个没有日期"
     },
+    "undated": {
+      "hide": "隐藏没有日期的任务",
+      "title": "没有日期"
+    },
     "view": {
       "gantt": "甘特图",
       "month": "月历"
