@@ -156,3 +156,11 @@ export const mondayLoadScheduleSchema = z.object({
 })
 
 export type MondayLoadScheduleRequest = z.infer<typeof mondayLoadScheduleSchema>
+
+export const mondayOpenBrowserWindowSchema = z.object({
+  url: z.string().min(1).max(8192),
+  /** The browser profile whose login the window shares; null is the default profile. */
+  profileId: z.string().min(1).max(256).nullable()
+})
+
+export type MondayOpenBrowserWindowRequest = z.infer<typeof mondayOpenBrowserWindowSchema>

@@ -72,6 +72,7 @@ function closeUnpreparedPopup(
     window.close()
   }
   return {
+    window,
     contentWebContents,
     close: (): void => {
       if (!window.isDestroyed()) {
@@ -271,6 +272,7 @@ export function openPopupWithOriginBar(
     showWhenAppActive(window)
   }
   return {
+    window,
     contentWebContents,
     close: (): void => {
       if (!window.isDestroyed()) {
