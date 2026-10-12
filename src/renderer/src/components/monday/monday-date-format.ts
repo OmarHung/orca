@@ -26,11 +26,11 @@ export function formatMondayShortMonth(day: number): string {
   return formatter({ month: 'short' }).format(dayDate(day))
 }
 
-/** Monday-first short weekday names. */
+/** Sunday-first weekday names. */
 export function mondayWeekdayNames(style: 'short' | 'narrow'): string[] {
-  const monday = toDayNumber('2026-01-05')
+  const sunday = toDayNumber('2026-01-04')
   const format = formatter({ weekday: style })
-  return Array.from({ length: 7 }, (_, index) => format.format(dayDate(monday + index)))
+  return Array.from({ length: 7 }, (_, index) => format.format(dayDate(sunday + index)))
 }
 
 /** A monday timestamp (update posted, item created) in the viewer's time zone. */

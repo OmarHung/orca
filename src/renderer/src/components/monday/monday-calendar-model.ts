@@ -57,13 +57,18 @@ export function shiftMonth(anchorMonth: string, delta: number): string {
   return date.toISOString().slice(0, 10)
 }
 
-/** Monday = 0 … Sunday = 6. Day 0 (1970-01-01) was a Thursday. */
+/** Sunday = 0 … Saturday = 6. Day 0 (1970-01-01) was a Thursday. */
 export function mondayWeekdayIndex(day: number): number {
-  return (((day + 3) % 7) + 7) % 7
+  return (((day + 4) % 7) + 7) % 7
+}
+
+export function isWeekendDay(day: number): boolean {
+  const index = mondayWeekdayIndex(day)
+  return index === 0 || index === 6
 }
 
 export type MondayMonthGrid = {
-  /** Day number of each week's Monday. */
+  /** Day number of each week's Sunday. */
   weekStarts: number[]
   firstDay: number
   lastDay: number
@@ -71,7 +76,7 @@ export type MondayMonthGrid = {
   monthLastDay: number
 }
 
-/** Whole Monday-to-Sunday weeks covering the anchor month. */
+/** Whole Sunday-to-Saturday weeks covering the anchor month. */
 export function buildMonthGrid(anchorMonth: string): MondayMonthGrid {
   const monthFirstDay = toDayNumber(anchorMonth)
   const monthLastDay = toDayNumber(shiftMonth(anchorMonth, 1)) - 1
