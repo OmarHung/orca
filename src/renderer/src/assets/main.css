@@ -141,6 +141,8 @@
   --color-status-warning-border: var(--status-warning-border);
   --color-callout-note: var(--callout-note);
   --color-callout-important: var(--callout-important);
+  --color-calendar-holiday: var(--calendar-holiday);
+  --color-calendar-holiday-background: var(--calendar-holiday-background);
   --color-run-mode-debug: var(--run-mode-debug);
   --color-run-mode-build: var(--run-mode-build);
   --color-run-mode-test: var(--run-mode-test);
@@ -234,6 +236,9 @@
   --agent-working: var(--color-yellow-500);
   /* Legible weight for text/glyphs on a tinted --agent-question surface. */
   --agent-question-text: var(--color-orange-700);
+  /* Public holidays in the monday calendars: red like a printed calendar, not an error state. */
+  --calendar-holiday: var(--color-red-600);
+  --calendar-holiday-background: color-mix(in srgb, var(--calendar-holiday) 12%, transparent);
   /* Run widget modes; a plain run is --status-success and Stop is --destructive. */
   --run-mode-debug: var(--color-orange-600);
   --run-mode-build: var(--color-blue-600);
@@ -347,6 +352,8 @@
   --ai-action-accent: var(--color-violet-400);
   --agent-question: var(--color-orange-500);
   --agent-question-text: var(--color-orange-300);
+  --calendar-holiday: var(--color-red-400);
+  --calendar-holiday-background: color-mix(in srgb, var(--calendar-holiday) 16%, transparent);
   --run-mode-debug: var(--color-orange-400);
   --run-mode-build: var(--color-blue-400);
   --run-mode-test: var(--color-cyan-400);
