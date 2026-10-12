@@ -22254,8 +22254,9 @@
     },
     "browser": {
       "close": "Close browser",
-      "moveToFloating": "Move to floating window",
       "openExternal": "Open in system browser",
+      "openInWindow": "Open in separate window",
+      "openInWindowFailed": "Could not open a separate window",
       "resize": "Resize browser"
     },
     "connect": {

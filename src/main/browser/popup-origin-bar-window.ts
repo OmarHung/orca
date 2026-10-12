@@ -20,6 +20,7 @@ export type PopupChildWindowOptions = Electron.BrowserWindowConstructorOptions &
 }
 
 export type PopupOriginBarWindow = {
+  window: BaseWindow
   contentWebContents: Electron.WebContents
   close: () => void
   onClosed: (listener: () => void) => void
@@ -90,6 +91,7 @@ function closeUnpreparedPopup(
     window.close()
   }
   return {
+    window,
     contentWebContents,
     close: (): void => {
       if (!window.isDestroyed()) {
@@ -283,6 +285,7 @@ export function openPopupWithOriginBar(
   })
 
   return {
+    window,
     contentWebContents,
     close: (): void => {
       if (!window.isDestroyed()) {

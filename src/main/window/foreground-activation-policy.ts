@@ -1,4 +1,4 @@
-import { app as electronApp, type BrowserWindow } from 'electron'
+import { app as electronApp, type BaseWindow } from 'electron'
 
 /**
  * Foreground policy for automated launches (E2E, benchmarks, agent-driven dev
@@ -80,7 +80,7 @@ export function applyBackgroundActivationPolicy(
  * `showInactive()` for explicitly headful E2E runs.
  */
 export function showWindowWithoutStealingFocus(
-  window: BrowserWindow,
+  window: BaseWindow,
   env: PolicyEnv = process.env
 ): void {
   if (window.isDestroyed()) {

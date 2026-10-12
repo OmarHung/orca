@@ -22057,8 +22057,9 @@
     },
     "browser": {
       "close": "关闭浏览器",
-      "moveToFloating": "移到浮动窗口",
       "openExternal": "用系统浏览器打开",
+      "openInWindow": "在独立窗口打开",
+      "openInWindowFailed": "无法打开独立窗口",
       "resize": "调整浏览器宽度"
     },
     "connect": {
