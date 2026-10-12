@@ -17,6 +17,8 @@ export type LaunchableWorkItem = {
   baseRefName?: string
   isCrossRepository?: boolean
   pasteContent?: string
+  /** Workspace and branch seed for items with no number to derive one from. */
+  workspaceName?: string
   linearIdentifier?: string
   linearWorkspaceId?: string
   linearOrganizationUrlKey?: string

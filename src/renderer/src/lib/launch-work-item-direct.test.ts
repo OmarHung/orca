@@ -382,6 +382,16 @@ describe('launchWorkItemDirect', () => {
     )
   })
 
+  it('seeds a numberless item from its workspaceName', async () => {
+    await launchWorkItemDirect({
+      repoId: 'repo-1',
+      launchSource: 'task_page',
+      openModalFallback: vi.fn(),
+      item: { type: 'issue', number: null, title: 'T', url: 'u', workspaceName: 'monday-2' }
+    })
+    expect(mocks.createWorktree.mock.calls[0]?.[1]).toBe('monday-2')
+  })
+
   it('prefills a link-only Linear reference without source context', async () => {
     mocks.ensureDetectedAgents.mockResolvedValue(['claude'])
 
