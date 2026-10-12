@@ -294,6 +294,19 @@ describe('openPopupWithOriginBar', () => {
     })
   })
 
+  it('shows guest popups at once but leaves a caller-presented window hidden', () => {
+    vi.stubEnv('ORCA_BACKGROUND_LAUNCH', undefined)
+    openPopupWithOriginBar({ loadInitialUrl: true }, 'https://a.example/')
+    expect(lastWindow().options.show).toBe(true)
+
+    const popup = openPopupWithOriginBar(
+      { loadInitialUrl: true, show: false },
+      'https://b.example/'
+    )
+    expect(lastWindow().options.show).toBe(false)
+    expect(popup.window).toBe(lastWindow())
+  })
+
   it('keeps the origin bar isolated with locked-down webPreferences', () => {
     openPopupWithOriginBar(
       { webContents: createFakeWebContents() as never },
