@@ -1,7 +1,7 @@
-import { TOGGLE_FLOATING_TERMINAL_EVENT } from '@/lib/floating-terminal'
+import { toast } from 'sonner'
+import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import type { BrowserPage, BrowserWorkspace } from '../../../../shared/browser-workspace-types'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
 import { MONDAY_BROWSER_WORKTREE_ID } from '../../../../shared/local-synthetic-workspace'
 
 export type MondayLinkPlan =
@@ -79,10 +79,6 @@ export function openMondayLink(url: string, options: { systemBrowser?: boolean }
   }
 }
 
-function isFloatingWorkspacePanelVisible(): boolean {
-  return Boolean(document.querySelector('[data-floating-terminal-panel][aria-hidden="false"]'))
-}
-
 export function closeMondayBrowser(): void {
   const state = useAppStore.getState()
   const tab = selectMondayBrowserTab(state)
@@ -91,62 +87,47 @@ export function closeMondayBrowser(): void {
   }
 }
 
-/** The pages to reopen elsewhere, in their order, and which one was showing. */
-export function mondayBrowserHandoff(
+/** The page to move into a window of its own; a null pageId means it was the browser's last page. */
+export function planMondayBrowserPopOut(
   tab: BrowserWorkspace,
   pages: readonly BrowserPage[]
-): { urls: string[]; activeIndex: number } {
-  const webPages = pages.filter((page) => !page.docLocation && isWebUrl(page.url))
-  if (webPages.length === 0) {
-    return { urls: isWebUrl(tab.url) ? [tab.url] : [], activeIndex: 0 }
+): { url: string; pageId: string | null } | null {
+  if (pages.length === 0) {
+    return isWebUrl(tab.url) ? { url: tab.url, pageId: null } : null
   }
-  const activeIndex = webPages.findIndex((page) => page.id === tab.activePageId)
-  return { urls: webPages.map((page) => page.url), activeIndex: Math.max(activeIndex, 0) }
+  const active = pages.find((page) => page.id === tab.activePageId) ?? pages[0]
+  if (active.docLocation || !isWebUrl(active.url)) {
+    return null
+  }
+  return { url: active.url, pageId: pages.length > 1 ? active.id : null }
 }
 
 /**
- * Reopens the page's browser in the floating workspace, which stays over every page. A guest
- * can't change workspace, so its pages load again there; the shared profile keeps the login.
+ * Moves the page that is showing into a separate OS window, which no workspace panel can absorb.
+ * A guest can't change window, so the page loads again there; the shared profile keeps the login.
  */
-export async function moveMondayBrowserToFloating(): Promise<void> {
+export async function openMondayBrowserInWindow(): Promise<void> {
   const state = useAppStore.getState()
   const tab = selectMondayBrowserTab(state)
   if (!tab) {
     return
   }
-  const { urls, activeIndex } = mondayBrowserHandoff(
-    tab,
-    state.browserPagesByWorkspace[tab.id] ?? []
-  )
-  const [firstUrl, ...restUrls] = urls
-  if (!firstUrl) {
+  const plan = planMondayBrowserPopOut(tab, state.browserPagesByWorkspace[tab.id] ?? [])
+  if (!plan) {
     return
   }
-  const floating = state.createBrowserTab(FLOATING_TERMINAL_WORKTREE_ID, firstUrl, {
-    activate: true,
-    focusAddressBar: false,
-    targetGroupId: state.activeGroupIdByWorktree[FLOATING_TERMINAL_WORKTREE_ID],
-    browserRuntimeEnvironmentId: null
+  const opened = await window.api.monday.openBrowserWindow({
+    url: plan.url,
+    profileId: tab.sessionProfileId ?? null
   })
-  const pageIds = [
-    useAppStore.getState().browserPagesByWorkspace[floating.id]?.[0]?.id,
-    ...restUrls.map(
-      (url) => useAppStore.getState().createBrowserPage(floating.id, url, { activate: false })?.id
-    )
-  ]
-  const activePageId = pageIds[activeIndex]
-  if (activeIndex > 0 && activePageId) {
-    useAppStore.getState().setActiveBrowserPage(floating.id, activePageId)
+  if (!opened) {
+    toast.error(translate('monday.browser.openInWindowFailed', 'Could not open a separate window'))
+    return
   }
-  state.closeBrowserTab(tab.id)
-  // Why enabled here: the user asked for the floating window, which a disabled feature never renders.
-  if (state.settings?.floatingTerminalEnabled !== true) {
-    await state.updateSettings({ floatingTerminalEnabled: true })
+  const latest = useAppStore.getState()
+  if (plan.pageId) {
+    latest.closeBrowserPage(plan.pageId)
+  } else {
+    latest.closeBrowserTab(tab.id)
   }
-  // Why deferred a frame: the panel only honors the toggle once the enabled flag has reached React.
-  requestAnimationFrame(() => {
-    if (!isFloatingWorkspacePanelVisible()) {
-      window.dispatchEvent(new CustomEvent(TOGGLE_FLOATING_TERMINAL_EVENT))
-    }
-  })
 }
