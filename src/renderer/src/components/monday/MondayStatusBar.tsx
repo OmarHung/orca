@@ -1,41 +1,25 @@
 import React from 'react'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { getIntlLocale, translate } from '@/i18n/i18n'
+import { cn } from '@/lib/utils'
 import type { MondaySchedule } from '../../../../shared/monday/monday-types'
-import type { MondayCalendarEntry } from './monday-calendar-model'
-import { selectMondayItem } from './monday-page-actions'
+import { updateMondayPrefs } from './monday-page-actions'
 import { useMondayPageStore } from './monday-page-store'
 import { MondayDueFlag } from './MondayScheduleVisuals'
 
-function UndatedItems({ entries }: { entries: readonly MondayCalendarEntry[] }): React.JSX.Element {
+function UndatedToggle({ count, shown }: { count: number; shown: boolean }): React.JSX.Element {
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button type="button" className="underline-offset-2 hover:text-foreground hover:underline">
-          {translate('monday.status.undated', '{{value0}} without dates', {
-            value0: entries.length
-          })}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-80">
-        <div className="scrollbar-sleek max-h-72 overflow-y-auto p-1">
-          {entries.map((entry) => (
-            <button
-              key={entry.item.id}
-              type="button"
-              onClick={() => selectMondayItem(entry.item.id)}
-              className="flex w-full flex-col rounded-sm px-2 py-1.5 text-left text-xs hover:bg-accent"
-            >
-              <span className="truncate">{entry.item.name}</span>
-              <span className="truncate text-[11px] text-muted-foreground">
-                {entry.boardName}
-                {entry.item.groupTitle ? ` · ${entry.item.groupTitle}` : ''}
-              </span>
-            </button>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
+    <button
+      type="button"
+      aria-pressed={shown}
+      data-testid="monday-undated-toggle"
+      onClick={() => updateMondayPrefs({ showUndated: !shown })}
+      className={cn(
+        'underline-offset-2 hover:text-foreground hover:underline',
+        shown && 'text-foreground'
+      )}
+    >
+      {translate('monday.status.undated', '{{value0}} without dates', { value0: count })}
+    </button>
   )
 }
 
@@ -67,9 +51,10 @@ function Legend(): React.JSX.Element {
 export function MondayStatusBar(props: {
   schedule: MondaySchedule
   scheduledCount: number
-  unscheduled: readonly MondayCalendarEntry[]
+  unscheduledCount: number
+  undatedShown: boolean
 }): React.JSX.Element {
-  const { schedule, scheduledCount, unscheduled } = props
+  const { schedule, scheduledCount, unscheduledCount, undatedShown } = props
   const truncated = schedule.boards.filter((board) => board.truncated)
   const syncedAt = useMondayPageStore((state) => state.syncedAt)
   const syncedTime = new Intl.DateTimeFormat(getIntlLocale(), { timeStyle: 'short' }).format(
@@ -82,7 +67,9 @@ export function MondayStatusBar(props: {
           value0: scheduledCount
         })}
       </span>
-      {unscheduled.length > 0 ? <UndatedItems entries={unscheduled} /> : null}
+      {unscheduledCount > 0 ? (
+        <UndatedToggle count={unscheduledCount} shown={undatedShown} />
+      ) : null}
       {truncated.map((board) => (
         <span key={board.boardId} className="text-destructive">
           {translate(

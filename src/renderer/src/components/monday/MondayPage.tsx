@@ -21,6 +21,7 @@ import { MondayItemDetailPanel } from './MondayItemDetailPanel'
 import { MondayMonthView } from './MondayMonthView'
 import { MondayStatusBar } from './MondayStatusBar'
 import { MondayToolbar } from './MondayToolbar'
+import { MondayUndatedPanel } from './MondayUndatedPanel'
 import { useMondayToday } from './use-monday-today'
 
 function CenteredMessage({ children }: { children: React.ReactNode }): React.JSX.Element {
@@ -78,6 +79,13 @@ function ScheduleWorkspace({ schedule }: { schedule: MondaySchedule }): React.JS
   return (
     <>
       <div className="flex min-h-0 flex-1">
+        {prefs.showUndated && unscheduled.length > 0 ? (
+          <MondayUndatedPanel
+            entries={unscheduled}
+            boardOrder={prefs.boardIds}
+            selectedItemId={selectedItemId}
+          />
+        ) : null}
         <div className="flex min-w-0 flex-1 flex-col">
           {prefs.view === 'month' ? (
             <MondayMonthView
@@ -109,7 +117,8 @@ function ScheduleWorkspace({ schedule }: { schedule: MondaySchedule }): React.JS
       <MondayStatusBar
         schedule={schedule}
         scheduledCount={scheduled.length}
-        unscheduled={unscheduled}
+        unscheduledCount={unscheduled.length}
+        undatedShown={prefs.showUndated}
       />
     </>
   )
