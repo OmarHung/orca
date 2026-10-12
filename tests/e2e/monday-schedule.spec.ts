@@ -72,7 +72,19 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
     await expect(orcaPage.getByTestId('monday-person-picker')).toContainText('Show: Omar')
     await expect(month.getByText('Bella 的設計稿')).toHaveCount(0)
     await expect(orcaPage.getByText('1 without dates')).toBeVisible()
+    // Items with no dates are listed beside the calendar; the status bar count hides and shows it.
+    const undated = orcaPage.getByTestId('monday-undated-panel')
+    await expect(undated.getByTestId('monday-undated-item')).toHaveText([/付款流程確認/])
     await orcaPage.screenshot({ path: testInfo.outputPath('monday-month.png') })
+    await orcaPage.getByTestId('monday-undated-toggle').click()
+    await expect(undated).toHaveCount(0)
+    await orcaPage.getByTestId('monday-undated-toggle').click()
+    await undated.getByTestId('monday-undated-item').click()
+    await expect(
+      orcaPage
+        .getByTestId('monday-detail-panel')
+        .getByRole('heading', { name: '付款流程確認' })
+    ).toBeVisible()
 
     await bar.first().click()
     const panel = orcaPage.getByTestId('monday-detail-panel')

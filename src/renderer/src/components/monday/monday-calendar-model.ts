@@ -47,6 +47,34 @@ export function buildMondayEntries(
   return { scheduled, unscheduled }
 }
 
+export type MondayUndatedGroup = {
+  boardId: string
+  boardName: string
+  entries: MondayCalendarEntry[]
+}
+
+/** Undated items by board in picker order; monday's own order within a board, done work last. */
+export function groupMondayUndatedEntries(
+  entries: readonly MondayCalendarEntry[],
+  boardOrder: readonly string[]
+): MondayUndatedGroup[] {
+  const groups = new Map<string, MondayUndatedGroup>()
+  for (const entry of entries) {
+    const boardId = entry.item.boardId
+    const group = groups.get(boardId) ?? { boardId, boardName: entry.boardName, entries: [] }
+    group.entries.push(entry)
+    groups.set(boardId, group)
+  }
+  return [...groups.values()]
+    .sort((a, b) => boardOrder.indexOf(a.boardId) - boardOrder.indexOf(b.boardId))
+    .map((group) => ({
+      ...group,
+      entries: group.entries.toSorted(
+        (a, b) => Number(a.item.status?.isDone === true) - Number(b.item.status?.isDone === true)
+      )
+    }))
+}
+
 /** First of the month, `YYYY-MM-01`. */
 export function monthOf(isoDate: string): string {
   return `${isoDate.slice(0, 7)}-01`
