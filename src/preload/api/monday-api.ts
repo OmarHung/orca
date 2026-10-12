@@ -3,6 +3,7 @@ import type {
   MondayConnectionStatus,
   MondayItemDetail,
   MondayLoadScheduleRequest,
+  MondayOpenBrowserWindowRequest,
   MondayResult,
   MondaySchedule,
   MondayUser
@@ -20,4 +21,6 @@ export type MondayApi = {
   /** Board id → last-change time: one cheap call to tell whether a reload is needed. */
   boardsUpdatedAt: (boardIds: string[]) => Promise<MondayResult<Record<string, string>>>
   getItem: (itemId: string) => Promise<MondayResult<MondayItemDetail>>
+  /** Opens the page in a window of its own, sharing the profile's login; false when it can't. */
+  openBrowserWindow: (request: MondayOpenBrowserWindowRequest) => Promise<boolean>
 }

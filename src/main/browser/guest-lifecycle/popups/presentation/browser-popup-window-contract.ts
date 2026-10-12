@@ -7,6 +7,7 @@ export type PopupChildWindowOptions = Electron.BrowserWindowConstructorOptions &
 }
 
 export type PopupOriginBarWindow = {
+  window: Electron.BaseWindow
   contentWebContents: Electron.WebContents
   close: () => void
   onClosed: (listener: () => void) => void

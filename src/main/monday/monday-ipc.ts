@@ -6,8 +6,12 @@ import {
   mondayConnectSchema,
   mondayIdSchema,
   mondayLoadScheduleSchema,
+  mondayOpenBrowserWindowSchema,
   type MondayResult
 } from '../../shared/monday/monday-types'
+import { browserSessionRegistry } from '../browser/browser-session-registry'
+import { openStandaloneBrowserWindow } from '../browser/standalone-browser-window'
+import { isTrustedUIRenderer } from '../ipc/ui'
 import { MondayApiError } from './monday-graphql-client'
 import { MondayService } from './monday-service'
 
@@ -63,5 +67,13 @@ export function registerMondayHandlers(): void {
   ipcMain.handle('monday:getItem', (_event, input: unknown) => {
     const parsed = mondayIdSchema.safeParse(input)
     return parsed.success ? respond(() => service.getItem(parsed.data)) : INVALID_REQUEST
+  })
+  ipcMain.handle('monday:openBrowserWindow', (event, input: unknown): boolean => {
+    const parsed = mondayOpenBrowserWindowSchema.safeParse(input)
+    if (!parsed.success || !isTrustedUIRenderer(event.sender)) {
+      return false
+    }
+    const partition = browserSessionRegistry.resolveKnownPartition(parsed.data.profileId)
+    return partition ? openStandaloneBrowserWindow(parsed.data.url, partition) : false
   })
 }

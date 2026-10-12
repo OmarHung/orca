@@ -1,5 +1,5 @@
 import React, { useRef } from 'react'
-import { ExternalLink, Globe, PictureInPicture2, X } from 'lucide-react'
+import { AppWindow, ExternalLink, Globe, X } from 'lucide-react'
 import { ResizeHandle } from '@/components/bottom-panel/ResizeHandle'
 import { useDragResize } from '@/components/bottom-panel/use-drag-resize'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,7 @@ import { useAppStore } from '@/store'
 import type { BrowserWorkspace } from '../../../../shared/browser-workspace-types'
 import {
   closeMondayBrowser,
-  moveMondayBrowserToFloating,
+  openMondayBrowserInWindow,
   selectMondayBrowserTab
 } from './monday-browser-actions'
 import { MondayBrowserSlot } from './MondayBrowserSlot'
@@ -47,10 +47,10 @@ function BrowserHeader({ tab }: { tab: BrowserWorkspace }): React.JSX.Element {
         {tab.title || tab.url}
       </span>
       <HeaderButton
-        label={translate('monday.browser.moveToFloating', 'Move to floating window')}
-        onClick={() => void moveMondayBrowserToFloating()}
+        label={translate('monday.browser.openInWindow', 'Open in separate window')}
+        onClick={() => void openMondayBrowserInWindow()}
       >
-        <PictureInPicture2 />
+        <AppWindow />
       </HeaderButton>
       <HeaderButton
         label={translate('monday.browser.openExternal', 'Open in system browser')}
