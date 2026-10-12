@@ -97,6 +97,36 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
     expect(await orcaPage.evaluate(() => Reflect.get(window, '__mondayXss'))).toBeUndefined()
     await orcaPage.screenshot({ path: testInfo.outputPath('monday-detail.png') })
 
+    // "Hand to AI" offers the recent workspaces and projects, and copies what an agent gets.
+    // Substitute only the clipboard IPC; never touch the user's system clipboard.
+    await electronApp.evaluate(({ ipcMain }) => {
+      ipcMain.removeHandler('clipboard:writeText')
+      ipcMain.handle('clipboard:writeText', (_event, text: string) => {
+        process.env.ORCA_E2E_COPIED_TEXT = text
+      })
+    })
+    await panel.getByTestId('monday-task-agent-trigger').click()
+    const agentMenu = orcaPage.getByRole('menu').first()
+    await expect(agentMenu.getByText('New agent in a workspace')).toBeVisible()
+    await expect(
+      agentMenu.getByRole('menuitem', { name: /New workspace in a project/ })
+    ).toBeVisible()
+    // Each workspace opens the agents its host can run.
+    await agentMenu.getByRole('menuitem', { name: /e2e-secondary/ }).hover()
+    const agentSubmenu = orcaPage.getByRole('menu').nth(1)
+    await expect(agentSubmenu.getByRole('menuitem').first()).toBeVisible()
+    // Why wait: the menus fade in, and a mid-animation screenshot shows them half drawn.
+    await orcaPage.waitForTimeout(300)
+    await orcaPage.screenshot({ path: testInfo.outputPath('monday-agent-menu.png') })
+    await agentMenu.getByRole('menuitem', { name: 'Copy the task for an agent' }).click()
+    await expect
+      .poll(() => electronApp.evaluate(() => process.env.ORCA_E2E_COPIED_TEXT ?? ''))
+      .toContain('Task: 首頁改版')
+    const handedOff = await electronApp.evaluate(() => process.env.ORCA_E2E_COPIED_TEXT ?? '')
+    expect(handedOff).toContain('請確認首頁的連結 ticket (https://example.com/ticket)')
+    expect(handedOff).toContain('[Image] https://acme.monday.com/protected_static/1/x.png')
+    expect(handedOff).not.toContain('__mondayXss')
+
     await orcaPage.getByRole('radio', { name: 'Gantt' }).click()
     const gantt = orcaPage.getByTestId('monday-gantt-view')
     await expect(gantt.getByText("Personal Tasks")).toBeVisible()
