@@ -17,6 +17,8 @@ const prefsSchema = z.object({
   hideDone: z.boolean().catch(false),
   /** Status labels to show; empty shows every status. */
   statusLabels: z.array(z.string()).catch([]),
+  /** The side list of items with no dates; it only shows when there are some. */
+  showUndated: z.boolean().catch(true),
   view: z.enum(['month', 'gantt']).catch('month'),
   browserWidth: z.number().min(MONDAY_BROWSER_MIN_WIDTH).catch(DEFAULT_BROWSER_WIDTH)
 })
@@ -28,6 +30,7 @@ export const DEFAULT_MONDAY_VIEW_PREFS: MondayViewPrefs = {
   includeUnassigned: true,
   hideDone: false,
   statusLabels: [],
+  showUndated: true,
   view: 'month',
   browserWidth: DEFAULT_BROWSER_WIDTH
 }
