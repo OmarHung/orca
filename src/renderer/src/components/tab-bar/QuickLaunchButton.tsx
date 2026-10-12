@@ -48,7 +48,7 @@ function getCatalogEntry(agent: TuiAgent): { id: TuiAgent; label: string } | nul
   return getAgentCatalog().find((a) => a.id === agent) ?? null
 }
 
-function orderAgents(
+export function orderAgents(
   defaultAgent: TuiAgent | 'blank' | null | undefined,
   detected: TuiAgent[]
 ): TuiAgent[] {

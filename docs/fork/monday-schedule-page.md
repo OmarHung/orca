@@ -55,6 +55,17 @@
 - monday 頁離開時會卸載，回來時 guest 會重新掛上（登入 cookie 在預設的 browser profile，不受影響）。Orca 瀏覽器的登入和系統瀏覽器分開，第一次要在裡面登入 monday。
 - 已知：焦點在 monday 瀏覽器裡時，Cmd+W 會關掉這個瀏覽器（依來源找到所屬 workspace）；新分頁、切換分頁等快捷鍵仍作用在目前的專案 workspace。
 
+## 交給 AI（2026-10-12）
+
+詳情面板標題列的「交給 AI」把 task 交給 agent。內容等詳情讀完才組（按鈕之前是停用的），**一律貼成草稿**，使用者補一句指示再按 Enter 送出。
+
+- **在 workspace 開新 agent**：列出最近用過的 10 個 workspace（和 Cmd+J 空白查詢同一個排序 `orderEmptyQueryWorktrees`，不含封存），子選單是那個 workspace 所在主機偵測到的 agent（SSH／paired runtime 列遠端的，預設 agent 排第一）。選了就開新分頁、切到那個 workspace。做法照上游 fix-checks：`launchAgentInNewTab` 加 `beforeSurfaceOpen` 先 `activateAndRevealWorktree`，所以 native chat 的 agent 也會切過去。
+- **在專案裡開新 workspace**：列出 git 專案（資料夾專案沒有 worktree 可開），用上游的 `launchWorkItemDirect` 建 workspace＋預設 agent＋草稿。名稱是 task 名稱，分支種子 `monday-<item id>`（task 名稱多半是中文，slug 之後是空的）。專案要先選設定（例如 setup 設成每次詢問）時改開「新 workspace」對話框並把內容放進剪貼簿。
+- **複製給 AI 的內容**：同一份內容放到剪貼簿。
+- 沒做「送給正在跑的 agent」：上游的送出路徑會直接送出，和「草稿」的決定衝突。
+
+內容（`monday-task-agent-prompt.ts`）：任務、board · group、monday 連結、時程／Due／狀態／優先順序／人員（有排程資料時）、其他欄位、連結的記錄（**只帶名稱和網址**，其他欄位可能有不該交給 agent 的資料）、描述、子任務、updates 和回覆（由新到舊）。update 的 HTML 轉成文字（`mondayHtmlToText`）：連結寫出完整網址（monday 會把長網址縮成「…」）、圖片寫成「[圖片] 網址」（要登入 monday 才看得到）、@提及不附網址、script／style 不算文字。貼進終端機前去掉控制字元和 bidi 控制字元，長度上限和上游 linked context 一樣 12,000 字，超過時從最舊的 update 截掉並註明。
+
 ## 架構
 
 | 位置 | 內容 |
@@ -64,7 +75,7 @@
 | `src/preload/api/monday-*` | `window.api.monday` |
 | `src/renderer/src/components/monday/` | 頁面、獨立 zustand store（不碰上游的 app store）、月曆／甘特版面模型、詳情面板、board 選擇器 |
 
-上游檔案只加一行分支：`TopLevelView`／`isTopLevelView`／`UiViewHistory`／`TopLevelViewSchema`、右側欄隱藏清單、`AppWorkspaceShell`、`SidebarNav`、`register-core-handlers`、preload 的 `api-types`／`index`；內嵌瀏覽器另改了 `browser-hydration-actions.ts` 兩行（見上）；獨立視窗另改了 `popup-origin-bar-window.ts`（可傳 `show: false`、回傳 `window`）和 `foreground-activation-policy.ts`（`showWindowWithoutStealingFocus` 收 `BaseWindow`）。
+上游檔案只加一行分支：`TopLevelView`／`isTopLevelView`／`UiViewHistory`／`TopLevelViewSchema`、右側欄隱藏清單、`AppWorkspaceShell`、`SidebarNav`、`register-core-handlers`、preload 的 `api-types`／`index`；內嵌瀏覽器另改了 `browser-hydration-actions.ts` 兩行（見上）；獨立視窗另改了 `popup-origin-bar-window.ts`（可傳 `show: false`、回傳 `window`）和 `foreground-activation-policy.ts`（`showWindowWithoutStealingFocus` 收 `BaseWindow`）；交給 AI 另改了 `launch-work-item-direct(-types).ts`（`LaunchableWorkItem.workspaceName`：沒有編號的項目用它當名稱種子）和 `QuickLaunchButton.tsx`（`orderAgents` 加 `export`）。
 
 ## API 用量
 
@@ -72,8 +83,8 @@ monday 的每日上限是**整個帳號共用**。所以：不在背景輪詢；
 
 ## 測試
 
-- 單元：欄位偵測（用兩個真實 board 的欄位當 fixture）、時程計算、月曆分道（lane）與甘特版面、GraphQL 錯誤分類與重試、token 儲存（沒有 keychain 不寫檔）、詳情對應、圖片轉連結。
-- e2e：`tests/e2e/monday-schedule.spec.ts`，搭配 `tests/e2e/helpers/fake-monday-server.ts`。端點覆寫 `ORCA_MONDAY_API_URL_FOR_TESTS` 只在非打包版生效（打包版的 token 只會送到 monday）。
+- 單元：欄位偵測（用兩個真實 board 的欄位當 fixture）、時程計算、月曆分道（lane）與甘特版面、GraphQL 錯誤分類與重試、token 儲存（沒有 keychain 不寫檔）、詳情對應、圖片轉連結、交給 AI 的內容（HTML 轉文字、控制字元、長度上限、連結記錄不帶帳密）和啟動參數（草稿、workspace 名稱、對話框退路）。
+- e2e：`tests/e2e/monday-schedule.spec.ts`，搭配 `tests/e2e/helpers/fake-monday-server.ts`。「交給 AI」選單和複製的內容也在這裡驗證（換掉 `clipboard:writeText` IPC，不碰系統剪貼簿）。端點覆寫 `ORCA_MONDAY_API_URL_FOR_TESTS` 只在非打包版生效（打包版的 token 只會送到 monday）。
 - happy-dom 裡的 DOMPurify 行為不正確，所以 update HTML 的淨化在 e2e（Chromium）裡驗證。
 
 ## 之後可以做
