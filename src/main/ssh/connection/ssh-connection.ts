@@ -605,7 +605,7 @@ export class SshConnection {
     // Why before transport selection: whichever transport runs below must leave through the host's VPN.
     const vpnProxy = await prepareSshVpnRoute(this.target, resolved)
     if (!this.isCurrentConnectAttempt(connectGeneration)) {
-      throw this.createCancelledConnectAttemptError()
+      throw createCancelledConnectAttemptError()
     }
     const usesConfiguredSystemTransport = shouldUseSystemSshTransport(this.target, resolved)
     const requiresSecurityKeyTransport = usesConfiguredSystemTransport

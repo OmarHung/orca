@@ -200,6 +200,7 @@ export const GIT_METHODS = [
   }),
   defineMethod({
     name: 'git.branchAction',
+    permission: 'workspace',
     params: GitBranchActionParams,
     handler: async (params, { runtime }) =>
       runtime.runRuntimeGitBranchAction(params.worktree, params.action)
