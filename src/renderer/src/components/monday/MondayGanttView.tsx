@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import { fromDayNumber, toDayNumber } from '../../../../shared/monday/monday-schedule'
 import {
   buildMonthGrid,
+  isWeekendDay,
   mondayWeekdayIndex,
   type MondayCalendarEntry
 } from './monday-calendar-model'
@@ -167,7 +168,7 @@ function DayColumns({
           key={index}
           className={cn(
             'h-full shrink-0 border-r border-border/40',
-            mondayWeekdayIndex(firstDay + index) >= 5 && 'bg-muted/40'
+            isWeekendDay(firstDay + index) && 'bg-muted/40'
           )}
           style={{ width: DAY_WIDTH }}
         />
