@@ -21108,6 +21108,10 @@
       "truncated": "{{value0}}：只顯示前 {{value1}} 個任務",
       "undated": "{{value0}} 個沒有日期"
     },
+    "undated": {
+      "hide": "隱藏沒有日期的任務",
+      "title": "沒有日期"
+    },
     "view": {
       "gantt": "甘特圖",
       "month": "月曆"
