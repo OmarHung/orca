@@ -55,6 +55,13 @@ afterEach(() => {
 })
 
 describe('direct workspace defaults', () => {
+  it('seeds a numberless item from its workspaceName', async () => {
+    await launch({
+      item: { type: 'issue', number: null, title: 'T', url: 'u', workspaceName: 'monday-2' }
+    })
+    expect(mocks.createWorktree.mock.calls[0]?.[1]).toBe('monday-2')
+  })
+
   it('plans a saved Chat preference before creation under CLI settings and carries both captured views', async () => {
     stageChat()
     mocks.store.settings = { defaultTuiAgent: 'codex', nativeChatProviders: { codex: false } }
