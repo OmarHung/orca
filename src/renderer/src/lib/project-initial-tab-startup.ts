@@ -2,9 +2,7 @@ import { buildAgentStartupPlan } from '@/lib/tui-agent-startup'
 import { tuiAgentToAgentKind } from '@/lib/telemetry'
 import { resolveAgentLaunchExecutionContext } from '@/lib/launch-agent-execution-context'
 import { getExecutionHostIdForWorktree } from '@/lib/worktree-runtime-owner'
-import { isNativeChatTranscriptLocalReadable } from '@/lib/native-chat-transcript-readability'
 import type { WorktreeStartupPayload } from '@/lib/worktree-startup-payload'
-import { resolveInitialNativeChatSessionOptions } from '@/components/native-chat/native-chat-launch-session-options'
 import { findRepoForHost } from '@/store/slices/repo-host-identity'
 import type { useAppStore } from '@/store'
 import { resolveAgentStartupPlanInputs } from '../../../shared/agent-startup-plan-inputs'
@@ -56,21 +54,16 @@ export function buildProjectInitialTabStartup(
   if (!agent) {
     return undefined
   }
-  const { worktreeSshConnectionId, resolvedLaunchPlatform, isRemote } =
-    resolveAgentLaunchExecutionContext(state, { worktreeId })
-  const settings = state.settings ?? {}
-  const sessionOptions = resolveInitialNativeChatSessionOptions(state.settings, {
-    agent,
-    nativeChatTranscriptIsLocalReadable:
-      isNativeChatTranscriptLocalReadable(worktreeSshConnectionId)
+  const { resolvedLaunchPlatform, isRemote } = resolveAgentLaunchExecutionContext(state, {
+    worktreeId
   })
+  const settings = state.settings ?? {}
   const plan = buildAgentStartupPlan({
     ...resolveAgentStartupPlanInputs({
       agent,
       settings,
       platform: resolvedLaunchPlatform,
-      isRemote,
-      sessionOptions
+      isRemote
     }),
     prompt: '',
     allowEmptyPromptLaunch: true
