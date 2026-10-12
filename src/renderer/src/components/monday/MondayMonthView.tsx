@@ -3,6 +3,8 @@ import { cn } from '@/lib/utils'
 import { fromDayNumber, toDayNumber } from '../../../../shared/monday/monday-schedule'
 import {
   buildMonthGrid,
+  isWeekendDay,
+  publicHolidayName,
   type MondayCalendarEntry,
   type MondayMonthGrid
 } from './monday-calendar-model'
@@ -146,19 +148,26 @@ function DayHeader({
   const iso = fromDayNumber(day)
   const isToday = iso === today
   const inMonth = day >= grid.monthFirstDay && day <= grid.monthLastDay
+  const holiday = publicHolidayName(day)
   return (
-    <div className="flex items-center gap-1 px-1.5 pt-1 text-xs">
+    <div className="flex min-w-0 items-center gap-1 px-1.5 pt-1 text-xs">
       <span
         className={cn(
-          'flex h-5 min-w-5 items-center justify-center rounded-full px-1 tabular-nums',
+          'flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 tabular-nums',
           isToday && 'bg-primary font-semibold text-primary-foreground',
-          !isToday && !inMonth && 'text-muted-foreground/60'
+          !isToday && holiday && 'font-semibold text-calendar-holiday',
+          !isToday && !holiday && !inMonth && 'text-muted-foreground/60'
         )}
       >
         {Number(iso.slice(8, 10))}
       </span>
       {iso.endsWith('-01') ? (
-        <span className="text-muted-foreground">{formatMondayShortMonth(day)}</span>
+        <span className="shrink-0 text-muted-foreground">{formatMondayShortMonth(day)}</span>
+      ) : null}
+      {holiday ? (
+        <span className="truncate text-[11px] font-medium text-calendar-holiday" title={holiday}>
+          {holiday}
+        </span>
       ) : null}
     </div>
   )
@@ -177,15 +186,20 @@ function WeekRow(props: {
   return (
     <div className="relative min-h-28 border-b border-border">
       <div aria-hidden className="absolute inset-0 grid grid-cols-7">
-        {days.map((day, index) => (
-          <div
-            key={day}
-            className={cn(
-              'border-r border-border last:border-r-0',
-              (day < grid.monthFirstDay || day > grid.monthLastDay || index >= 5) && 'bg-muted/30'
-            )}
-          />
-        ))}
+        {days.map((day) => {
+          const isHoliday = publicHolidayName(day) !== null
+          const isMuted = day < grid.monthFirstDay || day > grid.monthLastDay || isWeekendDay(day)
+          return (
+            <div
+              key={day}
+              className={cn(
+                'border-r border-border last:border-r-0',
+                isHoliday && 'bg-calendar-holiday-background',
+                !isHoliday && isMuted && 'bg-muted/30'
+              )}
+            />
+          )
+        })}
       </div>
       <div className="relative grid grid-cols-7">
         {days.map((day) => (
