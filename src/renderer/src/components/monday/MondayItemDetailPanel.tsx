@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { ExternalLink, Loader2, RotateCw, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -14,6 +14,7 @@ import { mondayScheduleWarnings } from './MondayItemHoverSummary'
 import { MondayColumnValue } from './MondayColumnValue'
 import { MondayItemUpdates } from './MondayItemUpdates'
 import { MondayLinkedItemRows } from './MondayLinkedItems'
+import { MondayTaskAgentMenu } from './MondayTaskAgentMenu'
 import { MondayDueFlag, MondayLabelBadge, mondayDueNeedsAttention } from './MondayScheduleVisuals'
 
 export const MONDAY_DETAIL_PANEL_WIDTH = 440
@@ -244,6 +245,11 @@ export function MondayItemDetailPanel(props: {
   const url = entry?.item.url ?? detail?.url ?? ''
   const groupTitle = entry?.item.groupTitle ?? detail?.groupTitle ?? ''
   const groupColor = entry?.item.groupColor ?? detail?.groupColor ?? null
+  const agentTask = useMemo(() => ({ id: itemId, name, url }), [itemId, name, url])
+  const agentPromptInput = useMemo(
+    () => (detail ? { detail, entry, board } : null),
+    [detail, entry, board]
+  )
   return (
     <aside
       className="flex shrink-0 flex-col border-l border-border bg-background"
@@ -270,6 +276,9 @@ export function MondayItemDetailPanel(props: {
               {groupTitle ? ` · ${groupTitle}` : ''}
             </span>
           </div>
+        </div>
+        <div className="shrink-0 pr-1 pt-0.5">
+          <MondayTaskAgentMenu task={agentTask} promptInput={agentPromptInput} />
         </div>
         {url ? (
           <IconAction

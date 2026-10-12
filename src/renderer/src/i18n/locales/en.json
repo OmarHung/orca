@@ -22244,6 +22244,29 @@
       "refresh": "Refresh from monday",
       "retry": "Retry"
     },
+    "agent": {
+      "trigger": "Hand to AI",
+      "inWorkspace": "New agent in a workspace",
+      "noWorkspaces": "No workspaces yet",
+      "detecting": "Finding agents…",
+      "noAgents": "No agents on this host",
+      "newWorkspace": "New workspace in a project",
+      "copy": "Copy the task for an agent",
+      "copied": "Copied the task for an agent",
+      "copyFailed": "Could not copy the task",
+      "workspaceUnavailable": "Could not open that workspace",
+      "launchFailed": "Could not start the agent",
+      "composerFallback": "This project needs a few choices first. The task is copied: paste it to the agent once the workspace opens.",
+      "prompt": {
+        "intro": "Please work on this monday task:",
+        "task": "Task",
+        "board": "Board",
+        "link": "monday link",
+        "subitems": "Subitems",
+        "updates": "Updates (newest first)",
+        "truncated": "[Too long, the rest is left out. The monday link above has everything.]"
+      }
+    },
     "boards": {
       "choose": "Choose boards",
       "count": "{{value0}} board(s)",

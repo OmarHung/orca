@@ -20986,6 +20986,29 @@
       "refresh": "從 monday 重新讀取",
       "retry": "重試"
     },
+    "agent": {
+      "trigger": "交給 AI",
+      "inWorkspace": "在 workspace 開新 agent",
+      "noWorkspaces": "還沒有 workspace",
+      "detecting": "正在找 agent…",
+      "noAgents": "這台主機沒有可用的 agent",
+      "newWorkspace": "在專案裡開新 workspace",
+      "copy": "複製給 AI 的內容",
+      "copied": "已複製給 AI 的內容",
+      "copyFailed": "無法複製",
+      "workspaceUnavailable": "無法開啟這個 workspace",
+      "launchFailed": "無法啟動 agent",
+      "composerFallback": "這個專案要先在對話框確認設定。task 內容已複製，workspace 開好後貼給 agent。",
+      "prompt": {
+        "intro": "請處理這個 monday task：",
+        "task": "任務",
+        "board": "Board",
+        "link": "monday 連結",
+        "subitems": "子任務",
+        "updates": "Updates（由新到舊）",
+        "truncated": "［內容太長，後面省略；完整內容見上方的 monday 連結］"
+      }
+    },
     "boards": {
       "choose": "選擇 board",
       "count": "{{value0}} 個 board",

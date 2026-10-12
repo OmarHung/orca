@@ -137,7 +137,7 @@ export async function launchWorkItemDirect(args: LaunchWorkItemDirectArgs): Prom
   const workspaceName = getWorkspaceSeedName({
     explicitName: item.linearIdentifier
       ? getLinearIssueWorkspaceName({ identifier: item.linearIdentifier, title: item.title })
-      : (workspaceIntentName?.seedName ?? ''),
+      : (workspaceIntentName?.seedName ?? item.workspaceName ?? ''),
     prompt: '',
     linkedIssueNumber: itemType === 'issue' ? (itemNumber ?? null) : null,
     linkedPR: itemType === 'pr' ? (itemNumber ?? null) : null

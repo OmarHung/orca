@@ -22047,6 +22047,29 @@
       "refresh": "从 monday 重新读取",
       "retry": "重试"
     },
+    "agent": {
+      "trigger": "交给 AI",
+      "inWorkspace": "在 workspace 开新 agent",
+      "noWorkspaces": "还没有 workspace",
+      "detecting": "正在查找 agent…",
+      "noAgents": "这台主机没有可用的 agent",
+      "newWorkspace": "在项目里新建 workspace",
+      "copy": "复制给 AI 的内容",
+      "copied": "已复制给 AI 的内容",
+      "copyFailed": "无法复制",
+      "workspaceUnavailable": "无法打开这个 workspace",
+      "launchFailed": "无法启动 agent",
+      "composerFallback": "这个项目需要先在对话框确认设置。task 内容已复制，workspace 打开后粘贴给 agent。",
+      "prompt": {
+        "intro": "请处理这个 monday task：",
+        "task": "任务",
+        "board": "Board",
+        "link": "monday 链接",
+        "subitems": "子任务",
+        "updates": "Updates（由新到旧）",
+        "truncated": "［内容太长，后面省略；完整内容见上方的 monday 链接］"
+      }
+    },
     "boards": {
       "choose": "选择 board",
       "count": "{{value0}} 个 board",
