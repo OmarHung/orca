@@ -166,6 +166,8 @@
   --color-status-warning-foreground: var(--status-warning-foreground);
   --color-callout-note: var(--callout-note);
   --color-callout-important: var(--callout-important);
+  --color-calendar-holiday: var(--calendar-holiday);
+  --color-calendar-holiday-background: var(--calendar-holiday-background);
   --color-run-mode-debug: var(--run-mode-debug);
   --color-run-mode-build: var(--run-mode-build);
   --color-run-mode-test: var(--run-mode-test);
@@ -302,6 +304,9 @@
   --unread: var(--color-blue-500);
   /* The unread dot on an inverted surface (tips): blue-500 keeps 3:1 on both the near-black and near-white inverse. */
   --unread-inverse: var(--color-blue-500);
+  /* Public holidays in the monday calendars: red like a printed calendar, not an error state. */
+  --calendar-holiday: var(--color-red-600);
+  --calendar-holiday-background: color-mix(in srgb, var(--calendar-holiday) 12%, transparent);
   /* Run widget modes; a plain run is --status-success and Stop is --destructive. */
   --run-mode-debug: var(--color-orange-600);
   --run-mode-build: var(--color-blue-600);
@@ -429,6 +434,8 @@
   --question-card-border-mix: 16%;
   --question-option-border-mix: 12%;
   --unread: var(--color-blue-400);
+  --calendar-holiday: var(--color-red-400);
+  --calendar-holiday-background: color-mix(in srgb, var(--calendar-holiday) 16%, transparent);
   --run-mode-debug: var(--color-orange-400);
   --run-mode-build: var(--color-blue-400);
   --run-mode-test: var(--color-cyan-400);
