@@ -1,11 +1,13 @@
 import {
   computeMondayItemSchedule,
+  fromDayNumber,
   hasMondaySchedule,
   toDayNumber,
   type MondayItemSchedule
 } from '../../../../shared/monday/monday-schedule'
 import type { MondaySchedule, MondayScheduleItem } from '../../../../shared/monday/monday-types'
 import { matchesMondayStatusFilter } from './monday-status-filter'
+import { TAIWAN_PUBLIC_HOLIDAYS } from './taiwan-public-holidays'
 
 export type MondayCalendarEntry = {
   item: MondayScheduleItem
@@ -65,6 +67,10 @@ export function mondayWeekdayIndex(day: number): number {
 export function isWeekendDay(day: number): boolean {
   const index = mondayWeekdayIndex(day)
   return index === 0 || index === 6
+}
+
+export function publicHolidayName(day: number): string | null {
+  return TAIWAN_PUBLIC_HOLIDAYS[fromDayNumber(day)] ?? null
 }
 
 export type MondayMonthGrid = {

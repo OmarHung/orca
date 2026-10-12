@@ -6,6 +6,7 @@ import {
   buildMonthGrid,
   isWeekendDay,
   mondayWeekdayIndex,
+  publicHolidayName,
   shiftMonth,
   type MondayCalendarEntry
 } from './monday-calendar-model'
@@ -73,6 +74,13 @@ describe('month grid', () => {
     expect(mondayWeekdayIndex(sunday + 6)).toBe(6)
     const weekend = Array.from({ length: 7 }, (_, index) => isWeekendDay(sunday + index))
     expect(weekend).toEqual([true, false, false, false, false, false, true])
+  })
+
+  it('names Taiwan public holidays, including make-up days, and skips plain weekends', () => {
+    expect(publicHolidayName(toDayNumber('2026-10-10'))).toBe('國慶日')
+    expect(publicHolidayName(toDayNumber('2026-10-09'))).toBe('補假')
+    expect(publicHolidayName(toDayNumber('2026-10-11'))).toBeNull()
+    expect(publicHolidayName(toDayNumber('2026-10-12'))).toBeNull()
   })
 
   it('shifts across year boundaries', () => {
