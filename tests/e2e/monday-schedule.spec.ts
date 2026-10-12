@@ -198,29 +198,40 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
     expect(await activeWorkspaceTabCount(orcaPage)).toBe(projectTabsBefore)
     await expect(orcaPage.getByTestId('monday-page')).toBeVisible()
 
-    // The browser can move to the floating window, which stays over every page.
+    // The browser moves to a separate OS window, never into the floating workspace.
     await orcaPage
       .getByTestId('monday-linked-item')
       .getByRole('button', { name: 'https://www.example.org/' })
       .click()
-    await browserPanel.getByRole('button', { name: 'Move to floating window' }).click()
+    await browserPanel.getByRole('button', { name: 'Open in separate window' }).click()
     await expect(browserPanel).toHaveCount(0)
-    const floatingPanel = orcaPage.locator('[data-floating-terminal-panel][aria-hidden="false"]')
-    await expect(floatingPanel).toBeVisible()
-    await expect(floatingPanel.locator('webview')).toBeVisible()
-    await expect
-      .poll(() =>
-        orcaPage.evaluate(
-          (worktreeId) =>
-            (window.__store!.getState().browserTabsByWorktree[worktreeId] ?? []).map(
-              (tab) => tab.url
-            ),
-          FLOATING_TERMINAL_WORKTREE_ID
-        )
-      )
-      .toContain('https://www.example.org/')
     expect(await mondayBrowserUrls(orcaPage)).toEqual([])
-    await orcaPage.screenshot({ path: testInfo.outputPath('monday-floating.png') })
+    await expect
+      .poll(
+        () =>
+          electronApp.evaluate(({ webContents }) =>
+            webContents
+              .getAllWebContents()
+              .filter(
+                (contents) =>
+                  contents.getType() !== 'webview' &&
+                  contents.getURL().startsWith('https://www.example.org/')
+              )
+              // The window shares the browser profile, so the monday login carries over.
+              .map((contents) => contents.session.storagePath?.includes('orca-browser') ?? false)
+          ),
+        { timeout: 15_000 }
+      )
+      .toEqual([true])
+    await expect(
+      orcaPage.locator('[data-floating-terminal-panel][aria-hidden="false"]')
+    ).toHaveCount(0)
+    expect(
+      await orcaPage.evaluate(
+        (worktreeId) => (window.__store!.getState().browserTabsByWorktree[worktreeId] ?? []).length,
+        FLOATING_TERMINAL_WORKTREE_ID
+      )
+    ).toBe(0)
 
     // The token only ever goes to the monday endpoint, from the main process.
     expect(new Set(server.tokens)).toEqual(new Set(['test-token']))

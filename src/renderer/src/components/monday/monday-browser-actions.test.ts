@@ -4,7 +4,7 @@ import type { BrowserPage, BrowserWorkspace } from '../../../../shared/browser-w
 // The store pulls in the whole renderer; the planner under test never touches it.
 vi.mock('@/store', () => ({ useAppStore: { getState: vi.fn() } }))
 
-import { mondayBrowserHandoff, planMondayLinkOpen } from './monday-browser-actions'
+import { planMondayBrowserPopOut, planMondayLinkOpen } from './monday-browser-actions'
 
 const ITEM_URL = 'https://acme.monday.com/boards/1/pulses/2'
 
@@ -80,28 +80,36 @@ describe('planMondayLinkOpen', () => {
   })
 })
 
-describe('mondayBrowserHandoff', () => {
-  it('keeps the page order and which page was showing', () => {
+describe('planMondayBrowserPopOut', () => {
+  it('moves the page that is showing and keeps the others docked', () => {
     const pages = [page('p1', ITEM_URL), page('p2', 'https://example.org/')]
-    expect(mondayBrowserHandoff({ ...tab(), activePageId: 'p2' }, pages)).toEqual({
-      urls: [ITEM_URL, 'https://example.org/'],
-      activeIndex: 1
+    expect(planMondayBrowserPopOut({ ...tab(), activePageId: 'p2' }, pages)).toEqual({
+      url: 'https://example.org/',
+      pageId: 'p2'
     })
   })
 
-  it('falls back to the first page when the active one is unknown', () => {
+  it('closes the whole browser when its only page moves', () => {
     expect(
-      mondayBrowserHandoff({ ...tab(), activePageId: 'gone' }, [page('p1', ITEM_URL)])
-    ).toEqual({ urls: [ITEM_URL], activeIndex: 0 })
+      planMondayBrowserPopOut({ ...tab(), activePageId: 'p1' }, [page('p1', ITEM_URL)])
+    ).toEqual({ url: ITEM_URL, pageId: null })
   })
 
-  it('leaves out pages that are not web addresses', () => {
+  it('falls back to the first page when the active one is unknown', () => {
+    const pages = [page('p1', ITEM_URL), page('p2', 'https://example.org/')]
+    expect(planMondayBrowserPopOut({ ...tab(), activePageId: 'gone' }, pages)).toEqual({
+      url: ITEM_URL,
+      pageId: 'p1'
+    })
+  })
+
+  it('does nothing for a page that is not a web address', () => {
     expect(
-      mondayBrowserHandoff(tab(), [page('p1', 'about:blank'), page('p2', ITEM_URL)]).urls
-    ).toEqual([ITEM_URL])
+      planMondayBrowserPopOut({ ...tab(), activePageId: 'p1' }, [page('p1', 'about:blank')])
+    ).toBeNull()
   })
 
   it('uses the tab address when no page record is left', () => {
-    expect(mondayBrowserHandoff(tab(), [])).toEqual({ urls: [ITEM_URL], activeIndex: 0 })
+    expect(planMondayBrowserPopOut(tab(), [])).toEqual({ url: ITEM_URL, pageId: null })
   })
 })
