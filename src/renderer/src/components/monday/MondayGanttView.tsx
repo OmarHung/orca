@@ -5,6 +5,7 @@ import {
   buildMonthGrid,
   isWeekendDay,
   mondayWeekdayIndex,
+  publicHolidayName,
   type MondayCalendarEntry
 } from './monday-calendar-model'
 import { formatMondayShortMonth, mondayWeekdayNames } from './monday-date-format'
@@ -40,10 +41,15 @@ function GanttHeader({ firstDay, days }: { firstDay: number; days: number }): Re
         const day = firstDay + index
         const iso = fromDayNumber(day)
         const showMonth = index === 0 || iso.endsWith('-01')
+        const holiday = publicHolidayName(day)
         return (
           <div
             key={day}
-            className="flex shrink-0 flex-col items-center py-1 text-[11px] leading-tight text-muted-foreground"
+            title={holiday ?? undefined}
+            className={cn(
+              'flex shrink-0 flex-col items-center py-1 text-[11px] leading-tight text-muted-foreground',
+              holiday && 'bg-calendar-holiday-background font-semibold text-calendar-holiday'
+            )}
             style={{ width: DAY_WIDTH }}
           >
             <span className="h-3.5 whitespace-nowrap font-semibold text-foreground">
@@ -163,16 +169,20 @@ function DayColumns({
       className="pointer-events-none absolute inset-y-0 flex"
       style={{ left: LABEL_WIDTH }}
     >
-      {Array.from({ length: days }, (_, index) => (
-        <div
-          key={index}
-          className={cn(
-            'h-full shrink-0 border-r border-border/40',
-            isWeekendDay(firstDay + index) && 'bg-muted/40'
-          )}
-          style={{ width: DAY_WIDTH }}
-        />
-      ))}
+      {Array.from({ length: days }, (_, index) => {
+        const isHoliday = publicHolidayName(firstDay + index) !== null
+        return (
+          <div
+            key={index}
+            className={cn(
+              'h-full shrink-0 border-r border-border/40',
+              isHoliday && 'bg-calendar-holiday-background',
+              !isHoliday && isWeekendDay(firstDay + index) && 'bg-muted/40'
+            )}
+            style={{ width: DAY_WIDTH }}
+          />
+        )
+      })}
       {todayCol >= 0 && todayCol < days ? (
         <div
           className="absolute inset-y-0 w-0.5 bg-primary/60"
