@@ -4,6 +4,7 @@ import type { MondaySchedule, MondayScheduleItem } from '../../../../shared/mond
 import {
   buildMondayEntries,
   buildMonthGrid,
+  isWeekendDay,
   mondayWeekdayIndex,
   shiftMonth,
   type MondayCalendarEntry
@@ -58,12 +59,20 @@ function entries(items: MondayScheduleItem[], hideDone = false): MondayCalendarE
 }
 
 describe('month grid', () => {
-  it('covers October 2026 with Monday-start weeks', () => {
+  it('covers October 2026 with Sunday-start weeks', () => {
     const grid = buildMonthGrid('2026-10-01')
-    expect(fromDayNumber(grid.firstDay)).toBe('2026-09-28')
-    expect(fromDayNumber(grid.lastDay)).toBe('2026-11-01')
+    expect(fromDayNumber(grid.firstDay)).toBe('2026-09-27')
+    expect(fromDayNumber(grid.lastDay)).toBe('2026-10-31')
     expect(grid.weekStarts).toHaveLength(5)
     expect(grid.weekStarts.every((day) => mondayWeekdayIndex(day) === 0)).toBe(true)
+  })
+
+  it('indexes weekdays from Sunday and flags only Saturday and Sunday as weekend', () => {
+    const sunday = toDayNumber('2026-10-11')
+    expect(mondayWeekdayIndex(sunday)).toBe(0)
+    expect(mondayWeekdayIndex(sunday + 6)).toBe(6)
+    const weekend = Array.from({ length: 7 }, (_, index) => isWeekendDay(sunday + index))
+    expect(weekend).toEqual([true, false, false, false, false, false, true])
   })
 
   it('shifts across year boundaries', () => {
