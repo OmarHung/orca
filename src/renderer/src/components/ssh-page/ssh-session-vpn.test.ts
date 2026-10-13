@@ -91,7 +91,9 @@ describe('openSshSession through a VPN', () => {
       vi.fn(async () => true)
     )
 
-    expect(mocks.queueTabStartupCommand).toHaveBeenCalledWith('tab-1', { command: 'ssh Web-Staging' })
+    expect(mocks.queueTabStartupCommand).toHaveBeenCalledWith('tab-1', {
+      command: 'ssh Web-Staging'
+    })
   })
 
   it('opens nothing and stays quiet when the user declines the VPN start', async () => {

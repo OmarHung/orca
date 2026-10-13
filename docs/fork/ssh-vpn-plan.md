@@ -1,7 +1,7 @@
 # SSH／SFTP 自動走 OpenVPN：實作計畫（fork 專屬）
 
 > 狀態：全部完成（2026-09-29），含帳密登入；紀錄見 §9，使用說明與已知限制見 §10
-> 分支：`feat/ssh-vpn`（worktree `<worktree>`），每個 Phase 完成後合回 `omar/custom`
+> 分支：`feat/ssh-vpn`，每個 Phase 完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
 ## 1. 目標
@@ -262,9 +262,9 @@ ORCA_TEST_SSH_VPN_DOCKER=1 node_modules/.bin/vitest run --config config/vitest.c
 
 ### Phase 0 之後的修正（2026-09-29）
 
-用使用者的 `hq.ovpn` 在 dev 實測時發現：
+用使用者自己的 .ovpn 在 dev 實測時發現：
 - **容器裡的 `nc` 殘留**：`docker exec` 的 client 被殺掉時，容器裡的 `nc` 不會跟著結束。連不到的主機每次重試都會留下一個卡在 connect 的 `nc`，閒置計數永遠不會歸零。當時改成 `nc -w 30`，以為只限制建立連線；2026-10-01 發現它其實會砍掉閒置 60 秒的連線，已拿掉（見下方「閒置 60 秒斷線」）。修正後，閒置 10 分鐘自動中斷連線在 dev 實際生效。
-- 實測結果：hq VPN 本身正常（容器出口 IP 跟 Mac 不同，Mac 的網路不變），但 Web-Staging 的防火牆沒有放行 hq 的出口 IP，所以連不上。使用者的其他 .ovpn（例如「branch-office」、ddns）都需要帳密，第一版不支援。
+- 實測結果：VPN 本身正常（容器出口 IP 跟 Mac 不同，Mac 的網路不變），但目標主機的防火牆沒有放行這個 VPN 的出口 IP，所以連不上。使用者其他的 .ovpn 都需要帳密，第一版不支援。
 - `ssh-vpn.json` 改成檔案 mtime 變了就重新讀取，手動編輯不用重開。
 
 ### Phase 1（2026-09-29）
@@ -307,7 +307,7 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 
 ### 帳密登入（2026-09-29，使用者要求，原本不在第一版範圍）
 
-使用者手上大部分 .ovpn（ASUS 路由器、「branch-office」）都用 `auth-user-pass`。
+使用者手上大部分 .ovpn（包括 ASUS 路由器匯出的）都用 `auth-user-pass`。
 - **解析**：`auth-user-pass` 沒有帶檔案時標記「需要帳密」並拿掉這行；帶檔案時跟憑證一樣複製進容器；拿掉 `auth-retry`（`interact` 會停在沒人能回答的提示）。MFA（`static-challenge`）仍然不支援。
 - **表單**：選擇 .ovpn 後由 main 解析（`sshVpn:inspectOvpn`）。需要帳密時才顯示帳號、密碼（可留空，連線時再問）和保存方式（系統鑰匙串／到 Orca 關閉／每次都問，沒有鑰匙串時不提供第一種）。
 - **保存**：`SshVpnPasswordVault` 用既有的 `SealedSecretFile`（系統鑰匙串加密，不存明文）或記憶體；`ssh-vpn.json` 只存帳號。
@@ -331,7 +331,7 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 
 ### Phase 3：收尾（2026-09-29）——已完成
 
-- 使用者用自己的「branch-office.ovpn」（ASUS 路由器，憑證加帳密）實測成功。過程中發現並修正：ASUS 會推送 Windows 專用的 `block-outside-dns`，OpenVPN 在 Linux 上只記一行「Options error」警告就繼續，但 manager 把所有「Options error」都當成致命錯誤。現在只有 `AUTH_FAILED` 和「Exiting due to fatal error」會讓啟動失敗，另外加上 `--pull-filter ignore block-outside-dns`；測試伺服器也改成會推送這個選項。
+- 使用者用自己的 .ovpn（ASUS 路由器，憑證加帳密）實測成功。過程中發現並修正：ASUS 會推送 Windows 專用的 `block-outside-dns`，OpenVPN 在 Linux 上只記一行「Options error」警告就繼續，但 manager 把所有「Options error」都當成致命錯誤。現在只有 `AUTH_FAILED` 和「Exiting due to fatal error」會讓啟動失敗，另外加上 `--pull-filter ignore block-outside-dns`；測試伺服器也改成會推送這個選項。
 - 刪除主機後殘留的指派：VPN UI 每次載入時，依 SSH 主機清單清掉（不必掛在 upstream 的刪除流程上；重新加入的主機會拿到新的 id）。
 - **更正 Phase 0 對 `orca serve` 的推測**：main 的 SSH 連線都由 `registerSshHandlers` 建立，它只在有視窗的模式執行，而且在 `registerCoreHandlers`（VPN 服務註冊的地方）之後（`desktop-startup-ordering.test.ts` 保證這個順序）。沒有視窗時 main 不建立 SSH 連線，所以不存在繞過 VPN 的路徑，不需要另外處理。
 
@@ -349,7 +349,7 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 
 ### 借用已在執行的 VPN 容器（2026-10-01，使用者要求）
 
-- 起因：使用者已經用 `a SOCKS VPN container` 在 Docker 裡跑辦公室 VPN（給 Chrome 走 SOCKS）。Orca 再用同一份 .ovpn 起一條，伺服器沒開 `duplicate-cn` 時兩邊會互踢。
+- 起因：使用者已經在 Docker 裡跑一個 VPN 容器（給瀏覽器走 SOCKS）。Orca 再用同一份 .ovpn 起一條，伺服器沒開 `duplicate-cn` 時兩邊會互踢。
 - 設定檔多一種 `kind: 'container'`，只存容器名稱（`containerName`）。原本的設定檔沒有 `kind`，一律當 .ovpn，檔案格式不用遷移。
 - 不走 SOCKS：三條路（ssh2、系統 ssh 的 ProxyCommand、資料庫）本來就是 `docker exec -i --user tunnel <容器> nc …`，借用容器只換容器名稱，連線程式碼不動。SOCKS 的話，SSH 頁終端機需要會講 SOCKS 的 nc（Windows 沒有），也無法確認 fail closed。
 - Orca 不啟動、停止、刪除借用的容器，也沒有閒置斷線；關閉 Orca 時不碰它（`runningContainers` 只列 Orca 自己的）。「Disconnect」只是讓 Orca 不再把它當 ready。
@@ -357,7 +357,7 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 - 存檔時也會檢查（不要求 healthy），所以容器沒照規則設定時存不進去。
 - 不跳啟動確認框（沒有東西要啟動）；表單直接顯示每條連線會跑的指令。
 - 程式碼：`ssh-vpn-borrowed-containers.ts`（狀態、重新檢查）由 `SshVpnManager` 依 `kind` 轉交；同一個 id 換種類時先停掉另一邊。介面：表單上方切換「OpenVPN 設定檔／我已在執行的容器」，`SshVpnContainerField.tsx` 列出 `docker ps`（排除 Orca 自己的容器）；列表列只有「檢查」按鈕。
-- socks-vpn 那邊：Dockerfile 加 `iptables` 和 `tunnel` 使用者，`entrypoint.sh` 在啟動 OpenVPN 前跑 `tunnel-firewall.sh`（規則同 Orca；重啟時從 `/tmp/resolv.conf.orig` 讀 Docker 自己的 DNS）。要重新 build 容器才生效。
+- 那個 SOCKS 容器那邊：Dockerfile 加 `iptables` 和 `tunnel` 使用者，`entrypoint.sh` 在啟動 OpenVPN 前跑 `tunnel-firewall.sh`（規則同 Orca；重啟時從 `/tmp/resolv.conf.orig` 讀 Docker 自己的 DNS）。要重新 build 容器才生效。
 
 ### 閒置 60 秒斷線（2026-10-01，使用者回報）
 
@@ -386,7 +386,7 @@ Phase 1 完成後，請一個 reviewer 讀過整個 diff。沒有 critical，以
 - 沒有連線使用時，閒置設定的分鐘數（預設 10）後自動斷線；關閉 Orca 時一定移除容器。當機留下的容器會在下次啟動時清掉。
 - VPN 起不來、設定檔壞掉、或主機的 VPN 設定檔不見時，一律拒絕連線，不會改成直接連線。
 
-**借用已在執行的容器**：新增設定檔時選「我已在執行的容器」，再從清單選容器。容器裡要有 `tunnel` 使用者和上面那組防火牆規則（socks-vpn 已內建），Orca 每次連線前都會檢查，不合就拒絕連線。容器的啟停由你自己管理。
+**借用已在執行的容器**：新增設定檔時選「我已在執行的容器」，再從清單選容器。容器裡要有 `tunnel` 使用者和上面那組防火牆規則，Orca 每次連線前都會檢查，不合就拒絕連線。容器的啟停由你自己管理。
 
 **資料庫連線**：新增或編輯資料庫連線時，在「VPN」欄位選設定檔即可（SQLite 沒有這個欄位）。主機和埠要填 VPN 內部看到的位址。連線期間 main 會開一個 `127.0.0.1` 的本機 port 接到 VPN，本機其他程式在這段時間也能連到它（跟資料庫的 SSH 通道一樣）。
 

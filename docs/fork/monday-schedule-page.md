@@ -32,7 +32,7 @@
 
 工具列的下拉選單選一個人（或「全部人」），預設是 token 所屬的帳號。篩選在 monday 端做，用人員欄的 `person-<使用者 ID>` 規則，**不用** monday 的 `assigned_to_me`：那個值代表 token 的擁有者，而 token 不一定是使用 Orca 的人的（例如訪客帳號不能產生 token，只能用同事的）。
 
-選了人時可以勾「也顯示沒有指派人的任務」（預設開）：個人 board（例如「Personal Tasks」）大部分任務沒填人員，只看指派的會幾乎全部被濾掉。人員清單來自 monday 的 `users`，排除停用、刪除的帳號和 monday 的 AI agent，每次連線只讀一次。
+選了人時可以勾「也顯示沒有指派人的任務」（預設開）：個人 board 大部分任務沒填人員，只看指派的會幾乎全部被濾掉；團隊的專案 board 則幾乎都有填。人員清單來自 monday 的 `users`，排除停用、刪除的帳號和 monday 的 AI agent，每次連線只讀一次。
 
 ## 依狀態篩選（2026-10-06）
 
@@ -44,7 +44,7 @@
 
 ## 內嵌瀏覽器（2026-10-06）
 
-頁面裡的連結（在 monday 開啟、開啟 monday、Client CRM 網址、欄位與 update 裡的連結、token 說明）都開在 monday 頁右側的 Orca 瀏覽器，不切離頁面；**Shift+點擊**改用系統瀏覽器，面板標題列也有「用系統瀏覽器開啟」。
+頁面裡的連結（在 monday 開啟、開啟 monday、連結記錄的網址、欄位與 update 裡的連結、token 說明）都開在 monday 頁右側的 Orca 瀏覽器，不切離頁面；**Shift+點擊**改用系統瀏覽器，面板標題列也有「用系統瀏覽器開啟」。
 
 - 瀏覽器分頁一定要屬於某個 workspace，所以加了第三個本機虛擬 workspace `global-monday-browser`（`MONDAY_BROWSER_WORKTREE_ID`，和浮動終端機、SSH 頁同一張清單），路由、清理、paired web client 同步都照虛擬 workspace 處理。桌面版的虛擬 workspace 本來就能開瀏覽器（只有 paired web client 不行），浮動面板就是先例；面板用自己的 `MondayBrowserSlot`（上游 v1.4.224 拿掉了 `FloatingBrowserSlot`）。
 - 面板顯示與否＝這個 workspace 裡有沒有瀏覽器分頁，不另存狀態；關閉面板就是關掉那個分頁。同一個網址已經開著就切過去，否則在同一個瀏覽器裡多開一頁。只接受 http(s)。
@@ -86,7 +86,7 @@ monday 的每日上限是**整個帳號共用**。所以：不在背景輪詢；
 
 ## 測試
 
-- 單元：欄位偵測（用兩個真實 board 的欄位當 fixture）、時程計算、月曆分道（lane）與甘特版面、GraphQL 錯誤分類與重試、token 儲存（沒有 keychain 不寫檔）、詳情對應、圖片轉連結、交給 AI 的內容（HTML 轉文字、控制字元、長度上限、連結記錄不帶帳密）和啟動參數（草稿、workspace 名稱、對話框退路）。
+- 單元：欄位偵測（用兩種常見 board 的欄位形狀當 fixture）、時程計算、月曆分道（lane）與甘特版面、GraphQL 錯誤分類與重試、token 儲存（沒有 keychain 不寫檔）、詳情對應、圖片轉連結、交給 AI 的內容（HTML 轉文字、控制字元、長度上限、連結記錄只帶名稱和網址）和啟動參數（草稿、workspace 名稱、對話框退路）。
 - e2e：`tests/e2e/monday-schedule.spec.ts`，搭配 `tests/e2e/helpers/fake-monday-server.ts`。「交給 AI」選單和複製的內容也在這裡驗證（換掉 `clipboard:writeText` IPC，不碰系統剪貼簿）。端點覆寫 `ORCA_MONDAY_API_URL_FOR_TESTS` 只在非打包版生效（打包版的 token 只會送到 monday）。
 - happy-dom 裡的 DOMPurify 行為不正確，所以 update HTML 的淨化在 e2e（Chromium）裡驗證。
 
