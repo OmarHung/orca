@@ -98,9 +98,7 @@ test('offers Build/Run/Publish for .NET and Node projects in the file tree and r
   await orcaPage.getByRole('menuitem', { name: 'More Run/Debug' }).hover()
   await orcaPage.getByRole('menuitem', { name: 'Publish (FolderProfile)' }).click()
   const dialog = orcaPage.getByRole('dialog').filter({ hasText: "Publish 'WebApp'?" })
-  await expect(dialog).toContainText(
-    'dotnet publish WebApp.csproj -p:PublishProfile=FolderProfile'
-  )
+  await expect(dialog).toContainText('dotnet publish WebApp.csproj -p:PublishProfile=FolderProfile')
   await dialog.getByRole('button', { name: 'Cancel' }).click()
 
   // Node: the script runs with the project's package manager, inside the project folder.
