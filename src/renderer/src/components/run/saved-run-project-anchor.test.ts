@@ -4,14 +4,14 @@ import { comparablePath, savedRunAnchor } from './saved-run-project-anchor'
 describe('savedRunAnchor', () => {
   it('ties a .NET folder publish to its project file, relative or absolute', () => {
     const base = { type: 'dotnet-publish' as const, id: 'p', name: 'Publish' }
-    expect(
-      savedRunAnchor({ ...base, projectFile: 'projects/WebApp/WebApp.csproj' }, '/w')
-    ).toEqual({
-      ecosystem: 'dotnet',
-      kind: 'publish',
-      by: 'projectFile',
-      path: 'projects/webapp/webapp.csproj'
-    })
+    expect(savedRunAnchor({ ...base, projectFile: 'projects/WebApp/WebApp.csproj' }, '/w')).toEqual(
+      {
+        ecosystem: 'dotnet',
+        kind: 'publish',
+        by: 'projectFile',
+        path: 'projects/webapp/webapp.csproj'
+      }
+    )
     expect(
       savedRunAnchor(
         { ...base, projectFile: '${workspaceFolder}/projects/WebApp/WebApp.csproj' },
