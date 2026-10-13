@@ -120,3 +120,27 @@ It converts `zh.json` with OpenCC (`cn → twp`: characters plus Taiwan phrasing
 (智能体→代理, 终端→終端機, 通过→透過 where it means "via"). To fix a wording, add an override
 there rather than editing the JSON. OpenCC is installed into `node_modules/.cache`, not
 `package.json`, so the lockfile keeps matching upstream.
+
+## Private data guard
+
+The fork is public and shares its object store with upstream's fork network, so anything pushed
+stays retrievable by SHA even after a history rewrite. Two husky hooks block private data before
+it is committed:
+
+- `.husky/pre-commit` runs `private-data-guard.mjs --staged` on staged file names and added lines.
+- `.husky/commit-msg` runs it with `--message-file` on the commit message.
+
+Built-in rules are generic: public IPv4 addresses outside the documentation and private ranges,
+`<slug>.monday.com` other than placeholder hosts, `.tw` host names, and emails outside
+example/test domains. Everything that names a real person, client, host, path or ID goes in
+`~/.config/orca-fork/private-strings.txt` (one literal per line, `#` comments, case-insensitive),
+which never enters the repo. Add new names there as projects come and go.
+
+On a hit the commit is refused with the file, line, rule and fragment. Use fictional values
+(`example.com`, `acme.monday.com`, `203.0.113.x`, placeholder names) instead; `--no-verify` is
+for a confirmed false positive only. Note that upstream's `.gitignore` excludes `docs/**`, so a new
+plan doc under `docs/fork/` needs `git add -f`, a deliberate extra step before publishing notes.
+
+```bash
+node_modules/.bin/vitest run --config config/vitest.config.ts config/scripts/fork-maintenance/private-data-guard.test.mjs
+```
