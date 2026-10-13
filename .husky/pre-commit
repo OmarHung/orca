@@ -1,2 +1,3 @@
 #!/usr/bin/env sh
+node config/scripts/fork-maintenance/private-data-guard.mjs --staged
 pnpm exec lint-staged
