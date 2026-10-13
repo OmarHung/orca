@@ -95,7 +95,7 @@
 
 - 月曆和甘特圖同時畫 timeline 和 due date；一週從週日開始，標出台灣國定假日
 - 選要看誰的項目、依狀態篩選；沒有日期的項目列在旁邊
-- 點 task 就能看描述、updates 和連結的項目（例如 Client CRM 紀錄）
+- 點 task 就能看描述、updates 和連結的項目（例如另一個 board 上的客戶紀錄）
 - 連結在頁面內建的瀏覽器開，也可以開成獨立視窗
 - 「Hand to AI」：把 task 的內容整理成草稿，交給任一工作區的 AI agent
 
