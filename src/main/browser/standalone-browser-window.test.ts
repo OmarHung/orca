@@ -117,9 +117,7 @@ beforeEach(() => {
 
 describe('openStandaloneBrowserWindow', () => {
   it('opens the page hidden in the given profile, then presents it without stealing focus', () => {
-    expect(openStandaloneBrowserWindow('https://acme.monday.com/boards/1', PARTITION)).toBe(
-      true
-    )
+    expect(openStandaloneBrowserWindow('https://acme.monday.com/boards/1', PARTITION)).toBe(true)
     const popup = mocks.popups[0]
     expect(popup.url).toBe('https://acme.monday.com/boards/1')
     expect(popup.options).toMatchObject({
