@@ -22,7 +22,7 @@ const IN_PROGRESS = { label: 'In Progress', color: '#fdab3d', done: false }
 const DONE = { label: 'Done', color: '#00c875', done: true }
 const STUCK = { label: 'Stuck', color: '#df2f4a', done: false }
 
-// Shaped like the real "Client Projects" (timeline + due) and "Personal Tasks" (start + due) boards.
+// Two board shapes: a team board (timeline + due) and a personal one (start + due).
 export const FAKE_MONDAY_BOARDS = [
   {
     id: '1000000001',
@@ -92,7 +92,7 @@ export const FAKE_MONDAY_BOARDS = [
   },
   {
     id: '1000000003',
-    name: "Personal Tasks",
+    name: 'Personal Tasks',
     columns: [
       { id: 'multiple_person_cccc3333', title: '使用者', type: 'people' },
       { id: 'date__1', title: '開始日期', type: 'date' },
@@ -122,7 +122,7 @@ export const FAKE_MONDAY_BOARDS = [
   }
 ]
 
-/** The "Client CRM" record a Client Projects task links to, shaped like the real board's columns. */
+/** The "Client CRM" record a Client Projects task links to. */
 export const FAKE_WEB_CRM_RELATION = {
   id: 'board_relation_aaaa1111',
   type: 'board_relation',
