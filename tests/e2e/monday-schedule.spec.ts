@@ -66,7 +66,10 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
       month.getByTestId('monday-calendar-flag').filter({ hasText: '月報匯出' })
     ).toBeVisible()
     await expect(
-      month.getByTestId('monday-calendar-bar').filter({ hasText: 'SEO 欄位調整' }).first()
+      month
+        .getByTestId('monday-calendar-bar')
+        .filter({ hasText: 'SEO 欄位調整' })
+        .first()
     ).toBeVisible()
     // Shows the connected account's items (plus unassigned) until someone else is picked.
     await expect(orcaPage.getByTestId('monday-person-picker')).toContainText('Show: Omar')
@@ -141,7 +144,7 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
 
     await orcaPage.getByRole('radio', { name: 'Gantt' }).click()
     const gantt = orcaPage.getByTestId('monday-gantt-view')
-    await expect(gantt.getByText("Personal Tasks")).toBeVisible()
+    await expect(gantt.getByText('Personal Tasks')).toBeVisible()
     await expect(gantt.getByRole('button', { name: '活動頁製作' }).first()).toBeVisible()
     await expect(gantt.getByTestId('monday-gantt-flag').first()).toBeVisible()
     await orcaPage.screenshot({ path: testInfo.outputPath('monday-gantt.png') })
