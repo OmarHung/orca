@@ -66,10 +66,7 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
       month.getByTestId('monday-calendar-flag').filter({ hasText: '月報匯出' })
     ).toBeVisible()
     await expect(
-      month
-        .getByTestId('monday-calendar-bar')
-        .filter({ hasText: 'SEO 欄位調整' })
-        .first()
+      month.getByTestId('monday-calendar-bar').filter({ hasText: 'SEO 欄位調整' }).first()
     ).toBeVisible()
     // Shows the connected account's items (plus unassigned) until someone else is picked.
     await expect(orcaPage.getByTestId('monday-person-picker')).toContainText('Show: Omar')
@@ -84,9 +81,7 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
     await orcaPage.getByTestId('monday-undated-toggle').click()
     await undated.getByTestId('monday-undated-item').click()
     await expect(
-      orcaPage
-        .getByTestId('monday-detail-panel')
-        .getByRole('heading', { name: '付款流程確認' })
+      orcaPage.getByTestId('monday-detail-panel').getByRole('heading', { name: '付款流程確認' })
     ).toBeVisible()
 
     await bar.first().click()

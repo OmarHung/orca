@@ -16,9 +16,7 @@ Build succeeded.`
 
 describe('findBuiltAssembly', () => {
   it("picks the project's own assembly over referenced projects", () => {
-    expect(findBuiltAssembly(BUILD_OUTPUT, 'WebApp')).toBe(
-      '/w/WebApp/bin/Debug/net10.0/WebApp.dll'
-    )
+    expect(findBuiltAssembly(BUILD_OUTPUT, 'WebApp')).toBe('/w/WebApp/bin/Debug/net10.0/WebApp.dll')
   })
 
   it('falls back to the last assembly, and to null when there is none', () => {
