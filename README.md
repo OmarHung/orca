@@ -26,6 +26,97 @@
   <img src="docs/assets/readme-hero.jpg" alt="Orca desktop app running agents in parallel worktrees, with the Orca mobile companion app in the corner" width="960" />
 </p>
 
+## 本 fork 加上的功能（OmarHung/orca）
+
+> 這是 [stablyai/orca](https://github.com/stablyai/orca) 的 fork。`omar/custom` 分支是 upstream 的發行版 tag，再加上本 fork 自己的 commit。下面列的功能只在這個分支裡；[官方下載](https://onorca.dev/download)的版本沒有，要自己建置（見[建置與更新](#建置與更新)）。設計文件都在 `docs/fork/`。
+
+### Run／Debug（JetBrains 風格）
+
+[設計文件](docs/fork/run-debug-configurations-plan.md)
+
+- 右上角的 Run widget：選設定後 Run／Debug／Stop／Rerun，清單裡有自動偵測到的執行項目、已存的設定、最近 5 次執行和目前檔案；執行中的程式顯示在 Run tool window，可以各自停止
+- 自動偵測 .NET、Node、Python 專案和 Docker Compose／Dockerfile，依 toolchain、專案、類型分組；檔案樹右鍵可以 Build／Run／Test／Publish
+- Edit Configurations：Before launch 步驟、compound（一次啟動多個）、匯入 `launch.json`、用 `orca.yaml` 跟團隊共享設定
+- Rider 風格的 .NET「Publish to folder」；把 Dockerfile 的 stage 匯出到資料夾、重建 compose
+- 顯示 run／debug session 監聽的 port，點了就能開
+- 內建除錯器：Python（debugpy）、JavaScript／TypeScript 和 npm scripts（js-debug）、.NET（netcoredbg）。支援條件中斷點、logpoint、例外中斷、Watch、Console REPL、inline values，暫停時滑過程式碼會跳出 JetBrains 風格的值視窗；可以同時除錯多個程式
+- 每個專案自動偵測 Python interpreter
+- .NET 5 以前、沒有 arm64 版本的舊專案，在 arm64 Docker 容器裡執行、除錯、跑 `dotnet ef`（[設計文件](docs/fork/dotnet-container-toolchain-plan.md)）
+
+### 程式碼跳轉（LSP）
+
+[設計文件](docs/fork/code-navigation-lsp-plan.md)・[Vue／Nuxt](docs/fork/code-navigation-vue-nuxt-plan.md)
+
+- C#、TypeScript／JavaScript、Vue／Nuxt：跳到定義、找參照、跳到實作、跳到型別定義、hover 說明；C# 可以跳進反編譯的原始碼
+- JetBrains 快捷鍵（⌘B、⌘⌥B、⌘⇧B、⌥F7…，可在設定裡改）和 Back／Forward 跳轉歷史；⌘⌥點擊直接跳到實作
+- MediatR：對 request 跳到實作會開它的 handler
+- Razor view 和 ASP.NET MVC 慣例
+- Explorer 檔案樹下方的 Structure（大綱）面板，支援 Go、Java、Rust、C／C++、PHP、Ruby、shell、PowerShell、CSS、JSON、YAML 等語言
+
+### Git
+
+- JetBrains 風格的 Git Log 底部面板：樹狀顯示、可調寬的欄位、選一個分支或全部分支；任選兩個 commit／分支比較，多選 commit 看它們一起改了哪些檔案；標出目前分支也有的、已經 cherry-pick 過的 commit；分支和 commit 的右鍵操作；在任何地方做了 git 操作都會自動重新載入
+- 狀態列顯示目前分支要推（↑）、要拉（↓）的 commit 數和未提交的檔案，可設定自動 fetch
+- 編輯器：JetBrains 風格的變更標記 gutter；GitLens 風格的游標行 blame（點擊展開卡片）；右鍵把檔案跟某個分支或 revision 比較；從單一檔案的 commit diff 打開工作區裡的檔案
+- Source Control 的「Committed on Branch」預設收合
+
+### Database（DataGrip 風格，唯讀）
+
+[設計文件](docs/fork/database-gui-plan.md)
+
+- 左側欄的 Database 頁，支援 PostgreSQL、MySQL／MariaDB、SQL Server、SQLite
+- Explorer：資料庫、schema、資料表、view、routine、key、index 和註解；連線可以分組、用顏色標示正式環境，圖示顯示資料庫類型和連線狀態；可以看 server／database／schema／table 的 Properties
+- SQL console：自動補全、格式化、查詢歷史、切換 database／schema
+- 資料表分頁和結果表格，複製和匯出都用完整的值；Show DDL
+- 一律唯讀：伺服器端強制唯讀，送出前也會先檢查語句
+- Dump to SQL（內建引擎，或用 pg_dump／mysqldump）和 Export Data，都在背景執行
+- 透過已存的 SSH 主機（tunnel）或 VPN 設定檔連線
+
+### SSH、SFTP 與 VPN
+
+[SSH／SFTP 設計文件](docs/fork/ssh-sftp-pages-plan.md)・[VPN 設計文件](docs/fork/ssh-vpn-plan.md)
+
+- 左側欄的 SSH、SFTP 頁：可搜尋、可分組的主機清單；SSH 頁有跟工作區一樣的分頁列
+- SFTP 雙窗格：上傳、下載、從 Finder 拖進來、在兩個窗格間拖曳、移動遠端檔案；分頁、可排序可調寬的欄位、檔案類型圖示、我的最愛資料夾、每台主機記住各自的本機資料夾、顯示選取項目的總大小
+- 每個 SSH／SFTP 動作執行前，先列出會跑的確切指令讓你確認
+- 記住 SSH key 的 passphrase（用系統 keychain 加密保存）
+- 把主機指定給 OpenVPN 設定檔：連這台主機時，Orca 自動在 Docker 容器裡連上 VPN，只有這條連線走 VPN，Mac 本身的網路不受影響；支援帳密登入，也能借用已經在執行的 VPN 容器；在 Settings → SSH 管理
+
+### ngrok
+
+[說明](docs/fork/ngrok-management.md)
+
+- 在狀態列的 Ports 面板用 ngrok 把本機 port 公開分享；SSH 工作區 forward 出來的 port 也可以
+- 列出這台機器上所有 ngrok endpoint（包括在終端機手動開的），可以開啟、複製網址、看請求紀錄、停止
+
+### monday.com 時程頁
+
+[說明](docs/fork/monday-schedule-page.md)
+
+- 月曆和甘特圖同時畫 timeline 和 due date；一週從週日開始，標出台灣國定假日
+- 選要看誰的項目、依狀態篩選；沒有日期的項目列在旁邊
+- 點 task 就能看描述、updates 和連結的項目（例如 Client CRM 紀錄）
+- 連結在頁面內建的瀏覽器開，也可以開成獨立視窗
+- 「Hand to AI」：把 task 的內容整理成草稿，交給任一工作區的 AI agent
+
+### 其他
+
+- 繁體中文（台灣）介面，每次同步 upstream 時從簡體中文目錄自動產生
+- 用量條加上平均用量標記，超前時變黃、快用完時變紅
+- agent 分頁的分頁列上可以一鍵清除對話（`/clear`）
+- 每個專案可以設定空工作區預設開終端機還是哪個 agent
+- 終端機裡點 Claude 的 `[Image #N]` 可以預覽那張圖
+
+### 建置與更新
+
+本機 Apple Silicon 建置，以及把本 fork 的 commit 同步到每個 upstream 發行版的流程，寫在 [`config/scripts/fork-maintenance/README.md`](config/scripts/fork-maintenance/README.md)。
+簡單說：`git switch omar/custom && node config/scripts/fork-maintenance/build-mac-local-arm64.mjs`，
+再把 `dist/mac-arm64/Orca.app` 拖進 `/Applications`。
+
+這樣建置的 app 不會收到官方更新。有新的 upstream 發行版時，更新卡片會列出它的 release notes，按 **Sync & update** 就自動 rebase、建置並安裝；有衝突時列出每個衝突的 commit，可以按 **Resolve with AI** 交給 agent 處理。更新完會打開一份 AI 寫的 changelog。
+
+---
+
 ## Features
 
 <table>
@@ -261,13 +352,6 @@ Want to contribute or run locally? See our [CONTRIBUTING.md](.github/CONTRIBUTIN
 
 The relay that pairs the mobile app with a desktop host is also in this repository under
 [`cloud/`](cloud/README.md), with a separate pnpm workspace and setup guide.
-
-### This fork (OmarHung/orca)
-
-Local Apple Silicon builds, and syncing this fork's changes onto each upstream release, are
-documented in [`config/scripts/fork-maintenance/README.md`](config/scripts/fork-maintenance/README.md).
-Short version: `git switch omar/custom && node config/scripts/fork-maintenance/build-mac-local-arm64.mjs`,
-then drag `dist/mac-arm64/Orca.app` into `/Applications`.
 
 <a href="https://github.com/stablyai/orca/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=stablyai/orca" alt="Orca contributors" />
