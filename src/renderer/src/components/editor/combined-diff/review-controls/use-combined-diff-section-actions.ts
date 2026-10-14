@@ -80,7 +80,9 @@ export function useCombinedDiffSectionActions({
       }
 
       if (isCommitMode && commitCompare) {
-        openCommitDiff(file.worktreeId, file.filePath, entry, commitCompare, language)
+        openCommitDiff(file.worktreeId, file.filePath, entry, commitCompare, language, {
+          entriesSnapshot: file.commitEntriesSnapshot
+        })
         return
       }
 
@@ -96,6 +98,7 @@ export function useCombinedDiffSectionActions({
     [
       branchCompare,
       commitCompare,
+      file.commitEntriesSnapshot,
       file.filePath,
       file.runtimeEnvironmentId,
       file.worktreeId,

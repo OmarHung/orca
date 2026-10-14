@@ -98,7 +98,8 @@ export function GitLogRangeDetails({
         baseRef: range.base.label,
         subject: label
       },
-      detectLanguage(entry.path)
+      detectLanguage(entry.path),
+      { entriesSnapshot: files.status === 'ready' ? files.entries : undefined }
     )
   }
   const toggleLabel =

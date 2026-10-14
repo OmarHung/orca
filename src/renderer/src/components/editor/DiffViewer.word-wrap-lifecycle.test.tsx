@@ -9,10 +9,20 @@ import { getLargeDiffRenderLimitFromCounts } from './large-diff-render-limit'
 const fixture = vi.hoisted(() => {
   function createEditor() {
     const disposals = new Set<() => void>()
+    // Why: the cursor methods back the diff navigation step, which reads the modified cursor before and after goToDiff.
+    const cursor = { line: 1, scrollTop: 0 }
     const modifiedEditor = {
       onDidDispose: (callback: () => void) => {
         disposals.add(callback)
         return { dispose: () => disposals.delete(callback) }
+      },
+      getPosition: () => ({ lineNumber: cursor.line, column: 1 }),
+      setPosition: (position: { lineNumber: number }) => {
+        cursor.line = position.lineNumber
+      },
+      getScrollTop: () => cursor.scrollTop,
+      setScrollTop: (scrollTop: number) => {
+        cursor.scrollTop = scrollTop
       }
     }
     const disposeUpdate = vi.fn()
@@ -22,7 +32,9 @@ const fixture = vi.hoisted(() => {
       onDidDispose: vi.fn(() => ({ dispose: vi.fn() })),
       onDidUpdateDiff: () => ({ dispose: disposeUpdate }),
       getLineChanges: () => [{}],
-      goToDiff: vi.fn(),
+      goToDiff: vi.fn(() => {
+        cursor.line = 5
+      }),
       saveViewState: () => null,
       focus: vi.fn()
     }
