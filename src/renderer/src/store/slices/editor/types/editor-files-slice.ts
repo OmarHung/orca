@@ -30,6 +30,11 @@ import type {
 import type { EditorBufferDetachments, EditorBufferViewIndex } from '../buffers/editor-buffer-views'
 import type { EditorOpenLinkIntent, EditorOpenResult } from './editor-open-link-intent'
 import type { OpenFilePathRekey, RekeyOpenFilesResult } from './open-file-path-rekey'
+
+// Why: the compare's file list rides along so the diff tab can step to the next or previous file.
+export type HistoryDiffOpenOptions = EditorOpenTargetOptions & {
+  entriesSnapshot?: GitBranchChangeEntry[]
+}
 import type {
   RestoredEditorOwnerMigration,
   RestoredEditorOwnerResult
@@ -182,7 +187,7 @@ export type EditorFilesSlice = {
     entry: GitBranchChangeEntry,
     compare: BranchCompareLike,
     language: string,
-    options?: EditorOpenTargetOptions
+    options?: HistoryDiffOpenOptions
   ) => void
   openCommitDiff: (
     worktreeId: string,
@@ -190,7 +195,7 @@ export type EditorFilesSlice = {
     entry: GitBranchChangeEntry,
     compare: CommitCompareLike,
     language: string,
-    options?: EditorOpenTargetOptions
+    options?: HistoryDiffOpenOptions
   ) => void
   openAllDiffs: (
     worktreeId: string,

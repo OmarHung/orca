@@ -11,6 +11,7 @@ import { exportActiveMarkdownToPdf } from './export-active-markdown'
 import type { EditorToggleValue } from './view-mode/EditorViewToggle'
 import { EditorPanelShell } from './EditorPanelShell'
 import { DiffNavigationProvider } from './diff/review/diff-navigation-context'
+import { resolveAdjacentDiffOpener } from './open-adjacent-diff-file'
 import { EditorCommandOwnerContext } from './editor-command-owner-context'
 import { canUseChangesModeForFile } from './view-mode/editor-panel-file-mode'
 import { getEditorPanelRenderModel } from './editor-panel-render-model'
@@ -330,7 +331,11 @@ function EditorPanelInner({
   return (
     <EditorCommandOwnerContext value={isCmdSaveOwner}>
       {/* Split panes need independent bridges between diff editors and header controls. */}
-      <DiffNavigationProvider>
+      <DiffNavigationProvider
+        resolveAdjacentFileOpener={(direction) =>
+          activeFile ? resolveAdjacentDiffOpener(activeFile, direction) : null
+        }
+      >
         <EditorPanelShell
           panelRef={setPanelRef}
           activeFile={viewedFile}
