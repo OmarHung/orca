@@ -23441,5 +23441,11 @@
     "startConfigured": "Start {{value0}}",
     "fromConfig": "ngrok.yml · {{value0}} · not running",
     "shareConfigured": "Share at {{value0}} (ngrok.yml)"
+  },
+  "diffNavigation": {
+    "fileEnd": "Last change in this file. Press again to open the next file.",
+    "fileStart": "First change in this file. Press again to open the previous file.",
+    "lastFile": "This is the last changed file.",
+    "firstFile": "This is the first changed file."
   }
 }

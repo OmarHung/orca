@@ -332,10 +332,10 @@ describe('installMonacoDiffChangeNavigationShortcut', () => {
 
     return {
       container,
-      dispose: installMonacoDiffChangeNavigationShortcut({
-        getContainerDomNode: () => container,
+      dispose: installMonacoDiffChangeNavigationShortcut(
+        { getContainerDomNode: () => container },
         goToDiff
-      }),
+      ),
       input,
       goToDiff,
       onDownstreamKeyDown

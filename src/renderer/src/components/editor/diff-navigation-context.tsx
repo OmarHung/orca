@@ -1,6 +1,22 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
+import { toast } from 'sonner'
+import { translate } from '@/i18n/i18n'
 import type { editor } from 'monaco-editor'
 import { installMonacoDiffChangeNavigationShortcut } from './editor-shortcuts'
+import {
+  stepDiffChange,
+  type DiffChangeCursorEditor,
+  type DiffChangeDirection
+} from './diff-change-step'
 
 // Why: the change-marker gutter drives the same header controls without a diff editor.
 export type DiffNavigationTarget = Pick<
@@ -9,6 +25,8 @@ export type DiffNavigationTarget = Pick<
 > & {
   getLineChanges: () => readonly unknown[] | null
   onDidUpdateDiff: (listener: () => void) => { dispose: () => void }
+  // Why: optional so change-marker navigation, which has no per-file diff cursor, keeps plain goToDiff.
+  getModifiedEditor?: () => DiffChangeCursorEditor
 }
 
 export type DiffEditorRegistrationContextValue = {
@@ -40,31 +58,91 @@ function countChanges(diffEditor: DiffNavigationTarget): number {
   return diffEditor.getLineChanges()?.length ?? 0
 }
 
+function boundaryNoticeText(direction: DiffChangeDirection): string {
+  return direction === 'next'
+    ? translate(
+        'diffNavigation.fileEnd',
+        'Last change in this file. Press again to open the next file.'
+      )
+    : translate(
+        'diffNavigation.fileStart',
+        'First change in this file. Press again to open the previous file.'
+      )
+}
+
+function edgeFileNoticeText(direction: DiffChangeDirection): string {
+  return direction === 'next'
+    ? translate('diffNavigation.lastFile', 'This is the last changed file.')
+    : translate('diffNavigation.firstFile', 'This is the first changed file.')
+}
+
 export function DiffNavigationProvider({
-  children
+  children,
+  resolveAdjacentFileOpener
 }: {
   children: React.ReactNode
+  // Why: returns null when there is no neighbouring changed file in that direction.
+  resolveAdjacentFileOpener?: (direction: DiffChangeDirection) => (() => void) | null
 }): React.JSX.Element {
   const editorRef = useRef<DiffNavigationTarget | null>(null)
+  const resolveAdjacentFileOpenerRef = useRef(resolveAdjacentFileOpener)
+  useLayoutEffect(() => {
+    resolveAdjacentFileOpenerRef.current = resolveAdjacentFileOpener
+  }, [resolveAdjacentFileOpener])
+  // Why: the target and direction that showed the boundary notice; a repeat press crosses to the next file.
+  const boundaryArmedRef = useRef<{
+    target: DiffNavigationTarget
+    direction: DiffChangeDirection
+  } | null>(null)
   const updateSubRef = useRef<{ dispose: () => void } | null>(null)
   // Share the registered editor across header buttons and F7/Shift+F7 shortcuts.
   const shortcutCleanupRef = useRef<(() => void) | null>(null)
   // Use state so sibling header controls repaint when diff computation changes their enabled state.
   const [changeCount, setChangeCount] = useState(0)
 
-  const registerDiffEditor = useCallback((diffEditor: DiffNavigationTarget) => {
-    editorRef.current = diffEditor
-    updateSubRef.current?.dispose()
-    updateSubRef.current = diffEditor.onDidUpdateDiff(() => {
-      // Ignore stale editor callbacks after a fast registration swap.
-      if (editorRef.current === diffEditor) {
-        setChangeCount(countChanges(diffEditor))
-      }
-    })
-    shortcutCleanupRef.current?.()
-    shortcutCleanupRef.current = installMonacoDiffChangeNavigationShortcut(diffEditor)
-    setChangeCount(countChanges(diffEditor))
+  const navigateDiffChange = useCallback((direction: DiffChangeDirection) => {
+    const target = editorRef.current
+    if (!target) {
+      return
+    }
+    if (stepDiffChange(target, direction) === 'moved') {
+      boundaryArmedRef.current = null
+      return
+    }
+    const armed = boundaryArmedRef.current
+    boundaryArmedRef.current = null
+    const openAdjacentFile = resolveAdjacentFileOpenerRef.current?.(direction) ?? null
+    if (!openAdjacentFile) {
+      toast(edgeFileNoticeText(direction))
+      return
+    }
+    if (armed?.target === target && armed.direction === direction) {
+      openAdjacentFile()
+      return
+    }
+    boundaryArmedRef.current = { target, direction }
+    toast(boundaryNoticeText(direction))
   }, [])
+
+  const registerDiffEditor = useCallback(
+    (diffEditor: DiffNavigationTarget) => {
+      editorRef.current = diffEditor
+      updateSubRef.current?.dispose()
+      updateSubRef.current = diffEditor.onDidUpdateDiff(() => {
+        // Ignore stale editor callbacks after a fast registration swap.
+        if (editorRef.current === diffEditor) {
+          setChangeCount(countChanges(diffEditor))
+        }
+      })
+      shortcutCleanupRef.current?.()
+      shortcutCleanupRef.current = installMonacoDiffChangeNavigationShortcut(
+        diffEditor,
+        navigateDiffChange
+      )
+      setChangeCount(countChanges(diffEditor))
+    },
+    [navigateDiffChange]
+  )
 
   const unregisterDiffEditor = useCallback((diffEditor: DiffNavigationTarget) => {
     // A stale disposal must not clear a newly registered replacement editor.
@@ -80,12 +158,12 @@ export function DiffNavigationProvider({
   }, [])
 
   const goToPreviousDiff = useCallback(() => {
-    editorRef.current?.goToDiff('previous')
-  }, [])
+    navigateDiffChange('previous')
+  }, [navigateDiffChange])
 
   const goToNextDiff = useCallback(() => {
-    editorRef.current?.goToDiff('next')
-  }, [])
+    navigateDiffChange('next')
+  }, [navigateDiffChange])
 
   useEffect(() => {
     return () => {
