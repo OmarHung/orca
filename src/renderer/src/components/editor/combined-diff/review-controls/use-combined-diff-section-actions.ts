@@ -93,7 +93,8 @@ export function useCombinedDiffSectionActions({
       if (isCommitMode && commitCompare) {
         openCommitDiff(file.worktreeId, file.filePath, entry, commitCompare, language, {
           ...placement,
-          runtimeEnvironmentId: file.runtimeEnvironmentId
+          runtimeEnvironmentId: file.runtimeEnvironmentId,
+          entriesSnapshot: file.commitEntriesSnapshot
         })
         return
       }
