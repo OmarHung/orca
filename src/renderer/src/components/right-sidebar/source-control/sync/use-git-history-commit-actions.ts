@@ -154,7 +154,12 @@ export function useGitHistoryCommitActions({
           message: item.message
         },
         detectLanguage(entry.path),
-        { targetGroupId, preview: shouldOpenSourceControlRowAsPreview(event, targetGroupId) }
+        {
+          targetGroupId,
+          preview: shouldOpenSourceControlRowAsPreview(event, targetGroupId),
+          // Why: next/previous-file navigation in the diff tab walks this commit's file list.
+          entriesSnapshot: cached.entries
+        }
       )
     },
     [activeWorktreeId, openCommitDiff, resolveSplitTargetGroupId, worktreePath]

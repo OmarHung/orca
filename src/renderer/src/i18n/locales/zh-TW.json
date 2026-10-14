@@ -21145,5 +21145,11 @@
     "startConfigured": "啟動 {{value0}}",
     "fromConfig": "ngrok.yml · {{value0}} · 未啟動",
     "shareConfigured": "分享到 {{value0}}（ngrok.yml）"
+  },
+  "diffNavigation": {
+    "fileEnd": "已到本檔案最後一個變更，再按一次開啟下一個檔案。",
+    "fileStart": "已到本檔案第一個變更，再按一次開啟上一個檔案。",
+    "lastFile": "已是最後一個變更檔案。",
+    "firstFile": "已是第一個變更檔案。"
   }
 }
