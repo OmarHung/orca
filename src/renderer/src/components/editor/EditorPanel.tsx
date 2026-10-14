@@ -12,6 +12,7 @@ import type { EditorToggleValue } from './view-mode/EditorViewToggle'
 import { EditorPanelShell } from './panel/EditorPanelShell'
 import { DiffNavigationProvider } from './diff/review/diff-navigation-context'
 import { EditorCommandOwnerContext } from './commands/editor-command-owner-context'
+import { resolveAdjacentDiffOpener } from './open-adjacent-diff-file'
 import { canUseChangesModeForFile } from './view-mode/editor-panel-file-mode'
 import { getEditorPanelRenderModel } from './panel/editor-panel-render-model'
 import { useEditorCmdSaveRequest } from './save/commands/useEditorCmdSaveRequest'
@@ -330,7 +331,11 @@ function EditorPanelInner({
   return (
     <EditorCommandOwnerContext value={isCmdSaveOwner}>
       {/* Split panes need independent bridges between diff editors and header controls. */}
-      <DiffNavigationProvider>
+      <DiffNavigationProvider
+        resolveAdjacentFileOpener={(direction) =>
+          activeFile ? resolveAdjacentDiffOpener(activeFile, direction) : null
+        }
+      >
         <EditorPanelShell
           panelRef={setPanelRef}
           activeFile={viewedFile}
