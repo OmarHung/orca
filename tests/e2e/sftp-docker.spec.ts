@@ -12,17 +12,17 @@ import path from 'node:path'
 import type { Page } from '@stablyai/playwright-test'
 import { expect, test } from './helpers/orca-app'
 import {
-  cleanupDockerSshRelayTarget,
-  execDockerSshRelayTargetCommand,
-  startDockerSshRelayTarget,
-  type DockerSshRelayTarget
-} from './helpers/docker-ssh-relay-target'
+  cleanupDockerSshHostTarget,
+  execDockerSshHostTargetCommand,
+  startDockerSshHostTarget,
+  type DockerSshHostTarget
+} from './helpers/docker-ssh-host-target'
 import { waitForSessionReady } from './helpers/store'
 
 const RUN_DOCKER_SSH = process.env.ORCA_E2E_SSH_DOCKER === '1'
 const REMOTE_DIR = '/tmp/orca-sftp-e2e'
 
-async function addDockerTarget(page: Page, target: DockerSshRelayTarget): Promise<string> {
+async function addDockerTarget(page: Page, target: DockerSshHostTarget): Promise<string> {
   return page.evaluate(
     async ({ host, port, identityFile }) => {
       const result = await window.api.ssh.addTarget({
@@ -49,10 +49,10 @@ test.describe('SFTP page against a Docker sshd', () => {
     orcaPage
   }, testInfo) => {
     test.setTimeout(180_000)
-    let target: DockerSshRelayTarget | null = null
+    let target: DockerSshHostTarget | null = null
     const localRoot = mkdtempSync(path.join(os.tmpdir(), 'orca-sftp-e2e-'))
     try {
-      target = startDockerSshRelayTarget(testInfo)
+      target = startDockerSshHostTarget(testInfo)
       await waitForSessionReady(orcaPage)
       const targetId = await addDockerTarget(orcaPage, target)
       const outbox = path.join(localRoot, 'outbox')
@@ -140,7 +140,7 @@ test.describe('SFTP page against a Docker sshd', () => {
         'nested',
         'hello.txt'
       ])
-      expect(execDockerSshRelayTargetCommand(target, `cat ${REMOTE_DIR}/nested/deep.txt`)).toBe(
+      expect(execDockerSshHostTargetCommand(target, `cat ${REMOTE_DIR}/nested/deep.txt`)).toBe(
         'deep'
       )
       expect(result.download.executed).toEqual(done)
@@ -170,10 +170,10 @@ test.describe('SFTP page against a Docker sshd', () => {
       )
       expect(removal).toEqual({ ok: true, value: { status: 'done' } })
       expect(
-        execDockerSshRelayTargetCommand(target, `test -e ${REMOTE_DIR} && echo yes || echo no`)
+        execDockerSshHostTargetCommand(target, `test -e ${REMOTE_DIR} && echo yes || echo no`)
       ).toBe('no')
 
-      execDockerSshRelayTargetCommand(target, 'touch /root/orca-sftp-visible.txt')
+      execDockerSshHostTargetCommand(target, 'touch /root/orca-sftp-visible.txt')
       await orcaPage.getByRole('button', { name: 'SFTP', exact: true }).click()
       await orcaPage.locator('[data-ssh-host-row]').filter({ hasText: 'Docker SFTP E2E' }).click()
       await expect(orcaPage.locator('[data-sftp-entry^="/root/"]').first()).toBeVisible({
@@ -224,7 +224,7 @@ test.describe('SFTP page against a Docker sshd', () => {
       const sshTarget = target
       await expect
         .poll(() =>
-          execDockerSshRelayTargetCommand(
+          execDockerSshHostTargetCommand(
             sshTarget,
             'test -d /root/wwwroot/assets/css && echo yes || echo no'
           )
@@ -323,7 +323,7 @@ test.describe('SFTP page against a Docker sshd', () => {
       await expect(sftpTabs.nth(1)).toHaveAttribute('aria-selected', 'true')
       await orcaPage.screenshot({ path: testInfo.outputPath('sftp-three-tabs.png') })
     } finally {
-      cleanupDockerSshRelayTarget(target)
+      cleanupDockerSshHostTarget(target)
       rmSync(localRoot, { recursive: true, force: true })
     }
   })

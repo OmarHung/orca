@@ -1,5 +1,5 @@
 import { isAbsolute } from 'node:path'
-import { runProcess } from '../../shared/child-process/run-process'
+import { runProcess } from '@orca/process-host'
 
 const WHERE_TIMEOUT_MS = 10_000
 const MAX_COMMAND_LENGTH = 10_000

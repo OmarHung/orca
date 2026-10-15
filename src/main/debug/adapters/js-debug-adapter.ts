@@ -1,9 +1,9 @@
 import { join } from 'node:path'
-import { spawnProcess } from '../../../shared/child-process/run-process'
+import { spawnProcess } from '@orca/process-host'
 import {
   forceTerminateProcessTree,
   signalProcessTree
-} from '../../../shared/child-process/process-tree-termination'
+} from '@orca/process-host/process-tree-termination'
 import type { AdapterInstallDeps } from './adapter-installer'
 import { extractArchive } from './archive-extract'
 import { downloadWithElectronNet } from './adapter-download'
@@ -38,9 +38,11 @@ export function startJsDebugServer(
     args: [join(installDir, 'js-debug', 'src', 'dapDebugServer.js'), '0', '127.0.0.1'],
     env: runtime.env,
     detached: process.platform !== 'win32',
-    stdio: ['ignore', 'pipe', 'pipe'],
+    // Why all pipes: the typed spawn then guarantees the streams; stdin is closed at once below.
+    stdio: ['pipe', 'pipe', 'pipe'],
     timeoutMs: null
   })
+  child.stdin.end()
   const dispose = (): void => {
     void signalProcessTree(child, 'SIGTERM')
     setTimeout(() => void forceTerminateProcessTree(child), 3_000).unref?.()

@@ -4,14 +4,14 @@ import type {
 } from '../../../shared/git-branch-action/git-branch-action-types'
 import { REBASE_FROM_BASE_RPC_TIMEOUT_MS } from '../../../shared/git-rebase-source'
 import { resolveLocalWorktreePath, type RuntimeGitContext } from './runtime-git-client-context'
-import { callRuntimeRpc, getActiveRuntimeTarget } from './runtime-rpc-client'
+import { callRuntimeRpc } from './runtime-rpc-client'
 import { toRuntimeWorktreeSelector } from './runtime-worktree-selector'
 
 export async function runRuntimeGitBranchAction(
   context: RuntimeGitContext,
   action: GitBranchAction
 ): Promise<GitBranchActionResult> {
-  const target = getActiveRuntimeTarget(context.settings)
+  const target = context.target
   if (target.kind === 'local' || !context.worktreeId) {
     return window.api.git.branchAction({
       worktreePath: resolveLocalWorktreePath(context),

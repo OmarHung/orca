@@ -18,9 +18,6 @@ vi.mock('@/store/slices/worktree-helpers', () => ({
       .flat()
       .find((worktree) => worktree.id === id)
 }))
-vi.mock('@/runtime/runtime-client-target', () => ({
-  getActiveRuntimeTarget: () => ({ kind: 'local' })
-}))
 vi.mock('../debug/debug-launch', () => ({ isLocalDebugTarget: () => true }))
 
 import { prepareDotnetLauncher, runCommandText } from './run-dotnet-launcher'

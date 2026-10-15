@@ -1,7 +1,6 @@
 import type { useAppStore } from '@/store'
 import type { OpenFile } from '@/store/slices/editor'
 import { findWorktreeById } from '@/store/slices/worktree-helpers'
-import { getActiveRuntimeTarget } from '@/runtime/runtime-client-target'
 import { getFolderWorkspaceConnectionId } from '@/lib/folder-workspace-connection'
 import { getResolvedExecutionHostIdForWorktree } from '@/lib/resolved-worktree-execution-host'
 import { getRelativePathInsideRoot } from '@/lib/path'
@@ -66,7 +65,6 @@ export function localWorkspaceRoot(state: AppState, worktreeId: string): string 
   }
   const isLocal = isLocalDebugTarget({
     repoHostId: getRepoExecutionHostId(repo),
-    activeRuntimeIsLocal: getActiveRuntimeTarget(state.settings).kind === 'local',
     worktreePath: worktree.path
   })
   return isLocal ? worktree.path : null

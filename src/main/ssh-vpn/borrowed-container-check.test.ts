@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { ProcessResult } from '../../shared/child-process/process-spec'
+import type { ProcessResult } from '@orca/process-host/process-spec'
 import {
   checkBorrowedContainer,
   listBorrowableContainers,

@@ -6,7 +6,7 @@ import {
   ngrokStopRequestSchema,
   type NgrokResult
 } from '../../shared/ngrok/ngrok-types'
-import { spawnProcess } from '../../shared/child-process/run-process'
+import { spawnProcess } from '@orca/process-host'
 import { resolveNgrokPath } from './ngrok-cli-location'
 import { readNgrokConfigText } from './ngrok-config'
 import { NGROK_AGENT_ARGS } from './ngrok-managed-agent'

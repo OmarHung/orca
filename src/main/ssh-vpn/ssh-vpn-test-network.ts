@@ -2,7 +2,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { runProcess } from '../../shared/child-process/run-process'
+import { runProcess } from '@orca/process-host'
 
 // Test-only: a Docker network reachable only through an OpenVPN server, with an sshd behind it
 // that the VPN's own DNS names `sshd.orca-vpn.test`. Used by the vitest integration test and the

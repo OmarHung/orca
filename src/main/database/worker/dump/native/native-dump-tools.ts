@@ -5,7 +5,7 @@ import type {
   DatabaseDumpTool,
   DatabaseDumpToolKind
 } from '../../../../../shared/database/database-dump-types'
-import { runProcess } from '../../../../../shared/child-process/run-process'
+import { runProcess } from '@orca/process-host'
 
 // Why a cap: a PATH full of old installs shouldn't turn opening a dialog into dozens of spawns.
 const MAX_CANDIDATES = 12

@@ -6,7 +6,7 @@ const { fetchMock, runProcessMock } = vi.hoisted(() => ({
 }))
 
 vi.mock('electron', () => ({ net: { fetch: fetchMock } }))
-vi.mock('../../shared/child-process/run-process', () => ({ runProcess: runProcessMock }))
+vi.mock('@orca/process-host', () => ({ runProcess: runProcessMock }))
 vi.mock('../startup/login-shell-environment', () => ({
   resolveLoginShellEnvironment: async () => ({})
 }))
@@ -134,11 +134,13 @@ describe('fetchUpstreamReleaseNotes', () => {
   })
 
   it('throws on an error response', async () => {
-    runProcessMock.mockResolvedValue({ code: 0, stdout: 'git@github.com:stablyai/orca', stderr: '' })
+    runProcessMock.mockResolvedValue({
+      code: 0,
+      stdout: 'git@github.com:stablyai/orca',
+      stderr: ''
+    })
     fetchMock.mockResolvedValue({ ok: false, status: 403, json: async () => ({}) })
 
-    await expect(fetchUpstreamReleaseNotes(identity, 'v1.4.211', 'v1.4.212')).rejects.toThrow(
-      '403'
-    )
+    await expect(fetchUpstreamReleaseNotes(identity, 'v1.4.211', 'v1.4.212')).rejects.toThrow('403')
   })
 })

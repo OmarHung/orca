@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { createInterface } from 'node:readline'
-import { runProcess, spawnProcess } from '../../shared/child-process/run-process'
+import { runProcess, spawnProcess } from '@orca/process-host'
 import { resolveLoginShellEnvironment } from '../startup/login-shell-environment'
 import type { ForkSourceIdentity } from './fork-source-identity'
 import type { ForkSyncRunResult } from './fork-source-updater'

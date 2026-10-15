@@ -10,6 +10,7 @@ import type {
   DatabaseJobEvent
 } from '../../../../../shared/database/database-dump-types'
 import { asDatabaseResult } from '../database-connections-store'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../../../shared/execution-host'
 
 export type DatabaseJobStatus = 'running' | 'done' | 'failed' | 'cancelled'
 
@@ -79,7 +80,8 @@ function announce(job: DatabaseDumpJob): void {
         description: job.destination,
         action: {
           label: translate('database.jobs.showInFolder', 'Show in Folder'),
-          onClick: () => void window.api.shell.openInFileManager(job.destination)
+          onClick: () =>
+            void window.api.shell.openInFileManager(job.destination, LOCAL_EXECUTION_HOST_ID)
         }
       })
   }

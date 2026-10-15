@@ -1,4 +1,5 @@
-import { runProcess, type ProcessResult } from '../../shared/child-process/run-process'
+import { runProcess } from '@orca/process-host'
+import type { ProcessResult } from '@orca/process-host/process-spec'
 import type { DotnetContainerStatus } from '../../shared/dotnet-container-types'
 
 const DOCKER_TIMEOUT_MS = 15_000
