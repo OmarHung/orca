@@ -66,7 +66,9 @@ export function buildProjectInitialTabStartup(
       agent,
       settings,
       platform: resolvedLaunchPlatform,
-      isRemote
+      isRemote,
+      // The tab quotes by its Settings shell, which its pane's spawn also reads.
+      shell: undefined
     }),
     prompt: '',
     allowEmptyPromptLaunch: true
