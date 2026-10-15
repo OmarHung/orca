@@ -268,6 +268,8 @@ describe('a creation that finishes after the user moved on (#9944)', () => {
     await vi.waitFor(() => expect(store.removePendingWorktreeCreation).toHaveBeenCalled())
 
     expect(activateAndRevealWorktree).toHaveBeenCalledWith('wt-1', {
+      // Why: a Blank Terminal create pins the shell over the project's initial agent.
+      agent: null,
       sidebarRevealBehavior: 'auto'
     })
     expect(queueWorkspaceActivationTerminalFocus).toHaveBeenCalledWith('wt-1', {
