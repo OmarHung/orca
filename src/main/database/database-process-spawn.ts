@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { forkProcess } from '../../shared/child-process/fork-process'
+import { forkProcess } from '@orca/process-host/fork-process'
 import { RUNTIME_ENV_ALLOWLIST, pickAllowedEnv } from '../ai-vault/session-scanner-service-env'
 import type { DatabaseWorkerPort } from './database-worker-client'
 import { resolveDatabaseWorkerEntryPath } from './database-worker-entry-path'

@@ -102,7 +102,7 @@ export function GitBranchStatusSegment({
     void useAppStore
       .getState()
       .fetchBranch(target.worktreeId, target.worktreePath, target.connectionId, target.pushTarget, {
-        runtimeTargetSettings: target.settings
+        runtimeTarget: target.target
       })
       // Why: fetchBranch already toasts the failure; this only keeps the rejection handled.
       .catch(() => {})

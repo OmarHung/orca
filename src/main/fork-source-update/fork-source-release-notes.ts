@@ -1,6 +1,6 @@
 import { net } from 'electron'
 import { z } from 'zod'
-import { runProcess } from '../../shared/child-process/run-process'
+import { runProcess } from '@orca/process-host'
 import type { ForkReleaseNote } from '../../shared/fork-sync-status'
 import { resolveLoginShellEnvironment } from '../startup/login-shell-environment'
 import type { ForkSourceIdentity } from './fork-source-identity'

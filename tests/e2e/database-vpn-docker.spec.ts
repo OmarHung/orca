@@ -1,4 +1,4 @@
-import { runProcess } from '../../src/shared/child-process/run-process'
+import { runProcess } from '@orca/process-host'
 import {
   startSshVpnTestNetwork,
   type SshVpnTestNetwork

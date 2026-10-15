@@ -1,8 +1,8 @@
-import { spawnProcess } from '../../shared/child-process/run-process'
+import { spawnProcess } from '@orca/process-host'
 import {
   forceTerminateProcessTree,
   signalProcessTree
-} from '../../shared/child-process/process-tree-termination'
+} from '@orca/process-host/process-tree-termination'
 import type { DapTransport, DapTransportClose } from './dap-transport'
 
 const GRACEFUL_STOP_MS = 3_000

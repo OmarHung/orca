@@ -1,8 +1,5 @@
-import {
-  runProcess,
-  spawnProcess,
-  type ProcessResult
-} from '../../shared/child-process/run-process'
+import { runProcess, spawnProcess } from '@orca/process-host'
+import type { PipedChildProcess, ProcessResult } from '@orca/process-host/process-spec'
 import {
   CONTAINER_LOGIN_PATH,
   CONTAINER_PROFILE_DIR,
@@ -216,10 +213,12 @@ export class SshVpnDocker {
     )
   }
 
-  spawnOpenVpn(containerName: string, withLogin: boolean): ReturnType<typeof spawnProcess> {
+  spawnOpenVpn(containerName: string, withLogin: boolean): PipedChildProcess {
     return spawnProcess({
       program: this.dockerPath,
-      args: dockerOpenVpnArgs(containerName, withLogin)
+      args: dockerOpenVpnArgs(containerName, withLogin),
+      // Why explicit: the piped spec is what guarantees stdin/stdout/stderr are streams.
+      stdio: 'pipe'
     })
   }
 

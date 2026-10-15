@@ -26,7 +26,7 @@ describe('debugTargetForFile', () => {
 })
 
 describe('isLocalDebugTarget', () => {
-  const local = { repoHostId: 'local', activeRuntimeIsLocal: true, worktreePath: '/Users/me/p' }
+  const local = { repoHostId: 'local', worktreePath: '/Users/me/p' }
 
   it('accepts a local workspace', () => {
     expect(isLocalDebugTarget(local)).toBe(true)
@@ -36,8 +36,8 @@ describe('isLocalDebugTarget', () => {
     expect(isLocalDebugTarget({ ...local, repoHostId: 'ssh:box' })).toBe(false)
   })
 
-  it('rejects when the window is attached to a remote runtime', () => {
-    expect(isLocalDebugTarget({ ...local, activeRuntimeIsLocal: false })).toBe(false)
+  it('rejects workspaces owned by a remote runtime', () => {
+    expect(isLocalDebugTarget({ ...local, repoHostId: 'runtime:env-1' })).toBe(false)
   })
 
   it('rejects WSL workspaces opened through UNC paths', () => {

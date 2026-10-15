@@ -13,10 +13,10 @@ vi.mock('@/store/selectors', () => ({
 vi.mock('@/lib/connection-context', () => ({
   getConnectionId: (worktreeId: string) => (worktreeId === 'wt-ssh' ? 'conn-1' : null)
 }))
-vi.mock('@/lib/worktree-runtime-owner', () => ({
-  getSettingsForWorktreeRuntimeOwner: () => ({ activeRuntimeEnvironmentId: null })
+vi.mock('@/lib/resolve-owner', () => ({
+  runtimeTargetForWorkspaceOwner: () => ({ kind: 'local' })
 }))
-vi.mock('@/runtime/runtime-git-client', () => ({ fetchRuntimeGit: mocks.fetchRuntimeGit }))
+vi.mock('@/runtime/runtime-git-sync-client', () => ({ fetchRuntimeGit: mocks.fetchRuntimeGit }))
 
 import { runGitAutoFetch, runGitAutoFetchTick } from './git-auto-fetch-runner'
 import { useGitAutoFetchStore } from './git-auto-fetch-store'
@@ -80,7 +80,7 @@ describe('runGitAutoFetchTick', () => {
       worktreePath: '/work/wt-1',
       connectionId: undefined,
       pushTarget: undefined,
-      settings: { activeRuntimeEnvironmentId: null }
+      target: { kind: 'local' }
     })
     const record = useGitAutoFetchStore.getState().recordsByRepo['repo-1']
     expect(record?.error).toBeTruthy()
