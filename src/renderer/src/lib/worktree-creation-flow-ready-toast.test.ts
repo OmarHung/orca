@@ -303,6 +303,8 @@ describe('a creation that finishes after the user moved on (#9944)', () => {
 
     expect(activateAndRevealWorktree).toHaveBeenCalledWith('wt-1', {
       worktreeCreationId: 'creation-1',
+      // A Blank Terminal create pins the shell over the project's initial agent.
+      agent: null,
       sidebarRevealBehavior: 'auto'
     })
     expect(queueWorkspaceActivationTerminalFocus).toHaveBeenCalledWith('wt-1', {
