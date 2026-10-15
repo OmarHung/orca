@@ -4,7 +4,7 @@ import type {
   PythonInterpreter,
   PythonInterpreterSource
 } from '../../shared/python-interpreter-types'
-import { runProcess } from '../../shared/child-process/run-process'
+import { runProcess } from '@orca/process-host'
 import { resolveCommandOnLocalPath } from '../ipc/command-path-resolver'
 
 const VENV_DIR_NAMES = ['.venv', 'venv', 'env']

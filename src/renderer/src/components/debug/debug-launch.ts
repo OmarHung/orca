@@ -2,7 +2,6 @@ import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import { findWorktreeById } from '@/store/slices/worktree-helpers'
-import { getActiveRuntimeTarget } from '@/runtime/runtime-client-target'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 import { basename } from '@/lib/path'
 import type {
@@ -35,15 +34,9 @@ export function isDebuggableFile(filePath: string): boolean {
 }
 
 /** Adapters run in this process's host only, so the workspace must live here too. */
-export function isLocalDebugTarget(options: {
-  repoHostId: string
-  activeRuntimeIsLocal: boolean
-  worktreePath: string
-}): boolean {
+export function isLocalDebugTarget(options: { repoHostId: string; worktreePath: string }): boolean {
   return (
-    options.repoHostId === LOCAL_EXECUTION_HOST_ID &&
-    options.activeRuntimeIsLocal &&
-    !WSL_UNC_PREFIX.test(options.worktreePath)
+    options.repoHostId === LOCAL_EXECUTION_HOST_ID && !WSL_UNC_PREFIX.test(options.worktreePath)
   )
 }
 
@@ -58,7 +51,6 @@ function localWorktreeForDebugging(worktreeId: string): { path: string } | null 
   }
   const local = isLocalDebugTarget({
     repoHostId: getRepoExecutionHostId(repo),
-    activeRuntimeIsLocal: getActiveRuntimeTarget(state.settings).kind === 'local',
     worktreePath: worktree.path
   })
   if (!local) {

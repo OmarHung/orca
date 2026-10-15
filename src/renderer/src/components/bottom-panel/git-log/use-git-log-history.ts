@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getConnectionId } from '@/lib/connection-context'
-import { getRuntimeGitHistory } from '@/runtime/runtime-git-client'
+import { getRuntimeGitHistory } from '@/runtime/runtime-git-status-client'
 import { translate } from '@/i18n/i18n'
 import { GIT_HISTORY_MAX_LIMIT, type GitHistoryBranchList } from '../../../../../shared/git-history'
 import type { GitHistoryPanelState } from '../../right-sidebar/source-control/sync/git-history-panel'
@@ -35,16 +35,16 @@ export function useGitLogHistory(
   isVisible: boolean,
   markCherryPicks = false
 ): GitLogHistory {
-  const { repoId, worktreeId, worktreePath, isFolder, repoSettings, observedHead } = worktree
+  const { repoId, worktreeId, worktreePath, isFolder, repoTarget, observedHead } = worktree
   const [stateByKey, setStateByKey] = useState<Record<string, GitHistoryPanelState>>({})
   const [branchListByWorktree, setBranchListByWorktree] = useState<
     Record<string, GitLogBranchListState>
   >({})
   const requestSeqRef = useRef(0)
   const latestRequestByKeyRef = useRef<Record<string, number>>({})
-  // Why: reads route by owner host; a new settings object with the same host must not refetch.
+  // Why: reads route by owner host; a new target object with the same host must not refetch.
   // `scope` must be referentially stable (held in state); the load effect keys on scopeKey.
-  const ownerHostKey = repoSettings?.activeRuntimeEnvironmentId?.trim() ?? ''
+  const ownerHostKey = repoTarget?.kind === 'environment' ? repoTarget.environmentId : ''
   const scopeKey = gitLogScopeKey(scope)
   const stateKey = worktreeId ? `${worktreeId}\n${scopeKey}` : null
   const cherryPicksRequested = markCherryPicks && scope.kind === 'ref'
@@ -52,7 +52,7 @@ export function useGitLogHistory(
 
   const refresh = useCallback(
     async (options?: GitLogRefreshOptions): Promise<void> => {
-      if (!worktreeId || !worktreePath || !stateKey || isFolder || !isVisible) {
+      if (!worktreeId || !worktreePath || !stateKey || isFolder || !isVisible || !repoTarget) {
         return
       }
       const requestId = ++requestSeqRef.current
@@ -64,7 +64,7 @@ export function useGitLogHistory(
       try {
         const result = await getRuntimeGitHistory(
           {
-            settings: repoSettings,
+            target: repoTarget,
             worktreeId,
             worktreePath,
             connectionId: getConnectionId(worktreeId) ?? undefined
@@ -114,7 +114,7 @@ export function useGitLogHistory(
       cherryPicksRequested,
       isFolder,
       isVisible,
-      repoSettings,
+      repoTarget,
       scope,
       stateKey,
       worktreeId,

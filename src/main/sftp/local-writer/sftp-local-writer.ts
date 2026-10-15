@@ -1,7 +1,7 @@
 import { existsSync, statSync } from 'node:fs'
 import type { SftpLocalRoot } from '../../../shared/sftp-types'
-import { forkProcess } from '../../../shared/child-process/fork-process'
-import type { SpawnedProcess } from '../../../shared/child-process/process-spec'
+import { forkProcess } from '@orca/process-host/fork-process'
+import type { SpawnedProcess } from '@orca/process-host/process-spec'
 import { RUNTIME_ENV_ALLOWLIST, pickAllowedEnv } from '../../ai-vault/session-scanner-service-env'
 import {
   currentWorkerEntryLayout,

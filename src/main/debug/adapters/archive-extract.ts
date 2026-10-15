@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { removeTree } from '../../../shared/windows-transient-lock-removal'
-import { runProcess } from '../../../shared/child-process/run-process'
-import { windowsSystem32Binary } from '../../../shared/child-process/windows-system-binary'
+import { runProcess } from '@orca/process-host'
+import { windowsSystem32Binary } from '@orca/process-host/windows-system-binary'
 import { resolveCommandOnLocalPath } from '../../ipc/command-path-resolver'
 
 const EXTRACT_TIMEOUT_MS = 120_000

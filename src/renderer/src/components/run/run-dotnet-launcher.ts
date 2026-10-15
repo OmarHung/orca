@@ -1,7 +1,6 @@
 import { joinPath } from '@/lib/path'
 import { useAppStore } from '@/store'
 import { findWorktreeById } from '@/store/slices/worktree-helpers'
-import { getActiveRuntimeTarget } from '@/runtime/runtime-client-target'
 import { getRepoExecutionHostId } from '../../../../shared/execution-host'
 import { flattenTerminalQuickCommand } from '../../../../shared/terminal-quick-commands'
 import { isLocalDebugTarget } from '../debug/debug-launch'
@@ -19,7 +18,6 @@ export function runsOnThisMachine(worktreeId: string): boolean {
     repo &&
     isLocalDebugTarget({
       repoHostId: getRepoExecutionHostId(repo),
-      activeRuntimeIsLocal: getActiveRuntimeTarget(state.settings).kind === 'local',
       worktreePath: worktree.path
     })
   )

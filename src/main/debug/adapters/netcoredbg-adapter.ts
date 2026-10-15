@@ -1,5 +1,5 @@
 import { basename, join } from 'node:path'
-import { spawnProcess } from '../../../shared/child-process/run-process'
+import { spawnProcess } from '@orca/process-host'
 import type { LaunchProfileDetails } from '../../../shared/run-configurations/dotnet-run-configurations'
 import type { AdapterInstallDeps } from './adapter-installer'
 import { downloadWithElectronNet } from './adapter-download'
@@ -49,9 +49,11 @@ export function buildDotnetProject(options: {
     program: options.dotnet,
     args: ['build', options.projectFile, '-c', 'Debug', '-nologo'],
     cwd: options.cwd,
-    stdio: ['ignore', 'pipe', 'pipe'],
+    // Why all pipes: the typed spawn then guarantees the streams; stdin is closed at once below.
+    stdio: ['pipe', 'pipe', 'pipe'],
     timeoutMs: BUILD_TIMEOUT_MS
   })
+  child.stdin.end()
   let output = ''
   const collect = (chunk: Buffer): void => {
     const text = chunk.toString('utf8')

@@ -2,10 +2,10 @@ import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { getRepoMapFromState, getWorktreeMapFromState } from '@/store/selectors'
 import { getConnectionId } from '@/lib/connection-context'
-import { getSettingsForWorktreeRuntimeOwner } from '@/lib/worktree-runtime-owner'
+import { runtimeTargetForWorkspaceOwner } from '@/lib/resolve-owner'
 import { translate } from '@/i18n/i18n'
 import { getRuntimeGitBlame } from '@/runtime/runtime-git-blame-client'
-import { getRuntimeGitCommitCompare } from '@/runtime/runtime-git-client'
+import { getRuntimeGitCommitCompare } from '@/runtime/runtime-git-diff-client'
 import type { RuntimeGitContext } from '@/runtime/runtime-git-client-context'
 import { isGitRepoKind } from '../../../../../shared/repo-kind'
 import type { GitBlameResult } from '../../../../../shared/git-blame'
@@ -26,12 +26,11 @@ function resolveContext(worktreeId: string): RuntimeGitContext | null {
   if (connectionId && state.sshConnectionStates.get(connectionId)?.status !== 'connected') {
     return null
   }
-  return {
-    settings: getSettingsForWorktreeRuntimeOwner(state, worktreeId),
-    worktreeId,
-    worktreePath: worktree.path,
-    connectionId
+  const target = runtimeTargetForWorkspaceOwner(state, { workspaceId: worktreeId })
+  if (!target) {
+    return null
   }
+  return { target, worktreeId, worktreePath: worktree.path, connectionId }
 }
 
 /** Blame for a worktree file at the given HEAD, or null when it can't be had right now. */

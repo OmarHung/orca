@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { parseDocument } from 'yaml'
-import { runProcess } from '../../shared/child-process/run-process'
+import { runProcess } from '@orca/process-host'
 import { ngrokUpstreamPort, type NgrokConfiguredEndpoint } from '../../shared/ngrok/ngrok-types'
 
 /**

@@ -1,7 +1,6 @@
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import { useAppStore } from '@/store'
 import type { AppState } from '@/store/types'
-import { getSettingsForAgentTabRuntimeOwner } from '@/lib/agent-paste-draft'
 import {
   sendNativeChatMessage,
   sendNativeChatTypedCommand
@@ -75,12 +74,11 @@ export function clearAgentTabConversation(
   if (isAgentTabBusy(state, tabId)) {
     return 'busy'
   }
-  const settings = getSettingsForAgentTabRuntimeOwner(tabId)
   // Why: same routing as the native chat composer — Codex only runs slash commands typed key by key.
   if (agent === 'codex') {
-    sendNativeChatTypedCommand(settings, ptyId, AGENT_CLEAR_COMMAND)
+    sendNativeChatTypedCommand(ptyId, AGENT_CLEAR_COMMAND)
   } else {
-    sendNativeChatMessage(settings, ptyId, AGENT_CLEAR_COMMAND)
+    sendNativeChatMessage(ptyId, AGENT_CLEAR_COMMAND)
   }
   return 'sent'
 }

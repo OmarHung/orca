@@ -1,25 +1,25 @@
 import { useMemo } from 'react'
 import { getConnectionId } from '@/lib/connection-context'
-import type { RuntimeGitContext } from '@/runtime/runtime-git-client-context'
+import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
 import type { GitLogCompareContext } from './open-git-log-compare'
 
 /** Stable git routing for Git Log compares; null while no workspace is shown. */
 export function useGitLogCompareContext(worktree: {
   worktreeId: string | null
   worktreePath: string | null
-  repoSettings: RuntimeGitContext['settings']
+  repoTarget: RuntimeClientTarget | null
 }): GitLogCompareContext | null {
-  const { worktreeId, worktreePath, repoSettings } = worktree
+  const { worktreeId, worktreePath, repoTarget } = worktree
   return useMemo(
     () =>
-      worktreeId && worktreePath
+      worktreeId && worktreePath && repoTarget
         ? {
-            settings: repoSettings,
+            target: repoTarget,
             worktreeId,
             worktreePath,
             connectionId: getConnectionId(worktreeId) ?? undefined
           }
         : null,
-    [repoSettings, worktreeId, worktreePath]
+    [repoTarget, worktreeId, worktreePath]
   )
 }

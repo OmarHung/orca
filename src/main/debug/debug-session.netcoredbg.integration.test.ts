@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 vi.mock('electron', () => ({ net: { fetch: vi.fn() } }))
 
 import type { DebugSessionEvent } from '../../shared/debug/debug-session-types'
-import { runProcess } from '../../shared/child-process/run-process'
+import { runProcess } from '@orca/process-host'
 import { resolveCommandOnLocalPath } from '../ipc/command-path-resolver'
 import {
   buildDotnetProject,

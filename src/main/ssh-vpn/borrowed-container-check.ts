@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { ProcessResult } from '../../shared/child-process/run-process'
+import type { ProcessResult } from '@orca/process-host/process-spec'
 import { SSH_VPN_TUNNEL_USER } from '../../shared/ssh-vpn-command-format'
 import type { SshVpnContainerCandidate } from '../../shared/ssh-vpn-types'
 import { keepsTunnelUserOnVpn } from './borrowed-container-firewall'

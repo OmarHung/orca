@@ -119,12 +119,7 @@ describe('runConfiguration', () => {
     await runConfiguration(target)
 
     expect(openRunTerminal).toHaveBeenCalledTimes(1)
-    expect(sendRuntimePtyInputVerified).toHaveBeenCalledWith(
-      null,
-      'pty-tab-1',
-      'pnpm dev\r',
-      'launch'
-    )
+    expect(sendRuntimePtyInputVerified).toHaveBeenCalledWith('pty-tab-1', 'pnpm dev\r', 'launch')
     expect(useRunPanelStore.getState().selectedByWorktree.wt).toBe('cmd')
     expect(useBottomPanelLayout.getState()).toMatchObject({ open: true, activeTab: 'run' })
     expect(useRunSessionStore.getState().sessionsByKey[key].status).toBe('running')
@@ -179,21 +174,11 @@ describe('stopConfiguration', () => {
     await runConfiguration(target)
 
     stopConfiguration('wt', 'cmd')
-    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(
-      null,
-      'pty-tab-1',
-      '\x03',
-      'driving'
-    )
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith('pty-tab-1', '\x03', 'driving')
     expect(useRunSessionStore.getState().sessionsByKey[key].status).toBe('stopping')
 
     stopConfiguration('wt', 'cmd')
-    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(
-      null,
-      'pty-tab-1',
-      '\x03\x1c',
-      'driving'
-    )
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith('pty-tab-1', '\x03\x1c', 'driving')
     expect(appState.closeTab).not.toHaveBeenCalled()
     expect(useRunSessionStore.getState().sessionsByKey[key]).toMatchObject({
       status: 'stopping',
@@ -214,12 +199,7 @@ describe('stopConfiguration', () => {
 
     stopConfiguration('wt', 'cmd')
 
-    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(
-      null,
-      'pty-tab-1',
-      '\x03',
-      'driving'
-    )
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith('pty-tab-1', '\x03', 'driving')
     expect(useRunSessionStore.getState().sessionsByKey[key].forceStopped).toBeUndefined()
   })
 
@@ -231,12 +211,7 @@ describe('stopConfiguration', () => {
     stopConfiguration('wt', 'cmd')
 
     expect(appState.consumeTabStartupCommand).toHaveBeenCalledWith('tab-1')
-    expect(sendRuntimePtyInputVerified).not.toHaveBeenCalledWith(
-      null,
-      'pty-tab-1',
-      '\x03',
-      'driving'
-    )
+    expect(sendRuntimePtyInputVerified).not.toHaveBeenCalledWith('pty-tab-1', '\x03', 'driving')
     expect(useRunSessionStore.getState().sessionsByKey[key].status).toBe('stopped')
   })
 
@@ -255,17 +230,11 @@ describe('rerunConfiguration', () => {
     await runConfiguration(target)
 
     const rerun = rerunConfiguration(target)
-    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(
-      null,
-      'pty-tab-1',
-      '\x03',
-      'driving'
-    )
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith('pty-tab-1', '\x03', 'driving')
     dispatchTerminalCommandFinishedEvent('wt', 130, `tab-1:${LEAF}`)
     await rerun
 
     expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(
-      null,
       'pty-tab-1',
       'pnpm dev\r',
       'launch'
@@ -283,7 +252,6 @@ describe('rerunConfiguration', () => {
 
     expect(appState.closeTab).not.toHaveBeenCalled()
     expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(
-      null,
       'pty-tab-1',
       'pnpm dev\r',
       'launch'
@@ -304,12 +272,7 @@ describe('rerunConfiguration', () => {
 
     const rerun = rerunConfiguration(target)
     await vi.advanceTimersByTimeAsync(3_001)
-    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(
-      null,
-      'pty-tab-1',
-      '\x03\x1c',
-      'driving'
-    )
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith('pty-tab-1', '\x03\x1c', 'driving')
     expect(appState.closeTab).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(2_001)
     await rerun
@@ -331,7 +294,6 @@ describe('rerunConfiguration', () => {
 
     expect(sendRuntimePtyInputVerified).toHaveBeenCalledTimes(2)
     expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(
-      null,
       'pty-tab-1',
       'pnpm dev\r',
       'launch'
@@ -351,7 +313,6 @@ describe('rerunConfiguration after forcing', () => {
 
     expect(appState.closeTab).not.toHaveBeenCalled()
     expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(
-      null,
       'pty-tab-1',
       'pnpm dev\r',
       'launch'
@@ -410,7 +371,6 @@ describe('stable pane ownership', () => {
     await runConfiguration(target)
 
     expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(
-      null,
       'pty-tab-detached',
       'pnpm dev\r',
       'launch'
@@ -438,7 +398,7 @@ describe('stable pane ownership', () => {
 
     stopConfiguration('wt', 'cmd')
 
-    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith(null, 'pty-run', '\x03', 'driving')
+    expect(sendRuntimePtyInputVerified).toHaveBeenLastCalledWith('pty-run', '\x03', 'driving')
   })
 
   it('closes only the owned pane at the final stop stage', async () => {
