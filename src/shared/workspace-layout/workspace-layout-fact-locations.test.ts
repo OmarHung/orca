@@ -93,6 +93,7 @@ function populate(loaded: LoadedWorkspaceLayout): LoadedWorkspaceLayout {
   fill(loaded, 'file.mirroredFromRuntimeSession', true)
   fill(loaded, 'file.readOnly', true)
   fill(loaded, 'file.liveTail', true)
+  fill(loaded, 'file.staysInOpeningWorkspace', true)
   // Use nonfirst focus/expanded panes so fallback mistakes become visible.
   fill(loaded, 'viewPane.activeLeafId', leaf(2), (holder) => holder.activeLeafId === leaf(1))
   fill(loaded, 'viewPane.expandedLeafId', leaf(2), (holder) => holder.activeLeafId === leaf(2))

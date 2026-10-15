@@ -1,17 +1,18 @@
 import { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { useActiveWorktree, useRepoById } from '@/store/selectors'
-import { getRepoOwnerRoutedSettings } from '@/lib/repo-runtime-owner'
+import { ipcOrRuntimeTargetForHostId } from '@/runtime/runtime-client-target'
 import { isFolderRepo } from '../../../../../shared/repo-kind'
-import type { RuntimeGitContext } from '@/runtime/runtime-git-client'
+import { getRepoExecutionHostId } from '../../../../../shared/execution-host'
+import type { RuntimeClientTarget } from '../../../../../shared/runtime-client-target'
 
 export type GitLogWorktree = {
   repoId: string | null
   worktreeId: string | null
   worktreePath: string | null
   isFolder: boolean
-  /** Settings routed to the repo OWNER host, so reads work for SSH/WSL/remote repos. */
-  repoSettings: RuntimeGitContext['settings']
+  /** Transport to the repo OWNER host, so reads work for SSH/WSL/remote repos; null without a repo row. */
+  repoTarget: RuntimeClientTarget | null
   /** Last HEAD git status observed; a change means the log is stale. */
   observedHead: string | null
 }
@@ -21,26 +22,23 @@ export function useGitLogWorktree(): GitLogWorktree {
   const activeWorktree = useActiveWorktree()
   const worktreeId = useAppStore((s) => s.activeWorktreeId)
   const repo = useRepoById(activeWorktree?.repoId ?? null)
-  const settings = useAppStore((s) => s.settings)
   const observedHead = useAppStore((s) =>
     worktreeId ? (s.gitStatusHeadByWorktree?.[worktreeId] ?? null) : null
   )
   const repoId = repo?.id ?? null
   const repoConnectionId = repo?.connectionId ?? null
   const repoExecutionHostId = repo?.executionHostId ?? null
-  const repoSettings = useMemo(
+  const repoTarget = useMemo(
     () =>
-      getRepoOwnerRoutedSettings(
-        settings,
-        repoId
-          ? {
-              id: repoId,
+      repoId
+        ? ipcOrRuntimeTargetForHostId(
+            getRepoExecutionHostId({
               connectionId: repoConnectionId,
               executionHostId: repoExecutionHostId
-            }
-          : null
-      ),
-    [repoConnectionId, repoExecutionHostId, repoId, settings]
+            })
+          )
+        : null,
+    [repoConnectionId, repoExecutionHostId, repoId]
   )
 
   return {
@@ -48,7 +46,7 @@ export function useGitLogWorktree(): GitLogWorktree {
     worktreeId,
     worktreePath: activeWorktree?.path ?? null,
     isFolder: repo ? isFolderRepo(repo) : false,
-    repoSettings,
+    repoTarget,
     observedHead
   }
 }

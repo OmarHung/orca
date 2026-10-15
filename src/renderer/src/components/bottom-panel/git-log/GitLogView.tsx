@@ -83,7 +83,7 @@ export function GitLogView(): React.JSX.Element {
   const commitActions = useGitHistoryCommitActions({
     activeWorktreeId: worktree.worktreeId,
     worktreePath: worktree.worktreePath,
-    activeRepoSettings: worktree.repoSettings,
+    activeRepoTarget: worktree.repoTarget,
     resolveSplitTargetGroupId: noSplitTarget
   })
   const [filter, setFilter] = useState<GitLogFilter>(EMPTY_GIT_LOG_FILTER)

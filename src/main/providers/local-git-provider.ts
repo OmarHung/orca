@@ -107,8 +107,14 @@ export function createLocalGitProvider(options: LocalGitProviderOptions = {}): L
         ...base,
         admissionTier: compareOptions?.admissionTier ?? 'interactive'
       }),
+    // Why spread: an absent base stays absent, so the call matches the free function's own shape.
     getCommitCompare: (worktreePath, commitId, baseCommitId) =>
-      getCommitCompare(worktreePath, commitId, interactive, baseCommitId),
+      getCommitCompare(
+        worktreePath,
+        commitId,
+        interactive,
+        ...(baseCommitId === undefined ? [] : [baseCommitId])
+      ),
     getUpstreamStatus: (worktreePath, pushTarget) =>
       getUpstreamStatus(worktreePath, pushTarget, base),
     pushBranch: (worktreePath, publish, pushTarget, pushOptions) =>

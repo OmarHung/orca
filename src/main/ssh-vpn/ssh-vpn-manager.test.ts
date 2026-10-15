@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { ProcessResult } from '../../shared/child-process/process-spec'
+import type { ProcessResult } from '@orca/process-host/process-spec'
 import type { SshVpnProfile, SshVpnProfileState } from '../../shared/ssh-vpn-types'
 import { SshVpnManager } from './ssh-vpn-manager'
 import type { SshVpnDockerPort } from './ssh-vpn-manager-types'

@@ -54,9 +54,12 @@ export function buildProjectInitialTabStartup(
   if (!agent) {
     return undefined
   }
-  const { resolvedLaunchPlatform, isRemote } = resolveAgentLaunchExecutionContext(state, {
-    worktreeId
-  })
+  const launchContext = resolveAgentLaunchExecutionContext(state, { worktreeId })
+  // Why: an unknown host OS already told the user why; keep the plain shell instead of guessing.
+  if (!launchContext) {
+    return undefined
+  }
+  const { resolvedLaunchPlatform, isRemote } = launchContext
   const settings = state.settings ?? {}
   const plan = buildAgentStartupPlan({
     ...resolveAgentStartupPlanInputs({

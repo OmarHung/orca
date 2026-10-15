@@ -51,7 +51,7 @@ function projectFilesFor(context: RuntimeFileOperationArgs, worktreeRoot: string
     readText: async (filePath) => {
       try {
         const file = await readRuntimeFileContent({
-          settings: context.settings,
+          target: context.target,
           filePath,
           relativePath: getRelativePathInsideRoot(filePath, worktreeRoot) ?? undefined,
           worktreeId: context.worktreeId ?? undefined,

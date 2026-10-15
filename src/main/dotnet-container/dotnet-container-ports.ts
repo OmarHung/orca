@@ -1,4 +1,4 @@
-import { runProcess } from '../../shared/child-process/run-process'
+import { runProcess } from '@orca/process-host'
 import { resolveDockerPath } from '../docker/docker-cli-location'
 import type { RawListeningPort } from '../ports/local-workspace-port-scan-state'
 import { ORCA_EXEC_PATH } from './dotnet-container-assets'

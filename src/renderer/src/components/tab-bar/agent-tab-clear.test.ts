@@ -14,7 +14,6 @@ const mocks = vi.hoisted(() => {
       runtimePaneTitlesByTabId: {}
     },
     activityStatus: 'done',
-    settings: { activeRuntimeEnvironmentId: null },
     sendNativeChatMessage: vi.fn(),
     sendNativeChatTypedCommand: vi.fn()
   }
@@ -22,9 +21,6 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('@/store', () => ({
   useAppStore: { getState: () => mocks.state }
-}))
-vi.mock('@/lib/agent-paste-draft', () => ({
-  getSettingsForAgentTabRuntimeOwner: () => mocks.settings
 }))
 vi.mock('../native-chat/native-chat-runtime-send', () => ({
   sendNativeChatMessage: mocks.sendNativeChatMessage,
@@ -95,7 +91,7 @@ describe('clearAgentTabConversation', () => {
   it('sends /clear to Claude as a submitted message', () => {
     expect(clearAgentTabConversation('tab', 'claude', 'pty-1')).toBe('sent')
 
-    expect(mocks.sendNativeChatMessage).toHaveBeenCalledWith(mocks.settings, 'pty-1', '/clear')
+    expect(mocks.sendNativeChatMessage).toHaveBeenCalledWith('pty-1', '/clear')
     expect(mocks.sendNativeChatTypedCommand).not.toHaveBeenCalled()
     expect(resolveTerminalTabActivityStatus).toHaveBeenCalledWith(
       expect.objectContaining({ tab: { id: 'tab', title: 'Claude' } })
@@ -105,7 +101,7 @@ describe('clearAgentTabConversation', () => {
   it('types /clear key by key for Codex', () => {
     expect(clearAgentTabConversation('tab', 'codex', 'pty-1')).toBe('sent')
 
-    expect(mocks.sendNativeChatTypedCommand).toHaveBeenCalledWith(mocks.settings, 'pty-1', '/clear')
+    expect(mocks.sendNativeChatTypedCommand).toHaveBeenCalledWith('pty-1', '/clear')
     expect(mocks.sendNativeChatMessage).not.toHaveBeenCalled()
   })
 
