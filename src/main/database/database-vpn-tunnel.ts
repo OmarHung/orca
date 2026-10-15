@@ -1,6 +1,6 @@
 import { createServer, type Server, type Socket } from 'node:net'
 import type { Readable, Writable } from 'node:stream'
-import { runProcess, spawnProcess } from '../../shared/child-process/run-process'
+import { runProcess, spawnProcess } from '@orca/process-host'
 import {
   isShellSafeSshHost,
   sshVpnReachabilityArgs,

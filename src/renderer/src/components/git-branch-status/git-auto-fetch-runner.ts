@@ -1,11 +1,11 @@
 import { useAppStore } from '@/store'
 import { getRepoMapFromState } from '@/store/selectors'
 import { getConnectionId } from '@/lib/connection-context'
-import { getSettingsForWorktreeRuntimeOwner } from '@/lib/worktree-runtime-owner'
+import { runtimeTargetForWorkspaceOwner } from '@/lib/resolve-owner'
 import { resolveRemoteOperationErrorMessage } from '@/lib/source-control-remote-error'
-import { fetchRuntimeGit } from '@/runtime/runtime-git-client'
+import { fetchRuntimeGit } from '@/runtime/runtime-git-sync-client'
 import { isGitRepoKind } from '../../../../shared/repo-kind'
-import type { GlobalSettings } from '../../../../shared/global-settings-types'
+import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
 import type { GitPushTarget } from '../../../../shared/worktree/types'
 import { isGitAutoFetchDue } from './git-auto-fetch-schedule'
 import { useGitAutoFetchStore } from './git-auto-fetch-store'
@@ -16,7 +16,8 @@ export type GitFetchTarget = {
   worktreePath: string
   connectionId: string | undefined
   pushTarget: GitPushTarget | undefined
-  settings: Pick<GlobalSettings, 'activeRuntimeEnvironmentId'>
+  /** Transport to the worktree's owner host. */
+  target: RuntimeClientTarget
 }
 
 /** The active workspace's git repository, when it can be fetched right now. */
@@ -39,13 +40,18 @@ export function resolveActiveGitFetchTarget(): GitFetchTarget | null {
   if (connectionId && state.sshConnectionStates.get(connectionId)?.status !== 'connected') {
     return null
   }
+  // Why: fetches go to the worktree's owner; an owner the rows can't name is not fetched.
+  const target = runtimeTargetForWorkspaceOwner(state, { workspaceId: worktreeId })
+  if (!target) {
+    return null
+  }
   return {
     repoId: repo.id,
     worktreeId,
     worktreePath: worktree.path,
     connectionId,
     pushTarget: worktree.pushTarget,
-    settings: getSettingsForWorktreeRuntimeOwner(state, worktreeId)
+    target
   }
 }
 
@@ -57,7 +63,7 @@ export async function runGitAutoFetch(target: GitFetchTarget): Promise<void> {
   }
   history.markStarted(target.repoId, Date.now())
   const context = {
-    settings: target.settings,
+    target: target.target,
     worktreeId: target.worktreeId,
     worktreePath: target.worktreePath,
     connectionId: target.connectionId
@@ -83,7 +89,7 @@ export async function runGitAutoFetch(target: GitFetchTarget): Promise<void> {
       target.worktreePath,
       target.connectionId,
       target.pushTarget,
-      { runtimeTargetSettings: target.settings }
+      { runtimeTarget: target.target }
     )
 }
 

@@ -8,16 +8,16 @@ import { execFileSync } from 'node:child_process'
 import type { Page } from '@stablyai/playwright-test'
 import { expect, test } from './helpers/orca-app'
 import {
-  cleanupDockerSshRelayTarget,
-  startDockerSshRelayTarget,
-  type DockerSshRelayTarget
-} from './helpers/docker-ssh-relay-target'
+  cleanupDockerSshHostTarget,
+  startDockerSshHostTarget,
+  type DockerSshHostTarget
+} from './helpers/docker-ssh-host-target'
 import { waitForSessionReady } from './helpers/store'
 
 const RUN_DOCKER_SSH = process.env.ORCA_E2E_SSH_DOCKER === '1'
 const PASSPHRASE = 'e2e-key-passphrase'
 
-async function addTarget(page: Page, target: DockerSshRelayTarget): Promise<string> {
+async function addTarget(page: Page, target: DockerSshHostTarget): Promise<string> {
   return page.evaluate(async ({ host, port, identityFile }) => {
     const { target: created } = await window.api.ssh.addTarget({
       target: {
@@ -79,8 +79,8 @@ test.describe('Remembered SSH key passphrases', () => {
     registerPostElectronShutdownCleanup
   }, testInfo) => {
     test.setTimeout(300_000)
-    const target = startDockerSshRelayTarget(testInfo)
-    registerPostElectronShutdownCleanup(async () => cleanupDockerSshRelayTarget(target))
+    const target = startDockerSshHostTarget(testInfo)
+    registerPostElectronShutdownCleanup(async () => cleanupDockerSshHostTarget(target))
     execFileSync('ssh-keygen', ['-p', '-q', '-P', '', '-N', PASSPHRASE, '-f', target.identityFile])
 
     await waitForSessionReady(orcaPage)

@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress'
 import { formatBytes } from '@/components/status-bar/workspace-space-format'
 import { translate } from '@/i18n/i18n'
 import type { DatabaseDumpJob, DatabaseJobStatus } from './database-jobs-store'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../../../shared/execution-host'
 
 function StatusIcon({ status }: { status: DatabaseJobStatus }): React.JSX.Element {
   switch (status) {
@@ -141,7 +142,9 @@ export function DatabaseJobRow({
             size="icon-sm"
             aria-label={translate('database.jobs.showInFolder', 'Show in Folder')}
             title={translate('database.jobs.showInFolder', 'Show in Folder')}
-            onClick={() => void window.api.shell.openInFileManager(job.destination)}
+            onClick={() =>
+              void window.api.shell.openInFileManager(job.destination, LOCAL_EXECUTION_HOST_ID)
+            }
           >
             <FolderOpen />
           </Button>

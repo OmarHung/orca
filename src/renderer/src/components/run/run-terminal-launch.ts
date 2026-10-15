@@ -160,14 +160,7 @@ export async function runInExistingTerminal(
   }
   const text = `${runCommandText(target)}\r`
   try {
-    if (
-      !(await sendRuntimePtyInputVerified(
-        useAppStore.getState().settings,
-        binding.ptyId,
-        text,
-        'launch'
-      ))
-    ) {
+    if (!(await sendRuntimePtyInputVerified(binding.ptyId, text, 'launch'))) {
       return false
     }
   } catch {

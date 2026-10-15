@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import { runProcess, spawnProcess } from '../../../shared/child-process/run-process'
+import { runProcess, spawnProcess } from '@orca/process-host'
 import { DebugPreparationError } from './prepared-debug-adapter'
 
 const WHERE_TIMEOUT_MS = 15_000
@@ -53,8 +53,10 @@ export function ensureDotnetContainer(
     program: launcher,
     args: ['--orca-ensure'],
     cwd,
-    stdio: ['ignore', 'pipe', 'pipe']
+    // Why all pipes: the typed spawn then guarantees the streams; stdin is closed at once below.
+    stdio: ['pipe', 'pipe', 'pipe']
   })
+  child.stdin.end()
   let stderr = ''
   child.stdout.on('data', (chunk: Buffer) => onOutput(chunk.toString('utf8')))
   child.stderr.on('data', (chunk: Buffer) => {

@@ -1,6 +1,6 @@
 import { delimiter } from 'node:path'
 import type { DebugProtocol } from '@vscode/debugprotocol'
-import { runProcess } from '../../../shared/child-process/run-process'
+import { runProcess } from '@orca/process-host'
 import type { AdapterInstallDeps } from './adapter-installer'
 import { downloadWithElectronNet } from './adapter-download'
 

@@ -8,7 +8,7 @@ import type {
   SshVpnStartPreview,
   SshVpnStatus
 } from '../../shared/ssh-vpn-types'
-import { runProcessSync } from '../../shared/child-process/run-process'
+import { runProcessSync } from '@orca/process-host'
 import type { SecretStore } from '../../shared/secret-store'
 import { resolveDockerPath } from '../docker/docker-cli-location'
 import { dockerInstanceTag } from '../docker/docker-instance-tag'

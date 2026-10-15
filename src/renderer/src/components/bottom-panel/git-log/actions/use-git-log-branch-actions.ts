@@ -36,7 +36,7 @@ function refreshWorktreeGitState(worktreeId: string): void {
   }
   const store = useAppStore.getState()
   void refreshGitStatusForWorktree({
-    settings: target.settings,
+    target: target.target,
     worktreeId,
     worktreePath: target.worktreePath,
     connectionId: target.connectionId,
@@ -55,7 +55,7 @@ function refreshWorktreeGitState(worktreeId: string): void {
         target.worktreePath,
         target.connectionId,
         target.pushTarget,
-        { runtimeTargetSettings: target.settings }
+        { runtimeTarget: target.target }
       )
     )
     .catch((error: unknown) => console.warn('[GitLog] post-action status refresh failed', error))
@@ -75,7 +75,7 @@ export function useGitLogBranchActions(
   const toastSeqRef = useRef(0)
   const confirm = useConfirmationDialog()
   const openDialog = useGitLogActionDialogStore((s) => s.open)
-  const { worktreeId, worktreePath, repoSettings } = worktree
+  const { worktreeId, worktreePath, repoTarget } = worktree
 
   const handleResult = useCallback(
     (
@@ -134,7 +134,7 @@ export function useGitLogBranchActions(
 
   const run = useCallback(
     (action: GitBranchAction): void => {
-      if (runningRef.current || !worktreeId || !worktreePath) {
+      if (runningRef.current || !worktreeId || !worktreePath || !repoTarget) {
         return
       }
       runningRef.current = true
@@ -145,7 +145,7 @@ export function useGitLogBranchActions(
         PROGRESS_TOAST_DELAY_MS
       )
       const context = {
-        settings: repoSettings,
+        target: repoTarget,
         worktreeId,
         worktreePath,
         connectionId: getConnectionId(worktreeId) ?? undefined
@@ -168,7 +168,7 @@ export function useGitLogBranchActions(
           followUp?.()
         })
     },
-    [handleResult, onSettled, repoSettings, worktreeId, worktreePath]
+    [handleResult, onSettled, repoTarget, worktreeId, worktreePath]
   )
 
   return useMemo(

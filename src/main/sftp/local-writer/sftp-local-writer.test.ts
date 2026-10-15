@@ -11,7 +11,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { SftpLocalRoot } from '../../../shared/sftp-types'
-import { forkProcess } from '../../../shared/child-process/fork-process'
+import { forkProcess } from '@orca/process-host/fork-process'
 import { spawnLocalWriterFromSource } from '../sftp-test-support'
 import { openSftpLocalWriter, type SftpLocalWriter } from './sftp-local-writer'
 

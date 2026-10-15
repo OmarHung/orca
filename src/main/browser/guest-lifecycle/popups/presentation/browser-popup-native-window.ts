@@ -192,6 +192,7 @@ export function prepareNativeBrowserPopup(
     }
   }
   const popup = {
+    window,
     contentWebContents: contents,
     close,
     onClosed: (listener: () => void): void => {

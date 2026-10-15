@@ -1,7 +1,7 @@
 import path from 'node:path'
 import type { FileEntryWithStats, Stats } from 'ssh2'
-import { forkProcess } from '../../shared/child-process/fork-process'
-import type { SpawnedProcess } from '../../shared/child-process/process-spec'
+import { forkProcess } from '@orca/process-host/fork-process'
+import type { SpawnedProcess } from '@orca/process-host/process-spec'
 import type { SftpOps } from './sftp-ops'
 
 /** Runs the real local-writer entry from source under Node, as a build runs its compiled copy. */

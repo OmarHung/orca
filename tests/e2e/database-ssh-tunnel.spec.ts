@@ -12,15 +12,15 @@ import {
   runInConsole
 } from './helpers/database-page'
 import {
-  cleanupDockerSshRelayTarget,
-  execDockerSshRelayTargetControlCommand,
-  startDockerSshRelayTarget,
-  type DockerSshRelayTarget
-} from './helpers/docker-ssh-relay-target'
+  cleanupDockerSshHostTarget,
+  execDockerSshHostTargetControlCommand,
+  startDockerSshHostTarget,
+  type DockerSshHostTarget
+} from './helpers/docker-ssh-host-target'
 import {
   readSystemSshInvocationKinds,
   trustDockerSshHost
-} from './helpers/ssh-port-forward-transport-evidence'
+} from './helpers/docker-ssh-system-ssh-evidence'
 import { test, expect } from './helpers/orca-app'
 
 // Opt-in: a Docker SSH host (ORCA_E2E_SSH_DOCKER=1) plus the database URLs the driver
@@ -54,7 +54,7 @@ function withEndpoint(raw: string, host: string, port: number): URL {
   return url
 }
 
-async function addBastion(page: Page, target: DockerSshRelayTarget): Promise<string> {
+async function addBastion(page: Page, target: DockerSshHostTarget): Promise<string> {
   return page.evaluate(
     async ({ host, port, identityFile, label }) => {
       const { target: created } = await window.api.ssh.addTarget({
@@ -131,7 +131,7 @@ test.describe('Database SSH tunnels', () => {
     electronApp
   }, testInfo) => {
     test.setTimeout(300_000)
-    const target = startDockerSshRelayTarget(testInfo)
+    const target = startDockerSshHostTarget(testInfo)
     // Seeded before the explorer lists anything, for the native dumps below.
     // Named apart, so each shows under its own connection only.
     const schema = `e2e_ssh_dump_${Date.now().toString(36)}`
@@ -145,7 +145,7 @@ test.describe('Database SSH tunnels', () => {
     await adminSql(MYSQL_URL!, seed('create database', mysqlSchema))
     try {
       // A tunnel only forwards ports, so it must work on a host where Orca's relay can't run.
-      execDockerSshRelayTargetControlCommand(target, 'mv "$(command -v node)" /tmp/node.hidden')
+      execDockerSshHostTargetControlCommand(target, 'mv "$(command -v node)" /tmp/node.hidden')
       await trustDockerSshHost(electronApp, target)
       await addBastion(orcaPage, target)
       await openDatabasePage(orcaPage)
@@ -203,7 +203,7 @@ test.describe('Database SSH tunnels', () => {
 
       // Resetting the SSH link takes the tunnel down; connecting again rebuilds both.
       // The SSH host drops our session, as a network change or sshd restart would.
-      execDockerSshRelayTargetControlCommand(target, "pkill -f '^sshd: root' || true")
+      execDockerSshHostTargetControlCommand(target, "pkill -f '^sshd: root' || true")
       await expect(mysqlRow).toContainText(/SSH connection to db-bastion was reset/, {
         timeout: 30_000
       })
@@ -227,7 +227,7 @@ test.describe('Database SSH tunnels', () => {
         dialog.getByText(new RegExp(`SSH tunnel: the SSH host could not reach ${mysql.host}:3399`))
       ).toBeVisible({ timeout: 60_000 })
     } finally {
-      cleanupDockerSshRelayTarget(target)
+      cleanupDockerSshHostTarget(target)
       await adminSql(POSTGRES_URL!, [`drop schema if exists ${schema} cascade`], {
         ignoreErrors: true
       })
@@ -247,7 +247,7 @@ test.describe('Database SSH tunnels over system OpenSSH', () => {
     electronApp
   }, testInfo) => {
     test.setTimeout(300_000)
-    const target = startDockerSshRelayTarget(testInfo)
+    const target = startDockerSshHostTarget(testInfo)
     try {
       const invocations = await trustDockerSshHost(electronApp, target)
       await addBastion(orcaPage, target)
@@ -268,7 +268,7 @@ test.describe('Database SSH tunnels over system OpenSSH', () => {
       execFileSync('pkill', ['-f', `127\\.0\\.0\\.1:[0-9]+:${mysql.host}:${mysql.port}`])
       await expect(row).toContainText(/SSH tunnel through db-bastion stopped/, { timeout: 30_000 })
     } finally {
-      cleanupDockerSshRelayTarget(target)
+      cleanupDockerSshHostTarget(target)
     }
   })
 })
