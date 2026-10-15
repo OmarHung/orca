@@ -6,8 +6,8 @@ import {
   scanWorkspacePortsForTarget,
   workspacePortScanKeyForTarget
 } from '@/lib/workspace-port-actions'
-import { runtimeTargetForExecutionHostId } from '@/runtime/runtime-client-target'
-import type { RuntimeClientTarget } from '@/runtime/runtime-rpc-client'
+import { ipcOrRuntimeTargetForHostId } from '@/runtime/runtime-client-target'
+import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
 import type { WorkspacePort } from '../../../../shared/workspace-ports'
 import { isLiveDebugSession, useDebugStore } from '../debug/debug-store'
 import {
@@ -79,7 +79,7 @@ function refreshClaims(restoring = false): void {
 }
 
 export function worktreeRuntimeTarget(worktreeId: string): RuntimeClientTarget | null {
-  return runtimeTargetForExecutionHostId(
+  return ipcOrRuntimeTargetForHostId(
     getExecutionHostIdForWorktree(useAppStore.getState(), worktreeId)
   )
 }

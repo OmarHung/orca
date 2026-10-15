@@ -2,7 +2,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { spawnProcess } from '../../../../../shared/child-process/run-process'
+import { spawnProcess } from '@orca/process-host'
 import { DumpOutput } from '../dump-output'
 import type { NativeDumpPlan, NativeRun } from './native-dump-plan'
 import { NativeDumpRunner } from './native-dump-runner'

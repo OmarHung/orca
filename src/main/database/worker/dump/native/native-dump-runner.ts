@@ -2,7 +2,8 @@ import type {
   DatabaseDumpProgress,
   DatabaseDumpSummary
 } from '../../../../../shared/database/database-dump-types'
-import { spawnProcess } from '../../../../../shared/child-process/run-process'
+import { spawnProcess } from '@orca/process-host'
+import type { PipedProcessSpawner } from '@orca/process-host/process-spec'
 import { safeFileName, type DumpOutput } from '../dump-output'
 import { DumpCancelled } from '../dump-writer'
 import type { NativeDumpPlan } from './native-dump-plan'
@@ -14,7 +15,7 @@ const ERROR_LINES = 8
 // How long a stopped tool gets to close, first after SIGTERM and again after SIGKILL.
 const STOP_GRACE_MS = 5_000
 
-type Spawn = typeof spawnProcess
+type Spawn = PipedProcessSpawner
 type Exit = { code: number | null; signal: NodeJS.Signals | null; error: Error | null }
 type Attempt = { ok: boolean; exit: Exit; stderr: string; wroteNothing: boolean }
 
@@ -147,8 +148,10 @@ export class NativeDumpRunner {
       program: plan.tool.path,
       args,
       env: plan.env,
-      stdio: ['ignore', 'pipe', 'pipe']
+      // Why all pipes: the typed spawn then guarantees the streams; stdin is closed at once below.
+      stdio: ['pipe', 'pipe', 'pipe']
     })
+    child.stdin.end()
     this.child = child
     let stderr = ''
     child.stderr.on('data', (chunk: Buffer) => {

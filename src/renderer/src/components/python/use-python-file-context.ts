@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import { useAppStore } from '@/store'
 import { basename } from '@/lib/path'
 import { findWorktreeById } from '@/store/slices/worktree-helpers'
-import { getActiveRuntimeTarget } from '@/runtime/runtime-client-target'
 import { getRepoExecutionHostId } from '../../../../shared/execution-host'
 import type { PythonInterpreter } from '../../../../shared/python-interpreter-types'
 import { debugTargetForFile, isLocalDebugTarget } from '../debug/debug-launch'
@@ -45,13 +44,11 @@ export function usePythonFileContext(): PythonFileContext | null {
   const repo = useAppStore((s) =>
     worktree ? s.repos.find((candidate) => candidate.id === worktree.repoId) : undefined
   )
-  const runtimeIsLocal = useAppStore((s) => getActiveRuntimeTarget(s.settings).kind === 'local')
   const local =
     worktree !== undefined &&
     repo !== undefined &&
     isLocalDebugTarget({
       repoHostId: getRepoExecutionHostId(repo),
-      activeRuntimeIsLocal: runtimeIsLocal,
       worktreePath: worktree.path
     })
   const projectRoot = worktree?.path ?? ''

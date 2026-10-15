@@ -1,7 +1,7 @@
 import { useAppStore } from '@/store'
 import { getRepoMapFromState, getWorktreeMapFromState } from '@/store/selectors'
 import { getConnectionId } from '@/lib/connection-context'
-import { getSettingsForWorktreeRuntimeOwner } from '@/lib/worktree-runtime-owner'
+import { runtimeTargetForWorkspaceOwner } from '@/lib/resolve-owner'
 import type { RuntimeGitContext } from '@/runtime/runtime-git-client-context'
 import { isGitRepoKind } from '../../../../../shared/repo-kind'
 
@@ -13,8 +13,12 @@ export function resolveRevisionCompareContext(worktreeId: string): RuntimeGitCon
   if (!worktree || !repo || !isGitRepoKind(repo)) {
     return null
   }
+  const target = runtimeTargetForWorkspaceOwner(state, { workspaceId: worktreeId })
+  if (!target) {
+    return null
+  }
   return {
-    settings: getSettingsForWorktreeRuntimeOwner(state, worktreeId),
+    target,
     worktreeId,
     worktreePath: worktree.path,
     connectionId: getConnectionId(worktreeId) ?? undefined

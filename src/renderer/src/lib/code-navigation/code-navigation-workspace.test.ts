@@ -62,7 +62,6 @@ describe('resolveCodeNavigationContext', () => {
 
   it('leaves remote runtimes, SSH repos and WSL paths to Monaco', () => {
     expect(resolve({ tab: { runtimeEnvironmentId: 'env-1' } })).toBeNull()
-    expect(resolve({ activeRuntimeEnvironmentId: 'env-1' })).toBeNull()
     expect(resolve({ repoExecutionHostId: 'ssh:target-1' })).toBeNull()
     expect(resolve({ worktreePath: '//wsl$/Ubuntu/home/me/repo' })).toBeNull()
   })

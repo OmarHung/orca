@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
-import { runProcess } from '../../shared/child-process/run-process'
+import { runProcess } from '@orca/process-host'
 import type { ForkUpdateChangelog } from '../../shared/fork-update-changelog'
 import type { GlobalSettings } from '../../shared/global-settings-types'
 import { resolveLoginShellEnvironment } from '../startup/login-shell-environment'

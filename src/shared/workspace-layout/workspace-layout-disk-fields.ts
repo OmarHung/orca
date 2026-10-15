@@ -200,7 +200,8 @@ const FILE = {
   dirtyDraftContent: own('editorDraft', 'dirtyDraftContent'),
   lastKnownDiskSignature: own('editorDraft', 'lastKnownDiskSignature'),
   readOnly: own('file', 'readOnly'),
-  liveTail: own('file', 'liveTail')
+  liveTail: own('file', 'liveTail'),
+  staysInOpeningWorkspace: own('file', 'staysInOpeningWorkspace')
 } as const satisfies Record<keyof PersistedOpenFile, DiskFieldWritten>
 
 const BROWSER = {

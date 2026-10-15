@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { ProcessResult } from '../../shared/child-process/process-spec'
+import type { ProcessResult } from '@orca/process-host/process-spec'
 import type { SshVpnContainerProfile, SshVpnProfileState } from '../../shared/ssh-vpn-types'
 import { SshVpnBorrowedContainers } from './ssh-vpn-borrowed-containers'
 

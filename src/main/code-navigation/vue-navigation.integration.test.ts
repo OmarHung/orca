@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { runProcess } from '../../shared/child-process/run-process'
+import { runProcess } from '@orca/process-host'
 import { resolveCommandOnLocalPath } from '../ipc/command-path-resolver'
 import { extractArchive } from '../debug/adapters/archive-extract'
 import { CodeNavigationService } from './code-navigation-service'
