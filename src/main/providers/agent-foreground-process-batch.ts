@@ -3,6 +3,7 @@ import {
   isExpectedAgentProcess
 } from '../../shared/agent-process-recognition'
 import { getFirstCommandToken } from '../../shared/command-token-scanner'
+import { paneShellOwnsEveryTtyProcessGroup } from '../../shared/pane-process-occupancy'
 import { resolveOuterWrapperForegroundProcess } from '../../shared/foreground-wrapper-agent'
 import { selectForegroundProcessCandidate } from '../../shared/foreground-process-selection'
 import type {
@@ -62,57 +63,6 @@ export type BatchedForegroundProcessOptions = {
   stats?: ProcessTableIndexStats
 }
 
-type PaneOccupancy = {
-  processGroupsByTty: ReadonlyMap<number, ReadonlySet<number>>
-  stoppedTtys: ReadonlySet<number>
-  /** Count all group members: killpg also reaches members without a controlling terminal. */
-  rowsByProcessGroup: ReadonlyMap<number, number>
-  /** Missing pgid rows make group counts insufficient to prove idle. */
-  processGroupsIncomplete: boolean
-}
-
-const paneOccupancyByCapture = new WeakMap<readonly ProcessTableRow[], PaneOccupancy>()
-
-/** A live tpgid identifies one controlling terminal; memoize its groups and host-wide group sizes per shared capture. */
-function getPaneOccupancy(rows: readonly ProcessTableRow[]): PaneOccupancy {
-  const cached = paneOccupancyByCapture.get(rows)
-  if (cached) {
-    return cached
-  }
-  const processGroupsByTty = new Map<number, Set<number>>()
-  const stoppedTtys = new Set<number>()
-  const rowsByProcessGroup = new Map<number, number>()
-  let processGroupsIncomplete = false
-  for (const row of rows) {
-    if (row.pgid === undefined) {
-      processGroupsIncomplete = true
-      continue
-    }
-    rowsByProcessGroup.set(row.pgid, (rowsByProcessGroup.get(row.pgid) ?? 0) + 1)
-    if (row.tpgid === undefined || row.tpgid <= 0) {
-      continue
-    }
-    let groups = processGroupsByTty.get(row.tpgid)
-    if (!groups) {
-      groups = new Set<number>()
-      processGroupsByTty.set(row.tpgid, groups)
-    }
-    groups.add(row.pgid)
-    // `T` is a job-control stop (Ctrl-Z), `t` a tracing stop. Both are work the pane still holds.
-    if (row.stat.startsWith('T') || row.stat.startsWith('t')) {
-      stoppedTtys.add(row.tpgid)
-    }
-  }
-  const occupancy: PaneOccupancy = {
-    processGroupsByTty,
-    stoppedTtys,
-    rowsByProcessGroup,
-    processGroupsIncomplete
-  }
-  paneOccupancyByCapture.set(rows, occupancy)
-  return occupancy
-}
-
 export async function resolveAgentForegroundProcessesBatch(
   requests: readonly BatchedForegroundProcessRequest[],
   options: BatchedForegroundProcessOptions = {}
@@ -170,7 +120,6 @@ export function resolveAgentForegroundProcessesFromIndex(
     }
   }
 
-  const occupancy = getPaneOccupancy(index.rows)
   return requests.map((request) => {
     const root = lookupProcessTableIndex(index, (value) => value.byPid.get(request.rootPid))
     if (!root) {
@@ -197,16 +146,7 @@ export function resolveAgentForegroundProcessesFromIndex(
     // Sweep authorization needs both: no other tty group (background/stopped jobs), and no other shell-group member
     // anywhere (job control off, detached/reparented children). Missing evidence never proves idle.
     // Capture age bounds races with new work; ps permission/namespace omissions remain unobservable despite killpg reach.
-    const ttyProcessGroups = occupancy.processGroupsByTty.get(root.tpgid)
-    const shellOwnsEveryTtyProcessGroup =
-      root.tpgid === root.pgid &&
-      ttyProcessGroups !== undefined &&
-      ttyProcessGroups.size === 1 &&
-      ttyProcessGroups.has(root.pgid) &&
-      !occupancy.stoppedTtys.has(root.tpgid) &&
-      !occupancy.processGroupsIncomplete &&
-      // The root counts itself; exactly one group member excludes all other killpg targets.
-      occupancy.rowsByProcessGroup.get(root.pgid) === 1
+    const shellOwnsEveryTtyProcessGroup = paneShellOwnsEveryTtyProcessGroup(index.rows, root)
     const allCandidates = rowsByOwner.get(root.pid) ?? []
     const foregroundCandidates = allCandidates.filter((row) => row.pgid === root.tpgid)
     const fallbackProcess = request.fallbackProcess
