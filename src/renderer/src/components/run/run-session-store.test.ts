@@ -171,3 +171,19 @@ describe('stored run sessions', () => {
     expect(readStoredRunSessions()).toEqual({})
   })
 })
+
+describe('stopAttempt', () => {
+  it('stops a run whose command ended unseen, but not its replacement', () => {
+    const store = useRunSessionStore.getState()
+    store.upsertSession(session({ attemptId: 'attempt-2' }))
+
+    store.stopAttempt(session().key, 'attempt-1')
+    expect(useRunSessionStore.getState().sessionsByKey[session().key]?.status).toBe('running')
+
+    store.stopAttempt(session().key, 'attempt-2')
+    expect(useRunSessionStore.getState().sessionsByKey[session().key]).toMatchObject({
+      status: 'stopped',
+      exitCode: null
+    })
+  })
+})
