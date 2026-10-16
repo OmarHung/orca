@@ -1,9 +1,9 @@
-// Blocks commits that would push private data to the public fork: staged
-// additions, staged file names and the commit message are matched against
-// built-in rules plus a literal list kept outside the repo.
+// Blocks commits and pushes that would publish private data to the public fork: staged
+// additions, staged file names, the commit message and every commit a push would publish are
+// matched against built-in rules, the local account name and a literal list kept outside the repo.
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
-import { homedir } from 'node:os'
+import { homedir, userInfo } from 'node:os'
 import path from 'node:path'
 
 export const DEFAULT_LITERALS_PATH = path.join(
@@ -89,6 +89,32 @@ export const BUILTIN_RULES = [
   }
 ]
 
+// Login names too generic to identify anyone; matching them would flag ordinary words.
+const GENERIC_ACCOUNT_NAMES = new Set(['root', 'user', 'admin', 'runner', 'ubuntu', 'node'])
+
+export function localAccountName() {
+  try {
+    return userInfo().username
+  } catch {
+    return path.basename(homedir())
+  }
+}
+
+/** The local login name as a whole word, which a captured `ps` row, path or prompt carries verbatim. */
+export function accountNameRule(name) {
+  if (!name || name.length < 3 || GENERIC_ACCOUNT_NAMES.has(name.toLowerCase())) {
+    return null
+  }
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  // `<name>/custom` and `<name>-custom` are the fork's own branch and worktree names, already public.
+  const pattern = new RegExp(`(?<!\\w)${escaped}(?!\\w)(?![/-]custom\\b)`, 'i')
+  return {
+    id: 'account-name',
+    why: 'local account name (use a placeholder such as alice)',
+    find: (line) => pattern.exec(line)?.[0] ?? null
+  }
+}
+
 /** Literal strings, one per line; blank lines and `#` comments ignored; matched case-insensitively. */
 export function parseLiterals(text) {
   return text
@@ -128,29 +154,40 @@ export function findPrivateData(entries, { literals = [], rules = BUILTIN_RULES 
 const SKIPPED_FILES =
   /(^|\/)(pnpm-lock\.yaml|package-lock\.json|yarn\.lock|private-data-guard\.test\.mjs)$|\.(png|jpe?g|gif|webp|ico|icns|woff2?|ttf|otf|pdf|zip|gz|tgz|node|wasm)$/i
 
-/** Added lines of a unified diff, tagged with file and new-side line number. */
+/** Added lines of a unified or combined (merge) diff, tagged with file and new-side line number.
+ *  A merge keeps only lines new against every parent: the rest arrived with a parent commit. */
 export function parseAddedLines(diff) {
   const entries = []
   let file = null
   let line = 0
+  // Marker columns per hunk line: one for a plain diff, one per parent for a combined diff.
+  // Zero means the file header, where `+++ ` names the file instead of adding a line.
+  let columns = 0
   for (const raw of diff.split('\n')) {
-    if (raw.startsWith('+++ ')) {
-      file = raw.startsWith('+++ b/') ? raw.slice(6) : null
+    if (raw.startsWith('diff ')) {
+      file = null
+      columns = 0
       continue
     }
     if (raw.startsWith('@@')) {
+      columns = raw.match(/^@+/)[0].length - 1
       line = Number(raw.match(/\+(\d+)/)?.[1] ?? 0)
       continue
     }
-    if (!file || raw.startsWith('---')) {
+    if (columns === 0) {
+      if (raw.startsWith('+++ ')) {
+        file = raw.startsWith('+++ b/') ? raw.slice(6) : null
+      }
       continue
     }
-    if (raw.startsWith('+')) {
-      entries.push({ file, line, text: raw.slice(1) })
-      line += 1
-    } else if (!raw.startsWith('-') && !raw.startsWith('\\')) {
-      line += 1
+    const markers = raw.slice(0, columns)
+    if (!file || raw.startsWith('\\') || markers.includes('-')) {
+      continue
     }
+    if (/^\++$/.test(markers)) {
+      entries.push({ file, line, text: raw.slice(columns) })
+    }
+    line += 1
   }
   return entries.filter((entry) => !SKIPPED_FILES.test(entry.file))
 }
@@ -171,6 +208,69 @@ export function collectStagedEntries(cwd) {
   return [...names, ...parseAddedLines(diff)]
 }
 
+function nonEmptyLines(text) {
+  return text.split('\n').filter(Boolean)
+}
+
+const MISSING_OID = /^0+$/
+
+function hasCommit(oid, cwd) {
+  try {
+    git(['cat-file', '-e', `${oid}^{commit}`], cwd)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Commits a push publishes, from pre-push's `<local ref> <local oid> <remote ref> <remote oid>`
+ *  lines: those on no remote yet, minus rebased copies of commits the remote already holds. */
+export function collectPushedCommits(updates, cwd) {
+  const commits = new Set()
+  for (const update of nonEmptyLines(updates)) {
+    const [, localOid, , remoteOid] = update.trim().split(/\s+/)
+    if (!localOid || MISSING_OID.test(localOid)) {
+      continue
+    }
+    let pushed = nonEmptyLines(git(['rev-list', localOid, '--not', '--remotes'], cwd))
+    if (remoteOid && !MISSING_OID.test(remoteOid) && hasCommit(remoteOid, cwd)) {
+      const range = `${remoteOid}...${localOid}`
+      const fresh = new Set(
+        nonEmptyLines(git(['rev-list', '--cherry-pick', '--right-only', range], cwd))
+      )
+      pushed = pushed.filter((sha) => fresh.has(sha))
+    }
+    for (const sha of pushed) {
+      commits.add(sha)
+    }
+  }
+  return [...commits]
+}
+
+/** One commit's message, added file names and added lines. Each commit is read on its own,
+ *  because a value one commit adds and a later one removes still ships in the history. */
+export function collectCommitEntries(sha, cwd) {
+  const label = sha.slice(0, 10)
+  const message = git(['show', '-s', '--format=%B', sha], cwd)
+    .split('\n')
+    .map((text, index) => ({ file: `${label} message`, line: index + 1, text }))
+  const names = nonEmptyLines(
+    git(
+      ['diff-tree', '--root', '--no-commit-id', '--name-only', '-r', '--diff-filter=ACMR', sha],
+      cwd
+    )
+  ).map((name) => ({ file: `${label} ${name}`, line: null, text: name }))
+  const patch = git(
+    ['show', '--format=', '--cc', '-U0', '--no-color', '--no-ext-diff', '--diff-filter=ACMR', sha],
+    cwd
+  )
+  const added = parseAddedLines(patch).map((entry) => ({
+    ...entry,
+    file: `${label} ${entry.file}`
+  }))
+  return [...message, ...names, ...added]
+}
+
 export function collectMessageEntries(messageFile) {
   return readFileSync(messageFile, 'utf8')
     .split('\n')
@@ -178,41 +278,64 @@ export function collectMessageEntries(messageFile) {
     .filter((entry) => !entry.text.startsWith('#'))
 }
 
-export function formatHits(hits, literalsPath) {
-  const lines = ['private-data-guard: refusing to commit, private data found:']
+export function formatHits(hits, literalsPath, action = 'commit') {
+  const lines = [`private-data-guard: refusing to ${action}, private data found:`]
   for (const hit of hits) {
     const where = hit.line === null ? `${hit.file} (file name)` : `${hit.file}:${hit.line}`
     const reason = hit.rule === 'literal' ? 'listed in private-strings.txt' : hit.why
     lines.push(`  ${where}  [${hit.rule}] ${hit.fragment}  — ${reason}`)
   }
-  lines.push(
-    '',
-    `Replace with fictional values. Literal list: ${literalsPath}`,
-    'Bypass only for a false positive: git commit --no-verify'
-  )
+  lines.push('', `Replace with fictional values. Literal list: ${literalsPath}`)
+  if (action === 'push') {
+    lines.push(
+      'A later commit that removes a value does not unpublish it: rewrite the commit that added it.'
+    )
+  }
+  lines.push(`Bypass only for a false positive: git ${action} --no-verify`)
   return lines.join('\n')
+}
+
+function readStdin() {
+  return process.stdin.isTTY ? '' : readFileSync(0, 'utf8')
+}
+
+function collectEntries(argv, cwd, readUpdates) {
+  const messageFlag = argv.indexOf('--message-file')
+  if (messageFlag !== -1) {
+    return collectMessageEntries(argv[messageFlag + 1])
+  }
+  if (argv.includes('--staged')) {
+    return collectStagedEntries(cwd)
+  }
+  if (argv.includes('--push')) {
+    return collectPushedCommits(readUpdates(), cwd).flatMap((sha) => collectCommitEntries(sha, cwd))
+  }
+  return null
 }
 
 export function run(
   argv,
-  { cwd = process.cwd(), literalsPath = DEFAULT_LITERALS_PATH, log = console.error } = {}
+  {
+    cwd = process.cwd(),
+    literalsPath = DEFAULT_LITERALS_PATH,
+    accountName = localAccountName(),
+    readUpdates = readStdin,
+    log = console.error
+  } = {}
 ) {
-  const messageFlag = argv.indexOf('--message-file')
-  const entries =
-    messageFlag !== -1
-      ? collectMessageEntries(argv[messageFlag + 1])
-      : argv.includes('--staged')
-        ? collectStagedEntries(cwd)
-        : null
+  const entries = collectEntries(argv, cwd, readUpdates)
   if (!entries) {
-    log('usage: private-data-guard.mjs --staged | --message-file <path>')
+    log(
+      'usage: private-data-guard.mjs --staged | --message-file <path> | --push (ref updates on stdin)'
+    )
     return 2
   }
-  const hits = findPrivateData(entries, { literals: loadLiterals(literalsPath) })
+  const rules = [...BUILTIN_RULES, accountNameRule(accountName)].filter(Boolean)
+  const hits = findPrivateData(entries, { literals: loadLiterals(literalsPath), rules })
   if (hits.length === 0) {
     return 0
   }
-  log(formatHits(hits, literalsPath))
+  log(formatHits(hits, literalsPath, argv.includes('--push') ? 'push' : 'commit'))
   return 1
 }
 
