@@ -56,7 +56,7 @@ describe('paneShellOwnsEveryTtyProcessGroup', () => {
       ppid: 1950,
       pgid: 4709,
       tpgid: 4729,
-      command: 'login -flpq omar'
+      command: 'login -flpq alice'
     })
     const shell = row({ pid: 4729, ppid: 4709, pgid: 4729, tpgid: 4729, command: '-zsh -l' })
     expect(paneShellOwnsEveryTtyProcessGroup([login, shell], shell)).toBe(true)
@@ -68,7 +68,7 @@ describe('paneShellOwnsEveryTtyProcessGroup', () => {
       ppid: 1950,
       pgid: 4709,
       tpgid: 4729,
-      command: 'login -flpq omar'
+      command: 'login -flpq alice'
     })
     const shell = row({ pid: 4729, ppid: 4709, pgid: 4729, tpgid: 4729, command: '-zsh -l' })
     const command = row({ pid: 4800, ppid: 4729, pgid: 4800, tpgid: 4729, command: 'node dev.js' })
