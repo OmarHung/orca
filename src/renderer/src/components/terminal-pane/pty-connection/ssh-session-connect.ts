@@ -95,7 +95,8 @@ export async function waitForSshConnection(connectionId: string): Promise<SshCon
 
   const promise: Promise<SshConnectResult> = (async (): Promise<SshConnectResult> => {
     try {
-      await window.api.ssh.connect({ targetId: connectionId })
+      // Why automatic: a pane mount dials on its own, so it must not lift a cancelled sign-in.
+      await window.api.ssh.connect({ targetId: connectionId, automatic: true })
       return { connected: true }
     } catch (err) {
       console.warn(`Deferred SSH reconnect failed for ${connectionId}:`, err)

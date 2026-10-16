@@ -808,7 +808,7 @@ describe('connectPanePty', () => {
 
     const windowApi = (globalThis as unknown as { window: { api: { ssh: { connect: unknown } } } })
       .window.api
-    expect(windowApi.ssh.connect).toHaveBeenCalledWith({ targetId: 'conn-1' })
+    expect(windowApi.ssh.connect).toHaveBeenCalledWith({ targetId: 'conn-1', automatic: true })
     expect(transport.connect).toHaveBeenCalledWith(
       expect.objectContaining({ sessionId: 'ssh:conn-1@@pty-7' })
     )
@@ -838,7 +838,7 @@ describe('connectPanePty', () => {
 
     const windowApi = (globalThis as unknown as { window: { api: { ssh: { connect: unknown } } } })
       .window.api
-    expect(windowApi.ssh.connect).toHaveBeenCalledWith({ targetId: 'conn-1' })
+    expect(windowApi.ssh.connect).toHaveBeenCalledWith({ targetId: 'conn-1', automatic: true })
     expect(transport.connect).toHaveBeenCalledWith(
       expect.not.objectContaining({ sessionId: expect.any(String) })
     )

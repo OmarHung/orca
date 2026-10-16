@@ -2,6 +2,7 @@ import { ipcMain, type BrowserWindow } from 'electron'
 import { randomUUID } from 'node:crypto'
 import type { SshCredentialSubmitResult } from '../../shared/ssh-saved-passphrase-types'
 import { SSH_CREDENTIAL_TIMEOUT_MS, type SshCredentialKind } from '../ssh/ssh-connection-utils'
+import { recordSshCredentialDeclined } from '../ssh/ssh-credential-decline'
 import { normalizeSshKeyPath } from '../ssh/ssh-saved-passphrase-store'
 import {
   canRememberSshPassphrase,
@@ -54,18 +55,29 @@ export function requestSshCredential(
       return
     }
     clearTimeout(timer)
-    signal?.removeEventListener('abort', cancel)
+    signal?.removeEventListener('abort', onAbort)
     notifyCredentialResolved(getMainWindow, requestId)
     resolve(answer)
   }
-  const cancel = (): void => finish({ value: null, asksAgain: true })
-  timer = setTimeout(cancel, SSH_CREDENTIAL_TIMEOUT_MS)
-  pendingRequests.set(requestId, { resolve: finish, keyPath })
+  const cancelled: SshCredentialAnswer = { value: null, asksAgain: true }
+  const onAbort = (): void => finish(cancelled)
+  // Why: an abort is the connection's own teardown; only the user's Cancel (or silence) declines.
+  const decline = (): void => {
+    if (pendingRequests.has(requestId)) {
+      recordSshCredentialDeclined(targetId, signal)
+    }
+    finish(cancelled)
+  }
+  timer = setTimeout(decline, SSH_CREDENTIAL_TIMEOUT_MS)
+  pendingRequests.set(requestId, {
+    resolve: (answer) => (answer.value === null ? decline() : finish(answer)),
+    keyPath
+  })
   if (signal?.aborted) {
-    cancel()
+    finish(cancelled)
     return promise
   }
-  signal?.addEventListener('abort', cancel, { once: true })
+  signal?.addEventListener('abort', onAbort, { once: true })
 
   const win = getMainWindow()
   if (win && !win.isDestroyed()) {
@@ -79,7 +91,7 @@ export function requestSshCredential(
       canRemember
     })
   } else {
-    cancel()
+    finish(cancelled)
   }
   return promise
 }

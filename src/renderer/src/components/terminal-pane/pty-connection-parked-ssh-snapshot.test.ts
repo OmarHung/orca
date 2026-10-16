@@ -201,7 +201,7 @@ describe('connectPanePty', () => {
         }
       }
     ).window.api
-    expect(api.ssh.connect).toHaveBeenCalledWith({ targetId: 'conn-1' })
+    expect(api.ssh.connect).toHaveBeenCalledWith({ targetId: 'conn-1', automatic: true })
     expect(transport.connect).toHaveBeenCalledWith(
       expect.objectContaining({ sessionId: 'leaf-session' })
     )
@@ -257,7 +257,7 @@ describe('connectPanePty', () => {
     )
     await flushAsyncTicks(20)
 
-    expect(window.api.ssh.connect).toHaveBeenCalledWith({ targetId: 'conn-1' })
+    expect(window.api.ssh.connect).toHaveBeenCalledWith({ targetId: 'conn-1', automatic: true })
     expect(window.api.pty.getMainBufferSnapshot).toHaveBeenCalledOnce()
     // No live SSH process can repaint this preconnect frame after a SIGWINCH.
     expect(writes.join('')).toContain('PARKED-SSH-PAINTED-WITHOUT-NETWORK')

@@ -4,6 +4,7 @@ import { rotateSshProviderAuthority } from '../ssh/ssh-provider-authority'
 import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
 import { isSshHostCensusInFlight } from '../ssh/ssh-connection-attribution'
 import { activeSessions } from './ssh-active-relay-sessions'
+import { clearSshCredentialDeclined, isSshCredentialDeclined } from '../ssh/ssh-credential-decline'
 import {
   connectInFlight,
   credentialRequestedForTarget,
@@ -29,6 +30,9 @@ export function relayGracePeriodForTarget(
 // Why extracted from the callbacks object: an explicit connect pushes its own 'deploying-relay'
 // through this exact path, so both callers share one implementation.
 export function handleSshConnectionStateChange(targetId: string, state: SshConnectionState): void {
+  if (state.status === 'connected') {
+    clearSshCredentialDeclined(targetId)
+  }
   if (testingTargets.has(targetId)) {
     return
   }
@@ -123,6 +127,10 @@ export function handleSshConnectionStateChange(targetId: string, state: SshConne
 export function createSshConnectionCallbacks(): SshConnectionCallbacks {
   return {
     onCredentialRequest: async (targetId, kind, detail, echo, signal) => {
+      // Why: after a Cancel only an explicit connect may prompt; answer the rest as cancelled.
+      if (isSshCredentialDeclined(targetId, signal)) {
+        return null
+      }
       const answer = await requestSshCredential(
         getCurrentMainWindow,
         targetId,

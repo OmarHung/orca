@@ -18,6 +18,7 @@ import { connectTarget } from './ssh-connect-flow'
 import { connectionManager, persistedStore } from './ssh-ipc-context'
 import { getPublicSshState } from './ssh-renderer-broadcast'
 import { disconnectRegisteredSshTarget, teardownActiveSshSession } from './ssh-session-teardown'
+import { clearSshCredentialDeclined, isSshCredentialDeclined } from '../ssh/ssh-credential-decline'
 import { terminateSshTargetSessions } from './ssh-terminate-sessions'
 import { assertNotManagedServerHost } from './ssh-target-crud-handlers'
 import { moveSshHostToManagedServer } from './ssh-managed-server-move'
@@ -95,7 +96,11 @@ export function registerSshConnectionHandlers(): void {
     getState: (targetId: string) => getPublicSshState(targetId)
   })
 
-  ipcMain.handle('ssh:connect', async (_event, args: { targetId: string }) => {
+  // `automatic`: no user asked for this connect, so a cancelled sign-in stays cancelled.
+  ipcMain.handle('ssh:connect', async (_event, args: { targetId: string; automatic?: boolean }) => {
+    if (args.automatic !== true) {
+      clearSshCredentialDeclined(args.targetId)
+    }
     return connectTarget(args.targetId)
   })
 
@@ -149,6 +154,9 @@ export function registerSshConnectionHandlers(): void {
 
   // Why: auto-connect callers need to know whether connecting will prompt; true when the last connect required a credential and no live conn has it cached.
   ipcMain.handle('ssh:needsPassphrasePrompt', (_event, args: { targetId: string }) => {
+    if (isSshCredentialDeclined(args.targetId)) {
+      return true
+    }
     const target = getSshTargetRegistryStore()!.getTarget(args.targetId)
     if (!target?.lastRequiredPassphrase) {
       return false
@@ -162,6 +170,7 @@ export function registerSshConnectionHandlers(): void {
     if (!target) {
       throw new Error(`SSH target "${args.targetId}" not found`)
     }
+    clearSshCredentialDeclined(args.targetId)
 
     // Why: with a live/reconnecting session, testConnection's disconnect() would tear down the relay stack (PTYs, watchers), so skip.
     const existingSession = activeSessions.get(args.targetId)
