@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
+  accountNameRule,
   collectStagedEntries,
   findPrivateData,
   formatHits,
@@ -68,6 +69,43 @@ describe('findPrivateData built-in rules', () => {
   })
 })
 
+describe('accountNameRule', () => {
+  it('flags the login name as a whole word in commands, paths, names and emails', () => {
+    const hits = findPrivateData(
+      [
+        entry('/usr/bin/login -flpq alice /bin/bash'),
+        entry('cwd: /Users/alice/work'),
+        entry("name: 'Alice'"),
+        entry('alice@example.com'),
+        entry('AliceSmith, malice, alices')
+      ],
+      { rules: [accountNameRule('alice')] }
+    )
+    expect(hits.map((h) => h.text)).toEqual([
+      '/usr/bin/login -flpq alice /bin/bash',
+      'cwd: /Users/alice/work',
+      "name: 'Alice'",
+      'alice@example.com'
+    ])
+  })
+
+  it("allows the fork's own branch and worktree names", () => {
+    const hits = findPrivateData(
+      [
+        entry('git switch alice/custom'),
+        entry('/src/orca-alice-custom'),
+        entry('backup/alice-custom-v1')
+      ],
+      { rules: [accountNameRule('alice')] }
+    )
+    expect(hits).toEqual([])
+  })
+
+  it('skips names too short or too generic to identify anyone', () => {
+    expect(['', 'ab', 'root', 'runner'].map(accountNameRule)).toEqual([null, null, null, null])
+  })
+})
+
 describe('parseAddedLines', () => {
   it('keeps only added lines with their new-side line numbers and skips lockfiles', () => {
     const diff = [
@@ -92,6 +130,34 @@ describe('parseAddedLines', () => {
       { file: 'src/a.ts', line: 3, text: 'new two' },
       { file: 'src/a.ts', line: 11, text: 'later' }
     ])
+  })
+})
+
+describe('parseAddedLines with merges and header-like content', () => {
+  it('reads a +++ line inside a hunk as content, not a file header', () => {
+    const diff = [
+      'diff --git a/a.md b/a.md',
+      '--- a/a.md',
+      '+++ b/a.md',
+      '@@ -0,0 +1 @@',
+      '+++ b/x'
+    ].join('\n')
+    expect(parseAddedLines(diff)).toEqual([{ file: 'a.md', line: 1, text: '++ b/x' }])
+  })
+
+  it("keeps only a merge's own lines, not those that arrived with a parent", () => {
+    const diff = [
+      'diff --cc a.ts',
+      'index 1111111,2222222..3333333',
+      '--- a/a.ts',
+      '+++ b/a.ts',
+      '@@@ -1,1 -1,1 +1,2 @@@',
+      '- left',
+      ' -right',
+      '++resolved',
+      ' +from the first parent'
+    ].join('\n')
+    expect(parseAddedLines(diff)).toEqual([{ file: 'a.ts', line: 1, text: 'resolved' }])
   })
 })
 
@@ -165,6 +231,74 @@ describe('run against a real index', () => {
       run(['--message-file', messageFile], { cwd: repo, literalsPath, log: (m) => logs.push(m) })
     ).toBe(1)
     expect(logs.at(-1)).toContain('commit message:1  [literal] contoso')
+  })
+
+  describe('--push', () => {
+    let remote
+
+    function commit(file, text, message) {
+      writeFileSync(path.join(repo, file), text)
+      git('add', file)
+      git('commit', '-q', '-m', message)
+      return git('rev-parse', 'HEAD')
+    }
+
+    function guardPush(localOid, remoteOid, logs) {
+      const updates = `refs/heads/main ${localOid} refs/heads/main ${remoteOid}\n`
+      return run(['--push'], {
+        cwd: repo,
+        literalsPath,
+        accountName: 'alice',
+        readUpdates: () => updates,
+        log: (m) => logs.push(m)
+      })
+    }
+
+    beforeEach(() => {
+      remote = mkdtempSync(path.join(tmpdir(), 'private-data-guard-remote-'))
+      execFileSync('git', ['init', '-q', '--bare', remote])
+      git('remote', 'add', 'fork', remote)
+    })
+
+    afterEach(() => rmSync(remote, { recursive: true, force: true }))
+
+    it('refuses a value one commit adds and a later one removes', () => {
+      const base = commit('a.ts', 'clean\n', 'chore: base')
+      git('push', '-q', 'fork', 'main')
+      const leak = commit('a.ts', "command: 'login -flpq alice'\n", 'test: add fixture')
+      const head = commit('a.ts', "command: 'login -flpq bella'\n", 'test: rename fixture')
+      const logs = []
+      expect(guardPush(head, base, logs)).toBe(1)
+      expect(logs.at(-1)).toContain('refusing to push')
+      expect(logs.at(-1)).toContain(`${leak.slice(0, 10)} a.ts:1  [account-name] alice`)
+      expect(logs.at(-1)).not.toContain(head.slice(0, 10))
+    })
+
+    it('checks every pushed commit message and file name', () => {
+      const base = commit('a.ts', 'clean\n', 'chore: base')
+      git('push', '-q', 'fork', 'main')
+      const head = commit('contoso.md', 'notes\n', 'docs: notes from 34.81.200.9')
+      const logs = []
+      expect(guardPush(head, base, logs)).toBe(1)
+      expect(logs.at(-1)).toContain(`${head.slice(0, 10)} message:1  [public-ip] 34.81.200.9`)
+      expect(logs.at(-1)).toContain(
+        `${head.slice(0, 10)} contoso.md (file name)  [literal] contoso`
+      )
+    })
+
+    it('skips commits already on a remote and rebased copies of them', () => {
+      const base = commit('a.ts', 'clean\n', 'chore: base')
+      const published = commit('b.ts', "name: 'Alice'\n", 'test: published long ago')
+      git('push', '-q', 'fork', 'main')
+      git('reset', '-q', '--hard', base)
+      commit('c.ts', 'new base\n', 'chore: newer upstream')
+      git('cherry-pick', published)
+      const head = git('rev-parse', 'HEAD')
+      const logs = []
+      expect(guardPush(head, published, logs)).toBe(0)
+      expect(guardPush('0'.repeat(40), published, logs)).toBe(0)
+      expect(logs).toEqual([])
+    })
   })
 
   it('returns usage when no mode is given', () => {
