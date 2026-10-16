@@ -79,6 +79,9 @@ export type RemoteForegroundEvidence =
       verdict: 'live'
       processName: string | null
       fence: PosixFence | WindowsFence
+      /** True only when nothing runs in the pane: no other process group on its terminal, none
+       *  stopped, and none sharing the shell's group. Absent from hosts that predate the field. */
+      shellOwnsEveryTtyProcessGroup?: boolean
     } & HostObservation)
   | ({ verdict: 'unverifiable'; reason: string } & HostObservation)
   | ({ verdict: 'exited'; reason: string } & HostObservation)
