@@ -124,19 +124,24 @@ there rather than editing the JSON. OpenCC is installed into `node_modules/.cach
 ## Private data guard
 
 The fork is public and shares its object store with upstream's fork network, so anything pushed
-stays retrievable by SHA even after a history rewrite. Two husky hooks block private data before
-it is committed:
+stays retrievable by SHA even after a history rewrite. Three husky hooks block private data before
+it is committed or pushed:
 
 - `.husky/pre-commit` runs `private-data-guard.mjs --staged` on staged file names and added lines.
 - `.husky/commit-msg` runs it with `--message-file` on the commit message.
+- `.husky/pre-push` runs it with `--push` on every commit the push would publish (on no remote
+  yet, minus rebased copies of commits the remote holds), one commit at a time: a value a later
+  commit removes still ships in history. It also covers commits made where pre-commit does not
+  run, such as a rebase's conflict resolutions.
 
 Built-in rules are generic: public IPv4 addresses outside the documentation and private ranges,
-`<slug>.monday.com` other than placeholder hosts, `.tw` host names, and emails outside
-example/test domains. Everything that names a real person, client, host, path or ID goes in
+`<slug>.monday.com` other than placeholder hosts, `.tw` host names, emails outside example/test
+domains, and the local login name as a whole word (read from the OS, so it is never written into
+the repo; the fork's `<name>/custom` and `<name>-custom` branch names are allowed). Everything that names a real person, client, host, path or ID goes in
 `~/.config/orca-fork/private-strings.txt` (one literal per line, `#` comments, case-insensitive),
 which never enters the repo. Add new names there as projects come and go.
 
-On a hit the commit is refused with the file, line, rule and fragment. Use fictional values
+On a hit the commit or push is refused with the commit, file, line, rule and fragment. Use fictional values
 (`example.com`, `acme.monday.com`, `203.0.113.x`, placeholder names) instead; `--no-verify` is
 for a confirmed false positive only. Note that upstream's `.gitignore` excludes `docs/**`, so a new
 plan doc under `docs/fork/` needs `git add -f`, a deliberate extra step before publishing notes.
