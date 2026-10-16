@@ -267,7 +267,19 @@ function doubleClickUncommitted(path: string): void {
   })
 }
 
+// Why: the fork starts "Committed on Branch" collapsed, so its rows only exist after a toggle.
+function expandBranchSection(): void {
+  const heading = [...container.querySelectorAll('span')].find(
+    (candidate) => candidate.textContent === 'Committed on Branch'
+  )
+  expect(heading).toBeDefined()
+  act(() => {
+    heading?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
+}
+
 function clickBranchRow(init: MouseEventInit = {}): void {
+  expandBranchSection()
   const label = [...container.querySelectorAll('span')].find(
     (candidate) => candidate.textContent === 'branch.ts'
   )

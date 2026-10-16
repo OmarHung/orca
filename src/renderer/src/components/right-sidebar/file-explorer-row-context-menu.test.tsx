@@ -49,6 +49,9 @@ vi.mock('@/store', () => ({
 
 vi.mock('@/hooks/useShortcutLabel', () => ({ useShortcutLabel: () => 'Unassigned' }))
 
+// Why: the fork's project Run entries read store and dialog context this host-capability test doesn't build.
+vi.mock('../run/ProjectRunContextMenuItems', () => ({ ProjectRunContextMenuItems: () => null }))
+
 vi.mock('@/i18n/i18n', () => ({
   translate: (_key: string, fallback: string) => fallback
 }))
