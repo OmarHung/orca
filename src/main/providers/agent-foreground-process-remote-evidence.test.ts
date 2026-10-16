@@ -121,6 +121,42 @@ describe('host-stamped remote foreground resolver', () => {
     ).toMatchObject({ verdict: 'unverifiable', reason: 'fence_incomplete' })
   })
 
+  it('attests an idle shell when the PTY root is the macOS login wrapper', () => {
+    const tty = 'ttys003'
+    const rows = [
+      {
+        pid: 4585,
+        ppid: 1921,
+        pgid: 4585,
+        tpgid: 4616,
+        tty,
+        startTime: 'login-start',
+        stat: 'Ss',
+        command: '/usr/bin/login -flpq alice /bin/bash --noprofile --norc -p -c exec /bin/zsh -l'
+      },
+      {
+        pid: 4616,
+        ppid: 4585,
+        pgid: 4616,
+        tpgid: 4616,
+        tty,
+        startTime: 'shell-start',
+        stat: 'S+',
+        command: '-/bin/zsh -l'
+      }
+    ] satisfies ProcessTableRow[]
+    const evidence = resolveRemoteForegroundEvidence(
+      { rootPid: 4585, fallbackProcess: 'login' },
+      { ...metadata, platform: 'darwin' },
+      rows
+    )
+    expect(evidence).toMatchObject({
+      verdict: 'live',
+      processName: null,
+      shellOwnsEveryTtyProcessGroup: true
+    })
+  })
+
   it('refuses a descendant attached to another real terminal', () => {
     const rows = rowsFor(['opencode', '/bin/bash'])
     rows[2].pgid = 102
