@@ -10,7 +10,7 @@ import {
   type ProcessTableIndex
 } from '../../../shared/process-observation/tables/process-table-index'
 import type { ProcessTableRow } from '../../../shared/process-observation/tables/process-table-snapshot'
-import { paneShellOwnsEveryTtyProcessGroup } from '../../../shared/pane-process-occupancy'
+import { paneHoldsOnlyItsShell } from '../../../shared/pane-process-occupancy'
 import type {
   BatchedForegroundProcessRequest,
   BatchedForegroundProcessResult,
@@ -113,7 +113,7 @@ export function resolveRemoteForegroundEvidenceFromRows(
     verdict: 'live',
     processName: candidate?.name.processName ?? null,
     fence,
-    shellOwnsEveryTtyProcessGroup: paneShellOwnsEveryTtyProcessGroup(rows, root)
+    shellOwnsEveryTtyProcessGroup: paneHoldsOnlyItsShell(rows, root)
   }
 }
 
