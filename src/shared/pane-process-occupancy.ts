@@ -1,4 +1,7 @@
+import { getCommandTokenPathBasename, getFirstCommandToken } from './command-token-scanner'
+import { getProcessTableIndex } from './process-table-index'
 import type { ProcessTableRow } from './process-table-snapshot'
+import { isShellProcess } from './shell-process-detection'
 
 /** The two units a forced stop can reach, indexed from one capture: which process groups occupy
  *  each controlling terminal (which terminals hold a stopped process), and how many rows belong to
@@ -110,4 +113,41 @@ export function paneShellOwnsEveryTtyProcessGroup(
     !occupancy.processGroupsIncomplete &&
     occupancy.rowsByProcessGroup.get(root.pgid) === 1
   )
+}
+
+function executableName(row: ProcessTableRow): string {
+  return getCommandTokenPathBasename(getFirstCommandToken(row.command)).replace(/^-/, '')
+}
+
+/** The shell a PTY root runs: the root itself, or the only shell its macOS `login` wrapper started. */
+function findPaneShell(
+  rows: readonly ProcessTableRow[],
+  root: ProcessTableRow
+): ProcessTableRow | null {
+  if (isShellProcess(executableName(root))) {
+    return root
+  }
+  if (executableName(root) !== 'login') {
+    return null
+  }
+  const shells = (getProcessTableIndex(rows).childrenByPpid.get(root.pid) ?? []).filter(
+    (row) => !row.stat.includes('Z') && isShellProcess(executableName(row))
+  )
+  return shells.length === 1 ? shells[0] : null
+}
+
+/** Whether nothing but its shell runs under a PTY root, which on a macOS daemon pane is `login`. */
+export function paneHoldsOnlyItsShell(
+  rows: readonly ProcessTableRow[],
+  root: ProcessTableRow
+): boolean {
+  const shell = findPaneShell(rows, root)
+  if (!shell) {
+    return false
+  }
+  // Why: the wrapper's group is skipped as an ancestor, so it must hold the wrapper alone.
+  if (shell !== root && getPaneOccupancy(rows).rowsByProcessGroup.get(root.pgid ?? -1) !== 1) {
+    return false
+  }
+  return paneShellOwnsEveryTtyProcessGroup(rows, shell)
 }
