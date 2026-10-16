@@ -21,6 +21,8 @@ vi.mock('../editor/editor-dropped-file-open', () => ({
   editorGroupStillExists: () => true
 }))
 vi.mock('../tab-bar/TabBar', () => ({ default: () => null }))
+// Why: the Run toolbar's module tree installs port tracking at import against the real store.
+vi.mock('../run/RunToolbar', () => ({ RunToolbar: () => null }))
 vi.mock('../tab-bar/TabBarQuickCommandsButton', () => ({ TabBarQuickCommandsButton: () => null }))
 vi.mock('@/lib/pane-manager/client-hosted-browser-row-state', () => ({
   useClientHostedBrowserRows: () => []
