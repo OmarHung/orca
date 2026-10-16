@@ -6,6 +6,7 @@ import type {
   WindowsFence
 } from '../../shared/foreground-process-evidence'
 import { buildProcessTableIndex, type ProcessTableIndex } from '../../shared/process-table-index'
+import { paneShellOwnsEveryTtyProcessGroup } from '../../shared/pane-process-occupancy'
 import type { ProcessTableRow } from '../../shared/process-table-snapshot'
 import type {
   BatchedForegroundProcessRequest,
@@ -118,7 +119,8 @@ export function resolveRemoteForegroundEvidenceFromRows(
     ...metadata,
     verdict: 'live',
     processName: candidate?.name.processName ?? null,
-    fence
+    fence,
+    shellOwnsEveryTtyProcessGroup: paneShellOwnsEveryTtyProcessGroup(rows, root)
   }
 }
 

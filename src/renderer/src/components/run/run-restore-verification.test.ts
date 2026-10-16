@@ -20,8 +20,25 @@ const mocks = vi.hoisted(() => {
   const listeners = new Set<Listener>()
   return {
     inspect: vi.fn(async (): Promise<TerminalProcessInspection> => ({
-      foregroundProcess: 'zsh',
-      hasChildProcesses: false
+      foregroundProcess: null,
+      hasChildProcesses: false,
+      foregroundProcessEvidence: {
+        verdict: 'live',
+        processName: null,
+        fence: {
+          platform: 'posix',
+          shellPid: 100,
+          shellStartTime: 'start',
+          tty: '/dev/ttys001',
+          foregroundPgid: 100
+        },
+        shellOwnsEveryTtyProcessGroup: true,
+        authorityGeneration: 'gen',
+        observationEpoch: 1,
+        capturedAgeMs: 0,
+        ptyId: 'pty-1',
+        ptyIncarnationId: 'inc-1'
+      }
     })),
     appStore: {
       getState: () => state,
@@ -108,7 +125,27 @@ describe('ensureRestoredRunVerification', () => {
 
   it('keeps a restored run whose terminal still runs its command', async () => {
     storeRun('running')
-    mocks.inspect.mockResolvedValue({ foregroundProcess: 'node', hasChildProcesses: true })
+    mocks.inspect.mockResolvedValue({
+      foregroundProcess: null,
+      hasChildProcesses: true,
+      foregroundProcessEvidence: {
+        verdict: 'live',
+        processName: null,
+        fence: {
+          platform: 'posix',
+          shellPid: 100,
+          shellStartTime: 'start',
+          tty: '/dev/ttys001',
+          foregroundPgid: 100
+        },
+        shellOwnsEveryTtyProcessGroup: false,
+        authorityGeneration: 'gen',
+        observationEpoch: 1,
+        capturedAgeMs: 0,
+        ptyId: 'pty-1',
+        ptyIncarnationId: 'inc-1'
+      }
+    })
     const { useRunSessionStore } = await start()
 
     bindPane()
