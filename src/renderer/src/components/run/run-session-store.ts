@@ -163,6 +163,8 @@ type RunSessionState = {
   /** Returns the active run that owns the stable pane, if any. */
   finishByLeafId: (leafId: string, exitCode: number | null) => RunSession | null
   finishAttempt: (key: string, attemptId: string, exitCode: number | null) => RunSession | null
+  /** Ends a run whose command is gone without a finish mark, such as one a reboot killed. */
+  stopAttempt: (key: string, attemptId: string) => void
   removeSession: (key: string) => void
   /** Drops sessions whose terminal is gone, so stored runs do not pile up. */
   retainSessions: (keep: (session: RunSession) => boolean) => void
@@ -225,6 +227,17 @@ export const useRunSessionStore = create<RunSessionState>((set, get) => ({
     const finished = finishRunSession(session, exitCode)
     set({ sessionsByKey: { ...get().sessionsByKey, [key]: finished } })
     return finished
+  },
+  stopAttempt: (key, attemptId) => {
+    const session = get().sessionsByKey[key]
+    if (session?.attemptId === attemptId && isRunSessionActive(session.status)) {
+      set({
+        sessionsByKey: {
+          ...get().sessionsByKey,
+          [key]: { ...session, status: 'stopped', exitCode: null }
+        }
+      })
+    }
   },
   removeSession: (key) => {
     if (get().sessionsByKey[key]) {
