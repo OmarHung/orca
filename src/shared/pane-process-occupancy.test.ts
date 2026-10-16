@@ -48,4 +48,30 @@ describe('paneShellOwnsEveryTtyProcessGroup', () => {
     const shell = row({ pid: 100, pgid: undefined })
     expect(paneShellOwnsEveryTtyProcessGroup([shell], shell)).toBe(false)
   })
+
+  it('reads an idle shell under its login wrapper as owning the pane', () => {
+    // Shape captured from a real idle terminal: login holds the tty in its own group.
+    const login = row({
+      pid: 4709,
+      ppid: 1950,
+      pgid: 4709,
+      tpgid: 4729,
+      command: 'login -flpq omar'
+    })
+    const shell = row({ pid: 4729, ppid: 4709, pgid: 4729, tpgid: 4729, command: '-zsh -l' })
+    expect(paneShellOwnsEveryTtyProcessGroup([login, shell], shell)).toBe(true)
+  })
+
+  it('still reads a command under the login wrapper as something running', () => {
+    const login = row({
+      pid: 4709,
+      ppid: 1950,
+      pgid: 4709,
+      tpgid: 4729,
+      command: 'login -flpq omar'
+    })
+    const shell = row({ pid: 4729, ppid: 4709, pgid: 4729, tpgid: 4729, command: '-zsh -l' })
+    const command = row({ pid: 4800, ppid: 4729, pgid: 4800, tpgid: 4729, command: 'node dev.js' })
+    expect(paneShellOwnsEveryTtyProcessGroup([login, shell, command], shell)).toBe(false)
+  })
 })

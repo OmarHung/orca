@@ -13,6 +13,8 @@ type PaneOccupancy = {
   /** True when some row carried no `pgid`, so the group counts are incomplete and cannot support
    *  an idleness claim. */
   processGroupsIncomplete: boolean
+  /** Parent and group per pid, from the same pass, so ancestry needs no second walk. */
+  parentByPid: ReadonlyMap<number, { ppid: number; pgid: number | undefined }>
 }
 
 const paneOccupancyByCapture = new WeakMap<readonly ProcessTableRow[], PaneOccupancy>()
@@ -31,8 +33,10 @@ function getPaneOccupancy(rows: readonly ProcessTableRow[]): PaneOccupancy {
   const processGroupsByTty = new Map<number, Set<number>>()
   const stoppedTtys = new Set<number>()
   const rowsByProcessGroup = new Map<number, number>()
+  const parentByPid = new Map<number, { ppid: number; pgid: number | undefined }>()
   let processGroupsIncomplete = false
   for (const row of rows) {
+    parentByPid.set(row.pid, { ppid: row.ppid, pgid: row.pgid })
     if (row.pgid === undefined) {
       processGroupsIncomplete = true
       continue
@@ -54,12 +58,33 @@ function getPaneOccupancy(rows: readonly ProcessTableRow[]): PaneOccupancy {
   }
   const occupancy: PaneOccupancy = {
     processGroupsByTty,
+    parentByPid,
     stoppedTtys,
     rowsByProcessGroup,
     processGroupsIncomplete
   }
   paneOccupancyByCapture.set(rows, occupancy)
   return occupancy
+}
+
+/** Process groups of the shell's ancestors (the login wrapper), which hold the terminal but run no work. */
+function ancestorProcessGroups(
+  parentByPid: PaneOccupancy['parentByPid'],
+  root: ProcessTableRow
+): Set<number> {
+  const groups = new Set<number>()
+  const seen = new Set<number>([root.pid])
+  let parent = parentByPid.get(root.ppid)
+  let ppid = root.ppid
+  while (parent && !seen.has(ppid)) {
+    seen.add(ppid)
+    if (parent.pgid !== undefined) {
+      groups.add(parent.pgid)
+    }
+    ppid = parent.ppid
+    parent = parentByPid.get(ppid)
+  }
+  return groups
 }
 
 /** Whether the pane's shell is the only thing running in it, so nothing is in front or behind it. */
@@ -71,11 +96,16 @@ export function paneShellOwnsEveryTtyProcessGroup(
     return false
   }
   const occupancy = getPaneOccupancy(rows)
+  // Why ignore ancestors: `login` holds the same terminal in its own group but runs no work.
+  const ancestors = ancestorProcessGroups(occupancy.parentByPid, root)
+  const busyGroups = [...(occupancy.processGroupsByTty.get(root.tpgid) ?? [])].filter(
+    (group) => !ancestors.has(group)
+  )
   // The root always counts itself, so exactly one row in its group means the group IS the shell.
   return (
     root.tpgid === root.pgid &&
-    occupancy.processGroupsByTty.get(root.tpgid)?.size === 1 &&
-    occupancy.processGroupsByTty.get(root.tpgid)?.has(root.pgid) === true &&
+    busyGroups.length === 1 &&
+    busyGroups[0] === root.pgid &&
     !occupancy.stoppedTtys.has(root.tpgid) &&
     !occupancy.processGroupsIncomplete &&
     occupancy.rowsByProcessGroup.get(root.pgid) === 1
