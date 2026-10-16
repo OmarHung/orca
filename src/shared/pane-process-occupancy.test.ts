@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { paneShellOwnsEveryTtyProcessGroup } from './pane-process-occupancy'
+import { paneHoldsOnlyItsShell, paneShellOwnsEveryTtyProcessGroup } from './pane-process-occupancy'
 import type { ProcessTableRow } from './process-table-snapshot'
 
 function row(overrides: Partial<ProcessTableRow> & Pick<ProcessTableRow, 'pid'>): ProcessTableRow {
@@ -73,5 +73,67 @@ describe('paneShellOwnsEveryTtyProcessGroup', () => {
     const shell = row({ pid: 4729, ppid: 4709, pgid: 4729, tpgid: 4729, command: '-zsh -l' })
     const command = row({ pid: 4800, ppid: 4729, pgid: 4800, tpgid: 4729, command: 'node dev.js' })
     expect(paneShellOwnsEveryTtyProcessGroup([login, shell, command], shell)).toBe(false)
+  })
+})
+
+describe('paneHoldsOnlyItsShell', () => {
+  // Shape captured from a real macOS daemon pane: the PTY's root process is `login`, not the shell.
+  const LOGIN_COMMAND =
+    '/usr/bin/login -flpq alice /bin/bash --noprofile --norc -p -c exec -l -- "$@" orca-tcc-login /bin/zsh /bin/zsh -l'
+
+  function loginPane(
+    tpgid: number,
+    extra: ProcessTableRow[] = []
+  ): { rows: ProcessTableRow[]; login: ProcessTableRow } {
+    const login = row({ pid: 4585, ppid: 1921, pgid: 4585, tpgid, command: LOGIN_COMMAND })
+    const shell = row({
+      pid: 4616,
+      ppid: 4585,
+      pgid: 4616,
+      tpgid,
+      stat: 'S+',
+      command: '-/bin/zsh -l'
+    })
+    return { rows: [login, shell, ...extra], login }
+  }
+
+  it('reads an idle shell under the login root as holding nothing else', () => {
+    const { rows, login } = loginPane(4616)
+    expect(paneHoldsOnlyItsShell(rows, login)).toBe(true)
+  })
+
+  it('reads a foreground command under the login root as something running', () => {
+    const command = row({ pid: 7000, ppid: 4616, pgid: 7000, tpgid: 7000, command: 'node dev.js' })
+    const { rows, login } = loginPane(7000, [command])
+    expect(paneHoldsOnlyItsShell(rows, login)).toBe(false)
+  })
+
+  it('reads a background job under the login root as something running', () => {
+    const job = row({ pid: 7000, ppid: 4616, pgid: 7000, tpgid: 4616, command: 'vite' })
+    const { rows, login } = loginPane(4616, [job])
+    expect(paneHoldsOnlyItsShell(rows, login)).toBe(false)
+  })
+
+  it('reads another member of the login group as something running', () => {
+    const stray = row({ pid: 7000, ppid: 4585, pgid: 4585, tpgid: 4616, command: 'sleep 9' })
+    const { rows, login } = loginPane(4616, [stray])
+    expect(paneHoldsOnlyItsShell(rows, login)).toBe(false)
+  })
+
+  it('reads two shells under one login root as unknown, never as idle', () => {
+    const second = row({ pid: 4617, ppid: 4585, pgid: 4617, tpgid: 4616, command: '-/bin/zsh -l' })
+    const { rows, login } = loginPane(4616, [second])
+    expect(paneHoldsOnlyItsShell(rows, login)).toBe(false)
+  })
+
+  it('reads a shell that is itself the root as before', () => {
+    const shell = row({ pid: 100 })
+    expect(paneHoldsOnlyItsShell([shell], shell)).toBe(true)
+  })
+
+  it('never looks past a root that is neither a shell nor login', () => {
+    const program = row({ pid: 100, tpgid: 200, command: 'node server.js' })
+    const shell = row({ pid: 200, ppid: 100, pgid: 200, tpgid: 200, command: 'bash -i' })
+    expect(paneHoldsOnlyItsShell([program, shell], program)).toBe(false)
   })
 })
