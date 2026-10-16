@@ -16,6 +16,8 @@
   },
   "settings": {
     "chat": {
+      "permissionsTitle": "新聊天的許可權",
+      "permissionsDescription": "僅適用於新聊天。在終端機中開啟的代理使用設定 → 代理 → 代理許可權。",
       "description": "選擇聊天的外觀和命名方式。",
       "names": {
         "title": "聊天名稱",
@@ -3744,7 +3746,6 @@
             "54e8d6bb2d": "Fable",
             "d79c3362c4": "5小時",
             "a79c64f87e": "Fable",
-            "8295903d17": "切換後繼續舊對話之前，請重新啟動即時 Claude 終端機。",
             "c98ea88392": "沒有其他帳戶",
             "9332ba8684": "切換到",
             "d450654fa2": "Claude 帳戶",
@@ -6499,7 +6500,6 @@
         "AccountsPane": {
           "c2d2751587": "刪除帳戶",
           "dbb9626ed1": "取消",
-          "854ebbcc45": "Orca 將刪除此已儲存帳戶的託管 Claude 身份驗證。如果目前處於活動狀態，Orca 將回退到系統預設的 Claude 登入名。",
           "63843e37e2": "刪除 Claude 帳戶？",
           "380a7736cc": "移除此帳戶會永久刪除其託管的 Codex 主目錄，包括其中儲存的所有 Codex 會話歷史記錄和 MCP 登入資訊。此操作無法復原。如果該帳戶目前處於活動狀態，Orca 將回退到系統預設的 Codex 登入。",
           "0d47394635": "刪除 Codex 帳戶？",
@@ -6547,12 +6547,10 @@
           "3fe7862418": "{{value0}} 沒有受管理的 Claude 帳戶。Orca 將使用該環境的系統預設 Claude 登入，直到您在此處新增一個。",
           "3455cf43fa": "Claude 登入。",
           "fcc4093fc1": "使用您目前 {{value0}} Codex 登入名。",
-          "79e484c3b2": "用於共享 Claude 身份驗證檔案的可選帳戶切換器。",
           "8bbfd74556": "Claude 帳戶",
           "72b36ea174": "可選。Orca 可使用系統預設 Claude 登入；僅當你需要快速切換且不想遷移聊天會話時才新增帳戶。",
           "26ef4b55be": "Claude",
           "2743cdc0af": "Claude 帳戶更新失敗。",
-          "b15ce90870": "{{value0}} -> {{value1}}。在繼續舊會話之前重新啟動即時 Claude 終端機。",
           "f921d32606": "Claude 帳戶已更新。",
           "5bf8764953": "Codex 帳戶更新失敗。",
           "9baf45d071": "目前裝置",
@@ -11127,7 +11125,7 @@
           "sourceControlAiDefaults": "方案、提示和託管審查預設值由此客戶端共享；模型選擇和發現則限定在代理執行的主機內。",
           "projectOnThisHost": "此主機上的專案",
           "repositorySourceControlAi": "這些覆蓋項應用於此專案設定，並繼承客戶端的原始碼管理 AI 預設值，直至自定義。",
-          "agentLaunchDefaults": "預設代理、命令覆蓋、CLI 引數和啟動環境是客戶端偏好。SSH 和遠端伺服器啟動仍會在執行時驗證主機可用性。",
+          "agentLaunchDefaults": "預設代理、命令覆蓋、CLI 引數和啟動環境儲存在所選主機上。",
           "clientDefaultProjectScopes": "客戶端預設 + 專案範圍",
           "terminalQuickCommands": "命令儲存在此客戶端，然後限定為全域性或某專案設定，以便從所選終端機上下文執行。",
           "hostOverride": "主機覆蓋",
@@ -13674,7 +13672,8 @@
             "resumeInChatTranscriptMissing": "無法載入此對話的歷史記錄，因此無法在聊天中恢復。",
             "resumeInChatFailed": "無法在新聊天中恢復此會話。",
             "resumeInNewCliUnavailable": "無法在 CLI 中開啟此會話。",
-            "resumeInNewCliHostTooOld": "請更新執行此聊天的主機上的 Orca，才能在新的 CLI 中恢復它。"
+            "resumeInNewCliHostTooOld": "請更新執行此聊天的主機上的 Orca，才能在新的 CLI 中恢復它。",
+            "folderWorkspaceUnavailable": "資料夾工作區不再可用。"
           },
           "AiVaultPanelControls": {
             "scanningSessions": "正在掃描會話",
@@ -13776,7 +13775,9 @@
             "copied": "已複製",
             "copy": "複製",
             "noFirstPromptAvailable": "沒有可用的首次提示",
-            "loadingFirstPrompt": "正在載入首次提示…"
+            "loadingFirstPrompt": "正在載入首次提示…",
+            "folder": "資料夾",
+            "resumeInFolder": "在資料夾中恢復"
           },
           "AiVaultSessionRow": {
             "resumeAgentSession": "恢復 {{value0}} 會話",
@@ -13872,7 +13873,12 @@
             "noRecordedWorktree": "此會話沒有記錄工作樹。",
             "archivedJumpUnavailable": "此會話位於已歸檔的工作樹中。",
             "noActiveWorktreeMatch": "沒有與此會話匹配的活動工作樹。",
-            "noActiveWorktreeTarget": "沒有可用的活動工作樹。"
+            "noActiveWorktreeTarget": "沒有可用的活動工作樹。",
+            "activeFolder": "資料夾",
+            "archivedFolder": "已歸檔的資料夾",
+            "archivedFolderJumpUnavailable": "此會話位於已歸檔的資料夾中。",
+            "currentFolder": "目前資料夾",
+            "jumpToFolder": "跳轉到資料夾"
           },
           "AiVaultSessionSubagents": {
             "subagentsCount": "子代理（{{value0}}）",
@@ -14916,7 +14922,6 @@
                 "d90d2e1f6d": "跟蹤會話和每週使用情況。",
                 "8919321417": "Codex 登入失敗。",
                 "c7b90c140b": "添加了 Codex 帳戶。",
-                "4e71d72912": "Claude 登入失敗。",
                 "9ddeb558f9": "已新增 Claude 帳戶。",
                 "29d0653961": "登入",
                 "945865332e": "登入",
@@ -17596,7 +17601,8 @@
         "expandNode": "展開 {{value0}}",
         "selectMachine": "選擇 {{value0}} 上的全部聊天",
         "sshHost": "SSH",
-        "done": "完成"
+        "done": "完成",
+        "resultListLabel": "本次恢復的聊天"
       },
       "linear-issue-attribute-filter-coverage-notice": {
         "statusPartialTeamCoverage": "過濾 {{value1}} 團隊狀態中的 {{value0}} — 不包括其餘團隊的問題。",
@@ -17698,7 +17704,11 @@
         "resumedTitleOne": "已恢復 {{value0}}/1 個聊天",
         "resumingTitleOne": "正在恢復 1 個聊天",
         "resumingTitle": "正在恢復 {{value0}} 個聊天",
-        "description": "每個聊天都會帶著完整上下文恢復，並被要求檢查它停在了哪裡。你可以關閉此視窗，狀態列會繼續顯示進度。"
+        "description": "每個聊天都會帶著完整上下文恢復，並被要求檢查它停在了哪裡。你可以關閉此視窗，狀態列會繼續顯示進度。",
+        "finished": "Orca 關閉時這些聊天正在工作。Orca 已將每個聊天恢復到停止的位置並保留完整上下文，並讓代理在繼續之前先檢查它之前在做什麼。你自己的提示沒有被重新發送。",
+        "finishedUpdate": "Orca 安裝更新時這些聊天正在工作。Orca 已將每個聊天恢復到停止的位置並保留完整上下文，並讓代理在繼續之前先檢查它之前在做什麼。你自己的提示沒有被重新發送。",
+        "finishedPartial": "Orca 關閉時這些聊天正在工作。Orca 恢復的聊天已回到停止的位置並保留完整上下文，並被要求在繼續之前先檢查之前在做什麼。你自己的提示沒有被重新發送。請在列表中檢視仍需處理或可以恢復的聊天。",
+        "finishedPartialUpdate": "Orca 安裝更新時這些聊天正在工作。Orca 恢復的聊天已回到停止的位置並保留完整上下文，並被要求在繼續之前先檢查之前在做什麼。你自己的提示沒有被重新發送。請在列表中檢視仍需處理或可以恢復的聊天。"
       },
       "NativeChatResumeRunStatusIcon": {
         "waitingForReply": "等待回覆",
@@ -17718,6 +17728,11 @@
         "attention": "需要處理",
         "running": "已執行 {{value0}}",
         "filter": "顯示聊天"
+      },
+      "NativeChatResumeAutoNote": {
+        "resuming": "重啟後正在自動恢復。",
+        "resumed": "重啟後已自動恢復。",
+        "changeInSettings": "在設定中更改"
       }
     },
     "i18n": {
@@ -17824,6 +17839,7 @@
         "couldNotStart": "{{agent}} 無法啟動。",
         "editSavedArguments": "請在設定 > 代理 > 引數中編輯。",
         "couldNotRestart": "{{agent}} 無法重新啟動。",
+        "codexCliTooOld": "Codex {{installedVersion}} 版本過舊，無法用於聊天。請更新到 {{minimumVersion}} 或更高版本。",
         "notSignedIn": "{{agent}} 尚未登入。",
         "claudeSystemNotSignedIn": "Claude 尚未登入。請執行 `{{loginCommand}}`，或在 Claude 帳戶設定中選擇帳戶。",
         "claudeManagedNotSignedIn": "此 Claude 帳戶尚未登入。請在 Claude 帳戶設定中重新登入。",
@@ -17839,6 +17855,8 @@
         "managedAccountUnsupported": "當 WSL 中添加了 Claude 帳戶時，Claude 聊天需要 Windows Claude 帳戶。",
         "launchFolderMissing": "此聊天執行所在的資料夾已不存在。請恢復該資料夾以繼續此聊天。",
         "historyInOtherAccount": "此聊天的歷史記錄位於另一個 Claude 帳戶中。請切換回該帳戶以繼續此聊天。",
+        "claudeAccountFolderMissing": "所選 Claude 帳戶的資料夾不存在。請重新登入該帳戶或選擇其他帳戶。",
+        "claudeAccountSetupFailed": "無法設定所選 Claude 帳戶。請重試或選擇其他帳戶。",
         "agentCommandNotRunnable": "{{agent}} 在設定 → 代理中的命令必須是 Orca 能找到的程式路徑或名稱，且不能包含引數或變數。請修改或重置。",
         "chooseClaudeAccount": "請在 Claude 帳戶設定中選擇或新增一個。",
         "chooseClaudeAccountThenRunCommand": "請在 Claude 帳戶設定中選擇或新增一個，然後重新執行 /{{command}}。",
@@ -18003,6 +18021,7 @@
         "model": "模型",
         "effort": "推理強度",
         "fastMode": "快速模式",
+        "speed": "速度",
         "thinking": "思考",
         "options": "選項",
         "sessionOptions": "會話選項",
@@ -18023,7 +18042,8 @@
           "high": "高",
           "xhigh": "極高",
           "max": "最大",
-          "ultra": "極致"
+          "ultra": "極致",
+          "standard": "標準"
         },
         "noCommandsOrSkills": "沒有匹配的命令或技能",
         "commands": "命令",
@@ -18054,6 +18074,19 @@
         "attachmentOwnerChanged": "此工作區在附加時更改了主機 - 再次刪除檔案。",
         "attachmentUnreadable": "無法讀取刪除的檔案。",
         "tooManyAttachments": "每次最多附加 {{value0}} 個檔案。",
+        "permissions": "許可權",
+        "permissionAsk": "請求核准",
+        "permissionAskDescription": "在設定未允許的編輯和命令前詢問",
+        "permissionAskCodexDescription": "在此工作區中編輯檔案並執行命令；其他操作前會詢問",
+        "permissionAskSharedDescription": "在執行尚未獲準的編輯或命令前詢問",
+        "permissionAcceptEdits": "接受編輯",
+        "permissionAcceptEditsDescription": "核准檔案編輯和檔案命令；其餘操作會詢問",
+        "permissionAuto": "替我核准",
+        "permissionAutoDescription": "代你稽核核准請求",
+        "permissionFullAccess": "完全訪問",
+        "permissionFullAccessDescription": "編輯或執行命令前從不詢問",
+        "permissionFullAccessCodexDescription": "從不詢問；可以編輯任何檔案並使用網路",
+        "permissionFullAccessSharedDescription": "編輯或執行命令前從不詢問",
         "pasteFailed": "貼上失敗。",
         "commandAttachmentsUnsupported": "使用聊天會話命令前，請先移除附件。"
       },
@@ -18174,8 +18207,11 @@
       },
       "transcriptLabel": "對話",
       "toggle": {
-        "showTerminal": "顯示終端機",
-        "showChat": "顯示聊天檢視"
+        "showTerminal": "顯示終端機"
+      },
+      "resumeInNewChat": {
+        "notSavedYet": "{{agent}} 尚未儲存此對話。請在它回覆後重試。",
+        "cannotResume": "此 {{agent}} 對話無法在本機聊天中恢復。"
       },
       "state": {
         "loading": {
@@ -18276,6 +18312,7 @@
         "orcaStopUpdate": "此回覆進行期間，{{machine}} 上的 Orca 為更新而重新啟動。",
         "orcaStopQuit": "此回覆進行期間，{{machine}} 上的 Orca 已關閉。",
         "orcaStopCrash": "此回覆進行期間，{{machine}} 上的 Orca 意外停止。",
+        "orcaStopRemote": "此回覆進行期間，{{machine}} 上的 Orca 已停止。",
         "orcaStopCanContinue": "你可以在此對話中繼續。"
       },
       "providerFrame": {
@@ -18480,8 +18517,7 @@
       },
       "visualUnavailable": "視覺化不可用",
       "visualLoading": "正在載入視覺化",
-      "visualOpenInSidebar": "在側邊欄中開啟",
-      "visualClose": "關閉視覺化"
+      "visualOpenInNewTab": "在新分頁中開啟"
     },
     "tab": {
       "bar": {
@@ -19153,9 +19189,6 @@
     "nativeChatUpgrade": {
       "eyebrow": "新功能",
       "title": "本機聊天已升級",
-      "chatModeNote": "新的代理分頁仍像以前一樣在終端機中開啟。",
-      "chatModeLabel": "開啟聊天模式",
-      "chatModeHint": "新的代理分頁改為以聊天方式開啟。",
       "intro": "受支援代理的新聊天現在會在升級後的聊天檢視中開啟。要在聊天和 CLI 之間切換，請開啟右側邊欄中的{{panel}}：",
       "resumeInNativeChat": "{{action}}：在本機聊天中開啟受支援的 CLI 對話。",
       "resumeInCli": "{{action}}：將 Claude 或 Codex 聊天複製到新的 CLI 會話中。原始聊天保持不變。",
@@ -19482,9 +19515,6 @@
       "oldTerminalDialogRisk": "共享伺服器的 Codex 會話可能會一起結束，並且代理狀態可能會錯誤。",
       "oldTerminalDialogCause": "較舊的終端機仍然共享 Codex 伺服器。開啟一個新終端機以在單獨的伺服器上執行 Codex。",
       "fix": "使固定",
-      "openNewTerminal": "開啟新終端機",
-      "dontShowAgain": "不再顯示",
-      "dismiss": "關閉",
       "dialogTitle": "為每個 Codex 分頁提供自己的伺服器",
       "dialogDescription": "Codex 會話直接在共享一台後台伺服器的終端機中啟動。 Orca 將其啟動的 Codex 會話分開儲存。當會話共享一台伺服器時，關閉一個伺服器可能會結束其他伺服器，並且代理狀態可能會錯誤。",
       "copy": "複製",
@@ -19495,7 +19525,6 @@
       "step2Title": "停止正在執行的共享伺服器",
       "undo": "要撤消，請執行 codex features enable daemon_auto_start。",
       "step2Warning": "關閉共享伺服器的所有開啟的 Codex 會話",
-      "learnMore": "瞭解更多",
       "turnOff": "關",
       "turningOff": "正在關閉…",
       "turnedOff": "已關閉",
@@ -19511,6 +19540,12 @@
     },
     "paneMove": {
       "failed": "無法將窗格移動到新分頁。"
+    },
+    "paneTopBanner": {
+      "openNewTerminal": "開啟新終端機",
+      "learnMore": "瞭解更多",
+      "dontShowAgain": "不再顯示",
+      "dismiss": "關閉"
     }
   },
   "fileSearch": {
@@ -19590,6 +19625,17 @@
   "projectField": {
     "updateFailed": "無法更新專案欄位"
   },
+  "settings.agents.environmentName": "環境變數名稱",
+  "settings.agents.environmentValue": "{{name}} 的值",
+  "settings.agents.savedEnvironment": "已儲存的值 · 輸入以替換",
+  "settings.agents.newEnvironment": "值",
+  "settings.agents.removeEnvironment": "刪除",
+  "settings.agents.loadingHost": "正在載入代理設定…",
+  "settings.agents.updateHost": "請更新此伺服器以編輯其代理啟動設定。",
+  "settings.agents.readFailed": "無法讀取代理設定。請檢查主機連線並重試。",
+  "settings.agents.saveFailed": "無法儲存代理設定。請檢查主機連線並重試。",
+  "settings.agents.hostDefaults": "所選主機上新代理的預設設定。",
+  "settings.agents.save": "儲存",
   "bottomPanel": {
     "error": {
       "title": "底部面板出錯了。",
@@ -20994,15 +21040,15 @@
       "trigger": "交給 AI",
       "inWorkspace": "在 workspace 開新 agent",
       "noWorkspaces": "還沒有 workspace",
-      "detecting": "正在找 agent…",
+      "detecting": "正在查詢 agent…",
       "noAgents": "這台主機沒有可用的 agent",
-      "newWorkspace": "在專案裡開新 workspace",
+      "newWorkspace": "在專案裡新增 workspace",
       "copy": "複製給 AI 的內容",
       "copied": "已複製給 AI 的內容",
       "copyFailed": "無法複製",
       "workspaceUnavailable": "無法開啟這個 workspace",
       "launchFailed": "無法啟動 agent",
-      "composerFallback": "這個專案要先在對話框確認設定。task 內容已複製，workspace 開好後貼給 agent。",
+      "composerFallback": "這個專案需要先在對話方塊確認設定。task 內容已複製，workspace 開啟後貼上給 agent。",
       "prompt": {
         "intro": "請處理這個 monday task：",
         "task": "任務",
@@ -21149,11 +21195,5 @@
     "startConfigured": "啟動 {{value0}}",
     "fromConfig": "ngrok.yml · {{value0}} · 未啟動",
     "shareConfigured": "分享到 {{value0}}（ngrok.yml）"
-  },
-  "diffNavigation": {
-    "fileEnd": "已到本檔案最後一個變更，再按一次開啟下一個檔案。",
-    "fileStart": "已到本檔案第一個變更，再按一次開啟上一個檔案。",
-    "lastFile": "已是最後一個變更檔案。",
-    "firstFile": "已是第一個變更檔案。"
   }
 }
