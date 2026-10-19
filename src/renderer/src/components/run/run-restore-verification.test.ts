@@ -119,7 +119,7 @@ describe('ensureRestoredRunVerification', () => {
     bindPane()
     await vi.advanceTimersByTimeAsync(10_000)
 
-    expect(mocks.inspect).toHaveBeenCalledWith(null, 'pty-1')
+    expect(mocks.inspect).toHaveBeenCalledWith('pty-1')
     expect(useRunSessionStore.getState().sessionsByKey[KEY]?.status).toBe('stopped')
   })
 

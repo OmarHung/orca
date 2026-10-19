@@ -9,7 +9,8 @@ import { useConfirmationDialog } from '@/components/confirmation-dialog-context'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { useWorktreeQuickCommands } from '@/hooks/use-worktree-quick-commands'
-import { getRepoExecutionHostId } from '../../../../shared/execution-host'
+import { getRepoExecutionHostId, type ExecutionHostId } from '../../../../shared/execution-host'
+import { getTerminalQuickCommandHostPromptMaxLength } from '@/lib/terminal-quick-command-host-prompt-limit'
 import type { TerminalQuickCommand } from '../../../../shared/terminal-quick-command-types'
 import { useTabBarQuickCommandsShortcut } from '../tab-bar/tab-bar-quick-commands-shortcut'
 import { EditRunConfigurationsDialog } from './EditRunConfigurationsDialog'
@@ -57,12 +58,28 @@ import { runWidgetCascadeDirection } from './run-widget-cascade'
 /** The Run widget's Add Quick Command dialog, which can also save a compound run configuration. */
 function RunWidgetQuickCommandDialog({
   worktreeId,
+  hostId,
   ...props
-}: Omit<React.ComponentProps<typeof TerminalQuickCommandDialog>, 'compound' | 'open' | 'mode'> & {
+}: Omit<
+  React.ComponentProps<typeof TerminalQuickCommandDialog>,
+  'compound' | 'open' | 'mode' | 'agentPromptMaxLength'
+> & {
   worktreeId: string
+  hostId: ExecutionHostId
 }): React.JSX.Element {
   const compound = useCompoundQuickCommand(worktreeId)
-  return <TerminalQuickCommandDialog open mode="add" compound={compound} {...props} />
+  const agentPromptMaxLength = useAppStore((state) =>
+    getTerminalQuickCommandHostPromptMaxLength(state, hostId)
+  )
+  return (
+    <TerminalQuickCommandDialog
+      open
+      mode="add"
+      compound={compound}
+      agentPromptMaxLength={agentPromptMaxLength}
+      {...props}
+    />
+  )
 }
 
 const NO_RECENT_RUNS: RunTarget[] = []
@@ -278,6 +295,7 @@ export function RunWidget({
       {quickCommandDraft ? (
         <RunWidgetQuickCommandDialog
           worktreeId={worktreeId}
+          hostId={addHostId}
           command={quickCommandDraft}
           repos={
             addHostId.startsWith('runtime:')
@@ -286,7 +304,7 @@ export function RunWidget({
           }
           onOpenChange={(open) => !open && setQuickCommandDraft(null)}
           onSave={(command) =>
-            void useAppStore.getState().upsertTerminalQuickCommand(addHostId, command)
+            useAppStore.getState().upsertTerminalQuickCommand(addHostId, command)
           }
         />
       ) : null}

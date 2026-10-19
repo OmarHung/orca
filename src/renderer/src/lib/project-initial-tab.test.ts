@@ -6,7 +6,7 @@ import { seedProjectInitialAgentTab } from './project-initial-agent-tab-seeding'
 import {
   makeCreatedAgentWorktree as makeWorktree,
   seedEmptyActivatableWorktree
-} from '@/lib/worktree-activation-created-agent-test-state'
+} from '@/lib/worktree-activation-created-agent.test-fixture'
 import type { Repo } from '../../../shared/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
 
