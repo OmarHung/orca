@@ -31,6 +31,10 @@ const PLACEHOLDER_HOST_LABELS = new Set([
 ])
 const PLACEHOLDER_MAIL_DOMAIN =
   /(^|\.)(example\.(com|org|net|test)|example|test|invalid|localhost|x\.io)$|users\.noreply\.github\.com$|^anthropic\.com$|^agent\.monday\.com$/
+// `pkg@1.2.3.patch` names a package version, not a mailbox.
+const PACKAGE_VERSION_DOMAIN = /^\d+\.\d+\.\d+/
+// The shared SSH user of public git hosts; a self-hosted `git@` host still counts as private.
+const PUBLIC_GIT_SSH_REMOTES = new Set(['git@github.com', 'git@gitlab.com', 'git@bitbucket.org'])
 
 /**
  * Generic rules only; anything naming a real person, host or path belongs in the
@@ -80,9 +84,15 @@ export const BUILTIN_RULES = [
     why: 'email outside example/test domains',
     find: (line) => {
       for (const match of line.matchAll(/\b[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g)) {
-        if (!PLACEHOLDER_MAIL_DOMAIN.test(match[1].toLowerCase())) {
-          return match[0]
+        const domain = match[1].toLowerCase()
+        if (
+          PLACEHOLDER_MAIL_DOMAIN.test(domain) ||
+          PACKAGE_VERSION_DOMAIN.test(domain) ||
+          PUBLIC_GIT_SSH_REMOTES.has(match[0].toLowerCase())
+        ) {
+          continue
         }
+        return match[0]
       }
       return null
     }
