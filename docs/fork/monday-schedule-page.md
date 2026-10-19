@@ -44,7 +44,9 @@
 
 ## 內嵌瀏覽器（2026-10-06）
 
-頁面裡的連結（在 monday 開啟、開啟 monday、連結記錄的網址、欄位與 update 裡的連結、token 說明）都開在 monday 頁右側的 Orca 瀏覽器，不切離頁面；**Shift+點擊**改用系統瀏覽器，面板標題列也有「用系統瀏覽器開啟」。
+頁面裡的連結（開啟 monday、連結記錄的網址、欄位與 update 裡的連結、token 說明）都開在 monday 頁右側的 Orca 瀏覽器，不切離頁面；**Shift+點擊**改用系統瀏覽器，面板標題列也有「用系統瀏覽器開啟」。
+
+- 例外（2026-10-19）：「在 monday 開啟」（詳情面板標題列、連結記錄卡片）**直接開獨立視窗**（見下方「在獨立視窗開啟」），不經過右側面板；monday 的 task 頁在窄面板裡太擠。視窗用右側瀏覽器的 browser profile，還沒開過時用新分頁會拿到的預設 profile，登入一樣不掉。Shift+點擊仍用系統瀏覽器。
 
 - 瀏覽器分頁一定要屬於某個 workspace，所以加了第三個本機虛擬 workspace `global-monday-browser`（`MONDAY_BROWSER_WORKTREE_ID`，和浮動終端機、SSH 頁同一張清單），路由、清理、paired web client 同步都照虛擬 workspace 處理。桌面版的虛擬 workspace 本來就能開瀏覽器（只有 paired web client 不行），浮動面板就是先例；面板用自己的 `MondayBrowserSlot`（上游 v1.4.224 拿掉了 `FloatingBrowserSlot`）。
 - 面板顯示與否＝這個 workspace 裡有沒有瀏覽器分頁，不另存狀態；關閉面板就是關掉那個分頁。同一個網址已經開著就切過去，否則在同一個瀏覽器裡多開一頁。只接受 http(s)。
