@@ -53,6 +53,20 @@ describe('findPrivateData built-in rules', () => {
     ])
   })
 
+  it('allows package@version patch names and public git SSH remotes', () => {
+    const hits = findPrivateData([
+      entry('tedious@20.0.0: config/patches/tedious@20.0.0.patch'),
+      entry('config/patches/xterm-src/@xterm__xterm@6.1.0-beta.304.src.patch'),
+      entry("stdout: 'git@github.com:stablyai/orca', ssh://git@gitlab.com/group/repo"),
+      entry('git@gitlab.contoso.com:team/app.git'),
+      entry('someone@163.com')
+    ])
+    expect(hits.map((h) => [h.rule, h.fragment])).toEqual([
+      ['email', 'git@gitlab.contoso.com'],
+      ['email', 'someone@163.com']
+    ])
+  })
+
   it('matches literals case-insensitively and reports the file and line', () => {
     const hits = findPrivateData([entry('const x = "Contoso Industries"', 'docs/x.md', 7)], {
       literals: parseLiterals('# clients\ncontoso industries\n\n')
