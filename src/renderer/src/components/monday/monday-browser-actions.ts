@@ -1,6 +1,11 @@
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
+import {
+  getBrowserSessionProfileHostId,
+  getDefaultBrowserProfileForHost
+} from '@/store/slices/browser/browser-host-state'
+import type { AppState } from '@/store/types'
 import type { BrowserPage, BrowserWorkspace } from '../../../../shared/browser-workspace-types'
 import { MONDAY_BROWSER_WORKTREE_ID } from '../../../../shared/local-synthetic-workspace'
 
@@ -79,6 +84,41 @@ export function openMondayLink(url: string, options: { systemBrowser?: boolean }
   }
 }
 
+/** The login a separate window shares: the docked browser's profile, else the one a new tab would get. */
+function mondayWindowProfileId(state: AppState): string | null {
+  const tab = selectMondayBrowserTab(state)
+  if (tab) {
+    return tab.sessionProfileId ?? null
+  }
+  return getDefaultBrowserProfileForHost(
+    state,
+    getBrowserSessionProfileHostId(state, MONDAY_BROWSER_WORKTREE_ID, undefined)
+  )
+}
+
+async function openInSeparateWindow(url: string, profileId: string | null): Promise<boolean> {
+  const opened = await window.api.monday.openBrowserWindow({ url, profileId })
+  if (!opened) {
+    toast.error(translate('monday.browser.openInWindowFailed', 'Could not open a separate window'))
+  }
+  return opened
+}
+
+/** Opens the link in a window of its own, skipping the docked browser; Shift sends it to the OS browser. */
+export async function openMondayLinkInWindow(
+  url: string,
+  options: { systemBrowser?: boolean } = {}
+): Promise<void> {
+  if (!isWebUrl(url)) {
+    return
+  }
+  if (options.systemBrowser) {
+    void window.api.shell.openUrl(url)
+    return
+  }
+  await openInSeparateWindow(url, mondayWindowProfileId(useAppStore.getState()))
+}
+
 export function closeMondayBrowser(): void {
   const state = useAppStore.getState()
   const tab = selectMondayBrowserTab(state)
@@ -116,12 +156,7 @@ export async function openMondayBrowserInWindow(): Promise<void> {
   if (!plan) {
     return
   }
-  const opened = await window.api.monday.openBrowserWindow({
-    url: plan.url,
-    profileId: tab.sessionProfileId ?? null
-  })
-  if (!opened) {
-    toast.error(translate('monday.browser.openInWindowFailed', 'Could not open a separate window'))
+  if (!(await openInSeparateWindow(plan.url, tab.sessionProfileId ?? null))) {
     return
   }
   const latest = useAppStore.getState()

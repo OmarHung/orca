@@ -273,6 +273,30 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
       )
     ).toBe(0)
 
+    // The task's "Open in monday" skips the docked browser and opens a separate window directly.
+    await orcaPage
+      .getByTestId('monday-detail-panel')
+      .locator('header')
+      .getByRole('button', { name: 'Open in monday' })
+      .click()
+    await expect
+      .poll(
+        () =>
+          electronApp.evaluate(({ webContents }) =>
+            webContents
+              .getAllWebContents()
+              .filter(
+                (contents) =>
+                  contents.getType() !== 'webview' && contents.getURL().includes('.monday.com/')
+              )
+              .map((contents) => contents.session.storagePath?.includes('orca-browser') ?? false)
+          ),
+        { timeout: 15_000 }
+      )
+      .toEqual([true])
+    await expect(browserPanel).toHaveCount(0)
+    expect(await mondayBrowserUrls(orcaPage)).toEqual([])
+
     // The token only ever goes to the monday endpoint, from the main process.
     expect(new Set(server.tokens)).toEqual(new Set(['test-token']))
   } finally {

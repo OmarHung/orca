@@ -1,10 +1,27 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BrowserPage, BrowserWorkspace } from '../../../../shared/browser-workspace-types'
 
-// The store pulls in the whole renderer; the planner under test never touches it.
-vi.mock('@/store', () => ({ useAppStore: { getState: vi.fn() } }))
+const mocks = vi.hoisted(() => ({
+  getState: vi.fn(),
+  openBrowserWindow: vi.fn(),
+  openUrl: vi.fn(),
+  defaultProfileForHost: vi.fn(),
+  toast: { error: vi.fn() }
+}))
 
-import { planMondayBrowserPopOut, planMondayLinkOpen } from './monday-browser-actions'
+vi.mock('sonner', () => ({ toast: mocks.toast }))
+// The store pulls in the whole renderer; the code under test only reads state.
+vi.mock('@/store', () => ({ useAppStore: { getState: mocks.getState } }))
+vi.mock('@/store/slices/browser/browser-host-state', () => ({
+  getBrowserSessionProfileHostId: () => 'local',
+  getDefaultBrowserProfileForHost: mocks.defaultProfileForHost
+}))
+
+import {
+  openMondayLinkInWindow,
+  planMondayBrowserPopOut,
+  planMondayLinkOpen
+} from './monday-browser-actions'
 
 const ITEM_URL = 'https://acme.monday.com/boards/1/pulses/2'
 
@@ -111,5 +128,70 @@ describe('planMondayBrowserPopOut', () => {
 
   it('uses the tab address when no page record is left', () => {
     expect(planMondayBrowserPopOut(tab(), [])).toEqual({ url: ITEM_URL, pageId: null })
+  })
+})
+
+describe('openMondayLinkInWindow', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.openBrowserWindow.mockResolvedValue(true)
+    mocks.defaultProfileForHost.mockReturnValue('work')
+    vi.stubGlobal('window', {
+      api: {
+        monday: { openBrowserWindow: mocks.openBrowserWindow },
+        shell: { openUrl: mocks.openUrl }
+      }
+    })
+  })
+
+  function stateWith(tabs: BrowserWorkspace[]): void {
+    mocks.getState.mockReturnValue({
+      browserTabsByWorktree: { 'global-monday-browser': tabs },
+      browserPagesByWorkspace: {}
+    })
+  }
+
+  it('opens the link straight in a separate window with the default profile', async () => {
+    stateWith([])
+
+    await openMondayLinkInWindow(ITEM_URL)
+
+    expect(mocks.openBrowserWindow).toHaveBeenCalledWith({ url: ITEM_URL, profileId: 'work' })
+    expect(mocks.toast.error).not.toHaveBeenCalled()
+  })
+
+  it('shares the docked browser profile so its login carries over', async () => {
+    stateWith([{ ...tab(), sessionProfileId: 'client' }])
+
+    await openMondayLinkInWindow(ITEM_URL)
+
+    expect(mocks.openBrowserWindow).toHaveBeenCalledWith({ url: ITEM_URL, profileId: 'client' })
+  })
+
+  it('sends the link to the system browser when asked', async () => {
+    stateWith([])
+
+    await openMondayLinkInWindow(ITEM_URL, { systemBrowser: true })
+
+    expect(mocks.openUrl).toHaveBeenCalledWith(ITEM_URL)
+    expect(mocks.openBrowserWindow).not.toHaveBeenCalled()
+  })
+
+  it('ignores anything that is not a web address', async () => {
+    stateWith([])
+
+    await openMondayLinkInWindow('javascript:alert(1)')
+
+    expect(mocks.openBrowserWindow).not.toHaveBeenCalled()
+    expect(mocks.openUrl).not.toHaveBeenCalled()
+  })
+
+  it('tells the user when the window could not open', async () => {
+    stateWith([])
+    mocks.openBrowserWindow.mockResolvedValue(false)
+
+    await openMondayLinkInWindow(ITEM_URL)
+
+    expect(mocks.toast.error).toHaveBeenCalledTimes(1)
   })
 })
