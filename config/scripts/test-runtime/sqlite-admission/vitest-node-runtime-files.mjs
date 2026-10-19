@@ -79,6 +79,10 @@ const NODE_RUNTIME_INCLUDE = [
   'src/main/rate-limits/providers/codex/codex-rpc-worker-backpressure.test.ts',
   'src/main/computer/macos-native/macos-native-provider-client.test.ts',
   'src/main/foreign-sqlite-readers/**/*.test.ts',
+  // Fork: the Database page's workers read SQLite through node:sqlite and load native drivers.
+  'src/main/database/**/*.test.ts',
+  // Fork: SFTP downloads fork the local writer helper and talk to it over Node IPC.
+  'src/main/sftp/**/*.test.ts',
   'src/main/browser/*cookie*.test.ts',
   'src/main/browser/cookies/*cookie*.test.ts',
   'src/main/browser/cookies/client-route/*cookie*.test.ts',
