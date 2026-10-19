@@ -39,10 +39,7 @@ export function ensureRestoredRunVerification(): void {
         continue
       }
       pending.delete(attemptId)
-      void verifyRestoredRun(
-        () => inspectRuntimeTerminalProcess(useAppStore.getState().settings, ptyId),
-        wait
-      ).then((verdict) => {
+      void verifyRestoredRun(() => inspectRuntimeTerminalProcess(ptyId), wait).then((verdict) => {
         if (verdict === 'ended') {
           useRunSessionStore.getState().stopAttempt(key, attemptId)
         }
