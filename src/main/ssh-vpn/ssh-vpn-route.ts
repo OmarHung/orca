@@ -1,5 +1,5 @@
 import type { SshTarget } from '../../shared/ssh-types'
-import type { SshResolvedConfig } from '../ssh/ssh-config-parser'
+import type { SshResolvedConfig } from '../ssh/config/ssh-g-config-resolution'
 import type { EffectiveProxy } from '../ssh/ssh-proxy-command'
 
 /**

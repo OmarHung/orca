@@ -120,7 +120,8 @@ export function RunWidget({
       quick.refreshRemoteHost()
     }
   }
-  useTabBarQuickCommandsShortcut({ menuOpen, onOpenChange: onMenuOpenChange })
+  // Why: TabGroupPanel mounts the Run toolbar only in the focused group.
+  useTabBarQuickCommandsShortcut({ isFocused: true, menuOpen, onOpenChange: onMenuOpenChange })
   // Why keyed by menuOpen: the file can appear or disappear between openings.
   const hasLaunchJson = useWorkspaceHasLaunchJson(worktreeId, menuOpen)
   const configurations = (data?.listed ?? NO_CONFIGURATIONS).map((entry) => entry.configuration)

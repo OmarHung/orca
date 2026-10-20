@@ -4,8 +4,8 @@ import type { SshConnection } from '../ssh/ssh-connection'
 import type { SshConnectionCallbacks } from '../ssh/ssh-connection-utils'
 import { DatabaseSshConnections } from './database-ssh-connections'
 
-vi.mock('../ipc/ssh-ipc-context', () => ({ getCurrentMainWindow: () => null }))
-vi.mock('../ipc/ssh-passphrase', () => ({ requestCredential: async () => null }))
+vi.mock('../ipc/ssh/ssh-ipc-context', () => ({ getCurrentMainWindow: () => null }))
+vi.mock('../ipc/ssh/ssh-passphrase', () => ({ requestCredential: async () => null }))
 
 const stateOf = (status: SshConnectionStatus): SshConnectionState => ({
   targetId: 'ssh-1',

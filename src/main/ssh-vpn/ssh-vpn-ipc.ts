@@ -12,8 +12,8 @@ import {
   type SshVpnSnapshot
 } from '../../shared/ssh-vpn-types'
 import { getSecretStore } from '../../shared/secret-store'
-import { getCurrentMainWindow } from '../ipc/ssh-ipc-context'
-import { resolveWithSshG } from '../ssh/ssh-config-parser'
+import { getCurrentMainWindow } from '../ipc/ssh/ssh-ipc-context'
+import { resolveWithSshG } from '../ssh/config/ssh-g-config-resolution'
 import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
 import { checkBorrowedContainer, listBorrowableContainers } from './borrowed-container-check'
 import { readOvpnProfileFile } from './ovpn-profile-files'

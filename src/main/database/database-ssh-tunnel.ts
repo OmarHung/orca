@@ -1,6 +1,6 @@
 import { createServer } from 'node:net'
 import type { SshConnection } from '../ssh/ssh-connection'
-import { SshPortForwardManager } from '../ssh/ssh-port-forward'
+import { SshPortForwardManager } from '../ssh/port-forwarding/ssh-port-forward'
 import {
   getSshProviderAuthority,
   registerSshProviderRequestAbort

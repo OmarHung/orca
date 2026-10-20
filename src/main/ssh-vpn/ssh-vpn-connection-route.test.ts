@@ -1,6 +1,7 @@
 import { PassThrough } from 'node:stream'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { clientInstances, resetSshConnectionMocks } from '../ssh/ssh-connection-test-harness'
+import { clientInstances } from '../ssh/__tests__/ssh-connection-test-client'
+import { resetSshConnectionMocks } from '../ssh/ssh-connection-test-harness'
 import { createCallbacks, createTarget } from '../ssh/ssh-connection-test-fixtures'
 import { SshConnection } from '../ssh/ssh-connection'
 import type * as SshProxyCommandModule from '../ssh/ssh-proxy-command'
@@ -11,18 +12,32 @@ const { prepareSshVpnRouteMock, spawnProxyCommandMock } = vi.hoisted(() => ({
   spawnProxyCommandMock: vi.fn()
 }))
 
-vi.mock('ssh2', async () => (await import('../ssh/ssh-connection-test-harness')).createSsh2Module())
-vi.mock('../ssh/system-ssh-binary', async () =>
+vi.mock('ssh2', async () =>
+  (await import('../ssh/__tests__/ssh-connection-test-client')).createSsh2Module()
+)
+vi.mock('../ssh/system-transport/system-ssh-binary', async () =>
   (await import('../ssh/ssh-connection-test-harness')).createSystemSshBinaryModule()
 )
-vi.mock('../ssh/ssh-system-fallback', async () =>
-  (await import('../ssh/ssh-connection-test-harness')).createSystemFallbackModule()
+vi.mock('../ssh/system-transport/system-ssh-args', async (importOriginal) =>
+  (await import('../ssh/ssh-connection-test-harness')).withSystemSshArgsMocks(
+    await importOriginal()
+  )
+)
+vi.mock('../ssh/system-transport/system-ssh-command', async (importOriginal) =>
+  (await import('../ssh/ssh-connection-test-harness')).withSystemSshCommandMocks(
+    await importOriginal()
+  )
 )
 vi.mock('../ssh/ssh-control-socket', async () =>
   (await import('../ssh/ssh-connection-test-harness')).createControlSocketModule()
 )
-vi.mock('../ssh/ssh-config-parser', async () =>
+vi.mock('../ssh/config/ssh-config-parser', async () =>
   (await import('../ssh/ssh-connection-test-harness')).createSshConfigParserModule()
+)
+vi.mock('../ssh/config/ssh-g-config-resolution', async (importOriginal) =>
+  (await import('../ssh/ssh-connection-test-harness')).withSshGConfigResolutionMocks(
+    await importOriginal()
+  )
 )
 vi.mock('./ssh-vpn-route', () => ({
   prepareSshVpnRoute: prepareSshVpnRouteMock,
