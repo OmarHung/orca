@@ -24,6 +24,7 @@ import {
 } from './run-port-claims'
 import { resolveListenerTerminals } from './run-port-listener-terminals'
 import { probeDebugSessionPorts } from './run-port-debugger-probe'
+import { probeRunPortProtocols } from './run-port-protocol-probe'
 import { isHiddenRunPort, noteRunPortScan, useRunPortStore } from './run-port-store'
 import { isRunSessionActive, useRunSessionStore } from './run-session-store'
 import { resolveRunTerminalBinding } from './run-terminal-binding'
@@ -75,6 +76,7 @@ function refreshClaims(restoring = false): void {
     useRunPortStore.setState({ claimsByOwner: next })
   }
   probeDebugSessionPorts(useRunPortStore.getState().claimsByOwner, scans, isLocalWorktree)
+  probeRunPortProtocols(useRunPortStore.getState().claimsByOwner, scans, isLocalWorktree)
   scheduleFastScan()
 }
 
