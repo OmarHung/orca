@@ -36,6 +36,10 @@
         "saveFailed": "無法儲存聊天命名設定。",
         "searchAgent": "代理",
         "searchTemplate": "命令範本"
+      },
+      "providers": {
+        "title": "提供方",
+        "antigravityDescription": "Antigravity 聊天執行在 Orca 下載到此主機的伺服器上，與 agy CLI 相互獨立。"
       }
     },
     "terminal": {
@@ -384,7 +388,8 @@
         "loopbackPairingBlocked": "此訪問連結會指回此裝置。",
         "remotePairingUnreachable": "無法連線 {{endpoint}} 上的 Orca。",
         "remotePairingInvalidDetails": "此訪問連結包含無效的連線資訊。",
-        "remotePairingSaveFailed": "Orca 驗證了主機但無法儲存它。檢查瀏覽器儲存並重試。"
+        "remotePairingSaveFailed": "Orca 驗證了主機但無法儲存它。檢查瀏覽器儲存並重試。",
+        "remotePairingRepairUnavailable": "Re-pairing is not available in the browser. Pair this browser with the server again."
       },
       "web": {
         "preload": {
@@ -545,7 +550,9 @@
           "presenceProfileOverflow": "{{names}} 及另外 {{count}} 個",
           "removeProjectFailed": "刪除專案失敗",
           "wslFilesystemBoundaryTitle": "該專案儲存在 Windows 驅動器上",
-          "wslFilesystemBoundaryDescription": "該專案的 Git 在 {{distro}} 中執行，它透過 WSL 檔案系統橋到達 Windows 驅動器。預計 git 的速度比儲存在 {{distro}} 內的副本慢大約 20 倍。"
+          "wslFilesystemBoundaryDescription": "該專案的 Git 在 {{distro}} 中執行，它透過 WSL 檔案系統橋到達 Windows 驅動器。預計 git 的速度比儲存在 {{distro}} 內的副本慢大約 20 倍。",
+          "moveToGroupOtherHost": "無法將專案移動到分組",
+          "moveToGroupOtherHostDesc": "執行此專案的電腦上沒有此分組。專案只能加入儲存在其所在電腦上的分組。"
         },
         "settings": {
           "e12dab333b": "切換伺服器失敗",
@@ -4176,7 +4183,14 @@
             "runtime_unavailable_explanation": "遠端主機可能仍在執行；僅 Orca 執行時連線不可用。",
             "contact_note": "主機可能仍在執行；僅 Orca 連線不可用。",
             "last_connected": "最後連線 {{value0}}",
-            "reconnect_attempt": "嘗試{{value0}}"
+            "reconnect_attempt": "嘗試{{value0}}",
+            "access_revoked": "Access revoked",
+            "access_revoked_summary": "This server revoked access for this computer",
+            "access_revoked_explanation": "Re-pair with a new pairing link from the server to reconnect.",
+            "update_required": "Update required",
+            "update_required_summary": "Orca versions are not compatible",
+            "update_required_explanation": "Update Orca on this computer or on the server, then connect again.",
+            "repair": "Re-pair…"
           },
           "NativeChatResumeStatusSegment": {
             "labelOne": "恢復 1 次聊天",
@@ -5399,6 +5413,12 @@
           "00c4235c10": "沒有匹配“{{value0}}”",
           "largeInputNoMatches": "沒有匹配此長輸入的結果"
         },
+        "SleepTwinWorkspaceDialog": {
+          "title": "Sleep Workspace",
+          "alsoSleeps": "Also sleeps the copy on {{hosts}}",
+          "cancel": "Cancel",
+          "confirm": "Sleep"
+        },
         "RemoveFolderDialog": {
           "4dc5b5065b": "移除",
           "d36883e046": "取消",
@@ -5841,7 +5861,8 @@
           "sidebarRowMissing": "目標不再存在",
           "failedUnnestWorkspace": "展開工作區失敗",
           "groupRenameFailed": "重新命名組失敗",
-          "groupRenameFailedDesc": "Orca 無法與該群組的主持人確認新名稱。重新連線後重新檢查該組。"
+          "groupRenameFailedDesc": "Orca 無法與該群組的主持人確認新名稱。重新連線後重新檢查該組。",
+          "hostRepairRequired": "Re-pair required"
         },
         "WorktreeMetaDialog": {
           "3db0a2a593": "取消",
@@ -6057,6 +6078,9 @@
               "8bc3fc0671": "無法睡眠工作區",
               "legacy": {
                 "unverified": "舊版主機執行時無法確認終端機已關閉。工作區已保持開啟；請更新主機後重試。"
+              },
+              "twin": {
+                "unattributed": "Orca couldn't tell which host runs this workspace's terminals, so the workspace was kept open. Reconnect its hosts and try again."
               },
               "host": {
                 "unverified": "主機無法確認終端機已關閉。工作區已保持開啟；請檢查連線後重試。"
@@ -6281,7 +6305,8 @@
           "59b553e2aa": "中斷連線",
           "2d3e4f5a6b": "檢查連線",
           "3c4d5e6f7a": "管理主機…",
-          "6e7f8a9b0c": "刪除主機..."
+          "6e7f8a9b0c": "刪除主機...",
+          "repair": "Re-pair…"
         },
         "WorkspaceKanbanDrawer": {
           "1975a4e480": "任務狀態同步失敗",
@@ -6292,6 +6317,7 @@
           "f4a5b6c7d8": "無法更新 Linear 議題 {{value0}}。",
           "a5b6c7d8e9": "無法同步 Linear 議題 {{value0}}。",
           "b6c7d8e9f0": "無法完成任務狀態同步。",
+          "f0a1b2c3d4": "已跳過 Linear 問題 {{value0}}：此工作區位於多個主機上。",
           "c7d8e9f0a1": "已更新 {{value0}} 個",
           "d8e9f0a1b2": "已跳過 {{value0}} 個",
           "e9f0a1b2c3": "失敗 {{value0}} 個"
@@ -8362,7 +8388,11 @@
           "serverWorkspaceWindowClosed": "工作區視窗已關閉",
           "serverRuntimeUnavailable": "Orca 不可用",
           "serverRuntimeUnavailableDescription": "SSH 傳輸已連線，但 Orca 執行時未應答。主機可能仍在執行。",
-          "serverReconnecting": "重新連線"
+          "serverReconnecting": "重新連線",
+          "accessRevoked": "{{value0}} no longer accepts this computer. Re-pair it with a new access link.",
+          "repair": "Re-pair…",
+          "serverAccessRevoked": "Access revoked",
+          "orcaVersionLastSeen": "Orca v{{value0}} (last seen)"
         },
         "RuntimePairingGeneratedUrlRows": {
           "0495f68959": "複製 {{value0}}"
@@ -12073,7 +12103,9 @@
           "networkConnection": "網路連線",
           "notAttempted": "未嘗試",
           "saveFailed": "無法儲存主機",
-          "saveFailedHelp": "主機已驗證，但 Orca 無法儲存。檢查名稱和本地設定儲存，然後重試。"
+          "saveFailedHelp": "主機已驗證，但 Orca 無法儲存。檢查名稱和本地設定儲存，然後重試。",
+          "differentServer": "This link is for a different server",
+          "differentServerHelp": "This pairing link is for a different server. Create the link on the server you are re-pairing."
         },
         "CloudVmSetupGuide": {
           "title": "建立雲虛擬機器",
@@ -12342,9 +12374,6 @@
           "cancel": "保持清潔",
           "stopping": "停止…",
           "confirm": "停止清理"
-        },
-        "NativeChatSupportedAgents": {
-          "label": "支援代理："
         },
         "contrast": {
           "title": "色彩對比",
@@ -12646,6 +12675,13 @@
           "remove": "移除",
           "turnOn": "在實驗性中開啟",
           "forceUpdate": "強制更新"
+        },
+        "RuntimeRepairDialog": {
+          "title": "Re-pair {{name}}",
+          "description": "{{name}} no longer accepts this computer. On {{name}}, open Settings → Remote Orca Servers → Share this host, create a link for another Orca client, then paste it here.",
+          "submit": "Re-pair",
+          "success": "Re-paired with {{name}}",
+          "failed": "Re-pair failed"
         }
       },
       "right": {
@@ -18015,6 +18051,9 @@
   },
   "components": {
     "native-chat": {
+      "install": {
+        "checking": "正在檢查 {{agent}} 是否已在此主機上就緒…"
+      },
       "reasoning": "推理",
       "contextMenu": {
         "copyOrcaSessionId": "複製 Orca 會話 ID",
@@ -18043,7 +18082,7 @@
         "signInThenSend": "請登入，然後重新發送您的訊息。",
         "historyTooLarge": "此對話的歷史記錄過大，無法在此恢復。",
         "managedAccountEnvOverride": "此次 Claude 啟動設定了自己的 Anthropic 登入變數。請移除這些變數以使用受管理的 Claude 帳戶。",
-        "accountSwitchInProgress": "正在切換 Claude 帳戶。請在切換完成後重試。",
+        "accountSwitchInProgress": "正在此主機上更改 {{agent}} 的設定。請在完成後重試。",
         "managedAccountUnsupported": "當 WSL 中添加了 Claude 帳戶時，Claude 聊天需要 Windows Claude 帳戶。",
         "launchFolderMissing": "此聊天執行所在的資料夾已不存在。請恢復該資料夾以繼續此聊天。",
         "historyInOtherAccount": "此聊天的歷史記錄位於另一個 Claude 帳戶中。請切換回該帳戶以繼續此聊天。",
@@ -18072,6 +18111,7 @@
         "attachmentInvalid": "此訊息中的附件無法傳送給代理。",
         "attachmentUnreadable": "無法讀取此訊息中的附件，因此訊息未傳送。",
         "emptyMessage": "此訊息為空，因此未傳送。",
+        "commandUnavailable": "此命令在 {{agent}} 聊天中不可用，因此未傳送。",
         "queueFull": "等待代理處理的訊息過多，因此此訊息未傳送。",
         "writeFailed": "Orca 無法將此訊息交給代理，因此訊息未傳送。",
         "cancelled": "此訊息在代理開始處理前已撤回。",
@@ -18213,6 +18253,8 @@
         "removeImagesToSend": "有些圖片無法恢復。請將其移除後再發送。",
         "imageAttachAgainLabel": "重新附加",
         "pastedImageNotKeptLabel": "未保留",
+        "imageNumber": "圖片 #{{number}}",
+        "imageReferenceMissing": "圖片已移除",
         "imagePasteFailed": "圖片貼上失敗。",
         "worktreeNotReady": "工作樹未就緒 — 請稍後重試。",
         "pasteUnavailable": "無法貼上 — 此聊天目前不接受輸入。",
@@ -18278,6 +18320,7 @@
         "permissionAskSharedDescription": "在執行尚未獲準的編輯或命令前詢問",
         "permissionAcceptEdits": "接受編輯",
         "permissionAcceptEditsDescription": "核准檔案編輯和檔案命令；其餘操作會詢問",
+        "permissionAcceptEditsAntigravityDescription": "核准檔案編輯；其餘操作會詢問",
         "permissionAuto": "替我核准",
         "permissionAutoDescription": "代你稽核核准請求",
         "permissionFullAccess": "完全訪問",
@@ -18684,6 +18727,9 @@
         "editFailed": "此訊息無法編輯。",
         "editGone": "此訊息已傳送或移除。你編輯的內容已放入聊天輸入框。",
         "editGonePrompt": "此訊息已傳送或移除。回答代理後，你編輯的內容會出現在聊天輸入框中。",
+        "imageCount": "{{count}} 張圖片",
+        "imageCount_one": "{{count}} 張圖片",
+        "imageCount_other": "{{count}} 張圖片",
         "collapse": "收起",
         "expand": "展開",
         "queued": "已排隊",
@@ -19207,11 +19253,10 @@
       "keywordIssuePicker": "議題選擇器"
     },
     "managed-runtime": {
-      "cancel": "取消安裝",
       "cancelled": "已取消安裝。",
       "cancelling": "正在取消…",
-      "chatTitle": "安裝 {{agent}} 即可開始聊天。",
       "damaged": "此 {{agent}} 副本已損壞。",
+      "downloadSize": "下載大小 {{size}} MB。",
       "downloading": "正在下載 {{done}} MB。",
       "downloadingOf": "正在下載 {{done}} MB / {{total}} MB。",
       "external": "使用在此主機上找到的 {{agent}} 副本。",
@@ -19224,11 +19269,39 @@
       "notInstalled": "未安裝。",
       "progress": "{{agent}} 下載",
       "readFailed": "無法檢查此主機上的 {{agent}}。正在重試。",
-      "reinstall": "重新安裝 {{agent}}",
+      "reinstall": "重新安裝",
+      "remove": "移除已下載的執行時",
+      "removeConfirm": "移除",
+      "removeDescription": "正在執行的 {{agent}} 聊天會停止。其歷史記錄會保留。",
+      "removeKeep": "取消",
+      "removeTitle": "要從 {{host}} 移除已下載的 {{agent}} 執行時嗎？",
+      "removing": "正在移除…",
       "retry": "重試安裝",
+      "thisComputer": "此電腦",
       "unavailable": "{{agent}} 在此主機上不可用。",
-      "update": "更新 {{agent}}",
-      "verifying": "正在檢查已下載的執行時。"
+      "update": "更新",
+      "verifying": "正在檢查已下載的執行時。",
+      "installTitle": "安裝 {{agent}} 以開始聊天",
+      "continueTitle": "安裝 {{agent}} 以繼續",
+      "heroBody": "一次性下載 {{size}} MB，由執行此聊天的電腦上的 {{agent}} 聊天共用。",
+      "heroBodyNoSize": "一次性下載，由執行此聊天的電腦上的 {{agent}} 聊天共用。",
+      "stripSize": "在執行此聊天的電腦上下載 {{size}} MB",
+      "settingsHint": "也可在 設定 › 聊天 › 供應商 中安裝",
+      "installShort": "安裝",
+      "tryAgain": "重試",
+      "cancelShort": "取消",
+      "failedTitle": "無法安裝 {{agent}}",
+      "cancelledTitle": "安裝已取消",
+      "cancelledBody": "未安裝任何內容。",
+      "downloadingTitle": "正在下載 {{agent}}",
+      "unpackingTitle": "正在解壓 {{agent}}",
+      "checkingTitle": "正在檢查下載內容",
+      "progressOf": "{{done}} / {{total}} MB",
+      "unpackingDetail": "正在解壓執行時",
+      "checkingDetail": "正在檢查已下載的執行時",
+      "stepDownload": "下載",
+      "stepUnpack": "解壓",
+      "stepCheck": "檢查"
     }
   },
   "dashboardPopout": {
