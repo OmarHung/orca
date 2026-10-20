@@ -9,6 +9,7 @@ import {
 import { DebugSessionManager, defaultDebugAdaptersDir } from './debug-session-manager'
 import { DEBUGGER_PROBE_HOSTS, isDebuggerEndpoint } from './debug-inspector-probe'
 import { findListenerTerminals } from './listener-terminals'
+import { probePortProtocol, type PortProtocol } from './port-protocol-probe'
 import { registerPythonHandlers } from '../python/python-ipc'
 import type { GlobalSettings } from '../../shared/global-settings-types'
 import { installDotnetContainerLauncher } from '../dotnet-container/dotnet-container-install'
@@ -20,7 +21,7 @@ const SessionIdSchema = z.string().regex(/^[A-Za-z0-9-]{8,64}$/)
 const AbsolutePathSchema = z.string().refine((value) => isAbsolute(value))
 
 // Why loopback only: the renderer must not turn this into a probe of arbitrary hosts.
-const DebuggerPortSchema = z.object({
+const LoopbackPortSchema = z.object({
   host: z.enum(DEBUGGER_PROBE_HOSTS),
   port: z.number().int().min(1).max(65_535)
 })
@@ -145,9 +146,17 @@ export function registerDebugHandlers(getSettings: () => GlobalSettings | null =
   })
 
   ipcMain.handle('debug:isDebuggerPort', async (_event, rawArgs: unknown): Promise<boolean> => {
-    const args = DebuggerPortSchema.safeParse(rawArgs)
+    const args = LoopbackPortSchema.safeParse(rawArgs)
     return args.success ? isDebuggerEndpoint(args.data.host, args.data.port) : false
   })
+
+  ipcMain.handle(
+    'debug:portProtocol',
+    async (_event, rawArgs: unknown): Promise<PortProtocol | null> => {
+      const args = LoopbackPortSchema.safeParse(rawArgs)
+      return args.success ? probePortProtocol(args.data.host, args.data.port) : null
+    }
+  )
 
   ipcMain.handle(
     'debug:listenerTerminals',

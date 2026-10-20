@@ -16,6 +16,8 @@ export type DebugApi = {
   stop: (sessionId: string) => Promise<void>
   /** Whether a loopback port is a debugger endpoint (e.g. a Node inspector), not the program's own. */
   isDebuggerPort: (args: { host: string; port: number }) => Promise<boolean>
+  /** Whether a loopback port speaks TLS; null when nothing answered. */
+  portProtocol: (args: { host: string; port: number }) => Promise<'http' | 'https' | null>
   /** Each pid's local terminal (PTY id), or null outside every terminal; for Run/Debug port links. */
   listenerTerminals: (pids: number[]) => Promise<Record<number, string | null>>
   onEvent: (callback: (event: DebugSessionEvent) => void) => () => void
