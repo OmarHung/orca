@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { Globe } from 'lucide-react'
+import { Globe, GlobeLock } from 'lucide-react'
 import { toast } from 'sonner'
 import { useShallow } from 'zustand/react/shallow'
 import { Button } from '@/components/ui/button'
@@ -8,11 +8,12 @@ import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { openWorkspacePortInBrowser } from '@/lib/workspace-port-actions'
 import { resolveLocalhostLabelRouteForPort } from '@/lib/workspace-port-localhost-label-selector'
-import { addressForPort } from '@/lib/workspace-port-urls'
+import { browserUrlForPort } from '@/lib/workspace-port-urls'
 import type { WorkspacePort } from '../../../../shared/workspace-ports'
 import { RunPortNgrokLink } from '../ngrok/RunPortNgrokLink'
 import { shareTargetForPort } from '../ngrok/ngrok-port-targets'
 import { liveClaimedPorts } from './run-port-claims'
+import { withProbedProtocol } from './run-port-protocol-probe'
 import { isHiddenRunPort, useRunPortStore } from './run-port-store'
 import { worktreeRuntimeTarget } from './run-port-tracking'
 
@@ -26,10 +27,14 @@ function useRunPorts(ownerKeys: readonly string[]): WorkspacePort[] {
     useShallow((s) => ownerKeys.flatMap((key) => s.claimsByOwner[key] ?? []))
   )
   const probesByPortId = useRunPortStore((s) => s.probesByPortId)
+  const protocolsByPortId = useRunPortStore((s) => s.protocolsByPortId)
   const scans = useAppStore((s) => s.workspacePortScansByKey)
   return useMemo(
-    () => liveClaimedPorts(claims, scans, (port) => isHiddenRunPort(probesByPortId, port)),
-    [claims, scans, probesByPortId]
+    () =>
+      liveClaimedPorts(claims, scans, (port) => isHiddenRunPort(probesByPortId, port)).map((port) =>
+        withProbedProtocol(port, protocolsByPortId)
+      ),
+    [claims, scans, probesByPortId, protocolsByPortId]
   )
 }
 
@@ -58,9 +63,10 @@ function RunPortLink({
   port: WorkspacePort
   compact: boolean
 }): React.JSX.Element {
-  const address = addressForPort(port)
+  const url = browserUrlForPort(port)
+  const isHttps = url.startsWith('https:')
   const isMac = isMacPlatform()
-  const label = translate('run.port.open', 'Open {{value0}} in your browser', { value0: address })
+  const label = translate('run.port.open', 'Open {{value0}} in your browser', { value0: url })
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -73,8 +79,8 @@ function RunPortLink({
           // Why: the system browser is the default here; ⌘/Ctrl+click keeps the page in Orca.
           onClick={(event) => openRunPort(port, isMac ? event.metaKey : event.ctrlKey)}
         >
-          <Globe />
-          <span className="tabular-nums">{compact ? `:${port.port}` : address}</span>
+          {isHttps ? <GlobeLock /> : <Globe />}
+          <span className="tabular-nums">{compact ? `:${port.port}` : url}</span>
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom" sideOffset={6}>

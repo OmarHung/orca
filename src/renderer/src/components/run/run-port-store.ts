@@ -10,11 +10,16 @@ const HEARTBEAT_MS = 10_000
 /** Whether probing found a debug session's port to be a debugger endpoint rather than the program's. */
 export type RunPortProbe = 'pending' | 'debugger' | 'program'
 
+/** The scheme a TLS handshake found a run or debug session's port to speak. */
+export type RunPortProtocolProbe = 'pending' | 'http' | 'https'
+
 type RunPortState = {
   sightings: PortSightings
   claimsByOwner: Readonly<Record<string, RunPortClaim>>
   /** Port id → probe verdict, for ports debug sessions claimed. */
   probesByPortId: Readonly<Record<string, RunPortProbe>>
+  /** Port id → probed scheme, for local loopback ports no terminal URL already names. */
+  protocolsByPortId: Readonly<Record<string, RunPortProtocolProbe>>
   /** Port id → the local terminal (PTY id) its process runs under, or null outside every one. */
   terminalsByPortId: Readonly<Record<string, string | null>>
 }
@@ -102,6 +107,7 @@ function writeStoredState(state: RunPortState): void {
 export const useRunPortStore = create<RunPortState>(() => ({
   ...readStoredState(),
   probesByPortId: {},
+  protocolsByPortId: {},
   terminalsByPortId: {}
 }))
 
