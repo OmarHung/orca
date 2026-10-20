@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { SshConnection } from '../ssh/ssh-connection'
-import { SshPortForwardManager } from '../ssh/ssh-port-forward'
+import { SshPortForwardManager } from '../ssh/port-forwarding/ssh-port-forward'
 import type {
   PortForwardStartOptions,
   SshPortForwardProvider
-} from '../ssh/ssh-port-forward-provider'
+} from '../ssh/port-forwarding/ssh-port-forward-provider'
 import { createDatabaseTunnelOpener, type DatabaseTunnelDeps } from './database-ssh-tunnel'
 
 type ForwardOut = (

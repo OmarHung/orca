@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain } from 'electron'
 import type { SftpResult, SftpTransferProgress } from '../../shared/sftp-types'
-import { requestSshCredential } from '../ipc/ssh-passphrase'
-import { getCurrentMainWindow } from '../ipc/ssh-ipc-context'
+import { requestSshCredential } from '../ipc/ssh/ssh-passphrase'
+import { getCurrentMainWindow } from '../ipc/ssh/ssh-ipc-context'
 import { SshConnection } from '../ssh/ssh-connection'
 import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
 import {
