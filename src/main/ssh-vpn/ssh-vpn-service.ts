@@ -9,7 +9,7 @@ import {
   sshVpnProxyCommand,
   sshVpnTunnelArgs
 } from '../../shared/ssh-vpn-command-format'
-import type { SshResolvedConfig } from '../ssh/ssh-config-parser'
+import type { SshResolvedConfig } from '../ssh/config/ssh-g-config-resolution'
 import { resolveEffectiveProxy, type EffectiveProxy } from '../ssh/ssh-proxy-command'
 import type { SshVpnLogins } from './ssh-vpn-logins'
 import type { SshVpnManager } from './ssh-vpn-manager'
