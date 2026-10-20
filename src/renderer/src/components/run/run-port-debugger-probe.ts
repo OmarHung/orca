@@ -2,7 +2,7 @@ import type { WorkspacePortScanResult } from '../../../../shared/workspace-ports
 import { claimedPortEntries, isDebugPortOwnerKey, type RunPortClaim } from './run-port-claims'
 import { useRunPortStore, type RunPortProbe } from './run-port-store'
 
-const PROBE_HOSTS: ReadonlySet<string> = new Set(['127.0.0.1', '::1', 'localhost'])
+export const PROBE_HOSTS: ReadonlySet<string> = new Set(['127.0.0.1', '::1', 'localhost'])
 
 async function probePort(portId: string, host: string, port: number): Promise<void> {
   let isDebugger = false
