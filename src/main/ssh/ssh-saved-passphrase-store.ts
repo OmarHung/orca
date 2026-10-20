@@ -4,7 +4,7 @@ import { isAbsolute, resolve } from 'node:path'
 import { utils } from 'ssh2'
 import type { SecretStore } from '../../shared/secret-store'
 import { SealedSecretFile } from '../sealed-secret-file'
-import { resolveSshConfigHomePath } from './ssh-config-path-expansion'
+import { resolveSshConfigHomePath } from './config/ssh-config-path-expansion'
 
 export type SshPassphraseCheck = 'correct' | 'wrong' | 'unverifiable'
 
