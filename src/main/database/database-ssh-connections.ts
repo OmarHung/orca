@@ -1,6 +1,6 @@
 import type { SshConnectionState, SshTarget } from '../../shared/ssh-types'
-import { getCurrentMainWindow } from '../ipc/ssh-ipc-context'
-import { requestCredential } from '../ipc/ssh-passphrase'
+import { getCurrentMainWindow } from '../ipc/ssh/ssh-ipc-context'
+import { requestCredential } from '../ipc/ssh/ssh-passphrase'
 import { SshConnection } from '../ssh/ssh-connection'
 import type { SshConnectionCallbacks } from '../ssh/ssh-connection-utils'
 import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
