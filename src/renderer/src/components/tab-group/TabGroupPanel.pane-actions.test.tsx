@@ -19,6 +19,8 @@ vi.mock('../tab-bar/TabBar', () => ({ default: () => null }))
 vi.mock('../tab-bar/TabBarQuickCommandsButton', () => ({
   TabBarQuickCommandsButton: () => null
 }))
+// Fork: the Run toolbar replaces the quick-commands button in the strip.
+vi.mock('../run/RunToolbar', () => ({ RunToolbar: () => null }))
 vi.mock('@/lib/pane-manager/client-hosted-browser-row-state', () => ({
   useClientHostedBrowserRows: () => []
 }))

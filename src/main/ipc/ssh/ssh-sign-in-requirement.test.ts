@@ -128,13 +128,23 @@ describe('SSH hosts that need a typed credential', () => {
     const fresh = { ...keyHost, id: 'ssh-new', lastRequiredPassphrase: undefined }
     await launch([fresh])
 
-    void createSshConnectionCallbacks().onCredentialRequest?.(
+    const answered = createSshConnectionCallbacks().onCredentialRequest?.(
       fresh.id,
       'password',
       fresh.host,
       undefined,
       new AbortController().signal
     )
+    // Fork: a target is flagged once its typed answer arrives, so remembered passphrases stay eager.
+    const request: unknown = credentialRequests().at(-1)?.[1]
+    if (!request || typeof request !== 'object' || !('requestId' in request)) {
+      throw new Error('no credential prompt was shown')
+    }
+    await handlers.get('ssh:submitCredential')!(null, {
+      requestId: request.requestId,
+      value: 'secret'
+    })
+    await expect(answered).resolves.toBe('secret')
     connected(fresh.id)
 
     expect(mockSshStore.updateTarget).toHaveBeenCalledWith(fresh.id, {
