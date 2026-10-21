@@ -9,7 +9,7 @@ import { isPluginUiLanguage } from '../../../../shared/ui-language'
  */
 export function useChangelogLocale(): string | null {
   const uiLanguage = useAppStore((state) => state.settings?.uiLanguage ?? null)
-  const packs = usePluginLanguagePackStore((state) => state.packs)
+  const packs = usePluginLanguagePackStore((state) => state.entries)
   if (uiLanguage === null) {
     return null
   }
