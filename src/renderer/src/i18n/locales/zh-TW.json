@@ -28,7 +28,7 @@
       "description": "選擇聊天的外觀和行為方式。",
       "names": {
         "title": "聊天名稱",
-        "description": "使用代理根據首條訊息為新聊天生成名稱。未生成名稱時，聊天仍顯示為 Claude Chat 或 Codex Chat。",
+        "description": "使用代理根據首條訊息為新聊天生成名稱。生成名稱前，聊天顯示其首條訊息。",
         "enable": "自動為聊天命名",
         "recipe": "聊天名稱",
         "recipeDescription": "根據新聊天的首條訊息生成簡短名稱。",
@@ -39,7 +39,10 @@
       },
       "providers": {
         "title": "提供方",
-        "antigravityDescription": "Antigravity 聊天執行在 Orca 下載到此主機的伺服器上，與 agy CLI 相互獨立。"
+        "antigravityDescription": "Antigravity 聊天執行在 Orca 下載到此主機的伺服器上，與 agy CLI 相互獨立。",
+        "antigravityNotSignedIn": "未登入。聊天需要單獨的 Antigravity 登入，與終端機中的 agy 帳戶分開。",
+        "antigravityAccount": "帳戶",
+        "antigravitySignInNeeded": "聊天需要單獨的 Antigravity 登入，與終端機中的 agy 帳戶分開。"
       }
     },
     "terminal": {
@@ -583,7 +586,8 @@
             "76deec8f58": "切換組織失敗",
             "7d4bc516ee": "切換設定檔失敗",
             "f518e89aa5": "該專案已存在於那個設定檔中",
-            "f03ae7f27b": "轉移專案失敗"
+            "f03ae7f27b": "轉移專案失敗",
+            "signInTimedOut": "登入逾時"
           }
         },
         "runtime": {
@@ -1084,6 +1088,9 @@
         "preparingWorkspace": "正在準備工作區…",
         "creatingWorktree": "正在建立工作樹…",
         "fetchingBaseBranch": "正在取得基礎分支…"
+      },
+      "duplicatePairedServers": {
+        "ambiguousSameServer": "{{value0}} 和 {{value1}} 是同一台伺服器被配對了兩次。請在“設定 > 遠端 Orca 伺服器”中移除其中一個。"
       }
     },
     "hooks": {
@@ -1264,7 +1271,7 @@
       },
       "ipcEvents": {
         "sshManagedServer": {
-          "refusedBlocked": "此 SSH 主機無法遷移到受管的 Orca 伺服器。設定中的“SSH 主機”會顯示原因。"
+          "refusedBlocked": "無法在此 SSH 主機上設定 Orca。設定中的“SSH 主機”會顯示原因。"
         }
       }
     },
@@ -2126,6 +2133,8 @@
         "851017590d": "新增 Linear 訪問",
         "228b25028f": "直接從這裡瀏覽並開始處理分配給您的 Linear 議題。",
         "6d56559467": "連線您的 Linear 帳戶",
+        "linearLoginUnreadableTitle": "重新連線 Linear",
+        "linearLoginUnreadableBody": "無法讀取已儲存的 Linear 登入資訊。請在設定中重新連線。",
         "eee68073b2": "在 Jira 中開啟",
         "9497f2787c": "啟動工作區",
         "eba87f2edb": "未發現 Jira 議題",
@@ -2885,6 +2894,7 @@
               "93e1f6bfca": "載入中",
               "98730088a6": "。在 Linear 中搜索或開啟以檢視完整列表。",
               "06b887d622": "首先顯示",
+              "linearLoginUnreadable": "無法讀取已儲存的 Linear 登入資訊。請在設定中重新連線。",
               "2c4b1c2c08": "數字",
               "f2cc1e0ff6": "Linear/專案",
               "906b5e4cb8": "Linear/專案/{{value0}}",
@@ -3253,6 +3263,7 @@
             "retry": "重試",
             "retrying": "正在重試...",
             "retryUnavailable": "重試仍無法重新連線。稍後再試。",
+            "openNewTerminal": "開啟新終端機",
             "ownerUnknown": "Orca 無法驗證該終端機的所有者。",
             "42b283ecfc": "Orca 無法安全地重新連線此終端機，因為主機無法驗證其儲存的會話。 Orca 保持儲存的會話不變。單擊“重試”立即嘗試重新連線。如果仍然無法重新連線，請開啟一個新終端機。",
             "e16012e31e": "擁有該會話的終端機守護程式已退出，因此該會話及其回滾無法恢復。開啟新終端機以繼續。",
@@ -3408,6 +3419,8 @@
           },
           "TerminalRemoteRuntimeReconnectBanner": {
             "retryingTitle": "正在重新連線到遠端執行時",
+            "pairingRefusedTitle": "此主機不再接受這台電腦",
+            "pairingRefusedBody": "Orca 無法透過 SSH 重新與其配對。主機上沒有任何內容被停止。請重新連線以重試。",
             "disconnectedTitle": "遠端執行時已中斷連線",
             "retryingBody": "Orca 正在自動重試。如果連線恢復，此終端機將恢復。",
             "disconnectedBody": "自動重試已停止。重新連線以恢復此終端機會話。",
@@ -3430,7 +3443,9 @@
             "copiedLink": "已複製連結",
             "copyLinkFailed": "複製連結失敗",
             "downloadOpenWithDefaultApp": "下載並使用預設應用程式開啟",
-            "downloadOpenFailed": "無法下載“{{value0}}”。"
+            "downloadOpenFailed": "無法下載“{{value0}}”。",
+            "openInThisGroup": "在此分組中開啟",
+            "openInThisGroupRefused": "無法在此分組中開啟 {{value0}}"
           },
           "TerminalQuickCommandsSubmenu": {
             "3ccc7981bb": "主機不可用",
@@ -3495,7 +3510,7 @@
         "bar": {
           "BrowserTab": {
             "6e0bc8f3a8": "在瀏覽器中開啟",
-            "9dd880bd56": "關閉右側的分頁",
+            "9dd880bd56": "關閉右側的所有分頁",
             "1611a1324b": "關閉",
             "5d6e89891f": "複製分頁",
             "966feb9ad5": "向右拆分",
@@ -3512,7 +3527,7 @@
             "52ce4f4605": "複製相對路徑",
             "5b85754786": "複製路徑",
             "bfd5797ef4": "開啟 Markdown 預覽",
-            "e5ff31ccaf": "關閉右側的分頁",
+            "e5ff31ccaf": "關閉右側的所有分頁",
             "ba1369dd24": "關閉所有編輯器分頁",
             "1ba8492c5b": "關閉",
             "68cc610e7f": "重新命名",
@@ -3545,7 +3560,7 @@
           "SortableTabContextMenu": {
             "35e8892fd0": "標籤顏色",
             "2f697b3c31": "更改標題",
-            "c1ee099c7e": "關閉右側的分頁",
+            "c1ee099c7e": "關閉右側的所有分頁",
             "8d16f9cd30": "關閉其他",
             "89359a36f7": "關閉",
             "21132389e9": "向右拆分",
@@ -3896,7 +3911,11 @@
             "97957ad3a3": "連線 AI 提供商帳戶，即可即時檢視使用量並在帳戶間快速切換。",
             "9a542f46c7": "從狀態列隱藏",
             "84c3b15dca": "代理用量限制",
-            "d663430cf9": "設定用量跟蹤"
+            "d663430cf9": "設定用量跟蹤",
+            "remoteLabel": "{{host}} 上沒有用量",
+            "remoteTitle": "{{host}} 上的用量",
+            "remoteBody": "此工作區執行在 {{host}} 上，因此狀態列顯示的是該主機的用量。請在該主機上登入代理，或切換到本地工作區以檢視這台電腦的用量。",
+            "remoteOpenAccounts": "開啟 {{host}} 的帳戶"
           },
           "UpdateStatusSegment": {
             "5cd13105a3": "更新失敗。單擊以展開。",
@@ -4083,7 +4102,11 @@
                 "label": "登入已過期",
                 "message": "Claude 用量已過期。請在此帳戶中啟動 Claude 以重新整理。"
               }
-            }
+            },
+            "remoteOwnerNotConfigured": "未在 {{server}} 上設定",
+            "remoteOwnerSignInSavedHere": "其登入資訊僅儲存在此電腦上。",
+            "claudeNoUsageFromHost": "{{server}} 無用量資料",
+            "claudeUnknownOnHost": "無法從 {{server}} 取得 Claude 用量。可能未在那裡登入，或使用的是 API 金鑰計費。"
           },
           "SshTargetStatusRow": {
             "sshHost": "SSH 主機"
@@ -4187,6 +4210,8 @@
             "access_revoked": "Access revoked",
             "access_revoked_summary": "This server revoked access for this computer",
             "access_revoked_explanation": "Re-pair with a new pairing link from the server to reconnect.",
+            "managed_access_revoked_explanation": "Orca 無法透過 SSH 重新與其配對。請連線以重試。",
+            "connect_access_revoked_explanation": "請連線以重試。",
             "update_required": "Update required",
             "update_required_summary": "Orca versions are not compatible",
             "update_required_explanation": "Update Orca on this computer or on the server, then connect again.",
@@ -5382,7 +5407,8 @@
         },
         "PendingWorktreeRow": {
           "af21e953d1": "取消工作樹建立",
-          "188f6922a0": "取消"
+          "188f6922a0": "取消",
+          "creatingWorkspace": "正在建立工作區…"
         },
         "ProjectGroupDeleteDialog": {
           "ca65b78f78": "取消",
@@ -6373,6 +6399,7 @@
           "sshSaveFailed": "新增 SSH 主機失敗。",
           "serverFieldsRequired": "必須填寫伺服器名稱和配對碼。",
           "serverSaved": "已新增遠端伺服器。",
+          "serverAlreadyPaired": "此伺服器已作為 {{value0}} 配對；已更新其連線。",
           "serverSaveFailed": "新增遠端伺服器失敗。",
           "serverTitle": "新增遠端伺服器",
           "sshTitle": "新增 SSH 主機",
@@ -6435,7 +6462,8 @@
           "sshConfigPickerAddAllEmpty": "全部新增到 Orca",
           "identityFileFromConfigHint": "故意留空：Orca 使用 ~/.ssh/config 解析為 {{value0}} 的每個金鑰。鍵入一個路徑以僅使用該鍵。",
           "sshConfigPickerRetry": "重試",
-          "sshConfigPickerResolving": "閱讀…"
+          "sshConfigPickerResolving": "閱讀…",
+          "pairingHelpShareComputer": "在另一台電腦上透過“設定 → 遠端 Orca 伺服器 → 共享此電腦”建立。"
         },
         "ForgetSshWorkspaceDialog": {
           "reconnectFailed": "重新連線失敗",
@@ -6449,8 +6477,7 @@
         },
         "MarkdownImageLightbox": {
           "image": "Image",
-          "expand": "Expand image",
-          "close": "Close"
+          "expand": "Expand image"
         },
         "WorktreeDeveloperMenu": {
           "developer": "Developer",
@@ -6850,7 +6877,8 @@
               "help": "用於在狀態列中顯示 OpenCode Go 使用情況。下面的會話 Cookie 僅舊版主控台 (OpenCode Black) 帳號需要。"
             }
           },
-          "remoteScopeLocalAccountsKeptHostPicker": "在此桌面上管理的帳戶保持不變。請在設定頂部的“主機”選單中選擇此電腦以檢視它們。"
+          "remoteScopeLocalAccountsKeptHostPicker": "在此桌面上管理的帳戶保持不變。請在設定頂部的“主機”選單中選擇此電腦以檢視它們。",
+          "apiKeyUpdateFailed": "MiniMax API 金鑰更新失敗。"
         },
         "AdvancedPane": {
           "40b29e0bf3": "重新啟動",
@@ -6917,8 +6945,6 @@
           "0d9e293a02": "重新整理",
           "c9b33eb5c0": "重新整理中…",
           "13647f9f80": "重新讀取 shell PATH 並重新檢測已安裝的代理",
-          "dc4a2ffdc0": "擴充套件命令覆蓋",
-          "cea7d97be1": "摺疊命令覆蓋",
           "db9e9e5887": "自定義命令",
           "959b67385b": "設定預設值",
           "24e032fa34": "預設",
@@ -6928,9 +6954,6 @@
           "8fbe1f37c1": "環境",
           "2d133152fa": "無預設環境",
           "agentPermissions": "代理許可權",
-          "agentPermissionsInfo": "代理許可權資訊",
-          "agentPermissionsTooltip": "切換模式時，自定義代理引數保持不變。",
-          "agentPermissionsDescription": "選擇 Orca 是以更少的許可權提示啟動代理，還是手動檢查。",
           "agentPermissionsYolo": "Yolo",
           "agentPermissionsManual": "手動",
           "3f1bdf3cb4": "環境文本過長，無法安全解析。",
@@ -8280,6 +8303,7 @@
           "e57dde9d93": "未儲存的更改"
         },
         "RuntimeAccessGrantList": {
+          "sshAccessCaveat": "在此撤銷並不能阻止擁有這台電腦 SSH 訪問許可權的人重新配對。要徹底阻止，請移除其 SSH 訪問許可權。",
           "8b82879581": "任何擁有有效授權的人都可以連線，直到您撤銷授權為止。撤銷共享訪問會立即斷開活動客戶端的連線。",
           "68ec21309f": "撤銷訪問許可權",
           "6f6d5188ed": "撤銷 {{value0}}",
@@ -8289,7 +8313,12 @@
           "27cf8507ad": "重新整理共享訪問",
           "f031182867": "共享伺服器訪問",
           "df142657a5": "尚未使用",
-          "b18d1764ef": "最後使用 {{value0}}"
+          "b18d1764ef": "最後使用 {{value0}}",
+          "linkName": "連結 · {{value0}}",
+          "activeLinks": "有效連結",
+          "noActiveLinks": "沒有有效連結。",
+          "createdAt": "創建於 {{value0}}",
+          "revoke": "撤銷"
         },
         "RuntimeEnvironmentsPane": {
           "aeb26635d2": "刪除 {{value0}}",
@@ -8319,7 +8348,7 @@
           "b5b5114cb0": "刪除了 {{value0}}。",
           "6cb6eae14f": "無法儲存執行時環境。",
           "7b5986c8df": "已連線到 {{value0}}。若要預設在其上建立新專案，請在“高階 > 新專案的預設主機”中選擇它。",
-          "5ef712f407": "名為“{{value0}}”的伺服器已存在。",
+          "serverAlreadyPaired": "此伺服器已作為 {{value0}} 配對；已更新其連線。",
           "0c55a47480": "需要名稱和配對程式碼。",
           "e6410d72c3": "無法載入執行時環境。",
           "6ef71985da": "無終點",
@@ -8390,9 +8419,15 @@
           "serverRuntimeUnavailableDescription": "SSH 傳輸已連線，但 Orca 執行時未應答。主機可能仍在執行。",
           "serverReconnecting": "重新連線",
           "accessRevoked": "{{value0}} no longer accepts this computer. Re-pair it with a new access link.",
+          "managedAccessRevoked": "{{value0}} 不再接受這台電腦，且 Orca 無法透過 SSH 重新與其配對。請連線以重試。",
+          "connectAccessRevoked": "{{value0}} 不再接受這台電腦。請連線以重試。",
           "repair": "Re-pair…",
           "serverAccessRevoked": "Access revoked",
-          "orcaVersionLastSeen": "Orca v{{value0}} (last seen)"
+          "orcaVersionLastSeen": "Orca v{{value0}} (last seen)",
+          "pairedTwice": "與 {{value0}} 是同一台伺服器，被配對了兩次。請移除其中一個，以便編輯其專案。",
+          "removeDefaultServerDescription": "此伺服器是新專案的預設主機。移除前請在“新專案開啟位置”中選擇其他主機。現有會話不受影響。",
+          "connectedNewProjectsHint": "已連線到 {{value0}}。若要預設在此建立新專案，請在“新專案開啟位置”中選擇它。",
+          "removeDefaultServerBlocked": "此伺服器是新專案的預設主機。移除前請在“新專案開啟位置”中選擇其他主機。"
         },
         "RuntimePairingGeneratedUrlRows": {
           "0495f68959": "複製 {{value0}}"
@@ -8445,7 +8480,15 @@
           "localLinkHelp": "此連結僅在運行於此電腦上的瀏覽器或 Orca 客戶端中有效。",
           "noExternalAddress": "未找到其他裝置的地址。將此電腦連線到 LAN 或 Tailscale，重新整理，或選擇“自定義地址”。",
           "staleAddress": "連線地址已更改。為 {{address}} 生成新連結。",
-          "customInvalid": "請輸入有效的主機、主機:埠、IPv6 地址或 ws(s):// URL。"
+          "customInvalid": "請輸入有效的主機、主機:埠、IPv6 地址或 ws(s):// URL。",
+          "thisComputer": "此電腦",
+          "whoOpens": "誰會開啟此連結",
+          "addressLabel": "地址",
+          "createLink": "建立連結",
+          "browserLinkLabel": "瀏覽器連結",
+          "accessLinkLabel": "訪問連結",
+          "accessLinkHelp": "將其貼上到另一個 Orca 的“新增伺服器”中。",
+          "staleAddressCreate": "連線地址已更改。請為 {{address}} 建立新連結。"
         },
         "Settings": {
           "3bf149e873": "專案設定 > {{value0}}",
@@ -8523,7 +8566,8 @@
           "devDescription": "僅用於除錯 UI 狀態的開發工具。",
           "linearTitle": "Linear",
           "linearDescription": "Linear 在 Orca 中的工作方式、設定清單、代理技能和提示詞示例。",
-          "tasksDescription": "連線提供商、安裝 Linear 技能並選擇要在任務中顯示的內容。"
+          "tasksDescription": "連線提供商、安裝 Linear 技能並選擇要在任務中顯示的內容。",
+          "remoteServersDescription": "在另一台機器上執行 Orca，並在這裡使用它。"
         },
         "SettingsFormControls": {
           "42a4d15a30": "沒有匹配的字型。",
@@ -8647,7 +8691,8 @@
           "2ef2b2674b": "刪除 {{value0}}"
         },
         "SshDestructiveActionDialog": {
-          "895b216267": "取消"
+          "895b216267": "取消",
+          "moreTargets": "另外 {{count}} 個"
         },
         "SshPane": {
           "c0f1c80166": "未設定 SSH 目標。",
@@ -8670,7 +8715,10 @@
           "f1fc50dad2": "無法載入 SSH 目標",
           "0cda732f43": "連線測試失敗",
           "syncedServerSingular": "已同步 {{count}} 台伺服器",
-          "syncedServerPlural": "已同步 {{count}} 台伺服器"
+          "syncedServerPlural": "已同步 {{count}} 台伺服器",
+          "noFilterMatch": "沒有匹配的主機。",
+          "addHost": "新增主機",
+          "alreadyInSync": "~/.ssh/config 已是最新同步狀態"
         },
         "SshPassphraseDialog": {
           "d5a234456f": "取消",
@@ -8701,11 +8749,26 @@
           "3d8af2949f": "編輯目標",
           "18968ede9e": "錯誤",
           "f0871e6bfb": "連線",
-          "47e94bd6ba": "已連線"
+          "47e94bd6ba": "已連線",
+          "removing": "正在移除…",
+          "testing": "正在測試…",
+          "select": "選擇 {{label}}",
+          "orcaServer": "Orca 伺服器",
+          "moreActions": "{{label}} 的更多操作",
+          "testConnection": "測試連線",
+          "edit": "編輯…",
+          "remove": "移除…"
         },
         "SshTargetDestructiveActions": {
           "3bb0cf0ee4": "這將刪除目標並結束任何活動的遠端終端機。",
-          "4808966c41": "刪除 SSH 目標"
+          "4808966c41": "刪除 SSH 目標",
+          "bulkTitleSingular": "移除 {{count}} 個 SSH 主機？",
+          "bulkTitlePlural": "移除 {{count}} 個 SSH 主機？",
+          "bulkDescription": "移除的主機將從工作區、自動化和側邊欄的主機選擇器中消失。你的 ~/.ssh/config 不會被修改，之後同步也不會把它們加回來。",
+          "bulkAction": "移除 {{count}} 個",
+          "bulkProgress": "正在移除第 {{done}} 個，共 {{count}} 個…",
+          "bulkConnectedSingular": "{{count}} 個主機已連線。其遠端終端機將被關閉。",
+          "bulkConnectedPlural": "{{count}} 個主機已連線。其遠端終端機將被關閉。"
         },
         "SshTargetForm": {
           "fea9cb402e": "取消",
@@ -8741,7 +8804,8 @@
           "addDescription": "新增一台可透過 SSH 登入的持久機器。",
           "editingPrefix": "正在編輯",
           "allowRemoteCliControl": "允許此主機的 orca CLI 控制 Orca",
-          "allowRemoteCliControlHelp": "新主機預設開啟。允許在此主機上執行的 orca 命令開啟並操作此桌面上的 Orca 瀏覽器分頁，但僅限此主機的工作區，且僅在主機連線期間；並允許此主機上由舊版 Orca 啟動的終端機為其自身受監督的工作執行編排命令（check、inbox、send、ask、reply）。它們無法讀取你的檔案、剪貼簿或 Cookie。關閉時，它們只能訪問此主機自身的 Orca 伺服器。"
+          "allowRemoteCliControlHelp": "新主機預設開啟。允許在此主機上執行的 orca 命令開啟並操作此桌面上的 Orca 瀏覽器分頁，但僅限此主機的工作區，且僅在主機連線期間；並允許此主機上由舊版 Orca 啟動的終端機為其自身受監督的工作執行編排命令（check、inbox、send、ask、reply）。它們無法讀取你的檔案、剪貼簿或 Cookie。關閉時，它們只能訪問此主機自身的 Orca 伺服器。",
+          "addHost": "新增主機"
         },
         "TasksPane": {
           "f71d8a9dd3": "任務提供者",
@@ -9290,7 +9354,6 @@
             "a79d266f71": "會話",
             "afbf35be68": "穩定會話",
             "agentPermissions": "代理許可權",
-            "agentPermissionsDescription": "在 Yolo 和手動之間切換代理許可權預設值。",
             "agentRuntime": "代理執行時",
             "agentRuntimeDescription": "選擇預設在 Windows 還是 WSL 中檢測並啟動代理。",
             "runtime": "執行時",
@@ -10610,7 +10673,11 @@
               "4575341c77": "新增已儲存的遠端 Orca 伺服器、生成配對 URL，或選擇新專案的預設主機。",
               "defaultHostKeyword": "預設主機",
               "newProjectsKeyword": "新專案",
-              "activeServerKeyword": "活動伺服器"
+              "activeServerKeyword": "活動伺服器",
+              "addShareDefault": "新增遠端 Orca 伺服器、共享此電腦，或選擇新專案的開啟位置。",
+              "shareComputerKeyword": "共享此電腦",
+              "accessLinkKeyword": "訪問連結",
+              "installKeyword": "安裝伺服器"
             }
           }
         },
@@ -11280,7 +11347,9 @@
           "localMac": "本地 Mac",
           "localCredentials": "此提供商的憑據和帳戶檢查由這台桌面客戶端管理。要使用伺服器，請更改“設定 > 遠端 Orca 伺服器 > 高階 > 新專案的預設主機”。",
           "remoteServerRateLimit": "{{value0}} API 額度從這台遠端伺服器上的 CLI 取得。要檢視其他主機的額度，請在“設定”頂部的主機選單中選擇。",
-          "localRateLimit": "{{value0}} API 額度從這台桌面客戶端上的 CLI 取得。要檢視伺服器的額度，請在“設定”頂部的主機選單中選擇。"
+          "localRateLimit": "{{value0}} API 額度從這台桌面客戶端上的 CLI 取得。要檢視伺服器的額度，請在“設定”頂部的主機選單中選擇。",
+          "remoteServerCredentialsNewProjects": "此提供商的憑據和帳戶檢查由此遠端伺服器負責。若要使用其他主機，請更改 設定 > 遠端 Orca 伺服器 > 新專案開啟位置。",
+          "localCredentialsNewProjects": "此提供商的憑據和帳戶檢查由此桌面客戶端負責。若要使用伺服器，請更改 設定 > 遠端 Orca 伺服器 > 新專案開啟位置。"
         },
         "settingOwnership": {
           "clientDefault": "客戶端預設",
@@ -11500,7 +11569,8 @@
           "stoppingCleanup": "停止…",
           "stopCleanup": "停止清理",
           "cleanupStopped": "清理已停止",
-          "stopCleanupFailed": "無法停止雲虛擬機器清理。"
+          "stopCleanupFailed": "無法停止雲虛擬機器清理。",
+          "cloudVmRefreshLabel": "重新整理 Cloud VM"
         },
         "ephemeralVms": {
           "search": {
@@ -12105,14 +12175,24 @@
           "saveFailed": "無法儲存主機",
           "saveFailedHelp": "主機已驗證，但 Orca 無法儲存。檢查名稱和本地設定儲存，然後重試。",
           "differentServer": "This link is for a different server",
-          "differentServerHelp": "This pairing link is for a different server. Create the link on the server you are re-pairing."
+          "differentServerHelp": "This pairing link is for a different server. Create the link on the server you are re-pairing.",
+          "loopbackRecoveryTunnel": "在另一台電腦上開啟“共享此電腦”，使用其 Tailscale 或區域網路地址為“其他裝置”建立連結。如果你透過 SSH 隧道訪問，請開啟下面的選項。",
+          "sshTunnelReach": "我透過 SSH 隧道訪問此地址",
+          "addServerWithTunnel": "透過隧道新增伺服器",
+          "addServer": "新增伺服器",
+          "nameLabel": "名稱",
+          "optional": "（可選）",
+          "headlessHelpPrefix": "在無視窗模式下執行 Orca？請在那台電腦上執行"
         },
         "CloudVmSetupGuide": {
           "title": "建立雲虛擬機器",
           "description": "雲虛擬機器會在建立工作區時透過環境範本建立。",
           "setupRecipe": "為你的雲提供商設定環境範本。",
           "createWorkspace": "建立工作區，並在“運行於”中選擇該範本。",
-          "openSetup": "設定環境範本"
+          "openSetup": "設定環境範本",
+          "cardTitle": "Cloud VM",
+          "cardDescription": "根據環境配方為每個工作區建立。",
+          "setUpRecipes": "設定配方"
         },
         "VoiceMicrophoneSetting": {
           "systemDefault": "系統預設",
@@ -12472,7 +12552,11 @@
           "planLevel": "套餐：{{value0}}",
           "hostOnly": "請在執行 Orca 的電腦上的桌面應用中更改套餐站點和 API 金鑰。",
           "detailsUnavailable": "計劃憑據詳細資訊只能在執行 Orca 的電腦上讀取。",
-          "siteUnavailable": "主機計劃網站不可用"
+          "siteUnavailable": "主機計劃網站不可用",
+          "keyStoredOnHostHelp": "儲存在 {{host}}，重新整理用量時僅從那裡傳送到所選站點。它優先於 ZCode CLI 登入。",
+          "usingCliOnHostHelp": "Orca 從 {{host}} 上的 ZCode CLI 憑據儲存讀取所選的 Coding Plan。在下方儲存 API 金鑰即可在那裡關聯該套餐。",
+          "notConfiguredOnHostHelp": "在下方儲存套餐 API 金鑰，或在 {{host}} 上使用 ZCode CLI 登入。",
+          "keyOnHostDescription": "從所選主控台的 API Keys 頁面貼上 API 金鑰。儲存在 {{host}}，重新整理用量時僅從那裡傳送到該站點。"
         },
         "NotificationHostToggles": {
           "offCount": "{{count}} 台已關閉",
@@ -12483,8 +12567,10 @@
           "body": "{{credential}} 未加密儲存 — 該系統沒有 Orca 可以使用的作業系統金鑰環。任何可以讀取您的磁碟或其備份的人都可以讀取該憑據。安裝並解鎖 gnome-keyring 或 kwallet，然後再次儲存以密封它。"
         },
         "sshManagedHostRemove": {
-          "description": "{{label}} 執行著一個受管的 Orca 伺服器。請在“受管伺服器”中使用“停止…”從主機移除該伺服器；如果主機已不存在，請使用“忘記…”。之後即可移除此 SSH 主機。",
-          "open": "開啟受管伺服器"
+          "description": "Orca 正在 {{label}} 上執行。請在“SSH 主機上的 Orca”中使用“停止…”從主機移除 Orca；如果主機已不存在，請使用“忘記…”。之後即可移除此 SSH 主機。",
+          "open": "開啟“SSH 主機上的 Orca”",
+          "descriptionServers": "Orca 正在 {{label}} 上執行。請在“遠端 Orca 伺服器”中開啟 {{label}} 上的 Orca 的 ⋯ 選單，選擇“停止…”從主機上移除 Orca；如果主機已不存在，請選擇“忘記…”。之後即可移除此 SSH 主機。",
+          "openServers": "開啟遠端 Orca 伺服器"
         },
         "managedServers": {
           "row": {
@@ -12506,10 +12592,14 @@
             "forget": "忘記…",
             "confirmForget": "在此桌面上忘記",
             "keepLinked": "保持關聯",
-            "forgetDescription": "在此處取消關聯此伺服器，而不聯絡其主機。如果主機恢復，伺服器可能仍在那裡執行。"
+            "forgetDescription": "在此處取消關聯此伺服器，而不聯絡其主機。如果主機恢復，伺服器可能仍在那裡執行。",
+            "title": "{{host}} 上的 Orca",
+            "orcaVersion": "此主機上的 Orca：{{version}}",
+            "stopOrcaDescription": "停止 SSH 主機上的 Orca，並將其從此列表中移除。",
+            "updateOrcaOnHost": "更新此主機上的 Orca"
           },
-          "title": "受管伺服器",
-          "description": "Orca 會在空的 SSH 主機上安裝並執行伺服器，並使其保持最新。",
+          "title": "SSH 主機上的 Orca",
+          "description": "Orca 會將自身安裝到空的 SSH 主機上，並自動保持最新。",
           "deploy": {
             "host": "SSH 主機",
             "hostPlaceholder": "選擇一個空的 SSH 主機",
@@ -12531,11 +12621,15 @@
             "pendingLink": "透過 SSH 連線未完成。",
             "pendingUnlink": "停止 SSH 訪問未完成。",
             "retry": "重試",
-            "cancelLink": "取消"
+            "cancelLink": "取消",
+            "linkedRoute": "透過 {{host}} 訪問，伺服器埠 {{port}}。",
+            "connect": "連線",
+            "chooseHost": "選擇主機"
           },
           "search": {
-            "title": "受管伺服器",
-            "keywordSsh": "ssh"
+            "title": "SSH 主機上的 Orca",
+            "keywordSsh": "ssh",
+            "keywordFormerName": "受管伺服器"
           },
           "phase": {
             "fenced": "主機已鎖定",
@@ -12554,7 +12648,7 @@
           },
           "blocker": {
             "notFound": "該 SSH 主機已不存在。",
-            "owned": "此 SSH 主機已屬於一個受管伺服器。",
+            "owned": "Orca 已在此 SSH 主機上執行。",
             "catalog": "此主機上的專案尚無法遷移。",
             "terminals": "此主機上的終端機仍在執行（{{count}}）。請先關閉它們。",
             "portForwards": "已儲存的埠轉發會保留在 SSH 主機上。",
@@ -12583,18 +12677,20 @@
             "unverifiable": "未完成：Orca 無法確認此伺服器上正在執行什麼。請在主機可訪問時重試。",
             "migration": "未完成：遷移到此伺服器的操作尚未完成。請先繼續該操作。",
             "deferred": "尚未完成：伺服器尚未準備好執行此操作。請稍後重試。",
-            "failed": "Orca 無法在伺服器上完成此操作。請重試。"
-          }
+            "failed": "Orca 無法在伺服器上完成此操作。請重試。",
+            "defaultServer": "未執行：此伺服器是新專案的預設主機。停止前請在“新專案開啟位置”中選擇其他主機。"
+          },
+          "reassurance": "在各個主機上執行，透過你自己的 SSH 連線訪問。你的程式碼和檔案留在原處。只有 Orca 的專案、分頁和終端機列表會移到該主機。"
         },
         "sshHostServer": {
-          "sourceChanged": "較舊版本的 Orca 更改了此主機的專案。要重新連線，請將這些更改遷移到其受管伺服器，或保留伺服器版本。",
-          "deploying": "正在設定受管的 Orca 伺服器…",
-          "converting": "正在將此主機的專案遷移到其受管的 Orca 伺服器…",
-          "connecting": "正在連線到受管的 Orca 伺服器…",
-          "updating": "正在更新受管伺服器…",
-          "starting": "正在啟動受管伺服器…",
-          "notServing": "Orca 無法確認受管伺服器是否正在回應。",
-          "hostNewer": "執行來自較新版本 Orca 的受管 Orca 伺服器；它會保留該版本。",
+          "sourceChanged": "較舊版本的 Orca 更改了此主機的專案。要重新連線，請將這些更改遷移到此主機上的 Orca 伺服器，或保留伺服器版本。",
+          "deploying": "正在 {{host}} 上設定 Orca…",
+          "converting": "正在遷移到 {{host}} 上的 Orca…",
+          "connecting": "正在連線到 {{host}} 上的 Orca…",
+          "updating": "正在更新 {{host}} 上的 Orca…",
+          "starting": "正在啟動 {{host}} 上的 Orca…",
+          "notServing": "Orca 無法確認其在 {{host}} 上的伺服器是否正在回應。",
+          "hostNewer": "執行的 Orca 伺服器比此應用新；它會保留該版本。",
           "failureDetails": "詳情",
           "cause": {
             "unsupportedHost": "Orca 沒有適用於此係統的伺服器構建",
@@ -12604,15 +12700,15 @@
             "securitySoftware": "安全軟體更改了伺服器的執行時",
             "nativePreflight": "主機缺少伺服器所需的系統庫"
           },
-          "updateDeferredLater": "執行受管的 Orca 伺服器；它會在下次連線時更新。",
-          "updateFailedPrevious": "在其先前版本上執行受管的 Orca 伺服器；更新失敗。",
-          "refusedBlocked": "未遷移到受管伺服器：此主機上的某些因素阻止了遷移。",
+          "updateDeferredLater": "執行 Orca 伺服器；它會在下次連線時更新。",
+          "updateFailedPrevious": "在其先前版本上執行 Orca 伺服器；更新失敗。",
+          "refusedBlocked": "此主機尚未設定 Orca：主機上的某些因素阻止了遷移。",
           "unsupported": "此版本的 Orca 不支援此主機（{{reason}}）。如需繼續使用，請安裝舊版本的 Orca。",
           "unsupportedUnknown": "此版本的 Orca 不支援此主機。如需繼續使用，請安裝舊版本的 Orca。",
           "tunnelUnsupported": "此版本的 Orca 不支援此主機：其 SSH 伺服器不允許埠轉發，Orca 也無法透過 SSH 會話連線到其伺服器。如需繼續使用，請安裝舊版本的 Orca。",
           "setupRetry": "Orca 無法在此主機上啟動其伺服器。請重新連線。",
-          "moveHeld": "由於無法確認伺服器上的副本，Orca 已暫停將此主機的專案遷移到其受管伺服器。沒有任何資料丟失：在遷移完成之前，主機會保留其專案並保持鎖定。重新連線即可繼續。如果伺服器無法恢復，請在“設定 > 受管伺服器”中停止或忘記它。",
-          "olderTerminalsBridged": "尚未遷移到託管伺服器：由舊版本 Orca 啟動的終端機仍在此主機的專案中執行。它們在這裡仍可正常使用。請關閉它們或在主機上結束它們，然後重新連線。",
+          "moveHeld": "由於無法確認伺服器上的副本，Orca 已暫停將此主機的專案遷移到主機上的 Orca 伺服器。沒有任何資料丟失：在遷移完成之前，主機會保留其專案並保持鎖定。重新連線即可繼續。如果伺服器無法恢復，請在“設定 > SSH 主機上的 Orca”中停止或忘記它。",
+          "olderTerminalsBridged": "此主機尚未設定 Orca：由舊版本 Orca 啟動的終端機仍在此主機的專案中執行。它們在這裡仍可正常使用。請關閉它們或在主機上結束它們，然後重新連線。",
           "olderTerminalsUncounted": "由舊版本 Orca 啟動的終端機仍在此主機上執行，且不會自行停止。請在該版本的 Orca 中關閉它們，或在主機上結束它們，然後重新連線。",
           "olderTerminalsUnverifiable": "Orca 無法確認由舊版本 Orca 啟動的終端機是否已退出。請重新連線後重試。",
           "olderTerminals_one": "由舊版本 Orca 啟動的 {{count}} 個終端機仍在此主機上執行，且不會自行停止。請在該版本的 Orca 中關閉它們，或在主機上結束它們，然後重新連線。",
@@ -12621,12 +12717,21 @@
           "linkedProjects_one": "此主機的 Orca 伺服器已有 {{paths}}，因此此桌面現在使用伺服器的副本。此桌面在那裡的分頁和 {{count}} 個自動化未被遷移，它在那裡建立的工作樹會顯示為外部工作樹。",
           "linkedProjects_other": "此主機的 Orca 伺服器已有 {{paths}}，因此此桌面現在使用伺服器的副本。此桌面在那裡的分頁和 {{count}} 個自動化未被遷移，它在那裡建立的工作樹會顯示為外部工作樹。",
           "linkedProjects": "此主機的 Orca 伺服器已有 {{paths}}，因此此桌面現在使用伺服器的副本。此桌面在那裡的分頁和 {{count}} 個自動化未被遷移，它在那裡建立的工作樹會顯示為外部工作樹。",
-          "linkedProjectsNoAutomations": "此主機的 Orca 伺服器已有 {{paths}}，因此此桌面現在使用伺服器的副本。此桌面在那裡的分頁未被遷移，它在那裡建立的工作樹會顯示為外部工作樹。"
+          "linkedProjectsNoAutomations": "此主機的 Orca 伺服器已有 {{paths}}，因此此桌面現在使用伺服器的副本。此桌面在那裡的分頁未被遷移，它在那裡建立的工作樹會顯示為外部工作樹。",
+          "nodeDownloadBlocked": "這台電腦和這台主機都無法下載 Orca 伺服器所需的 Node.js。請使用 Node.js 映象，或檢查兩台機器的網路。",
+          "nodeDownloadBlockedNoMirror": "這台電腦和這台主機都無法下載 Orca 伺服器所需的 Node.js。請檢查兩台機器的網路或代理，然後重新連線。",
+          "nodeDownloadBlockedMirrorTried": "這台電腦和這台主機都無法下載 Node.js，包括從 Node.js 下載映象下載。請檢查映象設定，然後重新連線。",
+          "reassurance": "在 {{host}} 上執行，透過你自己的 SSH 連線訪問。你的程式碼和檔案留在原處。只有 Orca 的專案、分頁和終端機列表會移到 {{host}}。",
+          "launchSessionEnded": "啟動此主機上 Orca 伺服器的 SSH 會話已結束，因此這台 Mac 上的終端機可能已失去本地網路訪問許可權。重啟 Orca 伺服器即可恢復。",
+          "behindRolledBack": "執行的 Orca 伺服器比此應用舊；上次更新已回滾。請使用“更新伺服器”重試。",
+          "behindNoTemplate": "執行的 Orca 伺服器無法由此應用更新；此版本沒有適用於此主機的伺服器。",
+          "behindMigrating": "執行 Orca 伺服器，它會在專案遷移完成後更新。",
+          "behindCheckFailed": "執行 Orca 伺服器；Orca 無法檢查它是否落後於此應用。"
         },
         "deltaMove": {
           "action": "遷移新專案…",
           "title": "遷移新專案",
-          "description": "較舊版本的 Orca 在此主機遷移到其受管伺服器後對其進行了更改。這會將它所建立的內容新增到伺服器；絕不會覆蓋伺服器已有的內容。",
+          "description": "此主機的專案遷移到主機上的 Orca 伺服器後，較舊版本的 Orca 又更改了此主機。這會將它所建立的內容新增到伺服器；絕不會覆蓋伺服器已有的內容。",
           "added": "已新增到伺服器",
           "nothingNew": "沒有可新增的新內容。",
           "notReflected": "在較舊版本上已更改或移除；伺服器會保留自己的副本",
@@ -12641,14 +12746,14 @@
         "keepServer": {
           "action": "保留伺服器的版本…",
           "title": "保留伺服器的版本",
-          "description": "此主機將按原樣恢復為使用其受管伺服器。較舊版本的 Orca 在此處新增或更改的內容不會被遷移；它們只會保留在這台電腦儲存的設定中，直到被清理。",
+          "description": "此主機將按原樣繼續使用其 Orca 伺服器。較舊版本的 Orca 在此處新增或更改的內容不會被遷移；它們只會保留在這台電腦儲存的設定中，直到被清理。",
           "cancel": "取消",
           "confirm": "保留伺服器的版本"
         },
         "moveAnyway": {
           "action": "仍要遷移…",
           "title": "仍要遷移此主機",
-          "description": "Orca 會將此主機遷移到其受管伺服器，但不包含下列已儲存的專案。它們會保留在這台電腦上，不會出現在受管伺服器上。未儲存的編輯會被保留，絕不會被刪除。",
+          "description": "Orca 會在 {{host}} 上完成設定，但不包含下列已儲存的專案。它們會保留在這台電腦上，不會出現在 {{host}} 上。未儲存的編輯會被保留，絕不會被刪除。",
           "cancel": "取消",
           "confirm": "仍要遷移"
         },
@@ -12674,14 +12779,189 @@
           "connect": "連線",
           "remove": "移除",
           "turnOn": "在實驗性中開啟",
-          "forceUpdate": "強制更新"
+          "forceUpdate": "強制更新",
+          "chip": "WSL"
         },
         "RuntimeRepairDialog": {
           "title": "Re-pair {{name}}",
           "description": "{{name}} no longer accepts this computer. On {{name}}, open Settings → Remote Orca Servers → Share this host, create a link for another Orca client, then paste it here.",
           "submit": "Re-pair",
           "success": "Re-paired with {{name}}",
-          "failed": "Re-pair failed"
+          "failed": "Re-pair failed",
+          "descriptionShareComputer": "{{name}} 不再接受此電腦。請在 {{name}} 上開啟 設定 → 遠端 Orca 伺服器 → 共享此電腦，為另一個 Orca 建立連結，然後貼上到這裡。"
+        },
+        "usageCredentialHost": {
+          "outdated": "請更新 {{host}} 上的 Orca，才能將此金鑰儲存在那裡。",
+          "unreachable": "無法連線 {{host}}，因此不確定那裡是否已儲存金鑰。",
+          "storedOnHost": "已儲存在 {{host}}",
+          "miniMaxStorage": "儲存在 {{host}}，並在重新整理用量時從那裡傳送到所選的 MiniMax 端點。",
+          "cookieNeedsDesktop": "{{host}} 上沒有可傳送會話 Cookie 的 Orca 桌面應用。請改為儲存 API 金鑰。",
+          "checking": "正在檢查 {{host}}…",
+          "sealedElsewhereForgettable": "由 {{host}} 上的另一個 Orca 應用儲存，此應用無法讀取。請在該應用中更改，或在此處忘記它。",
+          "unreadableKey": "{{host}} 上的 Orca 無法讀取已儲存的金鑰。請替換或忘記它。",
+          "miniMaxApiKeyDescription": "從 MiniMax 主控台 → API keys 貼上 API 金鑰。儲存在 {{host}}，並在重新整理用量時從那裡傳送到所選的 MiniMax 端點。API 金鑰優先於 Cookie。"
+        },
+        "useUsageHostSettings": {
+          "updateFailed": "無法更新 {{host}} 上的設定。"
+        },
+        "nodeDistMirrorDialog": {
+          "action": "使用 Node.js 映象…",
+          "openSetting": "開啟映象設定",
+          "title": "使用 Node.js 映象",
+          "description": "Orca 伺服器需要 Node.js，但這台電腦和這台主機都無法從 nodejs.org 下載。映象是 nodejs.org/dist 的副本，Orca 會在兩台機器上優先嚐試映象。",
+          "urlLabel": "映象 URL",
+          "checksum": "每次下載仍會按 Orca 為此 Node.js 版本固定的校驗和進行驗證。儲存在 設定 > 高階 > 網路 中。",
+          "cancel": "取消",
+          "save": "儲存並重試",
+          "saveFailed": "Orca 無法儲存映象。",
+          "retryFailed": "連線失敗",
+          "refusal": {
+            "tooLong": "映象 URL 過長。",
+            "protocol": "請使用 http 或 https 映象 URL。",
+            "credentials": "映象 URL 不能包含使用者名稱或密碼。",
+            "query": "映象 URL 不能包含查詢或片段。",
+            "invalid": "請輸入有效的映象 URL。"
+          }
+        },
+        "restartServer": {
+          "action": "重啟 Orca 伺服器…",
+          "title": "重啟 Orca 伺服器",
+          "description": "Orca 會透過你目前的連線重啟此主機上的 Orca 伺服器。只有在主機上沒有正在執行的終端機時才會重啟，因為仍然開啟的終端機會一直無法訪問。請先關閉它們。",
+          "terminalsUnknown": "Orca 無法確認此主機上是否有終端機正在執行，因此沒有重啟 Orca 伺服器。",
+          "terminalsRunning": "此主機上仍有 {{count}} 個終端機在執行。請關閉它們，然後重啟 Orca 伺服器。",
+          "cancel": "取消",
+          "confirm": "重啟"
+        },
+        "SshPaneToolbar": {
+          "filter": "篩選主機",
+          "sync": "同步 ~/.ssh/config",
+          "more": "更多 SSH 主機操作",
+          "restoreRemoved": "恢復已移除的主機…",
+          "selected": "已選擇 {{count}} 個",
+          "selectAll": "全選 {{count}} 個",
+          "clear": "清除",
+          "removeSelected": "移除 {{count}} 個",
+          "restoreRemovedCount": "恢復已移除的主機（{{count}}）…",
+          "hostCount": "{{count}} 個主機",
+          "selectMatching": "全選 {{count}} 個匹配項",
+          "testSelected": "測試",
+          "clearFilter": "清除篩選",
+          "restoreRemovedLoading": "恢復已移除的主機",
+          "restoreRemovedNone": "沒有可恢復的已移除主機",
+          "hiddenDeselectedSingular": "已取消選擇 {{count}} 個隱藏的主機",
+          "hiddenDeselectedPlural": "已取消選擇 {{count}} 個隱藏的主機"
+        },
+        "SshRestoreRemovedHosts": {
+          "title": "恢復已移除的主機？",
+          "description": "你在 Orca 中移除的 ~/.ssh/config 主機將重新出現在設定和所有主機選擇器中。",
+          "none": "沒有從 ~/.ssh/config 移除的主機。",
+          "confirm": "恢復"
+        },
+        "SshTargetList": {
+          "addedInOrca": "在 Orca 中新增",
+          "fromConfig": "來自 ~/.ssh/config",
+          "selectGroup": "選擇此組中的全部",
+          "filteredCount": "{{count}} / {{total}}",
+          "selectManualGroup": "選擇所有在 Orca 中新增的主機",
+          "selectConfigGroup": "選擇所有來自 ~/.ssh/config 的主機"
+        },
+        "sshBulkRemove": {
+          "removedCount": "已移除 {{count}} 個",
+          "skippedCount": "已跳過 {{count}} 個",
+          "failedCount": "{{count}} 個失敗",
+          "skippedManaged": "{{label}} 上有 Orca 伺服器。",
+          "skippedWorkspaces": "{{label}} 上有工作區。",
+          "skippedHint": "請逐個移除已跳過的主機，以選擇如何處理它們。"
+        },
+        "sshBulkTest": {
+          "passed": "{{count}} 個可連線",
+          "failed": "{{count}} 個失敗",
+          "alreadyConnected": "{{count}} 個已連線"
+        },
+        "serverList": {
+          "addTitle": "新增伺服器",
+          "installNoHosts": "沒有未安裝 Orca 伺服器的 SSH 主機。",
+          "installHostHelp": "僅顯示未安裝 Orca 伺服器的主機。",
+          "addSshHost": "新增 SSH 主機",
+          "cancel": "取消",
+          "moreActions": "{{name}} 的更多操作",
+          "moreActionsTooltip": "更多操作",
+          "hideDetails": "隱藏詳細資訊",
+          "details": "詳細資訊",
+          "address": "地址",
+          "route": "路由",
+          "protocol": "協議",
+          "capabilities": "功能",
+          "copied": "已複製錯誤",
+          "copyFailed": "無法複製錯誤。",
+          "copyError": "複製錯誤",
+          "updateMenu": "更新…",
+          "makeDefault": "在此開啟新專案",
+          "sshAccessLinked": "SSH 路由…",
+          "sshAccess": "透過 SSH 連線…",
+          "remove": "移除…",
+          "connecting": "正在連線…",
+          "disconnecting": "正在斷開…",
+          "needsUpdate": "需要更新",
+          "unreachable": "無法訪問",
+          "version": "v{{version}}",
+          "updateAvailable": "v{{version}} 可用",
+          "throughSsh": "透過 {{host}} → 埠 {{port}}",
+          "manualUpdate": "請在伺服器主機上更新 Orca",
+          "defaultChip": "預設",
+          "sshTunnelChip": "SSH 隧道",
+          "sshDialogTitle": "透過 SSH 連線 {{name}}",
+          "sshDialogDescription": "當無法直接訪問伺服器時使用。Orca 會透過 SSH 主機開啟隧道。",
+          "defaultHostLabel": "新專案開啟位置",
+          "thisComputer": "此電腦",
+          "defaultHostHelp": "現有專案保持不變。",
+          "defaultHostWebHelp": "此瀏覽器會在所選伺服器上開啟新專案。",
+          "updateAll": "全部更新（{{count}}）",
+          "addServer": "新增伺服器",
+          "moreWaysToAdd": "新增伺服器的更多方式",
+          "pasteAccessLink": "貼上訪問連結",
+          "checkForUpdates": "檢查更新",
+          "emptyDescription": "配對開發機、雲主機或家裡的桌上型電腦。此電腦休眠時，會話會繼續在那裡執行。",
+          "movePaused": "遷移已暫停",
+          "shareTitle": "共享此電腦",
+          "shareDescriptionNamed": "讓瀏覽器、手機或另一個 Orca 在 {{name}} 上工作。",
+          "shareDescription": "讓瀏覽器、手機或另一個 Orca 在此電腦上工作。",
+          "shareButton": "共享…",
+          "done": "完成",
+          "unreachableLead": "Orca 無法訪問此伺服器。",
+          "updateFailedLead": "上次更新未完成。",
+          "unreachableHint": "請確認伺服器上正在執行 Orca，且此電腦能訪問其地址。",
+          "tailscaleTip": "這是 Tailscale 地址，因此兩台電腦都需要登入同一個 tailnet。",
+          "loopbackTip": "127.0.0.1 地址只能透過 SSH 隧道使用。",
+          "lastSeen": "上次線上 {{when}}",
+          "retry": "重試",
+          "pasteAccessLinkHelp": "與已在另一台機器上執行的 Orca 配對。",
+          "cloudVm": "Cloud VM",
+          "cloudVmHelp": "根據環境配方為每個工作區建立。",
+          "addDescriptionShort": "貼上另一台機器上“共享此電腦”生成的訪問連結。",
+          "installHostPlaceholder": "選擇未安裝 Orca 的 SSH 主機",
+          "oneActiveLink": "1 個有效連結",
+          "activeLinks": "{{value0}} 個有效連結",
+          "shareDialogDescriptionRuns": "持有連結的人在你撤銷之前都可以以你的身份在此電腦上執行命令。",
+          "shownAs": "向他人顯示為 {{name}}",
+          "editName": "編輯",
+          "close": "關閉",
+          "neverConnected": "從未連線",
+          "noSavedServers": "沒有已儲存的伺服器",
+          "hideError": "隱藏錯誤",
+          "showError": "顯示錯誤",
+          "installNamePlaceholder": "與 SSH 主機相同",
+          "defaultHostEmptyLine": "在新增伺服器之前，新專案會在此電腦上開啟。",
+          "setUpDone": "已在 {{name}} 上設定好 Orca。",
+          "settingUpInBackground": "正在後台於 {{name}} 上設定 Orca。準備好後會顯示在列表中。",
+          "setUpOnSshHost": "在 SSH 主機上設定 Orca",
+          "setUp": "設定",
+          "overYourSsh": "透過你的 SSH 連線"
+        },
+        "networkAddress": {
+          "tailscale": "Tailscale · {{address}}",
+          "lan": "區域網路 · {{address}}",
+          "loopback": "此電腦 · {{address}}"
         }
       },
       "right": {
@@ -14034,8 +14314,8 @@
             "deleteReasonNonLocalHost": "只能刪除此裝置上的會話。",
             "deleteReasonSyntheticPath": "此會話無法在 Orca 中刪除。",
             "deleteReasonUnsupportedAgent": "{{value0}} 會話無法在 Orca 中刪除。",
-            "resumeInNewNativeChat": "在新的本機聊天中恢復",
-            "resumeInNewCli": "在新的 CLI 中恢復",
+            "resumeInNewNativeChat": "在新聊天中恢復",
+            "resumeInNewCli": "在新終端機中恢復",
             "resumeInNewCliTooltipFork": "將此對話派生到新的 CLI 會話中。",
             "resumeInNewCliTooltipChat": "本機聊天保持不變。"
           },
@@ -14500,7 +14780,9 @@
             "jiraMode": "Jira",
             "jiraSelectBindFailed": "無法關聯此 Jira 議題。請選擇匹配的站點或重新連線 Jira，然後重試。",
             "emoji": "Emoji",
-            "loadingLinearIssue": "正在載入 Linear 議題..."
+            "loadingLinearIssue": "正在載入 Linear 議題...",
+            "linearLoginUnreadableTitle": "重新連線 Linear",
+            "linearLoginUnreadableBody": "無法讀取已儲存的 Linear 登入資訊。請在設定中重新連線。"
           },
           "ProjectCombobox": {
             "empty": "沒有匹配搜尋的專案。",
@@ -15011,7 +15293,7 @@
             "61ffda7601": "建立工作區"
           },
           "WorkbenchAnimatedVisual": {
-            "633a91e358": "思維…",
+            "633a91e358": "思考中…",
             "932c4b3a97": ">",
             "ca2cfbf188": "向下拆分終端機",
             "e370fa8c2b": "向右拆分終端機",
@@ -15093,23 +15375,6 @@
                 "shared": {
                   "e7894927a2": "Codex",
                   "9deecb021c": "Claude"
-                },
-                "notes": {
-                  "styles": {
-                    "db6691aa0a": ".ravs-window { position: absolute; inset: 0; --ravs-soft-surface: color-mix(in srgb, var(--foreground) 2%, var(--card)); --ravs-soft-fill: color-mix(in srgb, var(--foreground) 6%, transparent); --ravs-panel-border: color-mix(in srgb, var(--foreground) 18%, var(--border)); --ravs-emphasis-border: color-mix(in srgb, var(--foreground) 44%, var(--border)); --ravs-floating-shadow: 0 14px 30px rgb(0 0 0 / 0.22), 0 2px 6px rgb(0 0 0 / 0.12); background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); } .ravs-difftoolbar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--border); background: var(--ravs-soft-surface); font-size: 11px; color: var(--muted-foreground); } .ravs-diff-path { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--foreground); } .ravs-ai-chip { margin-left: auto; display: inline-flex; align-items: stretch; overflow: hidden; border-radius: 6px; border: 1px solid var(--border); background: var(--ravs-soft-surface); opacity: 0; transform: translateY(-2px); transition: opacity 320ms ease, transform 320ms ease; } .ravs-ai-chip.is-visible { opacity: 1; transform: none; } .ravs-ai-chip .ravs-count-btn, .ravs-ai-chip .ravs-send-btn { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; font-size: 11px; color: var(--muted-foreground); background: transparent; line-height: 1; } .ravs-ai-chip .ravs-count-btn { border-right: 1px solid var(--border); } .ravs-ai-chip .ravs-send-btn { padding: 3px 7px; position: relative; } .ravs-send-glow { position: absolute; inset: 0; background: rgba(34, 197, 94, 0.18); opacity: 0; transition: opacity 280ms ease; pointer-events: none; } .ravs-ai-chip .ravs-send-btn.is-flash .ravs-send-glow { opacity: 1; } .ravs-count-num { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--foreground); font-weight: 600; } .ravs-diffbody { flex: 1; min-height: 0; position: relative; background: var(--editor-surface, var(--card)); } .ravs-diffscroll { position: absolute; inset: 0; overflow: hidden; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; line-height: 1.55; color: var(--foreground); padding: 4px 0 8px; transition: opacity 240ms ease; } .ravs-diffscroll.is-hidden { opacity: 0; pointer-events: none; } .ravs-term { position: absolute; inset: 0; background: var(--editor-surface, var(--card)); color: var(--foreground); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; line-height: 1.45; overflow: hidden; display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity 240ms ease; z-index: 4; } .ravs-term.is-visible { opacity: 1; } .ravs-term-body { flex: 1; min-height: 0; padding: 10px 12px; overflow: hidden; display: flex; flex-direction: column; gap: 6px; } .ravs-term-line { white-space: pre-wrap; word-break: break-word; line-height: 1.45; } .ravs-term-muted { color: var(--muted-foreground); } .ravs-term-glyph { color: rgb(217 119 6); margin-right: 6px; } .ravs-term-check { color: rgb(16 185 129); font-weight: 700; margin-right: 6px; } .ravs-term-spinner { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 999px; border: 1.5px solid color-mix(in srgb, var(--foreground) 20%, transparent); border-top-color: var(--foreground); vertical-align: -1px; animation: ravs-term-spin 0.9s linear infinite; } @keyframes ravs-term-spin { to { transform: rotate(360deg) } } .ravs-hunk-header { display: grid; grid-template-columns: 36px 36px 16px minmax(0,1fr); align-items: center; padding: 1px 8px 1px 0; background: rgba(99, 102, 241, 0.06); color: var(--muted-foreground); font-size: 10.5px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); } .ravs-hunk-header .ravs-text { grid-column: 4 / -1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: rgb(99 102 241); font-size: 10.5px; } .ravs-diff-line { display: grid; grid-template-columns: 36px 36px 16px minmax(0,1fr); align-items: stretch; position: relative; } .ravs-ln { text-align: right; padding: 0 6px 0 0; color: var(--muted-foreground); font-size: 10.5px; user-select: none; opacity: 0.85; } .ravs-marker { text-align: center; color: var(--muted-foreground); font-weight: 700; opacity: 0.7; } .ravs-text-cell { padding-right: 8px; white-space: pre; overflow: hidden; } .ravs-tok-kw { color: #a855f7; } .ravs-tok-id { color: #2563eb; } .ravs-tok-str { color: #16a34a; } .ravs-diff-line.is-add { background: color-mix(in srgb, var(--git-decoration-added) 14%, transparent); } .ravs-diff-line.is-add .ravs-marker { color: color-mix(in srgb, var(--git-decoration-added) 72%, transparent); opacity: 1; } .ravs-diff-line.is-rem { background: color-mix(in srgb, var(--git-decoration-deleted) 14%, transparent); } .ravs-diff-line.is-rem .ravs-marker { color: color-mix(in srgb, var(--git-decoration-deleted) 72%, transparent); opacity: 1; } .ravs-add-note-btn { position: absolute; left: 4px; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 1px solid color-mix(in srgb, currentColor 22%, var(--border)); border-radius: 4px; background: var(--ravs-soft-fill); color: var(--foreground); z-index: 5; opacity: 0; box-shadow: 0 1px 2px rgb(0 0 0 / 0.14); pointer-events: none; transition: opacity 160ms ease; } .ravs-add-note-btn.is-visible { opacity: 1; } .ravs-note-row { padding: 4px 8px 4px 0; max-height: 0; overflow: hidden; opacity: 0; transition: max-height 360ms cubic-bezier(.4,0,.2,1), opacity 280ms ease 60ms, padding 360ms cubic-bezier(.4,0,.2,1); } .ravs-note-row.is-visible { max-height: 90px; opacity: 1; } .ravs-note-card { margin: 0 12px; position: relative; border: 1px solid var(--ravs-panel-border); border-left: 3px solid var(--ravs-emphasis-border); border-radius: 6px; background-color: var(--card); padding: 5px 8px 5px 10px; box-shadow: 0 1px 2px rgb(0 0 0 / 0.16); } .ravs-note-meta { font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-foreground); } .ravs-note-body { font-size: 11.5px; color: var(--foreground); line-height: 1.35; margin-top: 2px; } .ravs-popover { position: absolute; left: 12px; right: 12px; max-width: none; z-index: 20; padding: 8px 10px; border: 1px solid var(--ravs-panel-border); border-left: 3px solid var(--ravs-emphasis-border); border-radius: 6px; background-color: var(--card); color: var(--foreground); box-shadow: var(--ravs-floating-shadow); display: flex; flex-direction: column; gap: 6px; opacity: 0; transform: translateY(-4px) scale(0.985); pointer-events: none; transition: opacity 180ms ease, transform 180ms ease; } .ravs-popover.is-visible { opacity: 1; transform: none; pointer-events: auto; } .ravs-pop-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-foreground); } .ravs-pop-input { min-height: 38px; max-height: 80px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--editor-surface, var(--card)); font-size: 12px; line-height: 1.4; color: var(--foreground); white-space: pre-wrap; word-break: break-word; overflow: hidden; } .ravs-pop-footer { display: flex; justify-content: flex-end; gap: 6px; } .ravs-pop-btn { font-size: 11px; font-weight: 500; padding: 4px 9px; border-radius: 5px; line-height: 1; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 5px; } .ravs-pop-btn.is-cancel { color: var(--muted-foreground); background: transparent; } .ravs-pop-btn.is-add { color: var(--primary-foreground); background: var(--primary); } .ravs-send-menu { position: absolute; z-index: 30; right: 8px; top: 6px; min-width: 200px; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); border-radius: 8px; padding: 4px; box-shadow: var(--ravs-floating-shadow); opacity: 0; transform: translateY(-4px) scale(0.985); pointer-events: none; transition: opacity 180ms ease, transform 180ms ease; } .ravs-send-menu.is-visible { opacity: 1; transform: none; pointer-events: auto; } .ravs-menu-section { padding: 4px 8px 2px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-foreground); } .ravs-menu-row { display: grid; grid-template-columns: 16px minmax(0,1fr); align-items: center; gap: 8px; padding: 6px 8px; border-radius: 5px; font-size: 12px; color: var(--popover-foreground); } .ravs-menu-row.is-hot { background: var(--accent); box-shadow: inset 0 0 0 1px var(--border); } .ravs-cursor { position: absolute; z-index: 40; pointer-events: none; transition: transform 600ms cubic-bezier(.45,.05,.2,1), opacity 200ms ease; transform: translate(-30px, 220px); opacity: 0; } .ravs-cursor.is-visible { opacity: 1; } .ravs-cursor .ravs-ripple { position: absolute; left: -6px; top: -6px; width: 28px; height: 28px; border-radius: 999px; border: 2px solid color-mix(in srgb, var(--foreground) 52%, transparent); opacity: 0; } .ravs-cursor.is-clicking .ravs-ripple { animation: ravs-ripple 460ms ease-out forwards; } @keyframes ravs-ripple { 0% { transform: scale(0.4); opacity: 0.9; } 100% { transform: scale(1.4); opacity: 0; } } .ravs-caret { display: inline-block; width: 1.5px; height: 1em; background: currentColor; vertical-align: -2px; margin-left: 1px; animation: ravs-caret-blink 1.05s steps(1) infinite; } @keyframes ravs-caret-blink { 0%, 50% { opacity: 1 } 51%, 100% { opacity: 0 } }"
-                  }
-                },
-                "pr": {
-                  "view": {
-                    "styles": {
-                      "fc9a23c83d": ".ravpr-stage { position: absolute; inset: 0; overflow: hidden; } .ravpr-stack { position: absolute; inset: 0; display: flex; justify-content: flex-end; padding: 4px 34px 4px 2px; overflow: hidden; } .ravpr-sidebar, .ravpr-card { position: absolute; top: 4px; right: 2px; width: 464px; height: calc(100% - 8px); background: var(--card, #fff); border: 1px solid var(--border); border-radius: 10px; color: var(--foreground, #18181b); overflow: hidden; box-shadow: 0 1px 2px rgba(24,24,27,0.04); } .ravpr-sidebar { opacity: 0; transition: opacity 220ms ease; } .ravpr-sidebar.is-visible { opacity: 1; } .ravpr-sidebar.is-hiding { opacity: 0; } .ravpr-card { display: flex; flex-direction: column; min-width: 0; opacity: 0; transition: opacity 260ms ease; } .ravpr-card.is-visible { opacity: 1; } .ravpr-tabs { position: relative; display: flex; align-items: center; gap: 14px; height: 36px; padding: 0 14px; background: rgba(24,24,27,0.015); color: var(--muted-foreground, #71717a); } .ravpr-tab { position: relative; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; color: var(--muted-foreground, #71717a); } .ravpr-tab.is-active, .ravpr-tab.is-hovered { color: var(--foreground, #18181b); } .ravpr-tab.is-active::after { content: ''; position: absolute; left: -5px; right: -5px; bottom: -10px; height: 1px; background: var(--foreground, #18181b); } .ravpr-tooltip { position: absolute; top: 34px; left: 106px; z-index: 6; padding: 7px 11px; border-radius: 8px; background: var(--card, #fff); color: var(--foreground, #18181b); font-size: 12px; line-height: 1; box-shadow: 0 8px 22px rgba(0,0,0,0.22); opacity: 0; transform: translateY(-3px); pointer-events: none; transition: opacity 160ms ease, transform 160ms ease; } .ravpr-tooltip.is-visible { opacity: 1; transform: translateY(0); } .ravpr-explorer { padding: 10px 12px 12px; } .ravpr-heading { color: var(--muted-foreground, #71717a); font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; } .ravpr-file-list { margin-top: 8px; display: flex; flex-direction: column; gap: 2px; } .ravpr-file { display: grid; grid-template-columns: 14px minmax(0,1fr) 22px; align-items: center; gap: 8px; min-height: 28px; padding: 4px 6px; border-radius: 6px; } .ravpr-file.is-active { background: rgba(24,24,27,0.06); box-shadow: inset 0 0 0 1px rgba(24,24,27,0.06); } .ravpr-file-icon { width: 12px; height: 12px; border-radius: 3px; background: rgba(24,24,27,0.14); } .ravpr-file-name { height: 8px; border-radius: 999px; background: rgba(24,24,27,0.14); } .ravpr-file-status { width: 14px; height: 8px; border-radius: 999px; background: rgba(24,24,27,0.12); } .ravpr-body { padding: 10px 12px 18px; display: flex; flex-direction: column; gap: 5px; min-height: 0; } .ravpr-number-row { display: flex; align-items: center; gap: 7px; } .ravpr-number { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 700; } .ravpr-open { display: inline-flex; align-items: center; justify-content: center; height: 18px; padding: 0 7px; border-radius: 5px; background: rgba(16,185,129,0.10); border: 1px solid rgba(16,185,129,0.28); color: rgb(4 120 87); font-size: 9px; font-weight: 700; line-height: 1; } .ravpr-title { font-size: 12px; font-weight: 600; line-height: 1.35; color: var(--foreground, #18181b); margin-bottom: 2px; } .ravpr-merge { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 30px; min-height: 30px; flex: 0 0 30px; border-radius: 7px; background: rgb(22 163 74); color: #fff; font-size: 11.5px; font-weight: 700; margin-bottom: 2px; box-shadow: 0 1px 2px rgba(22,163,74,0.18); transition: box-shadow 220ms ease, filter 220ms ease; } .ravpr-merge.is-ready { box-shadow: 0 0 0 3px rgba(34,197,94,0.22), 0 1px 2px rgba(22,163,74,0.18); } .ravpr-section-row, .ravpr-check-row { display: grid; grid-template-columns: 18px minmax(0,1fr) auto; align-items: center; gap: 7px; padding: 5px 0; font-size: 11.5px; color: var(--foreground, #18181b); } .ravpr-check-row { padding: 5px 7px; font-size: 10.5px; } .ravpr-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ravpr-meta, .ravpr-check-state { color: var(--muted-foreground, #71717a); font-size: 10.5px; } .ravpr-check-state { font-size: 10px; } .ravpr-ring { display: inline-block; width: 14px; height: 14px; border-radius: 999px; border: 2px solid rgba(245,158,11,0.35); border-top-color: rgb(245 158 11); animation: ravpr-spin 1.1s linear infinite; } .ravpr-check { width: 15px; height: 15px; border-radius: 999px; display: none; align-items: center; justify-content: center; background: rgba(34,197,94,0.14); color: rgb(22 163 74); } .ravpr-section-row.is-done .ravpr-ring, .ravpr-check-row.is-done .ravpr-ring { display: none; } .ravpr-section-row.is-done .ravpr-check, .ravpr-check-row.is-done .ravpr-check { display: inline-flex; } .ravpr-reveal { display: flex; flex-direction: column; gap: 3px; opacity: 0; transform: translateY(4px); transition: opacity 260ms ease, transform 260ms ease; pointer-events: none; } .ravpr-reveal.is-visible { opacity: 1; transform: translateY(0); pointer-events: auto; } .ravpr-check-list, .ravpr-comment-list { display: flex; flex-direction: column; gap: 4px; min-height: 0; } .ravpr-comment-card { border: 1px solid var(--border); border-radius: 8px; background: var(--card, #fff); overflow: hidden; opacity: 0; transform: translateY(4px); transition: opacity 260ms ease, transform 260ms ease; } .ravpr-comment-card.is-visible { opacity: 1; transform: translateY(0); } .ravpr-comment-head { display: grid; grid-template-columns: 18px minmax(0,1fr) auto; align-items: center; gap: 7px; padding: 5px 7px; background: rgba(24,24,27,0.015); } .ravpr-avatar { width: 16px; height: 16px; border-radius: 999px; background: rgba(24,24,27,0.16); } .ravpr-author { width: 78px; height: 8px; border-radius: 999px; background: rgba(24,24,27,0.18); } .ravpr-comment-path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 9.5px; color: var(--muted-foreground, #71717a); } .ravpr-comment-body { padding: 5px 7px 6px; font-size: 11px; line-height: 1.32; color: var(--foreground, #18181b); } .ravpr-comment-body code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10.5px; padding: 1px 4px; border-radius: 4px; background: rgba(24,24,27,0.06); } .ravpr-cursor { position: absolute; z-index: 40; pointer-events: none; transition: transform 600ms cubic-bezier(.45,.05,.2,1), opacity 200ms ease; transform: translate(-30px, 220px); opacity: 0; } .ravpr-cursor.is-visible { opacity: 1; } .ravpr-ripple { position: absolute; left: -6px; top: -6px; width: 28px; height: 28px; border-radius: 999px; border: 2px solid rgba(24,24,27,0.5); opacity: 0; } .ravpr-cursor.is-clicking .ravpr-ripple { animation: ravpr-ripple 460ms ease-out forwards; } @keyframes ravpr-ripple { 0% { transform: scale(0.4); opacity: 0.9; } 100% { transform: scale(1.4); opacity: 0; } } @keyframes ravpr-spin { to { transform: rotate(360deg); } }"
-                    }
-                  }
-                },
-                "ship": {
-                  "styles": {
-                    "90cdcd2ecc": ".ravs-ship-root { position: absolute; inset: 0; } .ravs-ship-stack { position: absolute; inset: 0; display: grid; grid-template-columns: 232px minmax(0,1fr); gap: 14px; padding: 4px 2px; /* Why: cards size to their content rather than stretch to the parent's full height, so the two cards don't show empty space below their content. */ align-items: start; } /* Source Control mini-sidebar — ahead-count header, commit textarea + split Commit button, then a CHANGES section with file rows. The file rows are the surface the \"reading\" pulse animates over. */ .ravs-sc-card { display: flex; flex-direction: column; background: var(--card, #fff); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 2px rgba(24,24,27,0.04); } /* Both card headers share the same fixed height so the SC card and PR dialog align across the top edge regardless of header content. */ .ravs-sc-header, .ravs-pr-head { height: 36px; box-sizing: border-box; } .ravs-sc-header { display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-bottom: 1px solid var(--border); } .ravs-sc-ahead { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; color: var(--foreground, #18181b); } .ravs-sc-ahead svg { color: var(--muted-foreground, #71717a); } .ravs-sc-commit-area { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; } .ravs-sc-textarea { position: relative; border: 1px solid var(--border); border-radius: 6px; background: var(--editor-surface, var(--card)); padding: 6px 26px 6px 8px; min-height: 56px; font-size: 12px; line-height: 1.45; color: var(--foreground, #18181b); white-space: pre-wrap; word-break: break-word; overflow: hidden; } .ravs-sc-textarea .ravs-placeholder { color: rgba(113,113,122,0.7); } .ravs-sc-sparkle { position: absolute; right: 6px; top: 6px; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; color: var(--muted-foreground, #71717a); background: transparent; transition: color 160ms ease, background 160ms ease; } .ravs-sc-sparkle.is-scanning { color: rgb(109 40 217); background: color-mix(in srgb, rgb(139 92 246) 18%, transparent); } .ravs-sc-split { display: flex; align-items: stretch; } /* Why: Commit + Create PR are surrounding chrome — the violet AI affordances are the focal points. Render them as quiet secondary buttons so they don't compete with the sparkle/scan signals. */ .ravs-sc-split .ravs-primary { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 5px 10px; background: var(--secondary, #f5f5f5); color: var(--secondary-foreground, #171717); font-size: 11px; font-weight: 500; border-radius: 6px 0 0 6px; border: 1px solid var(--border); transition: background 240ms ease, border-color 240ms ease, color 240ms ease; } .ravs-sc-split .ravs-chev { display: inline-flex; align-items: center; justify-content: center; width: 22px; background: var(--secondary, #f5f5f5); color: var(--muted-foreground, #71717a); border-radius: 0 6px 6px 0; border: 1px solid var(--border); border-left: 1px solid var(--border); transition: background 240ms ease, border-color 240ms ease, color 240ms ease; } /* Why: when AI has filled the commit message, tint the Commit button green to signal \"ready to commit\". Uses the same success-green family as the PR flash so the two beats rhyme. Mix is intentionally strong (~28%) — at 14% it disappeared next to the violet sparkle and PR flash, so users only saw the PR change color. */ .ravs-sc-split.is-ready .ravs-primary, .ravs-sc-split.is-ready .ravs-chev { background: color-mix(in srgb, rgb(34 197 94) 28%, var(--secondary, #f5f5f5)); border-color: rgb(34 197 94); color: rgb(21 128 61); transition: background 220ms ease, border-color 220ms ease, color 220ms ease; } .ravs-sc-split.is-ready .ravs-chev { border-left-color: rgba(34, 197, 94, 0.55); } .ravs-sc-changes-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-foreground, #71717a); } .ravs-sc-changes-count { color: var(--foreground, #18181b); font-weight: 600; margin-left: 2px; } .ravs-sc-view-all { font-size: 10px; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted-foreground, #71717a); } .ravs-sc-files { display: flex; flex-direction: column; padding: 2px 6px 8px; flex: 1; min-height: 0; overflow: hidden; } .ravs-sc-file { display: grid; grid-template-columns: 14px minmax(0,1fr) 12px; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 4px; font-size: 11px; line-height: 1.35; color: var(--foreground, #18181b); position: relative; transition: background 220ms ease; } .ravs-sc-ficon { color: rgb(180 83 9); display: inline-flex; } .ravs-sc-fname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ravs-sc-fmark { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; text-align: right; color: rgb(180 83 9); } .ravs-sc-file.is-reading { background: color-mix(in srgb, rgb(139 92 246) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, rgb(139 92 246) 28%, transparent); } /* PR dialog — matches the .ravs-sc-card chrome (same border, radius, elevation) so the two cards read as one design language. */ .ravs-pr-dialog { background: var(--card, #fff); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 1px 2px rgba(24,24,27,0.04); display: flex; flex-direction: column; min-width: 0; overflow: hidden; } .ravs-pr-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 10px; border-bottom: 1px solid var(--border); } .ravs-pr-title-text { font-size: 11px; font-weight: 500; color: var(--foreground, #18181b); } /* Icon-only AI-assist chip — mirrors .ravs-sc-sparkle so the affordance reads identically across both cards. */ .ravs-pr-gen-btn { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border-radius: 4px; color: var(--muted-foreground, #71717a); background: transparent; border: 0; cursor: pointer; transition: color 160ms ease, background 160ms ease; } .ravs-pr-gen-btn:hover { background: rgba(24,24,27,0.06); color: var(--foreground, #18181b); } .ravs-pr-gen-btn.is-scanning { color: rgb(109 40 217); background: color-mix(in srgb, rgb(139 92 246) 18%, transparent); } .ravs-pr-body { display: flex; flex-direction: column; gap: 8px; padding: 10px; } .ravs-pr-field { display: flex; flex-direction: column; gap: 4px; } .ravs-pr-field-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-foreground, #71717a); } .ravs-pr-base { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border: 1px solid var(--border); border-radius: 6px; font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--foreground, #18181b); background: var(--editor-surface, var(--card)); align-self: flex-start; } .ravs-pr-base svg { color: var(--muted-foreground, #71717a); } .ravs-pr-input { position: relative; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--editor-surface, var(--card)); min-height: 28px; font-size: 12px; line-height: 1.45; color: var(--foreground, #18181b); white-space: pre-wrap; word-break: break-word; overflow: hidden; } .ravs-pr-input.is-body { min-height: 50px; font-size: 11px; line-height: 1.4; } .ravs-pr-input .ravs-placeholder { color: rgba(113,113,122,0.7); } .ravs-pr-footer { display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin-top: 2px; } .ravs-pr-btn { font-size: 11px; font-weight: 500; padding: 5px 10px; border-radius: 6px; line-height: 1; border: 1px solid transparent; outline: none; } .ravs-pr-btn:focus, .ravs-pr-btn:focus-visible { outline: none; } /* Cancel reads as a quiet ghost button so it doesn't compete with the affirmative Create PR action. */ .ravs-pr-btn.is-outline { background: transparent; color: var(--muted-foreground, #71717a); border-color: transparent; } .ravs-pr-btn.is-outline:hover { background: rgba(24,24,27,0.05); color: var(--foreground, #18181b); } /* Quiet secondary fill — see the .ravs-sc-split note above. The flash ring still uses success-green so the \"PR created\" beat reads. The Create-PR button is slightly larger than Cancel so the affirmative action remains the bigger target. */ .ravs-pr-btn.is-solid { background: var(--secondary, #f5f5f5); color: var(--secondary-foreground, #171717); border-color: var(--border); font-size: 12px; padding: 7px 14px; transition: background 220ms ease, border-color 220ms ease, color 220ms ease, box-shadow 220ms ease; } .ravs-pr-btn.is-solid.is-ready { background: color-mix(in srgb, rgb(34 197 94) 28%, var(--secondary, #f5f5f5)); border-color: rgb(34 197 94); color: rgb(21 128 61); } .ravs-pr-btn.is-solid.is-flash { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.30); } .ravs-cursor { position: absolute; z-index: 40; pointer-events: none; transition: transform 600ms cubic-bezier(.45,.05,.2,1), opacity 200ms ease; transform: translate(-30px, 220px); opacity: 0; } .ravs-cursor.is-visible { opacity: 1; } .ravs-cursor .ravs-ripple { position: absolute; left: -6px; top: -6px; width: 28px; height: 28px; border-radius: 999px; border: 2px solid rgba(24,24,27,0.5); opacity: 0; } .ravs-cursor.is-clicking .ravs-ripple { animation: ravs-ripple 460ms ease-out forwards; } @keyframes ravs-ripple { 0% { transform: scale(0.4); opacity: 0.9; } 100% { transform: scale(1.4); opacity: 0; } } .ravs-caret { display: inline-block; width: 1.5px; height: 1em; background: currentColor; vertical-align: -2px; margin-left: 1px; animation: ravs-caret-blink 1.05s steps(1) infinite; } @keyframes ravs-caret-blink { 0%, 50% { opacity: 1 } 51%, 100% { opacity: 0 } }"
-                  }
                 }
               }
             },
@@ -15690,7 +15955,9 @@
           "1829437fce": "新 Markdown"
         },
         "DiagramViewerModal": {
-          "title": "圖表",
+          "title": "圖表"
+        },
+        "PanZoomImageDialog": {
           "zoomOut": "縮小",
           "zoomIn": "放大",
           "fit": "適應螢幕",
@@ -16042,9 +16309,11 @@
           "copy": "複製作業"
         },
         "ExternalFileChangeBanner": {
-          "7c41e90d12": "此檔案在您有未儲存編輯時在磁碟上發生了更改。儲存將覆蓋較新的磁碟內容。",
+          "7c41e90d12": "This file changed on disk while you have unsaved edits. Overwrite replaces the newer disk content.",
           "3fa2b8d417": "從磁碟重新載入",
           "a95d02c644": "保留我的編輯",
+          "overwrite": "Overwrite",
+          "keepHint": "Keeps your version. Your next save replaces the version on disk.",
           "5c02de9b31": "已從磁碟重新載入",
           "d1e830fa22": "撤銷",
           "90b2ce7d43": "比較"
@@ -16083,6 +16352,12 @@
               "notice": {
                 "8c59ce5075": "儲存檔案失敗。請重試。"
               }
+            },
+            "stale": {
+              "notice": "This file changed on disk since your edits. Use the banner to compare, reload, or overwrite."
+            },
+            "sectionStale": {
+              "notice": "This file changed on disk since this section loaded."
             }
           }
         },
@@ -17968,6 +18243,14 @@
         "a62f9db53d": "Cancel",
         "c77189bc0c": "Update filter",
         "19af906d12": "Save filter"
+      },
+      "OrcaSignInProgress": {
+        "waiting": "正在等待在瀏覽器中登入",
+        "copyLink": "複製登入連結",
+        "copied": "已複製登入連結",
+        "copyFailed": "無法複製連結。",
+        "signingIn": "正在登入…",
+        "cancel": "取消"
       }
     },
     "i18n": {
@@ -18070,12 +18353,15 @@
         "couldNotStart": "{{agent}} 無法啟動。",
         "editSavedArguments": "請在設定 > 代理 > 引數中編輯。",
         "couldNotRestart": "{{agent}} 無法重新啟動。",
+        "startTimedOut": "{{agent}} 啟動時間過長（{{seconds}} 秒後 {{method}} 仍無回應）。",
+        "startTimedOutKeepsHappening": "如果此問題持續出現，執行此聊天的電腦可能負載過重。",
         "codexCliTooOld": "Codex {{installedVersion}} 版本過舊，無法用於聊天。請更新到 {{minimumVersion}} 或更高版本。",
         "notSignedIn": "{{agent}} 尚未登入。",
         "claudeSystemNotSignedIn": "Claude 尚未登入。請執行 `{{loginCommand}}`，或在 Claude 帳戶設定中選擇帳戶。",
         "claudeManagedNotSignedIn": "此 Claude 帳戶尚未登入。請在 Claude 帳戶設定中重新登入。",
         "codexSystemNotSignedIn": "Codex 尚未登入。請執行 `{{loginCommand}}`。",
         "codexManagedNotSignedIn": "此 Codex 帳戶尚未登入。請在 Codex 帳戶設定中重新登入。",
+        "antigravityNotSignedIn": "尚未登入 Antigravity。請在設定 → 帳戶 → Antigravity中登入，然後重新發送訊息。",
         "cliMissing": "在執行此聊天的電腦上找不到 {{agent}}。請安裝它，或檢查設定 → 代理中的命令。",
         "signInFirst": "請先登入。",
         "signInThenRunCommand": "請登入，然後重新執行 /{{command}}。",
@@ -18146,6 +18432,14 @@
         "providerRetryNumber": "第 {{attempt}} 次重試。",
         "providerRetryNumberOf": "第 {{attempt}} 次重試，共 {{maxRetries}} 次。",
         "providerRetryLastError": "上次錯誤：{{detail}}。",
+        "usageLimitReached": "{{agent}} 已達到使用上限。",
+        "usageLimitReachedNamed": "{{agent}} 已達到{{window}}上限。",
+        "usageLimitWindowSession": "會話",
+        "usageLimitWindowWeekly": "每週",
+        "usageLimitWindowWeeklyModel": "模型每週",
+        "usageLimitWindowCredits": "額外用量",
+        "usageLimitResetsAt": "將在 {{when}} 重置。",
+        "usageLimitSendAfterReset": "重置後傳送訊息即可繼續。",
         "previousExitUnverifiable": "無法停止之前的 {{agent}}。",
         "sessionNotRestored": "{{agent}} 無法重新開啟之前的會話，因此此聊天將在新會話中繼續。{{agent}} 不記得之前的訊息。",
         "agentCommandNotSignedIn": "請在執行此聊天的電腦上使用 `{{loginCommand}}` 登入 {{agent}}。",
@@ -18167,10 +18461,12 @@
         "notDoneOption": "設定未更改。",
         "notDoneCommand": "命令未執行。",
         "notDoneGoal": "目標未更改。",
+        "notDoneQueuedEdit": "你的編輯未儲存。",
         "restartFailed": "代理無法重新啟動。",
         "capacity": "執行此聊天的電腦上的 Orca 已達到請求上限。請在那台電腦上更新 Orca，然後重試。",
         "outcomeUnknown": "Orca 無法確認發生了什麼。請檢視聊天。",
         "sendOutcomeLost": "Orca 無法確認你的訊息已送達代理。請檢視聊天，如有需要請重新發送。",
+        "continuationSuperseded": "This chat has moved on. Check the latest messages before continuing.",
         "questionChanged": "此問題已被回答或已更改。",
         "cancelNotSaved": "無法取消此問題或審批。",
         "historyUnreadable": "Orca 無法讀取此聊天的已儲存歷史記錄。",
@@ -18303,7 +18599,6 @@
         "imageSaving": "儲存貼上的影像...",
         "pendingAttachmentLimit": "太多附件正在等待。在附加更多內容之前先完成創作。",
         "viewAttachment": "檢視圖片",
-        "imagePreview": "全尺寸影像預覽",
         "imagePreviewUnavailable": "預覽不可用",
         "copyImage": "複製圖片",
         "copyImageFailed": "無法複製圖片",
@@ -18349,6 +18644,9 @@
         "interruptedCallsLabel": "已中斷的工具呼叫：{{value0}}",
         "runningPreview": "正在執行 {{preview}}",
         "runningCommand": "執行命令",
+        "showFullOutput": "顯示完整輸出",
+        "fullOutputFailed": "無法載入完整輸出。",
+        "fullOutputPartial": "正在顯示 {{total}} 中的 {{shown}}。",
         "runningNamedPreview": "執行 {{toolName}} {{preview}}",
         "runningNamed": "正在執行 {{toolName}}",
         "ranCommandOneToolSummary": "執行 {{commandCount}} 命令並使用 {{toolCount}} 工具",
@@ -18435,7 +18733,7 @@
         "stopping": "正在停止…",
         "queueAfterStop": "將訊息加入佇列，在停止後執行",
         "sendAfterStop": "傳送訊息，在停止後執行",
-        "thinking": "思維",
+        "thinking": "思考中",
         "workingFor": "已工作 {{value0}}",
         "workedFor": "工作了 {{value0}}",
         "interruptedAfter": "{{value0}} 後中斷",
@@ -18647,6 +18945,7 @@
         "pendingWork": "在使用此命令之前，請等待掛起的工作和訊息完成。"
       },
       "drop": {
+        "messageTitle": "拖放以附加到此訊息",
         "title": "拖放以附加到此聊天",
         "subtitle": "檔案將作為代理可以讀取的路徑新增到您的訊息中。"
       },
@@ -18724,6 +19023,7 @@
         "cancelEditing": "取消編輯",
         "editChanged": "你編輯時此訊息已更改。你編輯的內容已放入聊天輸入框。",
         "editChangedPrompt": "你編輯時此訊息已更改。回答代理後，你編輯的內容會出現在聊天輸入框中。",
+        "editChangedNotSaved": "你編輯時此訊息已更改。你的編輯未儲存。",
         "editFailed": "此訊息無法編輯。",
         "editGone": "此訊息已傳送或移除。你編輯的內容已放入聊天輸入框。",
         "editGonePrompt": "此訊息已傳送或移除。回答代理後，你編輯的內容會出現在聊天輸入框中。",
@@ -18733,7 +19033,9 @@
         "collapse": "收起",
         "expand": "展開",
         "queued": "已排隊",
-        "clearAll": "全部清除"
+        "clearAll": "全部清除",
+        "pasteOrDropImages": "貼上或拖入圖片",
+        "saveNeedsContent": "新增文字或圖片後才能儲存"
       },
       "thought": "已思考",
       "thoughtForDuration": "思考了 {{duration}}",
@@ -18749,7 +19051,9 @@
       "interruptedContinue": {
         "continue": "繼續",
         "failed": "無法繼續此聊天。請重試，或傳送一條訊息。",
-        "explanation": "繼續後，代理會先檢查其上一步是否已完成。"
+        "explanation": "繼續後，代理會先檢查其上一步是否已完成。",
+        "unconfirmed": "Couldn't confirm whether {{agent}} received Continue. Check the chat before trying again.",
+        "usageLimitExplanation": "讓代理從中斷處繼續。請在上限重置後使用。"
       },
       "rewind": {
         "unsupported": "此聊天無法返回到更早的訊息。",
@@ -18775,6 +19079,17 @@
       "visualUnavailable": "視覺化不可用",
       "visualLoading": "正在載入視覺化",
       "visualOpenInNewTab": "在新分頁中開啟",
+      "resumeCommand": {
+        "description": "開啟代理會話歷史",
+        "argumentHint": "[搜尋]",
+        "workspaceUnavailable": "此聊天的工作區尚未載入。請稍後再試一次 /resume。",
+        "replaceTitle": "替換此聊天？",
+        "replaceDescription": "在此恢復“{{title}}”將停止 {{agent}} 在此聊天中正在進行的工作。",
+        "replace": "替換"
+      },
+      "antigravitySignIn": {
+        "sentence": "尚未登入 Antigravity。請在<settings>設定 → 帳戶 → Antigravity</settings>中登入，然後重新發送訊息。"
+      },
       "claudeSignIn": {
         "signingIn": "正在登入…"
       }
@@ -18782,22 +19097,30 @@
     "tab": {
       "bar": {
         "SortableTabContextMenu": {
-          "switchToTerminalView": "切換到終端機檢視",
-          "switchToChatView": "切換到聊天檢視",
-          "closeTabsToLeft": "關閉左側的分頁"
+          "switchToTerminalView": "切換到終端機代理",
+          "switchToChatView": "切換到聊天UI",
+          "closeTabsToLeft": "關閉左側的所有分頁"
         },
         "BrowserTab": {
           "closeOthers": "關閉其他",
-          "closeTabsToLeft": "關閉左側的分頁"
+          "closeTabsToLeft": "關閉左側的所有分頁"
         },
         "EditorFileTabContextMenu": {
           "closeOthers": "關閉其他",
-          "closeTabsToLeft": "關閉左側的分頁"
+          "closeTabsToLeft": "關閉左側的所有分頁"
         },
         "CopyTabIdMenuItem": {
           "copied": "已複製分頁 ID",
           "failed": "無法複製分頁 ID",
           "copy": "複製分頁 ID"
+        },
+        "bulkClose": {
+          "others": "關閉其他分頁？",
+          "right": "關閉右側分頁？",
+          "left": "關閉左側分頁？",
+          "editors": "關閉所有編輯器分頁？",
+          "description": "選中的分頁將關閉。固定的分頁將保持開啟。",
+          "confirm": "關閉分頁"
         }
       }
     },
@@ -19265,12 +19588,14 @@
       "cancelFailed": "無法取消安裝。請重試。",
       "install": "安裝 {{agent}}",
       "installManaged": "安裝 Orca 的副本",
-      "installed": "已安裝。",
+      "installed": "已安裝",
       "notInstalled": "未安裝。",
       "progress": "{{agent}} 下載",
       "readFailed": "無法檢查此主機上的 {{agent}}。正在重試。",
-      "reinstall": "重新安裝",
+      "reinstall": "重新安裝 {{agent}}",
+      "reinstallShort": "重新安裝",
       "remove": "移除已下載的執行時",
+      "moreActions": "{{agent}} 的更多操作",
       "removeConfirm": "移除",
       "removeDescription": "正在執行的 {{agent}} 聊天會停止。其歷史記錄會保留。",
       "removeKeep": "取消",
@@ -19753,6 +20078,10 @@
       "openInSidebarCopy": "輸入您記得的內容，或詢問代理：“找到我們修復登入逾時的會話。”",
       "open": "開啟",
       "enableOnAll": "在所有電腦上啟用"
+    },
+    "dialog": {
+      "select": "選擇",
+      "open": "開啟"
     }
   },
   "aiVault": {
@@ -19849,6 +20178,27 @@
       "cancel": "取消"
     },
     "antigravity": {
+      "chatTitle": "Antigravity 聊天",
+      "chatDescription": "聊天使用自己的 Antigravity 登入，與上方的 agy 帳戶分開。在此裝置上登入一次即可。",
+      "chatSignIn": "登入",
+      "chatChangeAccount": "更換帳戶",
+      "chatRetry": "重試登入",
+      "chatCancel": "取消",
+      "chatCopyLink": "複製登入連結",
+      "chatCopyFailed": "無法複製連結。",
+      "chatStarting": "正在開始登入…",
+      "chatWaiting": "請在瀏覽器中完成登入。",
+      "chatOpenFailed": "複製連結並在瀏覽器中開啟。",
+      "chatVerifying": "正在完成登入…",
+      "chatPasteHelp": "如果登入後的最後一個頁面無法載入，請從瀏覽器複製它的完整地址並貼上到這裡。",
+      "chatContinue": "繼續",
+      "chatSignedInOn": "已在 {{host}} 上登入。",
+      "chatCancelled": "已取消登入。",
+      "chatExpired": "登入逾時。請重試。",
+      "chatFailed": "登入失敗。請重試。",
+      "chatNotSignedIn": "未在 {{host}} 上登入。",
+      "chatOtherClient": "另一個客戶端正在登入。",
+      "chatReadFailed": "無法檢查 {{host}} 上的登入。",
       "scope": "管理 {{host}} 上的本機 agy 帳戶。",
       "signIn": "在此主機上啟動 agy 並完成其瀏覽器登入，然後儲存目前帳戶。要新增其他帳戶，請在 agy 中使用 /logout 並再次登入。",
       "docs": "登入說明",
