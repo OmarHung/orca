@@ -15,10 +15,11 @@ import { useSshConfigSync } from './use-ssh-config-sync'
 import { useSshTargetSelection } from './use-ssh-target-selection'
 import {
   countSshTargetsBySource,
-  filterSshTargets,
   SSH_TARGET_FILTER_THRESHOLD,
   sshTargetDisplayOrder
 } from './ssh-target-list-model'
+// Why: every term must match the card text (incl. port and key), so "jenkins 198.51" finds one host.
+import { filterSshTargetsBySearchQuery as filterSshTargets } from './ssh-target-search'
 import { useSshBulkRemove } from './use-ssh-bulk-remove'
 import { SshTargetForm, EMPTY_FORM, type EditingTarget } from './SshTargetForm'
 import { getEditingTargetForSshTarget } from './ssh-target-draft'
