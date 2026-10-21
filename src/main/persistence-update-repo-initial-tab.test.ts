@@ -40,7 +40,7 @@ describe('repo initial tab persistence', () => {
     const store = await createStore()
     store.addRepo(makeRepo())
 
-    expect(store.updateRepo('r1', { initialTab: 'terminal' })!.initialTab).toBe('terminal')
+    expect(store.updateRepo({ id: 'r1' }, { initialTab: 'terminal' })!.initialTab).toBe('terminal')
     store.flush()
 
     const reloaded = await createStore()
@@ -52,7 +52,7 @@ describe('repo initial tab persistence', () => {
     store.addRepo(makeRepo({ initialTab: 'codex' }))
 
     // Why: parse bypasses the type the way an untyped IPC or RPC payload does.
-    const updated = store.updateRepo('r1', JSON.parse('{"initialTab":"browser"}'))
+    const updated = store.updateRepo({ id: 'r1' }, JSON.parse('{"initialTab":"browser"}'))
 
     expect(updated!.initialTab).toBe('codex')
   })

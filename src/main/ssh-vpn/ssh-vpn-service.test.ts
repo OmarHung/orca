@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { SshTarget } from '../../shared/ssh-types'
 import type { SshVpnProfile } from '../../shared/ssh-vpn-types'
-import { createResolvedConfig } from '../ssh/ssh-connection-test-fixtures'
+import { createResolvedConfig } from '../ssh/connection/ssh-connection-test-fixtures'
 import {
   SshVpnStartDeclinedError,
   type SshVpnStartConfirm,

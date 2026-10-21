@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store'
-import { sendRuntimePtyInputVerified } from '@/runtime/runtime-terminal-inspection'
+import { sendRuntimePtyInputVerified } from '@/runtime/runtime-terminal-verified-input'
 import { createBrowserUuid } from '@/lib/browser-uuid'
 import {
   ORCA_TERMINAL_COMMAND_FINISHED_EVENT,

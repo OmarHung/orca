@@ -2,8 +2,8 @@ import { BrowserWindow, ipcMain } from 'electron'
 import type { SftpResult, SftpTransferProgress } from '../../shared/sftp-types'
 import { requestSshCredential } from '../ipc/ssh/ssh-passphrase'
 import { getCurrentMainWindow } from '../ipc/ssh/ssh-ipc-context'
-import { SshConnection } from '../ssh/ssh-connection'
-import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
+import { SshConnection } from '../ssh/connection/ssh-connection'
+import { getSshTargetRegistryStore } from '../ssh/targets/ssh-target-registry'
 import {
   INVALID_SFTP_REQUEST_MESSAGE,
   SftpExecuteRequestSchema,

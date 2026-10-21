@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { SshConnectionState, SshConnectionStatus, SshTarget } from '../../shared/ssh-types'
-import type { SshConnection } from '../ssh/ssh-connection'
-import type { SshConnectionCallbacks } from '../ssh/ssh-connection-utils'
+import type { SshConnection } from '../ssh/connection/ssh-connection'
+import type { SshConnectionCallbacks } from '../ssh/connection/ssh-connection-callbacks'
 import { DatabaseSshConnections } from './database-ssh-connections'
 
 vi.mock('../ipc/ssh/ssh-ipc-context', () => ({ getCurrentMainWindow: () => null }))

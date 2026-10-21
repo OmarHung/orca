@@ -26,7 +26,7 @@ const { appState, sendRuntimePtyInputVerified, openRunTerminal } = vi.hoisted(()
 })
 
 vi.mock('@/store', () => ({ useAppStore: { getState: () => appState } }))
-vi.mock('@/runtime/runtime-terminal-inspection', () => ({ sendRuntimePtyInputVerified }))
+vi.mock('@/runtime/runtime-terminal-verified-input', () => ({ sendRuntimePtyInputVerified }))
 vi.mock('./run-terminal-open', () => ({ openRunTerminal }))
 
 import { dispatchTerminalCommandFinishedEvent } from '@/hooks/terminal-command-finished-event'
