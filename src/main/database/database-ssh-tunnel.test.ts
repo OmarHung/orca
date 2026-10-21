@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { SshConnection } from '../ssh/ssh-connection'
+import type { SshConnection } from '../ssh/connection/ssh-connection'
 import { SshPortForwardManager } from '../ssh/port-forwarding/ssh-port-forward'
 import type {
   PortForwardStartOptions,
@@ -18,9 +18,10 @@ type ForwardOut = (
 function fakeConnection(forwardOut: ForwardOut | null): SshConnection {
   const connection = {
     getState: () => ({ status: 'connected' }),
-    getClient: () => (forwardOut ? { forwardOut } : null)
+    getClient: () => (forwardOut ? { forwardOut } : null),
+    isDisposed: () => false
   }
-  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the opener only calls getState/getClient().forwardOut, and the fake provider below never reads the connection.
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the opener only calls getState/getClient().forwardOut, the forward manager isDisposed, and the fake provider below never reads the connection.
   return connection as unknown as SshConnection
 }
 
