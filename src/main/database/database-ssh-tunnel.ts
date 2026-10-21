@@ -1,11 +1,11 @@
 import { createServer } from 'node:net'
-import type { SshConnection } from '../ssh/ssh-connection'
+import type { SshConnection } from '../ssh/connection/ssh-connection'
 import { SshPortForwardManager } from '../ssh/port-forwarding/ssh-port-forward'
 import {
   getSshProviderAuthority,
   registerSshProviderRequestAbort
 } from '../ssh/ssh-provider-authority'
-import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
+import { getSshTargetRegistryStore } from '../ssh/targets/ssh-target-registry'
 import { DatabaseSshConnections } from './database-ssh-connections'
 import type { DatabaseTunnel, OpenDatabaseTunnel } from './database-session-manager'
 

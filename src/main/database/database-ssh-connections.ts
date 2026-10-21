@@ -1,9 +1,9 @@
 import type { SshConnectionState, SshTarget } from '../../shared/ssh-types'
 import { getCurrentMainWindow } from '../ipc/ssh/ssh-ipc-context'
 import { requestCredential } from '../ipc/ssh/ssh-passphrase'
-import { SshConnection } from '../ssh/ssh-connection'
-import type { SshConnectionCallbacks } from '../ssh/ssh-connection-utils'
-import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
+import { SshConnection } from '../ssh/connection/ssh-connection'
+import type { SshConnectionCallbacks } from '../ssh/connection/ssh-connection-callbacks'
+import { getSshTargetRegistryStore } from '../ssh/targets/ssh-target-registry'
 
 type DatabaseSshLinkConnection = Pick<
   SshConnection,

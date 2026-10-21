@@ -14,7 +14,7 @@ import {
 import { getSecretStore } from '../../shared/secret-store'
 import { getCurrentMainWindow } from '../ipc/ssh/ssh-ipc-context'
 import { resolveWithSshG } from '../ssh/config/ssh-g-config-resolution'
-import { getSshTargetRegistryStore } from '../ssh/ssh-target-registry'
+import { getSshTargetRegistryStore } from '../ssh/targets/ssh-target-registry'
 import { checkBorrowedContainer, listBorrowableContainers } from './borrowed-container-check'
 import { readOvpnProfileFile } from './ovpn-profile-files'
 import { prepareOvpnProfile } from './ovpn-profile-preparation'

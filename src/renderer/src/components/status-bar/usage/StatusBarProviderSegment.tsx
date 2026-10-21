@@ -17,7 +17,7 @@ import type { StatusBarUsageMode } from '../../../../../shared/status-bar/status
 import { formatCurrencyAmount } from '../../../../../shared/agent-usage/display/currency-format'
 import { formatCreditCount } from '../../../../../shared/agent-usage/display/credit-count-format'
 import { ProviderIcon } from './provider-usage-panel'
-import { USAGE_WARNING_PERCENT } from './usage-health-tone'
+import { USAGE_URGENT_PERCENT, USAGE_WARNING_PERCENT } from './usage-health-tone'
 import { UsagePaceBar } from '../UsagePaceBar'
 import { getOwnerNotSetUpLabelParts } from '../../../../../shared/agent-usage/status-copy/owner-not-set-up-copy'
 import {
@@ -41,17 +41,21 @@ const CALM_STALE_USAGE_MAX_AGE_MS = 30 * 60_000
 
 function MiniBar({
   window,
-  display
+  display,
+  updatedAt
 }: {
   window: RateLimitWindow
   display: UsagePercentageDisplay
+  updatedAt: number
 }): React.JSX.Element {
-  const now = useResetCountdownClock([window.resetsAt])
+  // Why: only an urgent window may wake the status bar; a calm one shows its pace as of the last fetch.
+  const urgent = clampUsedPercent(window.usedPercent) >= USAGE_URGENT_PERCENT
+  const clock = useResetCountdownClock(urgent ? [window.resetsAt] : [])
   return (
     <UsagePaceBar
       window={window}
       display={display}
-      now={now}
+      now={urgent ? clock : updatedAt}
       animated
       className="h-[6px] w-[48px] shrink-0"
     />
@@ -354,7 +358,7 @@ export function ProviderSegment({
     <span className="inline-flex items-center gap-1.5">
       <ProviderIcon provider={provider} />
       {!template && mode === 'verbose' && tightest && !compact ? (
-        <MiniBar window={tightest.window} display={display} />
+        <MiniBar window={tightest.window} display={display} updatedAt={p.updatedAt} />
       ) : null}
       {template ? (
         <CustomUsageText template={template} limits={p} display={display} now={now} />
