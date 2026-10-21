@@ -34,17 +34,21 @@ const CALM_STALE_USAGE_MAX_AGE_MS = 30 * 60_000
 
 function MiniBar({
   window,
-  display
+  display,
+  updatedAt
 }: {
   window: RateLimitWindow
   display: UsagePercentageDisplay
+  updatedAt: number
 }): React.JSX.Element {
-  const now = useResetCountdownClock([window.resetsAt])
+  // Why: only an urgent window may wake the status bar; a calm one shows its pace as of the last fetch.
+  const urgent = clampUsedPercent(window.usedPercent) >= USAGE_URGENT_PERCENT
+  const clock = useResetCountdownClock(urgent ? [window.resetsAt] : [])
   return (
     <UsagePaceBar
       window={window}
       display={display}
-      now={now}
+      now={urgent ? clock : updatedAt}
       animated
       className="h-[6px] w-[48px] flex-shrink-0"
     />
@@ -312,7 +316,7 @@ export function ProviderSegment({
     <span className="inline-flex items-center gap-1.5">
       <ProviderIcon provider={provider} />
       {mode === 'verbose' && tightest && !compact ? (
-        <MiniBar window={tightest.window} display={display} />
+        <MiniBar window={tightest.window} display={display} updatedAt={p.updatedAt} />
       ) : null}
       {showGroupedPools ? (
         <GroupedPoolUsage
