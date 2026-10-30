@@ -31,7 +31,8 @@ vi.mock('node:fs', async (importOriginal) => {
   }
 })
 
-import { importCookiesFromBrowser, type DetectedBrowser } from './browser-cookie-import'
+import { importCookiesFromBrowser } from './browser-cookie-import'
+import type { DetectedBrowser } from './sources/browser-cookie-detection-types'
 import { createChromiumCookieTestDatabase } from './browser-cookie-import-test-database'
 import {
   isMacPrivacyDenial,
