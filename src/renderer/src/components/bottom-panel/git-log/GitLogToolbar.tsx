@@ -12,7 +12,9 @@ import {
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import type { GitLogFilter } from './git-log-filter'
+import type { GitLogPullSource } from './git-log-pull-source'
 import { GitLogFetchButton } from './actions/GitLogFetchButton'
+import { GitLogPullButton } from './actions/GitLogPullButton'
 
 const ALL_AUTHORS_VALUE = '__all__'
 
@@ -94,6 +96,7 @@ type GitLogToolbarProps = {
   authors: readonly string[]
   scopeLabel: string | undefined
   cherryPicks: { available: boolean; pressed: boolean; onPressedChange: (pressed: boolean) => void }
+  pullSource: GitLogPullSource | null
   loading: boolean
   onRefresh: () => void
 }
@@ -104,6 +107,7 @@ export function GitLogToolbar({
   authors,
   scopeLabel,
   cherryPicks,
+  pullSource,
   loading,
   onRefresh
 }: GitLogToolbarProps): React.JSX.Element {
@@ -149,6 +153,7 @@ export function GitLogToolbar({
       ) : null}
       <div className="flex-1" />
       <GitLogCherryPickToggle {...cherryPicks} />
+      <GitLogPullButton source={pullSource} />
       <GitLogFetchButton />
       <Button
         variant="ghost"
