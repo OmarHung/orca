@@ -21,7 +21,7 @@ function untracked(path: string): GitStatusEntry {
 }
 
 describe('buildDiffFileSequence', () => {
-  it('follows the changes-first section order with each section sorted by name', () => {
+  it('follows the changes-first section order, with untracked files sorted into Changes', () => {
     // Arrange
     const entries = [staged('c.ts'), unstaged('b.ts'), untracked('d.ts'), unstaged('a.ts')]
 
@@ -29,7 +29,7 @@ describe('buildDiffFileSequence', () => {
     const sequence = buildDiffFileSequence(entries, 'changes-first')
 
     // Assert
-    expect(sequence.map((entry) => entry.path)).toEqual(['a.ts', 'b.ts', 'c.ts', 'd.ts'])
+    expect(sequence.map((entry) => entry.path)).toEqual(['a.ts', 'b.ts', 'd.ts', 'c.ts'])
   })
 
   it('follows the staged-first section order when the setting asks for it', () => {
