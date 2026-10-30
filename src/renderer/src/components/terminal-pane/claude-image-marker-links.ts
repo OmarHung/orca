@@ -8,7 +8,10 @@ import {
 } from '@/store/terminal-image-preview'
 import { CLAUDE_IMAGE_MARKER_PATTERN } from '../../../../shared/claude-pasted-image'
 import { resolveNativeChatTranscriptAgent } from '../../../../shared/native-chat-agent-support'
-import { buildWrappedLogicalLine, rangeForParsedFileLink } from './wrapped-terminal-link-ranges'
+import {
+  buildWrappedLogicalLine,
+  rangeForParsedFileLink
+} from '../../../../shared/wrapped-terminal-link-ranges'
 import {
   isTerminalLinkActionActivation,
   isTerminalLinkDirectActivation

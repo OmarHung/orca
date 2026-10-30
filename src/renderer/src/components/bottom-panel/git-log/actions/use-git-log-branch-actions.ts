@@ -14,6 +14,7 @@ import type {
 import type { GitLogWorktree } from '../use-git-log-worktree'
 import { resolveActiveGitFetchTarget } from '../../../git-branch-status/git-auto-fetch-runner'
 import { refreshGitStatusForWorktree } from '../../../right-sidebar/git-status-refresh'
+import { resolveWorktreeGitCopyNow } from '@/lib/worktree-git-copy'
 import { useGitLogActionDialogStore } from './git-log-action-dialog-store'
 import { gitLogActionProgress, gitLogActionSuccess, shortCommit } from './git-log-action-feedback'
 import {
@@ -31,12 +32,14 @@ type FollowUp = (() => void) | null
 /** Status, branch label and ahead/behind move with every action; don't wait for the next poll. */
 function refreshWorktreeGitState(worktreeId: string): void {
   const target = resolveActiveGitFetchTarget()
-  if (target?.worktreeId !== worktreeId) {
+  const copy = resolveWorktreeGitCopyNow(worktreeId)
+  if (target?.worktreeId !== worktreeId || !copy) {
     return
   }
   const store = useAppStore.getState()
   void refreshGitStatusForWorktree({
     target: target.target,
+    ownerHostId: copy.hostId,
     worktreeId,
     worktreePath: target.worktreePath,
     connectionId: target.connectionId,

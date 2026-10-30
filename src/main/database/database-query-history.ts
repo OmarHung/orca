@@ -8,7 +8,7 @@ import {
   type DatabaseHistoryEntry
 } from '../../shared/database/database-query-history-types'
 import { writeSecureFile } from '../../shared/secure-file'
-import { isENOENT } from '../ipc/filesystem-path-containment'
+import { isENOENT } from '../ipc/filesystem/filesystem-path-containment'
 
 const historyFileSchema = z.object({
   version: z.literal(1),
