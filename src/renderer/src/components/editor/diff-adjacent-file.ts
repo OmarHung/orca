@@ -2,13 +2,13 @@ import type { GitBranchChangeEntry } from '../../../../shared/git-diff-compare-t
 import type { GitStatusEntry } from '../../../../shared/git-status-types'
 import type { SourceControlGroupOrder } from '../../../../shared/ui-chrome-types'
 import { compareFileNames } from '../../../../shared/file-name-sort'
-import { compareGitStatusEntries } from '../right-sidebar/source-control-status-sort'
+import { compareGitStatusEntries } from '../../../../shared/git-status-sort'
 import {
   buildSourceControlDisplaySections,
   resolveSourceControlGroupOrder,
   type SourceControlEntryGroups,
   type SourceControlSectionArea
-} from '../right-sidebar/source-control/listing/section-order'
+} from '../../../../shared/source-control-section-order'
 import type { DiffChangeDirection } from './diff-change-step'
 
 export type DiffFileSource = 'staged' | 'unstaged'
