@@ -22020,7 +22020,10 @@
           "push": "Pushing {{name}}…",
           "rebase": "Rebasing…"
         },
+        "pull": "Pull",
+        "pullFrom": "Pull from {{upstream}}",
         "pullMerge": "Pull into “{{current}}” Using Merge",
+        "pullNoUpstream": "The current branch has no upstream branch to pull from",
         "pullRebase": "Pull into “{{current}}” Using Rebase",
         "push": "Push",
         "rebaseOnto": "Rebase “{{current}}” onto “{{name}}”",

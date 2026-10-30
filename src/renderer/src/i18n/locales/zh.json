@@ -21653,7 +21653,10 @@
           "push": "正在推送 {{name}}…",
           "rebase": "正在 rebase…"
         },
+        "pull": "拉取",
+        "pullFrom": "从 {{upstream}} 拉取",
         "pullMerge": "以合并方式拉取到「{{current}}」",
+        "pullNoUpstream": "当前分支没有可拉取的上游分支",
         "pullRebase": "以 rebase 方式拉取到「{{current}}」",
         "push": "推送",
         "rebaseOnto": "将「{{current}}」rebase 到「{{name}}」",
