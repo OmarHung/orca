@@ -25,6 +25,7 @@ import {
   collectGitLogCherryPickedIds,
   collectGitLogCurrentBranchIds
 } from './git-log-current-branch'
+import { resolveGitLogPullSource } from './git-log-pull-source'
 import { GitLogToolbar } from './GitLogToolbar'
 import { useBottomPanelLayout } from '../bottom-panel-layout-store'
 import { HEAD_GIT_LOG_SCOPE, isGitLogScopeHonored, type GitLogScope } from './git-log-scope'
@@ -75,6 +76,7 @@ export function GitLogView(): React.JSX.Element {
     (typeof branchList === 'object'
       ? branchList.branches.find((branch) => branch.isHead && branch.kind === 'local')?.name
       : state.result?.currentRef?.name) ?? null
+  const pullSource = useMemo(() => resolveGitLogPullSource(branchList), [branchList])
   const reloadAfterAction = useCallback(() => void refresh({ silent: true }), [refresh])
   const branchActions = useGitLogBranchActions(worktree, currentBranchName, reloadAfterAction)
   const actionsAvailable = Boolean(
@@ -317,6 +319,7 @@ export function GitLogView(): React.JSX.Element {
               pressed: markCherryPicks,
               onPressedChange: setMarkCherryPicks
             }}
+            pullSource={pullSource}
             loading={loading}
             onRefresh={() => void refresh()}
           />

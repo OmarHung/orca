@@ -20785,7 +20785,10 @@
           "push": "正在推送 {{name}}…",
           "rebase": "正在 rebase…"
         },
+        "pull": "拉取",
+        "pullFrom": "從 {{upstream}} 拉取",
         "pullMerge": "以合併方式拉取到「{{current}}」",
+        "pullNoUpstream": "目前分支沒有可拉取的上游分支",
         "pullRebase": "以 rebase 方式拉取到「{{current}}」",
         "push": "推送",
         "rebaseOnto": "將「{{current}}」rebase 到「{{name}}」",
