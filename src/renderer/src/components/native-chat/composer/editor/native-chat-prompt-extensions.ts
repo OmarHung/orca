@@ -6,6 +6,7 @@ import { nativeChatPromptPills } from './native-chat-prompt-document'
 import { NativeChatSideChat } from './native-chat-side-chat-node'
 import { NativeChatUnkernedRunDecorations } from './native-chat-unkerned-run-decorations'
 import { NativeChatHardBreakParagraphs } from './native-chat-hard-break-paragraphs'
+import { NativeChatNumberedList } from '../../native-chat-prompt-numbered-list'
 
 /** The composer's plain-text schema: paragraphs, hard breaks and the pills only Orca inserts. */
 export function nativeChatPromptExtensions(): Extensions {
@@ -35,6 +36,8 @@ export function nativeChatPromptExtensions(): Extensions {
         translate('components.native-chat.sideChat.placeholder', 'Ask a side question')
     }),
     NativeChatUnkernedRunDecorations,
+    // Fork: ahead of hard-break paragraphs so Enter continues a numbered list first.
+    NativeChatNumberedList,
     NativeChatHardBreakParagraphs
   ]
 }
