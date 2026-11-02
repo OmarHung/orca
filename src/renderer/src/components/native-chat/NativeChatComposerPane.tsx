@@ -11,6 +11,7 @@ import { useNativeChatComposerRecall } from './use-native-chat-composer-recall'
 import { useNativeChatLaunchDraftAdoption } from './use-native-chat-launch-draft-adoption'
 import { NativeChatComposerField } from './NativeChatComposerField'
 import { useNativeChatComposerAttachments } from './use-native-chat-composer-attachments'
+import { useAppStore } from '@/store'
 import { nativeChatComposerSendState } from './native-chat-composer-send-state'
 import { useNativeChatComposerHandle } from './use-native-chat-composer-handle'
 import { useNativeChatFileDrops } from './use-native-chat-file-drops'
@@ -285,6 +286,9 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
     })
 
     const { goalMode } = submission
+    const sendWithShortcutOnly = useAppStore(
+      (s) => s.settings?.nativeChatSendWithShortcutOnly === true
+    )
     const { sendHeld, ...sendButton } = nativeChatComposerSendState({
       draft,
       messageDelivery: submission.messageDelivery,
@@ -377,6 +381,8 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
           attachmentEnvironmentId={structuredTransport?.runtimeEnvironmentId ?? undefined}
           {...sendButton}
           isWorking={isWorking}
+          // Why: in shortcut-only mode the chord is the plain send, so it has no alternate to advertise.
+          alternateSend={sendWithShortcutOnly ? undefined : sendButton.alternateSend}
           isStopping={isStopping}
           afterStop={afterStop}
           attachDisabled={attachDisabled}

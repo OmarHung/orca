@@ -151,6 +151,7 @@ export function buildDefaultSettings(args: {
     nativeChatQueueFollowUps: true,
     nativeChatAutoContinueAfterUsageLimit: false,
     nativeChatIdleStopMinutes: DEFAULT_NATIVE_CHAT_IDLE_STOP_MINUTES,
+    nativeChatSendWithShortcutOnly: true,
     nativeChatInlineVisuals: true,
     nativeChatLinkPreviews: true,
     nativeChatScrollToLatestOnSend: true,

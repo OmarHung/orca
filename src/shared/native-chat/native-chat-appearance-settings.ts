@@ -27,6 +27,8 @@ export type NativeChatGlobalSettings = {
   nativeChatProviders?: NativeChatProviderChoices
   /** Own sends bring the latest into view; off keeps a reader who scrolled up in place. Absent means on. */
   nativeChatScrollToLatestOnSend?: boolean
+  /** Only Cmd/Ctrl+Enter sends from the composer; Enter adds a line, or picks from a menu without sending. Off, Enter sends. */
+  nativeChatSendWithShortcutOnly?: boolean
 }
 
 /** Only explicit OFF keeps a reader's place on send. */

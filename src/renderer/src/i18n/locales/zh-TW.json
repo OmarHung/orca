@@ -20033,6 +20033,12 @@
         }
       },
       "nativeChat": {
+        "sendWithShortcutOnlyTitle": "使用 {{value0}} 傳送",
+        "sendWithShortcutOnlyCopy": "Enter 會換行，並在 / 和 @ 選單中只選取項目而不傳送。只有 {{value0}} 才會傳送。關閉後改用 Enter 傳送。",
+        "sendWithShortcutOnlyToggleLabel": "切換僅以快速鍵傳送",
+        "sendSearchEnter": "Enter",
+        "sendSearchShortcut": "快速鍵",
+        "sendSearchNewLine": "換行",
         "queueFollowUpsTitle": "將後續訊息加入佇列",
         "queueFollowUpsCopy": "代理工作時傳送的訊息會以卡片形式等待，你可以立即傳送、編輯或刪除。帶圖片的訊息會立即傳送。",
         "queueFollowUpsToggleLabel": "切換後續訊息佇列",
