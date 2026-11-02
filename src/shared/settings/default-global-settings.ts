@@ -163,6 +163,7 @@ export function buildDefaultSettings(args: {
     nativeChatAutoContinueAfterUsageLimit: true,
     nativeChatAutoContinueAfterUsageLimitDefaultedOn: true,
     nativeChatIdleStopMinutes: DEFAULT_NATIVE_CHAT_IDLE_STOP_MINUTES,
+    nativeChatSendWithShortcutOnly: true,
     nativeChatInlineVisuals: true,
     nativeChatLinkPreviews: true,
     nativeChatOpenedPullRequests: true,

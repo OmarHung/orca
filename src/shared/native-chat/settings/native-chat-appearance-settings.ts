@@ -37,6 +37,8 @@ export type NativeChatGlobalSettings = {
   nativeChatMarkNewMessages?: boolean
   /** The agent's suggested next prompt in an empty composer. Absent means on. */
   nativeChatPromptSuggestions?: boolean
+  /** Only Cmd/Ctrl+Enter sends from the composer; Enter adds a line, or picks from a menu without sending. Off, Enter sends. */
+  nativeChatSendWithShortcutOnly?: boolean
 }
 
 /** Not written into default settings, so flipping this reaches everyone who never chose. */

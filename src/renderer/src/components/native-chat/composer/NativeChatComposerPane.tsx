@@ -27,6 +27,7 @@ import {
 } from './editor/use-native-chat-dictation'
 import { useNativeChatPtyComposerSend } from './submit/use-native-chat-pty-composer-send'
 import { useNativeChatStructuredComposerSend } from './submit/use-native-chat-structured-composer-send'
+import { useNativeChatShortcutOnlyAlternateSend } from './submit/use-native-chat-shortcut-only-alternate-send'
 import { useImeEnterGestureOwnership } from '@/lib/text-input/ime/ime-composition-keyboard-event'
 import { useNativeChatComposerAppMenuSelection } from './focus/use-native-chat-composer-app-menu-selection'
 import { useNativeChatComposerSubmit } from './submit/use-native-chat-composer-submit'
@@ -347,6 +348,7 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
 
     const pickerOpen = autocomplete.mode !== 'none'
     const steerChord = useNativeChatSteerChordPreview(root, sendButton, steerHead, send, pickerOpen)
+    const alternateSend = useNativeChatShortcutOnlyAlternateSend(sendButton.alternateSend)
 
     const draftEvents = useNativeChatDraftEvents({
       draft,
@@ -384,6 +386,7 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
             attachmentEnvironmentId={structuredTransport?.runtimeEnvironmentId ?? undefined}
             {...sendButton}
             isWorking={isWorking}
+            alternateSend={alternateSend}
             isStopping={isStopping}
             afterStop={afterStop}
             attachDisabled={attachDisabled}
