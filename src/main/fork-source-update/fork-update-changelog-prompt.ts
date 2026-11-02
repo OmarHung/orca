@@ -9,7 +9,8 @@ const MAX_PROMPT_COMMITS = 150
 export function describeSummaryLanguage(locale: string): string {
   const tag = locale.trim() || 'en'
   const lower = tag.toLowerCase()
-  if (lower === 'zh-tw') {
+  // Why zh-hant: the app's only Traditional Chinese locale, and it follows Taiwan conventions.
+  if (lower === 'zh-tw' || lower === 'zh-hant') {
     return 'Traditional Chinese as written in Taiwan (繁體中文，台灣用語)'
   }
   if (lower === 'zh-hk' || lower === 'zh-mo' || lower.startsWith('zh-hant')) {

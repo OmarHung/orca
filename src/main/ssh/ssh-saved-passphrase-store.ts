@@ -1,10 +1,10 @@
 import { createHash } from 'node:crypto'
 import { readFileSync, statSync } from 'node:fs'
 import { isAbsolute, resolve } from 'node:path'
-import { utils } from 'ssh2'
 import type { SecretStore } from '../../shared/secret-store'
 import { SealedSecretFile } from '../sealed-secret-file'
 import { resolveSshConfigHomePath } from './config/ssh-config-path-expansion'
+import { loadSsh2 } from './ssh2-module-load'
 
 export type SshPassphraseCheck = 'correct' | 'wrong' | 'unverifiable'
 
@@ -26,12 +26,12 @@ function readKeyFile(keyPath: string): Buffer | null {
 }
 
 function isEncryptedKey(contents: Buffer): boolean {
-  const parsed = utils.parseKey(contents)
+  const parsed = loadSsh2().utils.parseKey(contents)
   return parsed instanceof Error && PASSPHRASE_ERROR.test(parsed.message)
 }
 
 export function checkSshKeyPassphrase(contents: Buffer, passphrase: string): SshPassphraseCheck {
-  const parsed = utils.parseKey(contents, passphrase)
+  const parsed = loadSsh2().utils.parseKey(contents, passphrase)
   if (!(parsed instanceof Error)) {
     return 'correct'
   }

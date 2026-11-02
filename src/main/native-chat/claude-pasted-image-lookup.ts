@@ -1,4 +1,4 @@
-import { resolveNativeChatTranscriptAgent } from '../../shared/native-chat-agent-support'
+import { resolveNativeChatTranscriptAgent } from '../../shared/native-chat/native-chat-agent-support'
 import {
   isClaudePasteId,
   type ClaudePastedImageLookupArgs,

@@ -15,6 +15,7 @@ import { EditorCommandOwnerContext } from './commands/editor-command-owner-conte
 import { resolveAdjacentDiffOpener } from './open-adjacent-diff-file'
 import { canUseChangesModeForFile } from './view-mode/editor-panel-file-mode'
 import { getEditorPanelRenderModel } from './panel/editor-panel-render-model'
+import { isChangeMarkersUntrackedPath } from './change-markers/change-markers-baseline'
 import { useEditorCmdSaveRequest } from './save/commands/useEditorCmdSaveRequest'
 import { useEditorPanelContentState } from './loading/useEditorPanelContentState'
 import { useMarkdownPreviewShortcut } from './view-mode/useMarkdownPreviewShortcut'
@@ -123,15 +124,9 @@ function EditorPanelInner({
   const canUseChangesMode =
     !!activeFile && activeFile.mode === 'edit' && canUseChangesModeForFile(activeFile)
   const requestedChangesMode = canUseChangesMode && editorViewMode[activeFile.id] === 'changes'
-  const changeMarkersEnabled = settings?.editorChangeMarkersEnabled !== false
-  // Why: an untracked file is all new; marking every line green says nothing.
+  const changeMarkersEnabled = useAppStore((s) => s.settings?.editorChangeMarkersEnabled !== false)
   const isUntrackedFile =
-    !!activeFile &&
-    (gitStatusEntries ?? []).some(
-      (entry) =>
-        entry.path === activeFile.relativePath &&
-        (entry.status === 'untracked' || entry.area === 'untracked')
-    )
+    !!activeFile && isChangeMarkersUntrackedPath(gitStatusEntries, activeFile.relativePath)
   const wantsChangeMarkers =
     canUseChangesMode && !requestedChangesMode && changeMarkersEnabled && !isUntrackedFile
   const { fileContents, diffContents, reloadContent } = useEditorPanelContentState({

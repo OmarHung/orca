@@ -1,4 +1,4 @@
-import type { AgentType } from './native-chat-types'
+import type { AgentType } from './agent-status-types'
 
 /** Matches the `[Image #N]` chip Claude Code paints for a pasted image. */
 export const CLAUDE_IMAGE_MARKER_PATTERN = /\[Image #(\d+)\]/g

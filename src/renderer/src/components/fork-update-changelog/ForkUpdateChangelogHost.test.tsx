@@ -47,13 +47,13 @@ function installApi(withChangelogApi = true): void {
   })
 }
 
-function setUiLanguage(uiLanguage: 'zh-TW' | 'en'): void {
+function setUiLanguage(uiLanguage: 'zh-Hant' | 'en'): void {
   act(() => useAppStore.setState({ settings: { ...getDefaultSettings('/tmp'), uiLanguage } }))
 }
 
 beforeEach(() => {
   useAppStore.setState(useAppStore.getInitialState(), true)
-  setUiLanguage('zh-TW')
+  setUiLanguage('zh-Hant')
   useForkUpdateChangelogStore.setState(useForkUpdateChangelogStore.getInitialState(), true)
   for (const fn of [api.get, api.ensureSummary, api.regenerate, api.markSeen]) {
     fn.mockReset().mockResolvedValue(undefined)
@@ -74,7 +74,7 @@ describe('ForkUpdateChangelogHost', () => {
       await screen.findByText('Orca updated to v1.4.219', {}, { timeout: 15_000 })
     ).toBeTruthy()
     expect(screen.getByText('Summarizing the changes with AI…')).toBeTruthy()
-    expect(api.ensureSummary).toHaveBeenCalledWith('zh-TW')
+    expect(api.ensureSummary).toHaveBeenCalledWith('zh-Hant')
   })
 
   it('waits for settings before summarizing, then follows the chosen language', async () => {
@@ -84,8 +84,8 @@ describe('ForkUpdateChangelogHost', () => {
     expect(api.ensureSummary).not.toHaveBeenCalled()
     setUiLanguage('en')
     await waitFor(() => expect(api.ensureSummary).toHaveBeenCalledWith('en'))
-    setUiLanguage('zh-TW')
-    await waitFor(() => expect(api.ensureSummary).toHaveBeenLastCalledWith('zh-TW'))
+    setUiLanguage('zh-Hant')
+    await waitFor(() => expect(api.ensureSummary).toHaveBeenLastCalledWith('zh-Hant'))
   })
 
   it('stays closed for a changelog already seen', async () => {
@@ -120,7 +120,7 @@ describe('ForkUpdateChangelogHost', () => {
     render(<ForkUpdateChangelogHost />)
     expect(await screen.findByText('Claude failed: not logged in')).toBeTruthy()
     fireEvent.click(screen.getByText('Try again'))
-    expect(api.regenerate).toHaveBeenCalledWith('zh-TW')
+    expect(api.regenerate).toHaveBeenCalledWith('zh-Hant')
   })
 
   it('lists the fork commits behind a toggle', async () => {
