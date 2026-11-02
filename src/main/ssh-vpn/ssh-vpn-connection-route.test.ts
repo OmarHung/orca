@@ -12,8 +12,8 @@ const { prepareSshVpnRouteMock, spawnProxyCommandMock } = vi.hoisted(() => ({
   spawnProxyCommandMock: vi.fn()
 }))
 
-vi.mock('ssh2', async () =>
-  (await import('../ssh/__tests__/ssh-connection-test-client')).createSsh2Module()
+vi.mock('../ssh/ssh2-module-load', async () =>
+  (await import('../ssh/__tests__/ssh-connection-test-client')).createSsh2LoaderModule()
 )
 vi.mock('../ssh/system-transport/system-ssh-binary', async () =>
   (await import('../ssh/connection/ssh-connection-test-harness')).createSystemSshBinaryModule()

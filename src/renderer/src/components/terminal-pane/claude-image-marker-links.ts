@@ -7,7 +7,7 @@ import {
   type TerminalImagePreviewRequest
 } from '@/store/terminal-image-preview'
 import { CLAUDE_IMAGE_MARKER_PATTERN } from '../../../../shared/claude-pasted-image'
-import { resolveNativeChatTranscriptAgent } from '../../../../shared/native-chat-agent-support'
+import { resolveNativeChatTranscriptAgent } from '../../../../shared/native-chat/native-chat-agent-support'
 import {
   buildWrappedLogicalLine,
   rangeForParsedFileLink

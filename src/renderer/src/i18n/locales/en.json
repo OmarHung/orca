@@ -24737,7 +24737,16 @@
       "terminalSwitchInputSource": "Switch input source / language (native)",
       "newAgentTab": "New {{agent}} tab",
       "tabNewBrowserSplitRight": "New browser tab in right split",
-      "viewPlugins": "Open Plugins"
+      "viewPlugins": "Open Plugins",
+      "databasePageToggle": "Toggle Database Page",
+      "bottomPanelGitLogToggle": "Toggle Git Log Panel",
+      "editorGoToDeclaration": "Go to Declaration",
+      "editorGoToImplementation": "Go to Implementation",
+      "editorGoToTypeDeclaration": "Go to Type Declaration",
+      "editorFindUsages": "Find Usages",
+      "editorQuickDocumentation": "Quick Documentation",
+      "editorNavigateBack": "Navigate Back",
+      "editorNavigateForward": "Navigate Forward"
     },
     "group": {
       "global": "Global",

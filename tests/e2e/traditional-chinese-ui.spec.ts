@@ -6,7 +6,9 @@ test('the Traditional Chinese interface language renders Traditional, not Simpli
 }, testInfo) => {
   await waitForSessionReady(orcaPage)
   const previous = await orcaPage.evaluate(() => window.__store?.getState().settings?.uiLanguage)
-  await orcaPage.evaluate(() => window.__store?.getState().updateSettings({ uiLanguage: 'zh-TW' }))
+  await orcaPage.evaluate(() =>
+    window.__store?.getState().updateSettings({ uiLanguage: 'zh-Hant' })
+  )
 
   try {
     // Sidebar navigation: 搜尋／任務／自動化 are the Taiwan forms of 搜索／任务／自动化.

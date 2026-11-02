@@ -32,6 +32,7 @@ import {
 } from '@/lib/monaco-languages/plugin-syntax-editor-options'
 import { useMonacoTheme } from '@/hooks/use-monaco-theme'
 import { useEditorModelRekeyCarry } from './model-lifetime/identity/editor-model-rekey-carry'
+import { useDocumentDarkTheme } from '@/hooks/use-document-dark-theme'
 import { useMonacoDebugDecorations } from '../debug/use-monaco-debug-decorations'
 import { DebugValueHoverWidget } from '../debug/DebugValueHoverWidget'
 import { useMonacoChangeMarkers } from './change-markers/use-monaco-change-markers'
@@ -155,6 +156,7 @@ export default function MonacoEditor({
   const [gutterMenuLine, setGutterMenuLine] = useState(1)
   const [gutterMenuSelection, setGutterMenuSelection] = useState<IRange | null>(null)
   const monacoTheme = useMonacoTheme()
+  const isDark = useDocumentDarkTheme()
 
   const { queueReveal, cancelScheduledReveal, clearTransientRevealHighlight } =
     useMonacoRevealScheduler()

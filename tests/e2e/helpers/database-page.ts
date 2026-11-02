@@ -2,7 +2,7 @@ import type { Locator, Page } from '@stablyai/playwright-test'
 import { expect } from './orca-app'
 import { waitForSessionReady } from './store'
 
-const PAGE_TITLES = { en: 'Database', 'zh-TW': '資料庫' } as const
+const PAGE_TITLES = { en: 'Database', 'zh-Hant': '資料庫' } as const
 
 /** Opens the Database page in English (or `language`), whatever the host locale is. */
 export async function openDatabasePage(

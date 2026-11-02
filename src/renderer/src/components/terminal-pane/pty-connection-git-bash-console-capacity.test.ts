@@ -210,6 +210,7 @@ async function heldLaunch({
           previousVisibleForReconcileRef: { current: null },
           linkProviderDisposablesRef: { current: new Map() },
           terminalHandleLinkDisposablesRef: { current: new Map() },
+          imageMarkerLinkDisposablesRef: { current: new Map() },
           linkifierClickPrimingDisposablesRef: { current: new Map() },
           linkPointerGesturesRef: { current: new Map() },
           fileLinkClickFallbackDisposablesRef: { current: new Map() },
