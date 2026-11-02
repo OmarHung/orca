@@ -15,18 +15,27 @@ type ProjectResolution =
   | { kind: 'ambiguous' }
   | { kind: 'unknown' }
 
-function resolveProject(
-  setups: TerminalQuickCommandProjectContext['projectHostSetups'],
+type ProjectSetups = TerminalQuickCommandProjectContext['projectHostSetups']
+
+function findSetupsOnHost(
+  setups: ProjectSetups,
   hostId: ExecutionHostId,
-  repoId: string,
-  allowAnyHostFallback: boolean
-): ProjectResolution {
-  const hostMatches = setups.filter((setup) => setup.hostId === hostId && setup.repoId === repoId)
+  repoId: string
+): ProjectSetups {
+  return setups.filter((setup) => setup.hostId === hostId && setup.repoId === repoId)
+}
+
+function findCommandRepoSetups(
+  setups: ProjectSetups,
+  commandHostId: ExecutionHostId,
+  repoId: string
+): ProjectSetups {
+  const hostMatches = findSetupsOnHost(setups, commandHostId, repoId)
   // Why: commands belong to a settings host, while its repo can execute through that host's SSH.
-  const candidates =
-    hostMatches.length > 0 || !allowAnyHostFallback
-      ? hostMatches
-      : setups.filter((s) => s.repoId === repoId)
+  return hostMatches.length > 0 ? hostMatches : setups.filter((s) => s.repoId === repoId)
+}
+
+function resolveProject(candidates: ProjectSetups): ProjectResolution {
   const projectIds = new Set(candidates.map((setup) => setup.projectId))
   if (projectIds.size === 0) {
     return { kind: 'unknown' }
@@ -52,17 +61,19 @@ export function terminalQuickCommandMatchesWorkspaceProject(
     return true
   }
 
-  const commandProject = resolveProject(
+  const commandRepoSetups = findCommandRepoSetups(
     context.projectHostSetups,
     context.commandHostId,
-    scope.repoId,
-    true
+    scope.repoId
   )
+  // Why: clones of one remote share a project id; project matching only bridges different hosts.
+  if (commandRepoSetups.some((setup) => setup.hostId === context.targetHostId)) {
+    return scope.repoId === context.targetRepoId
+  }
+
+  const commandProject = resolveProject(commandRepoSetups)
   const targetProject = resolveProject(
-    context.projectHostSetups,
-    context.targetHostId,
-    context.targetRepoId,
-    false
+    findSetupsOnHost(context.projectHostSetups, context.targetHostId, context.targetRepoId)
   )
   if (commandProject.kind === 'ambiguous' || targetProject.kind === 'ambiguous') {
     return false
