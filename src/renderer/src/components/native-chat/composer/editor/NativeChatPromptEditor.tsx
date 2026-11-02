@@ -31,6 +31,7 @@ import {
   promptTextPosition
 } from './native-chat-prompt-document'
 import { promptParagraphLines, promptTextContent } from './native-chat-prompt-document-text'
+import { NativeChatNumberedList } from '../../native-chat-prompt-numbered-list'
 import type {
   NativeChatComposerInput,
   NativeChatPromptEditorProps
@@ -101,6 +102,7 @@ function NativePromptEditor({
       NativeChatFileReference,
       NativeChatImageReference,
       NativeChatUnkernedRunDecorations,
+      NativeChatNumberedList,
       NativeChatHardBreakParagraphs,
       // A disabled box still says why it is disabled, as the plain text box's placeholder does.
       Placeholder.configure({
