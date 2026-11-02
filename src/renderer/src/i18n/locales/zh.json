@@ -20033,6 +20033,12 @@
         }
       },
       "nativeChat": {
+        "sendWithShortcutOnlyTitle": "使用 {{value0}} 发送",
+        "sendWithShortcutOnlyCopy": "Enter 会换行，并在 / 和 @ 菜单中只选取项目而不发送。只有 {{value0}} 才会发送。关闭后改用 Enter 发送。",
+        "sendWithShortcutOnlyToggleLabel": "切换仅以快捷键发送",
+        "sendSearchEnter": "Enter",
+        "sendSearchShortcut": "快捷键",
+        "sendSearchNewLine": "换行",
         "queueFollowUpsTitle": "将后续消息加入队列",
         "queueFollowUpsCopy": "智能体工作时发送的消息会以卡片形式等待，你可以立即发送、编辑或删除。带图片的消息会立即发送。",
         "queueFollowUpsToggleLabel": "切换后续消息队列",

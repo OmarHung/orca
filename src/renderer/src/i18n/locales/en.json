@@ -20565,6 +20565,12 @@
         }
       },
       "nativeChat": {
+        "sendWithShortcutOnlyTitle": "Send with {{value0}}",
+        "sendWithShortcutOnlyCopy": "Enter adds a new line and picks from the / and @ menus without sending. Only {{value0}} sends. Turn off to send with Enter.",
+        "sendWithShortcutOnlyToggleLabel": "Toggle sending with the keyboard shortcut only",
+        "sendSearchEnter": "Enter",
+        "sendSearchShortcut": "shortcut",
+        "sendSearchNewLine": "new line",
         "queueFollowUpsTitle": "Queue follow-ups",
         "inlineVisualsTitle": "Inline visuals",
         "inlineVisualsCopy": "Let the agent show charts, diagrams and mockups inside its replies. Applies to newly started chats.",

@@ -21,6 +21,8 @@ function argValue(name) {
 
 const sessionId = argValue('--session-id') ?? argValue('--resume') ?? randomUUID()
 const write = (frame) => process.stdout.write(`${JSON.stringify(frame)}\n`)
+const reportedSkills = (process.env.ORCA_E2E_STUB_SKILLS ?? '').split(',').filter(Boolean)
+
 const initializeResponse = {
   commands: [],
   models: [{ value: 'default', displayName: 'Default', description: '' }],
@@ -128,7 +130,8 @@ process.stdin.on('data', (chunk) => {
         tools: [],
         mcp_servers: [],
         permissionMode: 'default',
-        slash_commands: [],
+        slash_commands: reportedSkills,
+        skills: reportedSkills,
         apiKeySource: 'none',
         output_style: 'default'
       })

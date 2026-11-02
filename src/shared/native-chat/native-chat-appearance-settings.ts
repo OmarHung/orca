@@ -21,6 +21,8 @@ export type NativeChatGlobalSettings = {
   nativeChatAutoName?: boolean
   /** Explicit chat provider choices; unlisted agents retain the chat launch default. */
   nativeChatProviders?: Partial<Record<TuiAgent, boolean>>
+  /** Only Cmd/Ctrl+Enter sends from the composer; Enter adds a line, or picks from a menu without sending. Off, Enter sends. */
+  nativeChatSendWithShortcutOnly?: boolean
 }
 
 export const DEFAULT_NATIVE_CHAT_FONT_SIZE = 14

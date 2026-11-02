@@ -4,6 +4,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
+import { useAppStore } from '@/store'
 import { ButtonKeyHint } from '@/components/ButtonKeyHint'
 import { isMacPlatform } from './native-chat-shortcut'
 import { NativeChatImageAttachmentPreview } from './NativeChatImageAttachmentPreview'
@@ -116,8 +117,12 @@ export function NativeChatQueuedMessageEditor({
             !event.altKey &&
             (mod || (!event.metaKey && !event.ctrlKey))
           ) {
-            event.preventDefault()
             event.stopPropagation()
+            // The field inserts this new line itself; only the bubbling could reach an open prompt card.
+            if (!mod && useAppStore.getState().settings?.nativeChatSendWithShortcutOnly === true) {
+              return
+            }
+            event.preventDefault()
             if (editor.canSave && !editor.acquiring && !editor.saving) {
               editor.save()
             }

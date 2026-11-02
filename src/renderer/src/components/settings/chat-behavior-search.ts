@@ -1,5 +1,6 @@
 import { translate } from '@/i18n/i18n'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
+import { getScreenSubmitShortcutLabel } from '@/lib/screen-submit-shortcut'
 import type { SettingsSearchEntry } from './settings-search'
 import { NATIVE_CHAT_RESUME_SETTING_SECTION_ID } from './native-chat-resume-setting-target'
 
@@ -20,6 +21,24 @@ export const getChatBehaviorEntriesByKey = createLocalizedCatalog(() => ({
     keywords: [
       translate('components.settings.nativeChat.resumeSearchUpdate', 'update'),
       translate('components.settings.nativeChat.resumeSearchRelaunch', 'relaunch')
+    ]
+  },
+  sendWithShortcutOnly: {
+    targetSectionId: 'chat-send-with-shortcut-only',
+    title: translate(
+      'components.settings.nativeChat.sendWithShortcutOnlyTitle',
+      'Send with {{value0}}',
+      { value0: getScreenSubmitShortcutLabel() }
+    ),
+    description: translate(
+      'components.settings.nativeChat.sendWithShortcutOnlyCopy',
+      'Enter adds a new line and picks from the / and @ menus without sending. Only {{value0}} sends. Turn off to send with Enter.',
+      { value0: getScreenSubmitShortcutLabel() }
+    ),
+    keywords: [
+      translate('components.settings.nativeChat.sendSearchEnter', 'Enter'),
+      translate('components.settings.nativeChat.sendSearchShortcut', 'shortcut'),
+      translate('components.settings.nativeChat.sendSearchNewLine', 'new line')
     ]
   },
   queueFollowUps: {
