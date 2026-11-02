@@ -21466,6 +21466,12 @@
         }
       },
       "nativeChat": {
+        "sendWithShortcutOnlyTitle": "Send with {{value0}}",
+        "sendWithShortcutOnlyCopy": "Enter adds a new line and picks from the / and @ menus without sending. Only {{value0}} sends. Turn off to send with Enter.",
+        "sendWithShortcutOnlyToggleLabel": "Toggle sending with the keyboard shortcut only",
+        "sendSearchEnter": "Enter",
+        "sendSearchShortcut": "shortcut",
+        "sendSearchNewLine": "new line",
         "followUpBehaviorTitle": "Queue follow-ups",
         "scrollToLatestOnSendTitle": "Scroll to latest when sending",
         "scrollToLatestOnSendCopy": "Sending while scrolled up jumps to the latest message and follows the reply. Turn off to keep your place.",

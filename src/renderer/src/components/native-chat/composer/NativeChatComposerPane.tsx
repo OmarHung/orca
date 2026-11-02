@@ -22,6 +22,7 @@ import { useNativeChatComposerSessionOptions } from './controls/use-native-chat-
 import { useNativeChatDictation } from './editor/use-native-chat-dictation'
 import { useNativeChatPtyComposerSend } from './submit/use-native-chat-pty-composer-send'
 import { useNativeChatStructuredComposerSend } from './submit/use-native-chat-structured-composer-send'
+import { useAppStore } from '@/store'
 import { useImeEnterGestureOwnership } from '@/lib/text-input/ime/ime-composition-keyboard-event'
 import { useNativeChatComposerAppMenuSelection } from './focus/use-native-chat-composer-app-menu-selection'
 import { useNativeChatComposerSubmit } from './submit/use-native-chat-composer-submit'
@@ -278,6 +279,9 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
     })
 
     const { goalMode } = submission
+    const sendWithShortcutOnly = useAppStore(
+      (s) => s.settings?.nativeChatSendWithShortcutOnly === true
+    )
     const { sendHeld, ...sendButton } = nativeChatComposerSendState({
       agent,
       draft,
@@ -375,6 +379,8 @@ export const NativeChatComposerPane = forwardRef<ComposerHandle, C.NativeChatCom
           attachmentEnvironmentId={structuredTransport?.runtimeEnvironmentId ?? undefined}
           {...sendButton}
           isWorking={isWorking}
+          // Why: in shortcut-only mode the chord is the plain send, so it has no alternate to advertise.
+          alternateSend={sendWithShortcutOnly ? undefined : sendButton.alternateSend}
           isStopping={isStopping}
           afterStop={afterStop}
           attachDisabled={attachDisabled}

@@ -19925,6 +19925,12 @@
         }
       },
       "nativeChat": {
+        "sendWithShortcutOnlyTitle": "使用 {{value0}} 发送",
+        "sendWithShortcutOnlyCopy": "Enter 会换行，并在 / 和 @ 菜单中只选取项目而不发送。只有 {{value0}} 才会发送。关闭后改用 Enter 发送。",
+        "sendWithShortcutOnlyToggleLabel": "切换仅以快捷键发送",
+        "sendSearchEnter": "Enter",
+        "sendSearchShortcut": "快捷键",
+        "sendSearchNewLine": "换行",
         "followUpBehaviorTitle": "将后续消息加入队列",
         "scrollToLatestOnSendTitle": "发送时滚动到最新消息",
         "scrollToLatestOnSendCopy": "向上滚动时发送消息会跳到最新消息并跟随回复。关闭后将保持当前位置。",

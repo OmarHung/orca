@@ -33,6 +33,8 @@ export type NativeChatGlobalSettings = {
   nativeChatCiResultLines?: boolean
   /** A "New" line above what arrived while the reader was away. Absent follows the default below. */
   nativeChatMarkNewMessages?: boolean
+  /** Only Cmd/Ctrl+Enter sends from the composer; Enter adds a line, or picks from a menu without sending. Off, Enter sends. */
+  nativeChatSendWithShortcutOnly?: boolean
 }
 
 /** Not written into default settings, so flipping this reaches everyone who never chose. */

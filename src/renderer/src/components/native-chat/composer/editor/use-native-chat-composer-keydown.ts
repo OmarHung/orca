@@ -10,6 +10,9 @@ import type { NativeChatPickerItem } from '../../../../../../shared/native-chat/
 import { isMacPlatform } from '../../pane/routing/native-chat-shortcut'
 import type { NativeChatMentionFiles } from '../pickers/use-native-chat-mention-files'
 import type { NativeChatComposerSendIntent } from '../submit/native-chat-composer-send-intent'
+import { flushSync } from 'react-dom'
+import { isScreenSubmitShortcut } from '@/lib/screen-submit-shortcut'
+import { useAppStore } from '@/store'
 import {
   isNativeChatRecallActive,
   nativeChatSentPrompts,
@@ -64,6 +67,8 @@ export function useNativeChatComposerKeyDown({
   // Read through a ref: the transcript changes on every streamed frame.
   const recallRef = useRef(recall)
   recallRef.current = recall
+  const sendRef = useRef(send)
+  sendRef.current = send
   return useCallback(
     (event) => {
       if (isComposing() || event.nativeEvent.isComposing || event.keyCode === 229) {
@@ -73,6 +78,8 @@ export function useNativeChatComposerKeyDown({
         }
         return
       }
+      const sendWithShortcutOnly =
+        useAppStore.getState().settings?.nativeChatSendWithShortcutOnly === true
       // An open layer that keeps focus here, like the context card, already spent this Escape closing
       // itself; a layer around the composer (a launch panel) leaves an open picker to take it.
       if (event.key === 'Escape' && event.defaultPrevented && autocomplete.mode === 'none') {
@@ -95,17 +102,32 @@ export function useNativeChatComposerKeyDown({
         const picks = (event.key === 'Enter' || event.key === 'Tab') && !event.shiftKey
         if (picks && items.length > 0) {
           event.preventDefault()
+          const sendChord = sendWithShortcutOnly && isScreenSubmitShortcut(event)
+          const commitPick = (pick: () => void): void => {
+            if (!sendChord) {
+              pick()
+              return
+            }
+            // A pick commits through state; flush it so send reads the completed draft.
+            flushSync(pick)
+            sendRef.current()
+          }
           if (autocomplete.mode === 'mention') {
             const { files } = mentionFiles
-            completeMention(files[Math.min(activeSuggestion, files.length - 1)])
+            commitPick(() => completeMention(files[Math.min(activeSuggestion, files.length - 1)]))
             return
           }
           const item = autocomplete.items[activeSuggestion] ?? autocomplete.items[0]
           // Only dispatch a command at a dispatchable prompt position; embedded tokens merely complete.
-          if (event.key === 'Enter' && item.kind === 'command' && autocomplete.dispatchable) {
+          if (
+            event.key === 'Enter' &&
+            item.kind === 'command' &&
+            autocomplete.dispatchable &&
+            (sendChord || !sendWithShortcutOnly)
+          ) {
             dispatchPickerCommand(item)
           } else {
-            completePickerItem(item)
+            commitPick(() => completePickerItem(item))
           }
           return
         }
@@ -137,10 +159,23 @@ export function useNativeChatComposerKeyDown({
         return
       }
       if (event.key === 'Enter' && !event.shiftKey) {
+        const composerEmpty = draft.trim() === '' && !hasAttachments
+        if (sendWithShortcutOnly) {
+          if (!isScreenSubmitShortcut(event)) {
+            return
+          }
+          event.preventDefault()
+          // The chord is this mode's plain send; from an empty composer it steers the head card, once per press.
+          if (composerEmpty && (event.repeat || steerHead?.())) {
+            return
+          }
+          send()
+          return
+        }
         event.preventDefault()
         if (!modified) {
           send()
-        } else if (draft.trim() !== '' || hasAttachments) {
+        } else if (!composerEmpty) {
           // The other thing than the setting, for this one message.
           send({ alternate: true })
         } else if (chordSteersHead && !event.repeat) {
