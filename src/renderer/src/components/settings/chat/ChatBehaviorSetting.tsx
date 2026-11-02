@@ -56,6 +56,7 @@ export function ChatBehaviorSetting({
     entries.resumeOnRestart,
     entries.idleStop,
     ...(hostContinuesUsageLimits ? [entries.autoContinueAfterUsageLimit] : []),
+    entries.sendWithShortcutOnly,
     ...(hostQueuesMessages ? [entries.queueFollowUps] : []),
     entries.scrollToLatestOnSend,
     entries.markNewMessages,
@@ -75,6 +76,7 @@ export function ChatBehaviorSetting({
   const linkPreviewsEnabled = settings.nativeChatLinkPreviews !== false
   const composerSpellcheckEnabled = settings.nativeChatComposerSpellcheck !== false
   const promptSuggestions = nativeChatShowsPromptSuggestions(settings)
+  const sendWithShortcutOnly = settings.nativeChatSendWithShortcutOnly === true
   return (
     <SettingsGroup id="chat-behavior" title={getChatBehaviorTitle(t)}>
       <ChatPermissionSetting
@@ -136,6 +138,23 @@ export function ChatBehaviorSetting({
           />
         </SearchableSetting>
       ) : null}
+      <SearchableSetting
+        {...entries.sendWithShortcutOnly}
+        id={entries.sendWithShortcutOnly.targetSectionId}
+        forceVisible={forceVisible}
+        className="max-w-none"
+      >
+        <SettingsSwitchRow
+          label={entries.sendWithShortcutOnly.title}
+          description={entries.sendWithShortcutOnly.description}
+          checked={sendWithShortcutOnly}
+          ariaLabel={t(
+            'components.settings.nativeChat.sendWithShortcutOnlyToggleLabel',
+            'Toggle sending with the keyboard shortcut only'
+          )}
+          onChange={() => updateSettings({ nativeChatSendWithShortcutOnly: !sendWithShortcutOnly })}
+        />
+      </SearchableSetting>
       {hostQueuesMessages ? (
         <SearchableSetting
           {...entries.queueFollowUps}
