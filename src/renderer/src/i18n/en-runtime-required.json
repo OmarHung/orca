@@ -1202,6 +1202,13 @@
           }
         }
       },
+      "tab": {
+        "bar": {
+          "TabBarQuickCommandsButton": {
+            "a2c7a33831": "Command"
+          }
+        }
+      },
       "task": {
         "project": {
           "source": {
@@ -2014,6 +2021,9 @@
       "subagents_other": "{{count}} subagents"
     }
   },
+  "debug": {
+    "localOnlyShort": "Debugging needs a local workspace"
+  },
   "editor": {
     "pdfExport": {
       "errors": {
@@ -2082,6 +2092,16 @@
       "suspendExitedWithoutCode": "Suspend exited with code unknown."
     }
   },
+  "gitBranchStatus": {
+    "aheadCount_one": "{{count}} commit to push",
+    "aheadCount_other": "{{count}} commits to push",
+    "behindCount_one": "{{count}} commit to pull",
+    "behindCount_other": "{{count}} commits to pull",
+    "changedFiles_one": "{{count}} file with uncommitted changes",
+    "changedFiles_other": "{{count}} files with uncommitted changes",
+    "conflicts_one": "{{count}} file with conflicts",
+    "conflicts_other": "{{count}} files with conflicts"
+  },
   "jira": {
     "workspace": {
       "linkedCount_one": "{{count}} workspace linked to {{key}}",
@@ -2094,6 +2114,9 @@
   },
   "menu": {
     "quitApp": "Quit {{appName}}"
+  },
+  "ngrok": {
+    "shareMenu": "Share Publicly with ngrok"
   },
   "pet": {
     "defaultLabels": {
@@ -2135,11 +2158,27 @@
       "tooLargeCount_other": "This view has {{count}} items — too large to render in Orca. Narrow the view's filter on GitHub."
     }
   },
+  "python": {
+    "action": {
+      "runFile": "Run '{{value0}}'"
+    }
+  },
   "resourceManager": {
     "pty": {
       "localOwnedCount_one": "{{count}} Orca PTY on this computer",
       "localOwnedCount_other": "{{count}} Orca PTYs on this computer"
     }
+  },
+  "run": {
+    "compound": {
+      "detected": "Detected in workspace"
+    },
+    "configurations": {
+      "add": {
+        "compound": "Add compound (start several together or in order)"
+      }
+    },
+    "unsafeShellPath": "This file’s path contains characters that cannot be passed safely to a shell, such as \" $ ` % or !."
   },
   "runtime": {
     "remoteServerPairingErrors": {
@@ -2196,11 +2235,6 @@
       "permissionOverridesFollow_other": "{{count}} agents now follow {{mode}}",
       "permissionOverridesKept_one": "{{count}} agent still uses their own permission setting:",
       "permissionOverridesKept_other": "{{count}} agents still use their own permission setting:"
-    },
-    "appearance": {
-      "language": {
-        "chineseTraditional": "中文（繁體）"
-      }
     },
     "diagnostics": {
       "errors": {
@@ -2562,26 +2596,6 @@
     "filter": {
       "ariaActiveCount_one": "Filter: {{count}} active.",
       "ariaActiveCount_other": "Filter: {{count}} active."
-    }
-  },
-  "gitBranchStatus": {
-    "aheadCount_one": "{{count}} commit to push",
-    "aheadCount_other": "{{count}} commits to push",
-    "behindCount_one": "{{count}} commit to pull",
-    "behindCount_other": "{{count}} commits to pull",
-    "changedFiles_one": "{{count}} file with uncommitted changes",
-    "changedFiles_other": "{{count}} files with uncommitted changes",
-    "conflicts_one": "{{count}} file with conflicts",
-    "conflicts_other": "{{count}} files with conflicts"
-  },
-  "run": {
-    "compound": {
-      "detected": "Detected in workspace"
-    },
-    "configurations": {
-      "add": {
-        "compound": "Add compound (start several together or in order)"
-      }
     }
   }
 }

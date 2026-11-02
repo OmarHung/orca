@@ -1,4 +1,5 @@
 import type { GitDiffResult } from '../../../../../shared/git-diff-compare-types'
+import type { GitStatusEntry } from '../../../../../shared/git-status-types'
 
 // Why: useEditorPanelDiffContentLoader reports a failed read as an empty HEAD
 // side plus this message, which would otherwise mark every line as added.
@@ -13,4 +14,15 @@ export function getChangeMarkersBaseline(diff: GitDiffResult | undefined): strin
     return null
   }
   return diff.originalContent
+}
+
+/** An untracked file is all new; marking every line green says nothing. */
+export function isChangeMarkersUntrackedPath(
+  entries: readonly GitStatusEntry[] | null | undefined,
+  relativePath: string
+): boolean {
+  return (entries ?? []).some(
+    (entry) =>
+      entry.path === relativePath && (entry.status === 'untracked' || entry.area === 'untracked')
+  )
 }

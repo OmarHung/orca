@@ -153,7 +153,23 @@ const STATIC_TITLE_COPY = {
     translate(
       'keybindings.title.terminalSwitchInputSource',
       'Switch input source / language (native)'
-    )
+    ),
+  'databasePage.toggle': () =>
+    translate('keybindings.title.databasePageToggle', 'Toggle Database Page'),
+  'bottomPanel.gitLog.toggle': () =>
+    translate('keybindings.title.bottomPanelGitLogToggle', 'Toggle Git Log Panel'),
+  'editor.goToDeclaration': () =>
+    translate('keybindings.title.editorGoToDeclaration', 'Go to Declaration'),
+  'editor.goToImplementation': () =>
+    translate('keybindings.title.editorGoToImplementation', 'Go to Implementation'),
+  'editor.goToTypeDeclaration': () =>
+    translate('keybindings.title.editorGoToTypeDeclaration', 'Go to Type Declaration'),
+  'editor.findUsages': () => translate('keybindings.title.editorFindUsages', 'Find Usages'),
+  'editor.quickDocumentation': () =>
+    translate('keybindings.title.editorQuickDocumentation', 'Quick Documentation'),
+  'editor.navigateBack': () => translate('keybindings.title.editorNavigateBack', 'Navigate Back'),
+  'editor.navigateForward': () =>
+    translate('keybindings.title.editorNavigateForward', 'Navigate Forward')
 } satisfies Record<StaticKeybindingActionId, () => string>
 
 const GROUP_COPY = {

@@ -237,11 +237,13 @@ describe('the SSH page', () => {
   beforeEach(() => {
     mocks.floatingFocused = false
     mocks.targetInsideFloatingPanel = false
+    mocks.resolveAgentShortcut.mockReset()
     vi.mocked(controller.handleNewTab).mockClear()
   })
 
   it('opens a project tab for Cmd+T on the workspace view', () => {
     mocks.state = { activeView: 'terminal' }
+    mocks.resolveAgentShortcut.mockReturnValue({ actionId: 'tab.newTerminal', agent: null })
     expect(pressCmdT().defaultPrevented).toBe(true)
     expect(controller.handleNewTab).toHaveBeenCalledTimes(1)
   })

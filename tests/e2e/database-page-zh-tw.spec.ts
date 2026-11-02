@@ -8,7 +8,7 @@ test('works end to end in Traditional Chinese', async ({
   registerPostElectronShutdownCleanup
 }, testInfo) => {
   const filePath = seedShopDatabase(registerPostElectronShutdownCleanup)
-  await openDatabasePage(orcaPage, 'zh-TW')
+  await openDatabasePage(orcaPage, 'zh-Hant')
   await expect(orcaPage.getByText('新增資料庫連線，就能瀏覽結構和執行 SQL。')).toBeVisible()
 
   await orcaPage.getByRole('button', { name: '新增連線' }).first().click()
