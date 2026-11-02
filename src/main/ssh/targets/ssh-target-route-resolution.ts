@@ -64,11 +64,13 @@ async function resolveRouteKey(target: SshTarget, resolvers: SshRouteResolvers):
   if (!resolved) {
     return ''
   }
+  const proxy = resolveEffectiveProxy(target, resolved)
   const ssh2Key = sshRouteKey(
     {
       alias,
       ...resolveEffectiveSshEndpoint(target, resolved),
-      proxy: resolveEffectiveProxy(target, resolved)
+      // Why: only an SSH VPN route is argv, and it never comes from a target's config.
+      proxy: proxy?.kind === 'argv' ? undefined : proxy
     },
     'ssh2'
   )

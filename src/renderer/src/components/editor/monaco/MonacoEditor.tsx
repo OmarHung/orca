@@ -42,6 +42,7 @@ import { useMonacoDebugDecorations } from '../../debug/use-monaco-debug-decorati
 import { useMonacoChangeMarkers } from '../change-markers/use-monaco-change-markers'
 import { useMonacoRevisionCompareActions } from '../revision-compare/use-monaco-revision-compare-actions'
 import { DebugValueHoverWidget } from '../../debug/DebugValueHoverWidget'
+import { useDocumentDarkTheme } from '@/hooks/theme/use-document-dark-theme'
 
 type MonacoEditorProps = {
   fileId: string
@@ -161,6 +162,7 @@ export default function MonacoEditor({
   const [gutterMenuLine, setGutterMenuLine] = useState(1)
   const [gutterMenuSelection, setGutterMenuSelection] = useState<IRange | null>(null)
   const monacoTheme = useMonacoTheme()
+  const isDark = useDocumentDarkTheme()
 
   const { queueReveal, cancelScheduledReveal, clearTransientRevealHighlight } =
     useMonacoRevealScheduler()
