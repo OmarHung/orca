@@ -39,9 +39,20 @@ export function MondayDueFlag({
   )
 }
 
-export function MondayLabelBadge({ label }: { label: MondayLabel }): React.JSX.Element {
+export function MondayLabelBadge({
+  label,
+  className
+}: {
+  label: MondayLabel
+  className?: string
+}): React.JSX.Element {
   return (
-    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-xs">
+    <span
+      className={cn(
+        'inline-flex max-w-full items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-xs',
+        className
+      )}
+    >
       <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: label.color }} />
       <span className="truncate">{label.label}</span>
     </span>
