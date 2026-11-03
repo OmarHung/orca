@@ -3,6 +3,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { translate } from '@/i18n/i18n'
 import type { MondayCalendarEntry } from './monday-calendar-model'
 import { daysBetween, formatMondayDay } from './monday-date-format'
+import { MondayLabelBadge } from './MondayScheduleVisuals'
 
 export function mondayScheduleWarnings(entry: MondayCalendarEntry, today: string): string[] {
   const { schedule } = entry
@@ -46,6 +47,10 @@ export function MondayItemHoverSummary({
             {entry.boardName}
             {item.groupTitle ? ` · ${item.groupTitle}` : ''}
           </div>
+          {item.status ? (
+            // Tooltips invert the theme, so the page's border token doesn't fit this surface.
+            <MondayLabelBadge label={item.status} className="border-background/30" />
+          ) : null}
           {schedule.span ? (
             <div>
               {translate('monday.hover.span', 'Timeline {{value0}} → {{value1}}', {
