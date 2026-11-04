@@ -4,10 +4,12 @@ import { useCommandConfirm } from '../command-confirm/command-confirm-context'
 import { translate } from '@/i18n/i18n'
 import { CommandConfirmProvider } from '../command-confirm/CommandConfirmProvider'
 import { useSftpProgressEvents } from '../sftp-page/use-sftp-progress-events'
+import { SshCommandList } from '../ssh-commands/SshCommandList'
 import { ContextMenuItem } from '../ui/context-menu'
 import { HostListToggleButton } from './HostListToggleButton'
 import { useRemoteHostsLayout } from './remote-hosts-layout-store'
 import { RemoteHostsPageFrame } from './RemoteHostsPageFrame'
+import { RemoteSidePanel } from './RemoteSidePanel'
 import { RemoteLayoutToggle } from './RemoteLayoutToggle'
 import { RemoteTransfersTray } from './RemoteTransfersTray'
 import {
@@ -140,12 +142,25 @@ function SshPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Elemen
         }
         sidePanel={
           isHostListCollapsed ? null : (
-            <SshHostListPanel
-              list={list}
-              currentTargetId={activeSession?.targetId ?? null}
-              onSelect={showHost}
-              hostMenuItems={hostMenuItems}
-              hostRowActions={hostRowActions}
+            <RemoteSidePanel
+              hosts={
+                <SshHostListPanel
+                  list={list}
+                  currentTargetId={activeSession?.targetId ?? null}
+                  onSelect={showHost}
+                  hostMenuItems={hostMenuItems}
+                  hostRowActions={hostRowActions}
+                />
+              }
+              commands={
+                <SshCommandList
+                  activeTabId={activeTerminalId}
+                  activeTarget={
+                    activeSession ? (targetsById.get(activeSession.targetId) ?? null) : null
+                  }
+                  targets={list.targets}
+                />
+              }
             />
           )
         }

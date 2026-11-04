@@ -22,6 +22,8 @@ type RemoteSessionState = {
   sessions: Readonly<Record<string, RemoteSession>>
   /** Remote folder each tab shows; not saved, since a tab reopens at the host's home. */
   remotePathByTab: Readonly<Record<string, string>>
+  /** Remote items selected in each tab's files pane; not saved, like the folder. */
+  remoteSelectionByTab: Readonly<Record<string, readonly string[]>>
   addSession: (session: NewRemoteSession) => void
   setLayout: (tabId: string, layout: RemoteLayout) => void
   setDockHeight: (tabId: string, dockHeight: number) => void
@@ -30,6 +32,7 @@ type RemoteSessionState = {
   markTerminalStopped: (tabId: string) => void
   setTargetId: (tabId: string, targetId: string) => void
   setRemotePath: (tabId: string, path: string) => void
+  setRemoteSelection: (tabId: string, paths: readonly string[]) => void
   /** Forgets every tab that is no longer open. */
   prune: (openTabIds: ReadonlySet<string>) => void
 }
@@ -115,6 +118,7 @@ export const useRemoteSessionStore = create<RemoteSessionState>((set, get) => {
   return {
     sessions: readPersisted(),
     remotePathByTab: {},
+    remoteSelectionByTab: {},
     addSession: (session) =>
       updateSession(session.tabId, { ...session, dockHeight: DEFAULT_REMOTE_DOCK_HEIGHT }),
     setLayout: (tabId, layout) => updateSession(tabId, { layout }),
@@ -128,9 +132,16 @@ export const useRemoteSessionStore = create<RemoteSessionState>((set, get) => {
         set({ remotePathByTab: { ...remotePathByTab, [tabId]: path } })
       }
     },
+    setRemoteSelection: (tabId, paths) => {
+      const { remoteSelectionByTab } = get()
+      const current = remoteSelectionByTab[tabId] ?? []
+      if (current.length !== paths.length || current.some((path, i) => path !== paths[i])) {
+        set({ remoteSelectionByTab: { ...remoteSelectionByTab, [tabId]: paths } })
+      }
+    },
     prune: (openTabIds) => {
       const isOpen = ([tabId]: [string, unknown]): boolean => openTabIds.has(tabId)
-      const { sessions, remotePathByTab } = get()
+      const { sessions, remotePathByTab, remoteSelectionByTab } = get()
       const openSessions = Object.entries(sessions).filter(isOpen)
       if (openSessions.length !== Object.keys(sessions).length) {
         const next = Object.fromEntries(openSessions)
@@ -140,6 +151,10 @@ export const useRemoteSessionStore = create<RemoteSessionState>((set, get) => {
       const openPaths = Object.entries(remotePathByTab).filter(isOpen)
       if (openPaths.length !== Object.keys(remotePathByTab).length) {
         set({ remotePathByTab: Object.fromEntries(openPaths) })
+      }
+      const openSelections = Object.entries(remoteSelectionByTab).filter(isOpen)
+      if (openSelections.length !== Object.keys(remoteSelectionByTab).length) {
+        set({ remoteSelectionByTab: Object.fromEntries(openSelections) })
       }
     }
   }

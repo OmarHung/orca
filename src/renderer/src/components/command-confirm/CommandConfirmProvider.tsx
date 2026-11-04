@@ -60,6 +60,7 @@ export function CommandConfirmProvider({
       {children}
       <Dialog open={active !== null} onOpenChange={(open) => !open && settle(false)}>
         <DialogContent
+          surface="security"
           showCloseButton={false}
           className="sm:max-w-2xl"
           data-command-confirm
