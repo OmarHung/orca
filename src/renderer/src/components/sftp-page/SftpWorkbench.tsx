@@ -5,6 +5,7 @@ import {
   FolderInput,
   FolderPlus,
   Pencil,
+  SquareTerminal,
   Trash2
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -63,6 +64,13 @@ function localSourceFor(targetId: string): SftpPaneSource {
   }
 }
 
+/** The terminal in the same tab, when there is one. Only ever types: never presses Enter. */
+export type SftpTerminalLink = {
+  cdTo: (path: string) => void
+  typePaths: (paths: readonly string[]) => void
+  terminalZone: () => Element | null
+}
+
 function isBrowsable(entry: SftpEntry): boolean {
   return entry.kind === 'directory' || entry.kind === 'symlink'
 }
@@ -72,7 +80,10 @@ export function SftpWorkbench({
   target,
   isActive = true,
   onRemotePathChange,
-  onRemoteSelectionChange
+  onRemoteSelectionChange,
+  terminalLink,
+  followedTerminalPath = null,
+  followControl
 }: {
   target: SshTarget
   /** False while its tab is hidden, so Finder drops only reach the tab on screen. */
@@ -81,6 +92,10 @@ export function SftpWorkbench({
   onRemotePathChange?: (path: string) => void
   /** Lets a saved command use the items selected here. */
   onRemoteSelectionChange?: (paths: readonly string[]) => void
+  terminalLink?: SftpTerminalLink
+  /** Where the terminal is, while the user has this pane following it. */
+  followedTerminalPath?: string | null
+  followControl?: React.ReactNode
 }): React.JSX.Element {
   const confirm = useCommandConfirm()
   const actionContext = useMemo<SftpActionContext>(() => ({ target, confirm }), [target, confirm])
@@ -101,6 +116,12 @@ export function SftpWorkbench({
 
   const { refreshIfShowing: refreshLocalIfShowing } = local
   const { refreshIfShowing: refreshRemoteIfShowing, refresh: reloadRemote } = remote
+  const { navigate: navigateRemote } = remote
+  useEffect(() => {
+    if (followedTerminalPath) {
+      navigateRemote(followedTerminalPath)
+    }
+  }, [followedTerminalPath, navigateRemote])
   const transfer = useCallback(
     (direction: SftpTransferDirection, sources: string[], destinationDir: string | null) => {
       if (!destinationDir || sources.length === 0) {
@@ -171,12 +192,17 @@ export function SftpWorkbench({
     },
     [moveRemote, transfer]
   )
+  const terminalDrop = useMemo(
+    () => terminalLink && { zone: terminalLink.terminalZone, onDrop: terminalLink.typePaths },
+    [terminalLink]
+  )
   const paneDrag = useSftpPaneDrag(
     {
       local: { zoneRef: localZoneRef, path: local.path, selected: local.selection.selected },
       remote: { zoneRef: dropZoneRef, path: remotePath, selected: remote.selection.selected }
     },
-    onPaneDrop
+    onPaneDrop,
+    terminalDrop
   )
 
   const selectedRemote = remote.selectedEntries
@@ -250,6 +276,9 @@ export function SftpWorkbench({
   }
 
   const uploadLabel = translate('sftpPage.local.upload', 'Upload')
+  // Why this folder: one selected folder is what the user pointed at, anything else means here.
+  const [onlySelected] = selectedRemote.length === 1 ? selectedRemote : []
+  const cdPath = onlySelected && isBrowsable(onlySelected) ? onlySelected.path : remotePath
   const remoteActions: SftpRemoteAction[] = [
     {
       id: 'download',
@@ -263,6 +292,21 @@ export function SftpWorkbench({
           local.path
         )
     },
+    ...(terminalLink
+      ? [
+          {
+            id: 'cdHere' as const,
+            label: translate('sftpPage.remote.cdHere', 'Type cd to this folder in the terminal'),
+            Icon: SquareTerminal,
+            isDisabled: cdPath === null,
+            run: () => {
+              if (cdPath) {
+                terminalLink.cdTo(cdPath)
+              }
+            }
+          }
+        ]
+      : []),
     {
       id: 'newFolder',
       label: translate('sftpPage.remote.newFolder', 'New folder'),
@@ -355,6 +399,7 @@ export function SftpWorkbench({
           actions={
             <>
               <SftpConnectionToggle targetId={target.id} onReconnect={reloadRemote} />
+              {followControl}
               <SftpRemoteToolbar actions={remoteActions} />
             </>
           }
