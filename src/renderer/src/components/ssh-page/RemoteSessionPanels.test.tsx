@@ -129,7 +129,10 @@ beforeEach(() => {
   getForegroundProcess.mockResolvedValue('ssh')
   Object.defineProperty(window, 'api', {
     configurable: true,
-    value: { pty: { getForegroundProcess } }
+    value: {
+      pty: { getForegroundProcess },
+      sftp: { localHostname: async () => 'my-laptop' }
+    }
   })
   container = document.createElement('div')
   document.body.appendChild(container)

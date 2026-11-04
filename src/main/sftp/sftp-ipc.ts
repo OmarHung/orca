@@ -1,3 +1,4 @@
+import { hostname } from 'node:os'
 import { BrowserWindow, ipcMain } from 'electron'
 import type { SftpConnectionState, SftpResult } from '../../shared/sftp-types'
 import { requestSshCredential } from '../ipc/ssh/ssh-passphrase'
@@ -114,6 +115,7 @@ export function registerSftpHandlers(): void {
   })
   ipcMain.handle('sftp:connectionStates', () => [...connectionStates.values()])
   ipcMain.handle('sftp:localHome', () => localHomeDirectory())
+  ipcMain.handle('sftp:localHostname', () => hostname())
   ipcMain.handle('sftp:localList', (_event, raw: unknown) => {
     const dir = SftpLocalPathSchema.safeParse(raw)
     return dir.success ? respond(() => listLocalDirectory(dir.data)) : INVALID_REQUEST
