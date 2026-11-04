@@ -145,6 +145,20 @@ describe('ssh session liveness', () => {
     expect(useSshSessionLivenessStore.getState().byTab.tab.hasManualSsh).toBe(false)
   })
 
+  it('says at once that an older tab ended, instead of waiting as if it just started', () => {
+    useSshSessionLivenessStore
+      .getState()
+      .recordForeground('tab', 'zsh', T0, T0 - LIVENESS_START_GRACE_MS)
+
+    expect(liveness()).toBe('ended')
+  })
+
+  it('still gives a tab opened moments ago time to start', () => {
+    useSshSessionLivenessStore.getState().recordForeground('tab', 'zsh', T0, T0 - 1)
+
+    expect(liveness()).toBe('starting')
+  })
+
   it('forgets closed tabs', () => {
     observe('ssh', T0)
     useSshSessionLivenessStore.getState().recordForeground('other', 'ssh', T0)

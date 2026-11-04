@@ -11,15 +11,20 @@ import { SshCommandRunDialog } from './SshCommandRunDialog'
 
 const mocks = vi.hoisted(() => ({
   check: vi.fn(),
-  send: vi.fn(async (): Promise<boolean> => true)
+  send: vi.fn(),
+  focus: vi.fn(),
+  toastError: vi.fn()
 }))
+
+vi.mock('sonner', () => ({ toast: { error: mocks.toastError } }))
+vi.mock('@/lib/focus-terminal-tab-surface', () => ({ focusTerminalTabSurface: mocks.focus }))
 
 vi.mock('./ssh-command-send', async (importOriginal) => {
   const actual = await importOriginal<typeof SendModule>()
   return {
     ...actual,
     checkSshCommandTarget: mocks.check,
-    sendSshCommand: mocks.send,
+    typeSshCommand: mocks.send,
     sshCommandRemotePlatform: () => undefined
   }
 })
@@ -56,15 +61,31 @@ let container: HTMLDivElement
 let root: Root
 const onClose = vi.fn()
 
-async function open(overrides: Partial<SshCommand> = {}): Promise<void> {
+async function open(
+  overrides: Partial<SshCommand> = {},
+  otherTargets: { tabId: string; target: SshTarget }[] = []
+): Promise<void> {
   await act(async () =>
     root.render(
       <SshCommandRunDialog
-        request={{ command: { ...command, ...overrides }, tabId: 'tab-1', target }}
+        request={{ command: { ...command, ...overrides }, tabId: 'tab-1', target, otherTargets }}
         onClose={onClose}
       />
     )
   )
+}
+
+const db: SshTarget = {
+  ...target,
+  id: 'db',
+  label: 'db-prod',
+  host: '203.0.113.20',
+  username: 'ops'
+}
+
+async function tick(tabId: string): Promise<void> {
+  const box = document.querySelector<HTMLElement>(`[data-ssh-command-target="${tabId}"]`)
+  await act(async () => box?.click())
 }
 
 function preview(): string {
@@ -95,7 +116,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   window.localStorage.clear()
   mocks.check.mockResolvedValue(READY)
-  mocks.send.mockResolvedValue(true)
+  mocks.send.mockResolvedValue({ isSent: true })
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -140,7 +161,7 @@ describe('SshCommandRunDialog', () => {
   })
 
   it('stays open, with what was typed, when sending fails', async () => {
-    mocks.send.mockResolvedValue(false)
+    mocks.send.mockResolvedValue({ isSent: false, reason: 'Couldn’t type' })
     await open()
     await typeInto('service', 'kept')
 
@@ -229,6 +250,136 @@ describe('SshCommandRunDialog', () => {
     await open()
 
     expect(preview()).toContain('journalctl -u postgres')
+  })
+
+  describe('in a grid', () => {
+    const others = [{ tabId: 'tab-2', target: db }]
+
+    it('sends to the current tab only, until another host is ticked', async () => {
+      await open({}, others)
+
+      await act(async () => button('data-ssh-command-run').click())
+
+      expect(mocks.send).toHaveBeenCalledTimes(1)
+      expect(mocks.send).toHaveBeenCalledWith('tab-1', 'journalctl -u nginx', 'run')
+    })
+
+    it('shows and sends each host its own command', async () => {
+      await open({ template: 'echo {{host}} {{user}}', params: [] }, others)
+
+      await tick('tab-2')
+
+      const preview = document.querySelector('[data-ssh-command-multi-preview]')?.textContent
+      expect(preview).toContain('echo 203.0.113.10 deploy')
+      expect(preview).toContain('echo 203.0.113.20 ops')
+
+      await act(async () => button('data-ssh-command-run').click())
+
+      expect(mocks.send.mock.calls).toEqual([
+        ['tab-1', 'echo 203.0.113.10 deploy', 'run'],
+        ['tab-2', 'echo 203.0.113.20 ops', 'run']
+      ])
+      expect(onClose).toHaveBeenCalled()
+    })
+
+    it('says how many hosts Run reaches', async () => {
+      await open({}, others)
+
+      await tick('tab-2')
+
+      expect(button('data-ssh-command-run').textContent).toContain('2')
+    })
+
+    it('skips a host that is not connected, and still sends to the rest', async () => {
+      mocks.check.mockImplementation(async (tabId: string) =>
+        tabId === 'tab-2' ? { kind: 'blocked', reason: 'localShell' } : READY
+      )
+      await open({}, others)
+      await act(async () => undefined)
+
+      await tick('tab-2')
+      expect(
+        document.querySelector('[data-ssh-command-multi-preview] [data-skipped="true"]')
+      ).not.toBeNull()
+
+      await act(async () => button('data-ssh-command-run').click())
+
+      expect(mocks.send).toHaveBeenCalledTimes(1)
+      expect(mocks.send).toHaveBeenCalledWith('tab-1', 'journalctl -u nginx', 'run')
+    })
+
+    it('refuses the files pane on several hosts, since it belongs to one tab', async () => {
+      await open({ template: 'ls {{path}}', params: [] }, others)
+
+      await tick('tab-2')
+
+      expect(document.querySelector('[data-ssh-command-problem="singleTargetOnly"]')).not.toBeNull()
+      expect(button('data-ssh-command-run').disabled).toBe(true)
+    })
+
+    it('can reach another host alone, without the current tab', async () => {
+      await open({ template: 'echo {{host}}', params: [] }, others)
+
+      await tick('tab-2')
+      await tick('tab-1')
+      await act(async () => button('data-ssh-command-run').click())
+
+      expect(mocks.send.mock.calls).toEqual([['tab-2', 'echo 203.0.113.20', 'run']])
+    })
+
+    it('names the host that gets it when only another one is ticked', async () => {
+      await open({ template: 'uptime', params: [] }, others)
+
+      await tick('tab-2')
+      await tick('tab-1')
+
+      const description = document.querySelector('[data-ssh-command-run-dialog] p')?.textContent
+      expect(description).toContain('db-prod')
+      expect(description).not.toContain('web-prod')
+      expect(document.querySelector('[data-ssh-command-multi-preview]')?.textContent).toContain(
+        'db-prod'
+      )
+    })
+
+    it('leaves the keyboard on the pane in use, even if it was not sent to', async () => {
+      await open({ template: 'uptime', params: [] }, others)
+      await tick('tab-2')
+      await tick('tab-1')
+
+      await act(async () => button('data-ssh-command-run').click())
+
+      expect(mocks.focus.mock.calls).toEqual([['tab-1']])
+    })
+
+    it('names each host that missed it, and closes when another got it', async () => {
+      mocks.send.mockImplementation(async (tabId: string) =>
+        tabId === 'tab-2' ? { isSent: false, reason: 'Couldn’t type' } : { isSent: true }
+      )
+      await open({ template: 'uptime', params: [] }, others)
+      await tick('tab-2')
+
+      await act(async () => button('data-ssh-command-run').click())
+
+      expect(mocks.toastError).toHaveBeenCalledWith('db-prod: Couldn’t type')
+      expect(onClose).toHaveBeenCalled()
+    })
+
+    it('says the command may run on this computer, also in a grid', async () => {
+      mocks.check.mockResolvedValue({ kind: 'ready', ptyId: 'pty-1', doubt: 'noSshEvidence' })
+
+      await open({}, others)
+
+      expect(document.querySelector('[data-ssh-command-doubt="noSshEvidence"]')).not.toBeNull()
+      expect(document.body.textContent).toContain('runs on your computer')
+    })
+
+    it('sends nothing with no host ticked', async () => {
+      await open({}, others)
+
+      await tick('tab-1')
+
+      expect(button('data-ssh-command-run').disabled).toBe(true)
+    })
   })
 
   it('does not ask for a parameter the template no longer uses', async () => {

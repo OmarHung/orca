@@ -8,11 +8,13 @@ import { SshCommandList } from '../ssh-commands/SshCommandList'
 import { ContextMenuItem } from '../ui/context-menu'
 import { HostListToggleButton } from './HostListToggleButton'
 import { useRemoteHostsLayout } from './remote-hosts-layout-store'
+import { RemoteGridControls, RemoteHostSelectionBar } from './RemoteGridControls'
 import { RemoteHostsPageFrame } from './RemoteHostsPageFrame'
 import { RemoteSidePanel } from './RemoteSidePanel'
 import { RemoteLayoutToggle } from './RemoteLayoutToggle'
 import { RemoteTransfersTray } from './RemoteTransfersTray'
 import {
+  remoteLayoutForTab,
   remoteSessionForTab,
   useRemoteSessionStore,
   type RemoteLayout
@@ -31,6 +33,9 @@ import {
   showHostSession,
   startSessionTerminal
 } from './ssh-session-actions'
+import { addTabToGrid, openHostsInGrid, returnToGrid } from './ssh-grid-actions'
+import { sshHostGroupIdOf, sshHostGroupSubtreeIds } from './ssh-host-groups'
+import { useSshHostGroups } from './ssh-host-groups-store'
 import { useRemoteSessionSync } from './use-remote-session-sync'
 import { useSshPageShortcuts } from './use-ssh-page-shortcuts'
 import { useSshSessionItems } from './use-ssh-session-items'
@@ -49,13 +54,17 @@ function SshPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Elemen
   const items = useSshSessionItems(isVisible)
   const isHostListCollapsed = useRemoteHostsLayout((s) => s.isHostListCollapsed)
   const sessions = useRemoteSessionStore((s) => s.sessions)
+  const grid = useRemoteSessionStore((s) => s.grid)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [gridPickerOpen, setGridPickerOpen] = useState(false)
+  const [selectedHostIds, setSelectedHostIds] = useState<ReadonlySet<string>>(() => new Set())
   const confirm = useCommandConfirm()
   useSftpProgressEvents()
   useRemoteSessionSync(list)
 
   const { activeTerminalId, terminalItems, tabBarOrder } = items
   const activeSession = activeTerminalId ? remoteSessionForTab(sessions, activeTerminalId) : null
+  const isGridShown = activeTerminalId !== null && grid?.tabIds.includes(activeTerminalId) === true
   const targetsById = useMemo(
     () => new Map(list.targets.map((target) => [target.id, target])),
     [list.targets]
@@ -102,6 +111,43 @@ function SshPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Elemen
     onSetLayout: setActiveLayout
   })
 
+  const toggleSelectedHost = useCallback((target: SshTarget) => {
+    setSelectedHostIds((current) => {
+      const next = new Set(current)
+      if (!next.delete(target.id)) {
+        next.add(target.id)
+      }
+      return next
+    })
+  }, [])
+  const openSelectedHosts = useCallback(() => {
+    const picked = list.targets.filter((target) => selectedHostIds.has(target.id))
+    setSelectedHostIds(new Set())
+    void openHostsInGrid(picked, confirm)
+  }, [confirm, list.targets, selectedHostIds])
+  const connectGroup = useCallback(
+    (groupId: string) => {
+      const groups = useSshHostGroups.getState().data
+      const subtree = sshHostGroupSubtreeIds(groups, groupId)
+      const inGroup = list.targets.filter((target) => {
+        const hostGroup = sshHostGroupIdOf(groups, target.id)
+        return hostGroup !== null && subtree.has(hostGroup)
+      })
+      void openHostsInGrid(inGroup, confirm)
+    },
+    [confirm, list.targets]
+  )
+  const addTab = useCallback(
+    (tabId: string) => {
+      const target = targetsById.get(remoteSessionForTab(sessions, tabId).targetId)
+      void addTabToGrid(tabId, target, confirm, activeTerminalId)
+    },
+    [activeTerminalId, confirm, sessions, targetsById]
+  )
+  const gridPickerTabs = terminalItems
+    .filter((tab) => !grid?.tabIds.includes(tab.id) && (grid || tab.id !== activeTerminalId))
+    .map((tab) => ({ id: tab.id, label: tab.quickCommandLabel ?? tab.title }))
+
   const hostMenuItems = useCallback(
     (target: SshTarget) => (
       <>
@@ -138,7 +184,22 @@ function SshPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Elemen
         onNewSession={openPicker}
         leadingControl={<HostListToggleButton />}
         trailingControl={
-          <RemoteLayoutToggle layout={activeSession?.layout ?? null} onChange={setActiveLayout} />
+          <div className="flex items-center gap-1.5">
+            <RemoteGridControls
+              hasGrid={grid !== null}
+              isGridShown={isGridShown}
+              hasTabs={terminalItems.length > 0}
+              onAdd={() => setGridPickerOpen(true)}
+              onReturn={returnToGrid}
+              onEnd={() => useRemoteSessionStore.getState().clearGrid()}
+            />
+            <RemoteLayoutToggle
+              layout={
+                activeTerminalId ? remoteLayoutForTab(sessions, grid, activeTerminalId) : null
+              }
+              onChange={setActiveLayout}
+            />
+          </div>
         }
         sidePanel={
           isHostListCollapsed ? null : (
@@ -150,6 +211,19 @@ function SshPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Elemen
                   onSelect={showHost}
                   hostMenuItems={hostMenuItems}
                   hostRowActions={hostRowActions}
+                  selectedTargetIds={selectedHostIds}
+                  onToggleSelected={toggleSelectedHost}
+                  onConnectGroup={connectGroup}
+                  selectionBar={
+                    selectedHostIds.size > 0 ? (
+                      <RemoteHostSelectionBar
+                        count={selectedHostIds.size}
+                        hasGrid={grid !== null}
+                        onOpen={openSelectedHosts}
+                        onClear={() => setSelectedHostIds(new Set())}
+                      />
+                    ) : null
+                  }
                 />
               }
               commands={
@@ -172,6 +246,12 @@ function SshPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Elemen
           targetsStatus={list.status}
           onStartTerminal={startTerminal}
           onReconnect={reconnect}
+          onAddCurrentToGrid={() => {
+            if (activeTerminalId) {
+              addTab(activeTerminalId)
+            }
+          }}
+          onReturnToGrid={returnToGrid}
         />
       </SshSessionsSurface>
       <RemoteTransfersTray targetsById={targetsById} />
@@ -180,6 +260,19 @@ function SshPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Elemen
         onOpenChange={setPickerOpen}
         targets={list.targets}
         onSelect={openNewSession}
+      />
+      <SshHostPickerDialog
+        open={gridPickerOpen}
+        onOpenChange={setGridPickerOpen}
+        targets={list.targets}
+        title={translate('sshPage.grid.pickerTitle', 'Show side by side')}
+        description={translate(
+          'sshPage.grid.pickerDescription',
+          'Pick an open tab, which needs no new connection, or a host.'
+        )}
+        openTabs={gridPickerTabs}
+        onSelectTab={addTab}
+        onSelect={(target) => void openHostsInGrid([target], confirm, activeTerminalId)}
       />
     </RemoteHostsPageFrame>
   )

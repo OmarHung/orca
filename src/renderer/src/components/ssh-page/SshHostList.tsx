@@ -22,6 +22,10 @@ type SshHostListProps = {
   hostMenuItems?: (target: SshTarget) => React.ReactNode
   /** Buttons at the end of a host row, shown while it is hovered or focused. */
   hostRowActions?: (target: SshTarget) => React.ReactNode
+  /** Hosts picked with ⌘/Ctrl, where the list can open several together. */
+  selectedTargetIds?: ReadonlySet<string>
+  onToggleSelected?: (target: SshTarget) => void
+  onConnectGroup?: (groupId: string) => void
 }
 
 function NewGroupButton({ onClick }: { onClick: () => void }): React.JSX.Element {
@@ -52,7 +56,10 @@ export function SshHostList({
   currentTargetId,
   onSelect,
   hostMenuItems,
-  hostRowActions
+  hostRowActions,
+  selectedTargetIds,
+  onToggleSelected,
+  onConnectGroup
 }: SshHostListProps): React.JSX.Element {
   const [query, setQuery] = useState('')
   // Why local: the page's list and the host picker's can both be mounted, so one dialog per list.
@@ -104,6 +111,7 @@ export function SshHostList({
                   drop={drop}
                   isSearching={isSearching}
                   onAskName={setNameRequest}
+                  onConnectGroup={onConnectGroup}
                 />
               )
             }
@@ -122,7 +130,9 @@ export function SshHostList({
                 key={row.key}
                 row={row}
                 isCurrent={row.target.id === currentTargetId}
+                isSelected={selectedTargetIds?.has(row.target.id) === true}
                 onSelect={onSelect}
+                onToggleSelected={onToggleSelected}
                 menuItems={hostMenuItems?.(row.target)}
                 rowActions={hostRowActions?.(row.target)}
                 onAskName={setNameRequest}

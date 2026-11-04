@@ -10,6 +10,11 @@ type SshHostListPanelProps = {
   onSelect: (target: SshTarget) => void
   hostMenuItems?: (target: SshTarget) => React.ReactNode
   hostRowActions?: (target: SshTarget) => React.ReactNode
+  selectedTargetIds?: ReadonlySet<string>
+  onToggleSelected?: (target: SshTarget) => void
+  onConnectGroup?: (groupId: string) => void
+  /** What to do with the hosts picked with ⌘/Ctrl, shown under the list. */
+  selectionBar?: React.ReactNode
 }
 
 function StatusMessage({ children }: { children: React.ReactNode }): React.JSX.Element {
@@ -22,7 +27,11 @@ export function SshHostListPanel({
   currentTargetId,
   onSelect,
   hostMenuItems,
-  hostRowActions
+  hostRowActions,
+  selectedTargetIds,
+  onToggleSelected,
+  onConnectGroup,
+  selectionBar
 }: SshHostListPanelProps): React.JSX.Element {
   const { status, targets, reload } = list
 
@@ -35,7 +44,11 @@ export function SshHostListPanel({
           onSelect={onSelect}
           hostMenuItems={hostMenuItems}
           hostRowActions={hostRowActions}
+          selectedTargetIds={selectedTargetIds}
+          onToggleSelected={onToggleSelected}
+          onConnectGroup={onConnectGroup}
         />
+        {selectionBar}
       </div>
     )
   }

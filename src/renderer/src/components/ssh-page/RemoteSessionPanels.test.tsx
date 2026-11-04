@@ -72,7 +72,7 @@ async function render(tabIds: string[], activeTerminalId: string | null): Promis
         <RemoteSessionPanels
           isVisible
           items={{
-            tabs: tabIds.map((id) => ({ id, ptyId: `pty-${id}` })),
+            tabs: tabIds.map((id) => ({ id, ptyId: `pty-${id}`, createdAt: 0 })),
             terminalItems: tabIds.map((id) => ({ id, quickCommandLabel: `label-${id}` })),
             activeTerminalId,
             parkedTerminalTabIds: new Set<string>()
@@ -81,6 +81,8 @@ async function render(tabIds: string[], activeTerminalId: string | null): Promis
           targetsStatus="ready"
           onStartTerminal={onStartTerminal}
           onReconnect={onReconnect}
+          onAddCurrentToGrid={vi.fn()}
+          onReturnToGrid={vi.fn()}
         />
       </TooltipProvider>
     )

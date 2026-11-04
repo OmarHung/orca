@@ -12,6 +12,7 @@ import {
   clearLegacySftpTabs,
   findSessionTabOnHost,
   readLegacySftpTabs,
+  remoteLayoutForTab,
   remoteSessionForTab,
   useRemoteSessionStore,
   type RemoteLayout
@@ -20,12 +21,10 @@ import { buildSshSessionCommand } from './ssh-session-command'
 import { useSshSessionLivenessStore } from './ssh-session-liveness'
 import { prepareSshSessionVpn } from './ssh-session-vpn'
 
-/** Asks the user to approve the exact ssh command; null when it was refused or cannot be typed. */
-async function confirmSshCommand(
-  target: SshTarget,
-  confirm: CommandConfirm,
-  note: string
-): Promise<string | null> {
+/** The exact ssh command for a host and the VPN it needs; null when it cannot be typed. */
+export async function prepareSshCommand(
+  target: SshTarget
+): Promise<{ command: string; vpnName: string | null } | null> {
   // Why first: a host that cannot be typed safely must not start a VPN it will never use.
   if (!buildSshSessionCommand(target)) {
     toast.error(
@@ -41,25 +40,41 @@ async function confirmSshCommand(
     return null
   }
   const command = buildSshSessionCommand(target, vpn?.sshOptions ?? [])
-  if (!command) {
+  return command ? { command, vpnName: vpn?.profileName ?? null } : null
+}
+
+/** How a dialog names where a command goes: the endpoint, and the VPN it travels through. */
+export function sshConnectionDetails(target: SshTarget, vpnName: string | null): string[] {
+  return [
+    translate('sshPage.session.confirmTarget', 'Target: {{endpoint}}', {
+      endpoint: `${target.username ? `${target.username}@` : ''}${target.host}:${target.port}`
+    }),
+    ...(vpnName
+      ? [
+          translate('sshPage.session.confirmVpn', 'Through VPN: {{name}} (already connected)', {
+            name: vpnName
+          })
+        ]
+      : [])
+  ]
+}
+
+/** Asks the user to approve the exact ssh command; null when it was refused or cannot be typed. */
+async function confirmSshCommand(
+  target: SshTarget,
+  confirm: CommandConfirm,
+  note: string
+): Promise<string | null> {
+  const prepared = await prepareSshCommand(target)
+  if (!prepared) {
     return null
   }
+  const { command, vpnName } = prepared
   const isConfirmed = await confirm({
     title: translate('sshPage.session.confirmTitle', 'Connect to {{host}}?', {
       host: target.label
     }),
-    details: [
-      translate('sshPage.session.confirmTarget', 'Target: {{endpoint}}', {
-        endpoint: `${target.username ? `${target.username}@` : ''}${target.host}:${target.port}`
-      }),
-      ...(vpn
-        ? [
-            translate('sshPage.session.confirmVpn', 'Through VPN: {{name}} (already connected)', {
-              name: vpn.profileName
-            })
-          ]
-        : [])
-    ],
+    details: sshConnectionDetails(target, vpnName),
     commands: [command],
     notes: [note],
     confirmLabel: translate('sshPage.session.connect', 'Connect')
@@ -67,7 +82,7 @@ async function confirmSshCommand(
   return isConfirmed ? command : null
 }
 
-function createSessionTab(label: string): string {
+export function createSessionTab(label: string): string {
   const store = useAppStore.getState()
   const tab = store.createTab(
     SSH_SESSIONS_WORKTREE_ID,
@@ -184,20 +199,32 @@ export async function reconnectSessionTerminal(
   focusTerminalTabSurface(tabId)
 }
 
+const PROMPT_EVIDENCE_RETRY_MS = 200
+// Why this many: the process table is shared for up to 500ms, so a newer capture arrives well before.
+const PROMPT_EVIDENCE_MAX_READS = 6
+
 /**
  * Whether the shell itself waits at its prompt. The foreground's name can't say: a running script
- * is also called bash, and Ctrl+C would kill it. Read fresh: the dialog can stay open for a while.
+ * is also called bash, and Ctrl+C would kill it. Only a capture taken after the user decided counts:
+ * a shared one may predate a script started a moment ago, and would call the shell idle.
  */
 async function readShellPromptState(ptyId: string): Promise<'idle' | 'busy' | 'unknown'> {
-  const inspection = await window.api.pty.inspectProcess(ptyId).catch(() => null)
-  const evidence = inspection?.foregroundProcessEvidence
-  if (evidence?.verdict !== 'live' || evidence.shellOwnsEveryTtyProcessGroup === undefined) {
-    return 'unknown'
+  const decidedAt = performance.now()
+  for (let read = 0; read < PROMPT_EVIDENCE_MAX_READS; read += 1) {
+    const inspection = await window.api.pty.inspectProcess(ptyId).catch(() => null)
+    const evidence = inspection?.foregroundProcessEvidence
+    if (evidence?.verdict !== 'live' || evidence.shellOwnsEveryTtyProcessGroup === undefined) {
+      return 'unknown'
+    }
+    if (performance.now() - evidence.capturedAgeMs >= decidedAt) {
+      return evidence.shellOwnsEveryTtyProcessGroup ? 'idle' : 'busy'
+    }
+    await new Promise((resolve) => setTimeout(resolve, PROMPT_EVIDENCE_RETRY_MS))
   }
-  return evidence.shellOwnsEveryTtyProcessGroup ? 'idle' : 'busy'
+  return 'unknown'
 }
 
-function activateSessionTab(tabId: string): void {
+export function activateSessionTab(tabId: string): void {
   const store = useAppStore.getState()
   const tab = store.unifiedTabsByWorktree[SSH_SESSIONS_WORKTREE_ID]?.find(
     (candidate) => candidate.entityId === tabId
@@ -225,8 +252,8 @@ export async function showHostSession(
     return
   }
   activateSessionTab(tabId)
-  const session = remoteSessionForTab(useRemoteSessionStore.getState().sessions, tabId)
-  if (session.layout !== 'files' && session.terminalStarted) {
+  const { sessions, grid } = useRemoteSessionStore.getState()
+  if (remoteLayoutForTab(sessions, grid, tabId) !== 'files' && sessions[tabId]?.terminalStarted) {
     focusTerminalTabSurface(tabId)
   }
 }
@@ -279,8 +306,9 @@ export function activateSshSession(groupTabs: readonly Tab[], visibleId: string)
   const store = useAppStore.getState()
   store.activateTab(tab.id)
   store.setActiveTab(tab.entityId)
-  const session = remoteSessionForTab(useRemoteSessionStore.getState().sessions, tab.entityId)
-  if (session.layout !== 'files' && session.terminalStarted) {
+  const { sessions, grid } = useRemoteSessionStore.getState()
+  const session = remoteSessionForTab(sessions, tab.entityId)
+  if (remoteLayoutForTab(sessions, grid, tab.entityId) !== 'files' && session.terminalStarted) {
     focusTerminalTabSurface(tab.entityId)
   }
 }

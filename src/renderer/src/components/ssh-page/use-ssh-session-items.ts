@@ -29,6 +29,7 @@ export function useSshSessionItems(isVisible: boolean) {
   const generatedTabTitlesEnabled = useAppStore((s) => s.settings?.tabAutoGenerateTitle === true)
   const expandedPanes = useAppStore((s) => s.expandedPaneByTabId)
   const remotePathByTab = useRemoteSessionStore((s) => s.remotePathByTab)
+  const grid = useRemoteSessionStore((s) => s.grid)
 
   const activeGroup = useMemo(
     () =>
@@ -49,15 +50,17 @@ export function useSshSessionItems(isVisible: boolean) {
   const activeTerminalId = activeUnifiedTab?.entityId ?? null
 
   const terminalAssignments = useMemo(() => {
+    // Why: parking only spares tabs marked visible, and every pane of a shown grid is on screen.
+    const shownGrid = activeTerminalId && grid?.tabIds.includes(activeTerminalId) ? grid.tabIds : []
     const assignments = new Map<string, { groupId: string; isActiveInGroup: boolean }>()
     for (const tab of groupTabs) {
       assignments.set(tab.entityId, {
         groupId: tab.groupId,
-        isActiveInGroup: tab.entityId === activeTerminalId
+        isActiveInGroup: tab.entityId === activeTerminalId || shownGrid.includes(tab.entityId)
       })
     }
     return assignments
-  }, [activeTerminalId, groupTabs])
+  }, [activeTerminalId, grid, groupTabs])
   const parkedTerminalTabIds = useTerminalTabColdParking({
     worktreeId: SSH_SESSIONS_WORKTREE_ID,
     terminalTabs: tabs,

@@ -10,6 +10,7 @@ import {
 import type { SshCommand } from '../../../../shared/ssh-command-types'
 import type { SshTarget } from '../../../../shared/ssh-types'
 import { useCommandConfirm } from '../command-confirm/command-confirm-context'
+import { remoteSessionForTab, useRemoteSessionStore } from '../ssh-page/remote-session-store'
 import { useSshHostGroups } from '../ssh-page/ssh-host-groups-store'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -25,7 +26,11 @@ import {
 import { forgetSshCommandValues } from './ssh-command-values'
 import { useSshCommandsStore } from './ssh-commands-store'
 import { SshCommandEditDialog, type SshCommandEditRequest } from './SshCommandEditDialog'
-import { SshCommandRunDialog, type SshCommandRunRequest } from './SshCommandRunDialog'
+import {
+  SshCommandRunDialog,
+  type SshCommandRunOption,
+  type SshCommandRunRequest
+} from './SshCommandRunDialog'
 
 function HeaderButton({
   label,
@@ -159,20 +164,40 @@ export function SshCommandList({
     }
   }, [activeTarget, commands, groups, query])
 
+  const targetsById = useMemo(
+    () => new Map(targets.map((target) => [target.id, target])),
+    [targets]
+  )
+
   const importDrafts = useMemo(
     () => quickCommandsToSshDrafts(quickCommands ?? [], commands),
     [commands, quickCommands]
   )
+
+  /** The rest of the grid on screen, limited to hosts this command is offered on. */
+  const gridTargets = (command: SshCommand): SshCommandRunOption[] => {
+    const { grid, sessions } = useRemoteSessionStore.getState()
+    if (!activeTabId || !grid?.tabIds.includes(activeTabId)) {
+      return []
+    }
+    return grid.tabIds.flatMap((tabId) => {
+      const target = targetsById.get(remoteSessionForTab(sessions, tabId).targetId)
+      const isOffered = target && sshCommandAppliesToTarget(command.scope, target.id, groups)
+      return tabId !== activeTabId && isOffered ? [{ tabId, target }] : []
+    })
+  }
 
   const choose = async (command: SshCommand): Promise<void> => {
     if (!activeTabId || !activeTarget) {
       toast.info(translate('sshCommands.list.noTab', 'Open a tab on a host first.'))
       return
     }
-    const request = { command, tabId: activeTabId, target: activeTarget }
+    const otherTargets = gridTargets(command)
+    const request = { command, tabId: activeTabId, target: activeTarget, otherTargets }
     const { params, unusedKeys } = syncSshCommandParams(command.template, command.params)
     const hasFields = params.some((param) => !unusedKeys.includes(param.key))
-    if (command.runMode !== 'insert' || hasFields) {
+    // Why: in a grid the dialog is also where other hosts can be chosen.
+    if (command.runMode !== 'insert' || hasFields || otherTargets.length > 0) {
       setRunRequest(request)
       return
     }
