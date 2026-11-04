@@ -4,6 +4,7 @@ import { Button } from '../ui/button'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '../ui/context-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { translate } from '@/i18n/i18n'
+import { isImeOwnedKeyboardEvent } from '@/lib/ime-composition-keyboard-event'
 import type { SftpEntry } from '../../../../shared/sftp-types'
 import { sftpRowWidthPx, TOGGLEABLE_SFTP_COLUMNS, type SftpColumnId } from './sftp-columns'
 import { useSftpColumnsStore, type SftpPaneId } from './sftp-columns-store'
@@ -24,6 +25,8 @@ const PLAIN_CLICK = { toggle: false, range: false }
 type SftpFilePaneProps = {
   paneId: SftpPaneId
   title: string
+  /** Shown right after the title, such as the connection status. */
+  titleAccessory?: React.ReactNode
   pane: SftpPaneState
   /** The favorite folders lists the star menu keeps and offers. */
   favoriteLists: readonly SftpFavoriteList[]
@@ -113,6 +116,7 @@ function PaneMessage({ children }: { children: React.ReactNode }): React.JSX.Ele
 export function SftpFilePane({
   paneId,
   title,
+  titleAccessory,
   pane,
   favoriteLists,
   onOpen,
@@ -132,6 +136,7 @@ export function SftpFilePane({
         <span className="max-w-32 shrink-0 truncate text-xs font-medium text-muted-foreground">
           {title}
         </span>
+        {titleAccessory}
         {/* Why: the Input primitive is h-9/text-sm; this matches the h-6 xs toolbar buttons, like Git Log's filter. */}
         <div className="flex h-6 min-w-0 flex-1 items-center rounded-md border border-input px-2 focus-within:border-ring">
           <input
@@ -142,7 +147,11 @@ export function SftpFilePane({
             spellCheck={false}
             className="min-w-0 flex-1 bg-transparent text-xs outline-none"
             onKeyDown={(event) => {
-              if (event.key === 'Enter' && event.currentTarget.value.trim()) {
+              if (
+                event.key === 'Enter' &&
+                !isImeOwnedKeyboardEvent(event) &&
+                event.currentTarget.value.trim()
+              ) {
                 pane.navigate(event.currentTarget.value.trim())
               }
             }}

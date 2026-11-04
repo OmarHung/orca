@@ -1,4 +1,5 @@
 import type {
+  SftpConnectionState,
   SftpEntry,
   SftpExecuteOutcome,
   SftpExecuteRequest,
@@ -23,4 +24,7 @@ export type SftpApi = {
   /** Absolute path of a file dropped from Finder; empty for virtual files. */
   getPathForFile: (file: File) => string
   onProgress: (callback: (progress: SftpTransferProgress) => void) => () => void
+  onConnectionState: (callback: (state: SftpConnectionState) => void) => () => void
+  /** What each host last reported, for a window that was not listening at the time. */
+  connectionStates: () => Promise<SftpConnectionState[]>
 }

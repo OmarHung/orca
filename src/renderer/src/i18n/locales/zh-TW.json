@@ -22997,7 +22997,14 @@
       "confirmVpn": "經由 VPN：{{name}}（已連線）",
       "confirmNoteExistingTab": "會在這個分頁啟動你的登入 shell，並在其中輸入這條指令，如同你親自輸入。",
       "notStarted": "這個分頁沒有執行中的終端機。",
-      "connectTo": "連線到 {{host}}"
+      "connectTo": "連線到 {{host}}",
+      "ended": "SSH 連線已結束。",
+      "endedDetail": "這個分頁現在是本機 shell，不是 {{host}}。",
+      "reconnect": "重新連線",
+      "reconnectBusy": "這個分頁似乎還有程式在執行，請先結束它。",
+      "confirmNoteReconnect": "會在這個分頁的本機 shell 中輸入這條指令，如同你親自輸入。提示符後已輸入的文字會先被清除。",
+      "reconnectUnknown": "Orca 無法確認這個分頁正在執行什麼，所以沒有輸入任何內容。",
+      "reconnectFailed": "無法在這個分頁中輸入。"
     },
     "picker": {
       "title": "開啟 SSH 連線",
@@ -23061,7 +23068,8 @@
       "failed": "失敗",
       "cancel": "取消傳輸",
       "title": "傳輸",
-      "clear": "清除已完成"
+      "clear": "清除已完成",
+      "runningCount": "{{count}} 個進行中"
     },
     "transfer": {
       "labelMany": "{{name}} 及另外 {{count}} 個"
@@ -23125,6 +23133,15 @@
       "removeCurrentShared": "從所有連線共用常用中移除“{{name}}”",
       "hostList": "{{host}} 專屬",
       "sharedList": "所有連線共用"
+    },
+    "connection": {
+      "connected": "已連線",
+      "connecting": "連線中…",
+      "disconnected": "已中斷連線",
+      "failed": "未連線",
+      "disconnect": "中斷連線",
+      "reconnect": "重新連線",
+      "busy": "請先完成或取消這台主機的傳輸，才能中斷連線。"
     }
   },
   "commandConfirm": {

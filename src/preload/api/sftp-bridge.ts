@@ -1,5 +1,5 @@
 import { ipcRenderer, webUtils } from 'electron'
-import type { SftpTransferProgress } from '../../shared/sftp-types'
+import type { SftpConnectionState, SftpTransferProgress } from '../../shared/sftp-types'
 import type { PreloadApi } from '../api-types'
 
 export const sftpApi = {
@@ -10,6 +10,7 @@ export const sftpApi = {
   discardPlan: (planId) => ipcRenderer.invoke('sftp:discardPlan', planId),
   cancel: (transferId) => ipcRenderer.invoke('sftp:cancel', transferId),
   disconnect: (targetId) => ipcRenderer.invoke('sftp:disconnect', targetId),
+  connectionStates: () => ipcRenderer.invoke('sftp:connectionStates'),
   localHome: () => ipcRenderer.invoke('sftp:localHome'),
   localList: (path) => ipcRenderer.invoke('sftp:localList', path),
   getPathForFile: (file) => webUtils.getPathForFile(file),
@@ -18,5 +19,11 @@ export const sftpApi = {
       callback(progress)
     ipcRenderer.on('sftp:progress', listener)
     return () => ipcRenderer.removeListener('sftp:progress', listener)
+  },
+  onConnectionState: (callback) => {
+    const listener = (_event: Electron.IpcRendererEvent, state: SftpConnectionState) =>
+      callback(state)
+    ipcRenderer.on('sftp:connectionState', listener)
+    return () => ipcRenderer.removeListener('sftp:connectionState', listener)
   }
 } satisfies PreloadApi['sftp']

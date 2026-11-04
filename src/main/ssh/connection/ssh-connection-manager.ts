@@ -11,7 +11,7 @@ import { SSH_CONNECT_IN_PROGRESS_SUFFIX } from '../../../shared/ssh-sign-in-requ
 import { markSshSessionStartFailure } from '../ssh-session-start-failure'
 
 /** A remembered sign-in only applies to the endpoint it was given for; an edited host must ask. */
-function signInEndpoint(target: SshTarget): string {
+export function signInEndpoint(target: SshTarget): string {
   const { configHost, host, port, username, identityFile, proxyCommand, jumpHost } = target
   return JSON.stringify([configHost, host, port, username, identityFile, proxyCommand, jumpHost])
 }

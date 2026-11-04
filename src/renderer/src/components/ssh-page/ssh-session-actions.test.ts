@@ -4,12 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SshTarget } from '../../../../shared/ssh-types'
 import { SSH_SESSIONS_WORKTREE_ID } from '../../../../shared/local-synthetic-workspace'
 import { useRemoteSessionStore } from './remote-session-store'
+import { useSshSessionLivenessStore } from './ssh-session-liveness'
 import {
   adoptSessionlessTabs,
   closeSshSessions,
   migrateLegacySftpTabs,
   openFilesSession,
   openSshSession,
+  reconnectSessionTerminal,
   setSessionLayout,
   showHostSession,
   startSessionTerminal
@@ -19,7 +21,7 @@ const mocks = vi.hoisted(() => {
   const state: {
     nextTabId: number
     unified: { id: string; entityId: string }[]
-    tabs: { id: string; quickCommandLabel?: string }[]
+    tabs: { id: string; quickCommandLabel?: string; ptyId?: string | null }[]
   } = { nextTabId: 1, unified: [], tabs: [] }
   return {
     state,
@@ -34,7 +36,9 @@ const mocks = vi.hoisted(() => {
     activateTab: vi.fn(),
     setActiveTab: vi.fn(),
     focusTerminalTabSurface: vi.fn(),
-    toastError: vi.fn()
+    toastError: vi.fn(),
+    writeAccepted: vi.fn(async (): Promise<boolean> => true),
+    inspectProcess: vi.fn()
   }
 })
 
@@ -67,6 +71,14 @@ const target: SshTarget = {
   username: 'deploy'
 }
 
+function shellAtPrompt(isIdle: boolean | undefined): unknown {
+  return {
+    foregroundProcess: isIdle ? null : 'bash',
+    hasChildProcesses: !isIdle,
+    foregroundProcessEvidence: { verdict: 'live', shellOwnsEveryTtyProcessGroup: isIdle }
+  }
+}
+
 function sessions(): ReturnType<typeof useRemoteSessionStore.getState>['sessions'] {
   return useRemoteSessionStore.getState().sessions
 }
@@ -78,6 +90,13 @@ beforeEach(() => {
   mocks.state.unified = []
   mocks.state.tabs = []
   useRemoteSessionStore.setState({ sessions: {}, remotePathByTab: {} })
+  useSshSessionLivenessStore.setState({ byTab: {} })
+  mocks.writeAccepted.mockResolvedValue(true)
+  mocks.inspectProcess.mockResolvedValue(shellAtPrompt(true))
+  Object.defineProperty(window, 'api', {
+    configurable: true,
+    value: { pty: { writeAccepted: mocks.writeAccepted, inspectProcess: mocks.inspectProcess } }
+  })
 })
 
 describe('openSshSession', () => {
@@ -183,6 +202,90 @@ describe('startSessionTerminal when the tab closes meanwhile', () => {
 
     expect(mocks.queueTabStartupCommand).not.toHaveBeenCalled()
     expect(sessions()['tab-1'].terminalStarted).toBe(false)
+  })
+})
+
+describe('reconnectSessionTerminal', () => {
+  const yes = vi.fn(async () => true)
+
+  beforeEach(() => {
+    mocks.state.tabs = [{ id: 'tab-1', ptyId: 'pty-1' }]
+    useSshSessionLivenessStore.getState().recordForeground('tab-1', 'ssh', 1)
+    useSshSessionLivenessStore.getState().recordForeground('tab-1', 'zsh', 2)
+  })
+
+  it('clears the prompt and types the confirmed command into the same terminal', async () => {
+    await reconnectSessionTerminal('tab-1', target, yes)
+
+    expect(yes).toHaveBeenCalledWith(
+      expect.objectContaining({ commands: ['ssh web-prod-203.0.113.10'] })
+    )
+    expect(mocks.writeAccepted).toHaveBeenCalledWith(
+      'pty-1',
+      '\u0003ssh web-prod-203.0.113.10\r',
+      'driving'
+    )
+    expect(mocks.createTab).not.toHaveBeenCalled()
+    expect(useSshSessionLivenessStore.getState().byTab['tab-1'].liveness).toBe('starting')
+  })
+
+  it('types nothing when the user cancels', async () => {
+    await reconnectSessionTerminal(
+      'tab-1',
+      target,
+      vi.fn(async () => false)
+    )
+
+    expect(mocks.writeAccepted).not.toHaveBeenCalled()
+  })
+
+  it('does not interrupt a script running under a shell of the same name', async () => {
+    mocks.inspectProcess.mockResolvedValue(shellAtPrompt(false))
+
+    await reconnectSessionTerminal('tab-1', target, yes)
+
+    expect(mocks.writeAccepted).not.toHaveBeenCalled()
+    expect(mocks.toastError).toHaveBeenCalledWith(
+      'Something still seems to be running in this tab. Finish it first.'
+    )
+  })
+
+  it('types nothing, and says so, when the terminal cannot be read', async () => {
+    mocks.inspectProcess.mockRejectedValue(new Error('gone'))
+
+    await reconnectSessionTerminal('tab-1', target, yes)
+
+    expect(mocks.writeAccepted).not.toHaveBeenCalled()
+    expect(mocks.toastError).toHaveBeenCalledTimes(1)
+  })
+
+  it('types nothing on a host too old to say whether the prompt is idle', async () => {
+    mocks.inspectProcess.mockResolvedValue(shellAtPrompt(undefined))
+
+    await reconnectSessionTerminal('tab-1', target, yes)
+
+    expect(mocks.writeAccepted).not.toHaveBeenCalled()
+  })
+
+  it('says so when the tab closed while the dialog was open', async () => {
+    const confirm = vi.fn(async () => {
+      mocks.state.tabs = []
+      return true
+    })
+
+    await reconnectSessionTerminal('tab-1', target, confirm)
+
+    expect(mocks.writeAccepted).not.toHaveBeenCalled()
+    expect(mocks.toastError).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not wait for a new ssh when the keystrokes were refused', async () => {
+    mocks.writeAccepted.mockResolvedValue(false)
+
+    await reconnectSessionTerminal('tab-1', target, yes)
+
+    expect(mocks.toastError).toHaveBeenCalledTimes(1)
+    expect(useSshSessionLivenessStore.getState().byTab['tab-1'].liveness).toBe('ended')
   })
 })
 

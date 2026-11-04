@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SshTarget } from '../../../../shared/ssh-types'
 import { TooltipProvider } from '../ui/tooltip'
 import { useRemoteSessionStore } from './remote-session-store'
+import { useSshSessionLivenessStore } from './ssh-session-liveness'
 import { RemoteSessionPanels } from './RemoteSessionPanels'
 
 const mocks = vi.hoisted(() => ({
@@ -62,6 +63,7 @@ const targetsById = new Map([[web.id, web]])
 let container: HTMLDivElement
 let root: Root
 const onStartTerminal = vi.fn()
+const onReconnect = vi.fn()
 
 async function render(tabIds: string[], activeTerminalId: string | null): Promise<void> {
   await act(async () =>
@@ -70,7 +72,7 @@ async function render(tabIds: string[], activeTerminalId: string | null): Promis
         <RemoteSessionPanels
           isVisible
           items={{
-            tabs: tabIds.map((id) => ({ id })),
+            tabs: tabIds.map((id) => ({ id, ptyId: `pty-${id}` })),
             terminalItems: tabIds.map((id) => ({ id, quickCommandLabel: `label-${id}` })),
             activeTerminalId,
             parkedTerminalTabIds: new Set<string>()
@@ -78,6 +80,7 @@ async function render(tabIds: string[], activeTerminalId: string | null): Promis
           targetsById={targetsById}
           targetsStatus="ready"
           onStartTerminal={onStartTerminal}
+          onReconnect={onReconnect}
         />
       </TooltipProvider>
     )
@@ -105,6 +108,8 @@ function filesArea(): HTMLElement | null {
   return container.querySelector<HTMLElement>('[data-remote-files]')
 }
 
+const getForegroundProcess = vi.fn(async (): Promise<string | null> => 'ssh')
+
 function addSession(
   tabId: string,
   layout: 'terminal' | 'split' | 'files',
@@ -117,6 +122,12 @@ beforeEach(() => {
   vi.clearAllMocks()
   window.localStorage.clear()
   useRemoteSessionStore.setState({ sessions: {}, remotePathByTab: {} })
+  useSshSessionLivenessStore.setState({ byTab: {} })
+  getForegroundProcess.mockResolvedValue('ssh')
+  Object.defineProperty(window, 'api', {
+    configurable: true,
+    value: { pty: { getForegroundProcess } }
+  })
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -200,6 +211,72 @@ describe('RemoteSessionPanels', () => {
     await act(async () => connect?.click())
 
     expect(onStartTerminal).toHaveBeenCalledWith('a', web)
+  })
+
+  describe('the session-ended banner', () => {
+    function banner(): Element | null {
+      return container.querySelector('[data-ssh-session-ended]')
+    }
+
+    async function endSession(foreground = 'zsh'): Promise<void> {
+      getForegroundProcess.mockResolvedValue(foreground)
+      await act(async () => {
+        useSshSessionLivenessStore.getState().recordForeground('a', 'ssh', 1)
+        useSshSessionLivenessStore.getState().recordForeground('a', foreground, 2)
+      })
+    }
+
+    it('stays away while ssh runs', async () => {
+      addSession('a', 'terminal', true)
+
+      await render(['a'], 'a')
+
+      expect(banner()).toBeNull()
+    })
+
+    it('says the tab is now a local shell, and reconnects in place', async () => {
+      addSession('a', 'terminal', true)
+      await render(['a'], 'a')
+
+      await endSession()
+
+      expect(banner()?.textContent).toContain('This tab is now a local shell, not web-prod.')
+      const reconnect = banner()?.querySelector('button')
+      await act(async () => reconnect?.click())
+      expect(onReconnect).toHaveBeenCalledWith('a', web)
+    })
+
+    it('refuses to reconnect while a local program would read the command', async () => {
+      addSession('a', 'terminal', true)
+      await render(['a'], 'a')
+
+      await endSession('vim')
+
+      expect(banner()?.querySelector('button')?.disabled).toBe(true)
+      expect(banner()?.textContent).toContain(
+        'Something still seems to be running in this tab. Finish it first.'
+      )
+    })
+
+    it('draws no conclusion when the foreground cannot be read', async () => {
+      addSession('a', 'terminal', true)
+      getForegroundProcess.mockResolvedValue(null)
+
+      await render(['a'], 'a')
+
+      expect(banner()).toBeNull()
+    })
+
+    it('does not apply to a tab whose terminal never started', async () => {
+      addSession('a', 'terminal', false)
+      await render(['a'], 'a')
+      await act(async () => useSshSessionLivenessStore.getState().recordForeground('a', 'zsh', 1))
+      await act(async () =>
+        useSshSessionLivenessStore.getState().recordForeground('a', 'zsh', 100_000)
+      )
+
+      expect(banner()).toBeNull()
+    })
   })
 
   describe('when the terminal’s shell ends', () => {

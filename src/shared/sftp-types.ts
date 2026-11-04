@@ -11,6 +11,15 @@ export type SftpEntry = {
   owner: string | null
 }
 
+/** The file connection of one host; independent of the terminal's ssh and of the relay. */
+export type SftpConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'failed'
+
+export type SftpConnectionState = {
+  targetId: string
+  status: SftpConnectionStatus
+  error: string | null
+}
+
 export type SftpResult<T> = { ok: true; value: T } | { ok: false; error: { message: string } }
 
 export type SftpTransferDirection = 'upload' | 'download'

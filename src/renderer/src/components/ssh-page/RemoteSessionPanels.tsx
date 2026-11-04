@@ -19,6 +19,12 @@ import {
   type RemoteSession
 } from './remote-session-store'
 import { closeSshSession } from './ssh-session-actions'
+import {
+  canReconnectInPlace,
+  useSshSessionLivenessPolling,
+  useSshSessionLivenessStore
+} from './ssh-session-liveness'
+import { SshSessionEndedBanner } from './SshSessionEndedBanner'
 import type { SshTargetListStatus } from './use-ssh-target-list'
 import { useSshSessionCwd } from './use-ssh-session-cwd'
 import type { SshSessionItem } from './use-ssh-session-items'
@@ -29,7 +35,7 @@ const MIN_TERMINAL_HEIGHT = 120
 type RemoteSessionPanelsProps = {
   isVisible: boolean
   items: {
-    tabs: readonly Pick<TerminalTab, 'id' | 'generation'>[]
+    tabs: readonly Pick<TerminalTab, 'id' | 'generation' | 'ptyId'>[]
     terminalItems: readonly Pick<SshSessionItem, 'id' | 'quickCommandLabel'>[]
     activeTerminalId: string | null
     parkedTerminalTabIds: ReadonlySet<string>
@@ -37,6 +43,7 @@ type RemoteSessionPanelsProps = {
   targetsById: ReadonlyMap<string, SshTarget>
   targetsStatus: SshTargetListStatus
   onStartTerminal: (tabId: string, target: SshTarget) => void
+  onReconnect: (tabId: string, target: SshTarget) => void
 }
 
 function TerminalNotStarted({
@@ -129,7 +136,8 @@ export function RemoteSessionPanels({
   items,
   targetsById,
   targetsStatus,
-  onStartTerminal
+  onStartTerminal,
+  onReconnect
 }: RemoteSessionPanelsProps): React.JSX.Element {
   const cwd = useSshSessionCwd()
   const sessions = useRemoteSessionStore((s) => s.sessions)
@@ -137,6 +145,18 @@ export function RemoteSessionPanels({
   const active = activeTerminalId ? remoteSessionForTab(sessions, activeTerminalId) : null
   const layout = active?.layout ?? 'terminal'
   const containerRef = useRef<HTMLDivElement>(null)
+  const activeTab = tabs.find((tab) => tab.id === activeTerminalId)
+  const hasRunningTerminal = active?.terminalStarted === true
+  useSshSessionLivenessPolling(
+    active?.tabId ?? null,
+    activeTab?.ptyId ?? null,
+    isVisible && hasRunningTerminal
+  )
+  const observation = useSshSessionLivenessStore((s) =>
+    activeTerminalId ? s.byTab[activeTerminalId] : undefined
+  )
+  const activeTarget = active ? targetsById.get(active.targetId) : undefined
+  const activeItem = terminalItems.find((item) => item.id === activeTerminalId)
 
   const filesTabs = useMemo<RemoteFilesTab[]>(
     () =>
@@ -152,52 +172,64 @@ export function RemoteSessionPanels({
     <div ref={containerRef} className="relative flex min-h-0 min-w-0 flex-1 flex-col">
       <div
         data-remote-terminals
+        data-ssh-liveness={hasRunningTerminal ? observation?.liveness : undefined}
         className={cn(
-          'relative min-h-0 min-w-0 flex-1 overflow-hidden bg-background',
+          'flex min-h-0 min-w-0 flex-1 flex-col bg-background',
           layout === 'files' && 'hidden'
         )}
       >
-        {cwd
-          ? tabs
-              .filter(
-                (tab) =>
-                  !parkedTerminalTabIds.has(tab.id) &&
-                  remoteSessionForTab(sessions, tab.id).terminalStarted
-              )
-              .map((tab) => {
-                const isCurrentTab = tab.id === activeTerminalId
-                const isShown = isCurrentTab && layout !== 'files'
-                return (
-                  <div
-                    key={`${tab.id}-${tab.generation ?? 0}`}
-                    className={isCurrentTab ? 'absolute inset-0' : 'absolute inset-0 hidden'}
-                    aria-hidden={!isShown}
-                  >
-                    <TerminalPane
-                      tabId={tab.id}
-                      worktreeId={SSH_SESSIONS_WORKTREE_ID}
-                      cwd={cwd}
-                      isActive={isShown}
-                      isVisible={isShown && isVisible}
-                      onPtyExit={(ptyId, exitCode) => handleTerminalExit(tab.id, ptyId, exitCode)}
-                      onCloseTab={() => closeSshSession(tab.id)}
-                    />
-                  </div>
-                )
-              })
-          : null}
-        {active && !active.terminalStarted ? (
-          <TerminalNotStarted
-            session={active}
-            target={targetsById.get(active.targetId)}
-            onStart={onStartTerminal}
+        {hasRunningTerminal && observation?.liveness === 'ended' ? (
+          <SshSessionEndedBanner
+            hostLabel={activeTarget?.label ?? activeItem?.quickCommandLabel ?? ''}
+            canReconnect={canReconnectInPlace(observation.foreground)}
+            onReconnect={
+              active && activeTarget ? () => onReconnect(active.tabId, activeTarget) : undefined
+            }
           />
         ) : null}
-        {terminalItems.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-            {translate('sshPage.page.pickHost', 'Pick a host to open an SSH session.')}
-          </div>
-        ) : null}
+        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
+          {cwd
+            ? tabs
+                .filter(
+                  (tab) =>
+                    !parkedTerminalTabIds.has(tab.id) &&
+                    remoteSessionForTab(sessions, tab.id).terminalStarted
+                )
+                .map((tab) => {
+                  const isCurrentTab = tab.id === activeTerminalId
+                  const isShown = isCurrentTab && layout !== 'files'
+                  return (
+                    <div
+                      key={`${tab.id}-${tab.generation ?? 0}`}
+                      className={isCurrentTab ? 'absolute inset-0' : 'absolute inset-0 hidden'}
+                      aria-hidden={!isShown}
+                    >
+                      <TerminalPane
+                        tabId={tab.id}
+                        worktreeId={SSH_SESSIONS_WORKTREE_ID}
+                        cwd={cwd}
+                        isActive={isShown}
+                        isVisible={isShown && isVisible}
+                        onPtyExit={(ptyId, exitCode) => handleTerminalExit(tab.id, ptyId, exitCode)}
+                        onCloseTab={() => closeSshSession(tab.id)}
+                      />
+                    </div>
+                  )
+                })
+            : null}
+          {active && !active.terminalStarted ? (
+            <TerminalNotStarted
+              session={active}
+              target={targetsById.get(active.targetId)}
+              onStart={onStartTerminal}
+            />
+          ) : null}
+          {terminalItems.length === 0 ? (
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+              {translate('sshPage.page.pickHost', 'Pick a host to open an SSH session.')}
+            </div>
+          ) : null}
+        </div>
       </div>
       <div
         data-remote-files

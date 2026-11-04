@@ -1,8 +1,9 @@
 import { BrowserWindow, ipcMain } from 'electron'
-import type { SftpResult, SftpTransferProgress } from '../../shared/sftp-types'
+import type { SftpConnectionState, SftpResult } from '../../shared/sftp-types'
 import { requestSshCredential } from '../ipc/ssh/ssh-passphrase'
 import { getCurrentMainWindow } from '../ipc/ssh/ssh-ipc-context'
 import { SshConnection } from '../ssh/connection/ssh-connection'
+import { signInEndpoint } from '../ssh/connection/ssh-connection-manager'
 import { getSshTargetRegistryStore } from '../ssh/targets/ssh-target-registry'
 import {
   INVALID_SFTP_REQUEST_MESSAGE,
@@ -14,6 +15,7 @@ import {
   SftpTargetSchema,
   sftpPlanRequestRejection
 } from './sftp-ipc-schemas'
+import { toSftpConnectionState } from './sftp-connection-state'
 import { listLocalDirectory, localHomeDirectory } from './sftp-local-fs'
 import { SftpSessionManager } from './sftp-session-manager'
 
@@ -22,26 +24,39 @@ const INVALID_REQUEST: SftpResult<never> = {
   error: { message: INVALID_SFTP_REQUEST_MESSAGE }
 }
 
-function broadcastProgress(progress: SftpTransferProgress): void {
+function broadcast(channel: 'sftp:progress' | 'sftp:connectionState', payload: unknown): void {
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) {
-      window.webContents.send('sftp:progress', progress)
+      window.webContents.send(channel, payload)
     }
   }
+}
+
+/** The last state of each host; a window that opens or reloads later missed the events. */
+const connectionStates = new Map<string, SftpConnectionState>()
+
+function publishConnectionState(state: SftpConnectionState): void {
+  connectionStates.set(state.targetId, state)
+  broadcast('sftp:connectionState', state)
 }
 
 function createSftpSessionManager(): SftpSessionManager {
   return new SftpSessionManager({
     getTarget: (targetId) => getSshTargetRegistryStore()?.getTarget(targetId),
-    createConnection: (target) =>
-      new SshConnection(target, {
-        // Why: this connection is the SFTP page's own; publishing its state would make the
-        // relay's per-target status (Settings → SSH) report a connection it doesn't have.
-        onStateChange: () => undefined,
-        onCredentialRequest: async (targetId, kind, detail, signal) =>
-          (await requestSshCredential(getCurrentMainWindow, targetId, kind, detail, signal)).value
-      }),
-    onProgress: broadcastProgress
+    createConnection: (target, credentials) =>
+      new SshConnection(
+        target,
+        {
+          // Why its own channel: this connection is not the relay's, so publishing it there would
+          // make the per-target status (Settings → SSH) report a connection the relay doesn't have.
+          onStateChange: (_targetId, state) => publishConnectionState(toSftpConnectionState(state)),
+          onCredentialRequest: async (targetId, kind, detail, signal) =>
+            (await requestSshCredential(getCurrentMainWindow, targetId, kind, detail, signal)).value
+        },
+        credentials
+      ),
+    signInEndpoint,
+    onProgress: (progress) => broadcast('sftp:progress', progress)
   })
 }
 
@@ -94,6 +109,7 @@ export function registerSftpHandlers(): void {
       await sessions.disconnect(targetId.data)
     }
   })
+  ipcMain.handle('sftp:connectionStates', () => [...connectionStates.values()])
   ipcMain.handle('sftp:localHome', () => localHomeDirectory())
   ipcMain.handle('sftp:localList', (_event, raw: unknown) => {
     const dir = SftpLocalPathSchema.safeParse(raw)
