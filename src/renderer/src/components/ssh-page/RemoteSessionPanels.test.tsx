@@ -83,6 +83,7 @@ async function render(tabIds: string[], activeTerminalId: string | null): Promis
           onReconnect={onReconnect}
           onAddCurrentToGrid={vi.fn()}
           onReturnToGrid={vi.fn()}
+          onJoinSync={vi.fn()}
         />
       </TooltipProvider>
     )

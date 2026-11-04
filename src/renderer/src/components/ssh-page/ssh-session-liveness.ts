@@ -15,6 +15,10 @@ type SshSessionObservation = {
   hasSeenSsh: boolean
   /** ssh came back after ending, without Orca being asked, so it may go to another host. */
   hasManualSsh: boolean
+  /** Counts those: accepting one says nothing about the next. */
+  manualSshEpoch: number
+  /** The last answer was that ssh isn't running. A look that can't be read doesn't change that. */
+  wasEnded: boolean
   startedAt: number
 }
 
@@ -77,16 +81,15 @@ function nextObservation(
     }
     return now - startedAt >= LIVENESS_START_GRACE_MS ? 'ended' : 'starting'
   }
-  const isNewSsh =
-    previous?.liveness === 'ended' &&
-    previous.hasSeenSsh &&
-    foreground !== null &&
-    isSshProcess(foreground)
+  const isNewSsh = previous?.wasEnded === true && foreground !== null && isSshProcess(foreground)
+  const nextLiveness = liveness()
   return {
-    liveness: liveness(),
+    liveness: nextLiveness,
     foreground,
     hasSeenSsh: Boolean(hasSeenSsh),
     hasManualSsh: previous?.hasManualSsh === true || isNewSsh,
+    manualSshEpoch: (previous?.manualSshEpoch ?? 0) + (isNewSsh ? 1 : 0),
+    wasEnded: foreground === null ? previous?.wasEnded === true : nextLiveness === 'ended',
     startedAt
   }
 }
@@ -106,6 +109,8 @@ export const useSshSessionLivenessStore = create<SshSessionLivenessState>((set, 
       foreground: null,
       hasSeenSsh: false,
       hasManualSsh: false,
+      manualSshEpoch: get().byTab[tabId]?.manualSshEpoch ?? 0,
+      wasEnded: false,
       startedAt: now
     }
     set({ byTab: { ...get().byTab, [tabId]: observation } })
@@ -123,7 +128,8 @@ export const useSshSessionLivenessStore = create<SshSessionLivenessState>((set, 
 function pollSshSessionForeground(
   tabId: string,
   ptyId: string,
-  tabCreatedAt: number | undefined
+  tabCreatedAt: number | undefined,
+  isWatchingClosely: boolean
 ): () => void {
   let isStopped = false
   let timer: ReturnType<typeof setTimeout> | null = null
@@ -136,7 +142,10 @@ function pollSshSessionForeground(
       .getState()
       .recordForeground(tabId, foreground, Date.now(), tabCreatedAt)
     const isStarting = useSshSessionLivenessStore.getState().byTab[tabId]?.liveness === 'starting'
-    timer = setTimeout(() => void poll(), isStarting ? STARTING_POLL_INTERVAL_MS : POLL_INTERVAL_MS)
+    timer = setTimeout(
+      () => void poll(),
+      isStarting || isWatchingClosely ? STARTING_POLL_INTERVAL_MS : POLL_INTERVAL_MS
+    )
   }
   void poll()
   return () => {
@@ -152,12 +161,14 @@ export function useSshSessionLivenessPolling(
   tabId: string | null,
   ptyId: string | null,
   isEnabled: boolean,
-  tabCreatedAt?: number
+  tabCreatedAt?: number,
+  /** Synced input is on: ssh ending and coming back must not slip between two looks. */
+  isWatchingClosely = false
 ): void {
   useEffect(() => {
     if (!isEnabled || !tabId || !ptyId) {
       return
     }
-    return pollSshSessionForeground(tabId, ptyId, tabCreatedAt)
-  }, [isEnabled, ptyId, tabCreatedAt, tabId])
+    return pollSshSessionForeground(tabId, ptyId, tabCreatedAt, isWatchingClosely)
+  }, [isEnabled, isWatchingClosely, ptyId, tabCreatedAt, tabId])
 }
