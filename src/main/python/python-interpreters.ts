@@ -5,7 +5,7 @@ import type {
   PythonInterpreterSource
 } from '../../shared/python-interpreter-types'
 import { runProcess } from '@orca/process-host'
-import { resolveCommandOnLocalPath } from '../ipc/command-path-resolver'
+import { resolveCommandOnLocalPath } from '../ipc/command-path/command-path-resolver'
 
 const VENV_DIR_NAMES = ['.venv', 'venv', 'env']
 const PROBE_TIMEOUT_MS = 5_000

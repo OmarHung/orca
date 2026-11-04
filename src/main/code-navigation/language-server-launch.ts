@@ -11,7 +11,7 @@ import {
 import type { DebugAdapterArtifact } from '../debug/adapters/adapter-manifest'
 import { downloadWithElectronNet } from '../debug/adapters/adapter-download'
 import { extractArchive } from '../debug/adapters/archive-extract'
-import { resolveCommandOnLocalPath } from '../ipc/command-path-resolver'
+import { resolveCommandOnLocalPath } from '../ipc/command-path/command-path-resolver'
 import type { LanguageServerLaunch } from './language-server-session'
 import { findCsharpSolution } from './csharp-solution-discovery'
 import { ensureCsharpRazorDesignTimeTargets } from './csharp-razor-design-time'

@@ -7,10 +7,10 @@ import { useAppStore } from '@/store'
 import { getDefaultSettings } from '../../../../shared/constants'
 import {
   applyMentionSuggestion,
-  applyPickerSuggestion,
-  type ComposerAutocomplete,
-  type NativeChatPickerItem
-} from '../../../../shared/native-chat-composer-autocomplete'
+  type ComposerAutocomplete
+} from '../../../../shared/native-chat/input/native-chat-composer-autocomplete'
+import { applyPickerSuggestion } from '../../../../shared/native-chat/input/native-chat-picker-triggers'
+import type { NativeChatPickerItem } from '../../../../shared/native-chat/input/native-chat-picker-items'
 import { useNativeChatComposerKeyDown } from './use-native-chat-composer-keydown'
 
 const COMMAND: NativeChatPickerItem = {

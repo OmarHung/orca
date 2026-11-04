@@ -10,8 +10,8 @@ import { SettingsSection } from '../section-layout/SettingsSection'
 import { translate } from '@/i18n/i18n'
 import type { Translate } from '@/i18n/use-translate'
 import type { SettingsRenderContext } from './settings-render-context'
-import { SshVpnSettingsSection } from '../ssh-vpn/SshVpnSettingsSection'
-import { SftpLocalFolderSettingsSection } from '../sftp-page/SftpLocalFolderSettingsSection'
+import { SshVpnSettingsSection } from '../../ssh-vpn/SshVpnSettingsSection'
+import { SftpLocalFolderSettingsSection } from '../../sftp-page/SftpLocalFolderSettingsSection'
 
 export function renderServersSettingsSection(
   context: SettingsRenderContext,

@@ -4,7 +4,7 @@ import {
   readLaunchProfileDetails,
   type LaunchProfileDetails
 } from '../../../shared/run-configurations/dotnet-run-configurations'
-import { resolveCommandOnLocalPath } from '../../ipc/command-path-resolver'
+import { resolveCommandOnLocalPath } from '../../ipc/command-path/command-path-resolver'
 import { CONTAINER_NETCOREDBG_PATH } from '../../dotnet-container/dotnet-container-assets'
 import { isExecutableFile } from '../../python/python-interpreters'
 import { startStdioDapTransport } from '../dap-transport-stdio'

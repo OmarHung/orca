@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import { workspacePortScanKeyForTarget } from '@/lib/workspace-port-actions'
+import { workspacePortScanKeyForTarget } from '@/lib/workspace-ports/workspace-port-actions'
 import type {
   NgrokConfiguredEndpoint,
   NgrokEndpoint,

@@ -2,11 +2,14 @@ import { existsSync, statSync } from 'node:fs'
 import type { SftpLocalRoot } from '../../../shared/sftp-types'
 import { forkProcess } from '@orca/process-host/fork-process'
 import type { SpawnedProcess } from '@orca/process-host/process-spec'
-import { RUNTIME_ENV_ALLOWLIST, pickAllowedEnv } from '../../ai-vault/session-scanner-service-env'
+import {
+  RUNTIME_ENV_ALLOWLIST,
+  pickAllowedEnv
+} from '../../ai-vault/scan-service/session-scanner-service-env'
 import {
   currentWorkerEntryLayout,
   resolveForkedProcessEntryPath
-} from '../../worker-thread-entry-path'
+} from '../../worker-threads/worker-thread-entry-path'
 import type { LocalWriterCommand, LocalWriterResponse } from './sftp-local-writer-protocol'
 
 const ENTRY_FILENAME = 'sftp-local-writer-entry.js'
