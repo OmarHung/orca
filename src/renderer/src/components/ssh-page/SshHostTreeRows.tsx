@@ -60,13 +60,15 @@ export function SshHostGroupRow({
   row,
   drop,
   isSearching,
-  onAskName
+  onAskName,
+  onConnectGroup
 }: {
   row: Extract<SshHostTreeRow, { kind: 'group' }>
   drop: SshHostDrop | null
   /** A search unfolds every group with matches, so folding waits until it ends. */
   isSearching: boolean
   onAskName: AskSshHostGroupName
+  onConnectGroup?: (groupId: string) => void
 }): React.JSX.Element {
   const position = dropAttribute(row, drop)
   const Icon = row.expanded ? FolderOpen : Folder
@@ -97,7 +99,11 @@ export function SshHostGroupRow({
           <ReorderLine position={position} />
         </button>
       </ContextMenuTrigger>
-      <SshHostGroupMenuContent group={row.group} onAskName={onAskName} />
+      <SshHostGroupMenuContent
+        group={row.group}
+        onAskName={onAskName}
+        onConnectGroup={onConnectGroup}
+      />
     </ContextMenu>
   )
 }
@@ -139,14 +145,20 @@ export function SshHostUngroupedRow({
 export function SshHostRow({
   row,
   isCurrent,
+  isSelected = false,
   onSelect,
+  onToggleSelected,
   menuItems,
   rowActions,
   onAskName
 }: {
   row: Extract<SshHostTreeRow, { kind: 'host' }>
   isCurrent: boolean
+  /** Picked with ⌘/Ctrl, to open several hosts together. */
+  isSelected?: boolean
   onSelect: (target: SshTarget) => void
+  /** Absent where a list picks one host only. */
+  onToggleSelected?: (target: SshTarget) => void
   /** Page-specific actions, listed first in the row's right-click menu. */
   menuItems?: React.ReactNode
   /** Sits beside the row's button, not in it: a button can't contain buttons. */
@@ -171,9 +183,16 @@ export function SshHostRow({
           data-ssh-tree-row={row.key}
           data-ssh-host-row={target.id}
           data-current={isCurrent ? 'true' : undefined}
+          data-selected={isSelected ? 'true' : undefined}
           aria-current={isCurrent ? 'true' : undefined}
-          onClick={() => onSelect(target)}
-          className="flex w-full flex-col items-start gap-0.5 rounded-md py-1.5 pr-2 text-left transition-colors group-hover/host:bg-accent data-[current=true]:bg-accent"
+          onClick={(event) => {
+            if (onToggleSelected && (event.metaKey || event.ctrlKey)) {
+              onToggleSelected(target)
+            } else {
+              onSelect(target)
+            }
+          }}
+          className="flex w-full flex-col items-start gap-0.5 rounded-md py-1.5 pr-2 text-left data-[selected=true]:ring-1 data-[selected=true]:ring-ring data-[selected=true]:ring-inset transition-colors group-hover/host:bg-accent data-[current=true]:bg-accent"
           style={indentStyle(row.depth)}
         >
           <span className="flex w-full items-center gap-1.5">

@@ -6,7 +6,11 @@ import { useAppStore } from '@/store'
 import { SSH_SESSIONS_WORKTREE_ID } from '../../../../shared/local-synthetic-workspace'
 import type { SshCommandBuiltins } from '../../../../shared/ssh-command-template'
 import type { SshRemotePlatform, SshTarget } from '../../../../shared/ssh-types'
-import { remoteSessionForTab, useRemoteSessionStore } from '../ssh-page/remote-session-store'
+import {
+  remoteLayoutForTab,
+  remoteSessionForTab,
+  useRemoteSessionStore
+} from '../ssh-page/remote-session-store'
 import { setSessionLayout } from '../ssh-page/ssh-session-actions'
 import { isSshProcess, useSshSessionLivenessStore } from '../ssh-page/ssh-session-liveness'
 import { readTerminalTabScreen } from '../terminal-pane/terminal-pane-manager-registry'
@@ -113,26 +117,42 @@ export function sshCommandRemotePlatform(
 }
 
 /** Checks again right before typing: the dialog can stay open while ssh ends behind it. */
-export async function sendSshCommand(
+export async function typeSshCommand(
   tabId: string,
   command: string,
   mode: 'run' | 'insert'
-): Promise<boolean> {
+): Promise<{ isSent: true } | { isSent: false; reason: string }> {
   const check = await checkSshCommandTarget(tabId)
   if (check.kind === 'blocked') {
-    toast.error(sshCommandBlockMessage(check.reason))
-    return false
+    return { isSent: false, reason: sshCommandBlockMessage(check.reason) }
   }
   const isAccepted = await window.api.pty
     .writeAccepted(check.ptyId, mode === 'run' ? `${command}\r` : command, 'driving')
     .catch(() => false)
   if (!isAccepted) {
-    toast.error(translate('sshCommands.sendFailed', 'Couldn’t type into this tab.'))
-    return false
+    return {
+      isSent: false,
+      reason: translate('sshCommands.sendFailed', 'Couldn’t type into this tab.')
+    }
   }
   // Why: the command's output is the point, and a files-only layout would hide it.
-  if (remoteSessionForTab(useRemoteSessionStore.getState().sessions, tabId).layout === 'files') {
+  const { sessions, grid } = useRemoteSessionStore.getState()
+  if (remoteLayoutForTab(sessions, grid, tabId) === 'files') {
     setSessionLayout(tabId, 'split')
+  }
+  return { isSent: true }
+}
+
+/** Types into one tab and leaves the keyboard there, or says why it couldn't. */
+export async function sendSshCommand(
+  tabId: string,
+  command: string,
+  mode: 'run' | 'insert'
+): Promise<boolean> {
+  const result = await typeSshCommand(tabId, command, mode)
+  if (!result.isSent) {
+    toast.error(result.reason)
+    return false
   }
   focusTerminalTabSurface(tabId)
   return true

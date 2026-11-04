@@ -23454,7 +23454,8 @@
       "moveToTop": "移到最上层",
       "removeFromGroup": "移出群组",
       "ungroup": "解散群组",
-      "ungrouped": "未分组"
+      "ungrouped": "未分组",
+      "connectAll": "全部连接并列显示"
     },
     "session": {
       "unsafeTarget": "这台主机的名称包含 Orca 无法安全传给 ssh 的字符。请在 ~/.ssh/config 中重新命名。",
@@ -23476,7 +23477,8 @@
     },
     "picker": {
       "title": "开启 SSH 连接",
-      "description": "选择要连接的主机。"
+      "description": "选择要连接的主机。",
+      "openTabs": "已打开的标签页"
     },
     "layout": {
       "label": "标签页布局",
@@ -23492,6 +23494,27 @@
     "sidePanel": {
       "hosts": "主机",
       "commands": "指令"
+    },
+    "grid": {
+      "tooMany": "并列最多 {{max}} 个窗格，所以只加入了 {{count}} 个。",
+      "confirmTitle": "连接 {{count}} 台主机？",
+      "confirmNote": "每台主机各开一个标签页运行登录 shell，并像手动输入一样输入它的指令。登录提示会显示在该主机的窗格中。",
+      "full": "并列最多 {{max}} 个窗格。请先移除一个。",
+      "ended": "本地 shell",
+      "remove": "从并列移除。连接不会中断。",
+      "start": "并列显示",
+      "return": "回到并列",
+      "add": "加入连接",
+      "end": "结束并列。标签页和连接都会保留。",
+      "outside": "这个标签页不在并列中。",
+      "addCurrent": "加入并列",
+      "addSelected": "将 {{count}} 台加入并列",
+      "openSelected": "并列打开 {{count}} 台",
+      "clearSelection": "清除选择",
+      "pickerTitle": "并列显示",
+      "pickerDescription": "选择已打开的标签页（不需要新连接）或一台主机。",
+      "unsafeTarget": "“{{host}}”包含 Orca 无法安全传给 ssh 的字符，所以没有打开任何连接。请在 ~/.ssh/config 中重命名。",
+      "notConnected": "没有打开任何连接，因为“{{host}}”无法准备好。"
     }
   },
   "sftpPage": {
@@ -24992,7 +25015,14 @@
       "insert": "粘贴但不运行",
       "run": "运行",
       "insideQuotes": "“{{name}}”写在模板的引号内，它的值可能会闭合引号。请编辑指令并移除引号。",
-      "manualSsh": "这个标签页的 ssh 是在 Orca 之外重新启动的，可能连到了其他主机。请先确认终端。"
+      "manualSsh": "这个标签页的 ssh 是在 Orca 之外重新启动的，可能连到了其他主机。请先确认终端。",
+      "sendTo": "发送到",
+      "doubtShort": "可能连到其他主机",
+      "skipped": "已略过",
+      "runOnMany": "在 {{count}} 台主机上运行",
+      "singleTargetOnly": "这条指令会用到单一标签页的文件窗格，不能发送到多台主机。请只选择一台。",
+      "targetMany": "输入到每个选中标签页的终端。如果你从其中一个又连到别处，指令会在当前的 shell 上运行。",
+      "doubtUnverified": "无法确认是否已连接"
     },
     "edit": {
       "unused": "未使用",

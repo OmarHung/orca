@@ -1,24 +1,20 @@
 import { useCallback, useMemo, useRef } from 'react'
-import TerminalPane from '@/components/terminal-pane/TerminalPane'
-import { shouldDeferParkedPtyExitTabClose } from '@/components/terminal-pane/terminal-parked-tab-watchers'
-import { closeTerminalTab } from '@/components/terminal/terminal-tab-actions'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
-import { useAppStore } from '@/store'
-import { isProvenProcessExit } from '../../../../shared/terminal-exit-cause'
 import type { TerminalTab } from '../../../../shared/terminal-tab-types'
-import { SSH_SESSIONS_WORKTREE_ID } from '../../../../shared/local-synthetic-workspace'
 import type { SshTarget } from '../../../../shared/ssh-types'
 import { ResizeHandle } from '../bottom-panel/ResizeHandle'
 import { useDragResize } from '../bottom-panel/use-drag-resize'
 import { SftpTabPanels, type RemoteFilesTab } from '../sftp-page/SftpTabPanels'
-import { Button } from '../ui/button'
+import { RemoteGridHint } from './RemoteGridControls'
 import {
+  DEFAULT_REMOTE_DOCK_HEIGHT,
+  remoteDockHeightForTab,
+  remoteLayoutForTab,
   remoteSessionForTab,
-  useRemoteSessionStore,
-  type RemoteSession
+  useRemoteSessionStore
 } from './remote-session-store'
-import { closeSshSession } from './ssh-session-actions'
+import { RemoteTerminalArea } from './RemoteTerminalArea'
 import {
   canReconnectInPlace,
   useSshSessionLivenessPolling,
@@ -26,7 +22,6 @@ import {
 } from './ssh-session-liveness'
 import { SshSessionEndedBanner } from './SshSessionEndedBanner'
 import type { SshTargetListStatus } from './use-ssh-target-list'
-import { useSshSessionCwd } from './use-ssh-session-cwd'
 import type { SshSessionItem } from './use-ssh-session-items'
 
 const MIN_DOCK_HEIGHT = 160
@@ -35,7 +30,7 @@ const MIN_TERMINAL_HEIGHT = 120
 type RemoteSessionPanelsProps = {
   isVisible: boolean
   items: {
-    tabs: readonly Pick<TerminalTab, 'id' | 'generation' | 'ptyId'>[]
+    tabs: readonly Pick<TerminalTab, 'id' | 'generation' | 'ptyId' | 'createdAt'>[]
     terminalItems: readonly Pick<SshSessionItem, 'id' | 'quickCommandLabel'>[]
     activeTerminalId: string | null
     parkedTerminalTabIds: ReadonlySet<string>
@@ -44,27 +39,8 @@ type RemoteSessionPanelsProps = {
   targetsStatus: SshTargetListStatus
   onStartTerminal: (tabId: string, target: SshTarget) => void
   onReconnect: (tabId: string, target: SshTarget) => void
-}
-
-function TerminalNotStarted({
-  session,
-  target,
-  onStart
-}: {
-  session: RemoteSession
-  target: SshTarget | undefined
-  onStart: (tabId: string, target: SshTarget) => void
-}): React.JSX.Element {
-  return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-4 text-center text-sm text-muted-foreground">
-      <p>{translate('sshPage.session.notStarted', 'This tab has no terminal running.')}</p>
-      {target ? (
-        <Button size="sm" onClick={() => onStart(session.tabId, target)}>
-          {translate('sshPage.session.connectTo', 'Connect to {{host}}', { host: target.label })}
-        </Button>
-      ) : null}
-    </div>
-  )
+  onAddCurrentToGrid: () => void
+  onReturnToGrid: () => void
 }
 
 /**
@@ -72,13 +48,14 @@ function TerminalNotStarted({
  * resize the remote shell's PTY each time. Holds the drag state, so a drag re-renders only this.
  */
 function DockResizeHandle({
-  session,
+  tabId,
+  dockHeight,
   containerRef
 }: {
-  session: RemoteSession
+  tabId: string
+  dockHeight: number
   containerRef: React.RefObject<HTMLDivElement | null>
 }): React.JSX.Element {
-  const { tabId, dockHeight } = session
   const setSize = useCallback(
     (next: number) => useRemoteSessionStore.getState().setDockHeight(tabId, next),
     [tabId]
@@ -111,25 +88,6 @@ function DockResizeHandle({
   )
 }
 
-function handleTerminalExit(tabId: string, ptyId: string, exitCode: number | undefined): void {
-  if (exitCode !== undefined && !isProvenProcessExit(exitCode)) {
-    useAppStore.getState().markUnverifiedPtyLoss(tabId)
-    return
-  }
-  if (shouldDeferParkedPtyExitTabClose(tabId, ptyId)) {
-    return
-  }
-  const { sessions, remotePathByTab, markTerminalStopped } = useRemoteSessionStore.getState()
-  // Why: a tab that has shown files is also a file workbench; its terminal ending must not take
-  // those away. Only a terminal-only tab closes with its shell.
-  if (remoteSessionForTab(sessions, tabId).layout !== 'terminal' || remotePathByTab[tabId]) {
-    useAppStore.getState().clearTabPtyId(tabId, ptyId)
-    markTerminalStopped(tabId)
-    return
-  }
-  closeTerminalTab(tabId, { reason: 'pty-exit', lifecyclePtyId: ptyId })
-}
-
 /** The active tab's terminal and files, in the layout that tab chose. Both start on first use. */
 export function RemoteSessionPanels({
   isVisible,
@@ -137,20 +95,31 @@ export function RemoteSessionPanels({
   targetsById,
   targetsStatus,
   onStartTerminal,
-  onReconnect
+  onReconnect,
+  onAddCurrentToGrid,
+  onReturnToGrid
 }: RemoteSessionPanelsProps): React.JSX.Element {
-  const cwd = useSshSessionCwd()
   const sessions = useRemoteSessionStore((s) => s.sessions)
+  const grid = useRemoteSessionStore((s) => s.grid)
   const { tabs, terminalItems, activeTerminalId, parkedTerminalTabIds } = items
   const active = activeTerminalId ? remoteSessionForTab(sessions, activeTerminalId) : null
-  const layout = active?.layout ?? 'terminal'
+  const layout = activeTerminalId
+    ? remoteLayoutForTab(sessions, grid, activeTerminalId)
+    : 'terminal'
+  const shownGridTabIds =
+    activeTerminalId && grid?.tabIds.includes(activeTerminalId) ? grid.tabIds : null
+  const dockHeight = activeTerminalId
+    ? remoteDockHeightForTab(sessions, grid, activeTerminalId)
+    : DEFAULT_REMOTE_DOCK_HEIGHT
   const containerRef = useRef<HTMLDivElement>(null)
   const activeTab = tabs.find((tab) => tab.id === activeTerminalId)
   const hasRunningTerminal = active?.terminalStarted === true
   useSshSessionLivenessPolling(
     active?.tabId ?? null,
     activeTab?.ptyId ?? null,
-    isVisible && hasRunningTerminal
+    // Why: a grid's panes each watch themselves, and this tab's pane is one of them.
+    isVisible && hasRunningTerminal && !shownGridTabIds,
+    activeTab?.createdAt
   )
   const observation = useSshSessionLivenessStore((s) =>
     activeTerminalId ? s.byTab[activeTerminalId] : undefined
@@ -170,6 +139,9 @@ export function RemoteSessionPanels({
 
   return (
     <div ref={containerRef} className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+      {grid && !shownGridTabIds && activeTerminalId ? (
+        <RemoteGridHint onAddCurrent={onAddCurrentToGrid} onReturn={onReturnToGrid} />
+      ) : null}
       <div
         data-remote-terminals
         data-ssh-liveness={hasRunningTerminal ? observation?.liveness : undefined}
@@ -178,7 +150,7 @@ export function RemoteSessionPanels({
           layout === 'files' && 'hidden'
         )}
       >
-        {hasRunningTerminal && observation?.liveness === 'ended' ? (
+        {hasRunningTerminal && !shownGridTabIds && observation?.liveness === 'ended' ? (
           <SshSessionEndedBanner
             hostLabel={activeTarget?.label ?? activeItem?.quickCommandLabel ?? ''}
             canReconnect={canReconnectInPlace(observation.foreground)}
@@ -187,49 +159,17 @@ export function RemoteSessionPanels({
             }
           />
         ) : null}
-        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
-          {cwd
-            ? tabs
-                .filter(
-                  (tab) =>
-                    !parkedTerminalTabIds.has(tab.id) &&
-                    remoteSessionForTab(sessions, tab.id).terminalStarted
-                )
-                .map((tab) => {
-                  const isCurrentTab = tab.id === activeTerminalId
-                  const isShown = isCurrentTab && layout !== 'files'
-                  return (
-                    <div
-                      key={`${tab.id}-${tab.generation ?? 0}`}
-                      className={isCurrentTab ? 'absolute inset-0' : 'absolute inset-0 hidden'}
-                      aria-hidden={!isShown}
-                    >
-                      <TerminalPane
-                        tabId={tab.id}
-                        worktreeId={SSH_SESSIONS_WORKTREE_ID}
-                        cwd={cwd}
-                        isActive={isShown}
-                        isVisible={isShown && isVisible}
-                        onPtyExit={(ptyId, exitCode) => handleTerminalExit(tab.id, ptyId, exitCode)}
-                        onCloseTab={() => closeSshSession(tab.id)}
-                      />
-                    </div>
-                  )
-                })
-            : null}
-          {active && !active.terminalStarted ? (
-            <TerminalNotStarted
-              session={active}
-              target={targetsById.get(active.targetId)}
-              onStart={onStartTerminal}
-            />
-          ) : null}
-          {terminalItems.length === 0 ? (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-              {translate('sshPage.page.pickHost', 'Pick a host to open an SSH session.')}
-            </div>
-          ) : null}
-        </div>
+        <RemoteTerminalArea
+          isVisible={isVisible}
+          tabs={tabs}
+          terminalItems={terminalItems}
+          activeTerminalId={activeTerminalId}
+          parkedTerminalTabIds={parkedTerminalTabIds}
+          shownGridTabIds={shownGridTabIds}
+          targetsById={targetsById}
+          onStartTerminal={onStartTerminal}
+          onReconnect={onReconnect}
+        />
       </div>
       <div
         data-remote-files
@@ -242,14 +182,18 @@ export function RemoteSessionPanels({
         style={
           layout === 'split'
             ? {
-                height: active?.dockHeight,
+                height: dockHeight,
                 maxHeight: `calc(100% - ${MIN_TERMINAL_HEIGHT}px)`
               }
             : undefined
         }
       >
         {layout === 'split' && active ? (
-          <DockResizeHandle session={active} containerRef={containerRef} />
+          <DockResizeHandle
+            tabId={active.tabId}
+            dockHeight={dockHeight}
+            containerRef={containerRef}
+          />
         ) : null}
         <SftpTabPanels
           tabs={filesTabs}

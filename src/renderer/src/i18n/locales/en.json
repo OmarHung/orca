@@ -24900,7 +24900,8 @@
       "moveToTop": "Move to Top Level",
       "removeFromGroup": "Remove from Group",
       "ungroup": "Ungroup",
-      "ungrouped": "Ungrouped"
+      "ungrouped": "Ungrouped",
+      "connectAll": "Connect All Side by Side"
     },
     "session": {
       "unsafeTarget": "This host has characters Orca cannot pass to ssh safely. Rename it in ~/.ssh/config.",
@@ -24922,7 +24923,8 @@
     },
     "picker": {
       "title": "Open an SSH session",
-      "description": "Pick the host to connect to."
+      "description": "Pick the host to connect to.",
+      "openTabs": "Open tabs"
     },
     "layout": {
       "label": "Tab layout",
@@ -24938,6 +24940,27 @@
     "sidePanel": {
       "hosts": "Hosts",
       "commands": "Commands"
+    },
+    "grid": {
+      "tooMany": "A grid holds {{max}} panes, so only {{count}} were added.",
+      "confirmTitle": "Connect to {{count}} hosts?",
+      "confirmNote": "Each host gets its own tab running your login shell, with its command typed in as if you typed it. Any login prompt appears in that host’s pane.",
+      "full": "A grid holds {{max}} panes. Remove one first.",
+      "ended": "Local shell",
+      "remove": "Remove from grid. The connection stays open.",
+      "start": "Show side by side",
+      "return": "Back to the grid",
+      "add": "Add a connection",
+      "end": "End the grid. Tabs and connections stay open.",
+      "outside": "This tab isn’t in the grid.",
+      "addCurrent": "Add to grid",
+      "addSelected": "Add {{count}} to grid",
+      "openSelected": "Open {{count}} side by side",
+      "clearSelection": "Clear selection",
+      "pickerTitle": "Show side by side",
+      "pickerDescription": "Pick an open tab, which needs no new connection, or a host.",
+      "unsafeTarget": "“{{host}}” has characters Orca cannot pass to ssh safely, so nothing was opened. Rename it in ~/.ssh/config.",
+      "notConnected": "Nothing was opened, because “{{host}}” couldn’t be prepared."
     }
   },
   "sftpPage": {
@@ -26369,7 +26392,14 @@
       "insert": "Paste without running",
       "run": "Run",
       "insideQuotes": "“{{name}}” is inside quotes in the template, where its value could close them. Edit the command to remove them.",
-      "manualSsh": "ssh was started again in this tab outside Orca, so it may be connected to another host. Check the terminal first."
+      "manualSsh": "ssh was started again in this tab outside Orca, so it may be connected to another host. Check the terminal first.",
+      "sendTo": "Send to",
+      "doubtShort": "May be on another host",
+      "skipped": "Skipped",
+      "runOnMany": "Run on {{count}} hosts",
+      "singleTargetOnly": "This uses one tab’s files pane, so it can’t go to several hosts. Choose one host.",
+      "targetMany": "Typed into each chosen tab’s terminal. If you connected onward from one, it runs wherever that shell is.",
+      "doubtUnverified": "Can’t confirm it’s connected"
     },
     "edit": {
       "unused": "Not used",

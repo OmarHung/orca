@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
+import { focusTerminalTabSurface } from '@/lib/focus-terminal-tab-surface'
 import { CommandList } from '../command-confirm/CommandList'
-import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import {
   Dialog,
@@ -11,155 +12,63 @@ import {
   DialogHeader,
   DialogTitle
 } from '../ui/dialog'
-import { Input } from '../ui/input'
-import { Label } from '../ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import {
   expandSshCommandTemplate,
   syncSshCommandParams,
-  type SshCommandProblem
+  type SshCommandExpansion
 } from '../../../../shared/ssh-command-template'
 import type { SshCommand, SshCommandParam } from '../../../../shared/ssh-command-types'
-import type { SshTarget } from '../../../../shared/ssh-types'
 import { useRemoteSessionStore } from '../ssh-page/remote-session-store'
 import {
   checkSshCommandTarget,
-  sendSshCommand,
+  typeSshCommand,
   sshCommandBlockMessage,
   sshCommandRemotePlatform,
-  type SshCommandDoubt,
   type SshCommandTargetCheck
 } from './ssh-command-send'
 import { initialSshCommandValues, rememberSshCommandValues } from './ssh-command-values'
+import {
+  doubtMessage,
+  MultiTargetPreview,
+  ParamField,
+  problemMessage,
+  TargetPicker,
+  type SshCommandRunOption
+} from './SshCommandRunFields'
 
-export type SshCommandRunRequest = { command: SshCommand; tabId: string; target: SshTarget }
+export type { SshCommandRunOption }
 
-// Why: Radix Select can't hold an empty value, and an optional option may be left out.
-const NO_OPTION = '__none__'
+export type SshCommandRunRequest = SshCommandRunOption & {
+  command: SshCommand
+  /** The rest of the grid this tab is in, where the command can also go. */
+  otherTargets?: readonly SshCommandRunOption[]
+}
+
+const NO_OTHER_TARGETS: readonly SshCommandRunOption[] = []
 
 const EMPTY_SELECTION: readonly string[] = []
 
-function problemMessage(problem: SshCommandProblem, labelOf: (key: string) => string): string {
-  const name = labelOf(problem.key)
-  switch (problem.kind) {
-    case 'missingValue':
-      return translate('sshCommands.run.missingValue', '“{{name}}” needs a value.', { name })
-    case 'controlCharacter':
-      return translate(
-        'sshCommands.run.controlCharacter',
-        '“{{name}}” contains a line break or control character, which could run something else.',
-        { name }
-      )
-    case 'notANumber':
-      return translate('sshCommands.run.notANumber', '“{{name}}” must be a number.', { name })
-    case 'notAnOption':
-      return translate('sshCommands.run.notAnOption', 'Choose one of the options for “{{name}}”.', {
-        name
-      })
-    case 'windowsNeedsRaw':
-      return translate(
-        'sshCommands.run.windowsNeedsRaw',
-        '“{{name}}” can’t be quoted for a Windows host. Set it to “Insert as written” or use a list.',
-        { name }
-      )
-    case 'insideQuotes':
-      return translate(
-        'sshCommands.run.insideQuotes',
-        '“{{name}}” is inside quotes in the template, where its value could close them. Edit the command to remove them.',
-        { name }
-      )
-    case 'noPath':
-      return translate(
-        'sshCommands.run.noPath',
-        'This uses the folder in the files pane. Open this tab’s files first.'
-      )
-    case 'noSelection':
-      return translate(
-        'sshCommands.run.noSelection',
-        'This uses the items selected in the files pane. Select something first.'
-      )
-    case 'undefinedParam':
-      return translate(
-        'sshCommands.run.undefinedParam',
-        '“{{name}}” isn’t defined. Edit the command.',
-        {
-          name
-        }
-      )
-  }
-}
-
-function doubtMessage(doubt: SshCommandDoubt): string {
-  return doubt === 'manualSsh'
-    ? translate(
-        'sshCommands.run.manualSsh',
-        'ssh was started again in this tab outside Orca, so it may be connected to another host. Check the terminal first.'
-      )
-    : translate(
-        'sshCommands.run.unverified',
-        'Orca can’t confirm this tab is still connected here. If ssh has ended, the command runs on your computer.'
-      )
-}
-
-function ParamField({
-  param,
-  value,
-  onChange
-}: {
-  param: SshCommandParam
-  value: string
-  onChange: (value: string) => void
-}): React.JSX.Element {
-  const id = `ssh-command-param-${param.key}`
-  return (
-    <div className="flex flex-col gap-1.5" data-ssh-command-param={param.key}>
-      <Label htmlFor={id} variant="settings">
-        {param.label || param.key}
-        {param.required ? null : (
-          <span className="font-normal text-muted-foreground">
-            {translate('sshCommands.run.optional', 'Optional')}
-          </span>
-        )}
-        {param.quote === 'raw' ? (
-          <Badge variant="outline">
-            {translate('sshCommands.run.rawBadge', 'Inserted as written')}
-          </Badge>
-        ) : null}
-      </Label>
-      {param.kind === 'select' ? (
-        <Select
-          value={value === '' ? NO_OPTION : value}
-          onValueChange={(next) => onChange(next === NO_OPTION ? '' : next)}
-        >
-          <SelectTrigger id={id} size="sm" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {param.required ? null : (
-              <SelectItem value={NO_OPTION}>
-                {translate('sshCommands.run.noOption', 'None')}
-              </SelectItem>
-            )}
-            {(param.options ?? []).map((option) => (
-              <SelectItem key={option} value={option}>
-                {option}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ) : (
-        <Input
-          id={id}
-          value={value}
-          spellCheck={false}
-          inputMode={param.kind === 'number' ? 'decimal' : undefined}
-          variant="code"
-          density="compact"
-          onChange={(event) => onChange(event.target.value)}
-        />
-      )}
-    </div>
-  )
+function expandFor(
+  option: SshCommandRunOption,
+  command: SshCommand,
+  params: readonly SshCommandParam[],
+  values: Readonly<Record<string, string>>,
+  isMultiTarget: boolean,
+  files: { path: string | null; selected: readonly string[] }
+): SshCommandExpansion {
+  return expandSshCommandTemplate({
+    template: command.template,
+    params,
+    values,
+    builtins: {
+      host: option.target.host,
+      user: option.target.username,
+      path: files.path,
+      selected: files.selected
+    },
+    remotePlatform: sshCommandRemotePlatform(option.tabId, option.target.id),
+    isMultiTarget
+  })
 }
 
 function RunDialogBody({
@@ -169,7 +78,7 @@ function RunDialogBody({
   request: SshCommandRunRequest
   onClose: () => void
 }): React.JSX.Element {
-  const { command, tabId, target } = request
+  const { command, tabId, target, otherTargets = NO_OTHER_TARGETS } = request
   const remotePath = useRemoteSessionStore((s) => s.remotePathByTab[tabId] ?? null)
   const selected = useRemoteSessionStore((s) => s.remoteSelectionByTab[tabId] ?? EMPTY_SELECTION)
   const params = useMemo(() => {
@@ -177,49 +86,103 @@ function RunDialogBody({
     return rows.filter((param) => !unusedKeys.includes(param.key))
   }, [command.params, command.template])
   const [values, setValues] = useState(() => initialSshCommandValues(command.id, params))
-  const [check, setCheck] = useState<SshCommandTargetCheck | null>(null)
+  const [checks, setChecks] = useState<Readonly<Record<string, SshCommandTargetCheck>>>({})
+  // Why only this tab: reaching more hosts should take a deliberate tick each.
+  const [chosenTabIds, setChosenTabIds] = useState<ReadonlySet<string>>(() => new Set([tabId]))
   const [isSending, setIsSending] = useState(false)
+  const isClosedRef = useRef(false)
+  useEffect(() => {
+    isClosedRef.current = false
+    return () => {
+      isClosedRef.current = true
+    }
+  }, [])
+  const options = useMemo<SshCommandRunOption[]>(
+    () => [{ tabId, target }, ...otherTargets],
+    [otherTargets, tabId, target]
+  )
 
   useEffect(() => {
     let isCancelled = false
-    void checkSshCommandTarget(tabId).then((result) => {
+    void Promise.all(
+      options.map(async (option) => [option.tabId, await checkSshCommandTarget(option.tabId)])
+    ).then((entries) => {
       if (!isCancelled) {
-        setCheck(result)
+        setChecks(Object.fromEntries(entries))
       }
     })
     return () => {
       isCancelled = true
     }
-  }, [tabId])
+  }, [options])
 
-  const expansion = expandSshCommandTemplate({
-    template: command.template,
-    params,
-    values,
-    builtins: {
-      host: target.host,
-      user: target.username,
-      path: remotePath,
-      selected
-    },
-    remotePlatform: sshCommandRemotePlatform(tabId, target.id)
-  })
+  const chosen = options.filter((option) => chosenTabIds.has(option.tabId))
+  const isMultiTarget = chosen.length > 1
+  const expansions = chosen.map((option) => ({
+    option,
+    expansion: expandFor(option, command, params, values, isMultiTarget, {
+      path: option.tabId === tabId ? remotePath : null,
+      selected: option.tabId === tabId ? selected : EMPTY_SELECTION
+    })
+  }))
+  const sendable = expansions.filter(({ option }) => checks[option.tabId]?.kind === 'ready')
+  const problems = expansions
+    .flatMap(({ expansion }) => expansion.problems)
+    .filter(
+      (problem, index, all) =>
+        all.findIndex((other) => other.key === problem.key && other.kind === problem.kind) === index
+    )
+  const warnings = expansions
+    .flatMap(({ expansion }) => expansion.warnings)
+    .filter(
+      (warning, index, all) =>
+        all.findIndex((other) => other.key === warning.key && other.kind === warning.kind) === index
+    )
+  const isBlank = expansions.some(({ expansion }) => expansion.command.trim() === '')
+  const canSend = sendable.length > 0 && problems.length === 0 && !isBlank && !isSending
   const labelOf = (key: string): string => params.find((param) => param.key === key)?.label || key
-  const canSend =
-    check?.kind === 'ready' &&
-    expansion.problems.length === 0 &&
-    expansion.command.trim() !== '' &&
-    !isSending
+  const check = checks[tabId]
+  const doubts = [
+    ...new Set(
+      chosen.flatMap((option) => {
+        const chosenCheck = checks[option.tabId]
+        return chosenCheck?.kind === 'ready' && chosenCheck.doubt ? [chosenCheck.doubt] : []
+      })
+    )
+  ]
 
   const send = async (mode: 'run' | 'insert'): Promise<void> => {
     setIsSending(true)
-    const isSent = await sendSshCommand(tabId, expansion.command, mode)
-    if (isSent) {
-      rememberSshCommandValues(command.id, values)
-      onClose()
+    const missed: { host: string; reason: string }[] = expansions
+      .filter(({ option }) => checks[option.tabId]?.kind !== 'ready')
+      .map(({ option }) => ({
+        host: option.target.label,
+        reason: translate('sshCommands.run.skipped', 'Skipped')
+      }))
+    let sentCount = 0
+    for (const { option, expansion } of sendable) {
+      // Why: closing the dialog while sending means stop, not finish the rest of the hosts.
+      if (isClosedRef.current) {
+        return
+      }
+      const result = await typeSshCommand(option.tabId, expansion.command, mode)
+      if (result.isSent) {
+        sentCount += 1
+      } else {
+        missed.push({ host: option.target.label, reason: result.reason })
+      }
+    }
+    for (const { host, reason } of missed) {
+      toast.error(`${host}: ${reason}`)
+    }
+    if (sentCount === 0) {
+      setIsSending(false)
       return
     }
-    setIsSending(false)
+    // Why the tab in use: typing elsewhere must not leave the keyboard on a pane not highlighted.
+    focusTerminalTabSurface(tabId)
+    rememberSshCommandValues(command.id, values)
+    onClose()
   }
 
   const isRunFirst = command.runMode === 'run'
@@ -228,11 +191,16 @@ function RunDialogBody({
       <DialogHeader className="min-w-0">
         <DialogTitle>{command.name}</DialogTitle>
         <DialogDescription>
-          {translate(
-            'sshCommands.run.target',
-            'Typed into this tab’s terminal, opened for {{host}}. If you connected onward from there, it runs wherever that shell is.',
-            { host: target.label }
-          )}
+          {chosen.length === 1
+            ? translate(
+                'sshCommands.run.target',
+                'Typed into this tab’s terminal, opened for {{host}}. If you connected onward from there, it runs wherever that shell is.',
+                { host: chosen[0].target.label }
+              )
+            : translate(
+                'sshCommands.run.targetMany',
+                'Typed into each chosen tab’s terminal. If you connected onward from one, it runs wherever that shell is.'
+              )}
         </DialogDescription>
       </DialogHeader>
       {params.length > 0 ? (
@@ -247,27 +215,55 @@ function RunDialogBody({
           ))}
         </div>
       ) : null}
-      <CommandList commands={[expansion.command]} />
-      {check?.kind === 'blocked' ? (
+      {otherTargets.length > 0 ? (
+        <TargetPicker
+          options={options}
+          chosenTabIds={chosenTabIds}
+          checks={checks}
+          onToggle={(toggled, isChosen) => {
+            const next = new Set(chosenTabIds)
+            if (isChosen) {
+              next.add(toggled)
+            } else {
+              next.delete(toggled)
+            }
+            setChosenTabIds(next)
+          }}
+        />
+      ) : null}
+      {/* Why always in a grid: the user may have unticked the tab in use, so name who gets it. */}
+      {otherTargets.length > 0 ? (
+        <MultiTargetPreview
+          lines={expansions.map(({ option, expansion }) => ({
+            tabId: option.tabId,
+            host: option.target.label,
+            command: expansion.command,
+            isSkipped: checks[option.tabId]?.kind === 'blocked'
+          }))}
+        />
+      ) : (
+        <CommandList commands={expansions.map(({ expansion }) => expansion.command)} />
+      )}
+      {otherTargets.length === 0 && check?.kind === 'blocked' ? (
         <p data-ssh-command-blocked className="text-sm text-destructive">
           {sshCommandBlockMessage(check.reason)}
         </p>
       ) : null}
-      {check?.kind === 'ready' && check.doubt ? (
-        <p data-ssh-command-doubt={check.doubt} className="text-sm text-destructive">
-          {doubtMessage(check.doubt)}
+      {doubts.map((doubt) => (
+        <p key={doubt} data-ssh-command-doubt={doubt} className="text-sm text-destructive">
+          {doubtMessage(doubt)}
         </p>
-      ) : null}
-      {expansion.problems.map((problem) => (
+      ))}
+      {problems.map((problem) => (
         <p
-          key={problem.key}
+          key={`${problem.kind}:${problem.key}`}
           data-ssh-command-problem={problem.kind}
           className="text-sm text-destructive"
         >
           {problemMessage(problem, labelOf)}
         </p>
       ))}
-      {expansion.warnings
+      {warnings
         .filter((warning) => warning.kind === 'leadingDash')
         .map((warning) => (
           <p key={warning.key} className="text-xs text-muted-foreground">
@@ -279,7 +275,7 @@ function RunDialogBody({
           </p>
         ))}
       <DialogFooter>
-        <Button variant="outline" onClick={onClose}>
+        <Button variant="outline" disabled={isSending} onClick={onClose}>
           {translate('sshCommands.run.cancel', 'Cancel')}
         </Button>
         <Button
@@ -296,7 +292,11 @@ function RunDialogBody({
           data-ssh-command-run
           onClick={() => void send('run')}
         >
-          {translate('sshCommands.run.run', 'Run')}
+          {isMultiTarget
+            ? translate('sshCommands.run.runOnMany', 'Run on {{count}} hosts', {
+                count: sendable.length
+              })
+            : translate('sshCommands.run.run', 'Run')}
         </Button>
       </DialogFooter>
     </>

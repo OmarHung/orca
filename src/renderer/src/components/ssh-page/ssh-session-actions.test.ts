@@ -71,11 +71,15 @@ const target: SshTarget = {
   username: 'deploy'
 }
 
-function shellAtPrompt(isIdle: boolean | undefined): unknown {
+function shellAtPrompt(isIdle: boolean | undefined, capturedAgeMs = 0): unknown {
   return {
     foregroundProcess: isIdle ? null : 'bash',
     hasChildProcesses: !isIdle,
-    foregroundProcessEvidence: { verdict: 'live', shellOwnsEveryTtyProcessGroup: isIdle }
+    foregroundProcessEvidence: {
+      verdict: 'live',
+      shellOwnsEveryTtyProcessGroup: isIdle,
+      capturedAgeMs
+    }
   }
 }
 
@@ -248,6 +252,44 @@ describe('reconnectSessionTerminal', () => {
     expect(mocks.toastError).toHaveBeenCalledWith(
       'Something still seems to be running in this tab. Finish it first.'
     )
+  })
+
+  it('does not trust a process table older than the decision, which may miss a new script', async () => {
+    vi.useFakeTimers()
+    try {
+      // The shared table predates a script started a moment ago, so it still looks idle.
+      mocks.inspectProcess
+        .mockResolvedValueOnce(shellAtPrompt(true, 400))
+        .mockResolvedValue(shellAtPrompt(false))
+
+      const reconnecting = reconnectSessionTerminal('tab-1', target, yes)
+      await vi.advanceTimersByTimeAsync(1_000)
+      await reconnecting
+
+      expect(mocks.inspectProcess.mock.calls.length).toBeGreaterThan(1)
+      expect(mocks.writeAccepted).not.toHaveBeenCalled()
+      expect(mocks.toastError).toHaveBeenCalledWith(
+        'Something still seems to be running in this tab. Finish it first.'
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('types nothing if it never gets a capture new enough to trust', async () => {
+    vi.useFakeTimers()
+    try {
+      mocks.inspectProcess.mockResolvedValue(shellAtPrompt(true, 86_400_000))
+
+      const reconnecting = reconnectSessionTerminal('tab-1', target, yes)
+      await vi.advanceTimersByTimeAsync(5_000)
+      await reconnecting
+
+      expect(mocks.writeAccepted).not.toHaveBeenCalled()
+      expect(mocks.toastError).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('types nothing, and says so, when the terminal cannot be read', async () => {

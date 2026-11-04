@@ -22986,7 +22986,8 @@
       "moveToTop": "移到最上層",
       "removeFromGroup": "移出群組",
       "ungroup": "解散群組",
-      "ungrouped": "未分組"
+      "ungrouped": "未分組",
+      "connectAll": "全部連線並列顯示"
     },
     "session": {
       "unsafeTarget": "這台主機的名稱包含 Orca 無法安全傳給 ssh 的字元。請在 ~/.ssh/config 中重新命名。",
@@ -23008,7 +23009,8 @@
     },
     "picker": {
       "title": "開啟 SSH 連線",
-      "description": "選擇要連線的主機。"
+      "description": "選擇要連線的主機。",
+      "openTabs": "已開啟的分頁"
     },
     "layout": {
       "label": "分頁佈局",
@@ -23024,6 +23026,27 @@
     "sidePanel": {
       "hosts": "主機",
       "commands": "指令"
+    },
+    "grid": {
+      "tooMany": "並列最多 {{max}} 個窗格，所以只加入了 {{count}} 個。",
+      "confirmTitle": "連線 {{count}} 台主機？",
+      "confirmNote": "每台主機各開一個分頁執行登入 shell，並像手動輸入一樣輸入它的指令。登入提示會顯示在該主機的窗格中。",
+      "full": "並列最多 {{max}} 個窗格。請先移除一個。",
+      "ended": "本地 shell",
+      "remove": "從並列移除。連線不會中斷。",
+      "start": "並列顯示",
+      "return": "回到並列",
+      "add": "加入連線",
+      "end": "結束並列。分頁和連線都會保留。",
+      "outside": "這個分頁不在並列中。",
+      "addCurrent": "加入並列",
+      "addSelected": "將 {{count}} 台加入並列",
+      "openSelected": "並列開啟 {{count}} 台",
+      "clearSelection": "清除選擇",
+      "pickerTitle": "並列顯示",
+      "pickerDescription": "選擇已開啟的分頁（不需要新連線）或一台主機。",
+      "unsafeTarget": "“{{host}}”包含 Orca 無法安全傳給 ssh 的字元，所以沒有開啟任何連線。請在 ~/.ssh/config 中重新命名。",
+      "notConnected": "沒有開啟任何連線，因為“{{host}}”無法準備好。"
     }
   },
   "sftpPage": {
@@ -24465,7 +24488,14 @@
       "insert": "貼上但不執行",
       "run": "執行",
       "insideQuotes": "“{{name}}”寫在範本的引號內，它的值可能會閉合引號。請編輯指令並移除引號。",
-      "manualSsh": "這個分頁的 ssh 是在 Orca 之外重新啟動的，可能連到了其他主機。請先確認終端機。"
+      "manualSsh": "這個分頁的 ssh 是在 Orca 之外重新啟動的，可能連到了其他主機。請先確認終端機。",
+      "sendTo": "傳送到",
+      "doubtShort": "可能連到其他主機",
+      "skipped": "已略過",
+      "runOnMany": "在 {{count}} 台主機上執行",
+      "singleTargetOnly": "這條指令會用到單一分頁的檔案窗格，不能傳送到多台主機。請只選擇一台。",
+      "targetMany": "輸入到每個選中分頁的終端機。如果你從其中一個又連到別處，指令會在目前的 shell 上執行。",
+      "doubtUnverified": "無法確認是否已連線"
     },
     "edit": {
       "unused": "未使用",
