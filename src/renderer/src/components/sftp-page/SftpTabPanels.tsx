@@ -36,6 +36,7 @@ export function SftpTabPanels({
   targetsStatus
 }: SftpTabPanelsProps): React.JSX.Element {
   const setRemotePath = useRemoteSessionStore((s) => s.setRemotePath)
+  const setRemoteSelection = useRemoteSessionStore((s) => s.setRemoteSelection)
   const [shownTabIds, setShownTabIds] = useState<ReadonlySet<string>>(() => new Set())
   // Why: adjust during render (not in an Effect) so the newly shown tab mounts in this pass.
   if (activeTabId && !shownTabIds.has(activeTabId)) {
@@ -62,6 +63,7 @@ export function SftpTabPanels({
                   target={target}
                   isActive={isActive && isPageVisible}
                   onRemotePathChange={(path) => setRemotePath(tab.id, path)}
+                  onRemoteSelectionChange={(paths) => setRemoteSelection(tab.id, paths)}
                 />
               ) : (
                 <PanelMessage>

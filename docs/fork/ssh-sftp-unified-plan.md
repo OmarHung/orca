@@ -1,6 +1,6 @@
 # SSH 與 SFTP 整合：實作計畫（fork 專屬）
 
-> 狀態：設計已確認（2026-11-04），Phase 1、2 完成並提交到功能分支，下一步 Phase 3。進度見 §10
+> 狀態：設計已確認（2026-11-04），Phase 1～3 完成並提交到功能分支，下一步 Phase 4。進度見 §10
 > 分支：`feat/ssh-sftp-unified`，每個 Phase 完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 > 前身：[`ssh-sftp-pages-plan.md`](./ssh-sftp-pages-plan.md)。本文件只推翻它的 D1（兩個獨立頁面），D2 到 D7 都保留。
@@ -128,7 +128,7 @@ type RemoteSession = {
 - **模板會外流**：Quick Commands 也會從專案終端機和手機執行，那裡沒有填參數的畫面，`{{service}}` 會原封不動送進 shell。
 - **範圍對不上**：它的範圍是全域或 repo，這裡需要全部主機、分組或指定主機。
 
-所以用 fork 自己的 store：`userData/ssh-commands.json`，寫法照 `SshVpnStore`。可重用的照用：`flattenTerminalQuickCommand`、`CommandList`。
+所以用 fork 自己的 store：`userData/ssh-commands.json`，寫法照 `SshVpnStore`，但讀不懂的紀錄會原樣寫回。預覽重用 `CommandList`。`flattenTerminalQuickCommand` 沒有重用，它會把 `\` 續行和註解行改壞，見 §6.5。
 
 ### 6.2 資料
 
@@ -161,7 +161,9 @@ type SshCommand = {
 
 - 打字時參數表自動同步：多一個 `{{x}}` 就多一列，拿掉就標示未使用，刪除前不丟已填的設定。
 - 內建參數：`{{host}}`、`{{user}}` 是目標主機；`{{path}}` 是檔案窗格目前的遠端資料夾；`{{selected}}` 是選取的項目。
-- 模板為空、參數名稱不合法、用了沒定義的參數都不能存。`{{x}}` 寫在引號裡時提醒，因為自動引號會變成兩層。
+- 模板為空、含控制字元（包括 Tab，遠端 shell 會當成補全）都不能存。
+- 只有符合 `[A-Za-z0-9_-]+` 的 `{{x}}` 才是參數，其他如 `{{.Names}}` 原樣送出，編輯畫面會標示。原本的設計是不合法就不能存，但這樣 `docker ps --format '{{.Names}}'` 存不了。
+- `{{x}}` 寫在引號裡**不能存，也不能送**，除非設成原樣帶入。值的引號會關掉作者的引號：`grep "{{x}}"` 配 `a"; touch y; "` 會執行 `touch y`。
 
 ### 6.4 執行
 
@@ -171,16 +173,17 @@ type SshCommand = {
 
 ### 6.5 參數展開規則（純函式 `expandSshCommandTemplate`，每個分支都有單元測試）
 
-| 情況                 | 處理                                                                   | 為什麼                                                              |
-| -------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| 一般的值             | 安全字元原樣保留；其他用 POSIX 單引號，`'` 轉成 `'\''`                 | `nginx; rm -rf /` 只會是一個字串                                    |
-| 值裡有換行或控制字元 | 拒絕                                                                   | 換行等於按 Enter                                                    |
-| 值以 `-` 開頭        | 提醒，可以繼續                                                         | 引號擋不住選項注入，模板加 `--` 才是根本解法                        |
-| 引號方式選原樣帶入   | 不加引號，預覽標示                                                     | 有時候就是要帶多個選項                                              |
-| 目標不在 ssh 使用中  | 單一目標拒絕；多台時這台列為略過，其餘照送                             | 否則會跑在本機 shell 上                                             |
-| 目標正在全螢幕程式   | 拒絕                                                                   | 字元進 vim 會被當成編輯指令                                         |
-| Windows 主機         | 不做自動引號，要求原樣帶入或選單                                       | PowerShell、cmd 的引號規則不同（`SshTarget.remotePlatform` 可判斷） |
-| 多台主機             | `{{host}}`、`{{user}}` 每台分開展開；`{{path}}`、`{{selected}}` 不能用 | 那兩個只屬於單一分頁的檔案窗格                                      |
+| 情況                 | 處理                                                                     | 為什麼                                                              |
+| -------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| 一般的值             | 安全字元原樣保留；其他用 POSIX 單引號，`'` 轉成 `'\''`                   | `nginx; rm -rf /` 只會是一個字串                                    |
+| 值裡有換行或控制字元 | 拒絕。內建值也一樣，遠端檔名可以含任何字元；方向控制字元也算             | 換行等於按 Enter，Ctrl-U 會清掉開頭引號，方向字元會讓預覽和實際不同 |
+| 模板有多行           | `\` 和結尾的 `&&`、`\|\|`、`\|` 接續同一行；註解行拿掉；其餘用 `; ` 串接 | 否則 `docker run \` 變成 `docker run \;`，註解會吃掉後面所有內容    |
+| 值以 `-` 開頭        | 提醒，可以繼續                                                           | 引號擋不住選項注入，模板加 `--` 才是根本解法                        |
+| 引號方式選原樣帶入   | 不加引號，預覽標示                                                       | 有時候就是要帶多個選項                                              |
+| 目標不在 ssh 使用中  | 單一目標拒絕；多台時這台列為略過，其餘照送                               | 否則會跑在本機 shell 上                                             |
+| 目標正在全螢幕程式   | 拒絕                                                                     | 字元進 vim 會被當成編輯指令                                         |
+| Windows 主機         | 不做自動引號，要求原樣帶入或選單                                         | PowerShell、cmd 的引號規則不同。判斷方式見 §10 的已知限制           |
+| 多台主機             | `{{host}}`、`{{user}}` 每台分開展開；`{{path}}`、`{{selected}}` 不能用   | 那兩個只屬於單一分頁的檔案窗格。Phase 3 只有單一目標，Phase 4 再加  |
 
 刻意不做：密碼類型的參數（會進 shell history 和畫面）、匯出匯入、和手機同步。
 
@@ -269,7 +272,8 @@ type SshCommand = {
 ### 9.1 上游檔案
 
 - **Phase 1 拿掉**：`ui-chrome-types`、`top-level-view`、`client-ui-params`、`ui-slice-contract-core`、`right-sidebar-visibility`、`terminal-workspace-keydown`、`AppWorkspaceShell` 裡的 `sftp`。
-- **Phase 3 各加一行**：`preload/index.ts`、`preload/api-types.ts`、`register-core-handlers.ts`（掛 IPC）；`use-terminal-pane-mount-lifecycle.ts:76` 附近把 SSH 分頁的 `PaneManager` 交給 fork 的 registry，之後的貼上、全螢幕判斷、鏡像、OSC 7 都從這裡拿。
+- **Phase 3 各加一行**：`preload/index.ts`、`preload/api-types.ts`（掛 IPC）；`use-terminal-pane-mount-lifecycle.ts`、`terminal-pane-mount-cleanup.ts` 把 `PaneManager` 交給 fork 的 `terminal-pane-manager-registry`，之後的全螢幕判斷、鏡像、OSC 7 都從這裡拿。
+- **`register-core-handlers.ts` 不要動**：它已超過 max-lines（300 行），只要改到，pre-commit 就會擋。IPC 從 fork 的 `registerSftpHandlers` 掛。
 
 ### 9.2 風險
 
@@ -342,3 +346,22 @@ Phase 2 中發現的事：
 - **登入 shell 超過 20 秒才打完指令時，橫幅會短暫誤報**，ssh 一出現就消失；這時按重新連線，可能多打一次 ssh 指令。
 - **沒看過 ssh、前景又是不認識的程式就顯示未知**：可能是 `autossh`、`kitten ssh` 這類包裝程式，寧可不提示也不誤報。
 - **main 收到中斷連線時，傳輸還在跑就直接忽略**：按鈕本身會提示，main 只是防另一個視窗不知道有傳輸。
+
+- 2026-11-04：Phase 3 完成，使用者實測通過。左欄多了「主機／指令」分頁；`ssh-commands/` 底下是清單、編輯和執行對話框；模板展開是 `shared/ssh-command-template.ts` 的純函式；資料在 `userData/ssh-commands.json`，上次填的值在 localStorage（`orca.sshCommandValues`）。
+
+送出前一定會再查一次（`checkSshCommandTarget`）：終端機有啟動、沒有分割、不在全螢幕程式、前景是 `ssh`。分割的分頁也拒絕，因為 `tab.ptyId` 只對應一個窗格。
+
+獨立審查找到、已修正的問題（寫在這裡，因為 Phase 5 的同步輸入會碰到同樣的事）：
+
+- 內建值原本不檢查控制字元。遠端檔名 `x\x15touch pwn\n` 選取後一鍵貼上，就會在主機上執行。
+- 參數寫在模板引號內，原本只提醒，值可以關掉引號後執行任意指令。
+- store 原本會在下次儲存時，清掉讀不懂的紀錄和未知格式的整個檔案。
+- `{{constructor}}` 會取到物件繼承的函式，用 `Object.hasOwn` 擋掉。
+
+已知限制：
+
+- **Orca 分不出 ssh 連到哪裡**：前景是 `ssh` 只代表有 ssh 在跑。分頁裡看過 ssh 結束，又有 ssh 自己回來時會警告（`hasManualSsh`），但只輪詢畫面上的分頁，切走時發生的看不到；從遠端再跳一層完全看不到。對話框文字照實寫。Phase 5 的同步輸入要特別注意這點，一次送多台時更危險。
+- **主機平台多半不知道**：`SshTarget` 沒有 `remotePlatform`，它只存在 relay 連線的狀態裡，而這個頁面不走 relay。目前看 relay 回報和檔案窗格的路徑（`/C:/`）。兩者都沒有時當成 POSIX，這時 Windows 主機的 cmd 不受引號保護。
+- **遠端的前景程式看不到**：`tail -f` 這類程式還在跑時，文字會進它的 stdin。遠端提示字元上打到一半的文字也不會清掉，所以貼上或執行前要先看終端機。
+- **密碼提示沒有偵測**：ssh 問密碼時前景也是 `ssh`，文字會被當成密碼。Phase 5 要做的「游標那行像密碼提示」完成後可以共用。
+- **上次填的值是明文**：沒有密碼類型的參數，但使用者可能把密碼填進文字參數。

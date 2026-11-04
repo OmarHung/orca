@@ -23020,6 +23020,10 @@
     "hostRow": {
       "openTerminal": "開啟終端機分頁",
       "openFiles": "開啟檔案分頁"
+    },
+    "sidePanel": {
+      "hosts": "主機",
+      "commands": "指令"
     }
   },
   "sftpPage": {
@@ -24432,5 +24436,87 @@
   "wslDistroHold": {
     "terminalStopped": "WSL 發行版 {{distro}} 已停止，因此 Orca 沒有啟動此終端機。請啟動該發行版後重試。",
     "terminalUnverifiable": "Orca 無法確認 WSL 發行版 {{distro}} 是否正在執行，因此沒有啟動此終端機。請啟動該發行版後重試。"
+  },
+  "sshCommands": {
+    "blocked": {
+      "notConnected": "請先連線這個分頁的終端機。",
+      "localShell": "這個分頁已回到你的電腦，指令會在本機執行。請先重新連線。",
+      "unknown": "Orca 無法確認這個分頁是否已連線，所以沒有傳送任何內容。",
+      "fullScreen": "這個分頁正在執行全屏程式，文字會被當成按鍵輸入。請先關閉它。",
+      "splitTab": "這個分頁已分屏，Orca 無法確定要傳送到哪個窗格。"
+    },
+    "sendFailed": "無法在這個分頁中輸入。",
+    "run": {
+      "missingValue": "“{{name}}”需要填寫。",
+      "controlCharacter": "“{{name}}”包含換行或控制字元，可能會執行其他內容。",
+      "notANumber": "“{{name}}”必須是數字。",
+      "notAnOption": "請為“{{name}}”選擇一個選項。",
+      "windowsNeedsRaw": "無法為 Windows 主機的“{{name}}”自動加引號。請改成“原樣帶入”或使用列表。",
+      "noPath": "這條指令會用到檔案窗格的資料夾。請先開啟這個分頁的檔案。",
+      "noSelection": "這條指令會用到檔案窗格選中的專案。請先選擇專案。",
+      "undefinedParam": "“{{name}}”尚未定義。請編輯這條指令。",
+      "optional": "可選",
+      "rawBadge": "原樣帶入",
+      "noOption": "無",
+      "target": "輸入到這個分頁的終端機（為 {{host}} 開啟）。如果你從那裡又連到別處，指令會在目前的 shell 上執行。",
+      "unverified": "Orca 無法確認這個分頁仍在連線中。如果 ssh 已結束，指令會在你的電腦上執行。",
+      "leadingDash": "“{{name}}”以連字元開頭，程式可能會把它當成選項。引號無法防止這一點；如果它是名稱，請在範本中它的前面加上 --。",
+      "cancel": "取消",
+      "insert": "貼上但不執行",
+      "run": "執行",
+      "insideQuotes": "“{{name}}”寫在範本的引號內，它的值可能會閉合引號。請編輯指令並移除引號。",
+      "manualSsh": "這個分頁的 ssh 是在 Orca 之外重新啟動的，可能連到了其他主機。請先確認終端機。"
+    },
+    "edit": {
+      "unused": "未使用",
+      "deleteParam": "刪除引數",
+      "paramLabel": "標籤",
+      "paramKind": "型別",
+      "kindText": "文本",
+      "kindNumber": "數字",
+      "kindSelect": "列表",
+      "paramDefault": "預設值",
+      "paramQuote": "值",
+      "quoteShell": "自動加引號",
+      "quoteRaw": "原樣帶入",
+      "paramOptions": "選項，每行一個",
+      "paramRequired": "必填",
+      "scope": "適用於",
+      "scopeAll": "所有主機",
+      "scopeGroup": "一個分組",
+      "scopeHosts": "指定主機",
+      "unsafeTemplate": "範本包含可能操控終端機的控制字元。",
+      "noHosts": "請至少選擇一台主機。",
+      "noGroup": "請選擇一個分組。",
+      "noOptions": "請為 {{key}} 新增選項。",
+      "defaultNotAnOption": "{{key}} 的預設值必須是它的選項之一。",
+      "titleEdit": "編輯指令",
+      "titleNew": "新增指令",
+      "name": "名稱",
+      "template": "指令",
+      "templateHint": "用 {{name}} 表示要填寫的值。內建：{{host}} {{user}} {{path}} {{selected}}，後兩個來自檔案窗格。",
+      "quotedKey": "{{key}} 寫在引號內，它的值可能會閉合引號。請移除它外面的引號，或改成“原樣帶入”。",
+      "literalTokens": "以下內容會原樣傳送，不算引數：{{tokens}}",
+      "params": "引數",
+      "runMode": "選擇時",
+      "runModeInsert": "貼上，由我按 Enter",
+      "runModeRun": "提供執行選項",
+      "cancel": "取消",
+      "save": "儲存",
+      "multiLine": "多行會用 ; 合併成一行，前面失敗時後面仍會執行。要在失敗時停止，請用 &&。"
+    },
+    "list": {
+      "edit": "編輯指令",
+      "delete": "刪除指令",
+      "noTab": "請先開啟一台主機的分頁。",
+      "deleteTitle": "刪除“{{name}}”？",
+      "deleteConfirm": "刪除",
+      "imported": "已匯入 {{count}} 條指令",
+      "search": "搜尋指令",
+      "import": "從 Quick Commands 匯入",
+      "new": "新增指令",
+      "empty": "還沒有指令。新增一條帶填寫值的指令，例如 journalctl -u {{service}}。",
+      "others": "其他主機"
+    }
   }
 }

@@ -15,6 +15,7 @@ import {
 import { isTerminalTabPresent } from '@/store/slices/terminal-tab-retirement'
 import { e2eConfig } from '@/lib/e2e-config'
 import { useAppStore } from '@/store'
+import { unregisterTerminalPaneManager } from './terminal-pane-manager-registry'
 
 export function cleanupTerminalPaneMount(args: {
   manager: PaneManager
@@ -121,6 +122,7 @@ export function cleanupTerminalPaneMount(args: {
   }
   panePtyBindingsRef.current.clear()
   paneTransportsRef.current.clear()
+  unregisterTerminalPaneManager(tabId, manager)
   manager.destroy()
   managerRef.current = null
   if (e2eConfig.exposeStore && window.__paneManagers?.get(tabId) === manager) {
