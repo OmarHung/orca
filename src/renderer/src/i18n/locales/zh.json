@@ -23562,6 +23562,18 @@
       "notePrompts": "密码提示是靠文字辨识的，措辞特殊的提示仍可能收到你输入的内容。",
       "noteOnward": "如果你从某台主机再连到别处，或手动重启过 ssh，Orca 可能无法察觉，按键会跟着过去。",
       "noteMouse": "鼠标操作只留在各自的窗格。"
+    },
+    "link": {
+      "copiedForWindows": "已复制路径，因为这台主机运行 Windows，其 shell 的引号规则可能不同。",
+      "controlCharacter": "这个名称包含控制字符，因此 Orca 不会把它输入到终端。"
+    },
+    "follow": {
+      "copied": "已复制。",
+      "setupTitle": "这台主机还没有回报它所在的文件夹",
+      "setupDescription": "主机的 shell 回报文件夹后，文件区才能跟随终端，只需在它的启动文件加一行。Orca 不会更改服务器上的任何内容。加完后请重新登录。",
+      "copy": "复制",
+      "stop": "停止跟随终端的文件夹",
+      "start": "跟随终端的文件夹"
     }
   },
   "sftpPage": {
@@ -23624,7 +23636,8 @@
       "dropHint": "空文件夹。将文件拖到这里即可上传。",
       "delete": "删除",
       "move": "移动",
-      "moveTo": "移动到…"
+      "moveTo": "移动到…",
+      "cdHere": "在终端输入 cd 到这个文件夹"
     },
     "local": {
       "upload": "上传",

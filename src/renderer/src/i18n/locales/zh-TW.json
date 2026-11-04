@@ -23094,6 +23094,18 @@
       "notePrompts": "密碼提示是靠文字辨識的，措辭特殊的提示仍可能收到你輸入的內容。",
       "noteOnward": "如果你從某台主機再連到別處，或手動重啟過 ssh，Orca 可能無法察覺，按鍵會跟著過去。",
       "noteMouse": "滑鼠操作只留在各自的窗格。"
+    },
+    "link": {
+      "copiedForWindows": "已複製路徑，因為這台主機執行 Windows，其 shell 的引號規則可能不同。",
+      "controlCharacter": "這個名稱包含控制字元，因此 Orca 不會把它輸入到終端機。"
+    },
+    "follow": {
+      "copied": "已複製。",
+      "setupTitle": "這台主機還沒有回報它所在的資料夾",
+      "setupDescription": "主機的 shell 回報資料夾後，檔案區才能跟隨終端機，只需在它的啟動檔案加一行。Orca 不會更改伺服器上的任何內容。加完後請重新登入。",
+      "copy": "複製",
+      "stop": "停止跟隨終端機的資料夾",
+      "start": "跟隨終端機的資料夾"
     }
   },
   "sftpPage": {
@@ -23156,7 +23168,8 @@
       "dropHint": "空資料夾。將檔案拖到這裡即可上傳。",
       "delete": "刪除",
       "move": "移動",
-      "moveTo": "移動到…"
+      "moveTo": "移動到…",
+      "cdHere": "在終端機輸入 cd 到這個資料夾"
     },
     "local": {
       "upload": "上傳",

@@ -23,6 +23,7 @@ import {
 } from './ssh-session-liveness'
 import { useSshSyncStore } from './ssh-sync-store'
 import { useSshSyncReceivingTabIds } from './use-ssh-sync'
+import { useSshTerminalCwdReports } from './use-ssh-terminal-cwd-reports'
 import { SshSessionEndedBanner } from './SshSessionEndedBanner'
 import type { SshTargetListStatus } from './use-ssh-target-list'
 import type { SshSessionItem } from './use-ssh-session-items'
@@ -107,6 +108,7 @@ export function RemoteSessionPanels({
   const sessions = useRemoteSessionStore((s) => s.sessions)
   const grid = useRemoteSessionStore((s) => s.grid)
   const { tabs, terminalItems, activeTerminalId, parkedTerminalTabIds } = items
+  useSshTerminalCwdReports(isVisible ? terminalItems.map((item) => item.id) : [])
   const active = activeTerminalId ? remoteSessionForTab(sessions, activeTerminalId) : null
   const layout = activeTerminalId
     ? remoteLayoutForTab(sessions, grid, activeTerminalId)

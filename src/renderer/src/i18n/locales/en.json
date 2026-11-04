@@ -25008,6 +25008,18 @@
       "notePrompts": "Password prompts are recognised by their wording, so an unusual one can still get your typing.",
       "noteOnward": "If you connected onward from a host, or ssh was restarted by hand, Orca may not be able to tell, and the keys follow you there.",
       "noteMouse": "Mouse actions stay in their own pane."
+    },
+    "link": {
+      "copiedForWindows": "Copied the path, since this host runs Windows and its shell may quote differently.",
+      "controlCharacter": "This name contains control characters, so Orca won’t type it into the terminal."
+    },
+    "follow": {
+      "copied": "Copied.",
+      "setupTitle": "This host hasn’t said which folder it is in",
+      "setupDescription": "The files can follow the terminal once the host’s shell reports its folder, which takes one line in its startup file. Orca won’t change anything on the server. After adding it, log in again.",
+      "copy": "Copy",
+      "stop": "Stop following the terminal’s folder",
+      "start": "Follow the terminal’s folder"
     }
   },
   "sftpPage": {
@@ -25070,7 +25082,8 @@
       "dropHint": "Empty folder. Drop files here to upload.",
       "delete": "Delete",
       "move": "Move",
-      "moveTo": "Move to…"
+      "moveTo": "Move to…",
+      "cdHere": "Type cd to this folder in the terminal"
     },
     "local": {
       "upload": "Upload",

@@ -12,6 +12,7 @@ export const sftpApi = {
   disconnect: (targetId) => ipcRenderer.invoke('sftp:disconnect', targetId),
   connectionStates: () => ipcRenderer.invoke('sftp:connectionStates'),
   localHome: () => ipcRenderer.invoke('sftp:localHome'),
+  localHostname: () => ipcRenderer.invoke('sftp:localHostname'),
   localList: (path) => ipcRenderer.invoke('sftp:localList', path),
   getPathForFile: (file) => webUtils.getPathForFile(file),
   onProgress: (callback) => {
