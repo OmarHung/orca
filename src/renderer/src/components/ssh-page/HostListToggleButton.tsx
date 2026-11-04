@@ -2,10 +2,10 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { translate } from '@/i18n/i18n'
-import { useRemoteHostsLayout, type RemoteHostsPageId } from './remote-hosts-layout-store'
+import { useRemoteHostsLayout } from './remote-hosts-layout-store'
 
-export function HostListToggleButton({ page }: { page: RemoteHostsPageId }): React.JSX.Element {
-  const isCollapsed = useRemoteHostsLayout((s) => s.hostListCollapsed[page])
+export function HostListToggleButton(): React.JSX.Element {
+  const isCollapsed = useRemoteHostsLayout((s) => s.isHostListCollapsed)
   const toggleHostList = useRemoteHostsLayout((s) => s.toggleHostList)
   const label = isCollapsed
     ? translate('sshPage.hostList.show', 'Show host list')
@@ -15,12 +15,7 @@ export function HostListToggleButton({ page }: { page: RemoteHostsPageId }): Rea
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          aria-label={label}
-          onClick={() => toggleHostList(page)}
-        >
+        <Button variant="ghost" size="icon-xs" aria-label={label} onClick={toggleHostList}>
           <Icon className="size-3.5" />
         </Button>
       </TooltipTrigger>

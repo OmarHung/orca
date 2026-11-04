@@ -8,11 +8,23 @@ import type { SshTarget } from '../../../../shared/ssh-types'
 import type { Tab } from '../../../../shared/tab-types'
 import { SSH_SESSIONS_WORKTREE_ID } from '../../../../shared/local-synthetic-workspace'
 import type { CommandConfirm } from '../command-confirm/command-confirm-context'
+import {
+  clearLegacySftpTabs,
+  findSessionTabOnHost,
+  readLegacySftpTabs,
+  remoteSessionForTab,
+  useRemoteSessionStore,
+  type RemoteLayout
+} from './remote-session-store'
 import { buildSshSessionCommand } from './ssh-session-command'
 import { prepareSshSessionVpn } from './ssh-session-vpn'
 
-/** After the user confirms the exact command, opens an SSH page tab that types it into a local shell. */
-export async function openSshSession(target: SshTarget, confirm: CommandConfirm): Promise<void> {
+/** Asks the user to approve the exact ssh command; null when it was refused or cannot be typed. */
+async function confirmSshCommand(
+  target: SshTarget,
+  confirm: CommandConfirm,
+  note: string
+): Promise<string | null> {
   // Why first: a host that cannot be typed safely must not start a VPN it will never use.
   if (!buildSshSessionCommand(target)) {
     toast.error(
@@ -21,15 +33,15 @@ export async function openSshSession(target: SshTarget, confirm: CommandConfirm)
         'This host has characters Orca cannot pass to ssh safely. Rename it in ~/.ssh/config.'
       )
     )
-    return
+    return null
   }
   const vpn = await prepareSshSessionVpn(target)
   if (vpn === 'cancelled') {
-    return
+    return null
   }
   const command = buildSshSessionCommand(target, vpn?.sshOptions ?? [])
   if (!command) {
-    return
+    return null
   }
   const isConfirmed = await confirm({
     title: translate('sshPage.session.confirmTitle', 'Connect to {{host}}?', {
@@ -48,26 +60,150 @@ export async function openSshSession(target: SshTarget, confirm: CommandConfirm)
         : [])
     ],
     commands: [command],
-    notes: [
-      translate(
-        'sshPage.session.confirmNote',
-        'Opens a new tab running your login shell and types this command into it, as if you typed it.'
-      )
-    ],
+    notes: [note],
     confirmLabel: translate('sshPage.session.connect', 'Connect')
   })
-  if (!isConfirmed) {
-    return
-  }
+  return isConfirmed ? command : null
+}
+
+function createSessionTab(label: string): string {
   const store = useAppStore.getState()
   const tab = store.createTab(
     SSH_SESSIONS_WORKTREE_ID,
     store.activeGroupIdByWorktree[SSH_SESSIONS_WORKTREE_ID],
     undefined,
-    { quickCommandLabel: target.label }
+    { quickCommandLabel: label }
   )
-  store.queueTabStartupCommand(tab.id, { command })
-  focusTerminalTabSurface(tab.id)
+  return tab.id
+}
+
+/** After the user confirms the exact command, opens a tab that types it into a local shell. */
+export async function openSshSession(target: SshTarget, confirm: CommandConfirm): Promise<void> {
+  const command = await confirmSshCommand(
+    target,
+    confirm,
+    translate(
+      'sshPage.session.confirmNote',
+      'Opens a new tab running your login shell and types this command into it, as if you typed it.'
+    )
+  )
+  if (!command) {
+    return
+  }
+  const tabId = createSessionTab(target.label)
+  useRemoteSessionStore
+    .getState()
+    .addSession({ tabId, targetId: target.id, layout: 'terminal', terminalStarted: true })
+  useAppStore.getState().queueTabStartupCommand(tabId, { command })
+  focusTerminalTabSurface(tabId)
+}
+
+/** Opens a tab showing only files; nothing runs in a terminal until the user asks for one. */
+export function openFilesSession(target: Pick<SshTarget, 'id' | 'label'>): string {
+  const tabId = createSessionTab(target.label)
+  useRemoteSessionStore
+    .getState()
+    .addSession({ tabId, targetId: target.id, layout: 'files', terminalStarted: false })
+  return tabId
+}
+
+/** Starts ssh in a tab that has only shown files so far, once the user confirms the command. */
+export async function startSessionTerminal(
+  tabId: string,
+  target: SshTarget,
+  confirm: CommandConfirm
+): Promise<void> {
+  const command = await confirmSshCommand(
+    target,
+    confirm,
+    translate(
+      'sshPage.session.confirmNoteExistingTab',
+      'Starts your login shell in this tab and types this command into it, as if you typed it.'
+    )
+  )
+  // Why recheck: the tab can close while the VPN starts or the dialog waits, and ⌘W still works then.
+  const store = useAppStore.getState()
+  const isOpen = store.tabsByWorktree[SSH_SESSIONS_WORKTREE_ID]?.some((tab) => tab.id === tabId)
+  if (!command || !isOpen) {
+    return
+  }
+  store.queueTabStartupCommand(tabId, { command })
+  useRemoteSessionStore.getState().markTerminalStarted(tabId)
+  focusTerminalTabSurface(tabId)
+}
+
+function activateSessionTab(tabId: string): void {
+  const store = useAppStore.getState()
+  const tab = store.unifiedTabsByWorktree[SSH_SESSIONS_WORKTREE_ID]?.find(
+    (candidate) => candidate.entityId === tabId
+  )
+  if (tab) {
+    store.activateTab(tab.id)
+    store.setActiveTab(tab.entityId)
+  }
+}
+
+/** Goes to the host's tab if it has one; otherwise asks to open a new session. */
+export async function showHostSession(
+  target: SshTarget,
+  confirm: CommandConfirm,
+  strip: { orderedTabIds: readonly string[]; activeTabId: string | null }
+): Promise<void> {
+  const tabId = findSessionTabOnHost(
+    useRemoteSessionStore.getState().sessions,
+    strip.orderedTabIds,
+    strip.activeTabId,
+    target.id
+  )
+  if (!tabId) {
+    await openSshSession(target, confirm)
+    return
+  }
+  activateSessionTab(tabId)
+  const session = remoteSessionForTab(useRemoteSessionStore.getState().sessions, tabId)
+  if (session.layout !== 'files' && session.terminalStarted) {
+    focusTerminalTabSurface(tabId)
+  }
+}
+
+export function setSessionLayout(tabId: string, layout: RemoteLayout): void {
+  const store = useRemoteSessionStore.getState()
+  store.setLayout(tabId, layout)
+  if (layout !== 'files' && remoteSessionForTab(store.sessions, tabId).terminalStarted) {
+    focusTerminalTabSurface(tabId)
+  }
+}
+
+/** Runs once per legacy save: what the separate SFTP page had open reopens here as files tabs. */
+export function migrateLegacySftpTabs(): void {
+  const { tabs } = readLegacySftpTabs()
+  clearLegacySftpTabs()
+  const created = tabs.map((tab) => ({
+    wasActive: tab.wasActive,
+    tabId: openFilesSession({ id: tab.targetId, label: tab.label })
+  }))
+  const active = created.find((tab) => tab.wasActive)
+  if (active) {
+    activateSessionTab(active.tabId)
+  }
+}
+
+/**
+ * Tabs from before sessions only know their host by label; record the id while it still matches.
+ * Why exactly one: guessing between same-named hosts would send file operations to the wrong server.
+ */
+export function adoptSessionlessTabs(targets: readonly SshTarget[]): void {
+  const store = useRemoteSessionStore.getState()
+  const tabs = useAppStore.getState().tabsByWorktree[SSH_SESSIONS_WORKTREE_ID] ?? []
+  for (const tab of tabs) {
+    if (store.sessions[tab.id]?.targetId) {
+      continue
+    }
+    const matches = targets.filter((candidate) => candidate.label === tab.quickCommandLabel)
+    if (matches.length === 1) {
+      store.setTargetId(tab.id, matches[0].id)
+    }
+  }
 }
 
 export function activateSshSession(groupTabs: readonly Tab[], visibleId: string): void {
@@ -78,7 +214,10 @@ export function activateSshSession(groupTabs: readonly Tab[], visibleId: string)
   const store = useAppStore.getState()
   store.activateTab(tab.id)
   store.setActiveTab(tab.entityId)
-  focusTerminalTabSurface(tab.entityId)
+  const session = remoteSessionForTab(useRemoteSessionStore.getState().sessions, tab.entityId)
+  if (session.layout !== 'files' && session.terminalStarted) {
+    focusTerminalTabSurface(tab.entityId)
+  }
 }
 
 export function closeSshSession(terminalTabId: string): void {

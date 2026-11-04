@@ -14,7 +14,6 @@ import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/R
 import { FloatingTerminalToggleButton } from '../components/floating-terminal/trigger/FloatingTerminalToggleButton'
 import { TerminalWorkbenchContainer } from '../components/terminal/workbench/TerminalWorkbenchContainer'
 import { SshPageHost } from '../components/ssh-page/SshPageHost'
-import { SftpPageHost } from '../components/sftp-page/SftpPageHost'
 import { useBottomPanelLayout } from '../components/bottom-panel/bottom-panel-layout-store'
 import type { VirtualizedScrollAnchor } from '../lib/list-interaction/virtualized-scrolling/useVirtualizedScrollAnchor'
 import { TitlebarLeftControls } from './chrome/TitlebarLeftControls'
@@ -234,10 +233,8 @@ export function AppWorkspaceShell(props: {
               list={<WorktreeSidebar layout={layout} scrollRefs={sidebarScrollRefs} />}
             />
             <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
-              {/* Every page sits under the top bar; window controls and board sheets rely on it. Fork: the SSH/SFTP pages' tab strips are their titlebars. */}
-              {layout.stackedSidebarOpen &&
-              layout.activeView !== 'ssh' &&
-              layout.activeView !== 'sftp' ? (
+              {/* Every page sits under the top bar; window controls and board sheets rely on it. Fork: the SSH page's tab strip is its titlebar. */}
+              {layout.stackedSidebarOpen && layout.activeView !== 'ssh' ? (
                 <div className="titlebar">{titlebarMainStrip}</div>
               ) : null}
               <div className="relative flex flex-1 min-w-0 min-h-0 overflow-hidden">
@@ -290,7 +287,6 @@ export function AppWorkspaceShell(props: {
                     </RecoverableRenderErrorBoundary>
                   </Suspense>
                   <SshPageHost />
-                  <SftpPageHost />
                 </div>
                 {floatingWorkspace.showToggleButton && !capturingPluginShot ? (
                   <MemoFloatingTerminalToggleButton

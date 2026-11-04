@@ -54,9 +54,9 @@ export function handleTerminalWorkspaceKeyDown(
   if (event.target instanceof Element && event.target.closest('[data-shortcut-recorder-active]')) {
     return
   }
-  // Why: the SSH and SFTP pages hide the project workspace and handle their own tab shortcuts.
+  // Why: the SSH page hides the project workspace and handles its own tab shortcuts.
   const { activeView } = useAppStore.getState()
-  if (activeView === 'ssh' || activeView === 'sftp') {
+  if (activeView === 'ssh') {
     return
   }
   const context = getKeybindingContext(event.target)
