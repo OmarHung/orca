@@ -8,18 +8,14 @@ type SshHostPickerDialogProps = {
   onOpenChange: (open: boolean) => void
   targets: readonly SshTarget[]
   onSelect: (target: SshTarget) => void
-  title?: string
-  description?: string
 }
 
-/** A tab strip's "+" on the SSH and SFTP pages: pick a host, then it opens in a new tab. */
+/** The tab strip's "+": pick a host, then it opens in a new tab. */
 export function SshHostPickerDialog({
   open,
   onOpenChange,
   targets,
-  onSelect,
-  title,
-  description
+  onSelect
 }: SshHostPickerDialogProps): React.JSX.Element {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -29,11 +25,9 @@ export function SshHostPickerDialog({
         onCloseAutoFocus={(event) => event.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle>
-            {title ?? translate('sshPage.picker.title', 'Open an SSH session')}
-          </DialogTitle>
+          <DialogTitle>{translate('sshPage.picker.title', 'Open an SSH session')}</DialogTitle>
           <DialogDescription>
-            {description ?? translate('sshPage.picker.description', 'Pick the host to connect to.')}
+            {translate('sshPage.picker.description', 'Pick the host to connect to.')}
           </DialogDescription>
         </DialogHeader>
         <SshHostList

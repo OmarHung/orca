@@ -141,6 +141,7 @@ export function SshHostRow({
   isCurrent,
   onSelect,
   menuItems,
+  rowActions,
   onAskName
 }: {
   row: Extract<SshHostTreeRow, { kind: 'host' }>
@@ -148,6 +149,8 @@ export function SshHostRow({
   onSelect: (target: SshTarget) => void
   /** Page-specific actions, listed first in the row's right-click menu. */
   menuItems?: React.ReactNode
+  /** Sits beside the row's button, not in it: a button can't contain buttons. */
+  rowActions?: React.ReactNode
   onAskName: AskSshHostGroupName
 }): React.JSX.Element {
   const { target } = row
@@ -161,27 +164,34 @@ export function SshHostRow({
         </>
       }
     >
-      <button
-        type="button"
-        draggable
-        data-ssh-tree-row={row.key}
-        data-ssh-host-row={target.id}
-        data-current={isCurrent ? 'true' : undefined}
-        aria-current={isCurrent ? 'true' : undefined}
-        onClick={() => onSelect(target)}
-        className="flex w-full flex-col items-start gap-0.5 rounded-md py-1.5 pr-2 text-left transition-colors hover:bg-accent data-[current=true]:bg-accent"
-        style={indentStyle(row.depth)}
-      >
-        <span className="flex w-full items-center gap-1.5">
-          <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
-            {target.label}
+      <div className="group/host relative">
+        <button
+          type="button"
+          draggable
+          data-ssh-tree-row={row.key}
+          data-ssh-host-row={target.id}
+          data-current={isCurrent ? 'true' : undefined}
+          aria-current={isCurrent ? 'true' : undefined}
+          onClick={() => onSelect(target)}
+          className="flex w-full flex-col items-start gap-0.5 rounded-md py-1.5 pr-2 text-left transition-colors group-hover/host:bg-accent data-[current=true]:bg-accent"
+          style={indentStyle(row.depth)}
+        >
+          <span className="flex w-full items-center gap-1.5">
+            <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
+              {target.label}
+            </span>
+            <SshHostVpnBadge targetId={target.id} />
           </span>
-          <SshHostVpnBadge targetId={target.id} />
-        </span>
-        <span className="w-full truncate text-xs text-muted-foreground">
-          {formatSshTargetEndpoint(target)}
-        </span>
-      </button>
+          <span className="w-full truncate text-xs text-muted-foreground">
+            {formatSshTargetEndpoint(target)}
+          </span>
+        </button>
+        {rowActions ? (
+          <div className="absolute top-1/2 right-1 hidden -translate-y-1/2 items-center gap-0.5 rounded-md bg-accent group-focus-within/host:flex group-hover/host:flex">
+            {rowActions}
+          </div>
+        ) : null}
+      </div>
     </SshHostVpnMenu>
   )
 }

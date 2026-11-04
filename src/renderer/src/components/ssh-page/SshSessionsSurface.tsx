@@ -1,14 +1,8 @@
 import { WorkspaceTabDragLayer } from '@/components/tab-group/WorkspaceTabDragLayer'
 import TabBar from '@/components/tab-bar/TabBar'
-import TerminalPane from '@/components/terminal-pane/TerminalPane'
-import { shouldDeferParkedPtyExitTabClose } from '@/components/terminal-pane/terminal-parked-tab-watchers'
-import { closeTerminalTab } from '@/components/terminal/terminal-tab-actions'
-import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import { isProvenProcessExit } from '../../../../shared/terminal-exit-cause'
 import { SSH_SESSIONS_WORKTREE_ID } from '../../../../shared/local-synthetic-workspace'
 import { activateSshSession, closeSshSession, closeSshSessions } from './ssh-session-actions'
-import { useSshSessionCwd } from './use-ssh-session-cwd'
 import type { SshSessionItems } from './use-ssh-session-items'
 
 type SshSessionsSurfaceProps = {
@@ -17,8 +11,12 @@ type SshSessionsSurfaceProps = {
   onNewSession: () => void
   /** Shown before the tabs, e.g. the host list toggle. */
   leadingControl?: React.ReactNode
-  /** Column left of the terminals, under the tab strip (the host list). */
+  /** Shown after the tabs, e.g. the layout toggle. */
+  trailingControl?: React.ReactNode
+  /** Column left of the panels, under the tab strip (the host list). */
   sidePanel?: React.ReactNode
+  /** The active tab's terminal and files. */
+  children: React.ReactNode
 }
 
 function tabsBeside(order: readonly string[], tabId: string, side: 'left' | 'right'): string[] {
@@ -34,13 +32,14 @@ export function SshSessionsSurface({
   items,
   onNewSession,
   leadingControl,
-  sidePanel
+  trailingControl,
+  sidePanel,
+  children
 }: SshSessionsSurfaceProps): React.JSX.Element {
-  const cwd = useSshSessionCwd()
   const setTabCustomTitle = useAppStore((s) => s.setTabCustomTitle)
   const setTabColor = useAppStore((s) => s.setTabColor)
   const setTabPaneExpanded = useAppStore((s) => s.setTabPaneExpanded)
-  const { terminalItems, activeTerminalId, groupTabs, tabs, parkedTerminalTabIds } = items
+  const { terminalItems, activeTerminalId, groupTabs } = items
   const order = items.tabBarOrder.length > 0 ? items.tabBarOrder : terminalItems.map((t) => t.id)
 
   return (
@@ -48,7 +47,7 @@ export function SshSessionsSurface({
       {/* Why: this strip is the page's titlebar (the stacked one is skipped for 'ssh'), so it
           drags the window like a workspace tab row and lines up with the sidebar header. */}
       <div
-        className="flex h-9 shrink-0 items-center border-b border-border bg-card"
+        className="@container/remote-strip flex h-9 shrink-0 items-center border-b border-border bg-card"
         data-terminal-focus-release-surface="true"
       >
         {leadingControl ? (
@@ -80,7 +79,13 @@ export function SshSessionsSurface({
                 onNewTabClick={onNewSession}
                 onNewTerminalTab={onNewSession}
                 onNewBrowserTab={() => undefined}
-                onSetCustomTitle={setTabCustomTitle}
+                onSetCustomTitle={(tabId, title) => {
+                  // Why: rename starts from the shown label; accepting it as is must not freeze the
+                  // current folder into a custom name.
+                  if (title !== terminalItems.find((item) => item.id === tabId)?.title) {
+                    setTabCustomTitle(tabId, title)
+                  }
+                }}
                 onSetTabColor={setTabColor}
                 onTogglePaneExpand={(tabId) =>
                   setTabPaneExpanded(tabId, items.expandedPaneByTabId[tabId] !== true)
@@ -89,50 +94,16 @@ export function SshSessionsSurface({
             </div>
           )}
         </WorkspaceTabDragLayer>
+        {trailingControl ? (
+          <div className="flex shrink-0 items-center px-1.5 [-webkit-app-region:no-drag]">
+            {trailingControl}
+          </div>
+        ) : null}
         <div className="window-controls-titlebar-spacer" />
       </div>
       <div className="flex min-h-0 flex-1">
         {sidePanel}
-        <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden bg-background">
-          {cwd
-            ? tabs
-                .filter((tab) => !parkedTerminalTabIds.has(tab.id))
-                .map((tab) => {
-                  const isActive = tab.id === activeTerminalId
-                  return (
-                    <div
-                      key={`${tab.id}-${tab.generation ?? 0}`}
-                      className={isActive ? 'absolute inset-0' : 'absolute inset-0 hidden'}
-                      aria-hidden={!isActive}
-                    >
-                      <TerminalPane
-                        tabId={tab.id}
-                        worktreeId={SSH_SESSIONS_WORKTREE_ID}
-                        cwd={cwd}
-                        isActive={isActive}
-                        isVisible={isActive && isVisible}
-                        onPtyExit={(ptyId, exitCode) => {
-                          if (exitCode !== undefined && !isProvenProcessExit(exitCode)) {
-                            useAppStore.getState().markUnverifiedPtyLoss(tab.id)
-                            return
-                          }
-                          if (shouldDeferParkedPtyExitTabClose(tab.id, ptyId)) {
-                            return
-                          }
-                          closeTerminalTab(tab.id, { reason: 'pty-exit', lifecyclePtyId: ptyId })
-                        }}
-                        onCloseTab={() => closeSshSession(tab.id)}
-                      />
-                    </div>
-                  )
-                })
-            : null}
-          {terminalItems.length === 0 ? (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-              {translate('sshPage.page.pickHost', 'Pick a host to open an SSH session.')}
-            </div>
-          ) : null}
-        </div>
+        {children}
       </div>
     </div>
   )

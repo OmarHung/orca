@@ -23462,21 +23462,28 @@
       "confirmTarget": "目标：{{endpoint}}",
       "confirmNote": "会打开新的标签页，在你的登录 shell 中输入这条指令，如同你亲自输入。",
       "connect": "连接",
-      "confirmVpn": "经由 VPN：{{name}}（已连接）"
+      "confirmVpn": "经由 VPN：{{name}}（已连接）",
+      "confirmNoteExistingTab": "会在这个标签页启动你的登录 shell，并在其中输入这条指令，如同你亲自输入。",
+      "notStarted": "这个标签页没有运行中的终端。",
+      "connectTo": "连接到 {{host}}"
     },
     "picker": {
       "title": "开启 SSH 连接",
       "description": "选择要连接的主机。"
+    },
+    "layout": {
+      "label": "标签页布局",
+      "terminal": "终端",
+      "split": "并排",
+      "files": "文件",
+      "resizeFiles": "调整文件区的高度"
+    },
+    "hostRow": {
+      "openTerminal": "打开终端标签页",
+      "openFiles": "打开文件标签页"
     }
   },
   "sftpPage": {
-    "nav": {
-      "sftp": "SFTP"
-    },
-    "page": {
-      "desktopOnly": "文件传输仅在桌面版中可用。",
-      "pickHost": "选择一台主机以浏览其中的文件。"
-    },
     "pane": {
       "path": "路径",
       "up": "上一层文件夹",
@@ -23564,14 +23571,7 @@
       "moveTitle": "要在 {{host}} 上移动吗？"
     },
     "tabs": {
-      "label": "SFTP 标签页",
-      "new": "新建标签页",
-      "close": "关闭标签页 {{name}}",
-      "missingHost": "“{{name}}”已不在你的 SSH 主机中，请关闭此标签页。",
-      "pickerTitle": "打开 SFTP 标签页",
-      "pickerDescription": "选择要浏览的主机。",
-      "openInNewTab": "在新标签页中打开",
-      "newTabOnHost": "在此主机新建标签页"
+      "missingHost": "“{{name}}”已不在你的 SSH 主机中，请关闭此标签页。"
     },
     "move": {
       "titleOne": "将“{{name}}”移动到…",

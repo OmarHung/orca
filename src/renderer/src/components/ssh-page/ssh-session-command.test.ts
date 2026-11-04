@@ -16,6 +16,24 @@ describe('buildSshSessionCommand', () => {
     expect(buildSshSessionCommand({ ...base, username: '' })).toBe('ssh 203.0.113.10')
   })
 
+  it('spells out a manual host, whose configHost is only its address', () => {
+    const manual = { ...base, source: 'manual' as const, configHost: base.host, port: 2222 }
+
+    expect(buildSshSessionCommand(manual)).toBe('ssh -p 2222 deploy@203.0.113.10')
+  })
+
+  it('spells out an older host saved without a source when its alias is only its address', () => {
+    expect(buildSshSessionCommand({ ...base, configHost: base.host, port: 2222 })).toBe(
+      'ssh -p 2222 deploy@203.0.113.10'
+    )
+  })
+
+  it('trusts ~/.ssh/config for a host imported from it, even if its alias is its address', () => {
+    expect(
+      buildSshSessionCommand({ ...base, source: 'ssh-config', configHost: base.host, port: 2222 })
+    ).toBe('ssh 203.0.113.10')
+  })
+
   it('refuses values that a shell or ssh would reinterpret', () => {
     expect(buildSshSessionCommand({ ...base, configHost: 'web; rm -rf ~' })).toBeNull()
     expect(buildSshSessionCommand({ ...base, configHost: '$(whoami)' })).toBeNull()

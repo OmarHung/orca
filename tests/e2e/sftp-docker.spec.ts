@@ -41,7 +41,7 @@ async function addDockerTarget(page: Page, target: DockerSshHostTarget): Promise
   )
 }
 
-test.describe('SFTP page against a Docker sshd', () => {
+test.describe('SSH page files against a Docker sshd', () => {
   test.skip(!RUN_DOCKER_SSH, 'Set ORCA_E2E_SSH_DOCKER=1 to run Docker-backed SSH E2E.')
   test.skip(process.platform === 'win32', 'Docker SSH E2E uses POSIX ssh tooling.')
 
@@ -174,8 +174,12 @@ test.describe('SFTP page against a Docker sshd', () => {
       ).toBe('no')
 
       execDockerSshHostTargetCommand(target, 'touch /root/orca-sftp-visible.txt')
-      await orcaPage.getByRole('button', { name: 'SFTP', exact: true }).click()
-      await orcaPage.locator('[data-ssh-host-row]').filter({ hasText: 'Docker SFTP E2E' }).click()
+      await orcaPage.getByRole('button', { name: 'SSH', exact: true }).click()
+      const hostRow = orcaPage
+        .locator('[data-ssh-page] [data-ssh-host-row]')
+        .filter({ hasText: 'Docker SFTP E2E' })
+      await hostRow.click({ button: 'right' })
+      await orcaPage.getByRole('menuitem', { name: 'Open a files tab' }).click()
       await expect(orcaPage.locator('[data-sftp-entry^="/root/"]').first()).toBeVisible({
         timeout: 30_000
       })
@@ -272,26 +276,24 @@ test.describe('SFTP page against a Docker sshd', () => {
       await remotePane.locator('[data-sftp-entry="/root/.ssh"]').dblclick()
       const remotePath = remotePane.locator('input[aria-label="Path"]')
       await expect(remotePath).toHaveValue('/root/.ssh')
-      const sftpPage = orcaPage.locator('[data-sftp-page]')
-      await sftpPage.getByRole('button', { name: 'New tab' }).click()
-      const picker = orcaPage.getByRole('dialog', { name: 'Open an SFTP tab' })
-      await picker.locator('[data-ssh-host-row]').filter({ hasText: 'Docker SFTP E2E' }).click()
-      await expect(picker).toBeHidden()
-      const sftpTabs = sftpPage.locator('[role="tab"]')
+      const sshPage = orcaPage.locator('[data-ssh-page]')
+      await hostRow.click({ button: 'right' })
+      await orcaPage.getByRole('menuitem', { name: 'Open a files tab' }).click()
+      const sftpTabs = sshPage.locator('[data-tab-id]')
       await expect(sftpTabs).toHaveCount(2)
       await expect(remotePath).toHaveValue('/root', { timeout: 30_000 })
       // The new tab opens the local folder this host showed last.
       await expect(localPath).toHaveValue(inbox)
-      await expect(sftpTabs.first().locator('[data-tab-folder]')).toHaveText('.ssh')
-      await expect(sftpTabs.nth(1).locator('[data-tab-folder]')).toHaveText('root')
+      await expect(sftpTabs.first()).toContainText('.ssh')
+      await expect(sftpTabs.nth(1)).toContainText('root')
       await orcaPage.screenshot({ path: testInfo.outputPath('sftp-two-tabs.png') })
       await sftpTabs.first().click()
       await expect(remotePath).toHaveValue('/root/.ssh')
 
       // Leaving the page and coming back keeps the tabs, folders and listings.
+      await orcaPage.evaluate(() => window.__store?.getState().setActiveView('terminal'))
+      await expect(sshPage).toBeHidden()
       await orcaPage.getByRole('button', { name: 'SSH', exact: true }).click()
-      await expect(sftpPage).toBeHidden()
-      await orcaPage.getByRole('button', { name: 'SFTP', exact: true }).click()
       await expect(sftpTabs).toHaveCount(2)
       await expect(remotePath).toHaveValue('/root/.ssh')
       await expect(
@@ -300,28 +302,36 @@ test.describe('SFTP page against a Docker sshd', () => {
 
       // Closing the active tab moves to its neighbour.
       await sftpTabs.first().hover()
-      await sftpTabs
-        .first()
-        .getByRole('button', { name: /^Close tab/ })
-        .click()
+      await sftpTabs.first().locator('[data-tab-close-button]').click()
       await expect(sftpTabs).toHaveCount(1)
       await expect(remotePath).toHaveValue('/root')
 
       // Clicking a host that already has a tab goes to that tab instead of opening another.
-      const hostRow = orcaPage.locator('[data-ssh-host-row]').filter({ hasText: 'Docker SFTP E2E' })
       await hostRow.click()
       await expect(sftpTabs).toHaveCount(1)
+      await expect(orcaPage.locator('[data-command-confirm]')).toBeHidden()
 
-      // Another tab comes from the host's or the tab's right-click menu.
-      await hostRow.click({ button: 'right' })
-      await orcaPage.getByRole('menuitem', { name: 'Open in new tab' }).click()
+      // The row's own button opens another files tab, with the first one's folder untouched.
+      await hostRow.hover()
+      await orcaPage
+        .locator('[data-ssh-page] [data-ssh-host-open="files"]')
+        .filter({ visible: true })
+        .click()
       await expect(sftpTabs).toHaveCount(2)
-      await expect(sftpTabs.nth(1)).toHaveAttribute('aria-selected', 'true')
-      await sftpTabs.first().click({ button: 'right' })
-      await orcaPage.getByRole('menuitem', { name: 'New tab on this host' }).click()
-      await expect(sftpTabs).toHaveCount(3)
-      await expect(sftpTabs.nth(1)).toHaveAttribute('aria-selected', 'true')
-      await orcaPage.screenshot({ path: testInfo.outputPath('sftp-three-tabs.png') })
+      await orcaPage.screenshot({ path: testInfo.outputPath('sftp-second-tab.png') })
+
+      // The split layout keeps the files in view and asks before running ssh in the same tab.
+      await orcaPage.locator('[data-remote-layout="split"]').click()
+      await expect(sshPage.locator('[data-remote-terminals]')).toBeVisible()
+      await expect(sshPage.locator('[data-remote-files]')).toBeVisible()
+      await expect(remotePath).toBeVisible()
+      await sshPage.getByRole('button', { name: /^Connect to Docker SFTP E2E/ }).click()
+      const connectDialog = orcaPage.locator('[data-command-confirm]')
+      await expect(connectDialog.locator('[data-command-list]')).toContainText('ssh ')
+      await connectDialog.getByRole('button', { name: 'Connect' }).click()
+      await expect(sftpTabs).toHaveCount(2)
+      await expect(remotePath).toBeVisible()
+      await orcaPage.screenshot({ path: testInfo.outputPath('ssh-split-layout.png') })
     } finally {
       cleanupDockerSshHostTarget(target)
       rmSync(localRoot, { recursive: true, force: true })

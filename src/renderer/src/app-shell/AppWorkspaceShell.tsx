@@ -11,7 +11,6 @@ import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/R
 import { FloatingTerminalToggleButton } from '../components/floating-terminal/FloatingTerminalToggleButton'
 import { TerminalWorkbenchContainer } from '../components/TerminalWorkbenchContainer'
 import { SshPageHost } from '../components/ssh-page/SshPageHost'
-import { SftpPageHost } from '../components/sftp-page/SftpPageHost'
 import { useBottomPanelLayout } from '../components/bottom-panel/bottom-panel-layout-store'
 import type { VirtualizedScrollAnchor } from '../hooks/useVirtualizedScrollAnchor'
 import { TitlebarLeftControls } from './TitlebarLeftControls'
@@ -200,12 +199,11 @@ export function AppWorkspaceShell(props: {
               )
             ) : null}
             <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
-              {/* Automations/artifacts own their headers and the SSH/SFTP pages' tab strips are their titlebars; another titlebar would leave an empty stripe. */}
+              {/* Automations/artifacts own their headers and the SSH page's tab strip is its titlebar; another titlebar would leave an empty stripe. */}
               {layout.stackedSidebarOpen &&
               layout.activeView !== 'automations' &&
               layout.activeView !== 'artifacts' &&
-              layout.activeView !== 'ssh' &&
-              layout.activeView !== 'sftp' ? (
+              layout.activeView !== 'ssh' ? (
                 <div className="titlebar">{titlebarMainStrip}</div>
               ) : null}
               <div className="relative flex flex-1 min-w-0 min-h-0 overflow-hidden">
@@ -258,7 +256,6 @@ export function AppWorkspaceShell(props: {
                     </RecoverableRenderErrorBoundary>
                   </Suspense>
                   <SshPageHost />
-                  <SftpPageHost />
                 </div>
                 {floatingWorkspace.showToggleButton && !capturingPluginShot ? (
                   <MemoFloatingTerminalToggleButton

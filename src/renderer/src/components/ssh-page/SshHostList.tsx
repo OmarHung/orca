@@ -20,6 +20,8 @@ type SshHostListProps = {
   onSelect: (target: SshTarget) => void
   /** Extra right-click actions for a host row. */
   hostMenuItems?: (target: SshTarget) => React.ReactNode
+  /** Buttons at the end of a host row, shown while it is hovered or focused. */
+  hostRowActions?: (target: SshTarget) => React.ReactNode
 }
 
 function NewGroupButton({ onClick }: { onClick: () => void }): React.JSX.Element {
@@ -49,10 +51,11 @@ export function SshHostList({
   targets,
   currentTargetId,
   onSelect,
-  hostMenuItems
+  hostMenuItems,
+  hostRowActions
 }: SshHostListProps): React.JSX.Element {
   const [query, setQuery] = useState('')
-  // Why local: the SSH and SFTP pages stay mounted together, so one dialog per list.
+  // Why local: the page's list and the host picker's can both be mounted, so one dialog per list.
   const [nameRequest, setNameRequest] = useState<SftpNameRequest | null>(null)
   const groups = useSshHostGroups((state) => state.data)
   const rows = useMemo(() => buildSshHostTreeRows(targets, groups, query), [targets, groups, query])
@@ -121,6 +124,7 @@ export function SshHostList({
                 isCurrent={row.target.id === currentTargetId}
                 onSelect={onSelect}
                 menuItems={hostMenuItems?.(row.target)}
+                rowActions={hostRowActions?.(row.target)}
                 onAskName={setNameRequest}
               />
             )

@@ -5,7 +5,7 @@ type RemoteHostsPageFrameProps = {
   children: React.ReactNode
 }
 
-/** Page shell shared by the SSH and SFTP pages. No header: the sidebar entry names the page. */
+/** Page shell of the SSH page. No header: the sidebar entry names the page. */
 export function RemoteHostsPageFrame({
   desktopOnlyMessage,
   children

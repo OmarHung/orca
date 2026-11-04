@@ -24908,21 +24908,28 @@
       "confirmTarget": "Target: {{endpoint}}",
       "confirmNote": "Opens a new tab running your login shell and types this command into it, as if you typed it.",
       "connect": "Connect",
-      "confirmVpn": "Through VPN: {{name}} (already connected)"
+      "confirmVpn": "Through VPN: {{name}} (already connected)",
+      "confirmNoteExistingTab": "Starts your login shell in this tab and types this command into it, as if you typed it.",
+      "notStarted": "This tab has no terminal running.",
+      "connectTo": "Connect to {{host}}"
     },
     "picker": {
       "title": "Open an SSH session",
       "description": "Pick the host to connect to."
+    },
+    "layout": {
+      "label": "Tab layout",
+      "terminal": "Terminal",
+      "split": "Split",
+      "files": "Files",
+      "resizeFiles": "Resize the files area"
+    },
+    "hostRow": {
+      "openTerminal": "Open a terminal tab",
+      "openFiles": "Open a files tab"
     }
   },
   "sftpPage": {
-    "nav": {
-      "sftp": "SFTP"
-    },
-    "page": {
-      "desktopOnly": "File transfers are available in the desktop app only.",
-      "pickHost": "Pick a host to browse its files."
-    },
     "pane": {
       "path": "Path",
       "up": "Parent folder",
@@ -25010,14 +25017,7 @@
       "moveTitle": "Move on {{host}}?"
     },
     "tabs": {
-      "label": "SFTP tabs",
-      "new": "New tab",
-      "close": "Close tab {{name}}",
-      "missingHost": "“{{name}}” is no longer in your SSH hosts. Close this tab.",
-      "pickerTitle": "Open an SFTP tab",
-      "pickerDescription": "Pick the host to browse.",
-      "openInNewTab": "Open in new tab",
-      "newTabOnHost": "New tab on this host"
+      "missingHost": "“{{name}}” is no longer in your SSH hosts. Close this tab."
     },
     "move": {
       "titleOne": "Move “{{name}}” to…",
