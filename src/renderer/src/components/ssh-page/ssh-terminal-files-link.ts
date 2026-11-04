@@ -1,22 +1,33 @@
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { hasSshCommandControlCharacter } from '../../../../shared/ssh-command-types'
-import { quotePosixShell } from '../../../../shared/shell-argument-quoting'
-import { sendSshCommand, sshCommandRemotePlatform } from '../ssh-commands/ssh-command-send'
+import {
+  checkSshCommandTarget,
+  sendSshCommand,
+  sshCommandRemotePlatform
+} from '../ssh-commands/ssh-command-send'
 
 /** How SFTP spells a Windows path, without the slash a Windows shell wouldn't take. */
 function windowsPath(path: string): string {
   return path.replace(/^\/([A-Za-z]:)/, '$1')
 }
 
-async function copyPaths(paths: readonly string[]): Promise<void> {
+/**
+ * For a name the server decides, in a shell Orca can't see. Why not `quotePosixShell`: fish reads
+ * a backslash inside single quotes as an escape, so a name holding one could end the quote early.
+ * Outside quotes, an escaped apostrophe or backslash means the same in every POSIX-style shell.
+ */
+export function quotePathForAnyShell(path: string): string {
+  return path
+    .split(/(['\\])/)
+    .filter((part) => part !== '')
+    .map((part) => (part === "'" || part === '\\' ? `\\${part}` : `'${part}'`))
+    .join('')
+}
+
+async function copyPaths(paths: readonly string[], explanation: string): Promise<void> {
   await window.api.ui.writeClipboardText(paths.map(windowsPath).join('\n'))
-  toast.info(
-    translate(
-      'sshPage.link.copiedForWindows',
-      'Copied the path, since this host runs Windows and its shell may quote differently.'
-    )
-  )
+  toast.info(explanation)
 }
 
 /** Never presses Enter: the user reads the line and decides. */
@@ -37,14 +48,32 @@ async function typeInTerminal(
     return
   }
   if (sshCommandRemotePlatform(tabId, targetId) === 'win32') {
-    await copyPaths(paths)
+    await copyPaths(
+      paths,
+      translate(
+        'sshPage.link.copiedForWindows',
+        'Copied the path, since this host runs Windows and its shell may quote differently.'
+      )
+    )
+    return
+  }
+  // Why: this names a file on this tab's host, and the terminal may be on another or on this computer.
+  const check = await checkSshCommandTarget(tabId)
+  if (check.kind === 'ready' && check.doubt) {
+    await copyPaths(
+      paths,
+      translate(
+        'sshPage.link.copiedInDoubt',
+        'Copied the path, since Orca can’t confirm this terminal is on this host.'
+      )
+    )
     return
   }
   await sendSshCommand(tabId, buildText(), 'insert')
 }
 
 export function typeCdIntoTerminal(tabId: string, targetId: string, path: string): Promise<void> {
-  return typeInTerminal(tabId, targetId, [path], () => `cd -- ${quotePosixShell(path)}`)
+  return typeInTerminal(tabId, targetId, [path], () => `cd -- ${quotePathForAnyShell(path)}`)
 }
 
 export function typePathsIntoTerminal(
@@ -52,5 +81,10 @@ export function typePathsIntoTerminal(
   targetId: string,
   paths: readonly string[]
 ): Promise<void> {
-  return typeInTerminal(tabId, targetId, paths, () => `${paths.map(quotePosixShell).join(' ')} `)
+  return typeInTerminal(
+    tabId,
+    targetId,
+    paths,
+    () => `${paths.map(quotePathForAnyShell).join(' ')} `
+  )
 }

@@ -1,4 +1,6 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
+import path from 'node:path'
 import type { Page } from '@stablyai/playwright-test'
 import { expect, test } from './helpers/orca-app'
 import {
@@ -9,8 +11,8 @@ import {
 } from './helpers/docker-ssh-host-target'
 import {
   addDockerTarget,
-  connectDockerTab,
   focusTerminalCell,
+  readSessionTabId,
   readTerminalText,
   terminalCell
 } from './helpers/ssh-docker-session'
@@ -24,6 +26,33 @@ const FOLLOW_LABEL = 'Follow the terminal’s folder'
 
 function readRemoteFile(target: DockerSshHostTarget, file: string): string {
   return execDockerSshHostTargetCommand(target, `cat '${file}' 2>/dev/null || true`).trim()
+}
+
+/**
+ * Lets the ssh Orca types log in by itself, as it would for a real host. Only the app's isolated
+ * home gets this, and a config of the test's own keeps the user's known_hosts out of it.
+ */
+async function teachShellsToLogIn(
+  page: Page,
+  target: DockerSshHostTarget,
+  configDir: string
+): Promise<void> {
+  const config = path.join(configDir, 'ssh_config')
+  writeFileSync(
+    config,
+    [
+      'Host *',
+      `  IdentityFile ${target.identityFile}`,
+      '  IdentitiesOnly yes',
+      '  StrictHostKeyChecking no',
+      '  UserKnownHostsFile /dev/null',
+      '  LogLevel ERROR'
+    ].join('\n')
+  )
+  const home = await page.evaluate(() => window.api.sftp.localHome())
+  for (const startupFile of ['.zshrc', '.bashrc']) {
+    writeFileSync(path.join(home, startupFile), `ssh() { command ssh -F '${config}' "$@"; }\n`)
+  }
 }
 
 /** Waits for any list already asked for to finish, so a wrong move would have landed by now. */
@@ -50,6 +79,7 @@ test.describe('The terminal and the files of one tab against a Docker sshd', () 
     // Logs in by hand against a Docker sshd, then checks each result on the server.
     test.setTimeout(240_000)
     let target: DockerSshHostTarget | null = null
+    const configDir = mkdtempSync(path.join(os.tmpdir(), 'orca-link-e2e-'))
     try {
       target = startDockerSshHostTarget(testInfo)
       const docker = target
@@ -59,8 +89,18 @@ test.describe('The terminal and the files of one tab against a Docker sshd', () 
       )
       await waitForSessionReady(orcaPage)
       const label = await addDockerTarget(orcaPage, docker, 'Link')
-      const tabId = await connectDockerTab(orcaPage, docker, label)
+      await teachShellsToLogIn(orcaPage, docker, configDir)
+      await orcaPage.getByRole('button', { name: 'SSH', exact: true }).click()
+      const sshPage = orcaPage.locator('[data-ssh-page]')
+      await sshPage.locator('[data-remote-side-tab="hosts"]').click()
+      await sshPage.locator('[data-ssh-host-row]').filter({ hasText: label }).click()
+      const connect = orcaPage.locator('[data-command-confirm]')
+      await connect.getByRole('button', { name: 'Connect' }).click()
+      await expect(connect).toBeHidden()
+      await expect.poll(() => readSessionTabId(orcaPage, label)).not.toBe('')
+      const tabId = await readSessionTabId(orcaPage, label)
       const terminalText = (): Promise<string> => readTerminalText(orcaPage, tabId)
+      await expect.poll(terminalText, { timeout: 30_000 }).toMatch(/root@[^\n]*# /)
 
       await orcaPage.locator('[data-remote-layout="split"]').click()
       const remotePane = orcaPage.locator('[data-sftp-pane="remote"]')
@@ -152,8 +192,20 @@ test.describe('The terminal and the files of one tab against a Docker sshd', () 
       await orcaPage.keyboard.type(`report web-1.example.test '${REMOTE_DIR}'\n`)
       await expect(pathInput).toHaveValue(REMOTE_DIR)
       await orcaPage.screenshot({ path: testInfo.outputPath('follow-on.png') })
+
+      // An ssh nobody asked Orca for may be on another host, so the path is copied, not typed.
+      await orcaPage.keyboard.type('exit\n')
+      await expect(sshPage.locator('[data-ssh-session-ended]')).toBeVisible({ timeout: 30_000 })
+      await orcaPage.keyboard.type(`ssh -p ${docker.port} root@127.0.0.1\n`)
+      await expect(sshPage.locator('[data-ssh-session-ended]')).toBeHidden({ timeout: 30_000 })
+      await remotePane.getByRole('button', { name: CD_LABEL }).click()
+      await expect(
+        orcaPage.getByText(/can’t confirm this terminal is on this host/).first()
+      ).toBeVisible()
+      expect(await terminalText()).not.toContain(`cd -- '${REMOTE_DIR}'`)
     } finally {
       cleanupDockerSshHostTarget(target)
+      rmSync(configDir, { recursive: true, force: true })
     }
   })
 })

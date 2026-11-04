@@ -23565,7 +23565,8 @@
     },
     "link": {
       "copiedForWindows": "已复制路径，因为这台主机运行 Windows，其 shell 的引号规则可能不同。",
-      "controlCharacter": "这个名称包含控制字符，因此 Orca 不会把它输入到终端。"
+      "controlCharacter": "这个名称包含控制字符，因此 Orca 不会把它输入到终端。",
+      "copiedInDoubt": "已复制路径，因为 Orca 无法确认这个终端在这台主机上。"
     },
     "follow": {
       "copied": "已复制。",

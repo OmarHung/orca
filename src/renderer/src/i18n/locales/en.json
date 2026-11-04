@@ -25011,7 +25011,8 @@
     },
     "link": {
       "copiedForWindows": "Copied the path, since this host runs Windows and its shell may quote differently.",
-      "controlCharacter": "This name contains control characters, so Orca won’t type it into the terminal."
+      "controlCharacter": "This name contains control characters, so Orca won’t type it into the terminal.",
+      "copiedInDoubt": "Copied the path, since Orca can’t confirm this terminal is on this host."
     },
     "follow": {
       "copied": "Copied.",
