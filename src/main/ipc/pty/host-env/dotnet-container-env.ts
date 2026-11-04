@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { delimiter } from 'node:path'
 import { dotnetContainerPaths } from '../../../dotnet-container/dotnet-container-install'
-import { resolvePathEnvKey } from '../../../pty/windows-environment-path'
+import { resolvePathEnvKey } from '../../../pty/environment/windows-path-segment-merge'
 import { readInheritedPath } from './path'
 
 export const DOTNET_LAUNCHER_DIR_ENV = 'ORCA_DOTNET_LAUNCHER_DIR'

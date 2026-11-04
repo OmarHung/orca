@@ -9,8 +9,8 @@ import { SshSavedPassphrasesSection } from '../ssh/SshSavedPassphrasesSection'
 import { SettingsSection } from '../section-layout/SettingsSection'
 import { translate } from '@/i18n/i18n'
 import type { SettingsRenderContext } from './settings-render-context'
-import { SshVpnSettingsSection } from '../ssh-vpn/SshVpnSettingsSection'
-import { SftpLocalFolderSettingsSection } from '../sftp-page/SftpLocalFolderSettingsSection'
+import { SshVpnSettingsSection } from '../../ssh-vpn/SshVpnSettingsSection'
+import { SftpLocalFolderSettingsSection } from '../../sftp-page/SftpLocalFolderSettingsSection'
 
 export function renderServersSettingsSection(context: SettingsRenderContext): React.JSX.Element {
   const { model, navigation, view } = context

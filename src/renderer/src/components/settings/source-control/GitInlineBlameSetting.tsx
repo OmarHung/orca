@@ -1,9 +1,9 @@
-import type { GlobalSettings } from '../../../../shared/global-settings-types'
+import type { GlobalSettings } from '../../../../../shared/global-settings-types'
 import { translate } from '@/i18n/i18n'
-import { Switch } from '../ui/switch'
-import { SearchableSetting } from './SearchableSetting'
-import { SettingsRow } from './SettingsFormControls'
-import { matchesSettingsSearch } from './settings-search'
+import { Switch } from '../../ui/switch'
+import { SearchableSetting } from '../section-layout/SearchableSetting'
+import { SettingsRow } from '../form-controls/SettingsFormControls'
+import { matchesSettingsSearch } from '../search/settings-search'
 
 const GIT_INLINE_BLAME_KEYWORDS = [
   'blame',

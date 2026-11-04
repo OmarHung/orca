@@ -26,7 +26,7 @@ import {
 } from '../server-actions/SshTargetServerStatus'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
-import { SshHostVpnBadge } from '../ssh-vpn/SshHostVpnMenu'
+import { SshHostVpnBadge } from '../../../ssh-vpn/SshHostVpnMenu'
 
 export const STATUS_LABELS: Record<SshConnectionStatus, string> = {
   get disconnected() {

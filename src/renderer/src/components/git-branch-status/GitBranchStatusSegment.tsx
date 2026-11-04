@@ -65,7 +65,9 @@ export function GitBranchStatusSegment({
     worktreeId ? s.remoteStatusesByWorktree[worktreeId] : undefined
   )
   const isRemoteOperationActive = useAppStore((s) => s.isRemoteOperationActive)
-  const isUserFetching = useAppStore((s) => s.inFlightRemoteOpKind === 'fetch')
+  const isUserFetching = useAppStore((s) =>
+    s.remoteOperations.some((op) => op.worktreeId === worktreeId && op.kind === 'fetch')
+  )
   const repoId = repo?.id ?? null
   const autoFetchRecord = useGitAutoFetchStore((s) =>
     repoId ? s.recordsByRepo[repoId] : undefined

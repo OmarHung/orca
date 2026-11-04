@@ -4,7 +4,7 @@ import type {
   DatabaseSaveExportRequest
 } from '../../shared/database/database-export-types'
 import type { DatabaseResult } from '../../shared/database/database-query-types'
-import { durableWriteTempPath, writeFileDurable } from '../durable-file-write'
+import { durableWriteTempPath, writeFileDurable } from '../filesystem/durable-file-write'
 
 const FILTERS: Record<DatabaseExportFormat, Electron.FileFilter> = {
   csv: { name: 'CSV', extensions: ['csv'] },

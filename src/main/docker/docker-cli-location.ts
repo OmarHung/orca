@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { resolveCommandOnLocalPath } from '../ipc/command-path-resolver'
+import { resolveCommandOnLocalPath } from '../ipc/command-path/command-path-resolver'
 
 /** Where Docker Desktop, OrbStack, Colima and Homebrew put the CLI when PATH does not have it. */
 function wellKnownDockerPaths(platform: NodeJS.Platform): string[] {

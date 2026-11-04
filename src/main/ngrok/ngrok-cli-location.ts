@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import path from 'node:path'
-import { resolveCommandOnLocalPath } from '../ipc/command-path-resolver'
+import { resolveCommandOnLocalPath } from '../ipc/command-path/command-path-resolver'
 
 /** Where Homebrew, winget, Chocolatey and snap put ngrok when PATH does not have it. */
 function wellKnownNgrokPaths(platform: NodeJS.Platform): string[] {

@@ -2,7 +2,7 @@ import { FolderOpen, X } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
-import { SettingsRow } from '../settings/SettingsFormControls'
+import { SettingsRow } from '../settings/form-controls/SettingsFormControls'
 import { useSftpDefaultLocalFolder } from './sftp-local-folder-memory'
 
 /** The SFTP block in Settings → SSH: where the local pane opens for hosts without a folder of their own. */

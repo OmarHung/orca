@@ -7,7 +7,7 @@ import { runWithGitWorktreeOperationLock } from '../../shared/git-worktree-opera
 import type { GitRuntimeOptions } from './git-runtime-options'
 import { gitOptionsForWorktree } from './git-runtime-options'
 import { gitExecFileAsync } from './runner'
-import { runWithGitReadCacheInvalidation } from './status'
+import { runWithGitReadCacheInvalidation } from './source-control/git-read-cache-invalidation'
 
 /** Runs a Git Log branch/commit action in a local (or WSL) worktree. */
 export async function runLocalGitBranchAction(

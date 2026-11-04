@@ -12,7 +12,7 @@ import {
 import { Input } from '../../../ui/input'
 import { Label } from '../../../ui/label'
 import { SshHostAdvancedFields } from './SshHostAdvancedFields'
-import { saveSshHostVpnDraft, SshTargetVpnField } from '../ssh-vpn/SshTargetVpnField'
+import { saveSshHostVpnDraft, SshTargetVpnField } from '../../../ssh-vpn/SshTargetVpnField'
 import {
   applyParsedSshHostInput,
   hasAdvancedConnectionValues,

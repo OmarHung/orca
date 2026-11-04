@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import {
   currentWorkerEntryLayout,
   resolveForkedProcessEntryPath
-} from '../worker-thread-entry-path'
+} from '../worker-threads/worker-thread-entry-path'
 
 const ENTRY_FILENAME = 'database-worker-entry.js'
 

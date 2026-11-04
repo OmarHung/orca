@@ -1,5 +1,5 @@
 import type { SshTarget } from '../../../../shared/ssh-types'
-import { filterSshTargetsBySearchQuery } from '../settings/ssh-target-search'
+import { filterSshTargetsBySearchQuery } from '../settings/ssh/targets/ssh-target-search'
 import {
   formatSshHostGroupPath,
   sshHostGroupIdOf,

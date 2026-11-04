@@ -17,9 +17,7 @@ export async function chooseLocalBuild(
   return confirmLocalBuild(getMainWindow, manifestPath)
 }
 
-async function pickManifestPath(
-  getMainWindow: () => BrowserWindow | null
-): Promise<string | null> {
+async function pickManifestPath(getMainWindow: () => BrowserWindow | null): Promise<string | null> {
   const openDialogOptions: Electron.OpenDialogOptions = {
     title: translateMain('localBuild.chooseTitle', 'Choose a Local Orca Build'),
     buttonLabel: translateMain('localBuild.chooseButton', 'Choose Build'),
