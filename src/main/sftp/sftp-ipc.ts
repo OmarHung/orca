@@ -17,6 +17,7 @@ import {
   SftpTargetSchema,
   sftpPlanRequestRejection
 } from './sftp-ipc-schemas'
+import { toSftpConnection } from './sftp-connection'
 import { toSftpConnectionState } from './sftp-connection-state'
 import { listLocalDirectory, localHomeDirectory } from './sftp-local-fs'
 import { SftpSessionManager } from './sftp-session-manager'
@@ -46,16 +47,20 @@ function createSftpSessionManager(): SftpSessionManager {
   return new SftpSessionManager({
     getTarget: (targetId) => getSshTargetRegistryStore()?.getTarget(targetId),
     createConnection: (target, credentials) =>
-      new SshConnection(
-        target,
-        {
-          // Why its own channel: this connection is not the relay's, so publishing it there would
-          // make the per-target status (Settings → SSH) report a connection the relay doesn't have.
-          onStateChange: (_targetId, state) => publishConnectionState(toSftpConnectionState(state)),
-          onCredentialRequest: async (targetId, kind, detail, signal) =>
-            (await requestSshCredential(getCurrentMainWindow, targetId, kind, detail, signal)).value
-        },
-        credentials
+      toSftpConnection(
+        new SshConnection(
+          target,
+          {
+            // Why its own channel: this connection is not the relay's, so publishing it there would
+            // make the per-target status (Settings → SSH) report a connection the relay doesn't have.
+            onStateChange: (_targetId, state) =>
+              publishConnectionState(toSftpConnectionState(state)),
+            onCredentialRequest: async (targetId, kind, detail, signal) =>
+              (await requestSshCredential(getCurrentMainWindow, targetId, kind, detail, signal))
+                .value
+          },
+          credentials
+        )
       ),
     signInEndpoint,
     onProgress: (progress) => broadcast('sftp:progress', progress)

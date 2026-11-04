@@ -31,6 +31,8 @@ afterEach(() => {
   rmSync(localRoot, { recursive: true, force: true })
 })
 
+const statsPlaceholder = new FakeSftp().placeholderStats()
+
 function remoteApp(): FakeSftp {
   return new FakeSftp()
     .addDir('/srv')
@@ -112,6 +114,73 @@ describe('draftSftpPlan', () => {
 
     expect(upload.conflicts).toEqual(['a.txt'])
     expect(download.conflicts).toEqual(['a.txt'])
+  })
+
+  describe('when it can’t tell whether a name is taken', () => {
+    const uploadOf = (name: string): SftpPlanRequest => ({
+      kind: 'upload',
+      targetId: 'web',
+      sources: [path.join(localRoot, name)],
+      destinationDir: '/srv/app'
+    })
+
+    function brokenLook(error: Error): FakeSftp {
+      const sftp = remoteApp()
+      const realStat = sftp.stat.bind(sftp)
+      sftp.stat = (target, callback) => {
+        if (target === '/srv/app') {
+          realStat(target, callback)
+        } else {
+          callback(error, statsPlaceholder)
+        }
+      }
+      return sftp
+    }
+
+    it('fails the plan instead of calling it free, when the channel is dead', async () => {
+      writeFileSync(path.join(localRoot, 'a.txt'), 'local')
+      const sftp = brokenLook(new Error('The SFTP connection closed.'))
+
+      await expect(draftSftpPlan(sftp, uploadOf('a.txt'))).rejects.toThrow('connection closed')
+    })
+
+    it('fails the plan when the look is denied, rather than overwriting unwarned', async () => {
+      writeFileSync(path.join(localRoot, 'a.txt'), 'local')
+      const denied = Object.assign(new Error('Permission denied'), { code: 3 })
+
+      await expect(draftSftpPlan(brokenLook(denied), uploadOf('a.txt'))).rejects.toThrow(
+        'Permission denied'
+      )
+    })
+
+    it('still counts a name as free when the host says there is no such file', async () => {
+      writeFileSync(path.join(localRoot, 'new.txt'), 'local')
+
+      const plan = await draftSftpPlan(remoteApp(), uploadOf('new.txt'))
+
+      expect(plan.conflicts).toEqual([])
+    })
+
+    it('fails a download plan when a link can’t be followed because the channel died', async () => {
+      const sftp = remoteApp()
+      const realStat = sftp.stat.bind(sftp)
+      sftp.stat = (target, callback) => {
+        if (target === '/srv/app/a-link') {
+          callback(new Error('The SFTP connection closed.'), statsPlaceholder)
+        } else {
+          realStat(target, callback)
+        }
+      }
+
+      await expect(
+        draftSftpPlan(sftp, {
+          kind: 'download',
+          targetId: 'web',
+          sources: ['/srv/app'],
+          destinationDir: localRoot
+        })
+      ).rejects.toThrow('connection closed')
+    })
   })
 
   it('removes children before their folder and links without following them', async () => {

@@ -60,7 +60,9 @@ export function spawnSystemSshCommand(
     options?.wrapCommand === false
       ? command
       : wrapRemoteCommandForPosixShell(command, { compress: options?.compressCommand === true })
-  const proc = spawn(sshPath, [...buildSshArgs(target, options), remoteCommand], {
+  // Why first: the destination follows `--`, after which `-s` would be part of the remote command.
+  const subsystemFlag = options?.subsystem ? ['-s'] : []
+  const proc = spawn(sshPath, [...subsystemFlag, ...buildSshArgs(target, options), remoteCommand], {
     stdio: ['pipe', 'pipe', 'pipe'],
     windowsHide: true
   })
