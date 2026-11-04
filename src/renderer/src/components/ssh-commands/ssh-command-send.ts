@@ -13,7 +13,10 @@ import {
 } from '../ssh-page/remote-session-store'
 import { setSessionLayout } from '../ssh-page/ssh-session-actions'
 import { isSshProcess, useSshSessionLivenessStore } from '../ssh-page/ssh-session-liveness'
-import { readTerminalTabScreen } from '../terminal-pane/terminal-pane-manager-registry'
+import {
+  readTerminalTabScreen,
+  reportTerminalOtherInput
+} from '../terminal-pane/terminal-pane-manager-registry'
 
 export type SshCommandBlockReason =
   | 'notConnected'
@@ -135,6 +138,7 @@ export async function typeSshCommand(
       reason: translate('sshCommands.sendFailed', 'Couldn’t type into this tab.')
     }
   }
+  reportTerminalOtherInput(check.ptyId, mode === 'run' ? `${command}\r` : command)
   // Why: the command's output is the point, and a files-only layout would hide it.
   const { sessions, grid } = useRemoteSessionStore.getState()
   if (remoteLayoutForTab(sessions, grid, tabId) === 'files') {

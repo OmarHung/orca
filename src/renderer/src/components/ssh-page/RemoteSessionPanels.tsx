@@ -14,12 +14,15 @@ import {
   remoteSessionForTab,
   useRemoteSessionStore
 } from './remote-session-store'
+import { RemoteSyncBar } from './RemoteSyncBar'
 import { RemoteTerminalArea } from './RemoteTerminalArea'
 import {
   canReconnectInPlace,
   useSshSessionLivenessPolling,
   useSshSessionLivenessStore
 } from './ssh-session-liveness'
+import { useSshSyncStore } from './ssh-sync-store'
+import { useSshSyncReceivingTabIds } from './use-ssh-sync'
 import { SshSessionEndedBanner } from './SshSessionEndedBanner'
 import type { SshTargetListStatus } from './use-ssh-target-list'
 import type { SshSessionItem } from './use-ssh-session-items'
@@ -41,6 +44,7 @@ type RemoteSessionPanelsProps = {
   onReconnect: (tabId: string, target: SshTarget) => void
   onAddCurrentToGrid: () => void
   onReturnToGrid: () => void
+  onJoinSync: (tabId: string) => void
 }
 
 /**
@@ -97,7 +101,8 @@ export function RemoteSessionPanels({
   onStartTerminal,
   onReconnect,
   onAddCurrentToGrid,
-  onReturnToGrid
+  onReturnToGrid,
+  onJoinSync
 }: RemoteSessionPanelsProps): React.JSX.Element {
   const sessions = useRemoteSessionStore((s) => s.sessions)
   const grid = useRemoteSessionStore((s) => s.grid)
@@ -124,6 +129,10 @@ export function RemoteSessionPanels({
   const observation = useSshSessionLivenessStore((s) =>
     activeTerminalId ? s.byTab[activeTerminalId] : undefined
   )
+  const isSyncOn = useSshSyncStore((s) => s.isOn)
+  const labelOf = (tabId: string): string =>
+    terminalItems.find((item) => item.id === tabId)?.quickCommandLabel ?? tabId
+  const syncHostLabels = useSshSyncReceivingTabIds(shownGridTabIds ?? []).map(labelOf)
   const activeTarget = active ? targetsById.get(active.targetId) : undefined
   const activeItem = terminalItems.find((item) => item.id === activeTerminalId)
 
@@ -140,7 +149,11 @@ export function RemoteSessionPanels({
   return (
     <div ref={containerRef} className="relative flex min-h-0 min-w-0 flex-1 flex-col">
       {grid && !shownGridTabIds && activeTerminalId ? (
-        <RemoteGridHint onAddCurrent={onAddCurrentToGrid} onReturn={onReturnToGrid} />
+        <RemoteGridHint
+          isSyncPaused={isSyncOn}
+          onAddCurrent={onAddCurrentToGrid}
+          onReturn={onReturnToGrid}
+        />
       ) : null}
       <div
         data-remote-terminals
@@ -150,6 +163,9 @@ export function RemoteSessionPanels({
           layout === 'files' && 'hidden'
         )}
       >
+        {isSyncOn && shownGridTabIds ? (
+          <RemoteSyncBar hostLabels={syncHostLabels} labelOf={labelOf} />
+        ) : null}
         {hasRunningTerminal && !shownGridTabIds && observation?.liveness === 'ended' ? (
           <SshSessionEndedBanner
             hostLabel={activeTarget?.label ?? activeItem?.quickCommandLabel ?? ''}
@@ -169,6 +185,7 @@ export function RemoteSessionPanels({
           targetsById={targetsById}
           onStartTerminal={onStartTerminal}
           onReconnect={onReconnect}
+          onJoinSync={onJoinSync}
         />
       </div>
       <div

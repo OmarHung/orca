@@ -62,7 +62,8 @@ vi.mock('../ssh-page/ssh-session-liveness', () => ({
   }
 }))
 vi.mock('../terminal-pane/terminal-pane-manager-registry', () => ({
-  readTerminalTabScreen: () => mocks.screen
+  readTerminalTabScreen: () => mocks.screen,
+  reportTerminalOtherInput: vi.fn()
 }))
 
 import {

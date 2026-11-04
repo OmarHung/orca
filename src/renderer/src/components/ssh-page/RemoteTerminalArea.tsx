@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { RotateCw, X } from 'lucide-react'
 import TerminalPane from '@/components/terminal-pane/TerminalPane'
 import { shouldDeferParkedPtyExitTabClose } from '@/components/terminal-pane/terminal-parked-tab-watchers'
 import { closeTerminalTab } from '@/components/terminal/terminal-tab-actions'
@@ -11,7 +10,6 @@ import { SSH_SESSIONS_WORKTREE_ID } from '../../../../shared/local-synthetic-wor
 import type { TerminalTab } from '../../../../shared/terminal-tab-types'
 import type { SshTarget } from '../../../../shared/ssh-types'
 import { Button } from '../ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import { remoteGridCells, type RemoteGridCell } from './remote-grid'
 import {
   remoteLayoutForTab,
@@ -19,13 +17,9 @@ import {
   useRemoteSessionStore,
   type RemoteSession
 } from './remote-session-store'
-import { removeTabFromGrid } from './ssh-grid-actions'
+import { RemoteGridPaneHeader } from './RemoteGridPaneHeader'
 import { activateSessionTab, closeSshSession } from './ssh-session-actions'
-import {
-  canReconnectInPlace,
-  useSshSessionLivenessPolling,
-  useSshSessionLivenessStore
-} from './ssh-session-liveness'
+import { useSshSyncReceivingTabIds } from './use-ssh-sync'
 import { useSshSessionCwd } from './use-ssh-session-cwd'
 import type { SshSessionItem } from './use-ssh-session-items'
 
@@ -40,6 +34,7 @@ type RemoteTerminalAreaProps = {
   targetsById: ReadonlyMap<string, SshTarget>
   onStartTerminal: (tabId: string, target: SshTarget) => void
   onReconnect: (tabId: string, target: SshTarget) => void
+  onJoinSync: (tabId: string) => void
 }
 
 function handleTerminalExit(tabId: string, ptyId: string, exitCode: number | undefined): void {
@@ -82,98 +77,6 @@ function TerminalNotStarted({
   )
 }
 
-function PaneIconButton({
-  label,
-  dataAttr,
-  onClick,
-  children
-}: {
-  label: string
-  dataAttr: string
-  onClick: () => void
-  children: React.ReactNode
-}): React.JSX.Element {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          aria-label={label}
-          data-remote-grid-action={dataAttr}
-          onClick={onClick}
-        >
-          {children}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" sideOffset={6}>
-        {label}
-      </TooltipContent>
-    </Tooltip>
-  )
-}
-
-/** Names the host a pane is on, says when ssh ended there, and watches for that happening. */
-function GridPaneHeader({
-  tabId,
-  ptyId,
-  createdAt,
-  label,
-  isActive,
-  isVisible,
-  isRunning,
-  target,
-  onReconnect
-}: {
-  tabId: string
-  ptyId: string | null
-  createdAt: number
-  label: string
-  isActive: boolean
-  isVisible: boolean
-  isRunning: boolean
-  target: SshTarget | undefined
-  onReconnect: (tabId: string, target: SshTarget) => void
-}): React.JSX.Element {
-  useSshSessionLivenessPolling(tabId, ptyId, isVisible && isRunning, createdAt)
-  const observation = useSshSessionLivenessStore((s) => s.byTab[tabId])
-  const hasEnded = isRunning && observation?.liveness === 'ended'
-  return (
-    <div
-      data-remote-grid-header
-      data-ssh-liveness={isRunning ? observation?.liveness : undefined}
-      className={cn(
-        'flex h-7 shrink-0 items-center gap-1 border-b border-border pr-1 pl-2 text-xs',
-        isActive ? 'bg-accent text-accent-foreground' : 'bg-card text-muted-foreground',
-        hasEnded && 'bg-[color-mix(in_srgb,var(--destructive)_15%,transparent)] text-foreground'
-      )}
-    >
-      <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
-      {hasEnded ? (
-        <span data-ssh-session-ended className="shrink-0 truncate">
-          {translate('sshPage.grid.ended', 'Local shell')}
-        </span>
-      ) : null}
-      {hasEnded && target && canReconnectInPlace(observation.foreground) ? (
-        <PaneIconButton
-          label={translate('sshPage.session.reconnect', 'Reconnect')}
-          dataAttr="reconnect"
-          onClick={() => onReconnect(tabId, target)}
-        >
-          <RotateCw className="size-3.5" />
-        </PaneIconButton>
-      ) : null}
-      <PaneIconButton
-        label={translate('sshPage.grid.remove', 'Remove from grid. The connection stays open.')}
-        dataAttr="remove"
-        onClick={() => removeTabFromGrid(tabId, isActive)}
-      >
-        <X className="size-3.5" />
-      </PaneIconButton>
-    </div>
-  )
-}
-
 function useElementWidth(ref: React.RefObject<HTMLDivElement | null>): number {
   const [width, setWidth] = useState(0)
   useEffect(() => {
@@ -210,7 +113,8 @@ export function RemoteTerminalArea({
   shownGridTabIds,
   targetsById,
   onStartTerminal,
-  onReconnect
+  onReconnect,
+  onJoinSync
 }: RemoteTerminalAreaProps): React.JSX.Element {
   const cwd = useSshSessionCwd()
   const sessions = useRemoteSessionStore((s) => s.sessions)
@@ -221,6 +125,7 @@ export function RemoteTerminalArea({
     ? remoteLayoutForTab(sessions, grid, activeTerminalId)
     : 'terminal'
   const cells = shownGridTabIds ? remoteGridCells(shownGridTabIds.length, width) : []
+  const syncReceivingTabIds = useSshSyncReceivingTabIds(shownGridTabIds ?? [])
 
   return (
     <div ref={areaRef} className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
@@ -242,6 +147,9 @@ export function RemoteTerminalArea({
                 key={`${tab.id}-${tab.generation ?? 0}`}
                 data-remote-terminal-cell={tab.id}
                 data-active={isCurrentTab ? 'true' : undefined}
+                data-remote-sync-receiving={
+                  syncReceivingTabIds.includes(tab.id) ? 'true' : undefined
+                }
                 className={cn(
                   'absolute',
                   !cell && 'inset-0',
@@ -249,7 +157,11 @@ export function RemoteTerminalArea({
                   // Why hide: its × closes the tab beside ours that keeps it, and a split would
                   // leave commands unable to tell which pane to type into.
                   cell &&
-                    'flex flex-col border-r border-b border-border [&_.pane-title-actions]:hidden'
+                    'flex flex-col border-r border-b border-border [&_.pane-title-actions]:hidden',
+                  // Why a frame: which panes get the keys must be visible without reading anything.
+                  cell &&
+                    syncReceivingTabIds.includes(tab.id) &&
+                    'outline outline-1 -outline-offset-1 outline-destructive'
                 )}
                 style={cell ? cellStyle(cell) : undefined}
                 aria-hidden={!isShown}
@@ -265,8 +177,9 @@ export function RemoteTerminalArea({
                 }}
               >
                 {cell ? (
-                  <GridPaneHeader
+                  <RemoteGridPaneHeader
                     tabId={tab.id}
+                    sourceTabId={activeTerminalId ?? tab.id}
                     ptyId={tab.ptyId}
                     createdAt={tab.createdAt}
                     label={label}
@@ -275,6 +188,7 @@ export function RemoteTerminalArea({
                     isRunning={session.terminalStarted}
                     target={targetsById.get(session.targetId)}
                     onReconnect={onReconnect}
+                    onJoinSync={onJoinSync}
                   />
                 ) : null}
                 <div className={cell ? 'relative min-h-0 min-w-0 flex-1' : 'absolute inset-0'}>

@@ -1,7 +1,9 @@
 import type { PtyTransport } from '../../pty-transport/pty-transport-types'
 import type { TerminalInputKind } from '../../../../../../shared/terminal/input/terminal-input-kind'
+import { reportTerminalOtherInput } from '../../terminal-pane-manager-registry'
 
-type TerminalPastePtyWriter = Pick<PtyTransport, 'sendInput' | 'sendInputAccepted'>
+type TerminalPastePtyWriter = Pick<PtyTransport, 'sendInput' | 'sendInputAccepted'> &
+  Partial<Pick<PtyTransport, 'getPtyId'>>
 
 export function writeTerminalPastePtyInput(
   transport: TerminalPastePtyWriter | undefined,
@@ -12,6 +14,7 @@ export function writeTerminalPastePtyInput(
   if (!transport) {
     return false
   }
+  reportTerminalOtherInput(transport.getPtyId?.(), data)
   // sendInput only queues writes; await sendInputAccepted so paste chunking respects PTY backpressure.
   const accepted = signal
     ? transport.sendInputAccepted?.(data, inputKind, { signal })

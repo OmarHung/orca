@@ -1,4 +1,4 @@
-import { LayoutGrid, Plus, X } from 'lucide-react'
+import { LayoutGrid, Plus, RadioTower, X } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
 import { Button } from '../ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
@@ -45,6 +45,10 @@ export function RemoteGridControls({
   hasGrid,
   isGridShown,
   hasTabs,
+  isSyncOn,
+  isSyncSupported,
+  onStartSync,
+  onStopSync,
   onAdd,
   onReturn,
   onEnd
@@ -53,6 +57,11 @@ export function RemoteGridControls({
   /** False while a tab outside the grid is on screen. */
   isGridShown: boolean
   hasTabs: boolean
+  isSyncOn: boolean
+  /** False on Windows, where the foreground can't show that ssh is running. */
+  isSyncSupported: boolean
+  onStartSync: () => void
+  onStopSync: () => void
   onAdd: () => void
   onReturn: () => void
   onEnd: () => void
@@ -83,6 +92,24 @@ export function RemoteGridControls({
   return (
     <>
       <StripButton
+        label={
+          !isSyncSupported
+            ? translate(
+                'sshPage.sync.unsupported',
+                'Synced input isn’t available on Windows, where Orca can’t confirm ssh is running.'
+              )
+            : isSyncOn
+              ? translate('sshPage.sync.stopButton', 'Stop synced input')
+              : translate('sshPage.sync.startButton', 'Send input to several hosts')
+        }
+        dataAttr={isSyncOn ? 'sync-stop' : 'sync-start'}
+        isPressed={isSyncOn}
+        disabled={!isSyncSupported}
+        onClick={isSyncOn ? onStopSync : onStartSync}
+      >
+        <RadioTower className="size-3.5" />
+      </StripButton>
+      <StripButton
         label={translate('sshPage.grid.add', 'Add a connection')}
         dataAttr="add"
         onClick={onAdd}
@@ -103,9 +130,12 @@ export function RemoteGridControls({
 
 /** Says a grid is waiting while a tab outside it is on screen, in every layout. */
 export function RemoteGridHint({
+  isSyncPaused,
   onAddCurrent,
   onReturn
 }: {
+  /** Typing here only reaches this tab, so a running sync has to say it isn't in effect. */
+  isSyncPaused: boolean
   onAddCurrent: () => void
   onReturn: () => void
 }): React.JSX.Element {
@@ -116,7 +146,12 @@ export function RemoteGridHint({
       className="flex shrink-0 items-center gap-3 border-b border-border bg-card px-3 py-1 text-xs text-muted-foreground"
     >
       <span className="min-w-0 flex-1 truncate">
-        {translate('sshPage.grid.outside', 'This tab isn’t in the grid.')}
+        {isSyncPaused
+          ? translate(
+              'sshPage.sync.paused',
+              'This tab isn’t in the grid. Synced input is paused, and what you type stays here.'
+            )
+          : translate('sshPage.grid.outside', 'This tab isn’t in the grid.')}
       </span>
       <Button variant="ghost" size="xs" data-remote-grid-hint-add onClick={onAddCurrent}>
         {translate('sshPage.grid.addCurrent', 'Add to grid')}

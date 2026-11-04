@@ -11,6 +11,7 @@ import { useRemoteHostsLayout } from './remote-hosts-layout-store'
 import { RemoteGridControls, RemoteHostSelectionBar } from './RemoteGridControls'
 import { RemoteHostsPageFrame } from './RemoteHostsPageFrame'
 import { RemoteSidePanel } from './RemoteSidePanel'
+import { RemoteSyncDialog, type RemoteSyncRequest } from './RemoteSyncDialog'
 import { RemoteLayoutToggle } from './RemoteLayoutToggle'
 import { RemoteTransfersTray } from './RemoteTransfersTray'
 import {
@@ -36,7 +37,9 @@ import {
 import { addTabToGrid, openHostsInGrid, returnToGrid } from './ssh-grid-actions'
 import { sshHostGroupIdOf, sshHostGroupSubtreeIds } from './ssh-host-groups'
 import { useSshHostGroups } from './ssh-host-groups-store'
+import { useSshSyncStore } from './ssh-sync-store'
 import { useRemoteSessionSync } from './use-remote-session-sync'
+import { isSshSyncSupported, useSshSync } from './use-ssh-sync'
 import { useSshPageShortcuts } from './use-ssh-page-shortcuts'
 import { useSshSessionItems } from './use-ssh-session-items'
 import { useSshTargetList } from './use-ssh-target-list'
@@ -57,10 +60,13 @@ function SshPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Elemen
   const grid = useRemoteSessionStore((s) => s.grid)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [gridPickerOpen, setGridPickerOpen] = useState(false)
+  const [syncRequest, setSyncRequest] = useState<RemoteSyncRequest | null>(null)
+  const isSyncOn = useSshSyncStore((s) => s.isOn)
   const [selectedHostIds, setSelectedHostIds] = useState<ReadonlySet<string>>(() => new Set())
   const confirm = useCommandConfirm()
   useSftpProgressEvents()
   useRemoteSessionSync(list)
+  useSshSync(isVisible)
 
   const { activeTerminalId, terminalItems, tabBarOrder } = items
   const activeSession = activeTerminalId ? remoteSessionForTab(sessions, activeTerminalId) : null
@@ -144,6 +150,20 @@ function SshPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Elemen
     },
     [activeTerminalId, confirm, sessions, targetsById]
   )
+  const syncPane = (tabId: string): RemoteSyncRequest['panes'][number] => {
+    const item = terminalItems.find((tab) => tab.id === tabId)
+    return {
+      tabId,
+      label: item?.quickCommandLabel ?? item?.title ?? tabId,
+      ptyId: item?.ptyId ?? null
+    }
+  }
+  const startSync = (): void => {
+    setSyncRequest({ panes: (grid?.tabIds ?? []).map(syncPane), isJoining: false })
+  }
+  const joinSync = (tabId: string): void => {
+    setSyncRequest({ panes: [syncPane(tabId)], isJoining: true })
+  }
   const gridPickerTabs = terminalItems
     .filter((tab) => !grid?.tabIds.includes(tab.id) && (grid || tab.id !== activeTerminalId))
     .map((tab) => ({ id: tab.id, label: tab.quickCommandLabel ?? tab.title }))
@@ -189,6 +209,10 @@ function SshPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Elemen
               hasGrid={grid !== null}
               isGridShown={isGridShown}
               hasTabs={terminalItems.length > 0}
+              isSyncOn={isSyncOn}
+              isSyncSupported={isSshSyncSupported()}
+              onStartSync={startSync}
+              onStopSync={() => useSshSyncStore.getState().stop()}
               onAdd={() => setGridPickerOpen(true)}
               onReturn={returnToGrid}
               onEnd={() => useRemoteSessionStore.getState().clearGrid()}
@@ -252,9 +276,11 @@ function SshPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Elemen
             }
           }}
           onReturnToGrid={returnToGrid}
+          onJoinSync={joinSync}
         />
       </SshSessionsSurface>
       <RemoteTransfersTray targetsById={targetsById} />
+      <RemoteSyncDialog request={syncRequest} onClose={() => setSyncRequest(null)} />
       <SshHostPickerDialog
         open={pickerOpen}
         onOpenChange={setPickerOpen}
