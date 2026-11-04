@@ -137,12 +137,21 @@ describe('ssh session liveness', () => {
     expect(useSshSessionLivenessStore.getState().byTab.tab.hasManualSsh).toBe(false)
   })
 
-  it('does not count a slow first connection as manual', () => {
+  it('counts an ssh first seen after the start grace as manual, since it may not be the one asked for', () => {
     observe('zsh', T0)
     observe('zsh', T0 + LIVENESS_START_GRACE_MS)
     observe('ssh', T0 + LIVENESS_START_GRACE_MS + 1)
 
-    expect(useSshSessionLivenessStore.getState().byTab.tab.hasManualSsh).toBe(false)
+    expect(useSshSessionLivenessStore.getState().byTab.tab.hasManualSsh).toBe(true)
+  })
+
+  it('still notices a new ssh when a look in between could not be read', () => {
+    observe('ssh', T0)
+    observe('zsh', T0 + 1)
+    observe(null, T0 + 2)
+    observe('ssh', T0 + 3)
+
+    expect(useSshSessionLivenessStore.getState().byTab.tab.hasManualSsh).toBe(true)
   })
 
   it('says at once that an older tab ended, instead of waiting as if it just started', () => {

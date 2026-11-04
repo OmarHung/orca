@@ -19,6 +19,7 @@ import {
 } from './remote-session-store'
 import { buildSshSessionCommand } from './ssh-session-command'
 import { useSshSessionLivenessStore } from './ssh-session-liveness'
+import { useSshSyncStore } from './ssh-sync-store'
 import { prepareSshSessionVpn } from './ssh-session-vpn'
 
 /** The exact ssh command for a host and the VPN it needs; null when it cannot be typed. */
@@ -196,6 +197,8 @@ export async function reconnectSessionTerminal(
     return
   }
   useSshSessionLivenessStore.getState().markStarting(tabId, Date.now())
+  // Why: the Ctrl+C typed first cleared whatever its line held.
+  useSshSyncStore.getState().markLineEmpty(tabId)
   focusTerminalTabSurface(tabId)
 }
 

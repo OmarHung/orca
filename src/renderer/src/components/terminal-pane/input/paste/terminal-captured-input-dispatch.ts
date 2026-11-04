@@ -1,5 +1,6 @@
 import type { IDisposable } from '@xterm/xterm'
 import type { PtyTransport } from '../../pty-transport/pty-transport-types'
+import { reportTerminalShortcutInput } from '../../terminal-pane-manager-registry'
 
 type CapturedTerminalInputDispatch = {
   targetPaneMounted: boolean
@@ -34,6 +35,7 @@ export function sendCapturedTerminalInput({
   }
   const sent = capturedTransport.sendInput(data, 'driving')
   if (sent) {
+    reportTerminalShortcutInput(capturedPtyId, data)
     onAccepted?.()
   }
   return sent
