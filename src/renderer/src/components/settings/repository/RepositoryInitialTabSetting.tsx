@@ -4,7 +4,7 @@ import { isRepoInitialTab, resolveRepoInitialTab } from '../../../../../shared/r
 import { isTuiAgentEnabled } from '../../../../../shared/tui-agent-selection'
 import { Label } from '../../ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select'
-import { SearchableSetting } from '../SearchableSetting'
+import { SearchableSetting } from '../section-layout/SearchableSetting'
 import { AgentIcon, getAgentCatalog } from '@/lib/agent-catalog'
 import { useAppStore } from '../../../store'
 import { translate } from '@/i18n/i18n'

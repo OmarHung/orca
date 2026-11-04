@@ -1,5 +1,5 @@
 import { getLocalPtyProvider } from '../ipc/pty/provider/registry'
-import { readProcessTable } from '../pty-descendant-termination'
+import { readProcessTable } from '../pty/process-retirement/pty-descendant-termination'
 import { readWindowsProcessIdentityTable } from '../windows/windows-process-table'
 
 /** Deeper than any real shell → tool → server chain; also stops a ppid cycle. */
