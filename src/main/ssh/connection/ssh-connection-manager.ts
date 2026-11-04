@@ -12,7 +12,7 @@ import { markSshSessionStartFailure } from './ssh-session-start-failure'
 import { createSshHostAsleepError, isSshHostHeldAsleep } from './ssh-host-sleep-hold'
 
 /** A remembered sign-in only applies to the endpoint it was given for; an edited host must ask. */
-function signInEndpoint(target: SshTarget): string {
+export function signInEndpoint(target: SshTarget): string {
   const { configHost, host, port, username, identityFile, proxyCommand, jumpHost } = target
   return JSON.stringify([configHost, host, port, username, identityFile, proxyCommand, jumpHost])
 }

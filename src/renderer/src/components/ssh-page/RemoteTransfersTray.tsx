@@ -1,10 +1,13 @@
-import { ArrowDownToLine, ArrowUpFromLine, X } from 'lucide-react'
+import { useState } from 'react'
+import { ArrowDownToLine, ArrowUpFromLine, ChevronDown, ChevronRight, X } from 'lucide-react'
+import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Progress } from '../ui/progress'
 import { translate } from '@/i18n/i18n'
+import type { SshTarget } from '../../../../shared/ssh-types'
+import { cancelSftpTransfer } from '../sftp-page/sftp-plan-actions'
+import { useSftpTransfersStore, type SftpTransfer } from '../sftp-page/sftp-transfers-store'
 import { formatBytes } from '../status-bar/workspace-space-format'
-import { cancelSftpTransfer } from './sftp-plan-actions'
-import { useSftpTransfersStore, type SftpTransfer } from './sftp-transfers-store'
 
 function statusText(transfer: SftpTransfer): string {
   switch (transfer.status) {
@@ -21,7 +24,14 @@ function statusText(transfer: SftpTransfer): string {
   }
 }
 
-function TransferRow({ transfer }: { transfer: SftpTransfer }): React.JSX.Element {
+function TransferRow({
+  transfer,
+  hostLabel
+}: {
+  transfer: SftpTransfer
+  /** Null once the host is gone from the list; the row still reports its transfer. */
+  hostLabel: string | null
+}): React.JSX.Element {
   const Icon = transfer.direction === 'upload' ? ArrowUpFromLine : ArrowDownToLine
   const percent =
     transfer.totalBytes > 0
@@ -31,6 +41,11 @@ function TransferRow({ transfer }: { transfer: SftpTransfer }): React.JSX.Elemen
   return (
     <div className="flex items-center gap-3 px-3 py-1.5 text-xs" data-sftp-transfer={transfer.id}>
       <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+      {hostLabel ? (
+        <Badge variant="outline" className="max-w-40 shrink-0">
+          <span className="truncate">{hostLabel}</span>
+        </Badge>
+      ) : null}
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           <span className="truncate font-medium text-foreground">{transfer.label}</span>
@@ -56,30 +71,59 @@ function TransferRow({ transfer }: { transfer: SftpTransfer }): React.JSX.Elemen
   )
 }
 
-export function SftpTransfersPanel(): React.JSX.Element | null {
+/**
+ * Every host's transfers, at the bottom of the page so they stay in view in any layout and after
+ * their tab closes: a transfer runs in main and does not depend on the tab that started it.
+ */
+export function RemoteTransfersTray({
+  targetsById
+}: {
+  targetsById: ReadonlyMap<string, SshTarget>
+}): React.JSX.Element | null {
   const transfers = useSftpTransfersStore((s) => s.transfers)
   const clearFinished = useSftpTransfersStore((s) => s.clearFinished)
+  const [isOpen, setIsOpen] = useState(true)
   if (transfers.length === 0) {
     return null
   }
-  const hasFinished = transfers.some((transfer) => transfer.status !== 'running')
+  const runningCount = transfers.filter((transfer) => transfer.status === 'running').length
+  const Chevron = isOpen ? ChevronDown : ChevronRight
   return (
-    <div className="flex max-h-48 shrink-0 flex-col border-t border-border">
-      <div className="flex shrink-0 items-center justify-between px-3 py-1">
-        <span className="text-xs font-medium text-muted-foreground">
+    <div data-remote-transfers className="flex max-h-48 shrink-0 flex-col border-t border-border">
+      <div className="flex h-7 shrink-0 items-center justify-between px-3">
+        <button
+          type="button"
+          aria-expanded={isOpen}
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+        >
+          <Chevron className="size-3" />
           {translate('sftpPage.transfers.title', 'Transfers')}
-        </span>
-        {hasFinished ? (
+          {runningCount > 0 ? (
+            <span className="font-normal">
+              {translate('sftpPage.transfers.runningCount', '{{count}} running', {
+                count: runningCount
+              })}
+            </span>
+          ) : null}
+        </button>
+        {runningCount < transfers.length ? (
           <Button variant="ghost" size="xs" onClick={clearFinished}>
             {translate('sftpPage.transfers.clear', 'Clear finished')}
           </Button>
         ) : null}
       </div>
-      <div className="scrollbar-sleek min-h-0 overflow-y-auto">
-        {transfers.map((transfer) => (
-          <TransferRow key={transfer.id} transfer={transfer} />
-        ))}
-      </div>
+      {isOpen ? (
+        <div className="scrollbar-sleek min-h-0 overflow-y-auto">
+          {transfers.map((transfer) => (
+            <TransferRow
+              key={transfer.id}
+              transfer={transfer}
+              hostLabel={targetsById.get(transfer.targetId)?.label ?? null}
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }

@@ -147,8 +147,60 @@ test('a files tab runs no ssh until asked, and going back to the host reuses it'
   await expect.poll(async () => (await readSshTabs(orcaPage))[0]?.ptyId ?? null).not.toBeNull()
 })
 
+test('says when ssh is over, and reconnects in the same tab over a half-typed line', async ({
+  orcaPage
+}, testInfo) => {
+  await waitForSessionReady(orcaPage)
+  await addRefusedTarget(orcaPage)
+  const tab = await openRefusedSession(orcaPage)
+  const sshPage = orcaPage.locator('[data-ssh-page]')
+
+  // The refused ssh left a local shell behind, under a tab named after the host.
+  const banner = sshPage.locator('[data-ssh-session-ended]')
+  await expect(banner).toContainText(`not ${REFUSED_TARGET.label}`, { timeout: 30_000 })
+  await orcaPage.screenshot({ path: testInfo.outputPath('ssh-session-ended.png') })
+
+  // A script under a shell of the same name is not a prompt: reconnecting must not interrupt it.
+  await sshPage.locator('[data-remote-terminals] .xterm').click()
+  await expect(sshPage.locator('[data-remote-terminals] textarea')).toBeFocused()
+  await orcaPage.keyboard.type("bash -c 'read line; echo still-$((40+2))'\n")
+  await expect(banner.getByRole('button', { name: 'Reconnect' })).toBeEnabled()
+  await banner.getByRole('button', { name: 'Reconnect' }).click()
+  await confirmSshCommand(orcaPage)
+  await expect(
+    orcaPage.getByText('Something still seems to be running in this tab. Finish it first.').last()
+  ).toBeVisible()
+  await sshPage.locator('[data-remote-terminals] .xterm').click()
+  await expect(sshPage.locator('[data-remote-terminals] textarea')).toBeFocused()
+  await orcaPage.keyboard.press('Enter')
+  // Only a script that was never interrupted gets as far as printing this.
+  await expect.poll(() => readTerminalText(orcaPage, tab.id)).toContain('still-42')
+  const afterScript = await readTerminalText(orcaPage, tab.id)
+  expect(afterScript.split('Connection refused').length - 1).toBe(1)
+
+  // Text left at the prompt must not end up in front of the ssh command.
+  await sshPage.locator('[data-remote-terminals] .xterm').click()
+  await expect(sshPage.locator('[data-remote-terminals] textarea')).toBeFocused()
+  await orcaPage.keyboard.type('echo leftover')
+  await expect.poll(() => readTerminalText(orcaPage, tab.id)).toContain('echo leftover')
+  await banner.getByRole('button', { name: 'Reconnect' }).click()
+  await confirmSshCommand(orcaPage)
+
+  await expect
+    .poll(async () => {
+      const text = await readTerminalText(orcaPage, tab.id)
+      return text.split('Connection refused').length - 1
+    })
+    .toBe(2)
+  const text = await readTerminalText(orcaPage, tab.id)
+  expect(text).not.toContain('echo leftoverssh')
+  expect(text).not.toContain('leftover ssh')
+  expect((await readSshTabs(orcaPage)).map((row) => row.id)).toEqual([tab.id])
+})
+
 test('restores SSH page tabs after an app restart', async (// oxlint-disable-next-line no-empty-pattern -- This persistence test owns both Electron launches.
 {}, testInfo) => {
+  // Launches Orca twice, and each launch opens a session before the restart can be checked.
   test.setTimeout(300_000)
   const session = createRestartSession(testInfo)
   let firstApp: ElectronApplication | null = null
