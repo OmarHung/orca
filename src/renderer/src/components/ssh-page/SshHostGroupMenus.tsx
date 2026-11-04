@@ -5,7 +5,8 @@ import {
   FolderPlus,
   FolderUp,
   Pencil,
-  Ungroup
+  Ungroup,
+  LayoutGrid
 } from 'lucide-react'
 import {
   ContextMenuContent,
@@ -97,13 +98,25 @@ export function SshHostMoveToGroupSubmenu({
 /** Right-click on a group row. */
 export function SshHostGroupMenuContent({
   group,
-  onAskName
+  onAskName,
+  onConnectGroup
 }: {
   group: SshHostGroup
   onAskName: AskSshHostGroupName
+  /** Absent where a list only picks one host. */
+  onConnectGroup?: (groupId: string) => void
 }): React.JSX.Element {
   return (
     <ContextMenuContent className="min-w-48">
+      {onConnectGroup ? (
+        <>
+          <ContextMenuItem data-ssh-group-connect onSelect={() => onConnectGroup(group.id)}>
+            <LayoutGrid />
+            {translate('sshPage.groups.connectAll', 'Connect All Side by Side')}
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+        </>
+      ) : null}
       <ContextMenuItem onSelect={() => onAskName(newSshHostGroupRequest(group.id))}>
         <FolderPlus />
         {translate('sshPage.groups.newSubgroup', 'New Subgroup…')}

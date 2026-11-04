@@ -41,9 +41,15 @@ vi.mock('../ssh-page/ssh-session-actions', () => ({ setSessionLayout: mocks.setS
 vi.mock('../ssh-page/remote-session-store', () => ({
   remoteSessionForTab: (sessions: Record<string, unknown>, tabId: string) =>
     sessions[tabId] ?? { layout: 'terminal', terminalStarted: true },
+  remoteLayoutForTab: (
+    sessions: Record<string, { layout: string } | undefined>,
+    _grid: unknown,
+    tabId: string
+  ) => sessions[tabId]?.layout ?? 'terminal',
   useRemoteSessionStore: {
     getState: () => ({
       sessions: mocks.sessions,
+      grid: null,
       remotePathByTab: mocks.paths,
       remoteSelectionByTab: { 'tab-1': ['/srv/app/a'] }
     })

@@ -15,6 +15,171 @@ beforeEach(() => {
   window.localStorage.clear()
 })
 
+describe('remote grid', () => {
+  async function storeWithTabs(...tabIds: string[]) {
+    const { useRemoteSessionStore, remoteLayoutForTab } = await loadStore()
+    for (const tabId of tabIds) {
+      useRemoteSessionStore
+        .getState()
+        .addSession({ tabId, targetId: tabId, layout: 'terminal', terminalStarted: true })
+    }
+    return { useRemoteSessionStore, remoteLayoutForTab }
+  }
+
+  it('is not a grid until there are two panes', async () => {
+    const { useRemoteSessionStore } = await storeWithTabs('a', 'b')
+
+    useRemoteSessionStore.getState().addToGrid(['a'])
+    expect(useRemoteSessionStore.getState().grid).toBeNull()
+
+    useRemoteSessionStore.getState().addToGrid(['a', 'b'])
+    expect(useRemoteSessionStore.getState().grid?.tabIds).toEqual(['a', 'b'])
+  })
+
+  it('adds to the end, without duplicates, up to nine panes', async () => {
+    const { useRemoteSessionStore } = await storeWithTabs()
+    const eleven = Array.from({ length: 11 }, (_, index) => `t${index}`)
+
+    useRemoteSessionStore.getState().addToGrid(['t0', 't1'])
+    useRemoteSessionStore.getState().addToGrid(['t1', ...eleven])
+
+    const tabIds = useRemoteSessionStore.getState().grid?.tabIds
+    expect(tabIds).toEqual(eleven.slice(0, 9))
+  })
+
+  it('leaves the grid when only one pane remains', async () => {
+    const { useRemoteSessionStore } = await storeWithTabs('a', 'b', 'c')
+    useRemoteSessionStore.getState().addToGrid(['a', 'b', 'c'])
+
+    useRemoteSessionStore.getState().removeFromGrid('a')
+    expect(useRemoteSessionStore.getState().grid?.tabIds).toEqual(['b', 'c'])
+
+    useRemoteSessionStore.getState().removeFromGrid('b')
+    expect(useRemoteSessionStore.getState().grid).toBeNull()
+  })
+
+  it('keeps a removed tab and its session', async () => {
+    const { useRemoteSessionStore } = await storeWithTabs('a', 'b', 'c')
+    useRemoteSessionStore.getState().addToGrid(['a', 'b', 'c'])
+
+    useRemoteSessionStore.getState().removeFromGrid('a')
+
+    expect(useRemoteSessionStore.getState().sessions.a.terminalStarted).toBe(true)
+  })
+
+  it('drops a closed tab from the grid', async () => {
+    const { useRemoteSessionStore } = await storeWithTabs('a', 'b', 'c')
+    useRemoteSessionStore.getState().addToGrid(['a', 'b', 'c'])
+
+    useRemoteSessionStore.getState().prune(new Set(['b', 'c']))
+    expect(useRemoteSessionStore.getState().grid?.tabIds).toEqual(['b', 'c'])
+
+    useRemoteSessionStore.getState().prune(new Set(['c']))
+    expect(useRemoteSessionStore.getState().grid).toBeNull()
+  })
+
+  it('gives every pane one layout, and leaves other tabs theirs', async () => {
+    const { useRemoteSessionStore, remoteLayoutForTab } = await storeWithTabs('a', 'b', 'c')
+    useRemoteSessionStore.getState().addToGrid(['a', 'b'])
+
+    useRemoteSessionStore.getState().setLayout('a', 'split')
+    useRemoteSessionStore.getState().setLayout('c', 'files')
+
+    const { sessions, grid } = useRemoteSessionStore.getState()
+    expect(remoteLayoutForTab(sessions, grid, 'a')).toBe('split')
+    expect(remoteLayoutForTab(sessions, grid, 'b')).toBe('split')
+    expect(remoteLayoutForTab(sessions, grid, 'c')).toBe('files')
+  })
+
+  it('gives the panes one dock height, and leaves their own until the grid ends', async () => {
+    const { useRemoteSessionStore } = await storeWithTabs('a', 'b')
+    const { remoteDockHeightForTab } = await import('./remote-session-store')
+    const height = (tabId: string): number => {
+      const { sessions, grid } = useRemoteSessionStore.getState()
+      return remoteDockHeightForTab(sessions, grid, tabId)
+    }
+    useRemoteSessionStore.getState().setDockHeight('a', 400)
+    useRemoteSessionStore.getState().addToGrid(['a', 'b'])
+
+    useRemoteSessionStore.getState().setDockHeight('b', 500)
+    expect(height('a')).toBe(500)
+    expect(height('b')).toBe(500)
+
+    useRemoteSessionStore.getState().clearGrid()
+    expect(height('a')).toBe(400)
+  })
+
+  it('returns a tab to its own layout after the grid ends', async () => {
+    const { useRemoteSessionStore, remoteLayoutForTab } = await storeWithTabs('a', 'b')
+    useRemoteSessionStore.getState().setLayout('a', 'files')
+    useRemoteSessionStore.getState().addToGrid(['a', 'b'])
+    useRemoteSessionStore.getState().setLayout('a', 'split')
+
+    useRemoteSessionStore.getState().clearGrid()
+
+    const { sessions, grid } = useRemoteSessionStore.getState()
+    expect(remoteLayoutForTab(sessions, grid, 'a')).toBe('files')
+  })
+
+  it('comes back after a reload', async () => {
+    const { useRemoteSessionStore } = await storeWithTabs('a', 'b')
+    useRemoteSessionStore.getState().addToGrid(['a', 'b'])
+    useRemoteSessionStore.getState().setLayout('a', 'split')
+
+    const reloaded = await loadStore()
+
+    expect(reloaded.useRemoteSessionStore.getState().grid).toMatchObject({
+      tabIds: ['a', 'b'],
+      layout: 'split'
+    })
+  })
+
+  it('reads sessions saved before grids existed', async () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        sessions: [
+          {
+            tabId: 'a',
+            targetId: 'web',
+            layout: 'terminal',
+            dockHeight: 280,
+            terminalStarted: true
+          }
+        ]
+      })
+    )
+
+    const { useRemoteSessionStore } = await loadStore()
+
+    expect(useRemoteSessionStore.getState().sessions.a.targetId).toBe('web')
+    expect(useRemoteSessionStore.getState().grid).toBeNull()
+  })
+
+  it('ignores a saved grid it cannot trust, and keeps the sessions', async () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        sessions: [
+          {
+            tabId: 'a',
+            targetId: 'web',
+            layout: 'terminal',
+            dockHeight: 280,
+            terminalStarted: true
+          }
+        ],
+        grid: { tabIds: ['a'], layout: 'nonsense' }
+      })
+    )
+
+    const { useRemoteSessionStore } = await loadStore()
+
+    expect(useRemoteSessionStore.getState().sessions.a).toBeDefined()
+    expect(useRemoteSessionStore.getState().grid).toBeNull()
+  })
+})
+
 describe('remote session store', () => {
   it('remembers a tab’s host and layout across reloads, but not its folder', async () => {
     const first = await loadStore()
