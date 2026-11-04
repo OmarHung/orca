@@ -13,6 +13,8 @@ type SshSessionObservation = {
   liveness: SshSessionLiveness
   foreground: string | null
   hasSeenSsh: boolean
+  /** ssh came back after ending, without Orca being asked, so it may go to another host. */
+  hasManualSsh: boolean
   startedAt: number
 }
 
@@ -68,7 +70,18 @@ function nextObservation(
     }
     return now - startedAt >= LIVENESS_START_GRACE_MS ? 'ended' : 'starting'
   }
-  return { liveness: liveness(), foreground, hasSeenSsh: Boolean(hasSeenSsh), startedAt }
+  const isNewSsh =
+    previous?.liveness === 'ended' &&
+    previous.hasSeenSsh &&
+    foreground !== null &&
+    isSshProcess(foreground)
+  return {
+    liveness: liveness(),
+    foreground,
+    hasSeenSsh: Boolean(hasSeenSsh),
+    hasManualSsh: previous?.hasManualSsh === true || isNewSsh,
+    startedAt
+  }
 }
 
 /** What each SSH tab's terminal was last seen running. Not saved: only a live PTY can answer. */
@@ -83,6 +96,7 @@ export const useSshSessionLivenessStore = create<SshSessionLivenessState>((set, 
       liveness: 'starting',
       foreground: null,
       hasSeenSsh: false,
+      hasManualSsh: false,
       startedAt: now
     }
     set({ byTab: { ...get().byTab, [tabId]: observation } })

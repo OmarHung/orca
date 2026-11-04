@@ -4,6 +4,7 @@ import { requestSshCredential } from '../ipc/ssh/ssh-passphrase'
 import { getCurrentMainWindow } from '../ipc/ssh/ssh-ipc-context'
 import { SshConnection } from '../ssh/connection/ssh-connection'
 import { signInEndpoint } from '../ssh/connection/ssh-connection-manager'
+import { registerSshCommandHandlers } from '../ssh-commands/ssh-commands-ipc'
 import { getSshTargetRegistryStore } from '../ssh/targets/ssh-target-registry'
 import {
   INVALID_SFTP_REQUEST_MESSAGE,
@@ -69,6 +70,8 @@ async function respond<T>(run: () => Promise<T>): Promise<SftpResult<T>> {
 }
 
 export function registerSftpHandlers(): void {
+  // Why here: the same SSH page uses both, and upstream's registration file is over its line limit.
+  registerSshCommandHandlers()
   const sessions = createSftpSessionManager()
 
   ipcMain.handle('sftp:home', (_event, raw: unknown) => {
