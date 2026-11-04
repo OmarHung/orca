@@ -6,6 +6,12 @@ import {
   startDockerSshHostTarget,
   type DockerSshHostTarget
 } from './helpers/docker-ssh-host-target'
+import {
+  addDockerTarget,
+  connectDockerTab,
+  focusActiveTerminal,
+  readTerminalText
+} from './helpers/ssh-docker-session'
 import { waitForSessionReady } from './helpers/store'
 
 const RUN_DOCKER_SSH = process.env.ORCA_E2E_SSH_DOCKER === '1'
@@ -13,78 +19,6 @@ const REMOTE_OUTPUT = '/tmp/orca-command-output'
 const REMOTE_MARKER = '/tmp/orca-command-injected'
 // Each piece would create the marker file if the value ever left its quotes.
 const HOSTILE_VALUE = `a b; touch ${REMOTE_MARKER}; $(touch ${REMOTE_MARKER}) \`touch ${REMOTE_MARKER}\` ' " done`
-
-async function readTerminalText(page: Page, tabId: string): Promise<string> {
-  return page.evaluate(
-    (id) => window.__paneManagers?.get(id)?.getPanes?.()[0]?.serializeAddon?.serialize?.() ?? '',
-    tabId
-  )
-}
-
-async function focusTerminal(page: Page): Promise<void> {
-  const active = page.locator('[data-ssh-page] [data-remote-terminal-cell][data-active]')
-  await active.locator('.xterm').click()
-  await expect(active.locator('textarea')).toBeFocused()
-}
-
-async function addTarget(page: Page, target: DockerSshHostTarget, name: string): Promise<string> {
-  const label = `${name} ${Date.now()}`
-  await page.evaluate(
-    async ({ host, port, identityFile, label: hostLabel }) => {
-      await window.api.ssh.addTarget({
-        target: {
-          label: hostLabel,
-          host,
-          port,
-          username: 'root',
-          identityFile,
-          identitiesOnly: true
-        }
-      })
-    },
-    { host: target.host, port: target.port, identityFile: target.identityFile, label }
-  )
-  return label
-}
-
-/** The typed ssh has no key flag, so log in by hand to reach a real remote shell in the tab. */
-async function connectTab(page: Page, target: DockerSshHostTarget, label: string): Promise<string> {
-  await page.getByRole('button', { name: 'SSH', exact: true }).click()
-  const sshPage = page.locator('[data-ssh-page]')
-  await sshPage.locator('[data-remote-side-tab="hosts"]').click()
-  await sshPage.locator('[data-ssh-host-row]').filter({ hasText: label }).click()
-  const connect = page.locator('[data-command-confirm]')
-  await connect.getByRole('button', { name: 'Connect' }).click()
-  await expect(connect).toBeHidden()
-  const readTabId = (): Promise<string> =>
-    page.evaluate(
-      (tabLabel) =>
-        window.__store
-          ?.getState()
-          .tabsByWorktree['global-ssh-sessions']?.find(
-            (tab) => tab.ptyId && tab.quickCommandLabel === tabLabel
-          )?.id ?? '',
-      label
-    )
-  await expect.poll(readTabId).not.toBe('')
-  const tabId = await readTabId()
-  await expect
-    .poll(() => readTerminalText(page, tabId), { timeout: 30_000 })
-    .toMatch(/yes\/no|password/i)
-  const terminals = sshPage.locator('[data-remote-terminals]')
-  await expect(terminals).toHaveAttribute('data-ssh-liveness', 'connected')
-  await focusTerminal(page)
-  await page.keyboard.press('Control+c')
-  await expect(sshPage.locator('[data-ssh-session-ended]')).toBeVisible()
-  await page.keyboard.type(
-    `ssh -i '${target.identityFile}' -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p ${target.port} root@${target.host}\n`
-  )
-  await expect(sshPage.locator('[data-ssh-session-ended]')).toBeHidden()
-  await page.keyboard.type('echo remote-$((40+2))\n')
-  await expect.poll(() => readTerminalText(page, tabId), { timeout: 30_000 }).toContain('remote-42')
-  await expect(terminals).toHaveAttribute('data-ssh-liveness', 'connected')
-  return tabId
-}
 
 async function addCommand(page: Page, name: string, template: string): Promise<void> {
   await page.locator('[data-ssh-command-action="new"]').click()
@@ -117,8 +51,8 @@ test.describe('SSH page commands against a Docker sshd', () => {
       target = startDockerSshHostTarget(testInfo)
       await waitForSessionReady(orcaPage)
       const dockerTarget = target
-      const label = await addTarget(orcaPage, dockerTarget, 'Docker commands E2E')
-      const tabId = await connectTab(orcaPage, dockerTarget, label)
+      const label = await addDockerTarget(orcaPage, dockerTarget, 'Docker commands E2E')
+      const tabId = await connectDockerTab(orcaPage, dockerTarget, label)
       await orcaPage.locator('[data-remote-side-tab="commands"]').click()
       await expect(orcaPage.locator('[data-ssh-command-list]')).toBeVisible()
 
@@ -146,7 +80,7 @@ test.describe('SSH page commands against a Docker sshd', () => {
       await expect(runDialog).toBeHidden()
       await expect.poll(() => readTerminalText(orcaPage, tabId)).toContain('echo pasted-$((1+1))')
       expect(await readTerminalText(orcaPage, tabId)).not.toContain('pasted-2')
-      await focusTerminal(orcaPage)
+      await focusActiveTerminal(orcaPage)
       await orcaPage.keyboard.press('Enter')
       await expect.poll(() => readTerminalText(orcaPage, tabId)).toContain('pasted-2')
 
@@ -164,7 +98,7 @@ test.describe('SSH page commands against a Docker sshd', () => {
       await expect(runDialog.locator('[data-ssh-command-blocked]')).toContainText('full-screen')
       await expect(runDialog.locator('[data-ssh-command-run]')).toBeDisabled()
       await runDialog.getByRole('button', { name: 'Cancel' }).click()
-      await focusTerminal(orcaPage)
+      await focusActiveTerminal(orcaPage)
       await orcaPage.keyboard.press('Enter')
 
       // Once ssh ends, the same command would run on this computer, so it is refused.
@@ -208,10 +142,10 @@ test.describe('SSH page commands against a Docker sshd', () => {
       await waitForSessionReady(orcaPage)
       const dockerTarget = target
       // Why before the page opens: its host list loads when the page becomes visible.
-      const firstLabel = await addTarget(orcaPage, dockerTarget, 'Grid one')
-      const secondLabel = await addTarget(orcaPage, dockerTarget, 'Grid two')
-      const firstTab = await connectTab(orcaPage, dockerTarget, firstLabel)
-      const secondTab = await connectTab(orcaPage, dockerTarget, secondLabel)
+      const firstLabel = await addDockerTarget(orcaPage, dockerTarget, 'Grid one')
+      const secondLabel = await addDockerTarget(orcaPage, dockerTarget, 'Grid two')
+      const firstTab = await connectDockerTab(orcaPage, dockerTarget, firstLabel)
+      const secondTab = await connectDockerTab(orcaPage, dockerTarget, secondLabel)
       await orcaPage.locator('[data-remote-grid-control="start"]').click()
       await orcaPage.locator(`[data-ssh-picker-tab="${firstTab}"]`).click()
       await expect(orcaPage.locator('[data-remote-grid-header]')).toHaveCount(2)
