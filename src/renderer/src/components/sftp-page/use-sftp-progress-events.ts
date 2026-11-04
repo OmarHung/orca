@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useSftpTransfersStore } from './sftp-transfers-store'
 
-/** Feeds main-process transfer progress into the transfers panel while the SFTP page is open. */
+/** Feeds main-process transfer progress into the transfers panel while the SSH page is mounted. */
 export function useSftpProgressEvents(): void {
   useEffect(
     () =>

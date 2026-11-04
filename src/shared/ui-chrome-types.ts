@@ -129,5 +129,4 @@ export type TopLevelView =
   | 'mobile'
   | 'database'
   | 'ssh'
-  | 'sftp'
   | 'monday'

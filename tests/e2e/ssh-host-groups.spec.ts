@@ -62,7 +62,7 @@ async function dragOnto(source: Locator, target: Locator, ratio = 0.5): Promise<
   await source.dragTo(target, { targetPosition: { x: box.width / 2, y: box.height * ratio } })
 }
 
-test('groups SSH hosts into nested, reorderable groups shared with the SFTP page', async ({
+test('groups SSH hosts into nested, reorderable groups shared with the host picker', async ({
   orcaPage
 }, testInfo) => {
   await waitForSessionReady(orcaPage)
@@ -115,8 +115,10 @@ test('groups SSH hosts into nested, reorderable groups shared with the SFTP page
   await dragOnto(host(HOSTS[1]), list.locator('[data-ssh-host-ungrouped]'))
   await expect.poll(() => readHostGroupName(orcaPage, HOSTS[1])).toBeNull()
 
-  await orcaPage.getByRole('button', { name: 'SFTP', exact: true }).click()
-  const sftpGroups = orcaPage.locator('[data-sftp-page] [data-ssh-host-group]')
-  await expect(sftpGroups).toHaveCount(3)
-  await expect(sftpGroups.first()).toContainText('Staging')
+  await list.getByRole('button', { name: 'New tab' }).click()
+  const pickerGroups = orcaPage
+    .getByRole('dialog', { name: 'Open an SSH session' })
+    .locator('[data-ssh-host-group]')
+  await expect(pickerGroups).toHaveCount(3)
+  await expect(pickerGroups.first()).toContainText('Staging')
 })

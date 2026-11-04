@@ -15,29 +15,34 @@ beforeEach(() => {
 })
 
 describe('remote hosts layout store', () => {
-  it('shows the host list on both pages by default', async () => {
+  it('shows the host list by default', async () => {
     const { useRemoteHostsLayout } = await loadStore()
 
-    expect(useRemoteHostsLayout.getState().hostListCollapsed).toEqual({ ssh: false, sftp: false })
+    expect(useRemoteHostsLayout.getState().isHostListCollapsed).toBe(false)
   })
 
-  it('collapses one page without touching the other and remembers it across reloads', async () => {
+  it('remembers a collapsed list across reloads', async () => {
     const first = await loadStore()
-    first.useRemoteHostsLayout.getState().toggleHostList('ssh')
+    first.useRemoteHostsLayout.getState().toggleHostList()
 
     const reloaded = await loadStore()
 
-    expect(reloaded.useRemoteHostsLayout.getState().hostListCollapsed).toEqual({
-      ssh: true,
-      sftp: false
-    })
+    expect(reloaded.useRemoteHostsLayout.getState().isHostListCollapsed).toBe(true)
   })
 
-  it('falls back to defaults when stored data is corrupt', async () => {
+  it('reads what the separate SSH and SFTP pages saved', async () => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ ssh: true, sftp: false }))
+
+    const { useRemoteHostsLayout } = await loadStore()
+
+    expect(useRemoteHostsLayout.getState().isHostListCollapsed).toBe(true)
+  })
+
+  it('falls back to showing the list when stored data is corrupt', async () => {
     window.localStorage.setItem(STORAGE_KEY, '{not json')
 
     const { useRemoteHostsLayout } = await loadStore()
 
-    expect(useRemoteHostsLayout.getState().hostListCollapsed).toEqual({ ssh: false, sftp: false })
+    expect(useRemoteHostsLayout.getState().isHostListCollapsed).toBe(false)
   })
 })

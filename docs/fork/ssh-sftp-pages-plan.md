@@ -1,6 +1,6 @@
 # SSH 與 SFTP 頁面：實作計畫（fork 專屬）
 
-> 狀態：Phase 1～4 全部完成（2026-09-29），紀錄見 §7
+> 狀態：Phase 1～4 全部完成（2026-09-29），紀錄見 §7。D1（兩個獨立頁面）已由 [`ssh-sftp-unified-plan.md`](./ssh-sftp-unified-plan.md) 取代
 > 分支：從 `omar/custom` 開 `feat/ssh-sftp-pages`，每個 Phase 完成後合回 `omar/custom`
 > 對象：接手實作的人或新對話。本文件可獨立閱讀，不需要先前的對話紀錄。
 
@@ -16,15 +16,15 @@
 
 ## 2. 已確定的決策
 
-| # | 決策 | 內容 |
-|---|---|---|
-| D1 | 頁面形式 | SSH 和 SFTP 各有自己的主畫面頁面，從側欄入口進入。**側欄不直接列主機**，避免把專案清單往下擠 |
-| D2 | SSH 終端機位置 | 開在 SSH 頁面自己的分頁列裡，**不是**浮動終端機面板，也不是目前專案的終端機區 |
-| D3 | SSH 連線方式 | 在本機 PTY 執行 `ssh <別名>`，照 `~/.ssh/config` 登入。**不走 Orca 的 relay**，所以遠端不需要 Node.js（Orca 設定頁的「連線」會部署 relay，必須有遠端 Node 18+） |
-| D4 | 主機來源 | Orca 的 SSH targets（`window.api.ssh.listTargets()`，會自動從 `~/.ssh/config` 同步）。有 `configHost` 的用別名，手動建立的主機用 `ssh -p <port> <user>@<host>` |
-| D5 | SFTP 連線方式 | 在 main process 建立**獨立的** ssh2 SFTP session，不經過 relay，也不共用 relay 的 `connectionManager` |
-| D6 | 範圍 | 只做桌面版。SSH 分頁**不同步**到手機或 web 客戶端 |
-| D7 | 降低 upstream 衝突 | 新程式碼放在新目錄；對 upstream 檔案只做一行等級的掛載點修改；i18n 用 fork 自己的 namespace（`sshPage.*`、`sftpPage.*`），跟 Database 頁一樣 |
+| #   | 決策               | 內容                                                                                                                                                            |
+| --- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | 頁面形式           | SSH 和 SFTP 各有自己的主畫面頁面，從側欄入口進入。**側欄不直接列主機**，避免把專案清單往下擠                                                                    |
+| D2  | SSH 終端機位置     | 開在 SSH 頁面自己的分頁列裡，**不是**浮動終端機面板，也不是目前專案的終端機區                                                                                   |
+| D3  | SSH 連線方式       | 在本機 PTY 執行 `ssh <別名>`，照 `~/.ssh/config` 登入。**不走 Orca 的 relay**，所以遠端不需要 Node.js（Orca 設定頁的「連線」會部署 relay，必須有遠端 Node 18+） |
+| D4  | 主機來源           | Orca 的 SSH targets（`window.api.ssh.listTargets()`，會自動從 `~/.ssh/config` 同步）。有 `configHost` 的用別名，手動建立的主機用 `ssh -p <port> <user>@<host>`  |
+| D5  | SFTP 連線方式      | 在 main process 建立**獨立的** ssh2 SFTP session，不經過 relay，也不共用 relay 的 `connectionManager`                                                           |
+| D6  | 範圍               | 只做桌面版。SSH 分頁**不同步**到手機或 web 客戶端                                                                                                               |
+| D7  | 降低 upstream 衝突 | 新程式碼放在新目錄；對 upstream 檔案只做一行等級的掛載點修改；i18n 用 fork 自己的 namespace（`sshPage.*`、`sftpPage.*`），跟 Database 頁一樣                    |
 
 ## 3. 現有架構（2026-09-29 調查結果）
 
@@ -36,15 +36,15 @@ Database 頁是範本（commit `d820e61fa2`）。它的導航狀態放在 fork �
 
 新頁面最少要改這些 upstream 檔案：
 
-| 檔案 | 改什麼 |
-|---|---|
-| `shared/ui-chrome-types.ts` | view 型別加 `'ssh' \| 'sftp'` |
-| `shared/top-level-view.ts` | 驗證用的完整對照表 |
-| `shared/rpc-contract/client-ui-params.ts` | `TopLevelViewSchema` |
-| `renderer/src/store/slices/ui/ui-slice-contract-core.ts` | view 清單 |
-| `renderer/src/app-shell/AppWorkspaceShell.tsx` | lazy import 和 `ActivePage` 分支 |
-| `renderer/src/lib/right-sidebar-visibility.ts` | 右側欄可見性 |
-| `renderer/src/components/sidebar/SidebarNav.tsx` | 側欄入口（約 281／400 行，入口元件要另外開檔） |
+| 檔案                                                     | 改什麼                                         |
+| -------------------------------------------------------- | ---------------------------------------------- |
+| `shared/ui-chrome-types.ts`                              | view 型別加 `'ssh' \| 'sftp'`                  |
+| `shared/top-level-view.ts`                               | 驗證用的完整對照表                             |
+| `shared/rpc-contract/client-ui-params.ts`                | `TopLevelViewSchema`                           |
+| `renderer/src/store/slices/ui/ui-slice-contract-core.ts` | view 清單                                      |
+| `renderer/src/app-shell/AppWorkspaceShell.tsx`           | lazy import 和 `ActivePage` 分支               |
+| `renderer/src/lib/right-sidebar-visibility.ts`           | 右側欄可見性                                   |
+| `renderer/src/components/sidebar/SidebarNav.tsx`         | 側欄入口（約 281／400 行，入口元件要另外開檔） |
 
 **不要**照抄 Database 頁在 `use-app-chrome-layout.ts` 裡隱藏左側欄的做法，因為 SSH／SFTP 的入口就在左側欄。
 
@@ -116,12 +116,12 @@ Database 頁是範本（commit `d820e61fa2`）。它的導航狀態放在 fork �
 
 ## 5. 分階段
 
-| Phase | 內容 | 驗收 |
-|---|---|---|
-| 1 | 側欄入口、SSH 和 SFTP 空頁面、SSH 主機清單和搜尋 | 點入口能開頁面；左側欄仍然在；主機清單可以篩選 |
-| 2 | SSH 工作區：synthetic id、約 20 處路由和保存的修改、常駐圖層、分頁列、「＋」主機選擇器、別名標題、快捷鍵例外、重新連線 | 開 3 台主機的分頁可以來回切換；切到別的頁面再回來，session 還在；重啟 app 後分頁還在 |
-| 3 | SFTP main 端：session 管理器和 IPC（先寫測試） | 單元測試涵蓋列目錄、上傳、下載、取消、認證失敗 |
-| 4 | SFTP 雙欄 UI | 實際對一台主機上傳和下載檔案與資料夾，進度正確 |
+| Phase | 內容                                                                                                                   | 驗收                                                                                 |
+| ----- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 1     | 側欄入口、SSH 和 SFTP 空頁面、SSH 主機清單和搜尋                                                                       | 點入口能開頁面；左側欄仍然在；主機清單可以篩選                                       |
+| 2     | SSH 工作區：synthetic id、約 20 處路由和保存的修改、常駐圖層、分頁列、「＋」主機選擇器、別名標題、快捷鍵例外、重新連線 | 開 3 台主機的分頁可以來回切換；切到別的頁面再回來，session 還在；重啟 app 後分頁還在 |
+| 3     | SFTP main 端：session 管理器和 IPC（先寫測試）                                                                         | 單元測試涵蓋列目錄、上傳、下載、取消、認證失敗                                       |
+| 4     | SFTP 雙欄 UI                                                                                                           | 實際對一台主機上傳和下載檔案與資料夾，進度正確                                       |
 
 每個 Phase 都要通過：`pnpm tc`、相關測試、`pnpm run check:code-quality:changed`（不能新增問題）、i18n 驗證、行數上限。完成後打包安裝給使用者實際試用。
 

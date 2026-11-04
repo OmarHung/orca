@@ -9,18 +9,20 @@ type SshHostListPanelProps = {
   currentTargetId?: string | null
   onSelect: (target: SshTarget) => void
   hostMenuItems?: (target: SshTarget) => React.ReactNode
+  hostRowActions?: (target: SshTarget) => React.ReactNode
 }
 
 function StatusMessage({ children }: { children: React.ReactNode }): React.JSX.Element {
   return <p className="px-4 py-6 text-center text-xs text-muted-foreground">{children}</p>
 }
 
-/** The host column of the SSH and SFTP pages, including its loading and empty states. */
+/** The host column of the SSH page, including its loading and empty states. */
 export function SshHostListPanel({
   list,
   currentTargetId,
   onSelect,
-  hostMenuItems
+  hostMenuItems,
+  hostRowActions
 }: SshHostListPanelProps): React.JSX.Element {
   const { status, targets, reload } = list
 
@@ -32,6 +34,7 @@ export function SshHostListPanel({
           currentTargetId={currentTargetId}
           onSelect={onSelect}
           hostMenuItems={hostMenuItems}
+          hostRowActions={hostRowActions}
         />
       </div>
     )

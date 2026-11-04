@@ -4,14 +4,14 @@ import { useAppStore } from '@/store'
 import { RecoverableRenderErrorBoundary } from '../error-boundaries/RecoverableRenderErrorBoundary'
 
 type KeptMountedPageProps = {
-  view: 'ssh' | 'sftp'
+  view: 'ssh'
   children: (isVisible: boolean) => React.ReactNode
 }
 
 /**
  * Mounts a page on its first visit and afterwards only hides it on other views, so switching
- * away never tears it down: the SSH page's terminals (a fail-open local PTY would respawn as a
- * bare shell on remount) and the SFTP page's host, folders and selections survive.
+ * away never tears it down: its terminals (a fail-open local PTY would respawn as a bare shell on
+ * remount) and its file tabs' folders and selections survive.
  */
 export function KeptMountedPage({
   view,

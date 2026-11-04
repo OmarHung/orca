@@ -5,6 +5,8 @@ import type { AppState } from '@/store/types'
 import type { TerminalTab } from '../../../../shared/terminal-tab-types'
 import { resolveUnifiedTabLabel } from '../../../../shared/tab-title-resolution'
 import { SSH_SESSIONS_WORKTREE_ID } from '../../../../shared/local-synthetic-workspace'
+import { useRemoteSessionStore } from './remote-session-store'
+import { sshSessionTabLabels } from './ssh-session-tab-labels'
 
 type TerminalTabs = NonNullable<AppState['tabsByWorktree'][string]>
 type TabGroups = NonNullable<AppState['groupsByWorktree'][string]>
@@ -26,6 +28,7 @@ export function useSshSessionItems(isVisible: boolean) {
   )
   const generatedTabTitlesEnabled = useAppStore((s) => s.settings?.tabAutoGenerateTitle === true)
   const expandedPanes = useAppStore((s) => s.expandedPaneByTabId)
+  const remotePathByTab = useRemoteSessionStore((s) => s.remotePathByTab)
 
   const activeGroup = useMemo(
     () =>
@@ -78,22 +81,25 @@ export function useSshSessionItems(isVisible: boolean) {
         {
           ...terminalTab,
           unifiedTabId: tab.id,
-          title: resolveUnifiedTabLabel(
-            {
-              ...tab,
-              quickCommandLabel: quickCommandLabel ?? undefined,
-              generatedLabel: tab.generatedLabel ?? terminalTab.generatedTitle
-            },
-            generatedTabTitlesEnabled,
-            tab.label
+          ...sshSessionTabLabels(
+            resolveUnifiedTabLabel(
+              {
+                ...tab,
+                quickCommandLabel: quickCommandLabel ?? undefined,
+                generatedLabel: tab.generatedLabel ?? terminalTab.generatedTitle
+              },
+              generatedTabTitlesEnabled,
+              tab.label
+            ),
+            quickCommandLabel,
+            remotePathByTab[terminalTab.id]
           ),
-          quickCommandLabel,
           customTitle: tab.customLabel ?? terminalTab.customTitle,
           color: tab.color ?? terminalTab.color
         }
       ]
     })
-  }, [generatedTabTitlesEnabled, groupTabs, tabs])
+  }, [generatedTabTitlesEnabled, groupTabs, remotePathByTab, tabs])
 
   const expandedPaneByTabId = useMemo(() => {
     const expanded: Record<string, boolean> = {}

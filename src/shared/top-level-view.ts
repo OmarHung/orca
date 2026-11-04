@@ -13,7 +13,6 @@ const TOP_LEVEL_VIEW_LOOKUP: Record<TopLevelView, true> = {
   mobile: true,
   database: true,
   ssh: true,
-  sftp: true,
   monday: true
 }
 

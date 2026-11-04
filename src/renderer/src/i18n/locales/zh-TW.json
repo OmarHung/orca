@@ -22994,21 +22994,28 @@
       "confirmTarget": "目標：{{endpoint}}",
       "confirmNote": "會開啟新的分頁，在你的登入 shell 中輸入這條指令，如同你親自輸入。",
       "connect": "連線",
-      "confirmVpn": "經由 VPN：{{name}}（已連線）"
+      "confirmVpn": "經由 VPN：{{name}}（已連線）",
+      "confirmNoteExistingTab": "會在這個分頁啟動你的登入 shell，並在其中輸入這條指令，如同你親自輸入。",
+      "notStarted": "這個分頁沒有執行中的終端機。",
+      "connectTo": "連線到 {{host}}"
     },
     "picker": {
       "title": "開啟 SSH 連線",
       "description": "選擇要連線的主機。"
+    },
+    "layout": {
+      "label": "分頁佈局",
+      "terminal": "終端機",
+      "split": "並排",
+      "files": "檔案",
+      "resizeFiles": "調整檔案區的高度"
+    },
+    "hostRow": {
+      "openTerminal": "開啟終端機分頁",
+      "openFiles": "開啟檔案分頁"
     }
   },
   "sftpPage": {
-    "nav": {
-      "sftp": "SFTP"
-    },
-    "page": {
-      "desktopOnly": "檔案傳輸僅在桌面版中可用。",
-      "pickHost": "選擇一台主機以瀏覽其中的檔案。"
-    },
     "pane": {
       "path": "路徑",
       "up": "上一層資料夾",
@@ -23096,14 +23103,7 @@
       "moveTitle": "要在 {{host}} 上移動嗎？"
     },
     "tabs": {
-      "label": "SFTP 分頁",
-      "new": "新增分頁",
-      "close": "關閉分頁 {{name}}",
-      "missingHost": "“{{name}}”已不在你的 SSH 主機中，請關閉此分頁。",
-      "pickerTitle": "開啟 SFTP 分頁",
-      "pickerDescription": "選擇要瀏覽的主機。",
-      "openInNewTab": "在新分頁中開啟",
-      "newTabOnHost": "在此主機新增分頁"
+      "missingHost": "“{{name}}”已不在你的 SSH 主機中，請關閉此分頁。"
     },
     "move": {
       "titleOne": "將“{{name}}”移動到…",
