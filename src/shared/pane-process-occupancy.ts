@@ -1,6 +1,6 @@
 import { getCommandTokenPathBasename, getFirstCommandToken } from './command-token-scanner'
 import { getProcessTableIndex } from './process-table-index'
-import type { ProcessTableRow } from './process-table-snapshot'
+import { unreadableArgvName, type ProcessTableRow } from './process-table-snapshot'
 import { isShellProcess } from './shell-process-detection'
 
 /** The two units a forced stop can reach, indexed from one capture: which process groups occupy
@@ -119,6 +119,11 @@ function executableName(row: ProcessTableRow): string {
   return getCommandTokenPathBasename(getFirstCommandToken(row.command)).replace(/^-/, '')
 }
 
+/** `login` runs as root: libproc can't read its argv and argv recovery skips a pane's root, so it reads `(login)`. */
+function isLoginWrapper(row: ProcessTableRow): boolean {
+  return executableName(row) === 'login' || unreadableArgvName(row.command) === 'login'
+}
+
 /** The shell a PTY root runs: the root itself, or the only shell its macOS `login` wrapper started. */
 function findPaneShell(
   rows: readonly ProcessTableRow[],
@@ -127,7 +132,7 @@ function findPaneShell(
   if (isShellProcess(executableName(root))) {
     return root
   }
-  if (executableName(root) !== 'login') {
+  if (!isLoginWrapper(root)) {
     return null
   }
   const shells = (getProcessTableIndex(rows).childrenByPpid.get(root.pid) ?? []).filter(

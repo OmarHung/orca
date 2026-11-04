@@ -83,9 +83,10 @@ describe('paneHoldsOnlyItsShell', () => {
 
   function loginPane(
     tpgid: number,
-    extra: ProcessTableRow[] = []
+    extra: ProcessTableRow[] = [],
+    loginCommand = LOGIN_COMMAND
   ): { rows: ProcessTableRow[]; login: ProcessTableRow } {
-    const login = row({ pid: 4585, ppid: 1921, pgid: 4585, tpgid, command: LOGIN_COMMAND })
+    const login = row({ pid: 4585, ppid: 1921, pgid: 4585, tpgid, command: loginCommand })
     const shell = row({
       pid: 4616,
       ppid: 4585,
@@ -124,6 +125,32 @@ describe('paneHoldsOnlyItsShell', () => {
     const second = row({ pid: 4617, ppid: 4585, pgid: 4617, tpgid: 4616, command: '-/bin/zsh -l' })
     const { rows, login } = loginPane(4616, [second])
     expect(paneHoldsOnlyItsShell(rows, login)).toBe(false)
+  })
+
+  // Shape from the real in-process reader: `login` runs as root, so libproc reports only its name.
+  describe('when the argv of the root login is unreadable', () => {
+    it('reads an idle shell under it as holding nothing else', () => {
+      const { rows, login } = loginPane(4616, [], '(login)')
+      expect(paneHoldsOnlyItsShell(rows, login)).toBe(true)
+    })
+
+    it('reads a foreground command under it as something running', () => {
+      const command = row({ pid: 7000, ppid: 4616, pgid: 7000, tpgid: 7000, command: 'bash x.sh' })
+      const { rows, login } = loginPane(7000, [command], '(login)')
+      expect(paneHoldsOnlyItsShell(rows, login)).toBe(false)
+    })
+
+    it('does not take a shell with unreadable argv for an idle one', () => {
+      const login = row({ pid: 4585, pgid: 4585, tpgid: 4616, command: '(login)' })
+      const shell = row({ pid: 4616, ppid: 4585, pgid: 4616, tpgid: 4616, command: '(zsh)' })
+      expect(paneHoldsOnlyItsShell([login, shell], login)).toBe(false)
+    })
+  })
+
+  it('reads a root with unreadable argv as unknown unless it is login', () => {
+    const program = row({ pid: 100, tpgid: 200, command: '(sudo)' })
+    const shell = row({ pid: 200, ppid: 100, pgid: 200, tpgid: 200, command: 'bash -i' })
+    expect(paneHoldsOnlyItsShell([program, shell], program)).toBe(false)
   })
 
   it('reads a shell that is itself the root as before', () => {
