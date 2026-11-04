@@ -47,6 +47,11 @@ function noSuchFile(target: string): Error {
 
 /** In-memory remote filesystem implementing the SFTP calls the page uses. */
 export class FakeSftp implements SftpOps {
+  /** What a failed `stat` hands back beside its error, which nothing should read. */
+  placeholderStats(): Stats {
+    return statsFor({ kind: 'dir' })
+  }
+
   ended = false
 
   /** Channels opened from one fake share its files but end independently. */

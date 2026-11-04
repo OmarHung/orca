@@ -20,7 +20,6 @@ const target: SshTarget = {
 class FakeConnection implements SftpConnection {
   connectCalls = 0
   disconnected = false
-  systemTransport = false
   reusableCredentials: SshCachedCredentials | null = null
   status: SshConnectionStatus = 'connected'
   onChannel: ((channel: FakeSftp) => void) | null = null
@@ -33,10 +32,6 @@ class FakeConnection implements SftpConnection {
 
   async disconnect(): Promise<void> {
     this.disconnected = true
-  }
-
-  usesSystemSshTransport(): boolean {
-    return this.systemTransport
   }
 
   getReusableCredentials(): SshCachedCredentials | null {
@@ -97,12 +92,69 @@ describe('SftpSessionManager', () => {
     expect(connection.connectCalls).toBe(1)
   })
 
-  it('fails clearly for unknown hosts and hosts that need the system ssh transport', async () => {
-    await expect(manager.list('missing', '/')).rejects.toThrow('SSH host not found')
+  it('looks again on a fresh channel when the one it had died while idle', async () => {
+    const dead = new FakeSftp()
+    dead.readdir = (_path, callback) => callback(new Error('The SFTP connection closed.'), [])
+    dead.stat = (_path, callback) =>
+      callback(new Error('The SFTP connection closed.'), dead.placeholderStats())
+    const sftp = vi.spyOn(connection, 'sftp')
+    sftp.mockResolvedValueOnce(dead)
 
-    connection.systemTransport = true
-    await expect(manager.list('web', '/')).rejects.toThrow(/system ssh/i)
-    expect(connection.disconnected).toBe(true)
+    await expect(manager.list('web', '/srv')).resolves.toHaveLength(2)
+    expect(sftp).toHaveBeenCalledTimes(2)
+  })
+
+  it('warns about a conflict even if the channel died while idle', async () => {
+    writeFileSync(path.join(localRoot, 'a.txt'), 'new')
+    const dead = new FakeSftp().addDir('/srv')
+    dead.stat = (_path, callback) =>
+      callback(new Error('The SFTP connection closed.'), dead.placeholderStats())
+    vi.spyOn(connection, 'sftp').mockResolvedValueOnce(dead)
+
+    const plan = await manager.plan({
+      kind: 'upload',
+      targetId: 'web',
+      sources: [path.join(localRoot, 'a.txt')],
+      destinationDir: '/srv'
+    })
+
+    expect(plan.conflicts).toEqual(['a.txt'])
+  })
+
+  it('does not look again after a request’s own failure, which a fresh channel would repeat', async () => {
+    const looks = vi.fn()
+    connection.onChannel = (channel) => {
+      const readdir = channel.readdir.bind(channel)
+      channel.readdir = (dir, callback) => {
+        looks()
+        readdir(dir, callback)
+      }
+    }
+
+    await expect(manager.list('web', '/srv/missing')).rejects.toThrow()
+
+    expect(looks).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not repeat a change on a fresh channel, since it may already have happened', async () => {
+    const dead = new FakeSftp()
+    const unlink = vi.fn((_path: string, callback: (err?: Error | null) => void) =>
+      callback(new Error('The SFTP connection closed.'))
+    )
+    dead.unlink = unlink
+    const plan = await manager.plan({ kind: 'remove', targetId: 'web', paths: ['/srv/a.txt'] })
+    vi.spyOn(connection, 'sftp').mockResolvedValueOnce(dead)
+    await manager.disconnect('web')
+
+    await expect(manager.execute({ planId: plan.planId, transferId: 'rm' })).rejects.toThrow(
+      'connection closed'
+    )
+
+    expect(unlink).toHaveBeenCalledTimes(1)
+  })
+
+  it('fails clearly for unknown hosts', async () => {
+    await expect(manager.list('missing', '/')).rejects.toThrow('SSH host not found')
   })
 
   it('plans an upload without touching the remote, then runs exactly that plan', async () => {

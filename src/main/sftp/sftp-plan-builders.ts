@@ -1,7 +1,14 @@
 import { lstat, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import type { SftpLocalRoot, SftpOperation, SftpPlanRequest } from '../../shared/sftp-types'
-import { sftpLstat, sftpReaddir, sftpStat, type SftpOps } from './sftp-ops'
+import {
+  isSftpNoSuchFile,
+  isSftpStatusError,
+  sftpLstat,
+  sftpReaddir,
+  sftpStat,
+  type SftpOps
+} from './sftp-ops'
 import { localFileIdentity } from './sftp-planned-upload'
 
 export type SftpPlanDraft = {
@@ -78,7 +85,13 @@ async function addRemoteTree(
     }
     // Why: follow links to files, but not to folders, so a link cycle cannot recurse forever.
     const stats = entry.attrs.isSymbolicLink()
-      ? await sftpStat(sftp, source).catch(() => null)
+      ? await sftpStat(sftp, source).catch((err: unknown) => {
+          // Why: a link that can't be followed is skipped, but a dead channel says nothing about it.
+          if (isSftpStatusError(err)) {
+            return null
+          }
+          throw err
+        })
       : entry.attrs
     if (stats?.isFile()) {
       list.add({ op: 'get', remote: source, local: destination, size: stats.size })
@@ -101,19 +114,29 @@ async function addRemoteRemoval(sftp: SftpOps, target: string, list: OperationLi
   list.add({ op: 'rmdir', path: target })
 }
 
-async function remoteExists(sftp: SftpOps, target: string): Promise<boolean> {
-  return sftpStat(sftp, target).then(
+/**
+ * Why only "no such file": a dead channel or a denied look says nothing about what is there, and
+ * calling that free would overwrite the file without the confirmation ever warning about it.
+ */
+function existsUnlessMissing(look: Promise<unknown>): Promise<boolean> {
+  return look.then(
     () => true,
-    () => false
+    (err: unknown) => {
+      if (isSftpNoSuchFile(err)) {
+        return false
+      }
+      throw err
+    }
   )
 }
 
+function remoteExists(sftp: SftpOps, target: string): Promise<boolean> {
+  return existsUnlessMissing(sftpStat(sftp, target))
+}
+
 // Why: lstat, so a dangling link at the destination still counts as taken.
-async function remoteEntryExists(sftp: SftpOps, target: string): Promise<boolean> {
-  return sftpLstat(sftp, target).then(
-    () => true,
-    () => false
-  )
+function remoteEntryExists(sftp: SftpOps, target: string): Promise<boolean> {
+  return existsUnlessMissing(sftpLstat(sftp, target))
 }
 
 async function localExists(target: string): Promise<boolean> {

@@ -117,6 +117,11 @@ export function isSftpFailureStatus(err: unknown): boolean {
   return sftpStatusCode(err) === 4
 }
 
+/** The one answer that really means nothing is there. */
+export function isSftpNoSuchFile(err: unknown): boolean {
+  return sftpStatusCode(err) === 2
+}
+
 /** A per-request SFTP status (no such file, permission denied…), as opposed to a dead channel. */
 export function isSftpStatusError(err: unknown): boolean {
   return typeof sftpStatusCode(err) === 'number'
