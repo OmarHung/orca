@@ -23097,7 +23097,8 @@
     },
     "link": {
       "copiedForWindows": "已複製路徑，因為這台主機執行 Windows，其 shell 的引號規則可能不同。",
-      "controlCharacter": "這個名稱包含控制字元，因此 Orca 不會把它輸入到終端機。"
+      "controlCharacter": "這個名稱包含控制字元，因此 Orca 不會把它輸入到終端機。",
+      "copiedInDoubt": "已複製路徑，因為 Orca 無法確認這個終端機在這台主機上。"
     },
     "follow": {
       "copied": "已複製。",
