@@ -20,7 +20,12 @@ type SshSessionObservation = {
 
 type SshSessionLivenessState = {
   byTab: Readonly<Record<string, SshSessionObservation>>
-  recordForeground: (tabId: string, foreground: string | null, now: number) => void
+  recordForeground: (
+    tabId: string,
+    foreground: string | null,
+    now: number,
+    tabCreatedAt?: number
+  ) => void
   /** A new ssh was just asked for, so what earlier ssh did no longer counts. */
   markStarting: (tabId: string, now: number) => void
   prune: (openTabIds: ReadonlySet<string>) => void
@@ -46,9 +51,11 @@ export function canReconnectInPlace(foreground: string | null): boolean {
 function nextObservation(
   previous: SshSessionObservation | undefined,
   foreground: string | null,
-  now: number
+  now: number,
+  tabCreatedAt: number | undefined
 ): SshSessionObservation {
-  const startedAt = previous?.startedAt ?? now
+  // Why the tab's age: a tab restored or shown later isn't starting up just because it's first seen.
+  const startedAt = previous?.startedAt ?? tabCreatedAt ?? now
   const hasSeenSsh = previous?.hasSeenSsh === true || (foreground && isSshProcess(foreground))
   const liveness = (): SshSessionLiveness => {
     if (foreground === null) {
@@ -87,9 +94,11 @@ function nextObservation(
 /** What each SSH tab's terminal was last seen running. Not saved: only a live PTY can answer. */
 export const useSshSessionLivenessStore = create<SshSessionLivenessState>((set, get) => ({
   byTab: {},
-  recordForeground: (tabId, foreground, now) => {
+  recordForeground: (tabId, foreground, now, tabCreatedAt) => {
     const { byTab } = get()
-    set({ byTab: { ...byTab, [tabId]: nextObservation(byTab[tabId], foreground, now) } })
+    set({
+      byTab: { ...byTab, [tabId]: nextObservation(byTab[tabId], foreground, now, tabCreatedAt) }
+    })
   },
   markStarting: (tabId, now) => {
     const observation: SshSessionObservation = {
@@ -111,7 +120,11 @@ export const useSshSessionLivenessStore = create<SshSessionLivenessState>((set, 
 }))
 
 /** Returns the function that stops it. Each poll waits for the last, so replies can't overlap. */
-function pollSshSessionForeground(tabId: string, ptyId: string): () => void {
+function pollSshSessionForeground(
+  tabId: string,
+  ptyId: string,
+  tabCreatedAt: number | undefined
+): () => void {
   let isStopped = false
   let timer: ReturnType<typeof setTimeout> | null = null
   const poll = async (): Promise<void> => {
@@ -119,7 +132,9 @@ function pollSshSessionForeground(tabId: string, ptyId: string): () => void {
     if (isStopped) {
       return
     }
-    useSshSessionLivenessStore.getState().recordForeground(tabId, foreground, Date.now())
+    useSshSessionLivenessStore
+      .getState()
+      .recordForeground(tabId, foreground, Date.now(), tabCreatedAt)
     const isStarting = useSshSessionLivenessStore.getState().byTab[tabId]?.liveness === 'starting'
     timer = setTimeout(() => void poll(), isStarting ? STARTING_POLL_INTERVAL_MS : POLL_INTERVAL_MS)
   }
@@ -136,12 +151,13 @@ function pollSshSessionForeground(tabId: string, ptyId: string): () => void {
 export function useSshSessionLivenessPolling(
   tabId: string | null,
   ptyId: string | null,
-  isEnabled: boolean
+  isEnabled: boolean,
+  tabCreatedAt?: number
 ): void {
   useEffect(() => {
     if (!isEnabled || !tabId || !ptyId) {
       return
     }
-    return pollSshSessionForeground(tabId, ptyId)
-  }, [isEnabled, ptyId, tabId])
+    return pollSshSessionForeground(tabId, ptyId, tabCreatedAt)
+  }, [isEnabled, ptyId, tabCreatedAt, tabId])
 }

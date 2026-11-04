@@ -26,6 +26,8 @@ export type SshCommandExpansionInput = {
   values: Readonly<Record<string, string>>
   builtins: SshCommandBuiltins
   remotePlatform?: SshRemotePlatform
+  /** Going to several hosts, where one tab's folder and selection mean nothing. */
+  isMultiTarget?: boolean
 }
 
 export type SshCommandProblem = {
@@ -36,6 +38,7 @@ export type SshCommandProblem = {
     | 'notAnOption'
     | 'windowsNeedsRaw'
     | 'insideQuotes'
+    | 'singleTargetOnly'
     | 'noPath'
     | 'noSelection'
     | 'undefinedParam'
@@ -258,6 +261,10 @@ export function expandSshCommandTemplate(input: SshCommandExpansionInput): SshCo
     }
     if (quotedKeys.has(key) && param?.quote !== 'raw') {
       addProblem('insideQuotes', key)
+      return token
+    }
+    if (!param && input.isMultiTarget && (key === 'path' || key === 'selected')) {
+      addProblem('singleTargetOnly', key)
       return token
     }
     // Why hasOwn: a parameter may be called `constructor`, which every object would answer for.

@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SshCommand } from '../../../../shared/ssh-command-types'
 import type { SshTarget } from '../../../../shared/ssh-types'
+import { useRemoteSessionStore } from '../ssh-page/remote-session-store'
 import { TooltipProvider } from '../ui/tooltip'
 import type * as SendModule from './ssh-command-send'
 import { useSshCommandsStore } from './ssh-commands-store'
@@ -115,6 +116,7 @@ beforeEach(() => {
     value: { sshCommands: { list, save, delete: remove } }
   })
   useSshCommandsStore.setState({ commands: [], status: 'idle', error: null })
+  useRemoteSessionStore.setState({ grid: null, sessions: {} })
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -163,6 +165,42 @@ describe('SshCommandList', () => {
 
     expect(mocks.send).not.toHaveBeenCalled()
     expect(document.querySelector('[data-ssh-command-doubt="manualSsh"]')).not.toBeNull()
+  })
+
+  it('opens the dialog in a grid, where other hosts can be chosen', async () => {
+    const other: SshTarget = { ...web, id: 'db', label: 'db-prod' }
+    useRemoteSessionStore.setState({
+      grid: { tabIds: ['tab-1', 'tab-2'], layout: 'terminal', dockHeight: 280 },
+      sessions: {
+        'tab-1': {
+          tabId: 'tab-1',
+          targetId: 'web',
+          layout: 'terminal',
+          dockHeight: 280,
+          terminalStarted: true
+        },
+        'tab-2': {
+          tabId: 'tab-2',
+          targetId: 'db',
+          layout: 'terminal',
+          dockHeight: 280,
+          terminalStarted: true
+        }
+      }
+    })
+    list.mockResolvedValue({ ok: true, value: [command('plain')] })
+    await act(async () =>
+      root.render(
+        <TooltipProvider>
+          <SshCommandList activeTabId="tab-1" activeTarget={web} targets={[web, other]} />
+        </TooltipProvider>
+      )
+    )
+
+    await click('plain')
+
+    expect(mocks.send).not.toHaveBeenCalled()
+    expect(document.querySelector('[data-ssh-command-target="tab-2"]')).not.toBeNull()
   })
 
   it('always shows the command first when it would run', async () => {

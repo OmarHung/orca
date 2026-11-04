@@ -364,6 +364,27 @@ describe('expandSshCommandTemplate', () => {
     expect(expand({ template, params: [] }).command).toBe(command)
   })
 
+  it.each(['path', 'selected'])(
+    'refuses {{%s}} on several hosts, since it belongs to one tab',
+    (key) => {
+      const result = expand({
+        template: `ls {{${key}}}`,
+        params: [],
+        isMultiTarget: true,
+        builtins: { host: 'h', user: 'u', path: '/srv', selected: ['/srv/a'] }
+      })
+
+      expect(result.problems).toEqual([{ kind: 'singleTargetOnly', key }])
+    }
+  )
+
+  it('still fills in the host and user on several hosts', () => {
+    const result = expand({ template: 'echo {{host}} {{user}}', params: [], isMultiTarget: true })
+
+    expect(result.command).toBe('echo web-1 deploy')
+    expect(result.problems).toEqual([])
+  })
+
   it('points at a parameter that has no definition', () => {
     const result = expand({ template: 'echo {{other}}', params: [] })
 
