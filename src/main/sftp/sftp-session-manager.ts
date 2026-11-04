@@ -19,7 +19,6 @@ import { listRemoteDirectory } from './sftp-remote-entries'
 export type SftpConnection = {
   connect(): Promise<void>
   disconnect(): Promise<void>
-  usesSystemSshTransport(): boolean
   sftp(): Promise<SftpOps>
   getReusableCredentials(): SshCachedCredentials | null
   getState(): { status: SshConnectionStatus }
@@ -60,8 +59,6 @@ const FINISHED_STATUSES: ReadonlySet<SshConnectionStatus> = new Set([
 ])
 const PROGRESS_INTERVAL_MS = 100
 const PLAN_EXPIRED_MESSAGE = 'This confirmation expired or was already used. Try the action again.'
-const SYSTEM_TRANSPORT_MESSAGE =
-  'This host connects through the system ssh (ProxyJump, ProxyCommand or a hardware key), which SFTP does not support yet.'
 
 function createProgressReporter(emit: (progress: SftpTransferProgress) => void): {
   report: (progress: SftpTransferProgress) => void
@@ -103,16 +100,16 @@ export class SftpSessionManager {
   }
 
   home(targetId: string): Promise<string> {
-    return this.withBrowseChannel(targetId, (sftp) => sftpRealpath(sftp, '.'))
+    return this.withReadOnlyChannel(targetId, (sftp) => sftpRealpath(sftp, '.'))
   }
 
   list(targetId: string, dir: string): Promise<SftpEntry[]> {
-    return this.withBrowseChannel(targetId, (sftp) => listRemoteDirectory(sftp, dir))
+    return this.withReadOnlyChannel(targetId, (sftp) => listRemoteDirectory(sftp, dir))
   }
 
   /** Lists every step an action would run; nothing changes until `execute`. */
   async plan(request: SftpPlanRequest): Promise<SftpPlan> {
-    const draft = await this.withBrowseChannel(request.targetId, (sftp) =>
+    const draft = await this.withReadOnlyChannel(request.targetId, (sftp) =>
       draftSftpPlan(sftp, request)
     )
     return this.plans.save({ ...draft, kind: request.kind, targetId: request.targetId })
@@ -257,10 +254,6 @@ export class SftpSessionManager {
       session = created
     }
     await session.ready
-    if (session.connection.usesSystemSshTransport()) {
-      await this.closeSession(targetId)
-      throw new Error(SYSTEM_TRANSPORT_MESSAGE)
-    }
     return session
   }
 
@@ -286,6 +279,24 @@ export class SftpSessionManager {
     } finally {
       session.activeBrowseCalls -= 1
       this.touch(targetId)
+    }
+  }
+
+  /**
+   * For what only looks: a channel can die while idle with its connection still counted as up, and
+   * asking again on a fresh one is safe. Anything that changes files must not be repeated.
+   */
+  private async withReadOnlyChannel<T>(
+    targetId: string,
+    run: (sftp: SftpOps) => Promise<T>
+  ): Promise<T> {
+    try {
+      return await this.withBrowseChannel(targetId, run)
+    } catch (err) {
+      if (isSftpStatusError(err)) {
+        throw err
+      }
+      return this.withBrowseChannel(targetId, run)
     }
   }
 
