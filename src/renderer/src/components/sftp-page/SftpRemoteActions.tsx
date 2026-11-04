@@ -5,7 +5,7 @@ import { ContextMenuItem, ContextMenuSeparator } from '../ui/context-menu'
 import { PaneIconButton } from './SftpFilePane'
 
 export type SftpRemoteAction = {
-  id: 'download' | 'newFolder' | 'rename' | 'move' | 'delete'
+  id: 'download' | 'cdHere' | 'newFolder' | 'rename' | 'move' | 'delete'
   label: string
   Icon: LucideIcon
   isDisabled: boolean

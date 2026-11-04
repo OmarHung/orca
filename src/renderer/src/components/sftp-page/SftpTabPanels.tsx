@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { translate } from '@/i18n/i18n'
 import type { SshTarget } from '../../../../shared/ssh-types'
+import { RemoteFollowTerminalButton } from '../ssh-page/RemoteFollowTerminalButton'
 import { useRemoteSessionStore } from '../ssh-page/remote-session-store'
+import { useSshTerminalCwdStore } from '../ssh-page/ssh-terminal-cwd-store'
+import { typeCdIntoTerminal, typePathsIntoTerminal } from '../ssh-page/ssh-terminal-files-link'
 import type { SshTargetListStatus } from '../ssh-page/use-ssh-target-list'
-import { SftpWorkbench } from './SftpWorkbench'
+import { SftpWorkbench, type SftpTerminalLink } from './SftpWorkbench'
 
 export type RemoteFilesTab = { id: string; targetId: string; label: string }
 
@@ -24,6 +27,42 @@ function PanelMessage({ children }: { children: React.ReactNode }): React.JSX.El
   )
 }
 
+/** A tab's workbench, tied to the terminal in the same tab. */
+function SftpTabWorkbench({
+  tabId,
+  target,
+  isActive
+}: {
+  tabId: string
+  target: SshTarget
+  isActive: boolean
+}): React.JSX.Element {
+  const setRemotePath = useRemoteSessionStore((s) => s.setRemotePath)
+  const setRemoteSelection = useRemoteSessionStore((s) => s.setRemoteSelection)
+  const followedPath = useSshTerminalCwdStore((s) =>
+    s.followingTabIds.has(tabId) ? (s.reportByTab[tabId]?.path ?? null) : null
+  )
+  const terminalLink = useMemo<SftpTerminalLink>(
+    () => ({
+      cdTo: (path) => void typeCdIntoTerminal(tabId, target.id, path),
+      typePaths: (paths) => void typePathsIntoTerminal(tabId, target.id, paths),
+      terminalZone: () => document.querySelector(`[data-remote-terminal-cell="${tabId}"]`)
+    }),
+    [tabId, target.id]
+  )
+  return (
+    <SftpWorkbench
+      target={target}
+      isActive={isActive}
+      onRemotePathChange={(path) => setRemotePath(tabId, path)}
+      onRemoteSelectionChange={(paths) => setRemoteSelection(tabId, paths)}
+      terminalLink={terminalLink}
+      followedTerminalPath={followedPath}
+      followControl={<RemoteFollowTerminalButton tabId={tabId} />}
+    />
+  )
+}
+
 /**
  * One workbench per tab. A tab mounts (and connects) the first time its files are shown, then
  * stays mounted while hidden so its folders, selection and listings survive tab switches.
@@ -35,8 +74,6 @@ export function SftpTabPanels({
   targetsById,
   targetsStatus
 }: SftpTabPanelsProps): React.JSX.Element {
-  const setRemotePath = useRemoteSessionStore((s) => s.setRemotePath)
-  const setRemoteSelection = useRemoteSessionStore((s) => s.setRemoteSelection)
   const [shownTabIds, setShownTabIds] = useState<ReadonlySet<string>>(() => new Set())
   // Why: adjust during render (not in an Effect) so the newly shown tab mounts in this pass.
   if (activeTabId && !shownTabIds.has(activeTabId)) {
@@ -59,11 +96,10 @@ export function SftpTabPanels({
               className="absolute inset-0 flex data-[active=false]:hidden"
             >
               {target ? (
-                <SftpWorkbench
+                <SftpTabWorkbench
+                  tabId={tab.id}
                   target={target}
                   isActive={isActive && isPageVisible}
-                  onRemotePathChange={(path) => setRemotePath(tab.id, path)}
-                  onRemoteSelectionChange={(paths) => setRemoteSelection(tab.id, paths)}
                 />
               ) : (
                 <PanelMessage>

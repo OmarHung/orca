@@ -4,7 +4,6 @@ import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { getShortcutPlatform } from '@/lib/shortcut-platform'
 import {
-  getTerminalTabXterm,
   observeTerminalDirectInput,
   readTerminalTabScreen
 } from '../terminal-pane/terminal-pane-manager-registry'
@@ -20,18 +19,16 @@ import {
   tabIdOfPty
 } from './ssh-sync-send'
 import { isAnotherPaneMidLine, useSshSyncStore } from './ssh-sync-store'
+import { watchTabTerminals } from './ssh-tab-terminal-watch'
 
 /** The wheel turns into arrow keys in a full-screen program, and those are not typing. */
 const WHEEL_ARROW_WINDOW_MS = 150
 const STATUS_REFRESH_MS = 1_000
-const ATTACHMENT_CHECK_MS = 500
 
 /** Synced input needs proof that ssh is in front, and Windows only ever reports the shell. */
 export function isSshSyncSupported(): boolean {
   return getShortcutPlatform() !== 'win32'
 }
-
-type PaneAttachment = { terminal: Terminal; stop: () => void }
 
 /** A paste that stayed in one pane leaves it out of step, which it has to be told. */
 function notePasteStayedHere(tabId: string, data: string): void {
@@ -45,7 +42,7 @@ function notePasteStayedHere(tabId: string, data: string): void {
 }
 
 /** Listens to one pane without touching its own input. */
-function attachMirror(tabId: string, terminal: Terminal): PaneAttachment {
+function attachMirror(tabId: string, terminal: Terminal): () => void {
   let lastWheelAt = Number.NEGATIVE_INFINITY
   const markWheel = (): void => {
     lastWheelAt = performance.now()
@@ -67,48 +64,25 @@ function attachMirror(tabId: string, terminal: Terminal): PaneAttachment {
       notePasteStayedHere(tabId, data)
     }
   })
-  return {
-    terminal,
-    stop: () => {
-      subscription.dispose()
-      element?.removeEventListener('wheel', markWheel, { capture: true })
-    }
+  return () => {
+    subscription.dispose()
+    element?.removeEventListener('wheel', markWheel, { capture: true })
   }
 }
 
-/**
- * Mirrors what is typed in any pane of the grid while sync is on. Checks on a timer, since a pane
- * can mount, split or unsplit with nothing announcing it.
- */
+/** Mirrors what is typed in any pane of the grid while sync is on. */
 function useMirrorTypedInput(isActive: boolean, tabIds: readonly string[]): void {
   const tabIdsKey = tabIds.join('\n')
   useEffect(() => {
     if (!isActive) {
       return
     }
-    const attached = new Map<string, PaneAttachment>()
-    const syncAttachments = (): void => {
-      const wanted = tabIdsKey.split('\n')
-      for (const [tabId, attachment] of attached) {
-        const isWanted = wanted.includes(tabId)
-        if (!isWanted || getTerminalTabXterm(tabId) !== attachment.terminal) {
-          attachment.stop()
-          attached.delete(tabId)
-        }
-        // Why: while split, what it typed couldn't be seen, so its line can't be vouched for.
-        if (isWanted && !attached.has(tabId)) {
-          markPaneDiverged(tabId, '')
-        }
-      }
-      for (const tabId of wanted) {
-        const terminal = getTerminalTabXterm(tabId)
-        if (terminal && !attached.has(tabId)) {
-          attached.set(tabId, attachMirror(tabId, terminal))
-        }
-      }
-    }
-    syncAttachments()
-    const timer = setInterval(syncAttachments, ATTACHMENT_CHECK_MS)
+    const stopWatching = watchTabTerminals(
+      tabIdsKey.split('\n'),
+      attachMirror,
+      // Why: while split, what it typed couldn't be seen, so its line can't be vouched for.
+      (tabId) => markPaneDiverged(tabId, '')
+    )
     const stopObserving = observeTerminalDirectInput({
       onShortcutInput: (ptyId, data) => {
         const tabId = tabIdOfPty(ptyId)
@@ -124,11 +98,8 @@ function useMirrorTypedInput(isActive: boolean, tabIds: readonly string[]): void
       }
     })
     return () => {
-      clearInterval(timer)
+      stopWatching()
       stopObserving()
-      for (const attachment of attached.values()) {
-        attachment.stop()
-      }
     }
   }, [isActive, tabIdsKey])
 }

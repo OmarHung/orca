@@ -30,6 +30,12 @@ type PaneInput = {
 type Dragged = { from: SftpPaneId; sources: string[] }
 type Target = { pane: SftpPaneId; dir: string; isRow: boolean }
 
+/** Remote rows dropped on the terminal of the same tab, the only one on the same host. */
+export type SftpTerminalDrop = {
+  zone: () => Element | null
+  onDrop: (paths: readonly string[]) => void
+}
+
 export type SftpPaneDropHandler = (
   from: SftpPaneId,
   sources: string[],
@@ -62,7 +68,8 @@ function targetAt(
  */
 export function useSftpPaneDrag(
   panes: Record<SftpPaneId, PaneInput>,
-  onDrop: SftpPaneDropHandler
+  onDrop: SftpPaneDropHandler,
+  terminalDrop?: SftpTerminalDrop
 ): Record<SftpPaneId, SftpPaneDrag> {
   const [target, setTarget] = useState<Target | null>(null)
   const dragged = useRef<Dragged | null>(null)
@@ -73,8 +80,31 @@ export function useSftpPaneDrag(
   useEffect(() => {
     const zones = { local: local.zoneRef, remote: remote.zoneRef }
     const paths = { local: local.path, remote: remote.path }
+    const isOverTerminal = (event: DragEvent): boolean => {
+      const zone = terminalDrop?.zone()
+      return (
+        dragged.current?.from === 'remote' &&
+        event.dataTransfer?.types.includes(DRAG_TYPE) === true &&
+        event.target instanceof Node &&
+        zone?.contains(event.target) === true
+      )
+    }
+    const onWindowDragOver = (event: DragEvent): void => {
+      if (isOverTerminal(event) && event.dataTransfer) {
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'copy'
+      }
+    }
     const onWindowDrop = (event: DragEvent): void => {
       const source = dragged.current
+      if (source && isOverTerminal(event)) {
+        event.preventDefault()
+        event.stopPropagation()
+        dragged.current = null
+        setTarget(null)
+        terminalDrop?.onDrop(source.sources)
+        return
+      }
       const into = PANES.find((pane) => {
         const zone = zones[pane].current
         return event.target instanceof Node && zone !== null && zone.contains(event.target)
@@ -91,9 +121,13 @@ export function useSftpPaneDrag(
         onDrop(source.from, source.sources, into, drop.dir)
       }
     }
+    window.addEventListener('dragover', onWindowDragOver, true)
     window.addEventListener('drop', onWindowDrop, true)
-    return () => window.removeEventListener('drop', onWindowDrop, true)
-  }, [local.path, local.zoneRef, onDrop, remote.path, remote.zoneRef])
+    return () => {
+      window.removeEventListener('dragover', onWindowDragOver, true)
+      window.removeEventListener('drop', onWindowDrop, true)
+    }
+  }, [local.path, local.zoneRef, onDrop, remote.path, remote.zoneRef, terminalDrop])
 
   const bind = (pane: SftpPaneId): SftpPaneDrag => ({
     dropTarget: target?.pane === pane && target.isRow ? target.dir : null,

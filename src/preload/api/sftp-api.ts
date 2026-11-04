@@ -20,6 +20,8 @@ export type SftpApi = {
   cancel: (transferId: string) => Promise<void>
   disconnect: (targetId: string) => Promise<void>
   localHome: () => Promise<string>
+  /** Tells a folder report from this machine's own shell apart from the remote host's. */
+  localHostname: () => Promise<string>
   localList: (path: string) => Promise<SftpResult<SftpEntry[]>>
   /** Absolute path of a file dropped from Finder; empty for virtual files. */
   getPathForFile: (file: File) => string
