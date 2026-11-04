@@ -17,6 +17,7 @@ import {
   type RemoteLayout
 } from './remote-session-store'
 import { buildSshSessionCommand } from './ssh-session-command'
+import { useSshSessionLivenessStore } from './ssh-session-liveness'
 import { prepareSshSessionVpn } from './ssh-session-vpn'
 
 /** Asks the user to approve the exact ssh command; null when it was refused or cannot be typed. */
@@ -129,7 +130,71 @@ export async function startSessionTerminal(
   }
   store.queueTabStartupCommand(tabId, { command })
   useRemoteSessionStore.getState().markTerminalStarted(tabId)
+  useSshSessionLivenessStore.getState().markStarting(tabId, Date.now())
   focusTerminalTabSurface(tabId)
+}
+
+/** Runs ssh again in the tab whose session ended, once the user confirms the exact command. */
+export async function reconnectSessionTerminal(
+  tabId: string,
+  target: SshTarget,
+  confirm: CommandConfirm
+): Promise<void> {
+  const command = await confirmSshCommand(
+    target,
+    confirm,
+    translate(
+      'sshPage.session.confirmNoteReconnect',
+      'Types this command into this tab’s local shell, as if you typed it. Anything already typed at the prompt is cleared first.'
+    )
+  )
+  if (!command) {
+    return
+  }
+  const tabs = useAppStore.getState().tabsByWorktree[SSH_SESSIONS_WORKTREE_ID]
+  const ptyId = tabs?.find((tab) => tab.id === tabId)?.ptyId
+  const prompt = ptyId ? await readShellPromptState(ptyId) : 'unknown'
+  if (!ptyId || prompt === 'unknown') {
+    toast.error(
+      translate(
+        'sshPage.session.reconnectUnknown',
+        'Orca can’t tell what is running in this tab, so it typed nothing.'
+      )
+    )
+    return
+  }
+  if (prompt === 'busy') {
+    toast.error(
+      translate(
+        'sshPage.session.reconnectBusy',
+        'Something still seems to be running in this tab. Finish it first.'
+      )
+    )
+    return
+  }
+  // Why Ctrl+C first: text left at the prompt would otherwise become part of this command line.
+  const isAccepted = await window.api.pty
+    .writeAccepted(ptyId, `\u0003${command}\r`, 'driving')
+    .catch(() => false)
+  if (!isAccepted) {
+    toast.error(translate('sshPage.session.reconnectFailed', 'Couldn’t type into this tab.'))
+    return
+  }
+  useSshSessionLivenessStore.getState().markStarting(tabId, Date.now())
+  focusTerminalTabSurface(tabId)
+}
+
+/**
+ * Whether the shell itself waits at its prompt. The foreground's name can't say: a running script
+ * is also called bash, and Ctrl+C would kill it. Read fresh: the dialog can stay open for a while.
+ */
+async function readShellPromptState(ptyId: string): Promise<'idle' | 'busy' | 'unknown'> {
+  const inspection = await window.api.pty.inspectProcess(ptyId).catch(() => null)
+  const evidence = inspection?.foregroundProcessEvidence
+  if (evidence?.verdict !== 'live' || evidence.shellOwnsEveryTtyProcessGroup === undefined) {
+    return 'unknown'
+  }
+  return evidence.shellOwnsEveryTtyProcessGroup ? 'idle' : 'busy'
 }
 
 function activateSessionTab(tabId: string): void {

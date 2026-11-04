@@ -48,6 +48,7 @@ test.describe('SSH page files against a Docker sshd', () => {
   test('lists, uploads, downloads and deletes without the relay', async ({
     orcaPage
   }, testInfo) => {
+    // Starts a Docker sshd, then runs a full round trip of transfers and reconnects against it.
     test.setTimeout(180_000)
     let target: DockerSshHostTarget | null = null
     const localRoot = mkdtempSync(path.join(os.tmpdir(), 'orca-sftp-e2e-'))
@@ -211,6 +212,21 @@ test.describe('SSH page files against a Docker sshd', () => {
       await downloadButton.click()
       await confirmDialog.getByRole('button', { name: 'Download', exact: true }).click()
       await expect.poll(() => existsSync(path.join(inbox, 'orca-sftp-visible.txt'))).toBe(true)
+
+      // The transfer stays on the page, under the host it ran on.
+      await expect(orcaPage.locator('[data-remote-transfers] [data-sftp-transfer]')).toContainText(
+        'Docker SFTP E2E'
+      )
+
+      // The connection shows its state, and ending it leaves the listing for the next action.
+      await expect(remotePane.locator('[data-sftp-connection="connected"]')).toBeVisible()
+      await remotePane.getByRole('button', { name: 'Disconnect', exact: true }).click()
+      await expect(remotePane.locator('[data-sftp-connection="disconnected"]')).toBeVisible()
+      await expect(
+        remotePane.locator('[data-sftp-entry="/root/orca-sftp-visible.txt"]')
+      ).toBeVisible()
+      await remotePane.getByRole('button', { name: 'Reconnect', exact: true }).click()
+      await expect(remotePane.locator('[data-sftp-connection="connected"]')).toBeVisible()
       await expect(orcaPage.locator('[data-slot="dialog-overlay"]')).toHaveCount(0)
 
       // A typed path creates its missing parent folders too, like mkdir -p.
@@ -329,9 +345,43 @@ test.describe('SSH page files against a Docker sshd', () => {
       const connectDialog = orcaPage.locator('[data-command-confirm]')
       await expect(connectDialog.locator('[data-command-list]')).toContainText('ssh ')
       await connectDialog.getByRole('button', { name: 'Connect' }).click()
+      await expect(connectDialog).toBeHidden()
       await expect(sftpTabs).toHaveCount(2)
       await expect(remotePath).toBeVisible()
+
+      // A real ssh waiting at its prompt is still a session, so no banner yet.
+      const newestTab = await orcaPage.evaluate(
+        () =>
+          window.__store?.getState().tabsByWorktree['global-ssh-sessions']?.find((tab) => tab.ptyId)
+            ?.id ?? ''
+      )
+      const terminalText = (): Promise<string> =>
+        orcaPage.evaluate(
+          (id) =>
+            window.__paneManagers?.get(id)?.getPanes?.()[0]?.serializeAddon?.serialize?.() ?? '',
+          newestTab
+        )
+      await expect.poll(terminalText, { timeout: 30_000 }).toMatch(/yes\/no|password/i)
+      await expect(sshPage.locator('[data-remote-terminals]')).toHaveAttribute(
+        'data-ssh-liveness',
+        'connected'
+      )
+      const endedBanner = sshPage.locator('[data-ssh-session-ended]')
+      await expect(endedBanner).toBeHidden()
       await orcaPage.screenshot({ path: testInfo.outputPath('ssh-split-layout.png') })
+
+      // Ending that ssh brings the banner within a poll, without any grace period.
+      await sshPage.locator('[data-remote-terminals] .xterm').filter({ visible: true }).click()
+      await orcaPage.keyboard.press('Control+c')
+      await expect(endedBanner).toBeVisible()
+      await orcaPage.screenshot({ path: testInfo.outputPath('ssh-session-ended.png') })
+
+      // Reconnecting types into the same tab, and ssh running again clears the banner.
+      await endedBanner.getByRole('button', { name: 'Reconnect' }).click()
+      await expect(connectDialog.locator('[data-command-list]')).toContainText('ssh ')
+      await connectDialog.getByRole('button', { name: 'Connect' }).click()
+      await expect(endedBanner).toBeHidden()
+      await expect(sftpTabs).toHaveCount(2)
     } finally {
       cleanupDockerSshHostTarget(target)
       rmSync(localRoot, { recursive: true, force: true })

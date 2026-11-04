@@ -9,6 +9,7 @@ import { HostListToggleButton } from './HostListToggleButton'
 import { useRemoteHostsLayout } from './remote-hosts-layout-store'
 import { RemoteHostsPageFrame } from './RemoteHostsPageFrame'
 import { RemoteLayoutToggle } from './RemoteLayoutToggle'
+import { RemoteTransfersTray } from './RemoteTransfersTray'
 import {
   remoteSessionForTab,
   useRemoteSessionStore,
@@ -23,6 +24,7 @@ import {
   closeSshSession,
   openFilesSession,
   openSshSession,
+  reconnectSessionTerminal,
   setSessionLayout,
   showHostSession,
   startSessionTerminal
@@ -72,6 +74,10 @@ function SshPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Elemen
   )
   const startTerminal = useCallback(
     (tabId: string, target: SshTarget) => void startSessionTerminal(tabId, target, confirm),
+    [confirm]
+  )
+  const reconnect = useCallback(
+    (tabId: string, target: SshTarget) => void reconnectSessionTerminal(tabId, target, confirm),
     [confirm]
   )
   const closeActiveSession = useCallback(() => {
@@ -150,8 +156,10 @@ function SshPageContent({ isVisible }: { isVisible: boolean }): React.JSX.Elemen
           targetsById={targetsById}
           targetsStatus={list.status}
           onStartTerminal={startTerminal}
+          onReconnect={reconnect}
         />
       </SshSessionsSurface>
+      <RemoteTransfersTray targetsById={targetsById} />
       <SshHostPickerDialog
         open={pickerOpen}
         onOpenChange={setPickerOpen}

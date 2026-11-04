@@ -16,7 +16,7 @@ import type { SshTarget } from '../../../../shared/ssh-types'
 import { SftpFilePane } from './SftpFilePane'
 import { SftpNameDialog, type SftpNameRequest } from './SftpNameDialog'
 import { SftpRemoteMenuItems, SftpRemoteToolbar, type SftpRemoteAction } from './SftpRemoteActions'
-import { SftpTransfersPanel } from './SftpTransfersPanel'
+import { SftpConnectionStatusLabel, SftpConnectionToggle } from './SftpConnectionControls'
 import { SftpDefaultLocalFolderButton } from './SftpDefaultLocalFolderButton'
 import {
   readHostLocalFolder,
@@ -330,6 +330,7 @@ export function SftpWorkbench({
         <SftpFilePane
           paneId="remote"
           title={target.label}
+          titleAccessory={<SftpConnectionStatusLabel targetId={target.id} />}
           pane={remote}
           favoriteLists={[{ scope: remoteFavoritesScope(target.id), host: target.label }]}
           dropZoneRef={dropZoneRef}
@@ -345,10 +346,14 @@ export function SftpWorkbench({
           }
           drag={paneDrag.remote}
           contextMenu={<SftpRemoteMenuItems actions={remoteActions} />}
-          actions={<SftpRemoteToolbar actions={remoteActions} />}
+          actions={
+            <>
+              <SftpConnectionToggle targetId={target.id} onReconnect={reloadRemote} />
+              <SftpRemoteToolbar actions={remoteActions} />
+            </>
+          }
         />
       </div>
-      <SftpTransfersPanel />
       <SftpNameDialog request={nameRequest} onClose={() => setNameRequest(null)} />
     </div>
   )

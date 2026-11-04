@@ -23465,7 +23465,14 @@
       "confirmVpn": "经由 VPN：{{name}}（已连接）",
       "confirmNoteExistingTab": "会在这个标签页启动你的登录 shell，并在其中输入这条指令，如同你亲自输入。",
       "notStarted": "这个标签页没有运行中的终端。",
-      "connectTo": "连接到 {{host}}"
+      "connectTo": "连接到 {{host}}",
+      "ended": "SSH 连接已结束。",
+      "endedDetail": "这个标签页现在是本机 shell，不是 {{host}}。",
+      "reconnect": "重新连接",
+      "reconnectBusy": "这个标签页似乎还有程序在运行，请先结束它。",
+      "confirmNoteReconnect": "会在这个标签页的本机 shell 中输入这条指令，如同你亲自输入。提示符后已输入的文字会先被清除。",
+      "reconnectUnknown": "Orca 无法确认这个标签页正在运行什么，所以没有输入任何内容。",
+      "reconnectFailed": "无法在这个标签页中输入。"
     },
     "picker": {
       "title": "开启 SSH 连接",
@@ -23529,7 +23536,8 @@
       "failed": "失败",
       "cancel": "取消传输",
       "title": "传输",
-      "clear": "清除已完成"
+      "clear": "清除已完成",
+      "runningCount": "{{count}} 个进行中"
     },
     "transfer": {
       "labelMany": "{{name}} 及另外 {{count}} 个"
@@ -23593,6 +23601,15 @@
       "removeCurrentShared": "从所有连接共用常用中移除“{{name}}”",
       "hostList": "{{host}} 专属",
       "sharedList": "所有连接共用"
+    },
+    "connection": {
+      "connected": "已连接",
+      "connecting": "连接中…",
+      "disconnected": "已断开连接",
+      "failed": "未连接",
+      "disconnect": "断开连接",
+      "reconnect": "重新连接",
+      "busy": "请先完成或取消这台主机的传输，才能断开连接。"
     }
   },
   "commandConfirm": {

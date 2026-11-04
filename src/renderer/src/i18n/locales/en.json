@@ -24911,7 +24911,14 @@
       "confirmVpn": "Through VPN: {{name}} (already connected)",
       "confirmNoteExistingTab": "Starts your login shell in this tab and types this command into it, as if you typed it.",
       "notStarted": "This tab has no terminal running.",
-      "connectTo": "Connect to {{host}}"
+      "connectTo": "Connect to {{host}}",
+      "ended": "SSH connection ended.",
+      "endedDetail": "This tab is now a local shell, not {{host}}.",
+      "reconnect": "Reconnect",
+      "reconnectBusy": "Something still seems to be running in this tab. Finish it first.",
+      "confirmNoteReconnect": "Types this command into this tab’s local shell, as if you typed it. Anything already typed at the prompt is cleared first.",
+      "reconnectUnknown": "Orca can’t tell what is running in this tab, so it typed nothing.",
+      "reconnectFailed": "Couldn’t type into this tab."
     },
     "picker": {
       "title": "Open an SSH session",
@@ -24975,7 +24982,8 @@
       "failed": "Failed",
       "cancel": "Cancel transfer",
       "title": "Transfers",
-      "clear": "Clear finished"
+      "clear": "Clear finished",
+      "runningCount": "{{count}} running"
     },
     "transfer": {
       "labelMany": "{{name}} and {{count}} more"
@@ -25039,6 +25047,15 @@
       "removeCurrentShared": "Remove “{{name}}” from favorites for all connections",
       "hostList": "{{host}} only",
       "sharedList": "All connections"
+    },
+    "connection": {
+      "connected": "Connected",
+      "connecting": "Connecting…",
+      "disconnected": "Disconnected",
+      "failed": "Not connected",
+      "disconnect": "Disconnect",
+      "reconnect": "Reconnect",
+      "busy": "Finish or cancel this host’s transfers to disconnect."
     }
   },
   "commandConfirm": {
