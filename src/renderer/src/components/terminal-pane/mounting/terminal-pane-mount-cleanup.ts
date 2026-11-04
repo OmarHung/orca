@@ -18,6 +18,7 @@ import { isTerminalTabPresent } from '@/store/terminals/terminal-tab-retirement'
 import { clearTerminalFontSizeOverride } from '../appearance/terminal-font-size-overrides'
 import { e2eConfig } from '@/app-shell/startup/e2e-config'
 import { useAppStore } from '@/store/index'
+import { unregisterTerminalPaneManager } from '../terminal-pane-manager-registry'
 
 export function cleanupTerminalPaneMount(args: {
   manager: PaneManager
@@ -130,6 +131,7 @@ export function cleanupTerminalPaneMount(args: {
   }
   panePtyBindingsRef.current.clear()
   paneTransportsRef.current.clear()
+  unregisterTerminalPaneManager(tabId, manager)
   manager.destroy()
   managerRef.current = null
   if (e2eConfig.exposeStore && window.__paneManagers?.get(tabId) === manager) {

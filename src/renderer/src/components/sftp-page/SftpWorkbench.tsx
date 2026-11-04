@@ -71,13 +71,16 @@ function isBrowsable(entry: SftpEntry): boolean {
 export function SftpWorkbench({
   target,
   isActive = true,
-  onRemotePathChange
+  onRemotePathChange,
+  onRemoteSelectionChange
 }: {
   target: SshTarget
   /** False while its tab is hidden, so Finder drops only reach the tab on screen. */
   isActive?: boolean
   /** Lets the tab strip name the folder this workbench shows. */
   onRemotePathChange?: (path: string) => void
+  /** Lets a saved command use the items selected here. */
+  onRemoteSelectionChange?: (paths: readonly string[]) => void
 }): React.JSX.Element {
   const confirm = useCommandConfirm()
   const actionContext = useMemo<SftpActionContext>(() => ({ target, confirm }), [target, confirm])
@@ -177,6 +180,9 @@ export function SftpWorkbench({
   )
 
   const selectedRemote = remote.selectedEntries
+  useEffect(() => {
+    onRemoteSelectionChange?.(selectedRemote.map((entry) => entry.path))
+  }, [onRemoteSelectionChange, selectedRemote])
   const requestNewFolder = (): void => {
     if (!remotePath) {
       return

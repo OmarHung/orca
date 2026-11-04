@@ -56,6 +56,7 @@ import type { DatabaseApi } from './api/database-api'
 import type { MondayApi } from './api/monday-api'
 import type { ForkUpdateChangelogApi } from './api/fork-update-changelog-api'
 import type { SftpApi } from './api/sftp-api'
+import type { SshCommandsApi } from './api/ssh-commands-api'
 import type { SshVpnApi } from './api/ssh-vpn-api'
 import type { NgrokApi } from './api/ngrok-api'
 import type { PythonApi } from './api/python-api'
@@ -144,6 +145,7 @@ export type PreloadApi = {
   monday: MondayApi
   forkUpdateChangelog: ForkUpdateChangelogApi
   sftp: SftpApi
+  sshCommands: SshCommandsApi
   sshVpn: SshVpnApi
   ngrok: NgrokApi
   python: PythonApi

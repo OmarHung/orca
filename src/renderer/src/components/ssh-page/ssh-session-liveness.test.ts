@@ -116,6 +116,35 @@ describe('ssh session liveness', () => {
     expect(liveness()).toBe('unknown')
   })
 
+  it('notices a new ssh nobody asked Orca for, which may go to another host', () => {
+    observe('ssh', T0)
+    expect(useSshSessionLivenessStore.getState().byTab.tab.hasManualSsh).toBe(false)
+
+    observe('zsh', T0 + 1)
+    observe('ssh', T0 + 2)
+
+    expect(liveness()).toBe('connected')
+    expect(useSshSessionLivenessStore.getState().byTab.tab.hasManualSsh).toBe(true)
+  })
+
+  it('does not count a reconnect through Orca as manual', () => {
+    observe('ssh', T0)
+    observe('zsh', T0 + 1)
+
+    useSshSessionLivenessStore.getState().markStarting('tab', T0 + 2)
+    observe('ssh', T0 + 3)
+
+    expect(useSshSessionLivenessStore.getState().byTab.tab.hasManualSsh).toBe(false)
+  })
+
+  it('does not count a slow first connection as manual', () => {
+    observe('zsh', T0)
+    observe('zsh', T0 + LIVENESS_START_GRACE_MS)
+    observe('ssh', T0 + LIVENESS_START_GRACE_MS + 1)
+
+    expect(useSshSessionLivenessStore.getState().byTab.tab.hasManualSsh).toBe(false)
+  })
+
   it('forgets closed tabs', () => {
     observe('ssh', T0)
     useSshSessionLivenessStore.getState().recordForeground('other', 'ssh', T0)

@@ -14,6 +14,7 @@ import { installTerminalPaneMountEvents } from './terminal-pane-mount-events'
 import { cleanupTerminalPaneMount } from './terminal-pane-mount-cleanup'
 import type { UseTerminalPaneLifecycleDeps } from './terminal-pane-lifecycle-types'
 import type { TerminalPaneLifecycleRefs } from './use-terminal-pane-lifecycle-refs'
+import { registerTerminalPaneManager } from './terminal-pane-manager-registry'
 
 export function useTerminalPaneMountLifecycle(
   deps: UseTerminalPaneLifecycleDeps,
@@ -73,6 +74,7 @@ export function useTerminalPaneMountLifecycle(
     }
     const manager = new PaneManager(container, createTerminalPaneManagerOptions(managerContext))
     deps.managerRef.current = manager
+    registerTerminalPaneManager(deps.tabId, manager)
     if (e2eConfig.exposeStore) {
       window.__paneManagers = window.__paneManagers ?? new Map()
       window.__paneManagers.set(deps.tabId, manager)

@@ -24934,6 +24934,10 @@
     "hostRow": {
       "openTerminal": "Open a terminal tab",
       "openFiles": "Open a files tab"
+    },
+    "sidePanel": {
+      "hosts": "Hosts",
+      "commands": "Commands"
     }
   },
   "sftpPage": {
@@ -26336,6 +26340,88 @@
   "checks": {
     "gitlabAllowedFailure": "Allowed to fail",
     "rerunUnsuccessful": "Rerun unsuccessful"
+  },
+  "sshCommands": {
+    "blocked": {
+      "notConnected": "Connect this tab’s terminal first.",
+      "localShell": "This tab is back on your computer, so the command would run here. Reconnect first.",
+      "unknown": "Orca can’t tell whether this tab is connected, so it sent nothing.",
+      "fullScreen": "A full-screen program is open in this tab and would read the text as keystrokes. Close it first.",
+      "splitTab": "This tab is split, so Orca can’t tell which pane should get the command."
+    },
+    "sendFailed": "Couldn’t type into this tab.",
+    "run": {
+      "missingValue": "“{{name}}” needs a value.",
+      "controlCharacter": "“{{name}}” contains a line break or control character, which could run something else.",
+      "notANumber": "“{{name}}” must be a number.",
+      "notAnOption": "Choose one of the options for “{{name}}”.",
+      "windowsNeedsRaw": "“{{name}}” can’t be quoted for a Windows host. Set it to “Insert as written” or use a list.",
+      "noPath": "This uses the folder in the files pane. Open this tab’s files first.",
+      "noSelection": "This uses the items selected in the files pane. Select something first.",
+      "undefinedParam": "“{{name}}” isn’t defined. Edit the command.",
+      "optional": "Optional",
+      "rawBadge": "Inserted as written",
+      "noOption": "None",
+      "target": "Typed into this tab’s terminal, opened for {{host}}. If you connected onward from there, it runs wherever that shell is.",
+      "unverified": "Orca can’t confirm this tab is still connected here. If ssh has ended, the command runs on your computer.",
+      "leadingDash": "“{{name}}” starts with a dash, so the program may read it as an option. Quotes can’t prevent that; put -- before it in the template if it’s a name.",
+      "cancel": "Cancel",
+      "insert": "Paste without running",
+      "run": "Run",
+      "insideQuotes": "“{{name}}” is inside quotes in the template, where its value could close them. Edit the command to remove them.",
+      "manualSsh": "ssh was started again in this tab outside Orca, so it may be connected to another host. Check the terminal first."
+    },
+    "edit": {
+      "unused": "Not used",
+      "deleteParam": "Delete parameter",
+      "paramLabel": "Label",
+      "paramKind": "Type",
+      "kindText": "Text",
+      "kindNumber": "Number",
+      "kindSelect": "List",
+      "paramDefault": "Default value",
+      "paramQuote": "Value",
+      "quoteShell": "Quote automatically",
+      "quoteRaw": "Insert as written",
+      "paramOptions": "Options, one per line",
+      "paramRequired": "Required",
+      "scope": "Offer on",
+      "scopeAll": "Every host",
+      "scopeGroup": "A group",
+      "scopeHosts": "Chosen hosts",
+      "unsafeTemplate": "The template contains a control character that could drive the terminal.",
+      "noHosts": "Choose at least one host.",
+      "noGroup": "Choose a group.",
+      "noOptions": "Add options for {{key}}.",
+      "defaultNotAnOption": "The default value of {{key}} must be one of its options.",
+      "titleEdit": "Edit command",
+      "titleNew": "New command",
+      "name": "Name",
+      "template": "Command",
+      "templateHint": "Write {{name}} for a value to fill in. Built in: {{host}} {{user}} {{path}} {{selected}}, the last two from the files pane.",
+      "quotedKey": "{{key}} is inside quotes, where its value could close them. Remove the quotes around it, or set it to “Insert as written”.",
+      "literalTokens": "Sent as written, not as parameters: {{tokens}}",
+      "params": "Parameters",
+      "runMode": "When chosen",
+      "runModeInsert": "Paste, and let me press Enter",
+      "runModeRun": "Offer to run it",
+      "cancel": "Cancel",
+      "save": "Save",
+      "multiLine": "Lines are joined into one with ; so a later line still runs if an earlier one fails. Use && to stop on failure."
+    },
+    "list": {
+      "edit": "Edit command",
+      "delete": "Delete command",
+      "noTab": "Open a tab on a host first.",
+      "deleteTitle": "Delete “{{name}}”?",
+      "deleteConfirm": "Delete",
+      "imported": "Imported {{count}} commands",
+      "search": "Search commands",
+      "import": "Import from Quick Commands",
+      "new": "New command",
+      "empty": "No commands yet. Add one with a value to fill in, like journalctl -u {{service}}.",
+      "others": "For other hosts"
+    }
   },
   "gitGraph": {
     "copyHash": "Copy commit hash",

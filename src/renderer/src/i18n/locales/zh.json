@@ -23488,6 +23488,10 @@
     "hostRow": {
       "openTerminal": "打开终端标签页",
       "openFiles": "打开文件标签页"
+    },
+    "sidePanel": {
+      "hosts": "主机",
+      "commands": "指令"
     }
   },
   "sftpPage": {
@@ -24959,6 +24963,88 @@
   "wslDistroHold": {
     "terminalStopped": "WSL 发行版 {{distro}} 已停止，因此 Orca 没有启动此终端。请启动该发行版后重试。",
     "terminalUnverifiable": "Orca 无法确认 WSL 发行版 {{distro}} 是否正在运行，因此没有启动此终端。请启动该发行版后重试。"
+  },
+  "sshCommands": {
+    "blocked": {
+      "notConnected": "请先连接这个标签页的终端。",
+      "localShell": "这个标签页已回到你的电脑，指令会在本机运行。请先重新连接。",
+      "unknown": "Orca 无法确认这个标签页是否已连接，所以没有发送任何内容。",
+      "fullScreen": "这个标签页正在运行全屏程序，文字会被当成按键输入。请先关闭它。",
+      "splitTab": "这个标签页已分屏，Orca 无法确定要发送到哪个窗格。"
+    },
+    "sendFailed": "无法在这个标签页中输入。",
+    "run": {
+      "missingValue": "“{{name}}”需要填写。",
+      "controlCharacter": "“{{name}}”包含换行或控制字符，可能会运行其他内容。",
+      "notANumber": "“{{name}}”必须是数字。",
+      "notAnOption": "请为“{{name}}”选择一个选项。",
+      "windowsNeedsRaw": "无法为 Windows 主机的“{{name}}”自动加引号。请改成“原样带入”或使用列表。",
+      "noPath": "这条指令会用到文件窗格的文件夹。请先打开这个标签页的文件。",
+      "noSelection": "这条指令会用到文件窗格选中的项目。请先选择项目。",
+      "undefinedParam": "“{{name}}”尚未定义。请编辑这条指令。",
+      "optional": "可选",
+      "rawBadge": "原样带入",
+      "noOption": "无",
+      "target": "输入到这个标签页的终端（为 {{host}} 打开）。如果你从那里又连到别处，指令会在当前的 shell 上运行。",
+      "unverified": "Orca 无法确认这个标签页仍在连接中。如果 ssh 已结束，指令会在你的电脑上运行。",
+      "leadingDash": "“{{name}}”以连字符开头，程序可能会把它当成选项。引号无法防止这一点；如果它是名称，请在模板中它的前面加上 --。",
+      "cancel": "取消",
+      "insert": "粘贴但不运行",
+      "run": "运行",
+      "insideQuotes": "“{{name}}”写在模板的引号内，它的值可能会闭合引号。请编辑指令并移除引号。",
+      "manualSsh": "这个标签页的 ssh 是在 Orca 之外重新启动的，可能连到了其他主机。请先确认终端。"
+    },
+    "edit": {
+      "unused": "未使用",
+      "deleteParam": "删除参数",
+      "paramLabel": "标签",
+      "paramKind": "类型",
+      "kindText": "文本",
+      "kindNumber": "数字",
+      "kindSelect": "列表",
+      "paramDefault": "默认值",
+      "paramQuote": "值",
+      "quoteShell": "自动加引号",
+      "quoteRaw": "原样带入",
+      "paramOptions": "选项，每行一个",
+      "paramRequired": "必填",
+      "scope": "适用于",
+      "scopeAll": "所有主机",
+      "scopeGroup": "一个分组",
+      "scopeHosts": "指定主机",
+      "unsafeTemplate": "模板包含可能操控终端的控制字符。",
+      "noHosts": "请至少选择一台主机。",
+      "noGroup": "请选择一个分组。",
+      "noOptions": "请为 {{key}} 添加选项。",
+      "defaultNotAnOption": "{{key}} 的默认值必须是它的选项之一。",
+      "titleEdit": "编辑指令",
+      "titleNew": "新建指令",
+      "name": "名称",
+      "template": "指令",
+      "templateHint": "用 {{name}} 表示要填写的值。内置：{{host}} {{user}} {{path}} {{selected}}，后两个来自文件窗格。",
+      "quotedKey": "{{key}} 写在引号内，它的值可能会闭合引号。请移除它外面的引号，或改成“原样带入”。",
+      "literalTokens": "以下内容会原样发送，不算参数：{{tokens}}",
+      "params": "参数",
+      "runMode": "选择时",
+      "runModeInsert": "粘贴，由我按 Enter",
+      "runModeRun": "提供运行选项",
+      "cancel": "取消",
+      "save": "保存",
+      "multiLine": "多行会用 ; 合并成一行，前面失败时后面仍会运行。要在失败时停止，请用 &&。"
+    },
+    "list": {
+      "edit": "编辑指令",
+      "delete": "删除指令",
+      "noTab": "请先打开一台主机的标签页。",
+      "deleteTitle": "删除“{{name}}”？",
+      "deleteConfirm": "删除",
+      "imported": "已导入 {{count}} 条指令",
+      "search": "搜索指令",
+      "import": "从 Quick Commands 导入",
+      "new": "新建指令",
+      "empty": "还没有指令。添加一条带填写值的指令，例如 journalctl -u {{service}}。",
+      "others": "其他主机"
+    }
   },
   "remoteHostBrowserControl": {
     "title": "{{host}} 正在控制一个浏览器标签页",

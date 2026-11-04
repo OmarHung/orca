@@ -62,6 +62,7 @@ import { databaseApi } from './api/database-bridge'
 import { mondayApi } from './api/monday-bridge'
 import { forkUpdateChangelogApi } from './api/fork-update-changelog-bridge'
 import { sftpApi } from './api/sftp-bridge'
+import { sshCommandsApi } from './api/ssh-commands-bridge'
 import { sshVpnApi } from './api/ssh-vpn-bridge'
 import { ngrokApi } from './api/ngrok-bridge'
 import { pythonApi } from './api/python-bridge'
@@ -177,6 +178,7 @@ const api = {
   monday: mondayApi,
   forkUpdateChangelog: forkUpdateChangelogApi,
   sftp: sftpApi,
+  sshCommands: sshCommandsApi,
   sshVpn: sshVpnApi,
   ngrok: ngrokApi,
   python: pythonApi,
