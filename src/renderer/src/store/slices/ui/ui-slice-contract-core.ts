@@ -141,7 +141,6 @@ export type UiViewHistory =
   | 'mobile'
   | 'database'
   | 'ssh'
-  | 'sftp'
   | 'monday'
 
 export type UISliceCore = {

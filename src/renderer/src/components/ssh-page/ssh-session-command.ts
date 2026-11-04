@@ -6,7 +6,15 @@ const MAX_PORT = 65_535
 // Why: the command is typed into the user's shell (bash, zsh, PowerShell, cmd).
 const SAFE_USER = /^[A-Za-z0-9._][A-Za-z0-9._-]*$/
 
-type SshSessionEndpoint = Pick<SshTarget, 'configHost' | 'host' | 'port' | 'username'>
+type SshSessionEndpoint = Pick<SshTarget, 'configHost' | 'host' | 'port' | 'username' | 'source'>
+
+/** Same rule as main's isOpenSshConfigBackedTarget: a manual host's configHost is only its address. */
+function usesConfigAlias(target: SshSessionEndpoint): boolean {
+  if (!target.configHost || target.source === 'manual') {
+    return false
+  }
+  return target.source === 'ssh-config' || target.configHost !== target.host
+}
 
 /**
  * The `ssh` command that opens an interactive session, or null when it can't be typed safely.
@@ -17,7 +25,7 @@ export function buildSshSessionCommand(
   options: readonly string[] = []
 ): string | null {
   const ssh = ['ssh', ...options].join(' ')
-  if (target.configHost) {
+  if (target.configHost && usesConfigAlias(target)) {
     return isShellSafeSshHost(target.configHost) ? `${ssh} ${target.configHost}` : null
   }
   if (!isShellSafeSshHost(target.host) || (target.username && !SAFE_USER.test(target.username))) {

@@ -44,7 +44,8 @@ async function readTerminalText(page: Page, tabId: string): Promise<string> {
 /** Every session asks first and shows the exact ssh command it will type. */
 async function confirmSshCommand(page: Page): Promise<void> {
   const dialog = page.locator('[data-command-confirm]')
-  await expect(dialog.locator('[data-command-list]')).toContainText('ssh ')
+  // Why exact: this host's port and user only reach ssh when the command spells them out.
+  await expect(dialog.locator('[data-command-list]')).toContainText('ssh -p 9 nobody@127.0.0.1')
   await dialog.getByRole('button', { name: 'Connect' }).click()
   await expect(dialog).toBeHidden()
 }
@@ -94,6 +95,58 @@ test('runs ssh in an SSH page tab that survives leaving the page', async ({
   await orcaPage.screenshot({ path: testInfo.outputPath('ssh-page-two-sessions.png') })
 })
 
+test('a files tab runs no ssh until asked, and going back to the host reuses it', async ({
+  orcaPage
+}, testInfo) => {
+  await waitForSessionReady(orcaPage)
+  await addRefusedTarget(orcaPage)
+  await orcaPage.getByRole('button', { name: 'SSH', exact: true }).click()
+  const sshPage = orcaPage.locator('[data-ssh-page]')
+  const hostRow = sshPage.locator('[data-ssh-host-row]').filter({ hasText: REFUSED_TARGET.label })
+  await hostRow.click({ button: 'right' })
+  await orcaPage.getByRole('menuitem', { name: 'Open a files tab' }).click()
+  await expect.poll(async () => (await readSshTabs(orcaPage)).length).toBe(1)
+
+  // Files only: the terminal area is hidden, and nothing has run.
+  await expect(sshPage.locator('[data-remote-files]')).toBeVisible()
+  await expect(sshPage.locator('[data-remote-terminals]')).toBeHidden()
+  const [filesTab] = await readSshTabs(orcaPage)
+  expect(filesTab.ptyId).toBeNull()
+
+  // Clicking the host goes to this tab instead of asking to open another.
+  await hostRow.click()
+  await expect(orcaPage.locator('[data-command-confirm]')).toBeHidden()
+  expect(await readSshTabs(orcaPage)).toHaveLength(1)
+
+  // The terminal half waits for the user; switching to it still runs nothing.
+  await sshPage.locator('[data-remote-layout="terminal"]').click()
+  const connect = sshPage.getByRole('button', { name: `Connect to ${REFUSED_TARGET.label}` })
+  await expect(connect).toBeVisible()
+  expect((await readSshTabs(orcaPage))[0].ptyId).toBeNull()
+  await orcaPage.screenshot({ path: testInfo.outputPath('ssh-terminal-not-started.png') })
+
+  // Connecting confirms the exact command and runs it in this same tab.
+  await connect.click()
+  await confirmSshCommand(orcaPage)
+  await expect
+    .poll(() => readTerminalText(orcaPage, filesTab.id), { timeout: 20_000 })
+    .toContain('Connection refused')
+  expect((await readSshTabs(orcaPage)).map((tab) => tab.id)).toEqual([filesTab.id])
+
+  // Once it has shown files, the tab outlives its shell and can connect again.
+  await sshPage.locator('[data-remote-layout="split"]').click()
+  // Why wait: the layout switch hands focus to the terminal a couple of frames later.
+  await expect(sshPage.locator('[data-remote-terminals] textarea')).toBeFocused()
+  await orcaPage.keyboard.type('exit\n')
+  await expect(connect).toBeVisible({ timeout: 20_000 })
+  await expect.poll(async () => (await readSshTabs(orcaPage))[0]?.ptyId ?? null).toBeNull()
+  expect((await readSshTabs(orcaPage)).map((tab) => tab.id)).toEqual([filesTab.id])
+  await expect(sshPage.locator('[data-remote-files]')).toBeVisible()
+  await connect.click()
+  await confirmSshCommand(orcaPage)
+  await expect.poll(async () => (await readSshTabs(orcaPage))[0]?.ptyId ?? null).not.toBeNull()
+})
+
 test('restores SSH page tabs after an app restart', async (// oxlint-disable-next-line no-empty-pattern -- This persistence test owns both Electron launches.
 {}, testInfo) => {
   test.setTimeout(300_000)
@@ -107,6 +160,12 @@ test('restores SSH page tabs after an app restart', async (// oxlint-disable-nex
     await waitForSessionReady(first.page)
     await addRefusedTarget(first.page)
     await openRefusedSession(first.page)
+    const hostRow = first.page
+      .locator('[data-ssh-page] [data-ssh-host-row]')
+      .filter({ hasText: REFUSED_TARGET.label })
+    await hostRow.click({ button: 'right' })
+    await first.page.getByRole('menuitem', { name: 'Open a files tab' }).click()
+    await expect.poll(async () => (await readSshTabs(first.page)).length).toBe(2)
 
     await session.close(firstApp)
     firstApp = null
@@ -116,7 +175,13 @@ test('restores SSH page tabs after an app restart', async (// oxlint-disable-nex
     await waitForSessionReady(second.page)
     await expect
       .poll(async () => (await readSshTabs(second.page)).map((tab) => tab.label))
-      .toEqual([REFUSED_TARGET.label])
+      .toEqual([REFUSED_TARGET.label, REFUSED_TARGET.label])
+    // The files tab comes back as one: still no terminal, on the page that shows it.
+    await second.page.getByRole('button', { name: 'SSH', exact: true }).click()
+    const sshPage = second.page.locator('[data-ssh-page]')
+    await expect(sshPage.locator('[data-remote-files]')).toBeVisible()
+    await expect(sshPage.locator('[data-remote-terminals]')).toBeHidden()
+    expect((await readSshTabs(second.page))[1].ptyId).toBeNull()
   } finally {
     for (const app of [secondApp, firstApp]) {
       if (!app) {

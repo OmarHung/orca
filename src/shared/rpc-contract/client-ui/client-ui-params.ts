@@ -125,7 +125,6 @@ export const TopLevelViewSchema = z.enum([
   'mobile',
   'database',
   'ssh',
-  'sftp',
   'monday'
 ])
 

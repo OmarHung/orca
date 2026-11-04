@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { translate } from '@/i18n/i18n'
 import type { SshTarget } from '../../../../shared/ssh-types'
+import { useRemoteSessionStore } from '../ssh-page/remote-session-store'
 import type { SshTargetListStatus } from '../ssh-page/use-ssh-target-list'
 import { SftpWorkbench } from './SftpWorkbench'
-import { useSftpTabsStore, type SftpTab } from './sftp-tabs-store'
+
+export type RemoteFilesTab = { id: string; targetId: string; label: string }
 
 type SftpTabPanelsProps = {
-  tabs: readonly SftpTab[]
+  tabs: readonly RemoteFilesTab[]
+  /** The tab to show; null while the active tab shows only its terminal. */
   activeTabId: string | null
   isPageVisible: boolean
   targetsById: ReadonlyMap<string, SshTarget>
@@ -22,8 +25,8 @@ function PanelMessage({ children }: { children: React.ReactNode }): React.JSX.El
 }
 
 /**
- * One workbench per tab. A tab mounts (and connects) the first time it is shown, then stays
- * mounted while hidden so its folders, selection and listings survive tab switches.
+ * One workbench per tab. A tab mounts (and connects) the first time its files are shown, then
+ * stays mounted while hidden so its folders, selection and listings survive tab switches.
  */
 export function SftpTabPanels({
   tabs,
@@ -32,20 +35,13 @@ export function SftpTabPanels({
   targetsById,
   targetsStatus
 }: SftpTabPanelsProps): React.JSX.Element {
-  const setTabRemotePath = useSftpTabsStore((s) => s.setTabRemotePath)
+  const setRemotePath = useRemoteSessionStore((s) => s.setRemotePath)
   const [shownTabIds, setShownTabIds] = useState<ReadonlySet<string>>(() => new Set())
   // Why: adjust during render (not in an Effect) so the newly shown tab mounts in this pass.
   if (activeTabId && !shownTabIds.has(activeTabId)) {
     setShownTabIds(new Set([...shownTabIds, activeTabId]))
   }
 
-  if (tabs.length === 0) {
-    return (
-      <PanelMessage>
-        {translate('sftpPage.page.pickHost', 'Pick a host to browse its files.')}
-      </PanelMessage>
-    )
-  }
   return (
     <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
       {tabs
@@ -65,7 +61,7 @@ export function SftpTabPanels({
                 <SftpWorkbench
                   target={target}
                   isActive={isActive && isPageVisible}
-                  onRemotePathChange={(path) => setTabRemotePath(tab.id, path)}
+                  onRemotePathChange={(path) => setRemotePath(tab.id, path)}
                 />
               ) : (
                 <PanelMessage>
