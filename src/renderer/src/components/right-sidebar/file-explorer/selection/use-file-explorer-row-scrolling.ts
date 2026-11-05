@@ -13,6 +13,7 @@ type UseFileExplorerRowScrollingParams = {
   visibleRowCount: number
   inlineInputIndex: number
   rowProjection: FileExplorerRowProjection
+  hasNameFilter?: boolean
   scrollRef: RefObject<HTMLDivElement | null>
   onRevealOutsideRoot?: () => void
   activeWorktreeId: string | null
@@ -45,6 +46,7 @@ export function useFileExplorerRowScrolling({
   visibleRowCount,
   inlineInputIndex,
   rowProjection,
+  hasNameFilter,
   scrollRef,
   activeWorktreeId,
   worktreePath,
@@ -99,6 +101,7 @@ export function useFileExplorerRowScrolling({
     loadingDirPaths,
     rootCache: displayRootPath ? dirCache[displayRootPath] : rootCache,
     rowProjection,
+    hasNameFilter,
     loadDir,
     loadMoreDir,
     setSelectedPath,
