@@ -15,13 +15,11 @@ vi.mock('../navigation/file-explorer-operation-owner', () => ({
 
 import { fileExplorerRevealHiddenPath } from './file-explorer-dir-pages'
 import type { DirCache } from './file-explorer-types'
+import { fileNode } from './file-explorer-tree-node-test-fixtures'
 
 describe('fileExplorerRevealHiddenPath', () => {
   const cacheWith = (...childPaths: string[]): Record<string, DirCache> => ({
-    '/repo': {
-      children: childPaths.map((path) => ({ path })),
-      loading: false
-    } as unknown as DirCache
+    '/repo': { children: childPaths.map((path) => ({ ...fileNode, path })) }
   })
   const listing = (...rows: string[]) => ({ hasPath: (path: string) => rows.includes(path) })
 

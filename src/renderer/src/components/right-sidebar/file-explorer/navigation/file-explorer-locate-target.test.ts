@@ -8,7 +8,7 @@ const WORKTREE_PATH = '/repo'
 function makeFile(
   id: string,
   filePath: string,
-  overrides: object = {}
+  overrides: Partial<LocateState['openFiles'][0]> = {}
 ): LocateState['openFiles'][0] {
   return {
     id,
