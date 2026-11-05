@@ -24633,7 +24633,7 @@
       "titleNew": "新增指令",
       "name": "名稱",
       "template": "指令",
-      "templateHint": "用 {{name}} 表示要填寫的值。內建：{{host}} {{user}} {{path}} {{selected}}，後兩個來自檔案窗格。",
+      "templateHint": "用 {{name}} 表示要填寫的值。內建：{{host}} {{user}} {{path}} {{selected}} {{date}} {{time}}。資料夾和選取項目來自檔案窗格，日期和時間來自這台電腦。",
       "quotedKey": "{{key}} 寫在引號內，它的值可能會閉合引號。請移除它外面的引號，或改成“原樣帶入”。",
       "literalTokens": "以下內容會原樣傳送，不算引數：{{tokens}}",
       "params": "引數",

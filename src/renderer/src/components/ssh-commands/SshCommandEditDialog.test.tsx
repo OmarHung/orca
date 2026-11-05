@@ -188,6 +188,8 @@ describe('SshCommandEditDialog', () => {
   it('shows the placeholders it explains, instead of filling them in', async () => {
     await open(null)
 
-    expect(document.body.textContent).toContain('{{host}} {{user}} {{path}} {{selected}}')
+    expect(document.body.textContent).toContain(
+      '{{host}} {{user}} {{path}} {{selected}} {{date}} {{time}}'
+    )
   })
 })

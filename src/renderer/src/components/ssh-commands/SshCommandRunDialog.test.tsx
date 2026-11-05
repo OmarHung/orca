@@ -152,6 +152,27 @@ describe('SshCommandRunDialog', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
+  it('sends the date and time the preview showed, however long the dialog stays open', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 10, 5, 9, 7, 3))
+    try {
+      await open({ template: 'tar czf {{date}}.tgz {{service}} # {{time}}' })
+      vi.setSystemTime(new Date(2026, 10, 6, 1, 0, 0))
+      await typeInto('service', 'app')
+
+      expect(preview()).toContain('tar czf 20261105.tgz app # 090703')
+      await act(async () => button('data-ssh-command-insert').click())
+
+      expect(mocks.send).toHaveBeenCalledWith(
+        'tab-1',
+        'tar czf 20261105.tgz app # 090703',
+        'insert'
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('runs when asked to', async () => {
     await open()
 

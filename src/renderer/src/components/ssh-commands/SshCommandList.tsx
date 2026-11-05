@@ -5,7 +5,8 @@ import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import {
   expandSshCommandTemplate,
-  syncSshCommandParams
+  syncSshCommandParams,
+  type SshCommandExpansion
 } from '../../../../shared/ssh-command-template'
 import type { SshCommand } from '../../../../shared/ssh-command-types'
 import type { SshTarget } from '../../../../shared/ssh-types'
@@ -127,6 +128,21 @@ function matchesQuery(command: SshCommand, query: string): boolean {
   )
 }
 
+function expandWithoutFields(
+  command: SshCommand,
+  tabId: string,
+  target: SshTarget
+): SshCommandExpansion {
+  return expandSshCommandTemplate({
+    template: command.template,
+    params: [],
+    values: {},
+    builtins: sshCommandBuiltins(tabId, target),
+    now: new Date(),
+    remotePlatform: sshCommandRemotePlatform(tabId, target.id)
+  })
+}
+
 /** The saved commands, with those offered on the current tab's host first. */
 export function SshCommandList({
   activeTabId,
@@ -201,13 +217,7 @@ export function SshCommandList({
       setRunRequest(request)
       return
     }
-    const expansion = expandSshCommandTemplate({
-      template: command.template,
-      params: [],
-      values: {},
-      builtins: sshCommandBuiltins(activeTabId, activeTarget),
-      remotePlatform: sshCommandRemotePlatform(activeTabId, activeTarget.id)
-    })
+    const expansion = expandWithoutFields(command, activeTabId, activeTarget)
     const check = await checkSshCommandTarget(activeTabId)
     // Why: only with nothing to fill in, no Enter pressed and nothing in doubt can it skip the dialog.
     if (expansion.problems.length > 0 || (check.kind === 'ready' && check.doubt)) {

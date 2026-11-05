@@ -134,14 +134,16 @@ function EditDialogBody({
           <p className="text-xs text-muted-foreground">
             {translate(
               'sshCommands.edit.templateHint',
-              'Write {{name}} for a value to fill in. Built in: {{host}} {{user}} {{path}} {{selected}}, the last two from the files pane.',
+              'Write {{name}} for a value to fill in. Built in: {{host}} {{user}} {{path}} {{selected}} {{date}} {{time}}. The folder and selection come from the files pane, the date and time from this computer.',
               // Why: these are the literal placeholders to show, not values to interpolate.
               {
                 name: '{{name}}',
                 host: '{{host}}',
                 user: '{{user}}',
                 path: '{{path}}',
-                selected: '{{selected}}'
+                selected: '{{selected}}',
+                date: '{{date}}',
+                time: '{{time}}'
               }
             )}
           </p>

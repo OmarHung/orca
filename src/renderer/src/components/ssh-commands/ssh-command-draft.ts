@@ -1,5 +1,6 @@
 import {
   findQuotedSshCommandKeys,
+  isSshCommandClockKey,
   literalBraceTokens,
   syncSshCommandParams
 } from '../../../../shared/ssh-command-template'
@@ -31,7 +32,8 @@ export type SshCommandDraftReview = {
 }
 
 function usesShellQuoting(draft: SshCommandDraft, key: string): boolean {
-  return draft.params.find((param) => param.key === key)?.quote !== 'raw'
+  const param = draft.params.find((candidate) => candidate.key === key)
+  return param ? param.quote !== 'raw' : !isSshCommandClockKey(key)
 }
 
 export function reviewSshCommandDraft(draft: SshCommandDraft): SshCommandDraftReview {
