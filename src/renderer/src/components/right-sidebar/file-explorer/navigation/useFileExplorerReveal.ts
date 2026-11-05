@@ -9,6 +9,10 @@ import { getRevealAncestorDirs } from './file-explorer-paths'
 import type { DirCache } from '../tree/file-explorer-types'
 import type { FileExplorerRowProjection } from '../tree/file-explorer-row-projection'
 import { fileExplorerRevealDirToReadOn } from '../tree/file-explorer-dir-pages'
+import {
+  getFileExplorerRevealScrollLeft,
+  getFileExplorerRowIndent
+} from '../tree/file-explorer-row-indent'
 
 type UseFileExplorerRevealParams = {
   onRevealOutsideRoot?: () => void
@@ -265,6 +269,19 @@ export function useFileExplorerReveal({
         const targetIndex = rowProjection.getIndexByPath(revealPath)
         if (targetIndex !== null) {
           virtualizer.scrollToIndex(targetIndex, { align: 'center' })
+        }
+        // Tab-switch reveals stay put: the click that opened the file must not yank a sideways scroll.
+        const scroller = virtualizer.scrollElement
+        const revealedRow = rowProjection.getRowByPath(revealPath)
+        if (pendingExplorerReveal.flash !== false && scroller && revealedRow) {
+          scroller.scrollLeft = getFileExplorerRevealScrollLeft(
+            getFileExplorerRowIndent(
+              revealedRow.depth,
+              getExplorerDisplayDepth(worktreePath, displayRootPath)
+            ),
+            scroller.scrollLeft,
+            scroller.clientWidth
+          )
         }
       }, 0)
     })

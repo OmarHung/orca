@@ -2,6 +2,7 @@ import React from 'react'
 import { ChevronRight, CircleAlert, CircleSlash, Link, Loader2 } from 'lucide-react'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { cn } from '@/lib/utils'
+import { useRowWidthReporter } from '@/lib/virtual-row-width'
 import { FileTypeIcon, FolderIcon } from '@/components/FileTypeIcon'
 import {
   encodeWorkspaceFilePaths,
@@ -13,6 +14,7 @@ import {
 import type { GitFileStatus } from '../../../../../../shared/git/status/git-status-types'
 import { STATUS_LABELS } from '../../../../../../shared/git/status/git-status-labels'
 import { RENAME_HOTSPOT_ATTR } from '../tree/file-explorer-dir-toggle-timing'
+import { getFileExplorerRowIndent } from '../tree/file-explorer-row-indent'
 import type { TreeNode } from '../tree/file-explorer-types'
 import { useFileExplorerRowDrag } from '../mutations/useFileExplorerRowDrag'
 import { translate } from '@/i18n/i18n'
@@ -21,9 +23,16 @@ import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-typ
 import { createMultiSelectDragGhost } from '../mutations/file-explorer-multi-drag-image'
 import { FileExplorerRowContextMenu } from './file-explorer-row-context-menu'
 
+// Keeps the status letter or ignored icon clear of the name when the widest row sets the tree's width.
+const ROW_END_RESERVE_PX = 36
+// Sticky: one long name widens every row, which would otherwise push status off-screen.
+const ROW_STATUS_CLASS =
+  'file-explorer-row-status sticky right-3 mr-1 ml-auto shrink-0 box-content px-1'
+
 export type FileExplorerRowProps = {
   node: TreeNode
   displayDepthOffset?: number
+  onMeasureWidth?: (path: string, width: number) => void
   isExpanded: boolean
   isLoading: boolean
   /** Distinguish failed reads from empty folders. */
@@ -74,6 +83,7 @@ export type FileExplorerRowProps = {
 export function FileExplorerRow({
   node,
   displayDepthOffset = 0,
+  onMeasureWidth,
   isExpanded,
   isLoading,
   loadError = null,
@@ -116,6 +126,13 @@ export function FileExplorerRow({
   onNativeDragExpandDir
 }: FileExplorerRowProps): React.JSX.Element {
   const showLoadError = node.isDirectory && isExpanded && !isLoading && loadError !== null
+  const rowIndent = getFileExplorerRowIndent(node.depth, displayDepthOffset)
+  const nameRef = useRowWidthReporter<HTMLSpanElement>(
+    node.path,
+    onMeasureWidth,
+    ROW_END_RESERVE_PX,
+    rowIndent
+  )
   const rowDropDir = node.isDirectory ? node.path : targetDir
   const { setRowDragNode, handleDragOver, handleDragEnter, handleDragLeave, handleDrop } =
     useFileExplorerRowDrag({
@@ -150,7 +167,7 @@ export function FileExplorerRow({
             isSelected && 'text-accent-foreground',
             isFlashing && 'bg-amber-400/20 ring-1 ring-inset ring-amber-400/70'
           )}
-          style={{ paddingLeft: `${(node.depth - displayDepthOffset) * 16 + 8}px` }}
+          style={{ paddingLeft: `${rowIndent}px` }}
           ref={setRowDragNode}
           // The OS-drop owner reads the target folder here at drop time.
           data-file-explorer-drop-dir={rowDropDir}
@@ -228,12 +245,13 @@ export function FileExplorerRow({
             </>
           )}
           <span
+            ref={nameRef}
             // Suppress directory toggling on the second click of a filename double-click rename.
             {...{ [RENAME_HOTSPOT_ATTR]: '' }}
             className={cn(
-              'truncate',
+              'shrink-0 whitespace-nowrap',
               isSelected && !nodeStatus && !isIgnored && 'text-accent-foreground',
-              // Reserve space for italic overhang so truncation does not clip the final letter.
+              // Reserve space for italic overhang so the row's edge does not clip the final letter.
               isIgnored && 'italic pr-0.5'
             )}
             style={
@@ -262,7 +280,7 @@ export function FileExplorerRow({
           ) : null}
           {nodeStatus ? (
             <span
-              className="ml-auto shrink-0 text-[10px] font-semibold tracking-wide mr-2"
+              className={cn(ROW_STATUS_CLASS, 'text-[10px] font-semibold tracking-wide')}
               style={{ color: statusColor ?? undefined }}
             >
               {STATUS_LABELS[nodeStatus]}
@@ -273,7 +291,7 @@ export function FileExplorerRow({
                 'auto.components.right.sidebar.FileExplorerRow.e26010014a',
                 'Ignored by .gitignore'
               )}
-              className="ml-auto size-3 shrink-0 mr-2"
+              className={cn(ROW_STATUS_CLASS, 'size-3')}
               style={{ color: 'var(--git-decoration-ignored)' }}
             />
           ) : null}
