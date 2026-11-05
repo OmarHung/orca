@@ -24,6 +24,7 @@ export async function rerunRunPanelSession(session: RunSession): Promise<void> {
 /** Closes the run's terminal; a still-running process asks first, like any terminal tab. */
 export function closeRunPanelSession(session: RunSession): void {
   closeTerminalTab(session.tabId, {
+    reason: 'user',
     onClosed: () => {
       const current = useRunSessionStore.getState().sessionsByKey[session.key]
       if (current?.tabId === session.tabId) {

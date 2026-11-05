@@ -317,7 +317,7 @@ export function activateSshSession(groupTabs: readonly Tab[], visibleId: string)
 }
 
 export function closeSshSession(terminalTabId: string): void {
-  closeTerminalTab(terminalTabId)
+  closeTerminalTab(terminalTabId, { reason: 'user' })
 }
 
 /** Bulk close from the tab context menu; like the floating panel, it skips per-tab prompts. */

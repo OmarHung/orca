@@ -66,6 +66,7 @@ function closeRunTerminal(session: RunSession): void {
     const detail: CloseTerminalPaneDetail = {
       tabId: binding.tabId,
       leafId: binding.leafId,
+      lastPaneCloseReason: 'user',
       ...(binding.ptyId ? { expectedPtyId: binding.ptyId } : {})
     }
     window.dispatchEvent(new CustomEvent(CLOSE_TERMINAL_PANE_EVENT, { detail }))
