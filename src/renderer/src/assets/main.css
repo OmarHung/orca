@@ -1552,24 +1552,40 @@ html.native-shell .app-layout {
   color: var(--accent-foreground);
 }
 
+[data-file-explorer-row]:hover {
+  --file-explorer-row-surface: var(--accent);
+}
+
 [data-file-explorer-row][data-selected='true'] {
   /* Why: flat bg-accent ≈ panel background in light mode, so selection mixes
      foreground into accent and adds an inset ring to stay legible in both themes. */
-  background: color-mix(in srgb, var(--foreground) 8%, var(--accent));
+  --file-explorer-row-surface: color-mix(in srgb, var(--foreground) 8%, var(--accent));
+  background: var(--file-explorer-row-surface);
   box-shadow: inset 0 0 0 1px var(--border);
   color: var(--accent-foreground);
 }
 
 [data-file-explorer-row][data-selected='true']:hover {
-  background: color-mix(in srgb, var(--foreground) 10%, var(--accent));
+  --file-explorer-row-surface: color-mix(in srgb, var(--foreground) 10%, var(--accent));
 }
 
 .dark [data-file-explorer-row][data-selected='true'] {
-  background: color-mix(in srgb, var(--accent) 70%, transparent);
+  --file-explorer-row-surface: color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
 .dark [data-file-explorer-row][data-selected='true']:hover {
-  background: color-mix(in srgb, var(--accent) 80%, transparent);
+  --file-explorer-row-surface: color-mix(in srgb, var(--accent) 80%, transparent);
+}
+
+/* Why: long names slide under the sticky status, and row surfaces can be translucent,
+   so the row's surface is layered over the panel to hide the text behind it. */
+.file-explorer-row-status {
+  background:
+    linear-gradient(
+      var(--file-explorer-row-surface, transparent),
+      var(--file-explorer-row-surface, transparent)
+    ),
+    var(--sidebar);
 }
 
 .sidebar {

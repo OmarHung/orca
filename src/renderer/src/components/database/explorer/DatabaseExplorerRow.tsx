@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef } from 'react'
+import React from 'react'
 import {
   ChevronRight,
   Columns3,
@@ -20,6 +20,7 @@ import {
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
+import { useRowWidthReporter } from '@/lib/virtual-row-width'
 import {
   DatabaseSessionIcon,
   DatabaseSessionStateText,
@@ -221,20 +222,7 @@ function MeasuredLabel({
   onMeasure: (key: string, width: number) => void
   children: React.ReactNode
 }): React.JSX.Element {
-  const ref = useRef<HTMLSpanElement>(null)
-  useLayoutEffect(() => {
-    const label = ref.current
-    if (!label) {
-      return
-    }
-    // Why offsetLeft: it counts from the row's own box, indent included.
-    const report = (): void =>
-      onMeasure(rowKey, label.offsetLeft + label.offsetWidth + ROW_END_PADDING)
-    report()
-    const observer = new ResizeObserver(report)
-    observer.observe(label)
-    return () => observer.disconnect()
-  }, [rowKey, onMeasure])
+  const ref = useRowWidthReporter<HTMLSpanElement>(rowKey, onMeasure, ROW_END_PADDING)
   return (
     <span ref={ref} className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
       {children}

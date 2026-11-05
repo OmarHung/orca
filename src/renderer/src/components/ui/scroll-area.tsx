@@ -9,9 +9,12 @@ function ScrollArea({
   viewportRef,
   viewportTabIndex,
   viewportProps,
+  horizontalScrollbar = false,
   children,
   ...props
 }: React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
+  /** Radix hides sideways overflow unless a horizontal scrollbar is mounted. */
+  horizontalScrollbar?: boolean
   viewportClassName?: string
   viewportRef?: React.Ref<HTMLDivElement>
   /** Set e.g. -1 so the viewport can receive programmatic focus (explorer keyboard shortcuts after inline rename). */
@@ -37,6 +40,7 @@ function ScrollArea({
         {children}
       </ScrollAreaPrimitive.Viewport>
       <ScrollBar />
+      {horizontalScrollbar ? <ScrollBar orientation="horizontal" /> : null}
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   )

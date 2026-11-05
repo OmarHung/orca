@@ -1,6 +1,7 @@
 import type { RefObject } from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useVirtualizer, type Virtualizer } from '@tanstack/react-virtual'
+import { useWidestRow } from '@/lib/virtual-row-width'
 import { useAppStore } from '@/store/index'
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import type { DirCache } from '../tree/file-explorer-types'
@@ -32,6 +33,8 @@ type UseFileExplorerRowScrollingResult = {
   virtualizer: Virtualizer<HTMLDivElement, Element>
   scrollToIndex: (index: number) => void
   flashingPath: string | null
+  widestRowWidth: number
+  onMeasureRowWidth: (path: string, width: number) => void
   cancelRevealTimers: () => void
   explorerShellRef: RefObject<HTMLDivElement | null>
   setExplorerShellRef: (node: HTMLDivElement | null) => void
@@ -59,6 +62,8 @@ export function useFileExplorerRowScrolling({
   const pendingExplorerReveal = useAppStore((s) => s.pendingExplorerReveal)
   const clearPendingExplorerReveal = useAppStore((s) => s.clearPendingExplorerReveal)
   const [flashingPath, setFlashingPath] = useState<string | null>(null)
+  const orderedPaths = useMemo(() => rowProjection.getOrderedPaths(), [rowProjection])
+  const { widest: widestRowWidth, onMeasure: onMeasureRowWidth } = useWidestRow(orderedPaths)
   /** Include the scrollbar, which is outside Radix’s viewport. */
   const explorerShellRef = useRef<HTMLDivElement | null>(null)
   const flashTimeoutRef = useRef<number | null>(null)
@@ -142,6 +147,8 @@ export function useFileExplorerRowScrolling({
     virtualizer,
     scrollToIndex,
     flashingPath,
+    widestRowWidth,
+    onMeasureRowWidth,
     explorerShellRef,
     setExplorerShellRef,
     cancelRevealTimers
