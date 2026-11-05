@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { Virtualizer } from '@tanstack/react-virtual'
+import { toast } from 'sonner'
+import { translate } from '@/i18n/i18n'
 import { getRelativePathInsideRoot } from '@/lib/path'
 import { getExplorerDisplayDepth } from './file-explorer-display-root'
 import { FILE_EXPLORER_FULL_ROOT } from '../../../../../../shared/file-listing/file-explorer-display-root'
@@ -8,11 +10,11 @@ import { useAppStore } from '@/store/index'
 import { getRevealAncestorDirs } from './file-explorer-paths'
 import type { DirCache } from '../tree/file-explorer-types'
 import type { FileExplorerRowProjection } from '../tree/file-explorer-row-projection'
-import { fileExplorerRevealDirToReadOn } from '../tree/file-explorer-dir-pages'
 import {
-  getFileExplorerRevealScrollLeft,
-  getFileExplorerRowIndent
-} from '../tree/file-explorer-row-indent'
+  fileExplorerRevealDirToReadOn,
+  fileExplorerRevealHiddenPath
+} from '../tree/file-explorer-dir-pages'
+import { scrollFileExplorerRowStartIntoView } from '../tree/file-explorer-row-indent'
 
 type UseFileExplorerRevealParams = {
   onRevealOutsideRoot?: () => void
@@ -31,6 +33,8 @@ type UseFileExplorerRevealParams = {
   loadingDirPaths: ReadonlySet<string>
   rootCache: DirCache | undefined
   rowProjection: FileExplorerRowProjection
+  /** The filter hides rows for only this render: a reveal clears it, so nothing counts as hidden yet. */
+  hasNameFilter?: boolean
   loadDir: (dirPath: string, depth: number, options?: { force?: boolean }) => Promise<boolean>
   loadMoreDir?: (dirPath: string) => Promise<void>
   setSelectedPath: (path: string | null) => void
@@ -52,6 +56,7 @@ export function useFileExplorerReveal({
   loadingDirPaths,
   rootCache,
   rowProjection,
+  hasNameFilter = false,
   loadDir,
   loadMoreDir,
   setSelectedPath,
@@ -217,30 +222,43 @@ export function useFileExplorerReveal({
       clearPendingExplorerReveal()
       return
     }
-    const readOn = loadMoreDir
-      ? fileExplorerRevealDirToReadOn(dirCache, rowProjection, [
-          ...pendingRevealAncestorDirs,
-          targetPath
-        ])
-      : null
-    if (readOn !== null) {
-      if (!loadingDirPaths.has(readOn)) {
-        void loadMoreDir?.(readOn)
+    const revealPaths = [...pendingRevealAncestorDirs, targetPath]
+    const hiddenPath =
+      hasNameFilter || rootStillLoading || missingExpandedAncestor
+        ? null
+        : fileExplorerRevealHiddenPath(dirCache, rowProjection, revealPaths)
+    // Waiting on a hidden path would never end, and would hold back every later automatic reveal.
+    if (hiddenPath === null) {
+      const readOn = loadMoreDir
+        ? fileExplorerRevealDirToReadOn(dirCache, rowProjection, revealPaths)
+        : null
+      if (readOn !== null) {
+        if (!loadingDirPaths.has(readOn)) {
+          void loadMoreDir?.(readOn)
+        }
+        return
       }
-      return
-    }
-    if (
-      rootStillLoading ||
-      missingExpandedAncestor ||
-      missingAncestor ||
-      parentDirStillLoading ||
-      !parentDirKnown
-    ) {
-      return
+      if (
+        rootStillLoading ||
+        missingExpandedAncestor ||
+        missingAncestor ||
+        parentDirStillLoading ||
+        !parentDirKnown
+      ) {
+        return
+      }
+    } else if (pendingExplorerReveal.flash !== false) {
+      toast.info(
+        translate(
+          'auto.components.right.sidebar.FileExplorer.revealHiddenFile',
+          'This file is hidden in the explorer. Turn on Show Dotfiles or Show Git Ignored Files in the ⋯ menu to see it.'
+        )
+      )
     }
 
-    const fallbackPath = rowProjection.hasPath(parentDirPath) ? parentDirPath : null
-    const revealPath = rowProjection.hasPath(targetPath) ? targetPath : fallbackPath
+    const revealPath = rowProjection.hasPath(targetPath)
+      ? targetPath
+      : (pendingRevealAncestorDirs.findLast((path) => rowProjection.hasPath(path)) ?? null)
     if (!revealPath) {
       clearPendingExplorerReveal()
       return
@@ -271,16 +289,11 @@ export function useFileExplorerReveal({
           virtualizer.scrollToIndex(targetIndex, { align: 'center' })
         }
         // Tab-switch reveals stay put: the click that opened the file must not yank a sideways scroll.
-        const scroller = virtualizer.scrollElement
-        const revealedRow = rowProjection.getRowByPath(revealPath)
-        if (pendingExplorerReveal.flash !== false && scroller && revealedRow) {
-          scroller.scrollLeft = getFileExplorerRevealScrollLeft(
-            getFileExplorerRowIndent(
-              revealedRow.depth,
-              getExplorerDisplayDepth(worktreePath, displayRootPath)
-            ),
-            scroller.scrollLeft,
-            scroller.clientWidth
+        if (pendingExplorerReveal.flash !== false) {
+          scrollFileExplorerRowStartIntoView(
+            virtualizer.scrollElement,
+            rowProjection.getRowByPath(revealPath)?.depth,
+            getExplorerDisplayDepth(worktreePath, displayRootPath)
           )
         }
       }, 0)
@@ -291,6 +304,7 @@ export function useFileExplorerReveal({
     clearPendingExplorerReveal,
     dirCache,
     expanded,
+    hasNameFilter,
     loadMoreDir,
     loadingDirPaths,
     pendingExplorerReveal,

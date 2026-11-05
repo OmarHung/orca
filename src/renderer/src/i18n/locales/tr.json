@@ -13469,6 +13469,7 @@
             "741ff8a0d2": "Push Yap ve {{value0}} Oluştur"
           },
           "FileExplorer": {
+            "revealHiddenFile": "Bu dosya gezginde gizli. Görmek için ⋯ menüsünden \"Nokta Dosyalarını Göster\" veya \"Git Tarafından Yok Sayılan Dosyaları Göster\" seçeneğini açın.",
             "79b1537dd3": "Dosyalara göz atmak için bir çalışma alanı seçin",
             "2f4483d6c4": "Bu filtreyle eşleşen dosya yok"
           },

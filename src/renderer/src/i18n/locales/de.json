@@ -13485,6 +13485,7 @@
             "741ff8a0d2": "Pushen und {{value0}} erstellen"
           },
           "FileExplorer": {
+            "revealHiddenFile": "Diese Datei ist im Explorer ausgeblendet. Aktiviere im ⋯-Menü „Dateien mit Punktpräfix anzeigen“ oder „Von Git ignorierte Dateien anzeigen“, um sie zu sehen.",
             "79b1537dd3": "Einen Arbeitsbereich auswählen, um Dateien zu durchsuchen",
             "2f4483d6c4": "Keine Dateien entsprechen diesem Filter"
           },

@@ -13144,6 +13144,7 @@
             "741ff8a0d2": "Hacer push y crear {{value0}}"
           },
           "FileExplorer": {
+            "revealHiddenFile": "Este archivo está oculto en el explorador. Activa «Mostrar dotfiles» o «Mostrar archivos ignorados por Git» en el menú ⋯ para verlo.",
             "79b1537dd3": "Selecciona un espacio de trabajo para explorar archivos",
             "2f4483d6c4": "No hay archivos que coincidan con este filtro"
           },

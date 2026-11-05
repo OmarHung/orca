@@ -14040,6 +14040,7 @@
             "741ff8a0d2": "Push & Create {{value0}}"
           },
           "FileExplorer": {
+            "revealHiddenFile": "This file is hidden in the explorer. Turn on Show Dotfiles or Show Git Ignored Files in the ⋯ menu to see it.",
             "79b1537dd3": "Select a workspace to browse files",
             "2f4483d6c4": "No files match this filter"
           },

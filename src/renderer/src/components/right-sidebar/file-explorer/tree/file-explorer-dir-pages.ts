@@ -83,6 +83,23 @@ export function fileExplorerRevealDirToReadOn(
   return parent?.more && parent.error === undefined ? dirname(unlisted) : null
 }
 
+/**
+ * The first reveal path a view setting hides: listed by its folder yet not a row. A path its folder
+ * has not listed is unknown rather than hidden, since it may be new and still on its way in.
+ */
+export function fileExplorerRevealHiddenPath(
+  dirCache: Readonly<Record<string, DirCache>>,
+  rowProjection: Pick<FileExplorerRowProjection, 'hasPath'>,
+  revealPaths: readonly string[]
+): string | null {
+  const unlisted = revealPaths.find((path) => !rowProjection.hasPath(path))
+  if (unlisted === undefined) {
+    return null
+  }
+  const isListed = dirCache[dirname(unlisted)]?.children.some((child) => child.path === unlisted)
+  return isListed ? unlisted : null
+}
+
 export type LoadMoreFileExplorerDirParams = {
   dirPath: string
   activeWorktreeId: string | null | undefined

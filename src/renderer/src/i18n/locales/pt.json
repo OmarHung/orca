@@ -11060,6 +11060,7 @@
             "startAgent": "Iniciar agente"
           },
           "FileExplorer": {
+            "revealHiddenFile": "Este arquivo está oculto no explorador. Ative \"Mostrar Dotfiles\" ou \"Mostrar Arquivos Ignorados pelo Git\" no menu ⋯ para vê-lo.",
             "79b1537dd3": "Selecione um espaço de trabalho para navegar pelos arquivos",
             "2f4483d6c4": "Nenhum arquivo corresponde a este filtro"
           },

@@ -13387,6 +13387,7 @@
             "741ff8a0d2": "Pusher & créer {{value0}}"
           },
           "FileExplorer": {
+            "revealHiddenFile": "Ce fichier est masqué dans l’explorateur. Activez « Afficher les dotfiles » ou « Afficher les fichiers ignorés par Git » dans le menu ⋯ pour le voir.",
             "79b1537dd3": "Sélectionnez un espace de travail pour parcourir les fichiers",
             "2f4483d6c4": "Aucun fichier ne correspond à ce filtre"
           },

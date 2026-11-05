@@ -17,7 +17,10 @@ vi.mock('../navigation/file-explorer-operation-owner', () => ({
   getFileExplorerOwnerUnresolvedMessage: () => 'unresolved'
 }))
 
-import { appendFileExplorerDirPage } from './file-explorer-dir-pages'
+import {
+  appendFileExplorerDirPage,
+  fileExplorerRevealHiddenPath
+} from './file-explorer-dir-pages'
 
 import type { DirCache } from './file-explorer-types'
 
@@ -74,5 +77,39 @@ describe('paged folder listing', () => {
       '/w'
     )
     expect(appended).toEqual({ children: [], operationOwner: { kind: 'local' } })
+  })
+})
+
+describe('fileExplorerRevealHiddenPath', () => {
+  const cacheWith = (...childPaths: string[]): Record<string, DirCache> => ({
+    '/repo': {
+      children: childPaths.map((path) => ({ path })),
+      loading: false
+    } as unknown as DirCache
+  })
+  const listing = (...rows: string[]) => ({ hasPath: (path: string) => rows.includes(path) })
+
+  it('names a path its folder lists but the tree does not show', () => {
+    expect(
+      fileExplorerRevealHiddenPath(cacheWith('/repo/.config'), listing(), [
+        '/repo/.config',
+        '/repo/.config/a.ts'
+      ])
+    ).toBe('/repo/.config')
+  })
+
+  it('keeps waiting on a path its folder has not listed', () => {
+    expect(
+      fileExplorerRevealHiddenPath(cacheWith('/repo/src'), listing('/repo/src'), [
+        '/repo/new-folder',
+        '/repo/new-folder/a.ts'
+      ])
+    ).toBeNull()
+  })
+
+  it('finds nothing hidden when every path is a row', () => {
+    expect(
+      fileExplorerRevealHiddenPath(cacheWith('/repo/a.ts'), listing('/repo/a.ts'), ['/repo/a.ts'])
+    ).toBeNull()
   })
 })
