@@ -14,12 +14,12 @@
 
 ## 2. 已確定的決策
 
-| # | 決策 | 內容 |
-|---|---|---|
-| D1 | 做法 | 接 LSP（語言伺服器），不是把專案檔餵給 Monaco 內建的 TS worker（大專案吃記憶體、tsconfig paths 解析不準、C# 做不到） |
-| D2 | 範圍與順序 | Phase 1 本機 TS/JS + C# 的定義／參照／實作；Phase 2 懸停提示、符號大綱、C# 反編譯的 metadata；Phase 3 SSH／WSL |
-| D3 | 伺服器取得方式 | 跟除錯器一樣：第一次用到時自動下載，SHA-256 驗證，裝在 `userData/language-servers/` |
-| D4 | 降低 upstream 衝突 | 新程式放在新目錄（`main/code-navigation/`、`renderer/src/lib/code-navigation/`）；upstream 檔案只加掛載點 |
+| #   | 決策               | 內容                                                                                                                 |
+| --- | ------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| D1  | 做法               | 接 LSP（語言伺服器），不是把專案檔餵給 Monaco 內建的 TS worker（大專案吃記憶體、tsconfig paths 解析不準、C# 做不到） |
+| D2  | 範圍與順序         | Phase 1 本機 TS/JS + C# 的定義／參照／實作；Phase 2 懸停提示、符號大綱、C# 反編譯的 metadata；Phase 3 SSH／WSL       |
+| D3  | 伺服器取得方式     | 跟除錯器一樣：第一次用到時自動下載，SHA-256 驗證，裝在 `userData/language-servers/`                                  |
+| D4  | 降低 upstream 衝突 | 新程式放在新目錄（`main/code-navigation/`、`renderer/src/lib/code-navigation/`）；upstream 檔案只加掛載點            |
 
 ## 3. 語言伺服器的選擇（2026-09-30 實測）
 
@@ -46,10 +46,10 @@ npm 上的 `typescript` latest 已是 7.0.2（Go 原生版），`tsc` 內建 LSP
 
 ### 3.3 manifest（`main/code-navigation/language-server-manifest.ts`）
 
-| 套件 | 版本 | 來源 |
-|---|---|---|
-| `@typescript/typescript-{darwin-arm64,darwin-x64,linux-x64,linux-arm64,win32-x64,win32-arm64}` | 7.0.2 | registry.npmjs.org |
-| `csharp-ls`（`.nupkg`，zip） | 0.28.0 | api.nuget.org |
+| 套件                                                                                           | 版本   | 來源               |
+| ---------------------------------------------------------------------------------------------- | ------ | ------------------ |
+| `@typescript/typescript-{darwin-arm64,darwin-x64,linux-x64,linux-arm64,win32-x64,win32-arm64}` | 7.0.2  | registry.npmjs.org |
+| `csharp-ls`（`.nupkg`，zip）                                                                   | 0.28.0 | api.nuget.org      |
 
 ## 4. 現有架構（調查結果）
 
@@ -73,14 +73,14 @@ npm 上的 `typescript` latest 已是 7.0.2（Go 原生版），`tsc` 內建 LSP
 
 ### 5.1 main process（`main/code-navigation/`）
 
-| 檔案 | 內容 |
-|---|---|
-| `language-server-manifest.ts` | 釘住版本與雜湊的下載清單 |
-| `language-server-launch.ts` | 依種類準備啟動參數：TS → `<install>/package/lib/tsc --lsp --stdio`；C# → 找 `dotnet`，`dotnet <install>/tools/net10.0/any/CSharpLanguageServer.dll` |
-| `lsp-connection.ts` | JSON-RPC：request／notify、`$/cancelRequest`、回應伺服器發來的 request（`workspace/configuration` 回 null、`client/registerCapability`、`window/workDoneProgress/create`） |
-| `language-server-session.ts` | 一個 (工作區根目錄, 語言) 一個伺服器：initialize、文件同步（didOpen／didChange 全文／didClose）、檔案變更、查詢、閒置 15 分鐘關閉 |
-| `code-navigation-service.ts` | session 表、懶啟動、狀態事件、把位置結果轉成路徑並附上預覽內容 |
-| `code-navigation-ipc.ts` | IPC handler（zod 驗證） |
+| 檔案                          | 內容                                                                                                                                                                       |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `language-server-manifest.ts` | 釘住版本與雜湊的下載清單                                                                                                                                                   |
+| `language-server-launch.ts`   | 依種類準備啟動參數：TS → `<install>/package/lib/tsc --lsp --stdio`；C# → 找 `dotnet`，`dotnet <install>/tools/net10.0/any/CSharpLanguageServer.dll`                        |
+| `lsp-connection.ts`           | JSON-RPC：request／notify、`$/cancelRequest`、回應伺服器發來的 request（`workspace/configuration` 回 null、`client/registerCapability`、`window/workDoneProgress/create`） |
+| `language-server-session.ts`  | 一個 (工作區根目錄, 語言) 一個伺服器：initialize、文件同步（didOpen／didChange 全文／didClose）、檔案變更、查詢、閒置 15 分鐘關閉                                          |
+| `code-navigation-service.ts`  | session 表、懶啟動、狀態事件、把位置結果轉成路徑並附上預覽內容                                                                                                             |
+| `code-navigation-ipc.ts`      | IPC handler（zod 驗證）                                                                                                                                                    |
 
 **文件同步策略**：不是每打一個字就送。renderer 在每次查詢時附上目前這份文件的內容與 Monaco 的 versionId；main 記錄每份文件最後送出的 versionId，不同才送 `didChange`（全文）。model 被 dispose 時 renderer 通知 `didClose`。伺服器的版本號由 main 自己遞增，不直接用 Monaco 的（model 重建後 versionId 會歸零）。
 
@@ -92,25 +92,25 @@ npm 上的 `typescript` latest 已是 7.0.2（Go 原生版），`tsc` 內建 LSP
 
 ### 5.2 IPC
 
-| channel | 方向 | 內容 |
-|---|---|---|
-| `codeNav:query` | invoke | `{ kind, root, feature: 'definition'｜'references'｜'implementation', document: { path, languageId, version, text }, position }` → `{ ok: true, locations: [{ path, range }], previews: { [path]: text } }` 或 `{ ok: false, message }` |
-| `codeNav:closeDocument` | invoke | `{ kind, root, path }` |
-| `codeNav:filesChanged` | invoke | `{ root, events: FsChangeEvent[] }`（只轉給該根目錄已啟動的 session） |
-| `codeNav:status` | main → renderer | `{ kind, root, phase: 'downloading'｜'starting'｜'ready'｜'failed', message? }` |
+| channel                 | 方向            | 內容                                                                                                                                                                                                                                    |
+| ----------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `codeNav:query`         | invoke          | `{ kind, root, feature: 'definition'｜'references'｜'implementation', document: { path, languageId, version, text }, position }` → `{ ok: true, locations: [{ path, range }], previews: { [path]: text } }` 或 `{ ok: false, message }` |
+| `codeNav:closeDocument` | invoke          | `{ kind, root, path }`                                                                                                                                                                                                                  |
+| `codeNav:filesChanged`  | invoke          | `{ root, events: FsChangeEvent[] }`（只轉給該根目錄已啟動的 session）                                                                                                                                                                   |
+| `codeNav:status`        | main → renderer | `{ kind, root, phase: 'downloading'｜'starting'｜'ready'｜'failed', message? }`                                                                                                                                                         |
 
 ### 5.3 renderer（`renderer/src/lib/code-navigation/`）
 
-| 檔案 | 內容 |
-|---|---|
-| `code-navigation-languages.ts` | 副檔名 → 伺服器種類與 LSP languageId（`.ts .mts .cts .tsx .js .mjs .cjs .jsx` → typescript；`.cs` → csharp） |
-| `code-navigation-workspace.ts` | 由 model URI 找出開著它的分頁 → 工作區 → 本機根目錄（非本機回傳 null） |
-| `code-navigation-providers.ts` | 定義／參照／實作 provider，分派到 LSP 或內建 TS worker |
-| `code-navigation-preview-models.ts` | `orca-lsp-preview:` 預覽 model 的建立、更新、清理 |
-| `code-navigation-editor-opener.ts` | `registerEditorOpener`：URI → 開分頁 + 定位 |
-| `code-navigation-document-lifecycle.ts` | model dispose → `closeDocument`；`onFsChanged` → `filesChanged` |
-| `code-navigation-status-toasts.ts` | 顯示下載／啟動／失敗 toast |
-| `install-code-navigation.ts` | 以上全部的掛載入口 |
+| 檔案                                    | 內容                                                                                                         |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `code-navigation-languages.ts`          | 副檔名 → 伺服器種類與 LSP languageId（`.ts .mts .cts .tsx .js .mjs .cjs .jsx` → typescript；`.cs` → csharp） |
+| `code-navigation-workspace.ts`          | 由 model URI 找出開著它的分頁 → 工作區 → 本機根目錄（非本機回傳 null）                                       |
+| `code-navigation-providers.ts`          | 定義／參照／實作 provider，分派到 LSP 或內建 TS worker                                                       |
+| `code-navigation-preview-models.ts`     | `orca-lsp-preview:` 預覽 model 的建立、更新、清理                                                            |
+| `code-navigation-editor-opener.ts`      | `registerEditorOpener`：URI → 開分頁 + 定位                                                                  |
+| `code-navigation-document-lifecycle.ts` | model dispose → `closeDocument`；`onFsChanged` → `filesChanged`                                              |
+| `code-navigation-status-toasts.ts`      | 顯示下載／啟動／失敗 toast                                                                                   |
+| `install-code-navigation.ts`            | 以上全部的掛載入口                                                                                           |
 
 upstream 檔案的掛載點：`monaco-setup.ts`（`runMonacoSetupSteps` 加一步）、`register-core-handlers.ts`（註冊 IPC）、`preload/index.ts` 與 `api-types.ts`（`codeNavigation` API）。
 
@@ -142,12 +142,12 @@ upstream 檔案的掛載點：`monaco-setup.ts`（`runMonacoSetupSteps` 加一�
 
 ### 9.1 範圍的決定
 
-| 項目 | 結果 |
-|---|---|
-| 懸停提示 | 做。TS/JS/C# 都改走 LSP |
-| 跳到型別定義 | 順便做。跟定義同一條路，只多一個 `textDocument/typeDefinition` |
-| C# 反編譯 | 做。F12 到 `Console`、`List<T>` 這類框架型別會開反編譯的原始碼 |
-| 符號大綱 | **不做**。Structure 面板已經用 TS worker 的 navigation tree（TS/JS）和 tree-sitter（C# 等）產生大綱，e2e 截圖裡 C# 的大綱也正確；換成 LSP 只多一個要啟動的伺服器，沒有明顯好處 |
+| 項目         | 結果                                                                                                                                                                           |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 懸停提示     | 做。TS/JS/C# 都改走 LSP                                                                                                                                                        |
+| 跳到型別定義 | 順便做。跟定義同一條路，只多一個 `textDocument/typeDefinition`                                                                                                                 |
+| C# 反編譯    | 做。F12 到 `Console`、`List<T>` 這類框架型別會開反編譯的原始碼                                                                                                                 |
+| 符號大綱     | **不做**。Structure 面板已經用 TS worker 的 navigation tree（TS/JS）和 tree-sitter（C# 等）產生大綱，e2e 截圖裡 C# 的大綱也正確；換成 LSP 只多一個要啟動的伺服器，沒有明顯好處 |
 
 TS 的內建型別（`console`、`Array`）不需要處理：TypeScript 7 回傳的是安裝目錄裡的 `lib.*.d.ts` 實體檔，第 1 階段就能開。
 
@@ -190,14 +190,14 @@ TS 的內建型別（`console`、`Array`）不需要處理：TypeScript 7 回傳
 
 ### 10.2 鍵位（`shared/keybindings/definitions-code-navigation.ts`，scope `editor`，設定頁可改）
 
-| 動作 | macOS | Windows／Linux | 執行的 Monaco 動作 |
-|---|---|---|---|
-| Go to Declaration | ⌘B | Ctrl+B | `editor.action.revealDefinition` |
-| Go to Implementation | ⌥⌘B、⌥⌘+點擊 | Ctrl+Alt+B、Ctrl+Alt+點擊 | `editor.action.goToImplementation` |
-| Go to Type Declaration | ⇧⌘B | Ctrl+Shift+B | `editor.action.goToTypeDefinition` |
-| Find Usages | ⌥F7 | Alt+F7 | `editor.action.goToReferences`（peek） |
-| Quick Documentation | F1 | （無，Ctrl+Q 是原生的結束） | `editor.action.showHover` |
-| Navigate Back／Forward | ⌘[／⌘] | Ctrl+Alt+←／→ | Orca 自己的歷史 |
+| 動作                   | macOS        | Windows／Linux              | 執行的 Monaco 動作                     |
+| ---------------------- | ------------ | --------------------------- | -------------------------------------- |
+| Go to Declaration      | ⌘B           | Ctrl+B                      | `editor.action.revealDefinition`       |
+| Go to Implementation   | ⌥⌘B、⌥⌘+點擊 | Ctrl+Alt+B、Ctrl+Alt+點擊   | `editor.action.goToImplementation`     |
+| Go to Type Declaration | ⇧⌘B          | Ctrl+Shift+B                | `editor.action.goToTypeDefinition`     |
+| Find Usages            | ⌥F7          | Alt+F7                      | `editor.action.goToReferences`（peek） |
+| Quick Documentation    | F1           | （無，Ctrl+Q 是原生的結束） | `editor.action.showHover`              |
+| Navigate Back／Forward | ⌘[／⌘]       | Ctrl+Alt+←／→               | Orca 自己的歷史                        |
 
 F12、⇧F12、⌘F12、⌘+點擊這些 Monaco 原本的鍵都保留。衝突偵測是按 `conflictGroup ?? scope` 分組，editor scope 的鍵不會被判定與 global／tabs 的同鍵衝突（`keybindings-conflicts.test.ts` 仍要求預設零衝突）。
 
@@ -246,19 +246,20 @@ F12、⇧F12、⌘F12、⌘+點擊這些 Monaco 原本的鍵都保留。衝突�
 
 使用者問「為什麼 loading 要這麼久」。在一個實際專案上實測 csharp-ls：
 
-| 階段 | x86_64 .NET（經 Rosetta，使用者現況） | arm64 原生 .NET 10 |
-|---|---|---|
-| 啟動 | 0.9 秒 | 0.2 秒 |
-| csharp-ls 在資料夾裡找方案檔 | 2 秒 | 2 秒 |
-| MSBuild 載入方案 | 3.8 秒 | 1.4 秒 |
-| 第一次語意編譯 | 8.1 秒 | 3.2 秒 |
-| 第一次跳轉總計 | 14.8 秒 | 6.8 秒 |
+| 階段                         | x86_64 .NET（經 Rosetta，使用者現況） | arm64 原生 .NET 10 |
+| ---------------------------- | ------------------------------------- | ------------------ |
+| 啟動                         | 0.9 秒                                | 0.2 秒             |
+| csharp-ls 在資料夾裡找方案檔 | 2 秒                                  | 2 秒               |
+| MSBuild 載入方案             | 3.8 秒                                | 1.4 秒             |
+| 第一次語意編譯               | 8.1 秒                                | 3.2 秒             |
+| 第一次跳轉總計               | 14.8 秒                               | 6.8 秒             |
 
 之後的跳轉都在 0.5 秒內。log 裡的「MSBuild failed」只是 NuGet 的 NU1510 警告（`System.Text.Encoding.CodePages` 可移除），不影響載入。
 
 使用者選的改善（arm64 dotnet 暫不做，要使用者另外安裝）：
+
 - **自動指定方案檔**（`csharp-solution-discovery.ts`）：Orca 以廣度優先找根目錄下最淺層的 `.sln`／`.slnx`（最多 4 層、2000 個資料夾，略過 node_modules、bin、obj、隱藏資料夾等），該層只有一個時用 `--solution <相對路徑>` 交給 csharp-ls。實測省下約 2 秒。
-- **背景預熱**（`code-navigation-prewarm.ts` + `codeNav:warm`）：C# 檔的編輯器換上 model 或取得焦點時，在背景啟動「已安裝」的伺服器，並在檔案開頭發一次 hover 逼它載入並編譯（實測預熱後第一次跳轉從 12.3 秒降到 0.4 秒）。同一個專案 60 秒內最多一次，也順便讓持續工作中的專案不被閒置關閉。TS 不預熱（本來就約 1 秒）。
+- **背景預熱**（`code-navigation-prewarm.ts` + `codeNav:warm`）：C# 檔的編輯器換上 model 或取得焦點時，在背景啟動「已安裝」的伺服器，並在檔案開頭發一次 hover 逼它載入並編譯（實測預熱後第一次跳轉從 12.3 秒降到 0.4 秒）。同一個專案 60 秒內最多一次，也順便讓持續工作中的專案不被閒置關閉。TS 不預熱（本來就約 1 秒）。（§14 之後改成開檔就預熱，且不限 C#。）
 - 預熱還沒完成就按跳轉時，那次查詢也會顯示「正在載入」的提示（`joinsStartingServer`）。
 
 ## 12. MediatR：從 request 直接跳到 handler（2026-10-01）
@@ -291,14 +292,14 @@ F12、⇧F12、⌘F12、⌘+點擊這些 Monaco 原本的鍵都保留。衝突�
 
 C# 的「跳到定義」在送給伺服器之前，先判斷游標是不是下列寫法；命中且找得到目標就直接回傳（`View()` 本來會跳到反編譯的 `Controller.View`），否則照常走 LSP。
 
-| 位置 | 寫法 | 目標 |
-|---|---|---|
-| view | `asp-action="X"`（同一個 tag 的 `asp-controller`，沒有就用 view 所在的 `Views/{Controller}`） | controller 的 action（多載全列，peek） |
-| view | `asp-controller="X"` | controller 類別 |
-| view | `<partial name="X">`、`Html.Partial/PartialAsync/RenderPartial/RenderPartialAsync("X")`、`Layout = "X"` | view 檔 |
-| 兩者 | `Html.ActionLink(文字, action, controller)`、`Url.Action(action, controller)`、`Html.BeginForm(action, controller)`、`RedirectToAction(action, controller)` | action 或 controller |
-| controller | `View()`、`PartialView()`（沒寫名稱時取所在 action 的名稱，`[ActionName("X")]` 優先） | view 檔 |
-| controller | `View("X")`、`PartialView("X")` | view 檔 |
+| 位置       | 寫法                                                                                                                                                        | 目標                                   |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| view       | `asp-action="X"`（同一個 tag 的 `asp-controller`，沒有就用 view 所在的 `Views/{Controller}`）                                                               | controller 的 action（多載全列，peek） |
+| view       | `asp-controller="X"`                                                                                                                                        | controller 類別                        |
+| view       | `<partial name="X">`、`Html.Partial/PartialAsync/RenderPartial/RenderPartialAsync("X")`、`Layout = "X"`                                                     | view 檔                                |
+| 兩者       | `Html.ActionLink(文字, action, controller)`、`Url.Action(action, controller)`、`Html.BeginForm(action, controller)`、`RedirectToAction(action, controller)` | action 或 controller                   |
+| controller | `View()`、`PartialView()`（沒寫名稱時取所在 action 的名稱，`[ActionName("X")]` 優先）                                                                       | view 檔                                |
+| controller | `View("X")`、`PartialView("X")`                                                                                                                             | view 檔                                |
 
 - **找 view**：照 ASP.NET 的搜尋順序：view 自己的資料夾（partial 放在旁邊；也涵蓋 feature folders）→ `Areas/{A}/Views/{C}` → `Areas/{A}/Views/Shared` → `Views/{C}` → `Views/Shared` →（partial／layout）`Pages/Shared`。`~/` 開頭是專案相對路徑，含 `/` 是相對目前 view。專案目錄是往上找到的第一個 `.csproj` 所在資料夾。
 - **找 controller／action**：`workspace/symbol`（會等方案載入）。class 以名稱完全相符（kind 5）；action 比對 csharp-ls 的方法名稱格式 `IActionResult HomeController.Index(int id)`（kind 6）。有指定 area 時優先 `Areas/{A}/` 底下的結果；找不到 action（繼承或改名）就跳到 controller 類別。
@@ -310,3 +311,14 @@ C# 的「跳到定義」在送給伺服器之前，先判斷游標是不是下�
 - 整合測試 `aspnet-mvc.integration.test.ts`（設 `ORCA_TEST_CSHARP_LS_DLL` 才跑）：`dotnet new mvc` 加上 Orders controller 與 view，asp-action／asp-controller／partial／`Model.RequestId`／`View()`／`View("Show")`／`[ActionName]`／`RedirectToAction` 全部命中。
 - e2e（`ORCA_E2E_CODE_NAVIGATION=1`）：view 裡 ⌘B 在 `asp-action="Privacy"` 開到 `HomeController.cs` 的 `Privacy`、⌘[ 回來；`@Model.RequestId` 到 `ErrorViewModel.cs`；controller 裡 `return View()` 到 `Views/Orders/Index.cshtml`。
 
+## 14. 開檔就載入伺服器（2026-11-05）
+
+使用者要求：伺服器在開檔時就載入，不要等到按跳轉或找參照才載入。這取代「明確跳轉才啟動伺服器」（`ac7688c560`）裡「開啟專案不會啟動伺服器」的部分。
+
+- **觸發**：編輯器換上 model 或取得焦點時（`code-navigation-prewarm.ts`），TS／JS、Vue、C# 都會預熱，不再限 C#，也不用先跳轉過。同一個語言、同一個專案 60 秒內最多一次；頻率檢查放在複製文件內容之前，因為每次取得焦點都會跑。
+- **下載維持明確觸發**：`warm` 先查 `isInstalled`，沒裝就直接結束，也不算啟用。還沒下載過的伺服器仍由第一次跳轉下載。
+- **啟用**：已安裝時開檔即算啟用該專案，之後 hover 與 Monaco 的連結預覽也走伺服器。伺服器還在載入時 hover 會等它。
+- **範圍不變**：只有本機工作區的編輯分頁；遠端與 SSH 不跑語言伺服器。上限 5 個、閒置 30 分鐘關閉也不變，所以同時在多個專案間切換時，最久沒用的會被關掉，切回去再啟動。
+- **取捨**：只是開檔就會在該專案啟動伺服器。C# 的設計階段建置會執行專案的 MSBuild，Vue 伺服器會用專案自己的 TypeScript，所以開啟不信任的 repo 裡的檔案就會執行它的程式碼，記憶體也會比較早被占用。
+
+驗證：暫時的 e2e 用真的 TS 伺服器（`tsc --lsp`）實測。沒安裝時開檔沒有啟動也沒有下載；裝好後在另一個工作區只開檔、沒有跳轉，約 0.25 秒就看到伺服器行程，稍等 1.5 秒後第一次 F12 為 89 毫秒。`code-navigation.spec.ts` 的 TypeScript 與 C# 兩個案例失敗（`projectGroups` 的 `throwOnError` 錯誤，以及 `⌘⌥B` 沒有跳轉），還原這次改動後一樣失敗，是既有問題。
