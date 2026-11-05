@@ -1,5 +1,5 @@
 import React from 'react'
-import { Ellipsis, ListCollapse, Loader2, RefreshCw } from 'lucide-react'
+import { Ellipsis, ListCollapse, Loader2, LocateFixed, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -27,6 +27,8 @@ type FileExplorerToolbarProps = {
     handleRefresh: () => void
   }
   canRefresh: boolean
+  canLocateActiveFile: boolean
+  onLocateActiveFile: () => void
   canCollapseAll: boolean
   onCollapseAll: () => void
   showGitIgnoredFilesToggle: boolean
@@ -55,6 +57,8 @@ export function FileExplorerToolbar({
   workspaceId,
   refresh,
   canRefresh,
+  canLocateActiveFile,
+  onLocateActiveFile,
   canCollapseAll,
   onCollapseAll,
   showGitIgnoredFilesToggle,
@@ -72,6 +76,39 @@ export function FileExplorerToolbar({
       >
         {repoName}
       </span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            className={cn(
+              'text-muted-foreground hover:text-foreground',
+              !canLocateActiveFile && 'cursor-not-allowed opacity-50'
+            )}
+            aria-label={translate(
+              'auto.components.right.sidebar.FileExplorerToolbar.locateActiveFile',
+              'Locate Active File'
+            )}
+            aria-disabled={!canLocateActiveFile}
+            onClick={(event) => {
+              if (!canLocateActiveFile) {
+                event.preventDefault()
+                return
+              }
+              onLocateActiveFile()
+            }}
+          >
+            <LocateFixed className="size-3" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" sideOffset={4}>
+          {translate(
+            'auto.components.right.sidebar.FileExplorerToolbar.locateActiveFile',
+            'Locate Active File'
+          )}
+        </TooltipContent>
+      </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
