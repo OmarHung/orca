@@ -1,7 +1,7 @@
 import { getCommandTokenPathBasename, getFirstCommandToken } from './command-token-scanner'
 import { getProcessTableIndex } from './process-table-index'
 import { unreadableArgvName, type ProcessTableRow } from './process-table-snapshot'
-import { isShellProcess } from './shell-process-detection'
+import { isShellProcess } from './agent-status/process/shell-process-detection'
 
 /** The two units a forced stop can reach, indexed from one capture: which process groups occupy
  *  each controlling terminal (which terminals hold a stopped process), and how many rows belong to

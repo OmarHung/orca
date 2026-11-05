@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store'
-import { makePaneKey } from '../../../../shared/stable-pane-id'
+import { makePaneKey } from '../../../../shared/workspace-layout/stable-pane-id'
 import { isImageDropPath } from './terminal-drop-image-path'
 
 /** An image path Orca pasted or dropped into a terminal. Claude only writes a

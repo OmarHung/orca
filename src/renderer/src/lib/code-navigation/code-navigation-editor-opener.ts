@@ -3,7 +3,7 @@ import { useAppStore } from '@/store'
 import type { OpenFile } from '@/store/slices/editor'
 import { detectLanguage } from '@/lib/language-detect'
 import { getRelativePathInsideRoot } from '@/lib/path'
-import { toEditorModelUri } from '@/components/editor/editor-model-uri'
+import { toEditorModelUri } from '@/components/editor/model-lifetime/identity/editor-model-uri'
 import {
   editorNavigationLocation,
   findEditTabForModelUri,

@@ -4,7 +4,7 @@ import { translate } from '@/i18n/i18n'
 import {
   buildDefaultGitHistoryColorMap,
   buildGitHistoryViewModels
-} from '../../../../../shared/git-history-graph'
+} from '../../../../../shared/git/history/git-history-graph'
 import { GitHistoryCommitContextMenu } from '../../right-sidebar/source-control/sync/git-history-commit-context-menu'
 import { useGitHistoryCommitActions } from '../../right-sidebar/source-control/sync/use-git-history-commit-actions'
 import { GitLogCommitDetails } from './git-log-commit-details'

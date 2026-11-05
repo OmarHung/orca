@@ -1,4 +1,4 @@
-import type { GitHistoryItem } from '../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../shared/git/history/git-history-types'
 
 export type GitLogFilter = {
   /** Matches subject, full message, or a hash prefix. */

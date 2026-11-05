@@ -28,8 +28,8 @@ import type { ActivePluginCustomEditor } from '@/store/plugins/file-editors/plug
 import { PluginEditorSourceFallbackNotice } from './PluginEditorNeedsDesktopNotice'
 import PluginCustomEditorFrame from './PluginCustomEditorFrame'
 import PluginBytesCustomEditorSurface from './PluginBytesCustomEditorSurface'
-import { getChangeMarkersBaseline } from './change-markers/change-markers-baseline'
-import { canUseChangesModeForFile } from './editor-panel-file-mode'
+import { ExternalChangeBannerFrame } from './ExternalChangeBannerFrame'
+import { monacoGitSurfaceProps } from './change-markers/monaco-git-surface-props'
 import { RevisionCompareView } from './revision-compare/RevisionCompareView'
 import { useRevisionCompareStore } from './revision-compare/revision-compare-store'
 
@@ -215,52 +215,39 @@ export function EditorEditFileSurface({
     ) : null
 
   if (revisionBaseline) {
-    const compareView = (
-      <RevisionCompareView
-        file={activeFile}
-        baseline={revisionBaseline}
-        modifiedContent={currentContent}
-        language={monacoLanguage}
-        sideBySide={sideBySide}
-        viewStateScopeId={viewStateScopeId}
-        diffViewStateKey={diffViewStateKey}
-        onContentChange={handleContentChange}
-        onSave={isMarkdown ? markdownDocuments.mdSave : handleSave}
-      />
-    )
-    return externalChangeBanner ? (
-      <div className="flex flex-1 min-h-0 flex-col">
-        {externalChangeBanner}
-        <div className="min-h-0 flex-1">{compareView}</div>
-      </div>
-    ) : (
-      compareView
+    return (
+      <ExternalChangeBannerFrame banner={externalChangeBanner}>
+        <RevisionCompareView
+          file={activeFile}
+          baseline={revisionBaseline}
+          modifiedContent={currentContent}
+          language={monacoLanguage}
+          sideBySide={sideBySide}
+          viewStateScopeId={viewStateScopeId}
+          diffViewStateKey={diffViewStateKey}
+          onContentChange={handleContentChange}
+          onSave={isMarkdown ? markdownDocuments.mdSave : handleSave}
+        />
+      </ExternalChangeBannerFrame>
     )
   }
 
   if (isChangesMode) {
-    const changesView = (
-      <ChangesModeView
-        activeFile={activeFile}
-        dc={diffContent}
-        modifiedContent={currentContent}
-        activeConflictEntry={activeConflictEntry}
-        resolvedLanguage={monacoLanguage}
-        sideBySide={sideBySide}
-        viewStateScopeId={viewStateScopeId}
-        diffViewStateKey={diffViewStateKey}
-        onContentChange={handleContentChange}
-        onSave={isMarkdown ? markdownDocuments.mdSave : handleSave}
-      />
-    )
-    if (!externalChangeBanner) {
-      return changesView
-    }
     return (
-      <div className="flex flex-1 min-h-0 flex-col">
-        {externalChangeBanner}
-        <div className="min-h-0 flex-1">{changesView}</div>
-      </div>
+      <ExternalChangeBannerFrame banner={externalChangeBanner}>
+        <ChangesModeView
+          activeFile={activeFile}
+          dc={diffContent}
+          modifiedContent={currentContent}
+          activeConflictEntry={activeConflictEntry}
+          resolvedLanguage={monacoLanguage}
+          sideBySide={sideBySide}
+          viewStateScopeId={viewStateScopeId}
+          diffViewStateKey={diffViewStateKey}
+          onContentChange={handleContentChange}
+          onSave={isMarkdown ? markdownDocuments.mdSave : handleSave}
+        />
+      </ExternalChangeBannerFrame>
     )
   }
 
@@ -314,12 +301,7 @@ export function EditorEditFileSurface({
             : undefined
         }
         markdownDocuments={isMarkdown ? markdownDocuments.markdownDocuments : undefined}
-        changeMarkersBaseline={showChangeMarkers ? getChangeMarkersBaseline(diffContent) : null}
-        gitRelativePath={
-          canUseChangesModeForFile(activeFile) && activeFile.readOnly !== true
-            ? activeFile.relativePath
-            : null
-        }
+        {...monacoGitSurfaceProps(activeFile, diffContent, showChangeMarkers)}
       />
     </RecoverableRenderErrorBoundary>
   )

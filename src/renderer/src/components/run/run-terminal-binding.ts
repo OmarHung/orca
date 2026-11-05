@@ -1,5 +1,5 @@
 import type { useAppStore } from '@/store'
-import type { TerminalPaneLayoutNode } from '../../../../shared/terminal-tab-types'
+import type { TerminalPaneLayoutNode } from '../../../../shared/workspace-layout/terminal-tab-types'
 
 type RunTerminalState = Pick<
   ReturnType<typeof useAppStore.getState>,

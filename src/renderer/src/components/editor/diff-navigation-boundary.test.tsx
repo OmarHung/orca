@@ -9,7 +9,7 @@ import {
   useDiffNavigation,
   type DiffEditorRegistrationContextValue,
   type DiffNavigationContextValue
-} from './diff-navigation-context'
+} from './diff/review/diff-navigation-context'
 
 vi.mock('sonner', () => ({ toast: vi.fn() }))
 vi.mock('@/i18n/i18n', () => ({

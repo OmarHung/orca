@@ -8,7 +8,7 @@ import type { OpenFile } from '@/store/slices/editor'
 import { resolveRevisionCompareContext } from './revision-compare-context'
 import { useRevisionCompareStore, type RevisionCompareBaseline } from './revision-compare-store'
 
-const DiffViewer = lazy(() => import('../DiffViewer'))
+const DiffViewer = lazy(() => import('../diff/monaco-view/DiffViewer'))
 
 type BaselineContent =
   | { key: string; status: 'loading' }

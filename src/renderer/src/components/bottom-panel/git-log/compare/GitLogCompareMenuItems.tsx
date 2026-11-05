@@ -8,7 +8,10 @@ import {
   ContextMenuSubTrigger
 } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
-import type { GitHistoryBranch, GitHistoryItem } from '../../../../../../shared/git-history'
+import type {
+  GitHistoryBranch,
+  GitHistoryItem
+} from '../../../../../../shared/git/history/git-history-types'
 import {
   branchCompareTarget,
   commitCompareTarget,

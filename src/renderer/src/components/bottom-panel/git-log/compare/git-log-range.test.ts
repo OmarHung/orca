@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import { resolveGitLogRange } from './git-log-range'
 
 function item(id: string, parentIds: string[]): GitHistoryItem {

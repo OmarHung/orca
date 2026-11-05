@@ -1,4 +1,7 @@
-import type { GitHistoryOptions, GitHistoryResult } from '../../../../../shared/git-history'
+import type {
+  GitHistoryOptions,
+  GitHistoryResult
+} from '../../../../../shared/git/history/git-history-types'
 
 /** Which commits the Git Log shows: the checked-out branch, one chosen branch, or every branch. */
 export type GitLogScope = { kind: 'head' } | { kind: 'all' } | { kind: 'ref'; fullName: string }

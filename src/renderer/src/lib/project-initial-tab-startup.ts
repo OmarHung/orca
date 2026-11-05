@@ -1,14 +1,14 @@
-import { buildAgentStartupPlan } from '@/lib/tui-agent-startup'
+import { buildAgentStartupPlan } from '../../../shared/agent-launch/startup/tui-agent-startup'
 import { tuiAgentToAgentKind } from '@/lib/telemetry'
 import { resolveAgentLaunchExecutionContext } from '@/lib/launch-agent-execution-context'
 import { getExecutionHostIdForWorktree } from '@/lib/worktree-runtime-owner'
 import type { WorktreeStartupPayload } from '@/lib/worktree-startup-payload'
 import { findRepoForHost } from '@/store/slices/repo-host-identity'
 import type { useAppStore } from '@/store'
-import { resolveAgentStartupPlanInputs } from '../../../shared/agent-startup-plan-inputs'
+import { resolveAgentStartupPlanInputs } from '../../../shared/agent-launch/startup/agent-startup-plan-inputs'
 import { resolveRepoInitialTab, type RepoInitialTab } from '../../../shared/repo-initial-tab'
-import { isTuiAgentEnabled } from '../../../shared/tui-agent-selection'
-import type { TuiAgent } from '../../../shared/tui-agent'
+import { isTuiAgentEnabled } from '../../../shared/agent-launch/catalog/tui-agent-selection'
+import type { TuiAgent } from '../../../shared/agent-launch/catalog/tui-agent'
 
 type AppState = ReturnType<typeof useAppStore.getState>
 

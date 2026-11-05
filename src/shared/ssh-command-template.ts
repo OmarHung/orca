@@ -1,4 +1,4 @@
-import { quotePosixShellUnlessPlain } from './shell-argument-quoting'
+import { quotePosixShellUnlessPlain } from './shell/launch/shell-argument-quoting'
 import {
   hasSshCommandControlCharacter,
   SSH_COMMAND_KEY_PATTERN,

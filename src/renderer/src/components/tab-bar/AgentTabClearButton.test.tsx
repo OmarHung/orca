@@ -4,7 +4,7 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
-import type { TuiAgent } from '../../../../shared/tui-agent'
+import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({

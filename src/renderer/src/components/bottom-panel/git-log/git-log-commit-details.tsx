@@ -7,8 +7,8 @@ import { useBottomPanelRegionResize } from '../use-bottom-panel-region-resize'
 
 const FILES_HEADER_HEIGHT_PX = 24
 import { translate } from '@/i18n/i18n'
-import type { GitHistoryItem } from '../../../../../shared/git-history'
-import type { GitBranchChangeEntry } from '../../../../../shared/git-diff-compare-types'
+import type { GitHistoryItem } from '../../../../../shared/git/history/git-history-types'
+import type { GitBranchChangeEntry } from '../../../../../shared/git/diff/git-diff-compare-types'
 import {
   GitHistoryCommitFiles,
   type GitHistoryCommitFilesState

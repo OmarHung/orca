@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { loadGitHistoryFromExecutor } from './git-history'
-import { createGitBranchActionTestRepos } from './git-branch-action/git-branch-action.test-fixture'
+import { loadGitHistoryFromExecutor } from './git-history-execution'
+import { createGitBranchActionTestRepos } from '../../git-branch-action/git-branch-action.test-fixture'
 
 describe('unpushed commits against real git', () => {
   const repos = createGitBranchActionTestRepos()

@@ -5,7 +5,7 @@ import { getFolderWorkspaceConnectionId } from '@/lib/folder-workspace-connectio
 import { getResolvedExecutionHostIdForWorktree } from '@/lib/resolved-worktree-execution-host'
 import { getRelativePathInsideRoot } from '@/lib/path'
 import { isLocalDebugTarget } from '@/components/debug/debug-launch'
-import { toEditorModelUri } from '@/components/editor/editor-model-uri'
+import { toEditorModelUri } from '@/components/editor/model-lifetime/identity/editor-model-uri'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
 import { folderWorkspaceKey, parseWorkspaceKey } from '../../../../shared/workspace-scope'
 import { isOrcaLanguageServerFilePath } from '../../../../shared/code-navigation/code-navigation-types'

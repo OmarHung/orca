@@ -1,5 +1,8 @@
 import { translate } from '@/i18n/i18n'
-import type { GitHistoryBranch, GitHistoryItem } from '../../../../../../shared/git-history'
+import type {
+  GitHistoryBranch,
+  GitHistoryItem
+} from '../../../../../../shared/git/history/git-history-types'
 
 const SHORT_SHA_LENGTH = 7
 

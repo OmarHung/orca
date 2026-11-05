@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { TerminalProcessInspection } from '../../../../shared/terminal-process-inspection'
+import type { TerminalProcessInspection } from '../../../../shared/terminal/pty/lifecycle/terminal-process-inspection'
 import type * as RunSessionStoreModule from './run-session-store'
 
 type State = Record<string, unknown>

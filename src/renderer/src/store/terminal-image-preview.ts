@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { AgentType } from '../../../shared/agent-status-types'
+import type { AgentType } from '../../../shared/agent-status/contracts/agent-status-types'
 
 export type TerminalImagePreviewRequest = {
   /** The `N` of the clicked `[Image #N]` chip. */

@@ -1,7 +1,7 @@
 import { Terminal } from 'lucide-react'
 import type { Repo } from '../../../../../shared/repo-types'
 import { isRepoInitialTab, resolveRepoInitialTab } from '../../../../../shared/repo-initial-tab'
-import { isTuiAgentEnabled } from '../../../../../shared/tui-agent-selection'
+import { isTuiAgentEnabled } from '../../../../../shared/agent-launch/catalog/tui-agent-selection'
 import { Label } from '../../ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select'
 import { SearchableSetting } from '../section-layout/SearchableSetting'

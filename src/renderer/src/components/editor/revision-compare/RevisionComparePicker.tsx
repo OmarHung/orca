@@ -11,7 +11,10 @@ import {
 import { translate } from '@/i18n/i18n'
 import { formatUiRelativeTime } from '@/i18n/relative-time-format'
 import { getRuntimeGitHistory } from '@/runtime/runtime-git-status-client'
-import type { GitHistoryBranch, GitHistoryItem } from '../../../../../shared/git-history'
+import type {
+  GitHistoryBranch,
+  GitHistoryItem
+} from '../../../../../shared/git/history/git-history-types'
 import { resolveRevisionCompareContext } from './revision-compare-context'
 import {
   useRevisionCompareStore,

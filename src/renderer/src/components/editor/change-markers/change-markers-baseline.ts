@@ -1,5 +1,5 @@
-import type { GitDiffResult } from '../../../../../shared/git-diff-compare-types'
-import type { GitStatusEntry } from '../../../../../shared/git-status-types'
+import type { GitDiffResult } from '../../../../../shared/git/diff/git-diff-compare-types'
+import type { GitStatusEntry } from '../../../../../shared/git/status/git-status-types'
 
 // Why: useEditorPanelDiffContentLoader reports a failed read as an empty HEAD
 // side plus this message, which would otherwise mark every line as added.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { resolveCodeNavigationContext } from './code-navigation-workspace'
-import { toEditorModelUri } from '@/components/editor/editor-model-uri'
+import { toEditorModelUri } from '@/components/editor/model-lifetime/identity/editor-model-uri'
 
 type StateOverrides = {
   repoExecutionHostId?: string

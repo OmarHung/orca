@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { GitHistoryItem } from '../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../shared/git/history/git-history-types'
 import { collectGitLogAuthors, filterGitLogItems, isGitLogFilterActive } from './git-log-filter'
 
 function commit(overrides: Partial<GitHistoryItem> & { id: string }): GitHistoryItem {

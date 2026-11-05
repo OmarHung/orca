@@ -1,7 +1,7 @@
 import * as monaco from 'monaco-editor'
 import type { editor, IDisposable } from 'monaco-editor'
 import { translate } from '@/i18n/i18n'
-import type { DiffNavigationTarget } from '../diff-navigation-context'
+import type { DiffNavigationTarget } from '../diff/review/diff-navigation-context'
 import {
   computeChangeMarkerHunks,
   findAdjacentChangeMarkerHunk,

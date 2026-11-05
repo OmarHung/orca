@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Image as ImageIcon, Loader2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
-import { useLocalImageSrc } from '@/components/editor/useLocalImageSrc'
+import { useLocalImageSrc } from '@/components/editor/document-images/useLocalImageSrc'
 import { translate } from '@/i18n/i18n'
 import { basename } from '@/lib/path'
 import { cn } from '@/lib/utils'

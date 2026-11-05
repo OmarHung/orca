@@ -1,5 +1,5 @@
-import type { GitHistoryItemRef } from '../../../../../shared/git-history'
-import { splitRemoteBranchName } from '../../../../../shared/git-effective-upstream'
+import type { GitHistoryItemRef } from '../../../../../shared/git/history/git-history-types'
+import { splitRemoteBranchName } from '../../../../../shared/git/remotes/git-remote-branch-name'
 
 /**
  * Local branch ref id → the remote-tracking ref that sits on the same commit and was folded into

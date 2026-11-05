@@ -1,8 +1,8 @@
-import { isShellProcess } from '../../../../shared/shell-process-detection'
+import { isShellProcess } from '../../../../shared/agent-status/process/shell-process-detection'
 import {
   isClientOnlyUnverifiableInspection,
   type TerminalProcessInspection
-} from '../../../../shared/terminal-process-inspection'
+} from '../../../../shared/terminal/pty/lifecycle/terminal-process-inspection'
 
 /** `ended`: nothing runs in the pane any more, so the restored run's command is gone. */
 export type RestoredRunVerdict = 'ended' | 'running' | 'unknown'

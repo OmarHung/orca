@@ -3,7 +3,7 @@ import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import { getRuntimeGitCommitCompare } from '@/runtime/runtime-git-diff-client'
 import type { RuntimeGitContext } from '@/runtime/runtime-git-client-context'
-import type { GitCommitCompareResult } from '../../../../../../shared/git-diff-compare-types'
+import type { GitCommitCompareResult } from '../../../../../../shared/git/diff/git-diff-compare-types'
 import {
   compareTabLabel,
   isSameCompareTarget,
