@@ -17,12 +17,10 @@ vi.mock('../navigation/file-explorer-operation-owner', () => ({
   getFileExplorerOwnerUnresolvedMessage: () => 'unresolved'
 }))
 
-import {
-  appendFileExplorerDirPage,
-  fileExplorerRevealHiddenPath
-} from './file-explorer-dir-pages'
+import { appendFileExplorerDirPage, fileExplorerRevealHiddenPath } from './file-explorer-dir-pages'
 
 import type { DirCache } from './file-explorer-types'
+import { fileNode } from './file-explorer-tree-node-test-fixtures'
 
 const file = (name: string): DirEntry => ({ name, isDirectory: false, isSymlink: false })
 const names = (count: number, from = 0): DirEntry[] =>
@@ -82,10 +80,7 @@ describe('paged folder listing', () => {
 
 describe('fileExplorerRevealHiddenPath', () => {
   const cacheWith = (...childPaths: string[]): Record<string, DirCache> => ({
-    '/repo': {
-      children: childPaths.map((path) => ({ path })),
-      loading: false
-    } as unknown as DirCache
+    '/repo': { children: childPaths.map((path) => ({ ...fileNode, path })) }
   })
   const listing = (...rows: string[]) => ({ hasPath: (path: string) => rows.includes(path) })
 
