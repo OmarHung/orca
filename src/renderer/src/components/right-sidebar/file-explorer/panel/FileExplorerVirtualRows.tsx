@@ -20,6 +20,9 @@ type FileExplorerVirtualRowsProps = {
   inlineInputIndex: number
   rowProjection: FileExplorerRowProjection
   displayDepthOffset?: number
+  /** Fixes the sideways-scrollable width at the widest measured row; unset fills the viewport. */
+  widestRowWidth?: number
+  onMeasureRowWidth?: (path: string, width: number) => void
   inlineInput: InlineInput | null
   handleInlineSubmit: (value: string) => void
   dismissInlineInput: () => void
@@ -109,6 +112,8 @@ export function FileExplorerVirtualRows(props: FileExplorerVirtualRowsProps): Re
     inlineInputIndex,
     rowProjection,
     displayDepthOffset = 0,
+    widestRowWidth,
+    onMeasureRowWidth,
     inlineInput,
     handleInlineSubmit,
     dismissInlineInput,
@@ -159,7 +164,10 @@ export function FileExplorerVirtualRows(props: FileExplorerVirtualRowsProps): Re
     resolveDragSourceOwner(rowProjection, dirCache, paths)
 
   return (
-    <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
+    <div
+      className="relative min-w-full"
+      style={{ height: `${virtualizer.getTotalSize()}px`, width: widestRowWidth || undefined }}
+    >
       {virtualizer.getVirtualItems().map((vItem) => {
         const isInlineRow = inlineInputIndex >= 0 && vItem.index === inlineInputIndex
         const rowIndex =
@@ -224,6 +232,7 @@ export function FileExplorerVirtualRows(props: FileExplorerVirtualRowsProps): Re
           >
             <FileExplorerRow
               displayDepthOffset={displayDepthOffset}
+              onMeasureWidth={onMeasureRowWidth}
               node={n}
               isExpanded={expanded.has(n.path)}
               isLoading={n.isDirectory && loadingDirPaths.has(n.path)}
