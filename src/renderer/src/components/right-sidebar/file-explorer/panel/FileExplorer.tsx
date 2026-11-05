@@ -17,6 +17,7 @@ import { useFileExplorerScopeTransition } from '../navigation/use-file-explorer-
 import { basename } from '@/lib/path'
 import { cn } from '@/lib/utils'
 import { isGitRepoKind } from '../../../../../../shared/repo-kind'
+import { getFileExplorerLocateTarget } from '../navigation/file-explorer-locate-target'
 import { getVisibleFileExplorerWorktreePath } from '../navigation/file-explorer-reset'
 import { FileExplorerBackgroundMenu } from './FileExplorerBackgroundMenu'
 import { FileExplorerFilesTreePane } from '../tree/FileExplorerFilesTreePane'
@@ -91,6 +92,13 @@ function FileExplorerFiles(): React.JSX.Element {
     rightSidebarOpen,
     worktreePath
   })
+  const locateTargetPath = useAppStore((s) => getFileExplorerLocateTarget(s, worktreePath))
+  const revealInExplorer = useAppStore((s) => s.revealInExplorer)
+  const handleLocateActiveFile = useCallback(() => {
+    if (activeWorktreeId && locateTargetPath) {
+      revealInExplorer(activeWorktreeId, locateTargetPath)
+    }
+  }, [activeWorktreeId, locateTargetPath, revealInExplorer])
   const repoName = activeRepo?.displayName ?? (worktreePath ? basename(worktreePath) : '')
   const activeRepoSupportsGit = activeRepo ? isGitRepoKind(activeRepo) : false
 
@@ -259,6 +267,8 @@ function FileExplorerFiles(): React.JSX.Element {
           workspaceId={activeWorktreeId}
           refresh={manualRefresh}
           canRefresh={isFilesViewActive}
+          canLocateActiveFile={locateTargetPath !== null}
+          onLocateActiveFile={handleLocateActiveFile}
           canCollapseAll={canCollapseAll}
           onCollapseAll={handleCollapseAll}
           showGitIgnoredFilesToggle={activeRepoSupportsGit}

@@ -165,6 +165,8 @@ function makeToolbar(overrides: Partial<Parameters<typeof FileExplorerToolbar>[0
     connectionId: null,
     refresh: makeRefreshState(),
     canRefresh: true,
+    canLocateActiveFile: false,
+    onLocateActiveFile: vi.fn(),
     canCollapseAll: false,
     onCollapseAll: vi.fn(),
     showGitIgnoredFilesToggle: true,
@@ -317,6 +319,7 @@ describe('FileExplorerToolbar', () => {
     const element = makeToolbar()
 
     expect(getToolbarButtonLabels(element)).toEqual([
+      'Locate Active File',
       'Collapse All',
       'Refresh Explorer',
       'More Explorer Actions'
