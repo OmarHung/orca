@@ -21,6 +21,8 @@ function param(key: string, overrides: Partial<SshCommandParam> = {}): SshComman
   }
 }
 
+const NOW = new Date(2026, 10, 5, 9, 7, 3)
+
 function expand(
   overrides: Partial<SshCommandExpansionInput>
 ): ReturnType<typeof expandSshCommandTemplate> {
@@ -29,6 +31,7 @@ function expand(
     params: [param('value')],
     values: {},
     builtins: { host: 'web-1', user: 'deploy', path: null, selected: [] },
+    now: NOW,
     ...overrides
   })
 }
@@ -95,6 +98,19 @@ describe('syncSshCommandParams', () => {
     const { params } = syncSshCommandParams('{{host}} {{user}} {{path}} {{selected}}', [])
 
     expect(params).toEqual([])
+  })
+
+  it('gives the date and time no row', () => {
+    expect(syncSshCommandParams('{{date}} {{time}}', []).params).toEqual([])
+  })
+
+  it('keeps a saved parameter called date or time, so an older command still asks for it', () => {
+    const existing = [param('date'), param('time', { label: 'Seconds' })]
+
+    const { params, unusedKeys } = syncSshCommandParams('sleep {{time}} # {{date}}', existing)
+
+    expect(params.map((row) => row.key)).toEqual(['time', 'date'])
+    expect(unusedKeys).toEqual([])
   })
 })
 
@@ -330,6 +346,43 @@ describe('expandSshCommandTemplate', () => {
     const result = expand({ template: 'rm {{selected}}', params: [] })
 
     expect(result.problems).toEqual([{ kind: 'noSelection', key: 'selected' }])
+  })
+
+  it('fills in the date and time of the given moment as zero-padded digits', () => {
+    const result = expand({ template: 'echo {{date}} {{time}}', params: [] })
+
+    expect(result.command).toBe('echo 20261105 090703')
+    expect(result.problems).toEqual([])
+  })
+
+  it('allows the date and time inside quotes, since they hold nothing that could close them', () => {
+    const result = expand({ template: 'echo "{{date}} {{time}}"', params: [] })
+
+    expect(result.command).toBe('echo "20261105 090703"')
+    expect(result.problems).toEqual([])
+  })
+
+  it('sends the same date and time to several hosts and to a Windows host', () => {
+    const result = expand({
+      template: 'echo {{date}} {{time}}',
+      params: [],
+      isMultiTarget: true,
+      remotePlatform: 'win32'
+    })
+
+    expect(result.command).toBe('echo 20261105 090703')
+    expect(result.problems).toEqual([])
+  })
+
+  it('prefers a saved parameter called date, with the usual quoting rules', () => {
+    const params = [param('date')]
+
+    expect(expand({ template: 'echo {{date}}', params, values: { date: 'a b' } }).command).toBe(
+      "echo 'a b'"
+    )
+    expect(expand({ template: 'echo "{{date}}"', params, values: { date: 'x' } }).problems).toEqual(
+      [{ kind: 'insideQuotes', key: 'date' }]
+    )
   })
 
   it('flattens a multi-line template, so no line break presses Enter early', () => {

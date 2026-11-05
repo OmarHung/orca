@@ -84,6 +84,15 @@ describe('reviewSshCommandDraft', () => {
     ])
   })
 
+  it('allows the date and time in quotes, unless a saved parameter has that name', () => {
+    const template = 'journalctl --since "{{date}} {{time}}"'
+
+    expect(reviewSshCommandDraft({ ...DRAFT, template }).problems).toEqual([])
+    expect(
+      reviewSshCommandDraft({ ...DRAFT, template, params: [{ ...PARAM, key: 'date' }] }).problems
+    ).toEqual([{ kind: 'quotedKey', key: 'date' }])
+  })
+
   it('points out double braces that are not parameters', () => {
     const template = "docker ps --format '{{.Names}}'"
 

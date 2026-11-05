@@ -54,7 +54,8 @@ function expandFor(
   params: readonly SshCommandParam[],
   values: Readonly<Record<string, string>>,
   isMultiTarget: boolean,
-  files: { path: string | null; selected: readonly string[] }
+  files: { path: string | null; selected: readonly string[] },
+  now: Date
 ): SshCommandExpansion {
   return expandSshCommandTemplate({
     template: command.template,
@@ -66,6 +67,7 @@ function expandFor(
       path: files.path,
       selected: files.selected
     },
+    now,
     remotePlatform: sshCommandRemotePlatform(option.tabId, option.target.id),
     isMultiTarget
   })
@@ -90,6 +92,8 @@ function RunDialogBody({
   // Why only this tab: reaching more hosts should take a deliberate tick each.
   const [chosenTabIds, setChosenTabIds] = useState<ReadonlySet<string>>(() => new Set([tabId]))
   const [isSending, setIsSending] = useState(false)
+  // Why fixed at open: this screen is the confirmation, so what it shows must be what gets sent.
+  const [now] = useState(() => new Date())
   const isClosedRef = useRef(false)
   useEffect(() => {
     isClosedRef.current = false
@@ -120,10 +124,18 @@ function RunDialogBody({
   const isMultiTarget = chosen.length > 1
   const expansions = chosen.map((option) => ({
     option,
-    expansion: expandFor(option, command, params, values, isMultiTarget, {
-      path: option.tabId === tabId ? remotePath : null,
-      selected: option.tabId === tabId ? selected : EMPTY_SELECTION
-    })
+    expansion: expandFor(
+      option,
+      command,
+      params,
+      values,
+      isMultiTarget,
+      {
+        path: option.tabId === tabId ? remotePath : null,
+        selected: option.tabId === tabId ? selected : EMPTY_SELECTION
+      },
+      now
+    )
   }))
   const sendable = expansions.filter(({ option }) => checks[option.tabId]?.kind === 'ready')
   const problems = expansions

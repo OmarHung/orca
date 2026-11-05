@@ -26489,7 +26489,7 @@
       "titleNew": "New command",
       "name": "Name",
       "template": "Command",
-      "templateHint": "Write {{name}} for a value to fill in. Built in: {{host}} {{user}} {{path}} {{selected}}, the last two from the files pane.",
+      "templateHint": "Write {{name}} for a value to fill in. Built in: {{host}} {{user}} {{path}} {{selected}} {{date}} {{time}}. The folder and selection come from the files pane, the date and time from this computer.",
       "quotedKey": "{{key}} is inside quotes, where its value could close them. Remove the quotes around it, or set it to “Insert as written”.",
       "literalTokens": "Sent as written, not as parameters: {{tokens}}",
       "params": "Parameters",

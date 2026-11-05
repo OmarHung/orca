@@ -25112,7 +25112,7 @@
       "titleNew": "新建指令",
       "name": "名称",
       "template": "指令",
-      "templateHint": "用 {{name}} 表示要填写的值。内置：{{host}} {{user}} {{path}} {{selected}}，后两个来自文件窗格。",
+      "templateHint": "用 {{name}} 表示要填写的值。内置：{{host}} {{user}} {{path}} {{selected}} {{date}} {{time}}。文件夹和所选项目来自文件窗格，日期和时间来自这台电脑。",
       "quotedKey": "{{key}} 写在引号内，它的值可能会闭合引号。请移除它外面的引号，或改成“原样带入”。",
       "literalTokens": "以下内容会原样发送，不算参数：{{tokens}}",
       "params": "参数",
