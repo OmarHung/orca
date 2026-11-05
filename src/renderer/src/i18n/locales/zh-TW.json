@@ -3214,7 +3214,6 @@
             "e8b3741ff7": "被忽略",
             "a9957007eb": "忽略 {{value0}}",
             "bef0adef9b": "分支",
-            "0b1766738a": "儲存庫",
             "bbb1ab6a6f": "選擇{{value0}}",
             "b771c92598": "刪除所選內容",
             "7eee951968": "檢查工作區安全",
@@ -3223,7 +3222,6 @@
             "b2c1331844": "刪除不活動的工作區",
             "7f451a3e2c": "無法忽略清理建議",
             "662b8ec3f8": "工作區清理掃描失敗",
-            "4d0b72481c": "忽略",
             "9cc26c019d": "移除",
             "0e2d235c63": "非活動工作區掃描已就緒",
             "4a35c08764": "檢視",
@@ -3231,9 +3229,6 @@
             "1d3503357d": "刪除繼續期間，你可以關閉此視窗並稍後回來。",
             "4c2990886e": "已刪除 {{value0}}/{{value1}}",
             "86ba852118": "{{value0}}，{{value1}} 個失敗",
-            "deletingCount": "正在刪除工作區：{{value0}}",
-            "deleteCount": "刪除工作區：{{value0}}？",
-            "selectedForDeletionCount": "已選擇刪除：{{value0}}",
             "deleteButtonCount": "刪除 {{value0}}",
             "archivedStatus": "已歸檔",
             "74f6c16279": "返回"
@@ -3248,7 +3243,6 @@
           },
           "candidateRow": {
             "gitLabel": "Git",
-            "commitsLabel": "提交",
             "contextLabel": "上下文",
             "flagsLabel": "標記",
             "collapseDetails": "收起詳情",
@@ -5402,8 +5396,6 @@
           "expandAriaLabel": "展開 {{repo}} 的隱藏工作樹",
           "hiding_one": "已隱藏 {{count}} 個檢測到的工作樹",
           "hiding_other": "已隱藏 {{count}} 個檢測到的工作樹",
-          "hidingInRepo_one": "已隱藏 {{repo}} 中的 {{count}} 個檢測到的工作樹",
-          "hidingInRepo_other": "已隱藏 {{repo}} 中的 {{count}} 個檢測到的工作樹",
           "keepHiddenAriaLabel_one": "為 {{repo}} 保留 {{count}} 個檢測到的工作樹為隱藏狀態；可從專案選單恢復",
           "keepHiddenAriaLabel_other": "為 {{repo}} 保留 {{count}} 個檢測到的工作樹為隱藏狀態；可從專案選單恢復",
           "keepHiddenTooltip": "保持隱藏 - 從專案選單恢復",
@@ -12846,7 +12838,7 @@
             "741ff8a0d2": "推送並建立 {{value0}}"
           },
           "FileExplorer": {
-            "revealHiddenFile": "這個檔案在檔案管理器中已隱藏。如要查看，請在 ⋯ 選單開啟「顯示點檔案」或「顯示 Git 忽略的檔案」。",
+            "revealHiddenFile": "此檔案在檔案管理器中已隱藏。如需檢視，請在 ⋯ 選單中開啟“顯示點檔案”或“顯示 Git 忽略的檔案”。",
             "79b1537dd3": "選擇一個工作區來瀏覽檔案",
             "2f4483d6c4": "沒有檔案匹配此篩選條件"
           },
@@ -18927,8 +18919,6 @@
       },
       "turnDiff": {
         "partial": "部分差異",
-        "showDiff": "顯示差異",
-        "hideDiff": "隱藏差異",
         "changedFiles_other": "{{count}} 個已更改的檔案"
       },
       "receipt": {
@@ -19454,9 +19444,7 @@
           },
           "noSizes": "尚未測量工作區大小。",
           "noSizesDescription": "測量磁碟使用情況後會顯示大小。",
-          "measureSizes": "掃描",
           "measureSizesTitle": "掃描工作區大小",
-          "measureSizesDescription": "掃描磁碟使用情況，按大小比較、排序和過濾工作區。",
           "sizeOnDisk": "磁碟大小：{{value0}}",
           "checkingGitRow": "檢查 git 狀態",
           "searchPlaceholder": "搜尋名稱、儲存庫、分支、路徑、主機",
@@ -20602,10 +20590,8 @@
       "offTerminal": "更喜歡終端機？終端機將繼續獲得完整支援。在你選擇聊天之前，代理會繼續在終端機中開啟。",
       "onIntro": "聊天介面已結束實驗階段，正式成為 Orca 的一部分。你的代理會繼續以聊天方式開啟，支援富文本訊息、視覺化內容和圖片。",
       "onTerminal": "終端機同樣會繼續獲得完整支援。你可以隨時把任何代理切換回終端機。",
-      "changeInSettings": "可隨時在<link>設定 → 代理</link>中更改。",
       "stayInTerminal": "繼續使用終端機",
       "cta": "使用聊天介面",
-      "saveFailed": "無法開啟聊天介面。請在“設定 → 代理”中選擇聊天。",
       "demoTabTitle": "解釋登入流程",
       "demoPrompt": "梳理一下登入是怎麼工作的",
       "demoReply": "登入從 {{file}} 開始：瀏覽器提交到 /login，伺服器檢查密碼並建立會話，然後將你重定向到應用。流程如下：",
