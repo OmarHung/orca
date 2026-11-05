@@ -12885,6 +12885,7 @@
             "d95e30fe28": "탐색기 새로 고침",
             "6026b16950": "모두 축소",
             "c1f3f3ec70": "파일 내용 검색",
+            "locateActiveFile": "활성 파일 찾기",
             "openInApp": "{{app}}에서 열기"
           },
           "FileExplorerTreeStatus": {

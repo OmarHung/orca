@@ -13352,6 +13352,7 @@
             "d95e30fe28": "重新整理檔案管理員",
             "6026b16950": "全部摺疊",
             "c1f3f3ec70": "搜尋檔案內容",
+            "locateActiveFile": "定位目前檔案",
             "openInApp": "在 {{app}} 中開啟"
           },
           "FileExplorerTreeStatus": {

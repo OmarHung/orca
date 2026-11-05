@@ -12900,6 +12900,7 @@
             "d95e30fe28": "刷新文件管理器",
             "6026b16950": "全部折叠",
             "c1f3f3ec70": "搜索文件内容",
+            "locateActiveFile": "定位当前文件",
             "openInApp": "在 {{app}} 中打开"
           },
           "FileExplorerTreeStatus": {

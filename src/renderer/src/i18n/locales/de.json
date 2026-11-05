@@ -13532,6 +13532,7 @@
             "d95e30fe28": "Explorer aktualisieren",
             "6026b16950": "Alle einklappen",
             "c1f3f3ec70": "Dateiinhalte durchsuchen",
+            "locateActiveFile": "Aktive Datei anzeigen",
             "openInApp": "In {{app}} öffnen"
           },
           "FileExplorerTreeStatus": {

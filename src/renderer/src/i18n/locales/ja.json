@@ -12885,6 +12885,7 @@
             "d95e30fe28": "エクスプローラーを更新する",
             "6026b16950": "すべて折りたたむ",
             "c1f3f3ec70": "ファイル内容を検索",
+            "locateActiveFile": "アクティブなファイルを表示",
             "openInApp": "{{app}} で開く"
           },
           "FileExplorerTreeStatus": {

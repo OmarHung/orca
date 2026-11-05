@@ -14087,6 +14087,7 @@
             "d95e30fe28": "Refresh Explorer",
             "6026b16950": "Collapse All",
             "c1f3f3ec70": "Search file contents",
+            "locateActiveFile": "Locate Active File",
             "openInApp": "Open in {{app}}"
           },
           "FileExplorerTreeStatus": {

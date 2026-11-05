@@ -13434,6 +13434,7 @@
             "d95e30fe28": "Actualiser l'explorateur",
             "6026b16950": "Tout réduire",
             "c1f3f3ec70": "Rechercher dans le contenu des fichiers",
+            "locateActiveFile": "Localiser le fichier actif",
             "openInApp": "Ouvrir dans {{app}}"
           },
           "FileExplorerTreeStatus": {

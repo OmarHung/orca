@@ -13191,6 +13191,7 @@
             "d95e30fe28": "Actualizar explorador",
             "6026b16950": "Contraer todo",
             "c1f3f3ec70": "Buscar en el contenido de los archivos",
+            "locateActiveFile": "Localizar archivo activo",
             "openInApp": "Abrir en {{app}}"
           },
           "FileExplorerTreeStatus": {

@@ -13516,6 +13516,7 @@
             "d95e30fe28": "Gezgini Yenile",
             "6026b16950": "Tümünü Daralt",
             "c1f3f3ec70": "Dosya içeriğinde ara",
+            "locateActiveFile": "Etkin dosyayı bul",
             "openInApp": "{{app}} ile aç"
           },
           "FileExplorerTreeStatus": {

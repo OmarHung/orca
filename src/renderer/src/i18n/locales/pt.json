@@ -11037,6 +11037,7 @@
             "d95e30fe28": "Atualizar Explorador",
             "6026b16950": "Recolher Tudo",
             "c1f3f3ec70": "Buscar no conteúdo dos arquivos",
+            "locateActiveFile": "Localizar arquivo ativo",
             "openInApp": "Abrir em {{app}}"
           },
           "AiVaultSessionLimitMenu": {
