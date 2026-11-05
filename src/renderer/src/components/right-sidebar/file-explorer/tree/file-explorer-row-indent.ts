@@ -7,13 +7,20 @@ export function getFileExplorerRowIndent(depth: number, displayDepthOffset: numb
   return (depth - displayDepthOffset) * INDENT_PER_DEPTH_PX + ROW_START_PADDING_PX
 }
 
-/** Where to scroll sideways so a revealed row's start shows; a row already in view stays put. */
-export function getFileExplorerRevealScrollLeft(
-  rowIndent: number,
-  scrollLeft: number,
-  clientWidth: number
-): number {
+/** Scrolls sideways so a revealed row's start shows; a row already in view stays put. */
+export function scrollFileExplorerRowStartIntoView(
+  scroller: Element | null,
+  rowDepth: number | undefined,
+  displayDepthOffset: number
+): void {
+  if (!scroller || rowDepth === undefined) {
+    return
+  }
+  const rowIndent = getFileExplorerRowIndent(rowDepth, displayDepthOffset)
+  const { scrollLeft, clientWidth } = scroller
   const startsInView =
     rowIndent >= scrollLeft && rowIndent + REVEAL_VISIBLE_WIDTH_PX <= scrollLeft + clientWidth
-  return startsInView ? scrollLeft : Math.max(0, rowIndent - ROW_START_PADDING_PX)
+  if (!startsInView) {
+    scroller.scrollLeft = Math.max(0, rowIndent - ROW_START_PADDING_PX)
+  }
 }
