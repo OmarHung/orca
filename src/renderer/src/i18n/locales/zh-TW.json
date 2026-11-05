@@ -62,7 +62,18 @@
         "searchTerminal": "終端機",
         "searchCli": "CLI"
       },
-      "permissionsDescriptionOwnAgents": "新聊天遵循設定 → 代理中各代理的許可權。"
+      "permissionsDescriptionOwnAgents": "新聊天遵循設定 → 代理中各代理的許可權。",
+      "launch": {
+        "on": "Chat UI 已開啟",
+        "off": "Chat UI 已關閉",
+        "agents": "每個代理的預設啟動模式",
+        "agentsDescription": "選擇每個代理在 Chat UI 還是 CLI 中開啟。",
+        "chatDescription": "新代理預設以聊天模式啟動。",
+        "cliDescription": "新代理預設以 CLI 啟動。",
+        "turnOn": "開啟",
+        "turnOff": "關閉",
+        "toggle": "預設使用 Chat UI"
+      }
     },
     "terminal": {
       "optionLayoutAlt": "ABC 或 U.S. — Option 鍵傳送 Alt/Esc 序列",
@@ -520,6 +531,28 @@
         "notPng": "儲存庫圖示必須是 PNG 檔案。",
         "tooLarge": "儲存庫圖示圖片不得超過 256 KB。"
       }
+    },
+    "editorFormatOnSave": {
+      "title": "儲存時格式化",
+      "description": "在手動儲存和自動儲存前格式化文本。在設定 > 專案中設定格式化程式命令。預設關閉。",
+      "keywords": "格式化程式 儲存時格式化 prettier biome gofmt"
+    },
+    "editorInsertFinalNewline": {
+      "title": "插入末尾換行符",
+      "description": "儲存非空程式碼檔案時，如果檔案末尾沒有換行符，則新增一個。預設關閉。",
+      "keywordNewline": "換行",
+      "keywordEndOfFile": "檔案末尾"
+    },
+    "repositoryFormatter": {
+      "title": "格式化程式命令",
+      "description": "儲存時格式化使用此專案的格式化程式。",
+      "saveFailed": "無法儲存格式化程式設定。",
+      "command": "命令",
+      "saving": "正在儲存…",
+      "save": "儲存格式化程式",
+      "commandHelp": "在檔案所在主機的工作區根目錄中執行。從 stdin 讀取緩衝區，並且只能向 stdout 輸出格式化後的文本。使用 ${file} 或 ${relativeFile} 表示路徑。引數直接傳遞，不經過 shell。請勿使用 --write。留空可在此專案中停用。",
+      "include": "包含的 glob（每行一個）",
+      "includeHelp": "匹配相對於工作區根目錄的路徑。沒有匹配的 glob 時不會格式化。* 和 ** 會跳過以點開頭的名稱；請明確列出，例如 .github/**/*.yml。要使用此命令，請在通用 > 編輯器中啟用“儲存時格式化”。"
     }
   },
   "menu": {
@@ -1646,7 +1679,6 @@
         "9c3ba11a05": "狀態：",
         "934d87ab96": "正在載入檢查詳細資訊...",
         "71c11aff84": "重新執行所有檢查",
-        "e31651a224": "重新執行失敗的檢查",
         "1b56e28faa": "重新執行",
         "f4b1292569": "在這些檢查中啟動預設的 AI 代理",
         "9a1004fc76": "重新整理檢查",
@@ -2143,7 +2175,6 @@
         "662bc2998d": "狀態：",
         "d8e82b7f15": "正在載入檢查詳細資訊...",
         "54cddd1858": "重新執行所有檢查",
-        "68605516dd": "重新執行失敗的檢查",
         "522d9353e1": "重新執行",
         "0fa8b8faec": "在這些檢查中啟動預設的 AI 代理",
         "5d0f42766d": "重新整理檢查",
@@ -3608,7 +3639,7 @@
             "copyLinkFailed": "複製連結失敗",
             "downloadOpenWithDefaultApp": "下載並使用預設應用程式開啟",
             "downloadOpenFailed": "無法下載“{{value0}}”。",
-            "openInThisGroup": "在此分組中開啟",
+            "openInNewTab": "在新分頁中開啟",
             "openInThisGroupRefused": "無法在此分組中開啟 {{value0}}"
           },
           "TerminalQuickCommandsSubmenu": {
@@ -4016,7 +4047,6 @@
             "5c938d39ac": "周",
             "54e8d6bb2d": "Fable",
             "a79c64f87e": "Fable",
-            "c98ea88392": "沒有其他帳戶",
             "d450654fa2": "Claude 帳戶",
             "11e2354daf": "Claude 使用量執行時",
             "3dd7ddfae1": "開啟 Claude 詳情和帳戶切換器",
@@ -7039,7 +7069,7 @@
         },
         "BrowserUseComputerUseNotice": {
           "15b5e680ba": "開放電腦使用",
-          "79209b37b9": "如果 cookie 匯入不合適，“電腦使用”可以控制本地應用程式，並可以在適用的情況下使用現有的登入瀏覽器會話。安裝電腦使用技能； macOS 還需要隱私權限。",
+          "79209b37b9": "如果 cookie 匯入不合適，“電腦使用”可以控制本地應用程式，並可以在適用的情況下使用現有的登入瀏覽器會話。安裝 Orca Computer Use 技能； macOS 還需要隱私權限。",
           "333984cf90": "使用現有的瀏覽器會話"
         },
         "BrowserUseEnableSwitch": {
@@ -7159,7 +7189,7 @@
         },
         "ComputerUsePane": {
           "1735461723": "使代理能夠檢查和操作本地桌面應用程式。",
-          "93255aaf18": "電腦控制技能",
+          "93255aaf18": "Orca Computer Use 技能",
           "45f8e22c2e": "開啟",
           "d95d1cfab8": "重新整理",
           "0c29da5805": "就緒",
@@ -8545,7 +8575,7 @@
           "902f5dee1f": "選擇時複製",
           "9129b7e805": "將滑鼠懸停在終端機窗格上即可將其啟用，無需單擊。",
           "8eefeaa3da": "焦點跟隨滑鼠",
-          "96fe15def8": "終端機窗格的滑鼠和剪貼簿行為。",
+          "96fe15def8": "終端機窗格的捲動、滑鼠和剪貼簿行為。",
           "45721f3e67": "終端機互動",
           "9c0b1c1792": "開",
           "c1fc9e9444": "GPU加速",
@@ -10587,7 +10617,8 @@
                   "supportedAgents": "此預設支援的代理：{{value0}}。",
                   "unsupportedSavedAgent": "{{value0}} 無法執行此文本生成預設。請在下方選擇一個支援的代理。",
                   "resolveComments": "從選中的未解決 PR 或 MR 評論啟動代理。",
-                  "fixPushFailure": "當 pre-push 鉤子或 git push 失敗時啟動代理。"
+                  "fixPushFailure": "當 pre-push 鉤子或 git push 失敗時啟動代理。",
+                  "commitMessageSharedModel": "拉取請求詳情、分支名稱和聊天名稱未選擇自己的模型時也可以使用此模型；其“與預設值相同”選項會顯示所用模型。"
                 }
               }
             }
@@ -12436,13 +12467,16 @@
         "AppearanceThemeControl": {
           "useTerminalTheme": "使用其終端機配色",
           "matchTerminal": "匹配終端機",
-          "dynamic": "動態"
+          "dynamic": "動態",
+          "searchThemes": "搜尋主題…",
+          "noThemes": "沒有與搜尋內容匹配的主題。"
         },
         "AppearanceInterfaceSection": {
           "pluginIconTheme": {
             "title": "圖示主題",
             "description": "來自已啟用外掛的檔案和資料夾圖示。",
-            "builtIn": "內建"
+            "builtIn": "內建",
+            "search": "搜尋圖示主題…"
           },
           "lightTheme": "淺色主題",
           "darkTheme": "深色主題",
@@ -12745,6 +12779,9 @@
         },
         "PluginContributionActionNewFile": {
           "create": "建立"
+        },
+        "SettingsSearchableSelect": {
+          "noMatches": "沒有匹配項。"
         }
       },
       "right": {
@@ -14379,9 +14416,7 @@
           "ae3b00ca82": "設定 GitHub 任務",
           "ff92d15436": "Orca 會在代理完成工作或需要幫助時通知你。",
           "b054332836": "設定通知",
-          "04ae28d8ca": "選擇你想盯著看幾個小時的主題。",
           "f396db9f20": "讓這裡有家的感覺",
-          "322fc50a18": "Orca 支援所有 CLI 代理。選擇你最常用的一個，隨時可切換。",
           "198b148b3c": "選擇預設代理",
           "windowsTerminalTitle": "設定 Windows 終端機預設值",
           "windowsTerminalSubtitle": "為新面板選擇預設 Shell，以及終端機中右鍵單擊的行為。",
@@ -17298,6 +17333,9 @@
         },
         "automationTargetAvailability": {
           "hostMismatch": "儲存的執行主機與此專案設定不再匹配。"
+        },
+        "launchSettings": {
+          "needsFreshSession": "代理啟動設定要求每次執行都使用新會話。"
         }
       },
       "agent": {
@@ -18790,8 +18828,6 @@
         "toggleDetails": "切換回合詳情"
       },
       "jumpToLatest": "跳到最新訊息",
-      "newRowsAnnouncement": "你離開期間有新訊息",
-      "newRowsMarker": "新訊息",
       "find": {
         "label": "在聊天中查詢",
         "noResults": "沒有結果",
@@ -18899,7 +18935,10 @@
         "cancelled": "取消",
         "resolved": "已解決",
         "resolver": "回覆於 {{device}}",
-        "cancelledBy": "於 {{device}} 取消"
+        "cancelledBy": "於 {{device}} 取消",
+        "thisComputer": "此電腦",
+        "computer": "電腦",
+        "otherDevice": "其他裝置"
       },
       "notices": {
         "contextCleared": "上下文已清除",
@@ -18990,7 +19029,7 @@
           "stoppedCount_other": "{{count}} 個已停止",
           "unverifiableCount_other": "{{count}} 個狀態不可用"
         },
-        "tokens": "{{value0}} 代幣",
+        "tokens": "{{value0}} token",
         "unnamed": "子代理",
         "started_other": "已啟動 {{count}} 個子代理",
         "ran_other": "已執行 {{count}} 個子代理"
@@ -19017,7 +19056,11 @@
         "handedOffToAgent": "已移交給代理",
         "startedAgent": "已啟動代理",
         "taskFromCoordinator": "來自協調者的任務",
-        "updateFromWorker": "來自工作者的更新"
+        "updateFromWorker": "來自工作者的更新",
+        "senderReplaced": "{{name}} 已不在其終端機中執行；現在有另一個代理在該終端機中執行。如有需要，請從側邊欄開啟該終端機。",
+        "senderAmbiguous": "Orca 無法確定 {{name}} 在哪個終端機中執行。請從側邊欄開啟終端機。",
+        "senderNotRunning": "{{name}} 已停止執行。請從側邊欄啟動新代理以繼續其工作。",
+        "unnamedSenderSubject": "一個代理"
       },
       "goal": {
         "placeholder": "描述您的目標，定義可衡量的結果以獲得最佳結果",
@@ -19049,7 +19092,6 @@
       "dismissDeliveryNotice": "關閉",
       "addSelectionToChat": "新增到聊天",
       "messageNotSent": "訊息未傳送",
-      "deliveryUnconfirmed": "無法確認送達 — 重試前請檢查聊天",
       "messageSending": "正在傳送…",
       "userMessage": {
         "showFull": "顯示完整訊息",
@@ -19112,7 +19154,6 @@
         "continue": "繼續",
         "failed": "無法繼續此聊天。請重試，或傳送一條訊息。",
         "explanation": "繼續後，代理會先檢查其上一步是否已完成。",
-        "unconfirmed": "無法確認 {{agent}} 是否收到“繼續”。在重試之前請檢查聊天記錄。",
         "usageLimitExplanation": "讓代理從中斷處繼續。請在上限重置後使用。"
       },
       "rewind": {
@@ -19305,6 +19346,24 @@
         "cancelled": "Orca 不會自動繼續此聊天。",
         "scheduled": "Orca 將在 {{time}} 繼續此聊天。",
         "cancel": "不要繼續"
+      },
+      "settings": "聊天設定",
+      "textAttachmentPreview": {
+        "copiedContents": "已複製內容",
+        "textAttachment": "文本附件",
+        "byteSize": "{{size}} 位元組",
+        "copyContents": "複製內容",
+        "saveFile": "儲存檔案",
+        "copyTooLarge": "此檔案過大，無法複製。請改為儲存檔案。",
+        "exportError": "無法匯出附件。請重試。",
+        "unreadableReply": "無法讀取附件回應。請重試。",
+        "incompleteReply": "附件已更改或回應不完整。請關閉後重試。",
+        "notText": "無法以文本形式預覽此檔案。請儲存後在其他應用中開啟。",
+        "openFailed": "無法開啟附件。請重試。",
+        "hostUpdate": "此主機尚無法開啟文本附件。請更新該主機上的 Orca，然後重試。",
+        "hostUnavailable": "附件所在主機不可用。請重新連線後重試。",
+        "connectionChanged": "連線已更改。請關閉並重新開啟此附件。",
+        "readFailed": "無法在主機上讀取此附件。請重新連線後重試。檔案可能已被刪除或更改。"
       }
     },
     "tab": {
@@ -19676,7 +19735,32 @@
           "system": "匹配作業系統",
           "dark": "輕鬆護眼",
           "light": "明亮、清脆"
-        }
+        },
+        "looks": {
+          "activeNow": "目前",
+          "browsePlugins": "瀏覽外掛",
+          "browseThemePlugins": "瀏覽主題外掛",
+          "colorMode": "顏色模式",
+          "colorModeCaption": "淺色、深色或跟隨系統。",
+          "darkLook": "深色外觀",
+          "darkLooks": "深色外觀",
+          "lightLook": "淺色外觀",
+          "lightLooks": "淺色外觀",
+          "moreThemes": "更多主題",
+          "next": "更多外觀",
+          "orcaDark": "Orca 深色",
+          "orcaLight": "Orca 淺色",
+          "pluginsHint": "更多主題以外掛形式提供。",
+          "previous": "上一組外觀",
+          "showsWhenDark": "系統為深色時顯示",
+          "showsWhenLight": "系統為淺色時顯示",
+          "slotLabel": "要編輯的外觀",
+          "sourceBuiltIn": "內建",
+          "sourceCommunity": "終端機調色盤",
+          "themes": "主題",
+          "themesCaption": "可選。使用應用主題和終端機調色盤進一步自定義。"
+        },
+        "subtitle": "選擇淺色或深色，也可以再選一個主題。兩者都可以隨時在設定中更改。"
       },
       "integrations": {
         "capabilities": {
@@ -19712,7 +19796,9 @@
       "TerminalInteraction": {
         "copyTrimsGutter": "修剪副本上的裝訂線",
         "copyTrimsGutterDescription": "將左側裝訂線代理輸出繪製在後面，因此複製的文本不會縮排。僅刪除每個選定行共享的縮排。",
-        "copyOnSelectDescription": "自動將在終端機或聊天中選擇的文本複製到剪貼簿。"
+        "copyOnSelectDescription": "自動將在終端機或聊天中選擇的文本複製到剪貼簿。",
+        "scrollOnUserInput": "輸入時捲動到底部",
+        "scrollOnUserInputDescription": "向上捲動時鍵入或貼上會跳至最新輸出。關閉此項可保持目前位置。"
       },
       "terminal": {
         "clipboard": {
@@ -19727,6 +19813,15 @@
             "highlight": "高亮",
             "chat": "聊天"
           }
+        },
+        "search": {
+          "typing": "鍵入",
+          "input": "輸入",
+          "jump": "跳轉",
+          "bottom": "底部",
+          "scrollback": "回滾",
+          "snap": "吸附",
+          "position": "位置"
         }
       },
       "nativeChat": {
@@ -19737,6 +19832,9 @@
         "sendSearchShortcut": "快捷鍵",
         "sendSearchNewLine": "換行",
         "followUpBehaviorTitle": "將後續訊息加入佇列",
+        "scrollToLatestOnSendTitle": "傳送時捲動到最新訊息",
+        "scrollToLatestOnSendCopy": "向上捲動時傳送訊息會跳到最新訊息並跟隨回覆。關閉後將保持目前位置。",
+        "scrollToLatestOnSendSearchPosition": "位置",
         "followUpBehaviorCopy": "代理工作時傳送的訊息會以卡片形式等待到回合結束，而不是進入正在進行的回合。Cmd/Ctrl+Enter 會對單條訊息採取相反做法。",
         "inlineVisualsTitle": "內聯視覺化",
         "inlineVisualsCopy": "允許代理在其回覆中顯示圖表、示意圖和原型圖。適用於新啟動的聊天。",
@@ -19753,7 +19851,13 @@
         "usageLimitContinueCopy": "額度重置後，Orca 會發送“Continue where you left off.”。適用於所有已知重置時間的聊天。",
         "usageLimitContinueSearchLimit": "使用額度",
         "usageLimitContinueSearchReset": "重置",
-        "usageLimitContinueToggleLabel": "切換使用額度重置後自動繼續聊天"
+        "usageLimitContinueToggleLabel": "切換使用額度重置後自動繼續聊天",
+        "idleStopTitle": "空閒多久後停止代理",
+        "idleStopCopy": "聊天空閒達到此時長後，結束該聊天的代理以釋放記憶體。聊天會保留，你傳送下一條訊息時代理會重新啟動。如果代理在輪次之間仍會在後台繼續工作，請選擇“從不”。",
+        "idleStopSearchIdle": "idle",
+        "idleStopSearchTimeout": "逾時",
+        "idleStopSearchKeepAlive": "保持活動",
+        "idleStopNever": "從不"
       }
     },
     "agentChildRow": {
@@ -19900,6 +20004,11 @@
     },
     "wslHostMark": {
       "runsOn": "在 WSL 上執行：{{distro}}（Linux）"
+    },
+    "editor": {
+      "formatOnSave": {
+        "failed": "無法格式化 {{file}}。將不經格式化直接儲存：{{reason}}"
+      }
     }
   },
   "dashboardPopout": {
@@ -21120,7 +21229,10 @@
         "review": "檢視",
         "restartCount_other": "重啟 {{count}} 個會話",
         "reviewBody_other": "其他 {{count}} 個 Claude 會話未移至 {{next}}。",
-        "body_other": "{{count}} 個 Claude 會話仍在 {{previous}} 上執行。重啟後，各對話將在 {{next}} 上繼續。忙碌的會話會等待空閒後再重啟。"
+        "body_other": "{{count}} 個 Claude 會話仍在 {{previous}} 上執行。重啟後，各對話將在 {{next}} 上繼續。忙碌的會話會等待空閒後再重啟。",
+        "reasonSharedSession": "在另一個窗格中也已開啟",
+        "sharedOne": "由於另一個窗格打開了同一對話，1 個 Claude 會話將保持在 {{previous}}。重新啟動可能會重新開啟另一個窗格的對話。",
+        "sharedOther": "由於另一個窗格打開了同一對話，{{count}} 個 Claude 會話將保持在 {{previous}}。重新啟動可能會重新開啟另一個窗格的對話。"
       }
     },
     "hostSignIn": {
@@ -24060,7 +24172,11 @@
     "use": "使用",
     "select": "選擇代理",
     "promptPlaceholder": "新增提示詞（可選）：/ 選擇技能，@ 選擇檔案",
-    "promptPlaceholderFilesOnly": "新增提示詞（可選）：@ 選擇檔案"
+    "promptPlaceholderFilesOnly": "新增提示詞（可選）：@ 選擇檔案",
+    "workspaceStartupFailed": "無法啟動 {{agent}}。請檢查此設定中的引數並重試。",
+    "sameAsTextDefault": "與預設值相同 · {{value0}}",
+    "chatChoicesNote": "沒有 CLI 標誌的 {{agent}} 模型或推理力度選項適用於聊天。",
+    "composedChoicesNote": "{{agent}} 的推理力度和速度選項包含在模型引數中。"
   },
   "wslMove": {
     "entry": {
@@ -24633,7 +24749,7 @@
       "titleNew": "新增指令",
       "name": "名稱",
       "template": "指令",
-      "templateHint": "用 {{name}} 表示要填寫的值。內建：{{host}} {{user}} {{path}} {{selected}} {{date}} {{time}}。資料夾和選取項目來自檔案窗格，日期和時間來自這台電腦。",
+      "templateHint": "用 {{name}} 表示要填寫的值。內建：{{host}} {{user}} {{path}} {{selected}} {{date}} {{time}}。資料夾和所選專案來自檔案窗格，日期和時間來自這台電腦。",
       "quotedKey": "{{key}} 寫在引號內，它的值可能會閉合引號。請移除它外面的引號，或改成“原樣帶入”。",
       "literalTokens": "以下內容會原樣傳送，不算引數：{{tokens}}",
       "params": "引數",
