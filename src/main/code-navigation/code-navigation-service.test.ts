@@ -271,16 +271,46 @@ describe('CodeNavigationService', () => {
     expect(created).toHaveLength(0)
   })
 
-  it('does not start an installed server from passive hover or warm before explicit navigation', async () => {
+  it('does not start an installed server from a passive hover before a file opens', async () => {
     const { service, created } = createService({ sessions: [fakeSession()], installed: true })
     const { feature: _feature, userInitiated: _userInitiated, ...hoverQuery } = query()
-    const { position: _position, ...warmRequest } = hoverQuery
 
     const result = await service.hover(hoverQuery)
-    await service.warm(warmRequest)
 
     expect(result.ok).toBe(false)
     expect(created).toHaveLength(0)
+  })
+
+  it('starts an installed server when a file opens, with no navigation before it', async () => {
+    const session = fakeSession()
+    const { service, created } = createService({ sessions: [session], installed: true })
+    const {
+      feature: _feature,
+      position: _position,
+      userInitiated: _userInitiated,
+      ...warmRequest
+    } = query()
+
+    await service.warm(warmRequest)
+
+    expect(created).toHaveLength(1)
+    expect(session.hover).toHaveBeenCalledWith(warmRequest.document, { line: 0, character: 0 })
+  })
+
+  it('never downloads a missing server when a file opens', async () => {
+    const { service, created } = createService({ sessions: [fakeSession()], installed: false })
+    const {
+      feature: _feature,
+      position: _position,
+      userInitiated: _userInitiated,
+      ...warmRequest
+    } = query()
+
+    await service.warm(warmRequest)
+    const passive = await service.query(query({ userInitiated: false }), () => {})
+
+    expect(created).toHaveLength(0)
+    expect(passive.ok).toBe(false)
   })
 
   it('never downloads a missing server for hover after activation', async () => {

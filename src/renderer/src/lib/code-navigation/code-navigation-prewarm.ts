@@ -1,5 +1,7 @@
 import type * as Monaco from 'monaco-editor'
+import { useAppStore } from '@/store'
 import { serverRequestFor } from './code-navigation-providers'
+import { resolveCodeNavigationContext } from './code-navigation-workspace'
 import type { CodeNavigationActivation } from './code-navigation-activation'
 
 // Why: re-warming keeps a server up while someone works in the project; once a minute is plenty.
@@ -10,9 +12,8 @@ type WarmableModel = Parameters<typeof serverRequestFor>[0]
 const lastWarmedAt = new Map<string, number>()
 
 /**
- * Keeps an explicitly activated C# project warm while it is in use. Before activation this exits
- * without serializing the document or invoking IPC; installed servers may restart, but no server
- * is downloaded.
+ * Loads the language server as soon as a file of its project shows, so the first jump does not wait.
+ * Main starts only an installed server; a missing one is still downloaded by the first explicit jump.
  */
 export function prewarmCodeNavigation(
   model: WarmableModel,
@@ -20,16 +21,21 @@ export function prewarmCodeNavigation(
   now: number = Date.now()
 ): void {
   const api = window.api?.codeNavigation
-  const request = serverRequestFor(model, { lineNumber: 1, column: 1 }, activation)
-  // Why C# only: a TypeScript server answers its first jump in about a second anyway.
-  if (!api || !request || request.kind !== 'csharp') {
+  const context = resolveCodeNavigationContext(useAppStore.getState(), model.uri.toString())
+  if (!api || !context) {
     return
   }
-  const key = `${request.kind}\0${request.root}`
+  // Why before building the request: it copies the whole document, and this runs on every focus.
+  const key = `${context.kind}\0${context.root}`
   if (now - (lastWarmedAt.get(key) ?? Number.NEGATIVE_INFINITY) < WARM_INTERVAL_MS) {
     return
   }
+  const request = serverRequestFor(model, { lineNumber: 1, column: 1 })
+  if (!request) {
+    return
+  }
   lastWarmedAt.set(key, now)
+  activation.activateWorkspace(request.kind, request.root)
   void api.warm({ kind: request.kind, root: request.root, document: request.document })
 }
 

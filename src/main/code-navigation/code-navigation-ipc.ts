@@ -101,7 +101,9 @@ export function registerCodeNavigationHandlers(): void {
   ipcMain.handle('codeNav:warm', (_event, rawRequest: unknown): void => {
     const request = HoverSchema.omit({ position: true }).safeParse(rawRequest)
     if (request.success) {
-      void service.warm(request.data)
+      service.warm(request.data).catch((error: unknown) => {
+        console.warn('[code-navigation] warm-up failed', error)
+      })
     }
   })
 

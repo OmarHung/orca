@@ -26,27 +26,27 @@ TypeScript 7（Go 原生版，Orca 目前用的 7.0.2）沒有 tsserver，也沒
 
 ### 3.1 Vue 3 + Vite 專案
 
-| 位置 | 查詢 | 結果 |
-|---|---|---|
-| template | `<PageCard>`（具名匯入的元件） | `src/components/PageCard/src/PageCard.vue` |
-| template | `<ImagePickerDialog>`（`./X.vue` 匯入） | `ImagePickerDialog.vue` |
-| template | `@click="handleSave"` | 同檔 script 的 `handleSave` |
-| template | `<el-button>`（全域註冊的 element-plus） | element-plus 的 `button/index.d.ts` |
-| script | `getSectionsApi()` | `src/api/sections/index.ts` |
-| script | `import X from './X.vue'` 的 X | 該 `.vue` 檔 |
-| script | `handleSave` 找參照 | script 宣告＋template 的 `@click` |
-| `.ts` | `getSectionsApi` 找參照 | `.ts` 宣告＋`.vue` 裡的匯入與呼叫 |
-| script | hover | `const handleSave: () => Promise<void>` |
+| 位置     | 查詢                                     | 結果                                       |
+| -------- | ---------------------------------------- | ------------------------------------------ |
+| template | `<PageCard>`（具名匯入的元件）           | `src/components/PageCard/src/PageCard.vue` |
+| template | `<ImagePickerDialog>`（`./X.vue` 匯入）  | `ImagePickerDialog.vue`                    |
+| template | `@click="handleSave"`                    | 同檔 script 的 `handleSave`                |
+| template | `<el-button>`（全域註冊的 element-plus） | element-plus 的 `button/index.d.ts`        |
+| script   | `getSectionsApi()`                       | `src/api/sections/index.ts`                |
+| script   | `import X from './X.vue'` 的 X           | 該 `.vue` 檔                               |
+| script   | `handleSave` 找參照                      | script 宣告＋template 的 `@click`          |
+| `.ts`    | `getSectionsApi` 找參照                  | `.ts` 宣告＋`.vue` 裡的匯入與呼叫          |
+| script   | hover                                    | `const handleSave: () => Promise<void>`    |
 
 ### 3.2 Nuxt 4 專案（`.nuxt/` 已產生）
 
-| 查詢 | 直接結果 | 備註 |
-|---|---|---|
-| `<LayoutHeader />`（自動匯入元件） | 對應的 `.vue` | 直接可用 |
-| `useNotice()`（自動匯入 composable） | `app/composables/useNotice.ts` ＋ `.nuxt/types/imports.d.ts` | 多一筆產生檔 |
-| `useXStore()`（pinia store） | pinia 的 `pinia.d.ts` ＋ `.nuxt/types/imports.d.ts` | **沒到** `app/stores/x.ts` |
-| `navigateTo()` | 只有 `.nuxt/types/imports.d.ts` | **沒到**原始碼 |
-| `xStore.refresh()` | `app/stores/x.ts` | 直接可用 |
+| 查詢                                 | 直接結果                                                     | 備註                       |
+| ------------------------------------ | ------------------------------------------------------------ | -------------------------- |
+| `<LayoutHeader />`（自動匯入元件）   | 對應的 `.vue`                                                | 直接可用                   |
+| `useNotice()`（自動匯入 composable） | `app/composables/useNotice.ts` ＋ `.nuxt/types/imports.d.ts` | 多一筆產生檔               |
+| `useXStore()`（pinia store）         | pinia 的 `pinia.d.ts` ＋ `.nuxt/types/imports.d.ts`          | **沒到** `app/stores/x.ts` |
+| `navigateTo()`                       | 只有 `.nuxt/types/imports.d.ts`                              | **沒到**原始碼             |
+| `xStore.refresh()`                   | `app/stores/x.ts`                                            | 直接可用                   |
 
 `.nuxt/types/imports.d.ts` 的每一行是 `const X: typeof import('<路徑>').X`。在行尾 `import(...)` 後面那個 `X` 上再查一次定義，就會到原始碼：store 和 composable 到專案裡的定義、`navigateTo` → nuxt 的 `router.d.ts`、`computed` → `runtime-core.d.ts`。這個二次解析由 Orca 做（§4.5），跟 C# 的 MediatR 處理同一個模式。
 
@@ -95,7 +95,7 @@ TypeScript 7（Go 原生版，Orca 目前用的 7.0.2）沒有 tsserver，也沒
 
 - `vue` 語言註冊既有的 definition／references／implementation／typeDefinition／hover providers；peek 預覽的 `orca-lsp-preview:` model 用 `vue` 語言建立，才有上色。
 - `.vue` 沒有 Monaco 內建的 TS 功能，不需要像 TS 那樣關掉內建 provider。
-- 沿用「明確跳轉才啟動伺服器」（`859bb41209`）：hover 與預熱只在該專案啟動過之後才會用到 `vue` session，且從不觸發下載。
+- 沿用「明確跳轉才啟動伺服器」（`859bb41209`）：hover 與預熱只在該專案啟動過之後才會用到 `vue` session，且從不觸發下載。（之後改成開檔就啟動已安裝的伺服器，見 [`code-navigation-lsp-plan.md`](./code-navigation-lsp-plan.md) §14；從不觸發下載這點不變。）
 - `isCodeNavigationWatchedPath` 的 `vue` 種類監看 `.vue` 與上述 TS／JS 副檔名，以及 `package.json`（§4.2 的快取）。
 
 ## 5. 不做／限制
@@ -117,22 +117,22 @@ TypeScript 7（Go 原生版，Orca 目前用的 7.0.2）沒有 tsserver，也沒
 
 ## 7. 決定（使用者 2026-10-01 確認）
 
-| # | 問題 | 選項 | 決定 |
-|---|---|---|---|
-| Q1 | 伺服器怎麼取得 | (a) 第一次用到時從 npm 下載 38 個套件並驗證；(b) 打包進 Orca app（app 大約多 38 MB） | **(a)**，與 TS／C# 伺服器一致，不影響 app 大小 |
-| Q2 | Vue 專案裡的 `.ts`／`.js` | (a) 改走 vtsls，找參照含 `.vue`；(b) 維持 TS 7（較快、較省記憶體），但查參照漏掉 `.vue` | **(a)** |
-| Q3 | `.nuxt/` 不存在時 | (a) 提示執行 `nuxi prepare`；(b) Orca 自動在背景執行；(c) 不處理 | **(a)**；(b) 會在使用者專案裡跑指令、寫檔 |
+| #   | 問題                      | 選項                                                                                    | 決定                                           |
+| --- | ------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Q1  | 伺服器怎麼取得            | (a) 第一次用到時從 npm 下載 38 個套件並驗證；(b) 打包進 Orca app（app 大約多 38 MB）    | **(a)**，與 TS／C# 伺服器一致，不影響 app 大小 |
+| Q2  | Vue 專案裡的 `.ts`／`.js` | (a) 改走 vtsls，找參照含 `.vue`；(b) 維持 TS 7（較快、較省記憶體），但查參照漏掉 `.vue` | **(a)**                                        |
+| Q3  | `.nuxt/` 不存在時         | (a) 提示執行 `nuxi prepare`；(b) Orca 自動在背景執行；(c) 不處理                        | **(a)**；(b) 會在使用者專案裡跑指令、寫檔      |
 
 ## 8. 實作紀錄（2026-10-01）
 
-| 檔案 | 內容 |
-|---|---|
-| `main/code-navigation/npm-package-set-installer.ts` | 多個 npm tarball 的安裝器：逐一下載、SHA-256 驗證、解壓到 `node_modules/<路徑>`，暫存目錄全部成功才換上；出錯時等所有下載結束再清理 |
-| `config/scripts/fork-maintenance/generate-vue-language-server-manifest.mjs` → `main/code-navigation/vue-language-server-manifest.ts` | 產生並固定 38 個套件（核對 npm sha512 後記 SHA-256）；升級＝改腳本裡的版本再跑 |
-| `main/code-navigation/vue-language-server-launch.ts` | `process.execPath`＋`ELECTRON_RUN_AS_NODE` 跑 vtsls；Vue plugin、`autoUseWorkspaceTsdk`、`useSyntaxServer: never` |
-| `main/code-navigation/vue-project-locator.ts` | 最近的 `package.json` 決定是否為 Vue／Nuxt 專案（含 peerDependencies），快取到 `package.json` 變更 |
-| `main/code-navigation/code-navigation-routing.ts` | 把請求改派到 `vue`／專案根目錄；記住文件的派送以便關閉；每個缺 `.nuxt/` 的 Nuxt 專案提示一次 |
-| `main/code-navigation/nuxt-auto-imports.ts` | §4.5 的二次解析；references 去掉 `.nuxt/` 宣告 |
-| `main/code-navigation/code-navigation-server-locations.ts` | 從 service 搬出的結果處理（MVC、MediatR）＋ Nuxt 後處理 |
-| renderer | `.vue` → `vue`；狀態提示加 Vue 與 `nuxtTypesMissing`（獨立 toast，不會被「完成」關掉） |
-| e2e | `tests/e2e/code-navigation-vue.spec.ts`；共用的編輯器操作搬到 `tests/e2e/helpers/code-navigation-editor.ts` |
+| 檔案                                                                                                                                 | 內容                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `main/code-navigation/npm-package-set-installer.ts`                                                                                  | 多個 npm tarball 的安裝器：逐一下載、SHA-256 驗證、解壓到 `node_modules/<路徑>`，暫存目錄全部成功才換上；出錯時等所有下載結束再清理 |
+| `config/scripts/fork-maintenance/generate-vue-language-server-manifest.mjs` → `main/code-navigation/vue-language-server-manifest.ts` | 產生並固定 38 個套件（核對 npm sha512 後記 SHA-256）；升級＝改腳本裡的版本再跑                                                      |
+| `main/code-navigation/vue-language-server-launch.ts`                                                                                 | `process.execPath`＋`ELECTRON_RUN_AS_NODE` 跑 vtsls；Vue plugin、`autoUseWorkspaceTsdk`、`useSyntaxServer: never`                   |
+| `main/code-navigation/vue-project-locator.ts`                                                                                        | 最近的 `package.json` 決定是否為 Vue／Nuxt 專案（含 peerDependencies），快取到 `package.json` 變更                                  |
+| `main/code-navigation/code-navigation-routing.ts`                                                                                    | 把請求改派到 `vue`／專案根目錄；記住文件的派送以便關閉；每個缺 `.nuxt/` 的 Nuxt 專案提示一次                                        |
+| `main/code-navigation/nuxt-auto-imports.ts`                                                                                          | §4.5 的二次解析；references 去掉 `.nuxt/` 宣告                                                                                      |
+| `main/code-navigation/code-navigation-server-locations.ts`                                                                           | 從 service 搬出的結果處理（MVC、MediatR）＋ Nuxt 後處理                                                                             |
+| renderer                                                                                                                             | `.vue` → `vue`；狀態提示加 Vue 與 `nuxtTypesMissing`（獨立 toast，不會被「完成」關掉）                                              |
+| e2e                                                                                                                                  | `tests/e2e/code-navigation-vue.spec.ts`；共用的編輯器操作搬到 `tests/e2e/helpers/code-navigation-editor.ts`                         |

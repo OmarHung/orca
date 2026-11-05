@@ -64,7 +64,7 @@ function errorMessage(error: unknown): string {
 /** Owns one language server per (kind, workspace root) and answers navigation queries. */
 export class CodeNavigationService {
   private readonly sessions = new Map<string, SessionEntry>()
-  private readonly explicitlyActivated = new Set<string>()
+  private readonly activatedWorkspaces = new Set<string>()
   private readonly router: CodeNavigationRouter
   private idleTimer: ReturnType<typeof setInterval> | null = null
 
@@ -83,11 +83,11 @@ export class CodeNavigationService {
     }
     const key = sessionKey(request.kind, request.root)
     const existing = this.sessions.get(key)
-    if (!existing && !request.userInitiated && !this.explicitlyActivated.has(key)) {
+    if (!existing && !request.userInitiated && !this.activatedWorkspaces.has(key)) {
       return { ok: false, message: 'Code navigation requires an explicit navigation action' }
     }
     if (request.userInitiated) {
-      this.explicitlyActivated.add(key)
+      this.activatedWorkspaces.add(key)
     }
     const entry = existing ?? this.startSession(request.kind, request.root, emitStatus)
     // Why: a query that joins a server still starting (one a prewarm or hover began) shows the
@@ -133,7 +133,7 @@ export class CodeNavigationService {
     const key = sessionKey(request.kind, request.root)
     let entry = this.sessions.get(key)
     if (!entry) {
-      if (!this.explicitlyActivated.has(key)) {
+      if (!this.activatedWorkspaces.has(key)) {
         return { ok: false, message: 'Code navigation has not been activated for this workspace' }
       }
       const installed = await this.deps.isInstalled(request.kind).catch(() => false)
@@ -154,12 +154,18 @@ export class CodeNavigationService {
   }
 
   /**
-   * Restarts an activated, installed server in the background and has it compile. Like hover, it
-   * never downloads and cannot activate a workspace.
+   * Starts an installed server when a file of its project opens and has it compile, so the first
+   * jump does not wait. It never downloads: a missing server waits for an explicit jump.
    */
   async warm(request: Omit<CodeNavigationHoverQuery, 'position'>): Promise<void> {
     // Why a hover at the top: it needs the semantic model, so the project loads and compiles now.
-    await this.hover({ ...request, position: { line: 0, character: 0 } })
+    const atTop = { ...request, position: { line: 0, character: 0 } }
+    const { kind, root } = await this.routeOf(atTop)
+    if (!(await this.deps.isInstalled(kind).catch(() => false))) {
+      return
+    }
+    this.activatedWorkspaces.add(sessionKey(kind, root))
+    await this.hover(atTop)
   }
 
   closeDocument(kind: CodeNavigationServerKind, root: string, path: string): void {
@@ -186,7 +192,7 @@ export class CodeNavigationService {
   async disposeAll(): Promise<void> {
     const entries = [...this.sessions.values()]
     this.sessions.clear()
-    this.explicitlyActivated.clear()
+    this.activatedWorkspaces.clear()
     this.stopIdleSweep()
     await Promise.all(entries.map((entry) => this.disposeEntry(entry)))
   }
