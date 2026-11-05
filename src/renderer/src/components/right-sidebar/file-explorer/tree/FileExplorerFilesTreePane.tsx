@@ -84,7 +84,7 @@ export function FileExplorerFilesTreePane({
   } = paneState
   const { inlineInput, inlineInputIndex, startNew, dismissInlineInput, handleInlineSubmit } =
     inlineInputState
-  const { virtualizer, flashingPath } = rowScrolling
+  const { virtualizer, flashingPath, widestRowWidth, onMeasureRowWidth } = rowScrolling
   const { handleClick, handleDoubleClick, handleWheelCapture } = handlers
   const {
     handleMoveDrop,
@@ -148,6 +148,7 @@ export function FileExplorerFilesTreePane({
       viewportRef={scrollRef}
       viewportTabIndex={-1}
       viewportClassName="h-full min-h-0 py-2"
+      horizontalScrollbar
       onWheelCapture={handleWheelCapture}
       onDragOverCapture={rootDragHandlers.onDragOverCapture}
       onDragOver={rootDragHandlers.onDragOver}
@@ -200,6 +201,8 @@ export function FileExplorerFilesTreePane({
         <FileExplorerVirtualRows
           displayDepthOffset={getExplorerDisplayDepth(worktreePath, displayRootPath)}
           virtualizer={virtualizer}
+          widestRowWidth={widestRowWidth}
+          onMeasureRowWidth={onMeasureRowWidth}
           inlineInputIndex={inlineInputIndex}
           rowProjection={rowProjection}
           inlineInput={inlineInput}
