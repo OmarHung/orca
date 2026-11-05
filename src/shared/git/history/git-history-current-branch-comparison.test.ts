@@ -3,7 +3,8 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { loadGitHistoryFromExecutor, type GitHistoryExecutor } from './git-history'
+import { loadGitHistoryFromExecutor } from './git-history-execution'
+import type { GitHistoryExecutor } from './git-history-types'
 
 describe('current branch comparison real Git contract', () => {
   const tempPaths: string[] = []

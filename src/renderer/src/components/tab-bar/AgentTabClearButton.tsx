@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef } from 'react'
 import { Eraser } from 'lucide-react'
 import { toast } from 'sonner'
-import type { TuiAgent } from '../../../../shared/tui-agent'
+import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import { ConfirmationDialogContext } from '@/components/confirmation-dialog-context'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getAgentLabel } from '@/lib/agent-catalog'

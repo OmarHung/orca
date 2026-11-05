@@ -1,4 +1,4 @@
-import type { GitHistoryBranch } from '../../../../../shared/git-history'
+import type { GitHistoryBranch } from '../../../../../shared/git/history/git-history-types'
 
 export type GitLogBranchTreeNode =
   | { kind: 'group'; key: 'local' | 'remote'; children: GitLogBranchTreeNode[] }

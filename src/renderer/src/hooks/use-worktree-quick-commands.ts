@@ -5,7 +5,7 @@ import { terminalQuickCommandMatchesWorkspaceProject } from '@/lib/terminal-quic
 import {
   getTerminalQuickCommandScope,
   isTerminalQuickCommandComplete
-} from '../../../shared/terminal-quick-commands'
+} from '../../../shared/terminal/quick-commands/terminal-quick-commands'
 import { getRepoIdFromWorktreeId } from '../../../shared/worktree/id'
 import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
 import {

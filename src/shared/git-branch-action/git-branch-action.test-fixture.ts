@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
-import { UNTRANSLATED_GIT_OUTPUT_ENV } from '../git-output-locale'
+import { UNTRANSLATED_GIT_OUTPUT_ENV } from '../git/commands/git-output-locale'
 import type { GitBranchActionExecutor } from './git-branch-action-types'
 
 const execFileAsync = promisify(execFile)

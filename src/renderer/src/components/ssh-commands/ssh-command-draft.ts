@@ -9,7 +9,7 @@ import {
   type SshCommand,
   type SshCommandDraft
 } from '../../../../shared/ssh-command-types'
-import type { TerminalQuickCommand } from '../../../../shared/terminal-quick-command-types'
+import type { TerminalQuickCommand } from '../../../../shared/terminal/quick-commands/terminal-quick-command-types'
 
 export const EMPTY_SSH_COMMAND_DRAFT: SshCommandDraft = {
   name: '',

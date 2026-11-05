@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { TerminalLayoutSnapshot } from '../../../../shared/terminal-tab-types'
+import type { TerminalLayoutSnapshot } from '../../../../shared/workspace-layout/terminal-tab-types'
 
 const { appState, sendRuntimePtyInputVerified, openRunTerminal } = vi.hoisted(() => {
   const tabsByWorktree: Record<string, { id: string }[]> = {}

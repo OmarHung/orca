@@ -9,7 +9,7 @@ import {
   ORCA_TERMINAL_STARTUP_BOUND_EVENT,
   type TerminalStartupBoundEventDetail
 } from '@/hooks/terminal-startup-bound-event'
-import { parsePaneKey } from '../../../../shared/stable-pane-id'
+import { parsePaneKey } from '../../../../shared/workspace-layout/stable-pane-id'
 import { runCommandText } from './run-dotnet-launcher'
 import { openRunTerminal } from './run-terminal-open'
 import { revealRunInPanel } from './run-panel-store'

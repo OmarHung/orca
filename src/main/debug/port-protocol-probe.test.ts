@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   LOCAL_HTTPS_TEST_CERTIFICATE,
   LOCAL_HTTPS_TEST_PRIVATE_KEY
-} from '../browser/browser-local-https-test-certificate'
+} from '../browser/electron-fixtures/browser-local-https-test-certificate'
 import { probePortProtocol } from './port-protocol-probe'
 
 let server: Server | null = null

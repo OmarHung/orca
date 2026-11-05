@@ -2,7 +2,7 @@ import type {
   GitBranchAction,
   GitBranchActionResult
 } from '../../../shared/git-branch-action/git-branch-action-types'
-import { REBASE_FROM_BASE_RPC_TIMEOUT_MS } from '../../../shared/git-rebase-source'
+import { REBASE_FROM_BASE_RPC_TIMEOUT_MS } from '../../../shared/git/remotes/git-rebase-source'
 import { resolveLocalWorktreePath, type RuntimeGitContext } from './runtime-git-client-context'
 import { callRuntimeRpc } from './runtime-rpc-client'
 import { toRuntimeWorktreeSelector } from './runtime-worktree-selector'

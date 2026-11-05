@@ -14,7 +14,7 @@ import {
 } from './terminal-link-handlers'
 import { createTerminalHandleLinkProvider } from './terminal-handle-links'
 import { createClaudeImageMarkerLinkProvider } from './claude-image-marker-links'
-import { makePaneKey } from '../../../../shared/stable-pane-id'
+import { makePaneKey } from '../../../../shared/workspace-layout/stable-pane-id'
 import { installTerminalLinkifierClickPriming } from './terminal-linkifier-click-priming'
 import { installTerminalLinkPointerGesture } from './terminal-link-pointer-gesture'
 import { installHttpLinkClickFallback } from './terminal-url-link-hit-testing'

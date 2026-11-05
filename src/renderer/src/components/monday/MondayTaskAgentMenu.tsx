@@ -19,7 +19,7 @@ import { translate } from '@/i18n/i18n'
 import { AgentIcon, getAgentCatalog } from '@/lib/agent-catalog'
 import { useAppStore } from '@/store'
 import { isGitRepoKind } from '../../../../shared/repo-kind'
-import { DEFAULT_DISABLED_TUI_AGENTS } from '../../../../shared/tui-agent-selection'
+import { DEFAULT_DISABLED_TUI_AGENTS } from '../../../../shared/agent-launch/catalog/tui-agent-selection'
 import {
   buildMondayTaskAgentPrompt,
   type MondayTaskAgentPromptInput

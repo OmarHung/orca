@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { loadGitHistoryFromExecutor, type GitHistoryExecutor } from './git-history'
+import { loadGitHistoryFromExecutor } from './git-history-execution'
+import type { GitHistoryExecutor } from './git-history-types'
 
 const HEAD_OID = 'a'.repeat(40)
 const OTHER_OID = 'd'.repeat(40)

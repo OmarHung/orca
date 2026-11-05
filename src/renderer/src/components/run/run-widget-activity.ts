@@ -1,6 +1,6 @@
 import type { RunConfigurationDefinition } from '../../../../shared/run-configurations/run-configuration-definition'
 import { planRunConfiguration } from '../../../../shared/run-configurations/run-configuration-plan'
-import { isTerminalAgentQuickCommand } from '../../../../shared/terminal-quick-commands'
+import { isTerminalAgentQuickCommand } from '../../../../shared/terminal/quick-commands/terminal-quick-commands'
 import type { DebugSessionView } from '../debug/debug-store'
 import { debugPortOwnerKey, runPortOwnerKey } from './run-port-claims'
 import { runWidgetItemMode, type RunMode } from './run-mode'

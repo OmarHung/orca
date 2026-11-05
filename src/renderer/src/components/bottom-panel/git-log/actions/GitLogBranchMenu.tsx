@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
 import { useConfirmationDialog } from '@/components/confirmation-dialog-context'
-import type { GitHistoryBranch } from '../../../../../../shared/git-history'
+import type { GitHistoryBranch } from '../../../../../../shared/git/history/git-history-types'
 import {
   GitLogBranchCompareItems,
   type GitLogCompareHandler

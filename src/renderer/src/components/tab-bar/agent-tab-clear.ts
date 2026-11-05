@@ -1,4 +1,4 @@
-import type { TuiAgent } from '../../../../shared/tui-agent'
+import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import { useAppStore } from '@/store'
 import type { AppState } from '@/store/types'
 import {

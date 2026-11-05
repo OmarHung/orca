@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import type { GitHistoryItemRef, GitHistoryRefCategory } from '../../../../../shared/git-history'
-import { dedupeRemoteTrackingRefs } from '../../../../../shared/git-history-ref-display'
+import type {
+  GitHistoryItemRef,
+  GitHistoryRefCategory
+} from '../../../../../shared/git/history/git-history-types'
+import { dedupeRemoteTrackingRefs } from '../../../../../shared/git/history/git-history-ref-display'
 import { collectFoldedRemoteRefs } from './git-log-ref-sync'
 
 const ref = (id: string, name: string, category: GitHistoryRefCategory): GitHistoryItemRef => ({

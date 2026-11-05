@@ -13,7 +13,7 @@ import type {
 } from '../../../../../../shared/git-branch-action/git-branch-action-types'
 import type { GitLogWorktree } from '../use-git-log-worktree'
 import { resolveActiveGitFetchTarget } from '../../../git-branch-status/git-auto-fetch-runner'
-import { refreshGitStatusForWorktree } from '../../../right-sidebar/git-status-refresh'
+import { refreshGitStatusForWorktree } from '../../../right-sidebar/source-control/sync/git-status-refresh'
 import { resolveWorktreeGitCopyNow } from '@/lib/worktree-git-copy'
 import { useGitLogActionDialogStore } from './git-log-action-dialog-store'
 import { gitLogActionProgress, gitLogActionSuccess, shortCommit } from './git-log-action-feedback'

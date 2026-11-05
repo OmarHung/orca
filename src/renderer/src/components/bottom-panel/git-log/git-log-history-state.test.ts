@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { GitHistoryResult } from '../../../../../shared/git-history'
+import type { GitHistoryResult } from '../../../../../shared/git/history/git-history-types'
 import type { GitHistoryPanelState } from '../../right-sidebar/source-control/sync/git-history-panel'
 import { finishGitLogLoad, startGitLogLoad } from './git-log-history-state'
 

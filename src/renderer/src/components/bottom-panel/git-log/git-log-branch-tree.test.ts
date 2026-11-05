@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { GitHistoryBranch } from '../../../../../shared/git-history'
+import type { GitHistoryBranch } from '../../../../../shared/git/history/git-history-types'
 import { buildGitLogBranchTree, flattenGitLogBranchTree } from './git-log-branch-tree'
 
 function branch(fullName: string, overrides: Partial<GitHistoryBranch> = {}): GitHistoryBranch {

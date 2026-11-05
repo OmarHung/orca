@@ -3,7 +3,7 @@ import {
   planCommitMessageGeneration,
   type CommitMessagePlan,
   type CommitMessagePlanResult
-} from '../../shared/commit-message-plan'
+} from '../../shared/source-control/ai/generation/commit-message-plan'
 import type { GlobalSettings } from '../../shared/global-settings-types'
 import { resolveLoginShellEnvironment } from '../startup/login-shell-environment'
 import {

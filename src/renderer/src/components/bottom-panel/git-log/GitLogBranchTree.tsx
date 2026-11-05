@@ -10,7 +10,7 @@ import {
 } from './git-log-branch-tree'
 import { ALL_GIT_LOG_SCOPE, HEAD_GIT_LOG_SCOPE, type GitLogScope } from './git-log-scope'
 import type { GitLogBranchListState } from './use-git-log-history'
-import type { GitHistoryBranch } from '../../../../../shared/git-history'
+import type { GitHistoryBranch } from '../../../../../shared/git/history/git-history-types'
 import type { GitLogCompareHandler } from './compare/GitLogCompareMenuItems'
 import { GitLogBranchMenu } from './actions/GitLogBranchMenu'
 import { describeGitLogBranch, GitLogBranchSyncBadge } from './git-log-branch-sync'

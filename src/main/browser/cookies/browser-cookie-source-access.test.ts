@@ -14,7 +14,7 @@ vi.mock('electron', () => ({
   app: { getPath: appGetPathMock },
   session: { fromPartition: sessionFromPartitionMock }
 }))
-vi.mock('../browser-session-registry', () => ({
+vi.mock('../sessions/browser-session-registry', () => ({
   browserSessionRegistry: {
     setPendingCookieImport: vi.fn(),
     clearPendingCookieImport: vi.fn()
@@ -32,7 +32,7 @@ vi.mock('node:fs', async (importOriginal) => {
 })
 
 import { importCookiesFromBrowser } from './browser-cookie-import'
-import type { DetectedBrowser } from './sources/browser-cookie-detection-types'
+import type { DetectedBrowser } from './sources/browser-cookie-source-profiles'
 import { createChromiumCookieTestDatabase } from './browser-cookie-import-test-database'
 import { browserCookieImportFailure } from '../../../shared/browser-cookie-import-failure-copy'
 import { isMacPrivacyDenial, sourceCopyFailure } from './browser-cookie-source-access'

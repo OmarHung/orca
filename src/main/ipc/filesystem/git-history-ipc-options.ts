@@ -1,4 +1,4 @@
-import type { GitHistoryOptions } from '../../../shared/git-history'
+import type { GitHistoryOptions } from '../../../shared/git/history/git-history-types'
 
 /** Keeps only the history options the renderer may set, with loose values normalized. */
 export function readGitHistoryIpcOptions(args: GitHistoryOptions): GitHistoryOptions {

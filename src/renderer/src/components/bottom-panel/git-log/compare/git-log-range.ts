@@ -1,4 +1,4 @@
-import type { GitHistoryItem } from '../../../../../../shared/git-history'
+import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import { commitCompareTarget, type GitLogCompareTarget } from './git-log-compare-target'
 
 export type GitLogRange = { base: GitLogCompareTarget; target: GitLogCompareTarget }

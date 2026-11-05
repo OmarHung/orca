@@ -47,7 +47,7 @@ vi.mock('@/components/ui/select', () => ({
   }
 }))
 
-vi.mock('../../sidebar/AddRemoteHostDialog', () => ({
+vi.mock('../../sidebar/host-admission/ssh/AddRemoteHostDialog', () => ({
   AddRemoteHostDialog: ({
     mode,
     onOpenChange
