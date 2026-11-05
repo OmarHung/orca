@@ -10,7 +10,14 @@ const BRACE_TOKEN = /\{\{([^{}]*)\}\}/g
 const PLAIN_VALUE = /^[A-Za-z0-9_./@:-]+$/
 const NUMBER_VALUE = /^-?\d+(\.\d+)?$/
 
-const BUILTIN_KEYS: ReadonlySet<string> = new Set(['host', 'user', 'path', 'selected'])
+const CLOCK_KEYS: ReadonlySet<string> = new Set(['date', 'time'])
+const BUILTIN_KEYS: ReadonlySet<string> = new Set([
+  'host',
+  'user',
+  'path',
+  'selected',
+  ...CLOCK_KEYS
+])
 
 export type SshCommandBuiltins = {
   host: string
@@ -25,6 +32,8 @@ export type SshCommandExpansionInput = {
   params: readonly SshCommandParam[]
   values: Readonly<Record<string, string>>
   builtins: SshCommandBuiltins
+  /** The moment `{{date}}` and `{{time}}` show, on the computer running Orca. */
+  now: Date
   remotePlatform?: SshRemotePlatform
   /** Going to several hosts, where one tab's folder and selection mean nothing. */
   isMultiTarget?: boolean
@@ -53,6 +62,11 @@ export type SshCommandExpansion = {
   /** Any entry here means the command must not be sent. */
   problems: SshCommandProblem[]
   warnings: SshCommandWarning[]
+}
+
+/** Digits only, so unlike other values these can't close quotes around them. */
+export function isSshCommandClockKey(key: string): boolean {
+  return CLOCK_KEYS.has(key)
 }
 
 /** Each parameter once, in the order written. Built-in values are included. */
@@ -140,9 +154,12 @@ export function syncSshCommandParams(
   template: string,
   params: readonly SshCommandParam[]
 ): { params: SshCommandParam[]; unusedKeys: string[] } {
-  const used = extractSshCommandKeys(template).filter((key) => !BUILTIN_KEYS.has(key))
-  const usedSet = new Set(used)
   const existing = new Map(params.map((param) => [param.key, param]))
+  // Why: a command saved before these were built in must keep asking, not silently change.
+  const used = extractSshCommandKeys(template).filter(
+    (key) => !BUILTIN_KEYS.has(key) || (CLOCK_KEYS.has(key) && existing.has(key))
+  )
+  const usedSet = new Set(used)
   const unused = params.filter((param) => !usedSet.has(param.key) && !isUntouchedParam(param))
   return {
     params: [...used.map((key) => existing.get(key) ?? newSshCommandParam(key)), ...unused],
@@ -187,6 +204,14 @@ function expandBuiltin(
     return { text: null, problem: 'missingValue' }
   }
   return quoteBuiltinValue(value, isWindows)
+}
+
+function clockValue(key: string, now: Date): string {
+  const parts =
+    key === 'date'
+      ? [now.getFullYear(), now.getMonth() + 1, now.getDate()]
+      : [now.getHours(), now.getMinutes(), now.getSeconds()]
+  return parts.map((part) => String(part).padStart(2, '0')).join('')
 }
 
 function expandParam(param: SshCommandParam, value: string, isWindows: boolean): KeyExpansion {
@@ -258,6 +283,9 @@ export function expandSshCommandTemplate(input: SshCommandExpansionInput): SshCo
     if (!param && !BUILTIN_KEYS.has(key)) {
       addProblem('undefinedParam', key)
       return token
+    }
+    if (!param && CLOCK_KEYS.has(key)) {
+      return clockValue(key, input.now)
     }
     if (quotedKeys.has(key) && param?.quote !== 'raw') {
       addProblem('insideQuotes', key)
