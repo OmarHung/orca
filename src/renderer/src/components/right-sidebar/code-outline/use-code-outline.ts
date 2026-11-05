@@ -2,7 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 import type * as Monaco from 'monaco-editor'
 import { useAppStore } from '@/store'
 import { editorModelRegistry } from '@/lib/editor-model-registry'
-import { toEditorModelUri } from '@/components/editor/editor-model-uri'
+import { toEditorModelUri } from '@/components/editor/model-lifetime/identity/editor-model-uri'
 import type { CodeOutlineSymbol } from './code-outline-types'
 import { isCodeOutlineLanguage, loadCodeOutline } from './code-outline-source'
 

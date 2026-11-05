@@ -1,6 +1,6 @@
 import type React from 'react'
 import { useEffect, useRef, useState, type RefObject } from 'react'
-import { createMultiSelectDragGhost } from '../right-sidebar/file-explorer-multi-drag-image'
+import { createMultiSelectDragGhost } from '../right-sidebar/file-explorer/mutations/file-explorer-multi-drag-image'
 import type { SftpPaneId } from './sftp-columns-store'
 import { resolveSftpDropDir } from './sftp-drop-target'
 

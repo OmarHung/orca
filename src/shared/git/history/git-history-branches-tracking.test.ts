@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { loadGitHistoryBranches, parseGitHistoryBranchTrack } from './git-history-branches'
-import { createGitBranchActionTestRepos } from './git-branch-action/git-branch-action.test-fixture'
+import { createGitBranchActionTestRepos } from '../../git-branch-action/git-branch-action.test-fixture'
 
 describe('parseGitHistoryBranchTrack', () => {
   it.each([

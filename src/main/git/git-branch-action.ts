@@ -3,7 +3,7 @@ import type {
   GitBranchAction,
   GitBranchActionResult
 } from '../../shared/git-branch-action/git-branch-action-types'
-import { runWithGitWorktreeOperationLock } from '../../shared/git-worktree-operation-lock'
+import { runWithGitWorktreeOperationLock } from '../../shared/git/worktrees/git-worktree-operation-lock'
 import type { GitRuntimeOptions } from './git-runtime-options'
 import { gitOptionsForWorktree } from './git-runtime-options'
 import { gitExecFileAsync } from './runner'

@@ -2,7 +2,7 @@ import type {
   GitHistoryItem,
   GitHistoryItemRef,
   GitHistoryResult
-} from '../../../../../shared/git-history'
+} from '../../../../../shared/git/history/git-history-types'
 import type { GitLogScope } from './git-log-scope'
 
 /**

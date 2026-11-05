@@ -1,6 +1,6 @@
 import type { ILink, ILinkProvider, Terminal } from '@xterm/xterm'
 import { useAppStore } from '@/store'
-import type { AgentType } from '../../../../shared/agent-status-types'
+import type { AgentType } from '../../../../shared/agent-status/contracts/agent-status-types'
 import { translate } from '@/i18n/i18n'
 import {
   useTerminalImagePreviewStore,
@@ -11,7 +11,7 @@ import { resolveNativeChatTranscriptAgent } from '../../../../shared/native-chat
 import {
   buildWrappedLogicalLine,
   rangeForParsedFileLink
-} from '../../../../shared/wrapped-terminal-link-ranges'
+} from '../../../../shared/terminal/links/wrapped-terminal-link-ranges'
 import {
   isTerminalLinkActionActivation,
   isTerminalLinkDirectActivation

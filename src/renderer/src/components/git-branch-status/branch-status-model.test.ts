@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { GitStatusEntry } from '../../../../shared/git-status-types'
+import type { GitStatusEntry } from '../../../../shared/git/status/git-status-types'
 import { branchDisplayName, summarizeBranchStatus } from './branch-status-model'
 
 function entry(path: string, overrides: Partial<GitStatusEntry> = {}): GitStatusEntry {

@@ -7,7 +7,7 @@ import { launchWorkItemDirect } from '@/lib/launch-work-item-direct'
 import { orderEmptyQueryWorktrees } from '@/lib/order-empty-query-worktrees'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { useAppStore } from '@/store'
-import type { TuiAgent } from '../../../../shared/tui-agent'
+import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import type { Worktree } from '../../../../shared/worktree/types'
 
 /** How many recent workspaces the hand-off menu offers. */

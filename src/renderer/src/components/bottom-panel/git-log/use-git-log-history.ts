@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { getConnectionId } from '@/lib/connection-context'
 import { getRuntimeGitHistory } from '@/runtime/runtime-git-status-client'
 import { translate } from '@/i18n/i18n'
-import { GIT_HISTORY_MAX_LIMIT, type GitHistoryBranchList } from '../../../../../shared/git-history'
+import {
+  GIT_HISTORY_MAX_LIMIT,
+  type GitHistoryBranchList
+} from '../../../../../shared/git/history/git-history-types'
 import type { GitHistoryPanelState } from '../../right-sidebar/source-control/sync/git-history-panel'
 import { gitLogScopeKey, gitLogScopeToHistoryOptions, type GitLogScope } from './git-log-scope'
 import { finishGitLogLoad, isSameGitLogPayload, startGitLogLoad } from './git-log-history-state'

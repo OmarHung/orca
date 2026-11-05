@@ -1,4 +1,4 @@
-import { isSafeGitRemoteName } from '../git-push-target-validation'
+import { isSafeGitRemoteName } from '../git/remotes/git-push-target-validation'
 import type { GitBranchActionExecutor } from './git-branch-action-types'
 
 const LOCAL_PREFIX = 'refs/heads/'
