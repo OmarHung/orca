@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { GitHistoryBranch, GitHistoryBranchList } from '../../../../../shared/git-history'
+import type {
+  GitHistoryBranch,
+  GitHistoryBranchList
+} from '../../../../../shared/git/history/git-history-types'
 import { resolveGitLogPullSource } from './git-log-pull-source'
 
 const branch = (overrides: Partial<GitHistoryBranch>): GitHistoryBranch => ({

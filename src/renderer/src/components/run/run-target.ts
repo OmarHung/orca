@@ -1,8 +1,8 @@
-import { isTerminalAgentQuickCommand } from '../../../../shared/terminal-quick-commands'
+import { isTerminalAgentQuickCommand } from '../../../../shared/terminal/quick-commands/terminal-quick-commands'
 import type {
   TerminalCommandQuickCommand,
   TerminalQuickCommand
-} from '../../../../shared/terminal-quick-command-types'
+} from '../../../../shared/terminal/quick-commands/terminal-quick-command-types'
 import type {
   DebugLaunchOptions,
   DebugLaunchTarget

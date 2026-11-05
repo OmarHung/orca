@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { editor } from 'monaco-editor'
-import { useDiffEditorRegistration } from '../diff-navigation-context'
+import { useDiffEditorRegistration } from '../diff/review/diff-navigation-context'
 import {
   createChangeMarkerController,
   type ChangeMarkerController

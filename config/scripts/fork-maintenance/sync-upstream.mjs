@@ -27,7 +27,7 @@ const CUSTOM_BRANCH = 'omar/custom'
 const RELEASE_TAG = /^v\d+\.\d+\.\d+$/
 const CONFLICT_EXIT_CODE = 2
 const FOCUSED_TESTS = [
-  'src/shared/git-history',
+  'src/shared/git/history',
   'src/renderer/src/components/bottom-panel',
   'src/renderer/src/components/right-sidebar/source-control/sync'
 ]

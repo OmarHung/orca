@@ -1,7 +1,7 @@
 import React from 'react'
 import { ArrowDown, ArrowUp, CloudOff, Unlink } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
-import type { GitHistoryBranch } from '../../../../../shared/git-history'
+import type { GitHistoryBranch } from '../../../../../shared/git/history/git-history-types'
 
 function syncDetail(branch: GitHistoryBranch, hasRemotes: boolean): string | null {
   if (!branch.upstream) {

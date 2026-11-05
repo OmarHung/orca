@@ -1,4 +1,7 @@
-import { normalizeGitErrorMessage, stripCredentialsFromMessage } from '../git-remote-error'
+import {
+  normalizeGitErrorMessage,
+  stripCredentialsFromMessage
+} from '../git/remotes/git-remote-error'
 import type {
   GitAbortableOperation,
   GitBranchActionExecutor,

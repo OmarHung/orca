@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { GitHistoryResult } from '../../../../../shared/git-history'
+import type { GitHistoryResult } from '../../../../../shared/git/history/git-history-types'
 import {
   ALL_GIT_LOG_SCOPE,
   HEAD_GIT_LOG_SCOPE,

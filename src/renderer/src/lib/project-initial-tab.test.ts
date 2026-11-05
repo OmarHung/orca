@@ -149,7 +149,7 @@ describe('project initial tab', () => {
 
     activateAndRevealWorktree(worktree.id, { ...USER_OPEN, notifyHostRuntime: false })
 
-    expect(openDefaultChat).toHaveBeenCalledWith(worktree.id, expect.any(Function))
+    expect(openDefaultChat).toHaveBeenCalledWith(worktree.id, expect.any(Function), undefined)
   })
 
   it('seeds the startup-hydration tab only when the project opens an agent', () => {

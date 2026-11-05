@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { create } from 'zustand'
 import { getShortcutPlatform } from '@/lib/shortcut-platform'
-import { isShellProcess } from '../../../../shared/shell-process-detection'
+import { isShellProcess } from '../../../../shared/agent-status/process/shell-process-detection'
 
 /**
  * `connected`: ssh is in the foreground. `ended`: it was, or never came up, and something local

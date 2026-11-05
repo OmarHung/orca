@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import { AddRemoteHostDialog } from '../../sidebar/AddRemoteHostDialog'
+import { AddRemoteHostDialog } from '../../sidebar/host-admission/ssh/AddRemoteHostDialog'
 import {
   DATABASE_DRIVER_NAMES,
   type DatabaseConnectionSummary

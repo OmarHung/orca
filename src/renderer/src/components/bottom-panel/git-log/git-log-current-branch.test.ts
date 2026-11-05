@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { GitHistoryItem, GitHistoryResult } from '../../../../../shared/git-history'
+import type {
+  GitHistoryItem,
+  GitHistoryResult
+} from '../../../../../shared/git/history/git-history-types'
 import {
   canMarkGitLogCherryPicks,
   collectGitLogCherryPickedIds,
