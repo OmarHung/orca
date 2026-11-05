@@ -84,7 +84,7 @@ export function FileExplorerToolbar({
             size="icon-xs"
             className={cn(
               'text-muted-foreground hover:text-foreground',
-              !canLocateActiveFile && 'cursor-not-allowed opacity-50'
+              !canLocateActiveFile && 'cursor-not-allowed'
             )}
             aria-label={translate(
               'auto.components.right.sidebar.FileExplorerToolbar.locateActiveFile',
@@ -99,7 +99,7 @@ export function FileExplorerToolbar({
               onLocateActiveFile()
             }}
           >
-            <LocateFixed className="size-3" />
+            <LocateFixed className={cn('size-3', !canLocateActiveFile && 'opacity-50')} />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom" sideOffset={4}>
