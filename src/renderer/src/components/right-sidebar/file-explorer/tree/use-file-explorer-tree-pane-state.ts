@@ -237,6 +237,7 @@ export function useFileExplorerTreePaneState({
     visibleRowCount,
     inlineInputIndex: inlineInputState.inlineInputIndex,
     rowProjection,
+    hasNameFilter,
     scrollRef,
     activeWorktreeId,
     worktreePath: visibleFilesWorktreePath,
