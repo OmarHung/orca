@@ -46,7 +46,7 @@ export function MondayConnectPanel(): React.JSX.Element {
         <p className="text-sm text-muted-foreground">
           {translate(
             'monday.connect.description',
-            'See timelines and due dates together, and open any item without leaving the calendar. Orca only reads monday.'
+            'See timelines and due dates together, open any item without leaving the calendar, and change its status.'
           )}
         </p>
         <div className="space-y-2">

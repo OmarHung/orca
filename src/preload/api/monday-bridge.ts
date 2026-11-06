@@ -10,5 +10,7 @@ export const mondayApi = {
   loadSchedule: (request) => ipcRenderer.invoke('monday:loadSchedule', request),
   boardsUpdatedAt: (boardIds) => ipcRenderer.invoke('monday:boardsUpdatedAt', boardIds),
   getItem: (itemId) => ipcRenderer.invoke('monday:getItem', itemId),
+  statusOptions: (request) => ipcRenderer.invoke('monday:statusOptions', request),
+  setStatus: (request) => ipcRenderer.invoke('monday:setStatus', request),
   openBrowserWindow: (request) => ipcRenderer.invoke('monday:openBrowserWindow', request)
 } satisfies PreloadApi['monday']

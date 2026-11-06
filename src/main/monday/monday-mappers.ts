@@ -6,6 +6,7 @@ import type {
   MondayItemColumnValue,
   MondayItemDetail,
   MondayItemRelation,
+  MondayAsset,
   MondayLabel,
   MondayScheduleItem,
   MondayUpdate,
@@ -14,7 +15,7 @@ import type {
 } from '../../shared/monday/monday-types'
 
 /** monday's grey for an empty label. */
-const NEUTRAL_LABEL_COLOR = '#c4c4c4'
+export const NEUTRAL_LABEL_COLOR = '#c4c4c4'
 
 export type RawMe = {
   id: string
@@ -62,11 +63,21 @@ export type RawScheduleItem = {
 
 export type RawItemsPage = { cursor: string | null; items: RawScheduleItem[] }
 
+type RawAsset = {
+  id: string
+  name: string | null
+  file_extension: string | null
+  file_size: number | null
+  url: string | null
+  public_url: string | null
+}
+
 type RawUpdateReply = {
   id: string
   body: string | null
   created_at: string | null
   creator: { name: string } | null
+  assets?: (RawAsset | null)[] | null
 }
 
 type RawDetailColumnValue = RawColumnValue & { column: { title: string } | null }
@@ -198,12 +209,32 @@ function mapDescription(description: RawItemDetail['description']): string | nul
   return text.length > 0 ? text : null
 }
 
+const HTTPS_URL = /^https:\/\//i
+
+function mapAssets(raw: RawUpdateReply['assets']): MondayAsset[] {
+  return (raw ?? []).flatMap((asset) =>
+    asset && HTTPS_URL.test(asset.public_url ?? '')
+      ? [
+          {
+            id: asset.id,
+            name: asset.name ?? '',
+            extension: (asset.file_extension ?? '').replace(/^\./, '').toLowerCase(),
+            sizeBytes: asset.file_size ?? 0,
+            publicUrl: asset.public_url ?? '',
+            url: HTTPS_URL.test(asset.url ?? '') ? (asset.url ?? '') : ''
+          }
+        ]
+      : []
+  )
+}
+
 function mapReply(raw: RawUpdateReply): MondayUpdateReply {
   return {
     id: raw.id,
     creatorName: raw.creator?.name ?? '',
     createdAt: raw.created_at ?? '',
-    bodyHtml: raw.body ?? ''
+    bodyHtml: raw.body ?? '',
+    assets: mapAssets(raw.assets)
   }
 }
 

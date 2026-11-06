@@ -102,10 +102,40 @@ test('connects monday, draws timeline bars with due flags, and opens an item fro
     await expect(panel.getByText('已更新')).toBeVisible()
     await expect(panel.getByText('Replies (3)')).toBeVisible()
     await expect(panel.getByTestId('monday-update-entry')).toHaveCount(4)
-    await expect(panel.getByRole('link', { name: '[Image]' })).toBeVisible()
+    await expect(panel.getByRole('link', { name: '[Image]' }).first()).toBeVisible()
     await expect(panel.getByText('內部驗收')).toBeVisible()
     expect(await orcaPage.evaluate(() => Reflect.get(window, '__mondayXss'))).toBeUndefined()
+    // The update's own image loads from its public address; that can't load here, so it falls
+    // back to monday's link for the file.
+    await expect(
+      panel.locator('a[href="https://acme.monday.com/protected_static/1/resources/7001/shot.png"]')
+    ).toHaveText('[Image]')
+    // Its public address can't load here, so the video falls back to a file row.
+    await expect(panel.getByRole('button', { name: /操作錄影\.mp4/ })).toBeVisible()
     await orcaPage.screenshot({ path: testInfo.outputPath('monday-detail.png') })
+
+    // The status dropdown lists the board's live labels and writes the pick back to monday.
+    const statusSelect = panel.getByTestId('monday-item-status-select')
+    await expect(statusSelect).toContainText('In Progress')
+    await statusSelect.click()
+    const statusOptions = orcaPage
+      .locator('[data-radix-popper-content-wrapper]')
+      .getByRole('option')
+    await expect(statusOptions).toHaveText(['No status', 'In Progress', 'Done', 'Stuck'])
+    await orcaPage.screenshot({ path: testInfo.outputPath('monday-status-select.png') })
+    await statusOptions.filter({ hasText: 'Stuck' }).click()
+    await expect(statusSelect).toContainText('Stuck')
+    await expect.poll(() => server.statusChanges.length).toBe(1)
+    expect(server.statusChanges[0]).toEqual({
+      board: '1000000001',
+      item: '101',
+      column: 'status8',
+      value: '{"index":2}'
+    })
+    await statusSelect.click()
+    await statusOptions.filter({ hasText: 'In Progress' }).click()
+    await expect(statusSelect).toContainText('In Progress')
+    await expect.poll(() => server.statusChanges.length).toBe(2)
 
     // "Hand to AI" offers the recent workspaces and projects, and copies what an agent gets.
     // Substitute only the clipboard IPC; never touch the user's system clipboard.

@@ -25362,7 +25362,7 @@
       "resize": "Resize browser"
     },
     "connect": {
-      "description": "See timelines and due dates together, and open any item without leaving the calendar. Orca only reads monday.",
+      "description": "See timelines and due dates together, open any item without leaving the calendar, and change its status.",
       "docs": "About monday API tokens",
       "storage": "The token stays on this computer and is only sent to monday.",
       "submit": "Connect",
@@ -25387,7 +25387,9 @@
       "status": "Status",
       "subitems": "Subitems ({{value0}})",
       "timeline": "Timeline",
-      "updates": "Updates ({{value0}})"
+      "updates": "Updates ({{value0}})",
+      "attachments": "Attachments",
+      "image": "Image"
     },
     "empty": {
       "noBoards": "Choose the monday boards whose schedule you want to see."
@@ -25443,7 +25445,10 @@
       "syncedAt": "Synced {{value0}}",
       "items": "{{value0}} items with dates",
       "truncated": "{{value0}}: only the first {{value1}} items are shown",
-      "undated": "{{value0}} without dates"
+      "undated": "{{value0}} without dates",
+      "change": "Change status",
+      "loading": "Loading statuses…",
+      "saveFailed": "Could not change the status"
     },
     "undated": {
       "hide": "Hide items without dates",

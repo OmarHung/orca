@@ -7,6 +7,8 @@ import {
   mondayIdSchema,
   mondayLoadScheduleSchema,
   mondayOpenBrowserWindowSchema,
+  mondaySetStatusSchema,
+  mondayStatusOptionsSchema,
   type MondayResult
 } from '../../shared/monday/monday-types'
 import { browserSessionRegistry } from '../browser/sessions/browser-session-registry'
@@ -67,6 +69,14 @@ export function registerMondayHandlers(): void {
   ipcMain.handle('monday:getItem', (_event, input: unknown) => {
     const parsed = mondayIdSchema.safeParse(input)
     return parsed.success ? respond(() => service.getItem(parsed.data)) : INVALID_REQUEST
+  })
+  ipcMain.handle('monday:statusOptions', (_event, input: unknown) => {
+    const parsed = mondayStatusOptionsSchema.safeParse(input)
+    return parsed.success ? respond(() => service.statusOptions(parsed.data)) : INVALID_REQUEST
+  })
+  ipcMain.handle('monday:setStatus', (_event, input: unknown) => {
+    const parsed = mondaySetStatusSchema.safeParse(input)
+    return parsed.success ? respond(() => service.setStatus(parsed.data)) : INVALID_REQUEST
   })
   ipcMain.handle('monday:openBrowserWindow', (event, input: unknown): boolean => {
     const parsed = mondayOpenBrowserWindowSchema.safeParse(input)

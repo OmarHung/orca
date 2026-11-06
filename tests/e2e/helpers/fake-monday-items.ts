@@ -138,9 +138,29 @@ export function itemDetail(itemId: string, names: FakeItemNames): unknown {
       updates: [
         {
           id: '5001',
-          body: '<p>請確認首頁的連結 <a href="https://example.com/ticket">ticket</a></p><img src="https://acme.monday.com/protected_static/1/x.png"><script>window.__mondayXss = true</script>',
+          body: '<p>請確認首頁的連結 <a href="https://example.com/ticket">ticket</a></p><img src="https://acme.monday.com/protected_static/1/x.png"><img src="https://acme.monday.com/protected_static/1/resources/7001/shot-inline.png" data-asset_id="7001"><script>window.__mondayXss = true</script>',
           created_at: '2026-09-24T05:59:08.000Z',
           creator: { name: 'Alice' },
+          // `.invalid` never resolves, so both files exercise the expired-link fallback. The inline
+          // image's src differs from its asset url to tell the fallback apart from a plain link.
+          assets: [
+            {
+              id: '7001',
+              name: 'shot.png',
+              file_extension: '.png',
+              file_size: 2048,
+              url: 'https://acme.monday.com/protected_static/1/resources/7001/shot.png',
+              public_url: 'https://files.example.invalid/7001/shot.png?sig=1'
+            },
+            {
+              id: '7002',
+              name: '操作錄影.mp4',
+              file_extension: '.mp4',
+              file_size: 5114212,
+              url: 'https://acme.monday.com/protected_static/1/resources/7002/rec.mp4',
+              public_url: 'https://files.example.invalid/7002/rec.mp4?sig=1'
+            }
+          ],
           replies: [
             {
               id: '5002',

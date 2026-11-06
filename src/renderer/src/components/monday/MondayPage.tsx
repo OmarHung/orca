@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import { isWebClientLocation } from '@/lib/web-client-location'
 import type { MondayError, MondaySchedule } from '../../../../shared/monday/monday-types'
-import { buildMondayEntries } from './monday-calendar-model'
+import { buildMondayEntries, type MondayCalendarEntry } from './monday-calendar-model'
 import { mondayErrorMessage } from './monday-error-message'
 import {
   checkMondayForChanges,
@@ -70,10 +70,19 @@ function ScheduleWorkspace({ schedule }: { schedule: MondaySchedule }): React.JS
       ),
     [schedule, prefs.hideDone, prefs.statusLabels, today]
   )
-  const selectedEntry = useMemo(
-    () => [...scheduled, ...unscheduled].find((entry) => entry.item.id === selectedItemId) ?? null,
-    [scheduled, unscheduled, selectedItemId]
-  )
+  const selectedEntry = useMemo(() => {
+    if (!selectedItemId) {
+      return null
+    }
+    const isSelected = (entry: MondayCalendarEntry): boolean => entry.item.id === selectedItemId
+    const shown = [...scheduled, ...unscheduled].find(isSelected)
+    if (shown) {
+      return shown
+    }
+    // Why: a status changed in the panel can filter the item out; the panel keeps showing it.
+    const all = buildMondayEntries(schedule, { hideDone: false, statusLabels: [] }, today)
+    return [...all.scheduled, ...all.unscheduled].find(isSelected) ?? null
+  }, [schedule, scheduled, unscheduled, selectedItemId, today])
   const selectedBoard =
     schedule.boards.find((board) => board.boardId === selectedEntry?.item.boardId) ?? null
   return (

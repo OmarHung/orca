@@ -2,7 +2,10 @@ import { localIsoDate } from '../../../../shared/monday/monday-schedule'
 import type {
   MondayConnectionStatus,
   MondayError,
-  MondaySchedule
+  MondayItemDetail,
+  MondaySchedule,
+  MondayScheduleItem,
+  MondayStatusOption
 } from '../../../../shared/monday/monday-types'
 import { monthOf, shiftMonth } from './monday-calendar-model'
 import { useMondayPageStore, type MondayPageState } from './monday-page-store'
@@ -17,6 +20,9 @@ let changeCheckRunning = false
 
 /** Opening the page and focusing the window often fire together; one check covers both. */
 const MIN_CHANGE_CHECK_GAP_MS = 3_000
+
+/** Attachment links monday hands out expire after an hour; re-read details a little before that. */
+const DETAIL_MAX_AGE_MS = 50 * 60_000
 
 function get(): MondayPageState {
   return useMondayPageStore.getState()
@@ -52,7 +58,8 @@ function resetMondayData(): void {
     scheduleError: null,
     scheduleLoading: false,
     selectedItemId: null,
-    details: {}
+    details: {},
+    statusOptions: {}
   })
 }
 
@@ -159,17 +166,125 @@ export async function loadMondayItemDetail(itemId: string): Promise<void> {
     details: {
       ...get().details,
       [itemId]: result.ok
-        ? { status: 'ready', detail: result.value }
+        ? { status: 'ready', detail: result.value, loadedAt: Date.now() }
         : { status: 'error', error: result.error }
     }
   })
 }
 
+function detailIsStale(itemId: string): boolean {
+  const state = get().details[itemId]
+  return !state || (state.status === 'ready' && Date.now() - state.loadedAt > DETAIL_MAX_AGE_MS)
+}
+
 export function selectMondayItem(itemId: string | null): void {
   set({ selectedItemId: itemId })
-  if (itemId && !get().details[itemId]) {
+  if (itemId && detailIsStale(itemId)) {
     void loadMondayItemDetail(itemId)
   }
+}
+
+export function mondayStatusColumnKey(boardId: string, columnId: string): string {
+  return `${boardId}:${columnId}`
+}
+
+export async function loadMondayStatusOptions(boardId: string, columnId: string): Promise<void> {
+  const key = mondayStatusColumnKey(boardId, columnId)
+  set({ statusOptions: { ...get().statusOptions, [key]: { status: 'loading' } } })
+  const result = await window.api.monday.statusOptions({ boardId, columnId })
+  set({
+    statusOptions: {
+      ...get().statusOptions,
+      [key]: result.ok
+        ? { status: 'ready', options: result.value }
+        : { status: 'error', error: result.error }
+    }
+  })
+}
+
+type ItemStatus = MondayScheduleItem['status']
+
+function scheduleWithStatus(
+  schedule: MondaySchedule,
+  itemId: string,
+  status: ItemStatus
+): MondaySchedule {
+  return {
+    ...schedule,
+    boards: schedule.boards.map((board) =>
+      board.items.some((item) => item.id === itemId)
+        ? {
+            ...board,
+            items: board.items.map((item) => (item.id === itemId ? { ...item, status } : item))
+          }
+        : board
+    )
+  }
+}
+
+function detailWithStatus(
+  detail: MondayItemDetail,
+  columnId: string,
+  status: ItemStatus
+): MondayItemDetail {
+  return {
+    ...detail,
+    columns: detail.columns.map((column) =>
+      column.id === columnId
+        ? { ...column, text: status?.label ?? '', color: status?.color ?? null }
+        : column
+    )
+  }
+}
+
+function showItemStatus(itemId: string, columnId: string, status: ItemStatus): void {
+  for (const [key, cached] of scheduleCache) {
+    scheduleCache.set(key, scheduleWithStatus(cached, itemId, status))
+  }
+  const { schedule, details } = get()
+  const detailState = details[itemId]
+  set({
+    schedule: schedule ? scheduleWithStatus(schedule, itemId, status) : schedule,
+    details:
+      detailState?.status === 'ready'
+        ? {
+            ...details,
+            [itemId]: {
+              ...detailState,
+              detail: detailWithStatus(detailState.detail, columnId, status)
+            }
+          }
+        : details
+  })
+}
+
+function currentItemStatus(itemId: string): ItemStatus {
+  for (const board of get().schedule?.boards ?? []) {
+    const item = board.items.find((candidate) => candidate.id === itemId)
+    if (item) {
+      return item.status
+    }
+  }
+  return null
+}
+
+/** Shows the new status at once and writes it to monday; puts the old one back if that fails. */
+export async function setMondayItemStatus(
+  target: { boardId: string; itemId: string; columnId: string },
+  option: MondayStatusOption
+): Promise<MondayError | null> {
+  const previous = currentItemStatus(target.itemId)
+  // monday's blank label is how an item shows "no status".
+  const next = option.label
+    ? { label: option.label, color: option.color, isDone: option.isDone }
+    : null
+  showItemStatus(target.itemId, target.columnId, next)
+  const result = await window.api.monday.setStatus({ ...target, labelId: option.id })
+  if (!result.ok) {
+    showItemStatus(target.itemId, target.columnId, previous)
+    return result.error
+  }
+  return null
 }
 
 export async function refreshMonday(): Promise<void> {

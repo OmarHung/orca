@@ -23580,7 +23580,7 @@
       "resize": "調整瀏覽器寬度"
     },
     "connect": {
-      "description": "同時看到時程和 Due date，在行事曆上點一下就能看任務內容。Orca 不會修改 monday 上的資料。",
+      "description": "同時看到時程和 Due date，在行事曆上點一下就能看任務內容，也能直接改狀態。",
       "docs": "關於 monday API token",
       "storage": "token 只儲存在這台電腦，只會傳送給 monday。",
       "submit": "連線",
@@ -23605,7 +23605,9 @@
       "status": "狀態",
       "subitems": "子任務（{{value0}}）",
       "timeline": "時程",
-      "updates": "Updates（{{value0}}）"
+      "updates": "Updates（{{value0}}）",
+      "attachments": "附件",
+      "image": "圖片"
     },
     "empty": {
       "noBoards": "選擇要檢視時程的 monday board。"
@@ -23661,7 +23663,10 @@
       "syncedAt": "{{value0}} 已同步",
       "items": "{{value0}} 個任務有日期",
       "truncated": "{{value0}}：只顯示前 {{value1}} 個任務",
-      "undated": "{{value0}} 個沒有日期"
+      "undated": "{{value0}} 個沒有日期",
+      "change": "變更狀態",
+      "loading": "正在讀取狀態…",
+      "saveFailed": "無法變更狀態"
     },
     "undated": {
       "hide": "隱藏沒有日期的任務",
