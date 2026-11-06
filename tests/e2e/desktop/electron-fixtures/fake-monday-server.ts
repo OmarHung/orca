@@ -23,7 +23,23 @@ function parseRequest(body: string): GraphqlRequest {
   return { query, variables }
 }
 
-type FakeState = { revision: number; names: Map<string, string> }
+export type FakeStatusChange = { board: unknown; item: unknown; column: unknown; value: unknown }
+
+type FakeState = {
+  revision: number
+  names: Map<string, string>
+  statusChanges: FakeStatusChange[]
+}
+
+const FAKE_STATUS_SETTINGS = {
+  labels: [
+    { id: 0, label: 'In Progress', hex: '#fdab3d', index: 1, is_done: false },
+    { id: 1, label: 'Done', hex: '#00c875', index: 2, is_done: true },
+    { id: 2, label: 'Stuck', hex: '#df2f4a', index: 3, is_done: false },
+    { id: 5, label: '', hex: '#c4c4c4', index: 0, is_done: false },
+    { id: 9, label: 'Retired', hex: '#333333', index: 4, is_done: false, is_deactivated: true }
+  ]
+}
 
 /** Every board's last-change time; renaming an item moves it forward. */
 function boardsUpdatedAt(state: FakeState): string {
@@ -111,6 +127,14 @@ function respond(request: GraphqlRequest, state: FakeState): unknown {
       )
     }
   }
+  if (query.includes('change_column_value(')) {
+    const { board, item, column, value } = variables
+    state.statusChanges.push({ board, item, column, value })
+    return { change_column_value: { id: String(item) } }
+  }
+  if (query.includes('columns(ids: $columns) { id settings }')) {
+    return { boards: [{ columns: [{ id: 'status', settings: FAKE_STATUS_SETTINGS }] }] }
+  }
   if (query.includes('items(ids:')) {
     return { items: itemDetail(stringList(variables.ids)[0] ?? '', state.names) }
   }
@@ -148,6 +172,8 @@ async function readBody(request: IncomingMessage): Promise<string> {
 export type FakeMondayServer = {
   url: string
   tokens: string[]
+  /** Status writes Orca sent, in order. */
+  statusChanges: FakeStatusChange[]
   /** Changes an item the way an edit on monday would, moving its board's updated_at forward. */
   renameItem: (itemId: string, name: string) => void
   close: () => Promise<void>
@@ -156,7 +182,7 @@ export type FakeMondayServer = {
 /** A local stand-in for api.monday.com that answers the queries Orca's monday page sends. */
 export async function startFakeMondayServer(): Promise<FakeMondayServer> {
   const tokens: string[] = []
-  const state: FakeState = { revision: 0, names: new Map() }
+  const state: FakeState = { revision: 0, names: new Map(), statusChanges: [] }
   const server: Server = createServer((request, response) => {
     void readBody(request).then((body) => {
       tokens.push(String(request.headers.authorization ?? ''))
@@ -171,6 +197,7 @@ export async function startFakeMondayServer(): Promise<FakeMondayServer> {
   return {
     url: `http://127.0.0.1:${port}/v2`,
     tokens,
+    statusChanges: state.statusChanges,
     renameItem: (itemId, name) => {
       state.names.set(itemId, name)
       state.revision += 1

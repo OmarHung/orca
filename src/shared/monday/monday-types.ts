@@ -57,6 +57,9 @@ export type MondayColumnInfo = { id: string; title: string; type: string }
 /** A status-style label; `color` is the hex monday assigns to it. */
 export type MondayLabel = { label: string; color: string }
 
+/** One choice of a board's status column; `id` is the label's index in monday's column value. */
+export type MondayStatusOption = MondayLabel & { id: number; isDone: boolean }
+
 /** Inclusive calendar dates, `YYYY-MM-DD`. */
 export type MondayDateRange = { from: string; to: string }
 
@@ -110,11 +113,23 @@ export type MondayLinkedItem = {
 
 export type MondayItemRelation = { columnId: string; title: string; items: MondayLinkedItem[] }
 
+/** A file attached to an update. `publicUrl` loads without a monday login but expires an hour after the read. */
+export type MondayAsset = {
+  id: string
+  name: string
+  extension: string
+  sizeBytes: number
+  publicUrl: string
+  /** monday's own address for the file, which needs a monday login. */
+  url: string
+}
+
 export type MondayUpdateReply = {
   id: string
   creatorName: string
   createdAt: string
   bodyHtml: string
+  assets: MondayAsset[]
 }
 
 export type MondayUpdate = MondayUpdateReply & { replies: MondayUpdateReply[] }
@@ -156,6 +171,24 @@ export const mondayLoadScheduleSchema = z.object({
 })
 
 export type MondayLoadScheduleRequest = z.infer<typeof mondayLoadScheduleSchema>
+
+const mondayColumnIdSchema = z.string().regex(/^[A-Za-z0-9_]{1,100}$/)
+
+export const mondayStatusOptionsSchema = z.object({
+  boardId: mondayIdSchema,
+  columnId: mondayColumnIdSchema
+})
+
+export type MondayStatusOptionsRequest = z.infer<typeof mondayStatusOptionsSchema>
+
+export const mondaySetStatusSchema = z.object({
+  boardId: mondayIdSchema,
+  itemId: mondayIdSchema,
+  columnId: mondayColumnIdSchema,
+  labelId: z.number().int().min(0).max(1000)
+})
+
+export type MondaySetStatusRequest = z.infer<typeof mondaySetStatusSchema>
 
 export const mondayOpenBrowserWindowSchema = z.object({
   url: z.string().min(1).max(8192),
