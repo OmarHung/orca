@@ -14,6 +14,7 @@ import { mondayScheduleWarnings } from './MondayItemHoverSummary'
 import { MondayColumnValue } from './MondayColumnValue'
 import { MondayItemUpdates } from './MondayItemUpdates'
 import { MondayLinkedItemRows } from './MondayLinkedItems'
+import { MondayItemStatusSelect } from './MondayItemStatusSelect'
 import { MondayTaskAgentMenu } from './MondayTaskAgentMenu'
 import { MondayDueFlag, MondayLabelBadge, mondayDueNeedsAttention } from './MondayScheduleVisuals'
 
@@ -63,6 +64,7 @@ function ScheduleRows(props: {
   const { entry, board, today } = props
   const { schedule, item } = entry
   const warnings = mondayScheduleWarnings(entry, today)
+  const statusColumnId = board?.roles.statusColumnId ?? null
   return (
     <>
       <FieldRow label={translate('monday.detail.timeline', 'Timeline')}>
@@ -102,9 +104,14 @@ function ScheduleRows(props: {
           </div>
         ))}
       </FieldRow>
-      {item.status ? (
+      {statusColumnId ? (
         <FieldRow label={translate('monday.detail.status', 'Status')}>
-          <MondayLabelBadge label={item.status} />
+          <MondayItemStatusSelect
+            boardId={item.boardId}
+            itemId={item.id}
+            columnId={statusColumnId}
+            status={item.status}
+          />
         </FieldRow>
       ) : null}
       {item.priority ? (

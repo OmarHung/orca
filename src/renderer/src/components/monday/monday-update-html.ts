@@ -32,10 +32,39 @@ const ALLOWED_TAGS = [
   'ul'
 ]
 
-export function mondayImagesAsLinks(html: string, imageLabel: string): string {
+const ASSET_ID_IN_URL = /\/resources\/(\d+)\//
+
+/** Which uploaded file an image or link in an update points at. */
+export function mondayAssetIdOf(element: Element): string | null {
+  const explicit = element.getAttribute('data-asset_id') ?? ''
+  if (/^\d+$/.test(explicit)) {
+    return explicit
+  }
+  const url = element.getAttribute('src') ?? element.getAttribute('href') ?? ''
+  return ASSET_ID_IN_URL.exec(url)?.[1] ?? null
+}
+
+/**
+ * Images whose file has a public address (asset id → url) stay images showing that address;
+ * the rest become links, because monday's own file URLs need a monday login to load.
+ */
+export function mondayImagesAsLinks(
+  html: string,
+  imageLabel: string,
+  imageUrls: ReadonlyMap<string, string> = new Map()
+): string {
   // DOMParser documents are inert: nothing in them loads or runs.
   const doc = new DOMParser().parseFromString(html, 'text/html')
   for (const image of Array.from(doc.querySelectorAll('img'))) {
+    const assetId = mondayAssetIdOf(image)
+    const url = assetId ? imageUrls.get(assetId) : undefined
+    if (url) {
+      const shown = doc.createElement('img')
+      shown.setAttribute('src', url)
+      shown.setAttribute('alt', image.getAttribute('alt') ?? '')
+      image.replaceWith(shown)
+      continue
+    }
     const link = doc.createElement('a')
     link.setAttribute('href', image.getAttribute('src') ?? '')
     link.textContent = imageLabel
@@ -44,16 +73,55 @@ export function mondayImagesAsLinks(html: string, imageLabel: string): string {
   return doc.body.innerHTML
 }
 
+/** Asset ids the update body already shows as images. */
+export function mondayInlineImageAssetIds(
+  html: string,
+  imageUrls: ReadonlyMap<string, string>
+): Set<string> {
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  return new Set(
+    Array.from(doc.querySelectorAll('img'))
+      .map(mondayAssetIdOf)
+      .filter((id): id is string => id !== null && imageUrls.has(id))
+  )
+}
+
+let allowedImageSources: ReadonlySet<string> = new Set()
+let purifier: ReturnType<typeof DOMPurify> | null = null
+
+// Own instance, so its hook never touches other sanitizers in the app.
+function mondayPurifier(): ReturnType<typeof DOMPurify> {
+  if (!purifier) {
+    purifier = DOMPurify(window)
+    purifier.addHook('afterSanitizeAttributes', (node) => {
+      // Only files monday handed Orca may load; any other image in the body stays unloaded.
+      if (node.tagName === 'IMG' && !allowedImageSources.has(node.getAttribute('src') ?? '')) {
+        node.removeAttribute('src')
+      }
+    })
+  }
+  return purifier
+}
+
 /**
- * monday update bodies are HTML written by other people. Keep only text formatting and http(s)
- * links; images become links because monday's file URLs need a monday login to load.
+ * monday update bodies are HTML written by other people. Keep only text formatting, http(s)
+ * links, and images of the update's own files.
  */
-export function sanitizeMondayHtml(html: string, imageLabel: string): string {
-  return DOMPurify.sanitize(mondayImagesAsLinks(html, imageLabel), {
-    ALLOWED_TAGS,
-    ALLOWED_ATTR: ['href'],
-    ALLOWED_URI_REGEXP: /^https?:/i
-  })
+export function sanitizeMondayHtml(
+  html: string,
+  imageLabel: string,
+  imageUrls: ReadonlyMap<string, string> = new Map()
+): string {
+  allowedImageSources = new Set(imageUrls.values())
+  try {
+    return mondayPurifier().sanitize(mondayImagesAsLinks(html, imageLabel, imageUrls), {
+      ALLOWED_TAGS: [...ALLOWED_TAGS, 'img'],
+      ALLOWED_ATTR: ['href', 'src', 'alt'],
+      ALLOWED_URI_REGEXP: /^https?:/i
+    })
+  } finally {
+    allowedImageSources = new Set()
+  }
 }
 
 const TEXT_BLOCK_TAGS = new Set([

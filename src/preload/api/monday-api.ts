@@ -6,6 +6,9 @@ import type {
   MondayOpenBrowserWindowRequest,
   MondayResult,
   MondaySchedule,
+  MondaySetStatusRequest,
+  MondayStatusOption,
+  MondayStatusOptionsRequest,
   MondayUser
 } from '../../shared/monday/monday-types'
 
@@ -21,6 +24,12 @@ export type MondayApi = {
   /** Board id → last-change time: one cheap call to tell whether a reload is needed. */
   boardsUpdatedAt: (boardIds: string[]) => Promise<MondayResult<Record<string, string>>>
   getItem: (itemId: string) => Promise<MondayResult<MondayItemDetail>>
+  /** The choices of one board's status column, in monday's order. */
+  statusOptions: (
+    request: MondayStatusOptionsRequest
+  ) => Promise<MondayResult<MondayStatusOption[]>>
+  /** Writes the item's status in monday. */
+  setStatus: (request: MondaySetStatusRequest) => Promise<MondayResult<void>>
   /** Opens the page in a window of its own, sharing the profile's login; false when it can't. */
   openBrowserWindow: (request: MondayOpenBrowserWindowRequest) => Promise<boolean>
 }
