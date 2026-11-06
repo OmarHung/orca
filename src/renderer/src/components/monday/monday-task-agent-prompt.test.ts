@@ -11,7 +11,7 @@ import type { MondayCalendarEntry } from './monday-calendar-model'
 import { buildMondayTaskAgentPrompt } from './monday-task-agent-prompt'
 
 function update(id: string, createdAt: string, bodyHtml: string): MondayUpdate {
-  return { id, creatorName: 'Cora', createdAt, bodyHtml, replies: [] }
+  return { id, creatorName: 'Cora', createdAt, bodyHtml, assets: [], replies: [] }
 }
 
 const detail: MondayItemDetail = {

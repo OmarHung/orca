@@ -10,12 +10,12 @@
 
 ## 使用者決定（2026-10-05）
 
-| # | 決定 |
-|---|---|
-| D1 | **獨立頁面**：左側欄 Database 下方的「monday」入口（`TopLevelView: 'monday'`），不放進 Tasks 頁 |
-| D2 | **月曆＋甘特都做**，兩種畫面都同時畫出時程長條和 Due date 旗標 |
-| D3 | **唯讀**：看時程、點開看完整內容；寫入（拖曳改日期、改狀態、發 update）以後再說 |
-| D4 | **選多個 board**，用「只顯示誰的」下拉選單篩人（2026-10-05 由「只看我的」開關改成下拉選單） |
+| #   | 決定                                                                                                             |
+| --- | ---------------------------------------------------------------------------------------------------------------- |
+| D1  | **獨立頁面**：左側欄 Database 下方的「monday」入口（`TopLevelView: 'monday'`），不放進 Tasks 頁                  |
+| D2  | **月曆＋甘特都做**，兩種畫面都同時畫出時程長條和 Due date 旗標                                                   |
+| D3  | **唯讀**：看時程、點開看完整內容；寫入（拖曳改日期、改狀態、發 update）以後再說。2026-11-06 起開放改狀態（見下） |
+| D4  | **選多個 board**，用「只顯示誰的」下拉選單篩人（2026-10-05 由「只看我的」開關改成下拉選單）                      |
 
 ## 畫面規則
 
@@ -71,14 +71,31 @@
 
 內容（`monday-task-agent-prompt.ts`）：任務、board · group、monday 連結、時程／Due／狀態／優先順序／人員（有排程資料時）、其他欄位、連結的記錄（**只帶名稱和網址**，其他欄位可能有不該交給 agent 的資料）、描述、子任務、updates 和回覆（由新到舊）。update 的 HTML 轉成文字（`mondayHtmlToText`）：連結寫出完整網址（monday 會把長網址縮成「…」）、圖片寫成「[圖片] 網址」（要登入 monday 才看得到）、@提及不附網址、script／style 不算文字。貼進終端機前去掉控制字元和 bidi 控制字元，長度上限和上游 linked context 一樣 12,000 字，超過時從最舊的 update 截掉並註明。
 
+## 改狀態（2026-11-06）
+
+詳情面板的「狀態」是下拉選單：board 有狀態欄就顯示（沒有狀態時顯示「沒有狀態」）。第一次打開才讀那個欄的選項（`columns(ids:) { settings }`，這次執行裡快取在 store），順序照 monday 的 `index`，停用的 label 不列；monday 的空白 label 顯示成「沒有狀態」，選它等於清掉狀態。
+
+選了就先在畫面上換掉（月曆／甘特長條顏色、已完成刪除線、快取的排程），再用 `change_column_value` 寫 `{"index": <label id>}`（用 id 而不是文字，因為空白 label 沒有文字可送）；失敗就換回原本的狀態並跳 toast。寫入用的是連線的 token，所以 monday 上記的是 token 擁有者改的。
+
+改成會被篩掉的狀態（例如開著「隱藏已完成」時改成 Done），長條會消失但面板繼續顯示這個任務。
+
+## Update 的附件（2026-11-06）
+
+update 和回覆多讀 `assets`。monday 的檔案網址（`protected_static`）要登入 monday 才看得到，但 API 給的 `public_url`（S3 簽名網址）不用登入、**一小時後失效**：
+
+- 圖片：update 內文裡指到自己附件的 `<img>`（`data-asset_id` 或網址裡的 `/resources/<id>/`）直接顯示，點了放大；其他 `<img>` 照舊變成「[圖片]」連結。淨化用自己的 DOMPurify 實例，hook 只放行這次附件的 `public_url`，其他圖片的 `src` 一律拿掉。
+- 內文沒顯示到的附件列在內文下方：圖片縮圖（點了放大）、影片（mp4／m4v／mov／webm）用內建播放器、其他檔案列成一行（檔名、大小），點了用 monday 的網址開在 Orca 瀏覽器（用那裡的 monday 登入）。
+- 圖片或影片載入失敗（多半是過期）就退成檔案那一行。詳情讀了超過 50 分鐘，再點開時會重讀一次拿新網址。
+- 「交給 AI」的內容不變：圖片仍寫成「[圖片] 網址」，附件不另外列。
+
 ## 架構
 
-| 位置 | 內容 |
-|---|---|
-| `src/shared/monday/` | 型別、IPC 輸入的 zod schema、欄位角色偵測（`detectMondayColumnRoles`）、時程計算（`computeMondayItemSchedule`） |
-| `src/main/monday/` | token 儲存（`KeptPasswords`：有 keychain 就加密存在 `userData/monday/`，沒有就只放記憶體，**絕不存明文**）、GraphQL client（`API-Version: 2026-07` 固定、錯誤分類、被限流時等一次再重試）、排程載入（多個 board 用 alias 合成一次請求，board 結構在這次執行裡快取）、IPC `monday:*` |
-| `src/preload/api/monday-*` | `window.api.monday` |
-| `src/renderer/src/components/monday/` | 頁面、獨立 zustand store（不碰上游的 app store）、月曆／甘特版面模型、詳情面板、board 選擇器 |
+| 位置                                  | 內容                                                                                                                                                                                                                                                                                |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/shared/monday/`                  | 型別、IPC 輸入的 zod schema、欄位角色偵測（`detectMondayColumnRoles`）、時程計算（`computeMondayItemSchedule`）                                                                                                                                                                     |
+| `src/main/monday/`                    | token 儲存（`KeptPasswords`：有 keychain 就加密存在 `userData/monday/`，沒有就只放記憶體，**絕不存明文**）、GraphQL client（`API-Version: 2026-07` 固定、錯誤分類、被限流時等一次再重試）、排程載入（多個 board 用 alias 合成一次請求，board 結構在這次執行裡快取）、IPC `monday:*` |
+| `src/preload/api/monday-*`            | `window.api.monday`                                                                                                                                                                                                                                                                 |
+| `src/renderer/src/components/monday/` | 頁面、獨立 zustand store（不碰上游的 app store）、月曆／甘特版面模型、詳情面板、board 選擇器                                                                                                                                                                                        |
 
 上游檔案只加一行分支：`TopLevelView`／`isTopLevelView`／`UiViewHistory`／`TopLevelViewSchema`、右側欄隱藏清單、`AppWorkspaceShell`、`SidebarNav`、`register-core-handlers`、preload 的 `api-types`／`index`；內嵌瀏覽器另改了 `browser-hydration-actions.ts` 兩行（見上）；獨立視窗另改了 `popup-origin-bar-window.ts`（可傳 `show: false`、回傳 `window`）和 `foreground-activation-policy.ts`（`showWindowWithoutStealingFocus` 收 `BaseWindow`）；交給 AI 另改了 `launch-work-item-direct(-types).ts`（`LaunchableWorkItem.workspaceName`：沒有編號的項目用它當名稱種子）和 `QuickLaunchButton.tsx`（`orderAgents` 加 `export`）。
 
@@ -89,11 +106,11 @@ monday 的每日上限是**整個帳號共用**。所以：不在背景輪詢；
 ## 測試
 
 - 單元：欄位偵測（用兩種常見 board 的欄位形狀當 fixture）、時程計算、月曆分道（lane）與甘特版面、GraphQL 錯誤分類與重試、token 儲存（沒有 keychain 不寫檔）、詳情對應、圖片轉連結、交給 AI 的內容（HTML 轉文字、控制字元、長度上限、連結記錄只帶名稱和網址）和啟動參數（草稿、workspace 名稱、對話框退路）。
-- e2e：`tests/e2e/monday-schedule.spec.ts`，搭配 `tests/e2e/helpers/fake-monday-server.ts`。「交給 AI」選單和複製的內容也在這裡驗證（換掉 `clipboard:writeText` IPC，不碰系統剪貼簿）。端點覆寫 `ORCA_MONDAY_API_URL_FOR_TESTS` 只在非打包版生效（打包版的 token 只會送到 monday）。
+- e2e：`tests/e2e/monday-schedule.spec.ts`，搭配 `tests/e2e/helpers/fake-monday-server.ts`。「交給 AI」選單和複製的內容、改狀態（送出的 mutation）、附件圖片與影片退路也在這裡驗證（換掉 `clipboard:writeText` IPC，不碰系統剪貼簿）。端點覆寫 `ORCA_MONDAY_API_URL_FOR_TESTS` 只在非打包版生效（打包版的 token 只會送到 monday）。
 - happy-dom 裡的 DOMPurify 行為不正確，所以 update HTML 的淨化在 e2e（Chromium）裡驗證。
 
 ## 之後可以做
 
-- 寫入：拖曳長條／旗標改日期、改狀態、發 update（需要先確認寫入是以使用者本人名義）。
+- 寫入：拖曳長條／旗標改日期、發 update（改狀態已做）。
 - 每個 board 手動調整欄位角色（目前只有自動偵測）。
 - 週檢視、從任務開 workspace。

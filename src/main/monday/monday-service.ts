@@ -5,6 +5,9 @@ import type {
   MondayItemDetail,
   MondayLoadScheduleRequest,
   MondaySchedule,
+  MondaySetStatusRequest,
+  MondayStatusOption,
+  MondayStatusOptionsRequest,
   MondayUser
 } from '../../shared/monday/monday-types'
 import { MondayAccountStore } from './monday-account-store'
@@ -24,10 +27,13 @@ import {
   BOARDS_UPDATED_AT_QUERY,
   ITEM_DETAIL_QUERY,
   ME_QUERY,
+  SET_STATUS_MUTATION,
+  STATUS_COLUMN_SETTINGS_QUERY,
   USERS_PAGE_SIZE,
   USERS_QUERY
 } from './monday-queries'
 import { MondayScheduleLoader } from './monday-schedule-loader'
+import { mapStatusOptions } from './monday-status-options'
 
 const BOARDS_PAGE_SIZE = 100
 const MAX_BOARD_PAGES = 5
@@ -153,6 +159,27 @@ export class MondayService {
       throw new MondayApiError('api', 'This item no longer exists, or you cannot see it.')
     }
     return mapItemDetail(item)
+  }
+
+  async statusOptions(request: MondayStatusOptionsRequest): Promise<MondayStatusOption[]> {
+    const data = await this.call<{ boards: { columns: { settings: unknown }[] | null }[] | null }>(
+      STATUS_COLUMN_SETTINGS_QUERY,
+      { board: [request.boardId], columns: [request.columnId] }
+    )
+    const column = data.boards?.[0]?.columns?.[0]
+    if (!column) {
+      throw new MondayApiError('api', 'This status column no longer exists, or you cannot see it.')
+    }
+    return mapStatusOptions(column.settings)
+  }
+
+  async setStatus(request: MondaySetStatusRequest): Promise<void> {
+    await this.call(SET_STATUS_MUTATION, {
+      board: request.boardId,
+      item: request.itemId,
+      column: request.columnId,
+      value: JSON.stringify({ index: request.labelId })
+    })
   }
 
   private async call<T>(query: string, variables: Record<string, unknown>): Promise<T> {

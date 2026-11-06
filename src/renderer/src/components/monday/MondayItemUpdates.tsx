@@ -1,10 +1,16 @@
-import React, { useMemo } from 'react'
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { PanZoomImageDialog } from '@/components/editor/PanZoomImageDialog'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
 import type { MondayUpdate, MondayUpdateReply } from '../../../../shared/monday/monday-types'
 import { openMondayLink } from './monday-browser-actions'
 import { formatMondayTimestamp } from './monday-date-format'
-import { mondayLinkFromClick, sanitizeMondayHtml } from './monday-update-html'
+import {
+  mondayInlineImageAssetIds,
+  mondayLinkFromClick,
+  sanitizeMondayHtml
+} from './monday-update-html'
+import { mondayAssetKind, MondayUpdateAttachments } from './MondayUpdateAttachments'
 
 // monday's own label palette, so a person keeps one color across every update thread.
 const PERSON_COLORS = [
@@ -55,18 +61,75 @@ function openClickedLink(event: React.MouseEvent): void {
   }
 }
 
-function UpdateBody({ html }: { html: string }): React.JSX.Element {
-  const safe = useMemo(
-    () => sanitizeMondayHtml(html, translate('monday.detail.imageLink', '[Image]')),
-    [html]
-  )
+function UpdateBody({ update }: { update: MondayUpdateReply }): React.JSX.Element {
+  const [zoomed, setZoomed] = useState<{ src: string; alt: string } | null>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const { safe, attachments } = useMemo(() => {
+    const imageUrls = new Map(
+      update.assets
+        .filter((asset) => mondayAssetKind(asset) === 'image')
+        .map((asset) => [asset.id, asset.publicUrl])
+    )
+    const inline = mondayInlineImageAssetIds(update.bodyHtml, imageUrls)
+    return {
+      safe: sanitizeMondayHtml(
+        update.bodyHtml,
+        translate('monday.detail.imageLink', '[Image]'),
+        imageUrls
+      ),
+      attachments: update.assets.filter((asset) => !inline.has(asset.id))
+    }
+  }, [update.bodyHtml, update.assets])
+
+  // Why a capture listener: load errors don't bubble, and these images come from injected HTML.
+  // Why a layout effect: it is attached before the images can start, so no error slips past.
+  useLayoutEffect(() => {
+    const body = bodyRef.current
+    if (!body) {
+      return
+    }
+    const onImageError = (event: Event): void => {
+      const image = event.target
+      if (!(image instanceof HTMLImageElement)) {
+        return
+      }
+      // An expired public address falls back to monday's own link, as an image without one would.
+      const asset = update.assets.find((entry) => entry.publicUrl === image.getAttribute('src'))
+      const link = document.createElement('a')
+      link.setAttribute('href', asset?.url ?? '')
+      link.textContent = translate('monday.detail.imageLink', '[Image]')
+      image.replaceWith(link)
+    }
+    body.addEventListener('error', onImageError, true)
+    return () => body.removeEventListener('error', onImageError, true)
+  }, [update.assets, safe])
+
+  const onBodyClick = (event: React.MouseEvent): void => {
+    const target = event.target
+    if (target instanceof HTMLImageElement && target.src) {
+      setZoomed({ src: target.src, alt: target.alt })
+      return
+    }
+    openClickedLink(event)
+  }
+
   return (
-    // Why onClick here: links inside keep their own keyboard activation; this reroutes them to the system browser.
-    <div
-      onClick={openClickedLink}
-      className="break-words text-sm leading-relaxed [&_a]:text-primary [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&>*:first-child]:mt-0"
-      dangerouslySetInnerHTML={{ __html: safe }}
-    />
+    <>
+      {/* Why onClick here: links inside keep their own keyboard activation; this reroutes them to the system browser. */}
+      <div
+        ref={bodyRef}
+        onClick={onBodyClick}
+        className="break-words text-sm leading-relaxed [&_a]:text-primary [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-2 [&_img]:my-1 [&_img]:max-h-72 [&_img]:cursor-zoom-in [&_img]:rounded-md [&_img]:border [&_img]:border-border [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&>*:first-child]:mt-0"
+        dangerouslySetInnerHTML={{ __html: safe }}
+      />
+      <MondayUpdateAttachments assets={attachments} />
+      <PanZoomImageDialog
+        open={zoomed !== null}
+        onOpenChange={(open) => !open && setZoomed(null)}
+        src={zoomed?.src}
+        title={zoomed?.alt || translate('monday.detail.image', 'Image')}
+      />
+    </>
   )
 }
 
@@ -90,7 +153,7 @@ function UpdateEntry({
             {formatMondayTimestamp(update.createdAt)}
           </span>
         </div>
-        <UpdateBody html={update.bodyHtml} />
+        <UpdateBody update={update} />
       </div>
     </div>
   )

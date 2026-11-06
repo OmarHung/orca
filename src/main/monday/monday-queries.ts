@@ -100,6 +100,8 @@ export const NEXT_SCHEDULE_PAGE_QUERY = `query ($cursor: String!, $columns: [Str
   }
 }`
 
+const ASSET_FIELDS = 'id name file_extension file_size url public_url'
+
 // Why display_value: connected-board, mirror and dependency columns return an empty `text`.
 // Linked items come with their own columns so the panel can show e.g. the task's Client CRM record.
 export const ITEM_DETAIL_QUERY = `query ($ids: [ID!]) {
@@ -129,7 +131,17 @@ export const ITEM_DETAIL_QUERY = `query ($ids: [ID!]) {
     subitems { id name column_values { type text } }
     updates(limit: 50) {
       id body created_at creator { name }
-      replies { id body created_at creator { name } }
+      assets { ${ASSET_FIELDS} }
+      replies { id body created_at creator { name } assets { ${ASSET_FIELDS} } }
     }
   }
+}`
+
+export const STATUS_COLUMN_SETTINGS_QUERY = `query ($board: [ID!], $columns: [String!]) {
+  boards(ids: $board) { columns(ids: $columns) { id settings } }
+}`
+
+// Why the JSON index, not the label text: an empty label (monday's "no status") has no text to send.
+export const SET_STATUS_MUTATION = `mutation ($board: ID!, $item: ID!, $column: String!, $value: JSON!) {
+  change_column_value(board_id: $board, item_id: $item, column_id: $column, value: $value) { id }
 }`

@@ -6,6 +6,7 @@ import type {
   MondayError,
   MondayItemDetail,
   MondaySchedule,
+  MondayStatusOption,
   MondayUser
 } from '../../../../shared/monday/monday-types'
 import { monthOf } from './monday-calendar-model'
@@ -13,7 +14,12 @@ import { readMondayViewPrefs, type MondayViewPrefs } from './monday-view-prefs'
 
 export type MondayDetailState =
   | { status: 'loading' }
-  | { status: 'ready'; detail: MondayItemDetail }
+  | { status: 'ready'; detail: MondayItemDetail; loadedAt: number }
+  | { status: 'error'; error: MondayError }
+
+export type MondayStatusOptionsState =
+  | { status: 'loading' }
+  | { status: 'ready'; options: MondayStatusOption[] }
   | { status: 'error'; error: MondayError }
 
 // Why its own store, not the app store: keeps the fork's page out of upstream's slices.
@@ -36,6 +42,8 @@ export type MondayPageState = {
   anchorMonth: string
   selectedItemId: string | null
   details: Record<string, MondayDetailState>
+  /** Keyed by `mondayStatusColumnKey`. */
+  statusOptions: Record<string, MondayStatusOptionsState>
   boardPickerOpen: boolean
 }
 
@@ -54,5 +62,6 @@ export const useMondayPageStore = create<MondayPageState>(() => ({
   anchorMonth: monthOf(localIsoDate(new Date())),
   selectedItemId: null,
   details: {},
+  statusOptions: {},
   boardPickerOpen: false
 }))
