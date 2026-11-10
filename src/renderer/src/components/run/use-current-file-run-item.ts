@@ -1,7 +1,7 @@
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import { basename, getRelativePathInsideRoot } from '@/lib/path'
-import { findWorktreeById } from '@/store/slices/worktree-helpers'
+import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
 import { quoteShellArgument } from '../../../../shared/run-configurations/run-configuration-types'
 import { debugTargetForFile } from '../debug/debug-launch'
 import { useDebugLaunchTarget } from '../debug/use-debug-launch-target'

@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useTerminalTabColdParking } from '@/components/terminal-pane/use-terminal-tab-cold-parking'
+import { useTerminalTabColdParking } from '@/components/terminal-pane/parking/lifecycle/use-terminal-tab-cold-parking'
 import { useAppStore } from '@/store'
 import type { AppState } from '@/store/types'
 import type { TerminalTab } from '../../../../shared/workspace-layout/terminal-tab-types'

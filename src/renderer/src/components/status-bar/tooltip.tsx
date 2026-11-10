@@ -21,7 +21,7 @@ import {
 import { formatUsagePercentageLabel } from './usage-percentage-label'
 import { useResetCountdownClock } from '@/hooks/useResetCountdownClock'
 import { recomputeOn } from '@/lib/recompute-on'
-import { barColor, ProviderExtraUsageSection } from './provider-extra-usage-section'
+import { ProviderExtraUsageSection } from './provider-extra-usage-section'
 import { UsagePaceBar } from './UsagePaceBar'
 
 export {

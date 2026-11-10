@@ -1,12 +1,14 @@
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
-import { getRepoMapFromState, getWorktreeMapFromState } from '@/store/selectors'
+import { getIndexedRepoMap } from '@/store/repos/repository-catalog-index'
+import { getIndexedWorktreeMap } from '@/store/slices/worktrees/listing/worktree-catalog-index'
+import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
 import { getConnectionId } from '@/lib/connection-context'
 import { runtimeTargetForWorkspaceOwner } from '@/lib/resolve-owner'
 import { translate } from '@/i18n/i18n'
 import { getRuntimeGitBlame } from '@/runtime/runtime-git-blame-client'
-import { getRuntimeGitCommitCompare } from '@/runtime/runtime-git-diff-client'
-import type { RuntimeGitContext } from '@/runtime/runtime-git-client-context'
+import { getRuntimeGitCommitCompare } from '@/runtime/source-control/git/runtime-git-diff-client'
+import type { RuntimeGitContext } from '@/runtime/source-control/git/runtime-git-client-context'
 import { isGitRepoKind } from '../../../../../shared/repo-kind'
 import type { GitBlameResult } from '../../../../../shared/git-blame'
 
@@ -17,8 +19,8 @@ const blameCache = new Map<string, Promise<GitBlameResult | null>>()
 
 function resolveContext(worktreeId: string): RuntimeGitContext | null {
   const state = useAppStore.getState()
-  const worktree = getWorktreeMapFromState(state).get(worktreeId)
-  const repo = worktree ? getRepoMapFromState(state).get(worktree.repoId) : undefined
+  const worktree = getIndexedWorktreeMap(selectWorktreesByRepo(state)).get(worktreeId)
+  const repo = worktree ? getIndexedRepoMap(state.repos).get(worktree.repoId) : undefined
   if (!worktree || !repo || !isGitRepoKind(repo)) {
     return null
   }

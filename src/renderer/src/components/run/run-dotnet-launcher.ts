@@ -1,6 +1,6 @@
 import { joinPath } from '@/lib/path'
 import { useAppStore } from '@/store'
-import { findWorktreeById } from '@/store/slices/worktree-helpers'
+import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
 import { getRepoExecutionHostId } from '../../../../shared/execution-host'
 import { flattenTerminalQuickCommand } from '../../../../shared/terminal/quick-commands/terminal-quick-commands'
 import { isLocalDebugTarget } from '../debug/debug-launch'

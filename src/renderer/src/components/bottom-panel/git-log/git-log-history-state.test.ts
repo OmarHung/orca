@@ -10,7 +10,7 @@ function historyResult(ids: string[], branch = 'main'): GitHistoryResult {
     hasOutgoingChanges: false,
     hasMore: false,
     limit: 200,
-    refs: {
+    branchList: {
       branches: [
         {
           fullName: `refs/heads/${branch}`,

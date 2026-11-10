@@ -147,7 +147,7 @@ export function ChatBehaviorSetting({
                 label={entries.sendWithShortcutOnly.title}
                 description={entries.sendWithShortcutOnly.description}
                 checked={sendWithShortcutOnly}
-                ariaLabel={translate(
+                ariaLabel={t(
                   'components.settings.nativeChat.sendWithShortcutOnlyToggleLabel',
                   'Toggle sending with the keyboard shortcut only'
                 )}

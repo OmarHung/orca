@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { existsSync, readFileSync, statSync } from 'node:fs'
-import { isUnreadableError, writeDurableSecureJsonFile } from '../../shared/secure-file'
+import {
+  isUnreadableError,
+  writeDurableSecureJsonFile
+} from '../../shared/secure-storage/secure-file'
 import {
   sshCommandSchema,
   type SshCommand,

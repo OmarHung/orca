@@ -1,6 +1,6 @@
 import type { useAppStore } from '@/store'
-import type { OpenFile } from '@/store/slices/editor'
-import { findWorktreeById } from '@/store/slices/worktree-helpers'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
+import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
 import { getFolderWorkspaceConnectionId } from '@/lib/folder-workspace-connection'
 import { getResolvedExecutionHostIdForWorktree } from '@/lib/resolved-worktree-execution-host'
 import { getRelativePathInsideRoot } from '@/lib/path'

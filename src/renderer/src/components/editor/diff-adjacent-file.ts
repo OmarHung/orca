@@ -1,7 +1,7 @@
 import type { GitBranchChangeEntry } from '../../../../shared/git/diff/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../shared/git/status/git-status-types'
 import type { SourceControlGroupOrder } from '../../../../shared/ui-chrome-types'
-import { compareFileNames } from '../../../../shared/file-name-sort'
+import { compareFileNames } from '../../../../shared/file-listing/file-name-sort'
 import { compareGitStatusEntries } from '../../../../shared/git/status/git-status-sort'
 import {
   buildSourceControlDisplaySections,

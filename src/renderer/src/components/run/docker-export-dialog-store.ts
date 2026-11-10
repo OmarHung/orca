@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { useAppStore } from '@/store'
-import { createBrowserUuid } from '@/lib/browser-uuid'
-import { findWorktreeById } from '@/store/slices/worktree-helpers'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
+import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
 import {
   newDockerExportConfiguration,
   type DockerExportRunConfiguration

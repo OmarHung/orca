@@ -27,7 +27,7 @@ const NEVER_CANCEL_TRUST_CHECK = (): boolean => false
 // Serialize the singleton modal callback so overlapping worktree actions cannot replace it.
 let trustPromptChain: Promise<unknown> = Promise.resolve()
 
-function enqueueTrustPrompt<T>(task: () => Promise<T>): Promise<T> {
+export function enqueueTrustPrompt<T>(task: () => Promise<T>): Promise<T> {
   const next = trustPromptChain.then(task, task)
   trustPromptChain = next.catch(() => undefined)
   return next
@@ -73,7 +73,7 @@ export type HookTrustApproval = { decision: 'run' | 'skip'; approvedContentHash?
 const SKIP: HookTrustApproval = { decision: 'skip' }
 const RUN_ANY: HookTrustApproval = { decision: 'run' }
 
-async function confirmScriptContent(
+export async function confirmScriptContent(
   state: AppState,
   repoId: string,
   scriptKind: OrcaHookTrustKind,
@@ -333,16 +333,4 @@ export async function ensureHooksApproved(
       signal
     )
   })
-}
-
-/** Asks once per content change before any orca.yaml run configuration may execute. */
-export function confirmSharedRunConfigurations(
-  state: AppState,
-  repoId: string,
-  trustContent: string,
-  hostId?: ExecutionHostId
-): Promise<'run' | 'skip'> {
-  return enqueueTrustPrompt(() =>
-    confirmScriptContent(state, repoId, 'runConfigurations', trustContent, hostId)
-  )
 }

@@ -1,5 +1,8 @@
 import type { GitBlameResult } from '../../../shared/git-blame'
-import { resolveLocalWorktreePath, type RuntimeGitContext } from './runtime-git-client-context'
+import {
+  resolveLocalWorktreePath,
+  type RuntimeGitContext
+} from './source-control/git/runtime-git-client-context'
 
 /**
  * Blame for one worktree file on its owning host (local, WSL or SSH). Returns

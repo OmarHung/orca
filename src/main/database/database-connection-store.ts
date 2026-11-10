@@ -5,7 +5,10 @@ import {
   type DatabaseConnection,
   type DatabaseConnectionDraft
 } from '../../shared/database/database-connection-types'
-import { isUnreadableError, writeDurableSecureJsonFile } from '../../shared/secure-file'
+import {
+  isUnreadableError,
+  writeDurableSecureJsonFile
+} from '../../shared/secure-storage/secure-file'
 
 type ConnectionsFile = { version: 1; connections: unknown[] }
 

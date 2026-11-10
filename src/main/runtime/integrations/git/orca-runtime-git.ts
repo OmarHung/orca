@@ -3,7 +3,7 @@ import { RuntimeGitGenerationCommands } from './runtime-git-generation-commands'
 import { RuntimeGitStagingCommands } from './runtime-git-staging-commands'
 import { RuntimeGitStatusCommands } from './runtime-git-status-commands'
 import { RuntimeGitSyncCommands } from './runtime-git-sync-commands'
-import { RuntimeGitBranchActionCommands } from './runtime-git-branch-action-commands'
+import { RuntimeGitBranchActionCommands } from '../../runtime-git-branch-action-commands'
 import type { RuntimeGitCommandHost } from './runtime-git-command-target'
 
 export class RuntimeGitCommands {

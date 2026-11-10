@@ -15,12 +15,12 @@ import {
 import {
   isTerminalLinkActionActivation,
   isTerminalLinkDirectActivation
-} from './terminal-link-activation'
-import { isMacPlatform } from './terminal-link-open-hints'
+} from './links/gestures/terminal-link-activation'
+import { isMacPlatform } from './links/terminal-link-open-hints'
 import {
   requestTerminalLinkAction,
   type TerminalLinkActionContext
-} from './terminal-link-action-request'
+} from './links/terminal-link-action-request'
 
 const MARKER_PREFIX = '[Image #'
 

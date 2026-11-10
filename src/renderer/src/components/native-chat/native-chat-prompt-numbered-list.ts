@@ -1,5 +1,5 @@
 import { Extension, type Editor } from '@tiptap/react'
-import { promptText } from './native-chat-prompt-document'
+import { promptText } from './composer/editor/native-chat-prompt-document'
 
 // Indent, number and the spacing after its dot; nine digits stay exact once parsed.
 const NUMBERED_ITEM = /^([ \t]*)(\d{1,9})\.([ \t]+)/

@@ -1,5 +1,5 @@
 import { toast } from 'sonner'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
 import { translate } from '@/i18n/i18n'
 import type { CommandConfirm } from '../command-confirm/command-confirm-context'
 import type { SftpPlan, SftpPlanRequest } from '../../../../shared/sftp-types'

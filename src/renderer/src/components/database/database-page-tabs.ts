@@ -1,4 +1,4 @@
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
 import { DATABASE_CONNECTION_ID_PATTERN } from '../../../../shared/database/database-connection-types'
 import { DATABASE_CONSOLE_ID_PATTERN } from '../../../../shared/database/database-session-types'
 

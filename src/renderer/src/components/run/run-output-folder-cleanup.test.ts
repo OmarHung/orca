@@ -13,15 +13,19 @@ const mocks = vi.hoisted(() => {
 })
 
 vi.mock('@/store', () => ({ useAppStore: { getState: () => mocks.appState } }))
-vi.mock('@/store/slices/worktree-helpers', () => ({
-  findWorktreeById: (byRepo: Record<string, { id: string }[]>, id: string) =>
+vi.mock('@/lib/workspace/ownership/worktree-runtime-owner-index', () => ({
+  findFirstIndexedWorktree: (byRepo: Record<string, { id: string }[]>, id: string) =>
     Object.values(byRepo)
       .flat()
       .find((worktree) => worktree.id === id)
 }))
 vi.mock('sonner', () => ({ toast: { error: mocks.toastError } }))
-vi.mock('@/runtime/runtime-file-metadata-client', () => ({ runtimePathExists: mocks.pathExists }))
-vi.mock('@/runtime/runtime-file-mutation-client', () => ({ deleteRuntimePath: mocks.deletePath }))
+vi.mock('@/runtime/files/metadata/runtime-file-metadata-client', () => ({
+  runtimePathExists: mocks.pathExists
+}))
+vi.mock('@/runtime/files/mutations/runtime-file-mutation-client', () => ({
+  deleteRuntimePath: mocks.deletePath
+}))
 vi.mock('../tab-bar/tab-create-entry-local-path', () => ({
   getTabEntryFileOperationContext: () => mocks.fileContext
 }))

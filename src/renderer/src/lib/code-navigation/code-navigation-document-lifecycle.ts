@@ -6,7 +6,10 @@ import {
   type CodeNavigationFileChange,
   type CodeNavigationServerKind
 } from '../../../../shared/code-navigation/code-navigation-types'
-import type { FsChangedPayload, FsChangeEvent } from '../../../../shared/filesystem-entry-types'
+import type {
+  FsChangedPayload,
+  FsChangeEvent
+} from '../../../../shared/file-watch/filesystem-change-event'
 
 type SyncedDocument = { kind: CodeNavigationServerKind; root: string; path: string }
 

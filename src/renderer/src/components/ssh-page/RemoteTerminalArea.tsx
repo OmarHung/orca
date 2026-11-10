@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import TerminalPane from '@/components/terminal-pane/TerminalPane'
-import { shouldDeferParkedPtyExitTabClose } from '@/components/terminal-pane/terminal-parked-tab-watchers'
+import { shouldDeferParkedPtyExitTabClose } from '@/components/terminal-pane/parking/output-watchers/terminal-parked-tab-watchers'
 import { closeTerminalTab } from '@/components/terminal/terminal-tab-actions'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'

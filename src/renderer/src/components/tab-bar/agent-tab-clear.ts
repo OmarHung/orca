@@ -4,7 +4,7 @@ import type { AppState } from '@/store/types'
 import {
   sendNativeChatMessage,
   sendNativeChatTypedCommand
-} from '../native-chat/native-chat-runtime-send'
+} from '../native-chat/session/terminal/send/native-chat-runtime-send'
 import {
   isTerminalTabActivityLive,
   resolveTerminalTabActivityStatus

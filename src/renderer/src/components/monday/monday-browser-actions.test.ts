@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('sonner', () => ({ toast: mocks.toast }))
 // The store pulls in the whole renderer; the code under test only reads state.
 vi.mock('@/store', () => ({ useAppStore: { getState: mocks.getState } }))
-vi.mock('@/store/slices/browser/browser-host-state', () => ({
+vi.mock('@/store/slices/browser/hosts/browser-host-state', () => ({
   getBrowserSessionProfileHostId: () => 'local',
   getDefaultBrowserProfileForHost: mocks.defaultProfileForHost
 }))

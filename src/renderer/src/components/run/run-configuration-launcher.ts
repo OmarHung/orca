@@ -1,8 +1,8 @@
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { joinPath } from '@/lib/path'
-import { findWorktreeById } from '@/store/slices/worktree-helpers'
-import { confirmSharedRunConfigurations } from '@/lib/ensure-hooks-confirmed'
+import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
+import { confirmSharedRunConfigurations } from '@/lib/shared-run-configuration-trust'
 import { getRepoExecutionHostId } from '../../../../shared/execution-host'
 import type { Repo } from '../../../../shared/repo-types'
 import type {

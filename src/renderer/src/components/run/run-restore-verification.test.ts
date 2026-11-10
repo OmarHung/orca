@@ -62,7 +62,7 @@ const mocks = vi.hoisted(() => {
 })
 
 vi.mock('@/store', () => ({ useAppStore: mocks.appStore }))
-vi.mock('@/runtime/runtime-terminal-inspection', () => ({
+vi.mock('@/runtime/hosted-terminals/inspection/runtime-terminal-process-inspection', () => ({
   inspectRuntimeTerminalProcess: mocks.inspect
 }))
 

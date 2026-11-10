@@ -1,9 +1,9 @@
 import { buildAgentStartupPlan } from '../../../shared/agent-launch/startup/tui-agent-startup'
 import { tuiAgentToAgentKind } from '@/lib/telemetry'
-import { resolveAgentLaunchExecutionContext } from '@/lib/launch-agent-execution-context'
-import { getExecutionHostIdForWorktree } from '@/lib/worktree-runtime-owner'
-import type { WorktreeStartupPayload } from '@/lib/worktree-startup-payload'
-import { findRepoForHost } from '@/store/slices/repo-host-identity'
+import { resolveAgentLaunchExecutionContext } from '@/lib/agent-session/launch/new-tab/launch-agent-execution-context'
+import { getExecutionHostIdForWorktree } from '@/lib/workspace/ownership/worktree-runtime-owner'
+import type { WorktreeStartupPayload } from '@/lib/workspace/creation/worktree-startup-payload'
+import { findRepoForHost } from '@/store/repos/repo-host-identity'
 import type { useAppStore } from '@/store'
 import { resolveAgentStartupPlanInputs } from '../../../shared/agent-launch/startup/agent-startup-plan-inputs'
 import { resolveRepoInitialTab, type RepoInitialTab } from '../../../shared/repo-initial-tab'
@@ -55,8 +55,8 @@ export function buildProjectInitialTabStartup(
     return undefined
   }
   const launchContext = resolveAgentLaunchExecutionContext(state, { worktreeId })
-  // Why: an unknown host OS already told the user why; keep the plain shell instead of guessing.
-  if (!launchContext) {
+  // Why: an unknown or withheld host already told the user why; keep the plain shell instead of guessing.
+  if (!launchContext || 'unavailable' in launchContext) {
     return undefined
   }
   const { resolvedLaunchPlatform, isRemote } = launchContext

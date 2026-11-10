@@ -14,7 +14,7 @@ import { installTerminalPaneMountEvents } from './terminal-pane-mount-events'
 import { cleanupTerminalPaneMount } from './terminal-pane-mount-cleanup'
 import type { UseTerminalPaneLifecycleDeps } from './terminal-pane-lifecycle-types'
 import type { TerminalPaneLifecycleRefs } from './use-terminal-pane-lifecycle-refs'
-import { registerTerminalPaneManager } from './terminal-pane-manager-registry'
+import { registerTerminalPaneManager } from '../terminal-pane-manager-registry'
 
 export function useTerminalPaneMountLifecycle(
   deps: UseTerminalPaneLifecycleDeps,

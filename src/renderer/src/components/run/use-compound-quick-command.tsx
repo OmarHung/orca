@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
 import type {
   CompoundRunConfiguration,
   RunConfigurationDefinition

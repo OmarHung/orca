@@ -14,7 +14,7 @@ import {
 import { captureTerminalDropTarget } from './terminal-drop-target'
 import { resolveTerminalDropTargetShell } from './terminal-drop-shell'
 import { writeTerminalDropPathsToCapturedTarget } from './terminal-drop-path-writer'
-import { recordTerminalImageDrops } from './terminal-image-paste-history'
+import { recordTerminalImageDrops } from '../../terminal-image-paste-history'
 import { resolveInternalTerminalDropPane } from './terminal-drop-pane-resolution'
 import { showTerminalDropWriteFailure } from './terminal-drop-write-failure'
 import type { TerminalDropWriteFailureReason } from './terminal-drop-write-failure'

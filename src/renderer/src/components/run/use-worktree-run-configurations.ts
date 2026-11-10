@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { useAppStore } from '@/store'
-import { findWorktreeById } from '@/store/slices/worktree-helpers'
+import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
 import { findRunConfiguration } from '../../../../shared/run-configurations/run-configuration-definition'
 import type { RunConfigurationDefinition } from '../../../../shared/run-configurations/run-configuration-definition'
 import { loadSharedRunConfigurations } from './run-configuration-launcher'

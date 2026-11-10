@@ -1,7 +1,7 @@
 import { mkdtemp, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { writeSecureFile } from '../../../../../shared/secure-file'
+import { writeSecureFile } from '../../../../../shared/secure-storage/secure-file'
 
 // Why a folder per file, named with the process id: writeSecureFile restricts the parent it
 // writes into, which must be a folder of ours and never the shared temp folder itself; and the

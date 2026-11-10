@@ -2,7 +2,7 @@ import type {
   ClaudePastedImageLookupArgs,
   ClaudePastedImageLookupResult
 } from '../../../../shared/claude-pasted-image'
-import { buildImageDataUri } from '../../../../shared/image-data-uri'
+import { buildImageDataUri } from '../../../../shared/file-preview/image-data-uri'
 import type { TerminalImagePreviewRequest } from '@/store/terminal-image-preview'
 import type { TerminalImagePaste } from './terminal-image-paste-history'
 

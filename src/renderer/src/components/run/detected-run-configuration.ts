@@ -1,7 +1,7 @@
 import type { ConfirmationDialogContextValue } from '@/components/confirmation-dialog-context'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import { findWorktreeById } from '@/store/slices/worktree-helpers'
+import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
 import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
 import { debugLaunchTarget } from '../debug/debug-launch'
 import { runConfiguration, type RunTarget } from './run-configuration-control'

@@ -22,7 +22,7 @@ function storageOf(profile: SshVpnProfile | null): string | undefined {
   return profile?.kind === 'container' ? undefined : profile?.passwordStorage
 }
 
-vi.mock('../../shared/secure-file', async (importOriginal) => {
+vi.mock('../../shared/secure-storage/secure-file', async (importOriginal) => {
   const { withQueuedDurableWrites } = await import('../durable-write-failures-test-support')
   return withQueuedDurableWrites(await importOriginal())
 })

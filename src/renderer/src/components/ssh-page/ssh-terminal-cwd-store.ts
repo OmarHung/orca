@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { parseOsc7 } from '../terminal-pane/parse-osc7'
+import { parseOsc7 } from '../terminal-pane/emulation/parse-osc7'
 
 /** The folder a tab's remote shell reported, and the host it was on when it first reported one. */
 export type SshTerminalCwdReport = { host: string; path: string }

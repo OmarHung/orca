@@ -6,8 +6,8 @@ const { spawnMock } = vi.hoisted(() => ({ spawnMock: vi.fn() }))
 
 vi.mock('child_process', () => ({ spawn: spawnMock }))
 
-import { spawnProxyCommand } from '../ssh/ssh-proxy-command'
-import { getControlSocketPath } from '../ssh/ssh-control-socket'
+import { spawnProxyCommand } from '../ssh/system-transport/ssh-proxy-command'
+import { getControlSocketPath } from '../ssh/system-transport/ssh-control-socket'
 import { buildSshArgs } from '../ssh/system-transport/system-ssh-args'
 import { setSshVpnRouteProvider } from './ssh-vpn-route'
 

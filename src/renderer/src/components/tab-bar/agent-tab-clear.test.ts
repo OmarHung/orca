@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => {
 vi.mock('@/store', () => ({
   useAppStore: { getState: () => mocks.state }
 }))
-vi.mock('../native-chat/native-chat-runtime-send', () => ({
+vi.mock('../native-chat/session/terminal/send/native-chat-runtime-send', () => ({
   sendNativeChatMessage: mocks.sendNativeChatMessage,
   sendNativeChatTypedCommand: mocks.sendNativeChatTypedCommand
 }))

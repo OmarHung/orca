@@ -7,7 +7,7 @@ import {
   DATABASE_HISTORY_MAX_TOTAL_CHARS,
   type DatabaseHistoryEntry
 } from '../../shared/database/database-query-history-types'
-import { writeSecureFile } from '../../shared/secure-file'
+import { writeSecureFile } from '../../shared/secure-storage/secure-file'
 import { isENOENT } from '../ipc/filesystem/access/filesystem-path-containment'
 
 const historyFileSchema = z.object({

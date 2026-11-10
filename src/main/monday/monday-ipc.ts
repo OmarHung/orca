@@ -11,7 +11,7 @@ import {
   mondayStatusOptionsSchema,
   type MondayResult
 } from '../../shared/monday/monday-types'
-import { browserSessionRegistry } from '../browser/sessions/browser-session-registry'
+import { browserSessionRegistry } from '../browser/sessions/profiles/browser-session-registry'
 import { openStandaloneBrowserWindow } from '../browser/standalone-browser-window'
 import { isTrustedUIRenderer } from '../ipc/ui'
 import { MondayApiError } from './monday-graphql-client'

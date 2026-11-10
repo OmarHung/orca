@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { translate } from '@/i18n/i18n'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
 import type { DatabaseDdlTarget } from '../../../../shared/database/database-ddl-types'
 import type { DatabasePropertiesTarget } from '../../../../shared/database/database-properties-types'
 import { useDatabaseConsoleRunStore } from './console/database-console-run-store'

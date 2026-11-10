@@ -11,7 +11,7 @@ import {
   resolveClaudeImageMarkerPane,
   type ClaudeImageMarkerPaneState
 } from './claude-image-marker-links'
-import type { TerminalLinkActionContext } from './terminal-link-action-request'
+import type { TerminalLinkActionContext } from './links/terminal-link-action-request'
 
 const PANE_KEY = 'tab-1:4a0c1a3e-5f4f-4c3a-9b7e-0d1c2b3a4f5e'
 

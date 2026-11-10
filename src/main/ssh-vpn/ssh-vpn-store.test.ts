@@ -7,7 +7,7 @@ import { SshVpnStore } from './ssh-vpn-store'
 
 const DRAFT = { name: 'Office', ovpnPath: '/vpn/office.ovpn', idleMinutes: 10 }
 
-vi.mock('../../shared/secure-file', async (importOriginal) => {
+vi.mock('../../shared/secure-storage/secure-file', async (importOriginal) => {
   const { withQueuedDurableWrites } = await import('../durable-write-failures-test-support')
   return withQueuedDurableWrites(await importOriginal())
 })

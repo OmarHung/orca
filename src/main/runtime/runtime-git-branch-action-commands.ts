@@ -2,7 +2,10 @@ import type {
   GitBranchAction,
   GitBranchActionResult
 } from '../../shared/git-branch-action/git-branch-action-types'
-import { requireRuntimeGitProvider, type RuntimeGitCommandHost } from './runtime-git-command-target'
+import {
+  requireRuntimeGitProvider,
+  type RuntimeGitCommandHost
+} from './integrations/git/runtime-git-command-target'
 
 export class RuntimeGitBranchActionCommands {
   constructor(private readonly host: RuntimeGitCommandHost) {}

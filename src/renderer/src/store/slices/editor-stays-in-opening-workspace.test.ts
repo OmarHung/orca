@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createEditorStore } from './editor-slice-test-harness'
-import { buildEditorSessionData } from '@/lib/workspace-session'
-import type { OpenFile } from './editor'
+import { createEditorStore } from './editor/editor-slice-test-harness'
+import { buildEditorSessionData } from '@/lib/workspace/persistence/workspace-session'
+import type { OpenFile } from './editor/types/open-file'
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
 
