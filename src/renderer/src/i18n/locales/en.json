@@ -75,6 +75,23 @@
   "osDocumentOpen": {
     "failed": "Failed to open the file."
   },
+  "repoRelocate": {
+    "menu": "Change Folder Location…",
+    "done": "{{name}} now opens from its new folder",
+    "failed": "Could not change the project folder",
+    "settingTitle": "Folder Location",
+    "settingDescription": "Where this project lives on this computer.",
+    "settingHelp": "Moved the folder? Pick its new location to keep this project, its settings and its workspaces.",
+    "settingButton": "Change…",
+    "error": {
+      "notGitRepo": "That folder is not a Git repository",
+      "linkedWorktree": "That folder is a worktree, not the project's main checkout",
+      "samePath": "The project already uses that folder",
+      "alreadyRegistered": "Another project already uses that folder",
+      "locked": "This project is being moved to a WSL host, so its folder cannot change now",
+      "notDirectory": "That folder could not be opened"
+    }
+  },
   "sidebar": {
     "revealFiltered": {
       "title": "Reveal hidden workspace?",

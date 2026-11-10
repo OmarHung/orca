@@ -26,6 +26,7 @@ import type {
 import type { BaseRefDefaultResult, BaseRefSearchResult, Repo } from '../../shared/repo-types'
 import type { WslMovedProject } from '../../shared/wsl-move/wsl-moved-project'
 import type { HostRepoCatalogSnapshot } from '../../shared/host-repo-catalog-snapshot'
+import type { RepoRelocateResult } from '../../shared/repo-relocation-types'
 
 export type RepositoryApi = {
   list: () => Promise<Repo[]>
@@ -80,6 +81,8 @@ export type RepositoryApi = {
       ghAccount?: GhAccountBinding | null
     }
   }) => Promise<Repo>
+  /** Points a local project at the folder it was moved to; desktop-only. */
+  relocate: (args: { repoId: string; path: string }) => Promise<RepoRelocateResult>
   pickFolder: () => Promise<string | null>
   pickFolders: () => Promise<string[]>
   pickDirectory: () => Promise<string | null>

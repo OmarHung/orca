@@ -261,4 +261,23 @@ export class RepoUpdatePersistenceOperations {
     this.scheduleSave()
     return this.hydrateRepo(repo)
   }
+
+  /** Points the project at its folder's new location; callers validate the path and re-key worktree ids. */
+  relocateRepo(target: RepoHostTarget, path: string): Repo | null {
+    const repo = findRepoRowForHostScopedWrite(
+      this.state.repos,
+      target.id,
+      getRepoExecutionHostId(target)
+    )
+    if (!repo) {
+      return null
+    }
+    repo.path = path
+    // A folder project's proven Git root named the old location.
+    delete repo.folderUpgradeGitRootPath
+    this.bumpLocalWorktreeScanGeneration(repo.id)
+    this.syncProjectHostSetupCompatibilityState()
+    this.scheduleSave()
+    return this.hydrateRepo(repo)
+  }
 }

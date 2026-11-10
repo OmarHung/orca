@@ -8,6 +8,7 @@ import { registerProjectGroupHandlers } from './repos/project-group-handlers'
 import { registerFolderWorkspaceHandlers } from './repos/folder-workspace-handlers'
 import { registerNestedRepoImportHandler } from './repos/nested-repo-import-handler'
 import { registerRepoUpdateHandler } from './repos/repo-update-handler'
+import { registerRepoRelocateHandler } from './repos/repo-relocate-handler'
 import { registerSparsePresetHandlers } from './repos/sparse-preset-handlers'
 import { registerRepoFolderPickerHandlers } from './repos/repo-folder-picker-handlers'
 import { registerRepoCloneHandlers } from './repos/repo-clone-lifecycle'
@@ -28,6 +29,7 @@ export function registerRepoHandlers(
   ipcMain.removeHandler('repos:reorder')
   ipcMain.removeHandler('repos:reorderForHost')
   ipcMain.removeHandler('repos:update')
+  ipcMain.removeHandler('repos:relocate')
   ipcMain.removeHandler('projects:list')
   ipcMain.removeHandler('projects:update')
   ipcMain.removeHandler('projectHostSetups:list')
@@ -80,6 +82,7 @@ export function registerRepoHandlers(
   registerFolderWorkspaceHandlers(mainWindow, store, runtime)
   registerNestedRepoImportHandler(mainWindow, store, metadata.enqueueRepositoryMetadata)
   registerRepoUpdateHandler(mainWindow, store)
+  registerRepoRelocateHandler(mainWindow, store, runtime)
   registerSparsePresetHandlers(mainWindow, store)
   registerRepoFolderPickerHandlers(mainWindow)
   registerRepoCloneHandlers(mainWindow, store, metadata.enqueueRepositoryMetadata)

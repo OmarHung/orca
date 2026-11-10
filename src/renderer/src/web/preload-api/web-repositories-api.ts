@@ -46,6 +46,7 @@ export function createReposApi(): NonNullable<Partial<PreloadApi>['repos']> {
       })
       return withRuntimeRepoOwner(owned.result.repo, owned.hostId)
     },
+    relocate: () => Promise.resolve({ error: 'remote-host' as const }),
     pickFolder: () => Promise.resolve(null),
     pickFolders: () => Promise.resolve([]),
     pickDirectory: () => Promise.resolve(null),

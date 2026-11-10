@@ -211,6 +211,10 @@ export class RepoLifecycleOperations {
   ): Repo | null {
     return getRepoUpdateOperations(this).updateRepo(target, updates)
   }
+
+  relocateRepo(target: RepoHostTarget, path: string): Repo | null {
+    return getRepoUpdateOperations(this).relocateRepo(target, path)
+  }
 }
 
 function dropRepoRestoreHints(owner: RepoLifecycleOperations, repoId: string): void {

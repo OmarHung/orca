@@ -23,6 +23,7 @@ import { useAppStore } from '@/store/index'
 import { getRepositoryIconSectionId } from './repository-settings-targets'
 import { RepositoryIconPicker } from './identity/RepositoryIconPicker'
 import { RepositoryInitialTabSetting } from './RepositoryInitialTabSetting'
+import { RepositoryFolderLocationSetting } from './RepositoryFolderLocationSetting'
 import { getRepositoryPaneSearchMetadata } from './repository-search'
 import { RepositoryHostSetupsSection } from './hosts/RepositoryHostSetupsSection'
 import { RepoSettingsDraftInput } from './RepositorySettingsDraftInput'
@@ -262,6 +263,8 @@ export function RepositoryPane({
             className="h-9 text-sm"
           />
         </SearchableSetting>
+
+        <RepositoryFolderLocationSetting repo={repo} forceVisible={forceFullPaneForRepoMatch} />
 
         <SearchableSetting
           title={t('auto.components.settings.RepositoryPane.e856e61455', 'Project icon')}
