@@ -38,6 +38,7 @@ import type {
 } from '../../../../../../shared/repository/repo-types'
 import { isGitRepoKind } from '../../../../../../shared/repository/repo-kind'
 import '../../../../../../shared/worktree/visibility/ownership'
+import { RelocateProjectMenuItem } from '@/components/repo-relocation/RelocateProjectMenuItem'
 import {
   effectiveExternalWorktreeVisibility,
   isLegacyRepoForExternalWorktreeVisibility
@@ -152,6 +153,7 @@ export const RepoHeaderProjectActionsMenu = React.memo(function RepoHeaderProjec
           <Shapes className="size-3.5" />
           {t('auto.components.sidebar.WorktreeList.e82d3589a1', 'Change Project Icon')}
         </DropdownMenuItem>
+        <RelocateProjectMenuItem repo={repo} />
         {isGitRepoKind(repo) ? (
           <DropdownMenuItem onSelect={() => actions.onOpenWorktreeVisibility(repo)}>
             <Eye className="size-3.5" />

@@ -30,6 +30,23 @@
     "noLogExcerpt": "沒有可用的日誌摘錄。",
     "refreshingDetails": "正在重新整理檢查詳情…"
   },
+  "repoRelocate": {
+    "menu": "變更資料夾位置…",
+    "done": "{{name}} 已改從新資料夾開啟",
+    "failed": "無法變更專案資料夾",
+    "settingTitle": "資料夾位置",
+    "settingDescription": "這個專案在這台電腦上的位置。",
+    "settingHelp": "資料夾搬走了？選擇它的新位置，專案、設定和工作區都會保留。",
+    "settingButton": "變更…",
+    "error": {
+      "notGitRepo": "這個資料夾不是 Git 儲存庫",
+      "linkedWorktree": "這個資料夾是工作樹，不是專案的主要簽出",
+      "samePath": "專案已經在使用這個資料夾",
+      "alreadyRegistered": "另一個專案已經在使用這個資料夾",
+      "locked": "這個專案正在移到 WSL 主機，暫時無法變更資料夾",
+      "notDirectory": "無法開啟這個資料夾"
+    }
+  },
   "settings": {
     "chat": {
       "permissionsAgentsLink": "設定 → 代理",
