@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store'
-import { findWorktreeById } from '@/store/slices/worktree-helpers'
+import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
 import type { NgrokShareRequest } from '../../../../shared/ngrok/ngrok-types'
 import {
   findRunConfiguration,

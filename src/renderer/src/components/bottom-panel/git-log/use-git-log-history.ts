@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getConnectionId } from '@/lib/connection-context'
-import { getRuntimeGitHistory } from '@/runtime/runtime-git-status-client'
+import { getRuntimeGitHistory } from '@/runtime/source-control/git/runtime-git-status-client'
 import { translate } from '@/i18n/i18n'
 import {
   GIT_HISTORY_MAX_LIMIT,
@@ -88,7 +88,7 @@ export function useGitLogHistory(
           const next = finishGitLogLoad(prev[stateKey], result)
           return next === prev[stateKey] ? prev : { ...prev, [stateKey]: next }
         })
-        const branchList = result.refs ?? 'unsupported'
+        const branchList = result.branchList ?? 'unsupported'
         setBranchListByWorktree((prev) =>
           isSameGitLogPayload(prev[worktreeId], branchList)
             ? prev

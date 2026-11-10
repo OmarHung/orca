@@ -34,7 +34,7 @@ vi.mock('@/components/terminal-pane/TerminalPane', () => ({
     />
   )
 }))
-vi.mock('@/components/terminal-pane/terminal-parked-tab-watchers', () => ({
+vi.mock('@/components/terminal-pane/parking/output-watchers/terminal-parked-tab-watchers', () => ({
   shouldDeferParkedPtyExitTabClose: () => false
 }))
 vi.mock('@/components/terminal/terminal-tab-actions', () => ({

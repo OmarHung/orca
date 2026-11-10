@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { writeDurableSecureJsonFile } from '../shared/secure-file'
+import { writeDurableSecureJsonFile } from '../shared/secure-storage/secure-file'
 import type { SecretStore } from '../shared/secret-store'
 
 const FILE_VERSION = 1

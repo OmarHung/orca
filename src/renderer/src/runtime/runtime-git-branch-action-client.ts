@@ -3,9 +3,12 @@ import type {
   GitBranchActionResult
 } from '../../../shared/git-branch-action/git-branch-action-types'
 import { REBASE_FROM_BASE_RPC_TIMEOUT_MS } from '../../../shared/git/remotes/git-rebase-source'
-import { resolveLocalWorktreePath, type RuntimeGitContext } from './runtime-git-client-context'
-import { callRuntimeRpc } from './runtime-rpc-client'
-import { toRuntimeWorktreeSelector } from './runtime-worktree-selector'
+import {
+  resolveLocalWorktreePath,
+  type RuntimeGitContext
+} from './source-control/git/runtime-git-client-context'
+import { callRuntimeRpc } from './rpc/calls/runtime-rpc-call'
+import { toRuntimeWorktreeSelector } from './rpc/targets/runtime-worktree-selector'
 
 export async function runRuntimeGitBranchAction(
   context: RuntimeGitContext,

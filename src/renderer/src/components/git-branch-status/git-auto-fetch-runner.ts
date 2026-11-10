@@ -1,9 +1,9 @@
 import { useAppStore } from '@/store'
-import { getRepoMapFromState } from '@/store/selectors'
+import { getIndexedRepoMap } from '@/store/repos/repository-catalog-index'
 import { getConnectionId } from '@/lib/connection-context'
 import { runtimeTargetForWorkspaceOwner } from '@/lib/resolve-owner'
-import { resolveRemoteOperationErrorMessage } from '@/lib/source-control-remote-error'
-import { fetchRuntimeGit } from '@/runtime/runtime-git-sync-client'
+import { resolveRemoteOperationErrorMessage } from '@/lib/source-control/remote/source-control-remote-error'
+import { fetchRuntimeGit } from '@/runtime/source-control/git/runtime-git-sync-client'
 import { isGitRepoKind } from '../../../../shared/repo-kind'
 import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
 import type { GitPushTarget } from '../../../../shared/worktree/types'
@@ -31,7 +31,7 @@ export function resolveActiveGitFetchTarget(): GitFetchTarget | null {
     worktreeId,
     state.activeWorkspaceExecutionHostId ?? undefined
   )
-  const repo = worktree ? getRepoMapFromState(state).get(worktree.repoId) : undefined
+  const repo = worktree ? getIndexedRepoMap(state.repos).get(worktree.repoId) : undefined
   if (!worktree || !repo || !isGitRepoKind(repo)) {
     return null
   }

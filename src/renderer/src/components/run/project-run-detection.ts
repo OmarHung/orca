@@ -1,9 +1,9 @@
 import { useAppStore } from '@/store'
 import { basename, dirname, getRelativePathInsideRoot, joinPath } from '@/lib/path'
-import { findWorktreeById } from '@/store/slices/worktree-helpers'
-import { readRuntimeDirectory } from '@/runtime/runtime-file-mutation-client'
-import { readRuntimeFileContent } from '@/runtime/runtime-file-read-client'
-import type { RuntimeFileOperationArgs } from '@/runtime/runtime-file-client-types'
+import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
+import { readRuntimeDirectory } from '@/runtime/files/reads/runtime-directory-read'
+import { readRuntimeFileContent } from '@/runtime/files/reads/runtime-file-read-client'
+import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
 import { getTabEntryFileOperationContext } from '../tab-bar/tab-create-entry-local-path'
 import {
   detectDotnetRunConfigurations,
@@ -25,7 +25,7 @@ import {
   type PythonVirtualEnv
 } from '../../../../shared/run-configurations/python-run-configurations'
 import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'
-import type { DirEntry } from '../../../../shared/filesystem-entry-types'
+import type { DirEntry } from '../../../../shared/file-listing/directory-entry'
 
 export type ProjectFiles = {
   listNames: (dir: string) => Promise<string[]>

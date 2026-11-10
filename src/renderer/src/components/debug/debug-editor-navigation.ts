@@ -1,7 +1,7 @@
 import { useAppStore } from '@/store'
 import { detectLanguage } from '@/lib/language-detect'
 import { getRelativePathInsideRoot } from '@/lib/path'
-import { findWorktreeById } from '@/store/slices/worktree-helpers'
+import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
 import { getOpenedEditFileIdAfterOpen } from '@/store/slices/editor/file-ids/editor-file-ids'
 import { scheduleEditorLineReveal } from '@/store/slices/editor/focus/editor-focus-reveal'
 

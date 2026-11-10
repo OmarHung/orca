@@ -4,7 +4,7 @@ import {
   rememberSyncedDocument,
   toCodeNavigationFileChanges
 } from './code-navigation-document-lifecycle'
-import type { FsChangedPayload } from '../../../../shared/filesystem-entry-types'
+import type { FsChangedPayload } from '../../../../shared/file-watch/filesystem-change-event'
 
 afterEach(() => {
   vi.unstubAllGlobals()

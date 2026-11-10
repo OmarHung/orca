@@ -5,7 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { translate } from '@/i18n/i18n'
 import { basename } from '@/lib/path'
 import { useAppStore } from '@/store'
-import { findWorktreeById } from '@/store/slices/worktree-helpers'
+import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
 import { useBreakpointStore, type BreakpointSpec } from './breakpoint-store'
 import {
   removeDebugBreakpoint,

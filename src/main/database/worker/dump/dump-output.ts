@@ -4,7 +4,10 @@ import { createWriteStream, existsSync, type WriteStream } from 'node:fs'
 import { mkdir, rename, rm } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import type { SqlDialect } from '../../../../shared/database/sql-dialect-lexing'
-import { bestEffortFsyncDirectorySync, fsyncFileSync } from '../../../../shared/secure-file'
+import {
+  bestEffortFsyncDirectorySync,
+  fsyncFileSync
+} from '../../../../shared/secure-storage/secure-file'
 
 export type DumpStatement = {
   sql: string

@@ -1,7 +1,7 @@
 import { hasSshCommandControlCharacter } from '../../../../shared/ssh-command-types'
 import { isTerminalQueryReply } from '../../../../shared/terminal/protocol/queries/terminal-query-reply'
-import { isPassiveTerminalInputReport } from '../terminal-pane/terminal-passive-input-report'
-import { isXtermMouseReport } from '../terminal-pane/terminal-pointer-input-sequences'
+import { isPassiveTerminalInputReport } from '../terminal-pane/input/terminal-passive-input-report'
+import { isXtermMouseReport } from '../terminal-pane/input/pointer/terminal-pointer-input-sequences'
 import { isSshProcess } from './ssh-session-liveness'
 
 export type SshSyncSkipReason =

@@ -1,12 +1,12 @@
 import { useAppStore } from '@/store'
-import { getExecutionHostIdForWorktree } from '@/lib/worktree-runtime-owner'
+import { getExecutionHostIdForWorktree } from '@/lib/workspace/ownership/worktree-runtime-owner'
 import { isWindowVisible } from '@/lib/window-visibility-interval'
 import {
   publishWorkspacePortScanForHost,
   scanWorkspacePortsForTarget,
   workspacePortScanKeyForTarget
 } from '@/lib/workspace-ports/workspace-port-actions'
-import { ipcOrRuntimeTargetForHostId } from '@/runtime/runtime-client-target'
+import { ipcOrRuntimeTargetForHostId } from '@/runtime/rpc/targets/runtime-client-target'
 import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
 import type { WorkspacePort } from '../../../../shared/workspace-ports'
 import { isLiveDebugSession, useDebugStore } from '../debug/debug-store'

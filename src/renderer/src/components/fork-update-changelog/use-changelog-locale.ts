@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store'
-import { usePluginLanguagePackStore } from '@/store/plugin-language-packs'
+import { usePluginLanguagePackStore } from '@/store/plugins/localization/plugin-language-packs'
 import { resolveUiLocale } from '@/i18n/supported-languages'
 import { isPluginUiLanguage } from '../../../../shared/ui-language'
 

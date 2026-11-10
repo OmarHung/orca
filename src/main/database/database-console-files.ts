@@ -1,7 +1,7 @@
 import { readFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { isENOENT } from '../ipc/filesystem/access/filesystem-path-containment'
-import { writeSecureFile } from '../../shared/secure-file'
+import { writeSecureFile } from '../../shared/secure-storage/secure-file'
 
 export const DATABASE_CONSOLE_MAX_BYTES = 5 * 1024 * 1024
 

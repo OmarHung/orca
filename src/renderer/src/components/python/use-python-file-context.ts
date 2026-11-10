@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useAppStore } from '@/store'
 import { basename } from '@/lib/path'
-import { findWorktreeById } from '@/store/slices/worktree-helpers'
+import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
 import { getRepoExecutionHostId } from '../../../../shared/execution-host'
 import type { PythonInterpreter } from '../../../../shared/python-interpreter-types'
 import { debugTargetForFile, isLocalDebugTarget } from '../debug/debug-launch'

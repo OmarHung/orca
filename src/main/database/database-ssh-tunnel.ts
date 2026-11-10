@@ -4,7 +4,7 @@ import { SshPortForwardManager } from '../ssh/port-forwarding/ssh-port-forward'
 import {
   getSshProviderAuthority,
   registerSshProviderRequestAbort
-} from '../ssh/ssh-provider-authority'
+} from '../ssh/connection/authority/ssh-provider-authority'
 import { getSshTargetRegistryStore } from '../ssh/targets/ssh-target-registry'
 import { DatabaseSshConnections } from './database-ssh-connections'
 import type { DatabaseTunnel, OpenDatabaseTunnel } from './database-session-manager'

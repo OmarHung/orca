@@ -1,11 +1,11 @@
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import { newAgentLaunchRequestId } from '@/lib/agent-launch-request-id'
+import { newAgentLaunchRequestId } from '@/lib/agent-session/launch/routing/agent-launch-request-id'
 import { focusTerminalTabSurface } from '@/lib/focus-terminal-tab-surface'
-import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
-import { launchWorkItemDirect } from '@/lib/launch-work-item-direct'
+import { launchAgentInNewTab } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab'
+import { launchWorkItemDirect } from '@/lib/workspace/creation/work-item/launch-work-item-direct'
 import { orderEmptyQueryWorktrees } from '@/lib/order-empty-query-worktrees'
-import { activateAndRevealWorktree } from '@/lib/worktree-activation'
+import { activateAndRevealWorktree } from '@/lib/workspace/activation/worktree-activation'
 import { useAppStore } from '@/store'
 import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import type { Worktree } from '../../../../shared/worktree/types'
@@ -57,7 +57,11 @@ export function startMondayTaskAgentInWorkspace(args: {
       return !revealFailed
     }
   })
-  if (!result) {
+  if (!result || 'refused' in result) {
+    // Why: a refused launch has usually told the user why already.
+    if (result?.refused.failureNotified) {
+      return
+    }
     toast.error(
       revealFailed
         ? translate('monday.agent.workspaceUnavailable', 'Could not open that workspace')

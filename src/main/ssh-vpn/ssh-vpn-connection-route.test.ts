@@ -1,59 +1,70 @@
 import { PassThrough } from 'node:stream'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { clientInstances } from '../ssh/__tests__/ssh-connection-test-client'
-import { resetSshConnectionMocks } from '../ssh/connection/ssh-connection-test-harness'
-import { createCallbacks, createTarget } from '../ssh/connection/ssh-connection-test-fixtures'
+import { clientInstances } from '../ssh/connection/testing/ssh-connection-test-client'
+import { resetSshConnectionMocks } from '../ssh/connection/testing/ssh-connection-test-harness'
+import {
+  createCallbacks,
+  createTarget
+} from '../ssh/connection/testing/ssh-connection-test-fixtures'
 import { SshConnection } from '../ssh/connection/ssh-connection'
-import type * as SshProxyCommandModule from '../ssh/ssh-proxy-command'
-import type { EffectiveProxy } from '../ssh/ssh-proxy-command'
+import type * as SshProxyCommandModule from '../ssh/system-transport/ssh-proxy-command'
+import type { EffectiveProxy } from '../ssh/system-transport/ssh-proxy-command'
 
 const { prepareSshVpnRouteMock, spawnProxyCommandMock } = vi.hoisted(() => ({
   prepareSshVpnRouteMock: vi.fn(),
   spawnProxyCommandMock: vi.fn()
 }))
 
-vi.mock('../ssh/ssh2-module-load', async () =>
-  (await import('../ssh/__tests__/ssh-connection-test-client')).createSsh2LoaderModule()
+vi.mock('../ssh/authentication/ssh2-module-load', async () =>
+  (await import('../ssh/connection/testing/ssh-connection-test-client')).createSsh2LoaderModule()
 )
 vi.mock('../ssh/system-transport/system-ssh-binary', async () =>
-  (await import('../ssh/connection/ssh-connection-test-harness')).createSystemSshBinaryModule()
+  (
+    await import('../ssh/connection/testing/ssh-connection-test-harness')
+  ).createSystemSshBinaryModule()
 )
 vi.mock('../ssh/system-transport/system-ssh-args', async (importOriginal) =>
-  (await import('../ssh/connection/ssh-connection-test-harness')).withSystemSshArgsMocks(
+  (await import('../ssh/connection/testing/ssh-connection-test-harness')).withSystemSshArgsMocks(
     await importOriginal()
   )
 )
 vi.mock('../ssh/system-transport/system-ssh-command', async (importOriginal) =>
-  (await import('../ssh/connection/ssh-connection-test-harness')).withSystemSshCommandMocks(
+  (await import('../ssh/connection/testing/ssh-connection-test-harness')).withSystemSshCommandMocks(
     await importOriginal()
   )
 )
-vi.mock('../ssh/system-transport/system-ssh-file-binary-transfer', async (importOriginal) =>
+vi.mock(
+  '../ssh/system-transport/file-transfer/system-ssh-file-binary-transfer',
+  async (importOriginal) =>
+    (
+      await import('../ssh/connection/testing/ssh-connection-test-harness')
+    ).withSystemSshFileBinaryTransferMocks(await importOriginal())
+)
+vi.mock('../ssh/system-transport/file-transfer/system-ssh-file-transfer', async (importOriginal) =>
   (
-    await import('../ssh/connection/ssh-connection-test-harness')
-  ).withSystemSshFileBinaryTransferMocks(await importOriginal())
+    await import('../ssh/connection/testing/ssh-connection-test-harness')
+  ).withSystemSshFileTransferMocks(await importOriginal())
 )
-vi.mock('../ssh/system-transport/system-ssh-file-transfer', async (importOriginal) =>
-  (await import('../ssh/connection/ssh-connection-test-harness')).withSystemSshFileTransferMocks(
-    await importOriginal()
-  )
-)
-vi.mock('../ssh/ssh-control-socket', async () =>
-  (await import('../ssh/connection/ssh-connection-test-harness')).createControlSocketModule()
+vi.mock('../ssh/system-transport/ssh-control-socket', async () =>
+  (
+    await import('../ssh/connection/testing/ssh-connection-test-harness')
+  ).createControlSocketModule()
 )
 vi.mock('../ssh/config/ssh-config-parser', async () =>
-  (await import('../ssh/connection/ssh-connection-test-harness')).createSshConfigParserModule()
+  (
+    await import('../ssh/connection/testing/ssh-connection-test-harness')
+  ).createSshConfigParserModule()
 )
 vi.mock('../ssh/config/ssh-g-config-resolution', async (importOriginal) =>
-  (await import('../ssh/connection/ssh-connection-test-harness')).withSshGConfigResolutionMocks(
-    await importOriginal()
-  )
+  (
+    await import('../ssh/connection/testing/ssh-connection-test-harness')
+  ).withSshGConfigResolutionMocks(await importOriginal())
 )
 vi.mock('./ssh-vpn-route', () => ({
   prepareSshVpnRoute: prepareSshVpnRouteMock,
   getSshVpnProxyCommand: () => null
 }))
-vi.mock('../ssh/ssh-proxy-command', async (importOriginal) => ({
+vi.mock('../ssh/system-transport/ssh-proxy-command', async (importOriginal) => ({
   ...(await importOriginal<typeof SshProxyCommandModule>()),
   spawnProxyCommand: spawnProxyCommandMock
 }))

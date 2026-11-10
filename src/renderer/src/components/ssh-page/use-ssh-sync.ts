@@ -7,8 +7,8 @@ import {
   observeTerminalDirectInput,
   readTerminalTabScreen
 } from '../terminal-pane/terminal-pane-manager-registry'
-import { isXtermWheelCursorKey } from '../terminal-pane/terminal-pointer-input-sequences'
-import { subscribeToTerminalInputData } from '../terminal-pane/terminal-user-input-signal'
+import { isXtermWheelCursorKey } from '../terminal-pane/input/pointer/terminal-pointer-input-sequences'
+import { subscribeToTerminalInputData } from '../terminal-pane/input/terminal-user-input-signal'
 import { useRemoteSessionStore } from './remote-session-store'
 import { useSshSessionLivenessStore } from './ssh-session-liveness'
 import { classifySyncInput, decideSyncPaneStatus, type SshSyncDecision } from './ssh-sync-decision'

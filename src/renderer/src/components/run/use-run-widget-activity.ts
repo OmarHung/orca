@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { useDebugStore } from '../debug/debug-store'
-import { collectLeafIdsInOrder } from '../terminal-pane/terminal-layout-leaf-ids'
+import { collectLeafIdsInOrder } from '../terminal-pane/layout/terminal-layout-leaf-traversal'
 import { useRunSessionStore } from './run-session-store'
 import { worktreeRunActivity, type RunWidgetActivity } from './run-widget-activity'
 

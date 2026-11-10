@@ -12,8 +12,8 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/store', () => ({ useAppStore: { getState: () => mocks.appState } }))
-vi.mock('@/store/slices/worktree-helpers', () => ({
-  findWorktreeById: (byRepo: Record<string, { id: string }[]>, id: string) =>
+vi.mock('@/lib/workspace/ownership/worktree-runtime-owner-index', () => ({
+  findFirstIndexedWorktree: (byRepo: Record<string, { id: string }[]>, id: string) =>
     Object.values(byRepo)
       .flat()
       .find((worktree) => worktree.id === id)

@@ -6,9 +6,8 @@ const mocks = vi.hoisted(() => {
 })
 
 vi.mock('@/store', () => ({ useAppStore: { getState: () => mocks.state } }))
-vi.mock('@/store/selectors', () => ({
-  getRepoMapFromState: (state: { repos: { id: string }[] }) =>
-    new Map(state.repos.map((repo) => [repo.id, repo]))
+vi.mock('@/store/repos/repository-catalog-index', () => ({
+  getIndexedRepoMap: (repos: { id: string }[]) => new Map(repos.map((repo) => [repo.id, repo]))
 }))
 vi.mock('@/lib/connection-context', () => ({
   getConnectionId: (worktreeId: string) => (worktreeId === 'wt-ssh' ? 'conn-1' : null)
@@ -16,7 +15,9 @@ vi.mock('@/lib/connection-context', () => ({
 vi.mock('@/lib/resolve-owner', () => ({
   runtimeTargetForWorkspaceOwner: () => ({ kind: 'local' })
 }))
-vi.mock('@/runtime/runtime-git-sync-client', () => ({ fetchRuntimeGit: mocks.fetchRuntimeGit }))
+vi.mock('@/runtime/source-control/git/runtime-git-sync-client', () => ({
+  fetchRuntimeGit: mocks.fetchRuntimeGit
+}))
 
 import { runGitAutoFetch, runGitAutoFetchTick } from './git-auto-fetch-runner'
 import { useGitAutoFetchStore } from './git-auto-fetch-store'
