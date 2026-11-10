@@ -9,7 +9,7 @@ import { KeptPasswords, type Released } from './kept-passwords'
 const NO_ENCRYPTION = 'no encryption'
 const DAMAGED = '{"version": 1,'
 
-vi.mock('../shared/secure-file', async (importOriginal) => {
+vi.mock('../shared/secure-storage/secure-file', async (importOriginal) => {
   const { withQueuedDurableWrites } = await import('./durable-write-failures-test-support')
   return withQueuedDurableWrites(await importOriginal())
 })

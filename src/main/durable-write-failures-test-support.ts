@@ -1,4 +1,4 @@
-import type * as SecureFile from '../shared/secure-file'
+import type * as SecureFile from '../shared/secure-storage/secure-file'
 
 /**
  * What the next durable write to a path does: `throw-after` replaces the file and then throws, as a

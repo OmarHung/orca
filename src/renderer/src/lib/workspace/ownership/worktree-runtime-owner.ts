@@ -1,4 +1,4 @@
-import { isLocalSyntheticWorkspaceId } from '../../../shared/local-synthetic-workspace'
+import { isLocalSyntheticWorkspaceId } from '../../../../../shared/local-synthetic-workspace'
 import {
   getRepoExecutionHostId,
   parseExecutionHostId,

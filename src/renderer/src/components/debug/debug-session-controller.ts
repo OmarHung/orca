@@ -3,9 +3,9 @@ import type {
   DebugLaunchTarget,
   DebugSessionEvent
 } from '../../../../shared/debug/debug-session-types'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
 import { useAppStore } from '@/store'
-import { findWorktreeById } from '@/store/slices/worktree-helpers'
+import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
 import { useBottomPanelLayout } from '../bottom-panel/bottom-panel-layout-store'
 import { revealDebugLocation } from './debug-editor-navigation'
 import {

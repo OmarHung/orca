@@ -12,17 +12,21 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('sonner', () => ({ toast: mocks.toast }))
-vi.mock('@/lib/launch-agent-in-new-tab', () => ({ launchAgentInNewTab: mocks.launchAgentInNewTab }))
-vi.mock('@/lib/launch-work-item-direct', () => ({
+vi.mock('@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab', () => ({
+  launchAgentInNewTab: mocks.launchAgentInNewTab
+}))
+vi.mock('@/lib/workspace/creation/work-item/launch-work-item-direct', () => ({
   launchWorkItemDirect: mocks.launchWorkItemDirect
 }))
-vi.mock('@/lib/worktree-activation', () => ({
+vi.mock('@/lib/workspace/activation/worktree-activation', () => ({
   activateAndRevealWorktree: mocks.activateAndRevealWorktree
 }))
 vi.mock('@/lib/focus-terminal-tab-surface', () => ({
   focusTerminalTabSurface: mocks.focusTerminalTabSurface
 }))
-vi.mock('@/lib/agent-launch-request-id', () => ({ newAgentLaunchRequestId: () => 'request-1' }))
+vi.mock('@/lib/agent-session/launch/routing/agent-launch-request-id', () => ({
+  newAgentLaunchRequestId: () => 'request-1'
+}))
 vi.mock('@/store', () => ({
   useAppStore: {
     getState: () => ({ activeGroupIdByWorktree: { 'wt-1': 'group-1' }, openModal: mocks.openModal })

@@ -23,14 +23,14 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/store', () => ({ useAppStore: { getState: () => mocks.appState } }))
-vi.mock('@/store/slices/worktree-helpers', () => ({
-  findWorktreeById: (byRepo: Record<string, { id: string }[]>, id: string) =>
+vi.mock('@/lib/workspace/ownership/worktree-runtime-owner-index', () => ({
+  findFirstIndexedWorktree: (byRepo: Record<string, { id: string }[]>, id: string) =>
     Object.values(byRepo)
       .flat()
       .find((worktree) => worktree.id === id)
 }))
 vi.mock('sonner', () => ({ toast: { error: mocks.toastError } }))
-vi.mock('@/lib/ensure-hooks-confirmed', () => ({
+vi.mock('@/lib/shared-run-configuration-trust', () => ({
   confirmSharedRunConfigurations: mocks.confirmSharedRunConfigurations
 }))
 vi.mock('../debug/debug-launch', () => ({ debugLaunchTarget: mocks.debugLaunchTarget }))

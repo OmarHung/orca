@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
 import {
   addSshHostGroup,
   EMPTY_SSH_HOST_GROUPS,

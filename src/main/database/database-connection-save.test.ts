@@ -15,7 +15,7 @@ import { saveConnectionWithPassword } from './database-connection-save'
 import { DatabaseConnectionStore } from './database-connection-store'
 import { DatabasePasswordVault } from './database-password-vault'
 
-vi.mock('../../shared/secure-file', async (importOriginal) => {
+vi.mock('../../shared/secure-storage/secure-file', async (importOriginal) => {
   const { withQueuedDurableWrites } = await import('../durable-write-failures-test-support')
   return withQueuedDurableWrites(await importOriginal())
 })

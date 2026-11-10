@@ -5,7 +5,10 @@ import {
   type SshVpnProfile,
   type SshVpnProfileDraft
 } from '../../shared/ssh-vpn-types'
-import { isUnreadableError, writeDurableSecureJsonFile } from '../../shared/secure-file'
+import {
+  isUnreadableError,
+  writeDurableSecureJsonFile
+} from '../../shared/secure-storage/secure-file'
 
 type StoreFile = {
   version: 1

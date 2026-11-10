@@ -67,9 +67,9 @@ export function TerminalQuickCommandActionToggle({
           value="compound"
           data-testid="quick-command-action-compound"
           className={cn(QUICK_COMMAND_TOGGLE_ITEM_CLASS, 'w-full justify-center')}
-          aria-label={translate('run.compound.actionLabel', 'Compound: start several runs')}
+          aria-label={t('run.compound.actionLabel', 'Compound: start several runs')}
         >
-          {translate('run.compound.actionShort', 'Compound')}
+          {t('run.compound.actionShort', 'Compound')}
         </ToggleGroupItem>
       ) : null}
     </ToggleGroup>

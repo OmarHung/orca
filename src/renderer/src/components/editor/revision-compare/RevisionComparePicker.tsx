@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/command'
 import { translate } from '@/i18n/i18n'
 import { formatUiRelativeTime } from '@/i18n/relative-time-format'
-import { getRuntimeGitHistory } from '@/runtime/runtime-git-status-client'
+import { getRuntimeGitHistory } from '@/runtime/source-control/git/runtime-git-status-client'
 import type {
   GitHistoryBranch,
   GitHistoryItem
@@ -40,7 +40,7 @@ async function loadPickerData(request: RevisionComparePickerRequest): Promise<Pi
   }
   if (request.mode === 'branch') {
     const result = await getRuntimeGitHistory(context, { includeRefs: true, limit: 1 })
-    if (!result.refs) {
+    if (!result.branchList) {
       return {
         status: 'error',
         error: translate(
@@ -49,7 +49,7 @@ async function loadPickerData(request: RevisionComparePickerRequest): Promise<Pi
         )
       }
     }
-    return { status: 'branches', branches: result.refs.branches }
+    return { status: 'branches', branches: result.branchList.branches }
   }
   const result = await getRuntimeGitHistory(context, {
     path: request.relativePath,

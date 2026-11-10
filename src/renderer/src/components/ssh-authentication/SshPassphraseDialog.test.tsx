@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SshCredentialSubmitResult } from '../../../../shared/ssh-saved-passphrase-types'
 import { i18n } from '../../i18n/i18n'
 import { useAppStore } from '../../store'
-import type { SshCredentialRequest } from '../../store/slices/ssh'
+import type { SshCredentialRequest } from '../../store/slices/ssh/create-ssh-slice'
 import { SshPassphraseDialog } from './SshPassphraseDialog'
 
 const toastError = vi.hoisted(() => vi.fn())

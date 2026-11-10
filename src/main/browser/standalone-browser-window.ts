@@ -4,13 +4,13 @@ import {
   normalizeExternalBrowserUrl
 } from '../../shared/browser-url'
 import { showWindowWithoutStealingFocus } from '../window/foreground-activation-policy'
-import { SAFE_POPUP_WINDOW_OPTIONS } from './guest-lifecycle/manager/browser-manager-types'
+import { SAFE_POPUP_WINDOW_OPTIONS } from './guest-lifecycle/popups/presentation/browser-popup-window-policy'
 import { isNewBrowserTabPopupIntent } from './guest-lifecycle/popups/browser-popup-new-tab-intent'
-import {
-  openPopupWithOriginBar,
-  type PopupChildWindowOptions,
-  type PopupOriginBarWindow
-} from './guest-lifecycle/popups/popup-origin-bar-window'
+import { openPopupWithOriginBar } from './guest-lifecycle/popups/presentation/popup-origin-bar-window'
+import type {
+  PopupChildWindowOptions,
+  PopupOriginBarWindow
+} from './guest-lifecycle/popups/presentation/browser-popup-window-contract'
 
 const STANDALONE_WINDOW_WIDTH = 1280
 const STANDALONE_WINDOW_HEIGHT = 860

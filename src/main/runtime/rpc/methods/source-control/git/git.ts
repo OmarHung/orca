@@ -4,7 +4,7 @@ import { defineMethod } from '../../../core'
 import { GIT_COMMIT_MESSAGE_GENERATION_METHODS } from './git-commit-message-generation-methods'
 import { GIT_BRANCH_METHODS } from './git-branch-methods'
 import { GIT_DIFF_METHODS } from './git-diff-methods'
-import { GitBranchActionParams } from '../../../../shared/rpc-contract/git-branch-action-params'
+import { GitBranchActionParams } from '../../../../../../shared/rpc-contract/git-branch-action-params'
 import {
   GitBranchCompare,
   GitBulkPaths,

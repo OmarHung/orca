@@ -1,6 +1,6 @@
 import type * as Monaco from 'monaco-editor'
 import { useAppStore } from '@/store'
-import type { OpenFile } from '@/store/slices/editor'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import { detectLanguage } from '@/lib/language-detect'
 import { getRelativePathInsideRoot } from '@/lib/path'
 import { toEditorModelUri } from '@/components/editor/model-lifetime/identity/editor-model-uri'

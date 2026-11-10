@@ -1,6 +1,6 @@
 import type { SshTarget } from '../../shared/ssh-types'
 import type { SshResolvedConfig } from '../ssh/config/ssh-g-config-resolution'
-import type { EffectiveProxy } from '../ssh/ssh-proxy-command'
+import type { EffectiveProxy } from '../ssh/system-transport/ssh-proxy-command'
 
 /**
  * The seam between upstream SSH code and the fork's per-host VPN. Kept free of runtime imports

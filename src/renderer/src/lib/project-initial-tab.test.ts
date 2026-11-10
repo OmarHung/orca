@@ -1,18 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
-import { activateAndRevealWorktree } from './worktree-activation'
-import * as activationGate from './worktree-agent-activation-gate'
+import { activateAndRevealWorktree } from './workspace/activation/worktree-activation'
+import * as activationGate from './workspace/activation/worktree-agent-activation-gate'
 import { seedProjectInitialAgentTab } from './project-initial-agent-tab-seeding'
 import {
   makeCreatedAgentWorktree as makeWorktree,
   seedEmptyActivatableWorktree
-} from '@/lib/worktree-activation-created-agent.test-fixture'
+} from '@/lib/workspace/activation/worktree-activation-created-agent.test-fixture'
 import type { Repo } from '../../../shared/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
 
 const openDefaultChat = vi.hoisted(() => vi.fn())
 
-vi.mock('@/lib/empty-workspace-default-agent-chat', () => ({
+vi.mock('@/lib/workspace/activation/initial-surface/empty-workspace-default-agent-chat', () => ({
   openDefaultAgentChatInEmptyWorkspace: openDefaultChat,
   emptyWorkspaceDefaultChatAwaitsDetection: () => false,
   loadEmptyWorkspaceDefaultChatDetection: async () => {}

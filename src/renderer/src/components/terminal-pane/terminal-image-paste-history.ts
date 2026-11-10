@@ -1,6 +1,6 @@
 import { useAppStore } from '@/store'
 import { makePaneKey } from '../../../../shared/workspace-layout/stable-pane-id'
-import { isImageDropPath } from './terminal-drop-image-path'
+import { isImageDropPath } from '../../../../shared/image-path-paste'
 
 /** An image path Orca pasted or dropped into a terminal. Claude only writes a
  *  chip's image to its transcript on submit, so an unsent `[Image #N]` can only

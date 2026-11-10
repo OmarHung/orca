@@ -1,6 +1,6 @@
 import { getRelativePathInsideRoot } from '@/lib/path'
 import { isEditorTabContentType } from '@/store/slices/editor/tabs/editor-tab-content-type'
-import type { OpenFile } from '@/store/slices/editor'
+import type { OpenFile } from '@/store/slices/editor/types/open-file'
 import type { AppState } from '@/store/types'
 
 type LocateTargetState = Pick<

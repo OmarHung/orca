@@ -71,7 +71,7 @@ const { mocks } = vi.hoisted(() => {
   return { mocks: { popups, openPopupWithOriginBar, show: vi.fn() } }
 })
 
-vi.mock('./guest-lifecycle/popups/popup-origin-bar-window', () => ({
+vi.mock('./guest-lifecycle/popups/presentation/popup-origin-bar-window', () => ({
   openPopupWithOriginBar: mocks.openPopupWithOriginBar
 }))
 vi.mock('../window/foreground-activation-policy', () => ({

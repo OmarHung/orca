@@ -1,5 +1,5 @@
 import { CLOSE_TERMINAL_PANE_EVENT, type CloseTerminalPaneDetail } from '@/constants/terminal'
-import { sendRuntimePtyInputVerified } from '@/runtime/runtime-terminal-verified-input'
+import { sendRuntimePtyInputVerified } from '@/runtime/hosted-terminals/input/runtime-terminal-verified-input'
 import { useAppStore } from '@/store'
 import {
   isRunSessionActive,

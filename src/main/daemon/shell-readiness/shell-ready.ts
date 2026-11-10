@@ -1,4 +1,4 @@
-import { FISH_DOTNET_LAUNCHER_PATH_RESTORE } from '../pty/shell-startup/dotnet-launcher-path-restore'
+import { FISH_DOTNET_LAUNCHER_PATH_RESTORE } from '../../pty/shell-startup/dotnet-launcher-path-restore'
 import { tmpdir } from 'node:os'
 import { basename, join, win32 as pathWin32 } from 'node:path'
 import { statSync } from 'node:fs'
