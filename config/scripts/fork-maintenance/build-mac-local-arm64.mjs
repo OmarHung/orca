@@ -12,7 +12,7 @@
 import { execFileSync } from 'node:child_process'
 import { chmodSync, lstatSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { getLocalBuildIdentity } from '../build-mac-local.mjs'
+import { getLocalBuildIdentity } from '../desktop-distribution/macos/build-mac-local.mjs'
 
 const repoRoot = path.resolve(import.meta.dirname, '..', '..', '..')
 
@@ -27,9 +27,16 @@ function run(command, args, env = process.env) {
 }
 
 run('pnpm', ['run', 'build:desktop'])
-run('node', ['config/scripts/build-computer-macos.mjs'])
-run('node', ['config/scripts/build-keyboard-layout-macos.mjs', '--single-arch'])
-run('node', ['config/scripts/build-notification-status-macos.mjs', '--single-arch'])
+run('node', ['config/scripts/native-build/macos/build-computer-macos.mjs'])
+run('node', ['config/scripts/native-build/macos/build-keyboard-layout-macos.mjs', '--single-arch'])
+run('node', [
+  'config/scripts/native-build/macos/build-process-footprint-macos.mjs',
+  '--single-arch'
+])
+run('node', [
+  'config/scripts/native-build/macos/build-notification-status-macos.mjs',
+  '--single-arch'
+])
 run('pnpm', ['run', 'ensure:electron-runtime'])
 
 const electronDist = path.join(repoRoot, 'node_modules', 'electron', 'dist')
