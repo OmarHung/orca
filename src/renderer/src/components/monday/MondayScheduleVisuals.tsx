@@ -1,6 +1,6 @@
 import type React from 'react'
 import { Flag } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import type { MondayItemSchedule } from '../../../../shared/monday/monday-schedule'
 import type { MondayLabel, MondayScheduleItem } from '../../../../shared/monday/monday-types'
 

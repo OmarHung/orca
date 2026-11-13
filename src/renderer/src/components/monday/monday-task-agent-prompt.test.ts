@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { describe, expect, it } from 'vitest'
-import { LINKED_CONTEXT_BLOCK_MAX_CHARS } from '@/lib/linked-work-item-context'
+import { LINKED_CONTEXT_BLOCK_MAX_CHARS } from '@/lib/work-items/linked-work-item-context'
 import type {
   MondayBoardSchedule,
   MondayItemDetail,

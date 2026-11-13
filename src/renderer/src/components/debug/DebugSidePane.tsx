@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { DebugBreakpointsList } from './DebugBreakpointsList'
 import { DebugConsole } from './DebugConsole'
 import type { DebugSession } from './debug-store'

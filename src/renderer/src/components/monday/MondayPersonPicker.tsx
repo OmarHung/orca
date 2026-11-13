@@ -11,7 +11,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import type { MondayAccount, MondayUser } from '../../../../shared/monday/monday-types'
 import { mondayErrorMessage } from './monday-error-message'
 import { loadMondayUsers, resolveMondayPersonId, updateMondayPrefs } from './monday-page-actions'

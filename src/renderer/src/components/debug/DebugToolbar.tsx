@@ -13,7 +13,7 @@ import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import { basename } from '@/lib/path'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { stopDebugSession } from './debug-session-controller'
 import { isLiveDebugSession, type DebugSessionView } from './debug-store'
 import {

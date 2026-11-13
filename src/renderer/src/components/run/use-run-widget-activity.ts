@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { useDebugStore } from '../debug/debug-store'
-import { collectLeafIdsInOrder } from '../terminal-pane/layout/terminal-layout-leaf-traversal'
+import { collectLayoutLeafIdsInOrder } from '../../../../shared/workspace-layout/terminal-pane-tree'
 import { useRunSessionStore } from './run-session-store'
 import { worktreeRunActivity, type RunWidgetActivity } from './run-widget-activity'
 
@@ -13,7 +13,9 @@ export function useRunWidgetActivity(worktreeId: string): RunWidgetActivity {
   const debugSessions = useDebugStore((s) => s.sessions)
   return useMemo(() => {
     const liveLeafIds = new Set(
-      (tabs ?? []).flatMap((tab) => collectLeafIdsInOrder(terminalLayoutsByTabId[tab.id]?.root))
+      (tabs ?? []).flatMap((tab) =>
+        collectLayoutLeafIdsInOrder(terminalLayoutsByTabId[tab.id]?.root)
+      )
     )
     return worktreeRunActivity({
       worktreeId,

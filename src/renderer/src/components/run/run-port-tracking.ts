@@ -1,6 +1,6 @@
 import { useAppStore } from '@/store'
 import { getExecutionHostIdForWorktree } from '@/lib/workspace/ownership/worktree-runtime-owner'
-import { isWindowVisible } from '@/lib/window-visibility-interval'
+import { isWindowVisible } from '@/lib/window-activity/window-visibility-interval'
 import {
   publishWorkspacePortScanForHost,
   scanWorkspacePortsForTarget,

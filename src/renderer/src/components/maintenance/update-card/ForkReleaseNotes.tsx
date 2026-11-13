@@ -1,6 +1,6 @@
 import React from 'react'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import CommentMarkdown from '../../sidebar/CommentMarkdown'
 import type { ForkReleaseNote } from '../../../../../shared/fork-sync-status'
 

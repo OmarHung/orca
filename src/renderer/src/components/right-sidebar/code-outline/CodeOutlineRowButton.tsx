@@ -1,6 +1,6 @@
 import React from 'react'
 import { ChevronRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import type { CodeOutlineRow } from './code-outline-tree'
 import { CODE_OUTLINE_KIND_ICON } from './code-outline-kind-icon'
 

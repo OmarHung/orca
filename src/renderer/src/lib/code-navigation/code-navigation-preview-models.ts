@@ -1,5 +1,5 @@
 import type * as Monaco from 'monaco-editor'
-import { detectLanguage } from '@/lib/language-detect'
+import { detectLanguage } from '../../../../shared/editor-language/editor-language-detect'
 import { toEditorModelUri } from '@/components/editor/model-lifetime/identity/editor-model-uri'
 import {
   hasOpenMonacoPeekReferences,

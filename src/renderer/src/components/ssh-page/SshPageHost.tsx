@@ -1,4 +1,4 @@
-import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
+import { lazyWithRetry as lazy } from '@/app-shell/startup/lazy-with-retry'
 import { KeptMountedPage } from './KeptMountedPage'
 
 const SshPage = lazy(() => import('./SshPage'))

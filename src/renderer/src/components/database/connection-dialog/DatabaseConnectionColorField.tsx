@@ -1,7 +1,7 @@
 import React from 'react'
 import { Ban } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { FormField } from '../../run/RunConfigurationFormField'
 import { DATABASE_CONNECTION_COLORS } from '../database-connection-color'
 

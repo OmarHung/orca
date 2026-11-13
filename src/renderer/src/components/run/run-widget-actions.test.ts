@@ -7,7 +7,9 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/store', () => ({ useAppStore: { getState: () => ({}) } }))
-vi.mock('@/lib/run-quick-command-in-new-tab', () => ({ runQuickCommandInNewTab: vi.fn() }))
+vi.mock('@/lib/terminal/quick-commands/run-quick-command-in-new-tab', () => ({
+  runQuickCommandInNewTab: vi.fn()
+}))
 vi.mock('../debug/debug-launch', () => ({ debugLaunchTarget: vi.fn() }))
 vi.mock('../debug/debug-session-controller', () => ({ stopDebugSession: mocks.stopDebugSession }))
 vi.mock('./run-debug-exclusivity', () => ({

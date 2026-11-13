@@ -8,7 +8,7 @@ import {
 
 const platform = vi.hoisted(() => ({ current: 'darwin' }))
 
-vi.mock('@/lib/shortcut-platform', () => ({ getShortcutPlatform: () => platform.current }))
+vi.mock('@/lib/keyboard/shortcut-platform', () => ({ getShortcutPlatform: () => platform.current }))
 
 const T0 = 1_000_000
 

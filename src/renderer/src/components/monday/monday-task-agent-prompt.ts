@@ -1,5 +1,5 @@
 import { translate } from '@/i18n/i18n'
-import { LINKED_CONTEXT_BLOCK_MAX_CHARS } from '@/lib/linked-work-item-context'
+import { LINKED_CONTEXT_BLOCK_MAX_CHARS } from '@/lib/work-items/linked-work-item-context'
 import type {
   MondayBoardSchedule,
   MondayItemColumnValue,

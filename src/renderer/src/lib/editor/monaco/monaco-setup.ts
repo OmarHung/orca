@@ -33,7 +33,7 @@ import { installMonacoContextMenuPaste } from '@/components/editor/monaco/instal
 import { runMonacoSetupSteps } from './monaco-setup-steps'
 import { installMonacoTsWorkerIdleStop } from './monaco-ts-worker-idle-stop'
 import { onPluginFontLoadsChanged } from '@/store/plugins/appearance/plugin-fonts'
-import { installCodeNavigation } from './code-navigation/install-code-navigation'
+import { installCodeNavigation } from '../../code-navigation/install-code-navigation'
 
 globalThis.MonacoEnvironment = {
   getWorker(_workerId, label) {

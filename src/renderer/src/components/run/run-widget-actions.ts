@@ -1,6 +1,6 @@
 import type { ConfirmationDialogContextValue } from '@/components/confirmation-dialog-context'
 import { useAppStore } from '@/store'
-import { runQuickCommandInNewTab } from '@/lib/run-quick-command-in-new-tab'
+import { runQuickCommandInNewTab } from '@/lib/terminal/quick-commands/run-quick-command-in-new-tab'
 import { runsPosixShell } from '../../../../shared/run-configurations/host-shell'
 import { commandConfigurationOf } from '../../../../shared/run-configurations/run-configuration-plan'
 import { resolveCommandLaunch } from '../../../../shared/run-configurations/run-configuration-resolve'
