@@ -8,4 +8,6 @@ export type GitEditorIntegrationSettings = {
   gitAutoFetchIntervalMinutes: number
   /** JetBrains-style gutter bars for lines that differ from HEAD in file editors. */
   editorChangeMarkersEnabled: boolean
+  /** Git Log cherry-picks run `git cherry-pick -x`, naming the source commit in the message. */
+  gitCherryPickRecordOrigin: boolean
 }

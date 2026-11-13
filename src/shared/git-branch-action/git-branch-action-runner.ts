@@ -152,7 +152,7 @@ async function dispatch(
     case 'push':
       return push(exec, action.ref)
     case 'cherryPick':
-      return run(exec, ['cherry-pick', ...action.commits])
+      return run(exec, ['cherry-pick', ...(action.recordOrigin ? ['-x'] : []), ...action.commits])
     case 'revert':
       return run(exec, ['revert', '--no-edit', ...action.commits])
     case 'reset':

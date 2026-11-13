@@ -19,6 +19,7 @@ import {
   DEFAULT_LEFT_SIDEBAR_TINT_OPACITY
 } from '../sidebar-list/appearance/left-sidebar-appearance'
 import { DEFAULT_SOURCE_CONTROL_GROUP_ORDER } from '../source-control/listing/source-control-group-order'
+import { DEFAULT_GIT_EDITOR_INTEGRATION_SETTINGS } from '../git-editor-integration-settings-defaults'
 import { DESKTOP_TERMINAL_SCROLLBACK_ROWS_DEFAULT } from '../terminal/replay/terminal-scrollback-policy'
 import { NESTED_WORKER_MAX_DEPTH_DEFAULT } from '../orchestration/workers/nested-worker-depth'
 import { getDefaultWorkspaceCleanupRules } from '../workspace-cleanup/workspace-cleanup-policy'
@@ -180,10 +181,7 @@ export function buildDefaultSettings(args: {
     sourceControlGroupOrder: DEFAULT_SOURCE_CONTROL_GROUP_ORDER,
     sourceControlCompareAgainstUpstream: false,
     prAutoRefresh: 'default',
-    gitBranchStatusBarEnabled: true,
-    gitAutoFetchEnabled: false,
-    gitAutoFetchIntervalMinutes: 15,
-    editorChangeMarkersEnabled: true,
+    ...DEFAULT_GIT_EDITOR_INTEGRATION_SETTINGS,
     showTitlebarAppName: true,
     showTasksButton: true,
     showAutomationsButton: true,
