@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { List, ListTree } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
-import { detectLanguage } from '@/lib/language-detect'
+import { detectLanguage } from '../../../../../../shared/editor-language/editor-language-detect'
 import { useAppStore } from '@/store'
 import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import type {

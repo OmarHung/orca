@@ -1,7 +1,7 @@
 import React from 'react'
 import { SquareTerminal, Table2, X } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { connectionTabStyle } from './database-connection-color'
 import { useDatabaseConnectionsStore } from './database-connections-store'
 import { closeDatabaseTab } from './database-page-actions'

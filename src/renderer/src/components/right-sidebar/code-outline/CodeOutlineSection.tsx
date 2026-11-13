@@ -2,7 +2,7 @@ import React, { useCallback, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { useDragResize } from '@/components/bottom-panel/use-drag-resize'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { CodeOutlineBody } from './CodeOutlineBody'
 import {
   loadCodeOutlineSectionLayout,

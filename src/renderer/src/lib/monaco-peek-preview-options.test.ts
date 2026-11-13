@@ -2,7 +2,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type * as Monaco from 'monaco-editor'
-import { installMonacoPeekReferencesPreviewOptions } from './monaco-peek-preview-options'
+import { installMonacoPeekReferencesPreviewOptions } from './editor/monaco/monaco-peek-preview-options'
 import {
   hasOpenMonacoPeekReferences,
   onDidCloseMonacoPeekReferences

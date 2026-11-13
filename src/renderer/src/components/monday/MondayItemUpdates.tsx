@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { PanZoomImageDialog } from '@/components/editor/PanZoomImageDialog'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import type { MondayUpdate, MondayUpdateReply } from '../../../../shared/monday/monday-types'
 import { openMondayLink } from './monday-browser-actions'
 import { formatMondayTimestamp } from './monday-date-format'

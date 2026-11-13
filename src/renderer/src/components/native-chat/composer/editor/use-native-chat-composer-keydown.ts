@@ -11,7 +11,7 @@ import { isMacPlatform } from '../../pane/routing/native-chat-shortcut'
 import type { NativeChatMentionFiles } from '../pickers/use-native-chat-mention-files'
 import type { NativeChatComposerSendIntent } from '../submit/native-chat-composer-send-intent'
 import { flushSync } from 'react-dom'
-import { isScreenSubmitShortcut } from '@/lib/screen-submit-shortcut'
+import { isScreenSubmitShortcut } from '@/lib/keyboard/screen-submit-shortcut'
 import { useAppStore } from '@/store'
 import {
   isNativeChatRecallActive,

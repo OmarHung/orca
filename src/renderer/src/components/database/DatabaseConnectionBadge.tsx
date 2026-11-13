@@ -1,6 +1,6 @@
 import React from 'react'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import type { DatabaseSessionState } from '../../../../shared/database/database-session-types'
 import { useDatabaseConnectionsStore } from './database-connections-store'
 

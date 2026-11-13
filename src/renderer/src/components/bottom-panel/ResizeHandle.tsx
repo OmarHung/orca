@@ -1,5 +1,5 @@
 import React from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import type { DragResizeHandleProps } from './use-drag-resize'
 
 const EDGE_CLASS = {

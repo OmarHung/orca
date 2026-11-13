@@ -10,7 +10,7 @@ import {
   ContextMenuSubTrigger
 } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
-import { getShortcutPlatform } from '@/lib/shortcut-platform'
+import { getShortcutPlatform } from '@/lib/keyboard/shortcut-platform'
 import type { DatabaseExportFormat } from '../../../../../shared/database/database-export-types'
 import { formatKeybindingList } from '../../../../../shared/keybindings'
 import type { GridCopyFormat } from './database-grid-transfer'

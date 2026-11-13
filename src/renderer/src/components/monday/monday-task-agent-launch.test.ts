@@ -21,7 +21,7 @@ vi.mock('@/lib/workspace/creation/work-item/launch-work-item-direct', () => ({
 vi.mock('@/lib/workspace/activation/worktree-activation', () => ({
   activateAndRevealWorktree: mocks.activateAndRevealWorktree
 }))
-vi.mock('@/lib/focus-terminal-tab-surface', () => ({
+vi.mock('@/components/terminal-pane/input/focus/focus-terminal-tab-surface', () => ({
   focusTerminalTabSurface: mocks.focusTerminalTabSurface
 }))
 vi.mock('@/lib/agent-session/launch/routing/agent-launch-request-id', () => ({

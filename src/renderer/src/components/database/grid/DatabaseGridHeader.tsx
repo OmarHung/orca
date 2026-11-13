@@ -1,7 +1,7 @@
 import React from 'react'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import type { DatabaseColumn } from '../../../../../shared/database/database-query-types'
 import { ResizeHandle } from '../../bottom-panel/ResizeHandle'
 import { useDragResize } from '../../bottom-panel/use-drag-resize'

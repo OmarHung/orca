@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import { isImeOwnedKeyboardEvent } from '@/lib/ime-composition-keyboard-event'
+import { isImeOwnedKeyboardEvent } from '@/lib/text-input/ime/ime-composition-keyboard-event'
 import { hasSshCommandControlCharacter } from '../../../../shared/ssh-command-types'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'

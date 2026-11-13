@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { CircleAlert, CircleCheck, CircleSlash } from 'lucide-react'
 import { getIntlLocale, translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import type {
   DatabaseConsoleLogEntry,
   DatabaseConsoleLogOutcome

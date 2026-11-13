@@ -35,7 +35,7 @@ vi.mock('@/store', () => ({
     })
   }
 }))
-vi.mock('@/lib/shortcut-platform', () => ({ getShortcutPlatform: () => 'darwin' }))
+vi.mock('@/lib/keyboard/shortcut-platform', () => ({ getShortcutPlatform: () => 'darwin' }))
 vi.mock('@/lib/pane-manager/mobile-driver-state', () => ({
   isPtyLocked: (ptyId: string) => mocks.lockedPtys.has(ptyId)
 }))

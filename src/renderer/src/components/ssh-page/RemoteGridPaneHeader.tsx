@@ -1,6 +1,6 @@
 import { Radio, RadioTower, RotateCw, X } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import type { SshTarget } from '../../../../shared/ssh-types'
 import { Button } from '../ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
