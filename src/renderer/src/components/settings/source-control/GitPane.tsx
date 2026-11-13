@@ -30,6 +30,10 @@ import {
 } from './GitBranchStatusSettings'
 import { GitInlineBlameSetting, gitInlineBlameSettingMatchesSearch } from './GitInlineBlameSetting'
 import {
+  GitCherryPickRecordOriginSetting,
+  gitCherryPickRecordOriginSettingMatchesSearch
+} from './GitCherryPickRecordOriginSetting'
+import {
   KEEP_LOCAL_MAIN_UP_TO_DATE_SECTION_ID,
   getKeepLocalMainUpToDateTitle
 } from './keep-local-main-up-to-date-setting'
@@ -306,6 +310,13 @@ export function GitPane({
     gitInlineBlameSettingMatchesSearch(searchQuery) ? (
       <GitInlineBlameSetting
         key="git-inline-blame"
+        settings={settings}
+        updateSettings={updateSettings}
+      />
+    ) : null,
+    gitCherryPickRecordOriginSettingMatchesSearch(searchQuery) ? (
+      <GitCherryPickRecordOriginSetting
+        key="git-cherry-pick-record-origin"
         settings={settings}
         updateSettings={updateSettings}
       />

@@ -154,8 +154,13 @@ export function parseGitBranchAction(value: unknown): GitBranchAction {
         : { kind: 'pull', ref, strategy: readEnum(record, 'strategy', PULL_STRATEGIES) }
     }
     case 'cherryPick':
+      return {
+        kind: 'cherryPick',
+        commits: readCommits(record),
+        ...(record.recordOrigin === true ? { recordOrigin: true } : {})
+      }
     case 'revert':
-      return { kind: record.kind, commits: readCommits(record) }
+      return { kind: 'revert', commits: readCommits(record) }
     case 'reset':
       return {
         kind: 'reset',

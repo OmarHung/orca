@@ -97,6 +97,18 @@ export const getGitPaneSearchEntries = createLocalizedCatalog(() => [
     ]
   },
   {
+    title: translate('gitCherryPick.settings.title', 'Record Cherry-Pick Source'),
+    description: translate(
+      'gitCherryPick.settings.description',
+      'When you cherry-pick from the Git Log, add a "(cherry picked from commit …)" line naming the original commit to the message (git cherry-pick -x). Highlight commits already cherry-picked can then also recognize picks whose conflicts you resolved.'
+    ),
+    keywords: [
+      ...translateSearchKeyword('gitCherryPick.settings.keywordCherryPick', 'cherry-pick'),
+      ...translateSearchKeyword('gitCherryPick.settings.keywordGitLog', 'git log'),
+      ...translateSearchKeyword('gitCherryPick.settings.keywordSource', 'source commit')
+    ]
+  },
+  {
     title: translate('gitBranchStatus.settings.title', 'Branch Status & Auto Fetch'),
     description: translate(
       'gitBranchStatus.settings.description',

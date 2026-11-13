@@ -23402,6 +23402,15 @@
       "keywordAuthor": "作者"
     }
   },
+  "gitCherryPick": {
+    "settings": {
+      "title": "记录 Cherry-pick 来源",
+      "description": "从 Git 日志 cherry-pick 时，在提交信息加上一行“(cherry picked from commit …)”标明原始提交（git cherry-pick -x）。解决过冲突的提交也能被“高亮已 cherry-pick 的提交”识别出来。",
+      "keywordCherryPick": "cherry-pick",
+      "keywordGitLog": "Git 日志",
+      "keywordSource": "来源提交"
+    }
+  },
   "revisionCompare": {
     "withBranchAction": "Git：与分支比较…",
     "withRevisionAction": "Git：与版本比较…",

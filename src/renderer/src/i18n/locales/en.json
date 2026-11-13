@@ -24865,6 +24865,15 @@
       "keywordAuthor": "author"
     }
   },
+  "gitCherryPick": {
+    "settings": {
+      "title": "Record Cherry-Pick Source",
+      "description": "When you cherry-pick from the Git Log, add a \"(cherry picked from commit …)\" line naming the original commit to the message (git cherry-pick -x). Highlight commits already cherry-picked can then also recognize picks whose conflicts you resolved.",
+      "keywordCherryPick": "cherry-pick",
+      "keywordGitLog": "git log",
+      "keywordSource": "source commit"
+    }
+  },
   "revisionCompare": {
     "withBranchAction": "Git: Compare with Branch…",
     "withRevisionAction": "Git: Compare with Revision…",
