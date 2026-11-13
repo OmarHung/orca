@@ -24,7 +24,8 @@ export type GitBranchAction =
   | { kind: 'checkoutAndRebase'; ref: string }
   | { kind: 'pull'; ref: string; strategy: GitPullStrategy }
   | { kind: 'push'; ref: string }
-  | { kind: 'cherryPick'; commits: string[] }
+  /** `recordOrigin` adds git's `(cherry picked from commit …)` line (`-x`). */
+  | { kind: 'cherryPick'; commits: string[]; recordOrigin?: boolean }
   | { kind: 'revert'; commits: string[] }
   | { kind: 'reset'; commit: string; mode: GitResetMode }
   | { kind: 'createTag'; name: string; commit: string; message?: string }

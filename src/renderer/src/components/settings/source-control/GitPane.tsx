@@ -28,6 +28,10 @@ import {
   gitBranchStatusSettingsMatchSearch
 } from './GitBranchStatusSettings'
 import {
+  GitCherryPickRecordOriginSetting,
+  gitCherryPickRecordOriginSettingMatchesSearch
+} from './GitCherryPickRecordOriginSetting'
+import {
   KEEP_LOCAL_MAIN_UP_TO_DATE_DESCRIPTION,
   KEEP_LOCAL_MAIN_UP_TO_DATE_KEYWORDS,
   KeepLocalMainUpToDateSetting
@@ -191,6 +195,13 @@ export function GitPane({
     }) ? (
       <SourceControlGroupOrderSetting
         key="source-control-group-order"
+        settings={settings}
+        updateSettings={updateSettings}
+      />
+    ) : null,
+    gitCherryPickRecordOriginSettingMatchesSearch(searchQuery) ? (
+      <GitCherryPickRecordOriginSetting
+        key="git-cherry-pick-record-origin"
         settings={settings}
         updateSettings={updateSettings}
       />

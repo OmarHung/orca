@@ -98,6 +98,23 @@ describe('Git Log branch and commit actions against real git', () => {
     expect(subjects(repo, 'HEAD')[0]).toBe('Revert "feature only"')
   })
 
+  it('names the source commit in the message only when recordOrigin is set', async () => {
+    const repo = divergedRepo()
+    const featureCommit = repo.git('rev-parse', 'feature').trim()
+    const headBody = (): string => repo.git('log', '-1', '--format=%b', 'HEAD').trim()
+
+    await runGitBranchAction(repo.exec, { kind: 'cherryPick', commits: [featureCommit] })
+    expect(headBody()).toBe('')
+
+    repo.git('reset', '--quiet', '--hard', 'HEAD~1')
+    await runGitBranchAction(repo.exec, {
+      kind: 'cherryPick',
+      commits: [featureCommit],
+      recordOrigin: true
+    })
+    expect(headBody()).toBe(`(cherry picked from commit ${featureCommit})`)
+  })
+
   it('resets the current branch with the chosen mode', async () => {
     const repo = divergedRepo()
     const base = repo.git('rev-parse', 'main~1').trim()

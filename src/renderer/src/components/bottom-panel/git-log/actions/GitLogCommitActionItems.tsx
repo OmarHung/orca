@@ -2,6 +2,7 @@ import React from 'react'
 import { Cherry, GitBranchPlus, LogIn, RotateCcw, Tag, Undo2 } from 'lucide-react'
 import { ContextMenuItem, ContextMenuSeparator } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
+import { useAppStore } from '@/store'
 import type { GitHistoryItem } from '../../../../../../shared/git/history/git-history-types'
 import { useGitLogActionDialogStore } from './git-log-action-dialog-store'
 import { currentLabel, shortCommit } from './git-log-action-feedback'
@@ -23,6 +24,7 @@ export function GitLogCommitActionItems({
 }: CommitActionItemsProps): React.JSX.Element | null {
   const actions = useGitLogActions()
   const openDialog = useGitLogActionDialogStore((s) => s.open)
+  const recordOrigin = useAppStore((s) => s.settings?.gitCherryPickRecordOrigin !== false)
   if (!actions) {
     return null
   }
@@ -96,7 +98,7 @@ export function GitLogCommitActionItems({
       </ContextMenuItem>
       <ContextMenuItem
         disabled={busy || toPick.length === 0}
-        onSelect={() => actions.run({ kind: 'cherryPick', commits: toPick })}
+        onSelect={() => actions.run({ kind: 'cherryPick', commits: toPick, recordOrigin })}
       >
         <Cherry />
         {toPick.length > 1
