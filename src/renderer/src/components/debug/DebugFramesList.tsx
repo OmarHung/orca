@@ -1,7 +1,7 @@
 import React from 'react'
 import { translate } from '@/i18n/i18n'
 import { basename } from '@/lib/path'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { selectDebugFrame } from './debug-session-controller'
 import type { DebugSession } from './debug-store'
 

@@ -1,5 +1,5 @@
 import React from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { RUN_MODE_ICONS } from './run-configuration-icon'
 import type { RunMode } from './run-mode'
 

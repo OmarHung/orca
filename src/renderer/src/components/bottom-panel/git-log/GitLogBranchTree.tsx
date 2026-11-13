@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { ChevronDown, Folder, GitBranch, Layers, Search, Star, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
 import {

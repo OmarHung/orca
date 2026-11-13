@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ExecutionHostId } from '../../../shared/execution-host'
 import type { ProjectHostSetup } from '../../../shared/project-types'
 import type { TerminalQuickCommand } from '../../../shared/terminal/quick-commands/terminal-quick-command-types'
-import { terminalQuickCommandMatchesWorkspaceProject } from './terminal-quick-command-project-scope'
+import { terminalQuickCommandMatchesWorkspaceProject } from './terminal/quick-commands/terminal-quick-command-project-scope'
 
 type ScopeSetup = Pick<ProjectHostSetup, 'hostId' | 'projectId' | 'repoId'>
 

@@ -1,7 +1,7 @@
 import React, { useMemo, useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { useWidestRow } from '@/lib/virtual-row-width'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
 import { openDatabaseTable } from '../database-page-actions'

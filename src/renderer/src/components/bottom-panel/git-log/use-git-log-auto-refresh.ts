@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { createCoalescedPollRunner } from '../../../lib/repository-refresh/coalesced-poll-runner'
+import { createCoalescedPollRunner } from '../../../lib/source-control/refresh/coalesced-poll-runner'
 import { subscribeGitLogRefreshSignals } from './git-log-refresh-signals'
 
 // Why: one git operation fires several signals (index, ref, command end); space the reloads out.

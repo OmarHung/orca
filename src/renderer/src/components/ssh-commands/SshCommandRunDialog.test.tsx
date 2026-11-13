@@ -17,7 +17,9 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('sonner', () => ({ toast: { error: mocks.toastError } }))
-vi.mock('@/lib/focus-terminal-tab-surface', () => ({ focusTerminalTabSurface: mocks.focus }))
+vi.mock('@/components/terminal-pane/input/focus/focus-terminal-tab-surface', () => ({
+  focusTerminalTabSurface: mocks.focus
+}))
 
 vi.mock('./ssh-command-send', async (importOriginal) => {
   const actual = await importOriginal<typeof SendModule>()

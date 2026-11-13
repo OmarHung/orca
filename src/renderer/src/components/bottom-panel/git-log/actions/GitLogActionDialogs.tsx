@@ -1,6 +1,6 @@
 import React from 'react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import type { GitBranchAction } from '../../../../../../shared/git-branch-action/git-branch-action-types'
 import {
   useGitLogActionDialogStore,

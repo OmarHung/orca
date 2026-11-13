@@ -1,11 +1,11 @@
 import path from 'node:path'
 import type { FileEntryWithStats, Stats } from 'ssh2'
 import { forkProcess } from '@orca/process-host/fork-process'
-import type { SpawnedProcess } from '@orca/process-host/process-spec'
+import type { ChildProcess } from 'node:child_process'
 import type { SftpOps } from './sftp-ops'
 
 /** Runs the real local-writer entry from source under Node, as a build runs its compiled copy. */
-export function spawnLocalWriterFromSource(cwd: string): SpawnedProcess {
+export function spawnLocalWriterFromSource(cwd: string): ChildProcess {
   return forkProcess({
     modulePath: path.join(__dirname, 'local-writer', 'sftp-local-writer-entry.ts'),
     cwd,

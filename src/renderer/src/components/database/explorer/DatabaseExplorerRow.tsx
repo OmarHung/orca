@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { useRowWidthReporter } from '@/lib/virtual-row-width'
 import {
   DatabaseSessionIcon,

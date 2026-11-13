@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { getShortcutPlatform } from '@/lib/shortcut-platform'
+import { getShortcutPlatform } from '@/lib/keyboard/shortcut-platform'
 import { useAppStore } from '@/store'
 import { keybindingMatchesAction, type KeybindingActionId } from '../../../../shared/keybindings'
 import { getKeybindingContext } from '../terminal-workspace-model'

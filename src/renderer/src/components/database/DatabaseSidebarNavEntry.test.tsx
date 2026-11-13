@@ -15,7 +15,7 @@ vi.mock('@/store', () => ({
     selector({ activeView: mocks.activeView })
 }))
 
-vi.mock('@/lib/web-client-location', () => ({
+vi.mock('@/app-shell/platform/web-client-location', () => ({
   isWebClientLocation: () => mocks.isWebClient
 }))
 

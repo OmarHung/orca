@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useRef } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { debugOutput, useDebugStore, type DebugSession } from './debug-store'
 import { DebugConsoleInput } from './DebugConsoleInput'
 

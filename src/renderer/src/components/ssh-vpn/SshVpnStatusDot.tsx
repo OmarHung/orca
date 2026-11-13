@@ -1,5 +1,5 @@
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import type { SshVpnStatus } from '../../../../shared/ssh-vpn-types'
 
 export function describeSshVpnStatus(status: SshVpnStatus): string {

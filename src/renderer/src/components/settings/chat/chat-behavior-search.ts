@@ -1,7 +1,7 @@
 import { translate } from '@/i18n/i18n'
 import type { Translate } from '@/i18n/use-translate'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
-import { getScreenSubmitShortcutLabel } from '@/lib/screen-submit-shortcut'
+import { getScreenSubmitShortcutLabel } from '@/lib/keyboard/screen-submit-shortcut'
 import type { SettingsSearchEntry } from '../search/settings-search'
 import { NATIVE_CHAT_RESUME_SETTING_SECTION_ID } from './native-chat-resume-setting-target'
 import { NATIVE_CHAT_USAGE_LIMIT_CONTINUE_SETTING_SECTION_ID } from './native-chat-usage-limit-continue-setting-target'

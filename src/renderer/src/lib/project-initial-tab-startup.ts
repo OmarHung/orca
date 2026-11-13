@@ -1,5 +1,5 @@
 import { buildAgentStartupPlan } from '../../../shared/agent-launch/startup/tui-agent-startup'
-import { tuiAgentToAgentKind } from '@/lib/telemetry'
+import { tuiAgentToAgentKind } from '../../../shared/agent-kind'
 import { resolveAgentLaunchExecutionContext } from '@/lib/agent-session/launch/new-tab/launch-agent-execution-context'
 import { getExecutionHostIdForWorktree } from '@/lib/workspace/ownership/worktree-runtime-owner'
 import type { WorktreeStartupPayload } from '@/lib/workspace/creation/worktree-startup-payload'

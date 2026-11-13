@@ -1,6 +1,9 @@
 import type { AppState } from '@/store/types'
 import type { ExecutionHostId } from '../../../shared/execution-host'
-import { confirmScriptContent, enqueueTrustPrompt } from './ensure-hooks-confirmed'
+import {
+  confirmScriptContent,
+  enqueueTrustPrompt
+} from '../runtime/repo-hooks/ensure-hooks-confirmed'
 
 /** Asks once per content change before any orca.yaml run configuration may execute. */
 export function confirmSharedRunConfigurations(

@@ -1,5 +1,5 @@
 import type * as Monaco from 'monaco-editor'
-import { getShortcutPlatform } from '@/lib/shortcut-platform'
+import { getShortcutPlatform } from '@/lib/keyboard/shortcut-platform'
 
 type ClickableEditor = Pick<
   Monaco.editor.ICodeEditor,

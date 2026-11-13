@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef } from 'react'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import type { TerminalTab } from '../../../../shared/workspace-layout/terminal-tab-types'
 import type { SshTarget } from '../../../../shared/ssh-types'
 import { ResizeHandle } from '../bottom-panel/ResizeHandle'

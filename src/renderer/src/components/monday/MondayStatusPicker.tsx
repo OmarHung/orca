@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { updateMondayPrefs } from './monday-page-actions'
 import { useMondayPageStore } from './monday-page-store'
 import { collectMondayStatusOptions, MONDAY_NO_STATUS } from './monday-status-filter'

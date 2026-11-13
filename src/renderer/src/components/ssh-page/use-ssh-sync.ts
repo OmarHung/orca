@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Terminal } from '@xterm/xterm'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import { getShortcutPlatform } from '@/lib/shortcut-platform'
+import { getShortcutPlatform } from '@/lib/keyboard/shortcut-platform'
 import {
   observeTerminalDirectInput,
   readTerminalTabScreen

@@ -27,8 +27,10 @@ vi.mock('sonner', () => ({ toast: { error: mocks.toastError } }))
 vi.mock('@/i18n/i18n', () => ({
   translate: (_key: string, fallback: string) => fallback
 }))
-vi.mock('@/lib/focus-terminal-tab-surface', () => ({ focusTerminalTabSurface: mocks.focus }))
-vi.mock('@/lib/shortcut-platform', () => ({ getShortcutPlatform: () => mocks.platform }))
+vi.mock('@/components/terminal-pane/input/focus/focus-terminal-tab-surface', () => ({
+  focusTerminalTabSurface: mocks.focus
+}))
+vi.mock('@/lib/keyboard/shortcut-platform', () => ({ getShortcutPlatform: () => mocks.platform }))
 vi.mock('@/store', () => ({
   useAppStore: {
     getState: () => ({

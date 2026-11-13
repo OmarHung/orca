@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { useLocalImageSrc } from '@/components/editor/document-images/useLocalImageSrc'
 import { translate } from '@/i18n/i18n'
 import { basename } from '@/lib/path'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import {
   useTerminalImagePreviewStore,
   type TerminalImagePreviewRequest

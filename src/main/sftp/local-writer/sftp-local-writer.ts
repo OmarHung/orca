@@ -1,7 +1,7 @@
 import { existsSync, statSync } from 'node:fs'
 import type { SftpLocalRoot } from '../../../shared/sftp-types'
 import { forkProcess } from '@orca/process-host/fork-process'
-import type { SpawnedProcess } from '@orca/process-host/process-spec'
+import type { ChildProcess } from 'node:child_process'
 import {
   RUNTIME_ENV_ALLOWLIST,
   pickAllowedEnv
@@ -16,7 +16,7 @@ const ENTRY_FILENAME = 'sftp-local-writer-entry.js'
 const STDERR_TAIL_CHARS = 2_000
 
 /** Starts the writer process with `cwd` as its working directory. */
-export type SpawnSftpLocalWriter = (cwd: string) => SpawnedProcess
+export type SpawnSftpLocalWriter = (cwd: string) => ChildProcess
 
 /** Local writes for one download, all inside the folder the user confirmed. */
 export type SftpLocalWriter = {
@@ -32,7 +32,7 @@ export type SftpLocalWriter = {
 
 type Pending = { resolve: (response: LocalWriterResponse) => void; reject: (error: Error) => void }
 
-export function spawnSftpLocalWriterProcess(cwd: string): SpawnedProcess {
+export function spawnSftpLocalWriterProcess(cwd: string): ChildProcess {
   const entryPath = resolveForkedProcessEntryPath(
     currentWorkerEntryLayout(__dirname),
     ENTRY_FILENAME

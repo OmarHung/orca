@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { GitCompareArrows, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
+import { lazyWithRetry as lazy } from '@/app-shell/startup/lazy-with-retry'
 import { translate } from '@/i18n/i18n'
 import { getRuntimeGitCommitDiff } from '@/runtime/source-control/git/runtime-git-diff-client'
 import type { OpenFile } from '@/store/slices/editor/types/open-file'

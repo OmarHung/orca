@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useAppStore } from '@/store'
-import { isWebClientLocation } from '@/lib/web-client-location'
-import { installWindowVisibilityInterval } from '@/lib/window-visibility-interval'
+import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
+import { installWindowVisibilityInterval } from '@/lib/window-activity/window-visibility-interval'
 import { normalizeGitAutoFetchIntervalMinutes } from './git-auto-fetch-schedule'
 import { runGitAutoFetchTick } from './git-auto-fetch-runner'
 

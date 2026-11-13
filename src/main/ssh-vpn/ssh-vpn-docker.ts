@@ -1,5 +1,6 @@
 import { runProcess, spawnProcess } from '@orca/process-host'
-import type { PipedChildProcess, ProcessResult } from '@orca/process-host/process-spec'
+import type { ChildProcessWithoutNullStreams } from 'node:child_process'
+import type { ProcessResult } from '@orca/process-host/process-spec'
 import {
   CONTAINER_LOGIN_PATH,
   CONTAINER_PROFILE_DIR,
@@ -213,7 +214,7 @@ export class SshVpnDocker {
     )
   }
 
-  spawnOpenVpn(containerName: string, withLogin: boolean): PipedChildProcess {
+  spawnOpenVpn(containerName: string, withLogin: boolean): ChildProcessWithoutNullStreams {
     return spawnProcess({
       program: this.dockerPath,
       args: dockerOpenVpnArgs(containerName, withLogin),

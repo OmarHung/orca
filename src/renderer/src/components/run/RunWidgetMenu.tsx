@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { translate } from '@/i18n/i18n'
 import { TabBarQuickCommandHostLoadStatus } from '../tab-bar/TabBarQuickCommandHostLoadStatus'
-import { isWindowsUserAgent } from '../../lib/user-agent-platform'
+import { isWindowsUserAgent } from '../../app-shell/platform/user-agent-platform'
 import { DotnetContainerMenu } from './DotnetContainerMenu'
 import { isDetectedRunMenuEmpty, type DetectedRunMenu } from './detected-run-menu'
 import { RunWidgetDetectedSection, type DetectedSectionActions } from './RunWidgetDetectedSection'

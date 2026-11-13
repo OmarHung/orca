@@ -1,7 +1,7 @@
 import { toast } from 'sonner'
 import { resolveGroupTabFromVisibleId } from '@/components/tab-group/tab-group-visible-id'
 import { closeTerminalTab } from '@/components/terminal/terminal-tab-actions'
-import { focusTerminalTabSurface } from '@/lib/focus-terminal-tab-surface'
+import { focusTerminalTabSurface } from '@/components/terminal-pane/input/focus/focus-terminal-tab-surface'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import type { SshTarget } from '../../../../shared/ssh-types'

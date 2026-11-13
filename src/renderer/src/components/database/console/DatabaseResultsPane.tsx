@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { findDatabaseConnection } from '../database-connections-store'
 import type { DatabaseRunTarget } from '../database-page-tabs'
 import { DatabaseResultGrid } from '../grid/DatabaseResultGrid'

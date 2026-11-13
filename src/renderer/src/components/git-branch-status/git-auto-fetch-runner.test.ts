@@ -9,10 +9,10 @@ vi.mock('@/store', () => ({ useAppStore: { getState: () => mocks.state } }))
 vi.mock('@/store/repos/repository-catalog-index', () => ({
   getIndexedRepoMap: (repos: { id: string }[]) => new Map(repos.map((repo) => [repo.id, repo]))
 }))
-vi.mock('@/lib/connection-context', () => ({
+vi.mock('@/lib/workspace/ownership/connection-context', () => ({
   getConnectionId: (worktreeId: string) => (worktreeId === 'wt-ssh' ? 'conn-1' : null)
 }))
-vi.mock('@/lib/resolve-owner', () => ({
+vi.mock('@/lib/workspace/ownership/resolve-owner', () => ({
   runtimeTargetForWorkspaceOwner: () => ({ kind: 'local' })
 }))
 vi.mock('@/runtime/source-control/git/runtime-git-sync-client', () => ({

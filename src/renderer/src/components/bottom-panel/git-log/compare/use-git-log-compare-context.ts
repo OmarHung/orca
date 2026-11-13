@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { getConnectionId } from '@/lib/connection-context'
+import { getConnectionId } from '@/lib/workspace/ownership/connection-context'
 import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
 import type { GitLogCompareContext } from './open-git-log-compare'
 

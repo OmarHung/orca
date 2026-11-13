@@ -3,7 +3,7 @@ import { Minus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SYNC_FIT_PANES_EVENT } from '@/constants/terminal'
 import { translate } from '@/i18n/i18n'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import {
   BOTTOM_PANEL_MIN_WORKBENCH_HEIGHT,
   BOTTOM_PANEL_SIZE_LIMITS,

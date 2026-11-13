@@ -1,6 +1,6 @@
-import { isWindowVisible } from '@/lib/window-visibility-interval'
+import { isWindowVisible } from '@/lib/window-activity/window-visibility-interval'
 import { ORCA_TERMINAL_COMMAND_FINISHED_EVENT } from '@/hooks/terminal-command-finished-event'
-import type { CoalescedPollRunnerTrigger } from '../../../lib/repository-refresh/coalesced-poll-runner'
+import type { CoalescedPollRunnerTrigger } from '../../../lib/source-control/refresh/coalesced-poll-runner'
 
 // Why: the host's git watcher skips refs/**, so a branch, tag or fetch made by an agent or another
 // app changes no watched file; only this poll notices it.

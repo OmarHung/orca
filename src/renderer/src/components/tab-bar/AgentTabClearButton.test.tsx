@@ -22,7 +22,7 @@ vi.mock('@/components/ui/tooltip', () => ({
   TooltipTrigger: ({ children }: { children: ReactNode }) => <>{children}</>,
   TooltipContent: ({ children }: { children: ReactNode }) => <span>{children}</span>
 }))
-vi.mock('@/lib/agent-catalog', () => ({ getAgentLabel: () => 'Claude Code' }))
+vi.mock('@/lib/agent-catalog/agent-catalog', () => ({ getAgentLabel: () => 'Claude Code' }))
 vi.mock('sonner', () => ({ toast: { error: mocks.toastError } }))
 vi.mock('./agent-tab-clear', () => ({
   clearAgentTabConversation: mocks.clearAgentTabConversation,

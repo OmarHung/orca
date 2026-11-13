@@ -3,7 +3,7 @@ import { ReferenceWidget as MonacoReferenceWidget } from 'monaco-editor/esm/vs/e
 import {
   markMonacoPeekReferencesClosed,
   markMonacoPeekReferencesOpen
-} from './monaco-peek-references-lifecycle'
+} from '../../monaco-peek-references-lifecycle'
 
 type PeekPreviewEditor = Pick<Monaco.editor.ICodeEditor, 'updateOptions'>
 

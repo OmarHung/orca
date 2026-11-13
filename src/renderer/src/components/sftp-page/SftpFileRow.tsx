@@ -1,6 +1,6 @@
 import { createElement } from 'react'
 import { File, FileSymlink, Folder, FolderUp, type LucideIcon } from 'lucide-react'
-import { getFileTypeIcon } from '@/lib/file-type-icons'
+import { getFileTypeIcon } from '@/lib/file-icons/file-type-icons'
 import { getFolderTypeIcon } from '@/lib/folder-type-icons'
 import type { SftpEntry } from '../../../../shared/sftp-types'
 import {

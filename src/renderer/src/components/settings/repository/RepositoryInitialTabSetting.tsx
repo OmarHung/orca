@@ -5,7 +5,8 @@ import { isTuiAgentEnabled } from '../../../../../shared/agent-launch/catalog/tu
 import { Label } from '../../ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select'
 import { SearchableSetting } from '../section-layout/SearchableSetting'
-import { AgentIcon, getAgentCatalog } from '@/lib/agent-catalog'
+import { AgentIcon } from '@/components/agent/icons/AgentIcon'
+import { getAgentCatalog } from '@/lib/agent-catalog/agent-catalog'
 import { useAppStore } from '../../../store'
 import { translate } from '@/i18n/i18n'
 
