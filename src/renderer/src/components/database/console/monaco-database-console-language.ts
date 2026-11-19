@@ -2,7 +2,8 @@ import type * as MonacoApi from 'monaco-editor'
 import type { IDisposable, languages } from 'monaco-editor'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import type { SqlDialect } from '../../../../../shared/database/sql-dialect-lexing'
+import { isSqlDriver } from '../../../../../shared/database/database-connection-types'
+import type { DatabaseConsoleLanguage } from './database-console-statements'
 import { sqlCatalogFor } from './sql-completion-catalog'
 import { sqlCompletions, type SqlCompletionKind } from './sql-completion-items'
 import { formatSqlConsole } from './sql-console-format'
@@ -12,7 +13,7 @@ type TextModel = MonacoApi.editor.ITextModel
 
 export type DatabaseConsoleTarget = {
   connectionId: string
-  dialect: SqlDialect
+  language: DatabaseConsoleLanguage
   /** Resolves unqualified names for completion; null uses the connection's current schema. */
   schema: string | null
   /** The console's database (PostgreSQL, SQL Server); null is the connection's. */
@@ -27,9 +28,20 @@ let providers: IDisposable[] = []
 let providerMonaco: Monaco | null = null
 const targetsByModel = new Map<string, () => DatabaseConsoleTarget>()
 
+/** Monaco's language for a console: SQL, Redis commands, or mongosh's JavaScript. */
+export function monacoLanguageFor(language: DatabaseConsoleLanguage): string {
+  if (language === 'redis') {
+    return 'redis'
+  }
+  return language === 'mongodb' ? 'javascript' : 'sql'
+}
+
+const MODEL_EXTENSIONS: Record<string, string> = { redis: 'redis', javascript: 'js', sql: 'sql' }
+
 /** The Monaco model path for a console tab's editor. */
-export function databaseConsoleModelPath(tabId: string): string {
-  return `${CONSOLE_SCHEME}:/${encodeURIComponent(tabId)}.sql`
+export function databaseConsoleModelPath(tabId: string, language: DatabaseConsoleLanguage): string {
+  const extension = MODEL_EXTENSIONS[monacoLanguageFor(language)]
+  return `${CONSOLE_SCHEME}:/${encodeURIComponent(tabId)}.${extension}`
 }
 
 const targetOf = (model: TextModel): DatabaseConsoleTarget | undefined =>
@@ -57,13 +69,13 @@ async function provideCompletions(
   position: MonacoApi.Position
 ): Promise<languages.CompletionList | undefined> {
   const target = targetOf(model)
-  if (!target) {
+  if (!target || !isSqlDriver(target.language)) {
     return undefined
   }
   const { prefix, items } = await sqlCompletions({
     text: model.getValue(),
     offset: model.getOffsetAt(position),
-    dialect: target.dialect,
+    dialect: target.language,
     catalog: sqlCatalogFor(target.connectionId, target.database),
     currentSchema: target.schema
   })
@@ -92,7 +104,7 @@ async function provideFormatting(
   tabSize: number
 ): Promise<languages.TextEdit[] | undefined> {
   const target = targetOf(model)
-  if (!target) {
+  if (!target || !isSqlDriver(target.language)) {
     return undefined
   }
   const offsets = range && {
@@ -101,7 +113,7 @@ async function provideFormatting(
   }
   const { edits, failure } = await formatSqlConsole(
     model.getValue(),
-    target.dialect,
+    target.language,
     offsets,
     tabSize
   )

@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react'
 import { getIntlLocale, translate } from '@/i18n/i18n'
-import type { DatabaseDriver } from '../../../../../shared/database/database-connection-types'
+import {
+  isSqlDriver,
+  type DatabaseDriver
+} from '../../../../../shared/database/database-connection-types'
 import {
   databaseCellText,
   type DatabaseQueryResult,
@@ -9,6 +12,14 @@ import {
 import { asDatabaseResult } from '../database-connections-store'
 import type { DatabaseTableTab } from '../database-page-tabs'
 import { buildTableCountSql } from '../../../../../shared/database/table-data-sql'
+
+/**
+ * Redis and MongoDB statements name no database, so the console moves to the table's first.
+ * SQL table queries are schema-qualified and keep their console where it is.
+ */
+export function tableSchemaOption(driver: DatabaseDriver, schema: string): { schema?: string } {
+  return isSqlDriver(driver) ? {} : { schema }
+}
 
 export type TableRowCount =
   | { status: 'idle' }
@@ -32,6 +43,15 @@ export function useTableRowCount(
   const requestRef = useRef(0)
 
   const count = async (): Promise<void> => {
+    const sql = buildTableCountSql({
+      driver,
+      schema: tab.schema,
+      relation: tab.relation,
+      where: tab.where
+    })
+    if (sql === null) {
+      return
+    }
     requestRef.current += 1
     const request = requestRef.current
     setRowCount({ status: 'counting' })
@@ -39,14 +59,10 @@ export function useTableRowCount(
       await window.api.database.execute({
         connectionId: tab.connectionId,
         consoleId: tab.countConsoleId,
-        sql: buildTableCountSql({
-          driver,
-          schema: tab.schema,
-          relation: tab.relation,
-          where: tab.where
-        }),
+        sql,
         pageSize: 1,
-        database: tab.database ?? undefined
+        database: tab.database ?? undefined,
+        ...tableSchemaOption(driver, tab.schema)
       })
     )
     if (request !== requestRef.current) {

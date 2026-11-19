@@ -7,17 +7,31 @@ import {
 } from './database-connection-form-state'
 
 describe('database connection form', () => {
-  it('defaults to a local PostgreSQL and derives a DataGrip-style name', () => {
+  it('defaults to a local MySQL and derives a DataGrip-style name', () => {
     const parsed = parseConnectionForm(initialConnectionForm(null, true))
     expect(parsed).toMatchObject({
       ok: true,
       draft: {
-        driver: 'postgres',
-        name: 'postgres@localhost',
-        port: 5432,
+        driver: 'mysql',
+        name: 'root@localhost',
+        port: 3306,
         database: '',
         passwordStorage: 'forever'
       }
+    })
+  })
+
+  it('starts Redis and MongoDB without a user or TLS, and checks their own fields', () => {
+    const redis = changeConnectionDriver(initialConnectionForm(null, true), 'redis')
+    expect(redis).toMatchObject({ port: '6379', user: '', sslMode: 'disable' })
+    expect(parseConnectionForm({ ...redis, database: 'db1' })).toMatchObject({
+      ok: false,
+      invalidFields: new Set(['database'])
+    })
+    const mongo = changeConnectionDriver(redis, 'mongodb')
+    expect(parseConnectionForm({ ...mongo, authDatabase: ' admin ' })).toMatchObject({
+      ok: true,
+      draft: { driver: 'mongodb', port: 27017, authDatabase: 'admin', sslMode: 'disable' }
     })
   })
 

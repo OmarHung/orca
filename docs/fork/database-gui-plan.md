@@ -63,32 +63,32 @@ SQL Server 登入失敗（2026-09-28）：tedious 的 `ELOGIN`、錯誤 18456、
 
 ## 2. 已確定的決策
 
-| # | 決策 | 內容 |
-|---|---|---|
-| D1 | 形式 | **做成內建功能，不做成插件**。上游的插件 API（v0，實驗階段）有三個限制：面板只能呼叫 3 個 host 動作，叫不到自己的 worker；面板訊息上限 64KB、每 10 秒 30 則；面板只能放在側邊欄。要擴充這些得改上游插件核心，而且改完的插件也只能在 fork 上跑 |
-| D2 | 位置 | **獨立的 Database 頁面**（新的 `TopLevelView: 'database'`，跟 Settings、Tasks、Space 同一層）。不做成編輯區分頁，也不放右側欄或底部面板。原因是要對上游的改動最少，而且頁面不綁 workspace，SSH／WSL／資料夾 workspace 都一樣能用 |
-| D3 | 資料庫 | PostgreSQL、MySQL／MariaDB、SQL Server、SQLite |
-| D4 | v1 範圍 | 連線管理和結構樹、SQL Console 和結果表格、~~資料表直接編輯~~（2026-09-28 移除，全部唯讀，見 §0）、SSH Tunnel |
-| D5 | 驅動 | 只用 MIT 授權的純 JS 驅動和 Node 內建的 `node:sqlite`，**不加原生模組**，避開 Linux glibc 下限的問題 |
-| D6 | 執行位置 | 所有資料庫連線都在**本機**的 worker thread 裡執行。遠端資料庫一律經 SSH tunnel 連線，不走 relay。Tunnel 斷線時就回報斷線，**不會悄悄改成直接連線**（`docs/reference/ssh-execution-boundary.md`） |
-| D7 | 密碼 | 用 `getSecretStore()` 加密後存檔，**加密不可用時不存明文**。密碼只存在 main，永遠不送到 renderer |
-| D8 | 連線範圍 | 連線是**全域**的，不綁 repo 或 worktree（跟 DataGrip 的 global data source 一樣）。之後再考慮綁定專案 |
-| D9 | 編輯範圍 | v1 **只有資料表畫面可以編輯**，而且資料表必須有主鍵或非 null 的唯一鍵。Console 查詢結果先唯讀 |
-| D10 | 降低衝突 | 新程式碼放在新目錄：`src/main/database/`、`src/shared/database/`、`src/preload/api/database-*`、`src/renderer/src/components/database/`。對上游檔案只加最小的掛載點（§4） |
-| D11 | 授權 | 只能參考其他工具的設計，**不能複製 GPL 專案的程式碼**（例如 Beekeeper Studio 是 GPLv3） |
+| #   | 決策     | 內容                                                                                                                                                                                                                                          |
+| --- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | 形式     | **做成內建功能，不做成插件**。上游的插件 API（v0，實驗階段）有三個限制：面板只能呼叫 3 個 host 動作，叫不到自己的 worker；面板訊息上限 64KB、每 10 秒 30 則；面板只能放在側邊欄。要擴充這些得改上游插件核心，而且改完的插件也只能在 fork 上跑 |
+| D2  | 位置     | **獨立的 Database 頁面**（新的 `TopLevelView: 'database'`，跟 Settings、Tasks、Space 同一層）。不做成編輯區分頁，也不放右側欄或底部面板。原因是要對上游的改動最少，而且頁面不綁 workspace，SSH／WSL／資料夾 workspace 都一樣能用              |
+| D3  | 資料庫   | PostgreSQL、MySQL／MariaDB、SQL Server、SQLite；2026-11-20 加入 Redis、MongoDB（見「Redis 與 MongoDB」）                                                                                                                                      |
+| D4  | v1 範圍  | 連線管理和結構樹、SQL Console 和結果表格、~~資料表直接編輯~~（2026-09-28 移除，全部唯讀，見 §0）、SSH Tunnel                                                                                                                                  |
+| D5  | 驅動     | 只用 MIT 授權的純 JS 驅動和 Node 內建的 `node:sqlite`，**不加原生模組**，避開 Linux glibc 下限的問題                                                                                                                                          |
+| D6  | 執行位置 | 所有資料庫連線都在**本機**的 worker thread 裡執行。遠端資料庫一律經 SSH tunnel 連線，不走 relay。Tunnel 斷線時就回報斷線，**不會悄悄改成直接連線**（`docs/reference/ssh-execution-boundary.md`）                                              |
+| D7  | 密碼     | 用 `getSecretStore()` 加密後存檔，**加密不可用時不存明文**。密碼只存在 main，永遠不送到 renderer                                                                                                                                              |
+| D8  | 連線範圍 | 連線是**全域**的，不綁 repo 或 worktree（跟 DataGrip 的 global data source 一樣）。之後再考慮綁定專案                                                                                                                                         |
+| D9  | 編輯範圍 | v1 **只有資料表畫面可以編輯**，而且資料表必須有主鍵或非 null 的唯一鍵。Console 查詢結果先唯讀                                                                                                                                                 |
+| D10 | 降低衝突 | 新程式碼放在新目錄：`src/main/database/`、`src/shared/database/`、`src/preload/api/database-*`、`src/renderer/src/components/database/`。對上游檔案只加最小的掛載點（§4）                                                                     |
+| D11 | 授權     | 只能參考其他工具的設計，**不能複製 GPL 專案的程式碼**（例如 Beekeeper Studio 是 GPLv3）                                                                                                                                                       |
 
 ## 3. 開源元件
 
-| 元件 | 版本（2026-09-27） | 授權 | 用途 |
-|---|---|---|---|
-| `pg` + `pg-cursor` | 8.23 / 2.22 | MIT | PostgreSQL；用 cursor 分頁讀取 |
-| `mysql2` | 3.24 | MIT | MySQL／MariaDB |
-| `tedious` | 20.0 | MIT | SQL Server；需要 Node 22 以上，Electron 43 內建 Node 24.21，沒問題 |
-| `node:sqlite` | 內建 | — | SQLite（`DatabaseSync`，同步 API，所以一定要放在 worker thread） |
-| `ssh2` | 已有 | MIT | SSH tunnel（重用 Orca 現有的 SSH 連線） |
-| `@tanstack/react-virtual` | 已有 | MIT | 表格虛擬捲動 |
-| `monaco-editor` | 已有 | MIT | SQL 編輯器，已經有 `sql` 語言 |
-| `sql-formatter` | 15.9 | MIT | 格式化 SQL（Phase 5，可選） |
+| 元件                      | 版本（2026-09-27） | 授權 | 用途                                                               |
+| ------------------------- | ------------------ | ---- | ------------------------------------------------------------------ |
+| `pg` + `pg-cursor`        | 8.23 / 2.22        | MIT  | PostgreSQL；用 cursor 分頁讀取                                     |
+| `mysql2`                  | 3.24               | MIT  | MySQL／MariaDB                                                     |
+| `tedious`                 | 20.0               | MIT  | SQL Server；需要 Node 22 以上，Electron 43 內建 Node 24.21，沒問題 |
+| `node:sqlite`             | 內建               | —    | SQLite（`DatabaseSync`，同步 API，所以一定要放在 worker thread）   |
+| `ssh2`                    | 已有               | MIT  | SSH tunnel（重用 Orca 現有的 SSH 連線）                            |
+| `@tanstack/react-virtual` | 已有               | MIT  | 表格虛擬捲動                                                       |
+| `monaco-editor`           | 已有               | MIT  | SQL 編輯器，已經有 `sql` 語言                                      |
+| `sql-formatter`           | 15.9               | MIT  | 格式化 SQL（Phase 5，可選）                                        |
 
 打包注意事項：
 
@@ -102,45 +102,45 @@ SQL Server 登入失敗（2026-09-28）：tedious 的 `ELOGIN`、錯誤 18456、
 
 **Main 和 preload**（跟 Run/Debug 一樣的做法，見 `src/main/debug/debug-ipc.ts`）：
 
-| 檔案 | 改動 |
-|---|---|
+| 檔案                                                                              | 改動                                                |
+| --------------------------------------------------------------------------------- | --------------------------------------------------- |
 | `src/main/ipc/register-core-handlers/register-core-handlers.ts` 和它的 `.test.ts` | 呼叫 `registerDatabaseHandlers()`；測試加 `vi.mock` |
-| `src/preload/api-types.ts`、`src/preload/index.ts` | 加上 `database` API |
-| `electron.vite.config.ts` | worker entry 加進 `rollupOptions.input` |
-| `config/build-plugins/plain-node-entry-guard.ts` | worker 名稱加進 `WORKER_THREAD_ENTRY_NAMES` |
-| `config/packaged-runtime-node-modules.cjs` | 加上驅動套件 |
-| `package.json` | 新依賴 |
+| `src/preload/api-types.ts`、`src/preload/index.ts`                                | 加上 `database` API                                 |
+| `electron.vite.config.ts`                                                         | worker entry 加進 `rollupOptions.input`             |
+| `config/build-plugins/plain-node-entry-guard.ts`                                  | worker 名稱加進 `WORKER_THREAD_ENTRY_NAMES`         |
+| `config/packaged-runtime-node-modules.cjs`                                        | 加上驅動套件                                        |
+| `package.json`                                                                    | 新依賴                                              |
 
 **Database 頁面**（照上游 `space`、`automations` 頁面的做法，每處大多只改一行）：
 
-| 檔案 | 改動 |
-|---|---|
-| `src/shared/ui-chrome-types.ts` | `TopLevelView` 加 `'database'` |
-| `src/shared/top-level-view.ts` | lookup 加 `database: true` |
-| `src/shared/rpc-contract/client-ui-params.ts` | `TopLevelViewSchema` 加 `'database'` |
-| `src/renderer/src/store/slices/ui/ui-slice-contract-core.ts` | view history 型別和 `previousViewBeforeDatabase` |
-| `src/renderer/src/store/slices/ui/ui-slice-view-actions.ts` | `openDatabasePage` / `closeDatabasePage` |
-| `src/renderer/src/app-shell/AppWorkspaceShell.tsx` | `ActivePage` 加 `<DatabasePage />`（lazy load） |
-| `src/renderer/src/lib/right-sidebar-visibility.ts` | Database 頁面隱藏右側欄；左側欄保留（比照 SSH／SFTP 頁面） |
-| VPN：`database-vpn-tunnel.ts`、`ssh-vpn-database-route.ts` | 伺服器連線可選 VPN 設定檔（2026-09-29），做法和限制記在 `docs/fork/ssh-vpn-plan.md`「資料庫連線走 VPN」 |
+| 檔案                                                                                                          | 改動                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/shared/ui-chrome-types.ts`                                                                               | `TopLevelView` 加 `'database'`                                                                                                                                                 |
+| `src/shared/top-level-view.ts`                                                                                | lookup 加 `database: true`                                                                                                                                                     |
+| `src/shared/rpc-contract/client-ui-params.ts`                                                                 | `TopLevelViewSchema` 加 `'database'`                                                                                                                                           |
+| `src/renderer/src/store/slices/ui/ui-slice-contract-core.ts`                                                  | view history 型別和 `previousViewBeforeDatabase`                                                                                                                               |
+| `src/renderer/src/store/slices/ui/ui-slice-view-actions.ts`                                                   | `openDatabasePage` / `closeDatabasePage`                                                                                                                                       |
+| `src/renderer/src/app-shell/AppWorkspaceShell.tsx`                                                            | `ActivePage` 加 `<DatabasePage />`（lazy load）                                                                                                                                |
+| `src/renderer/src/lib/right-sidebar-visibility.ts`                                                            | Database 頁面隱藏右側欄；左側欄保留（比照 SSH／SFTP 頁面）                                                                                                                     |
+| VPN：`database-vpn-tunnel.ts`、`ssh-vpn-database-route.ts`                                                    | 伺服器連線可選 VPN 設定檔（2026-09-29），做法和限制記在 `docs/fork/ssh-vpn-plan.md`「資料庫連線走 VPN」                                                                        |
 | 入口：`SidebarNav.tsx`、`src/shared/keybindings/types.ts`、`definitions-core-4.ts`、`app-command-handlers.ts` | 左側欄 SFTP 下方的「資料庫」項目（`DatabaseSidebarNavEntry`；原本是狀態列按鈕，2026-09-29 移過去）和快捷鍵 `Mod+Alt+D`（`definitions-core-1.ts` 已滿 300 行，所以放在 core-4） |
-| `en.json`、`zh.json` | 新增 `database` namespace，再用 `config/scripts/fork-maintenance/generate-zh-tw-locale.mjs` 產生 `zh-TW.json`（不要手改） |
+| `en.json`、`zh.json`                                                                                          | 新增 `database` namespace，再用 `config/scripts/fork-maintenance/generate-zh-tw-locale.mjs` 產生 `zh-TW.json`（不要手改）                                                      |
 
 ### 4.2 可以重用的東西
 
-| 需求 | 重用 |
-|---|---|
-| Worker thread 範例 | `src/main/ai-vault/session-scanner-opencode-sqlite-worker-{entry,client,spawn,protocol}.ts`；路徑解析用 `src/main/worker-thread-entry-path.ts` |
-| 載入 `node:sqlite` | `src/main/sqlite/sync-database.ts` 的 `process.getBuiltinModule('node:sqlite')` 寫法 |
-| 加密儲存 | `src/shared/secret-store.ts`（`getSecretStore()`、`describeProtectionGap()`）；檔案格式照 `src/main/plugins/plugin-secrets-store.ts`（沒有明文 fallback） |
-| 設定檔寫入 | `src/main/durable-file-write.ts`（`writeFileDurable`） |
-| SSH 連線 | `getSshConnectionManager()`（`src/main/ssh/ssh-target-registry.ts`）的 `connect(target)` 會重用已連上的連線；帳密和 passphrase 的詢問流程已經有了 |
-| SSH 轉發 | 每個 socket 呼叫 `client.forwardOut`，前例在 `src/main/browser/ssh-browser-network-execution-route.ts`。走系統 OpenSSH 的主機（ProxyJump、ProxyCommand、security key）拿不到 ssh2 client，改用 `src/main/ssh/system-ssh-forward-process.ts` 的 `ssh -L` |
-| 表格 | `CsvViewer.tsx` 的列虛擬化和欄寬取樣；`git-log-table-columns.tsx` 的欄寬拖拉和雙擊自動調整 |
-| 樹 | `DebugVariablesTree.tsx` 的展開時才載入；code outline 樹的鍵盤操作和 a11y role |
-| Monaco（不是檔案的內容） | `AutomationEditorPromptEditor.tsx` |
-| 連線設定對話框 | `EditRunConfigurationsDialog.tsx`（左邊清單、右邊表單）。注意：Dialog 裡放 DropdownMenu 會被 focus trap 卡住 |
-| 可拖拉分隔 | `ResizeHandle.tsx`、`use-drag-resize.ts` |
+| 需求                     | 重用                                                                                                                                                                                                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Worker thread 範例       | `src/main/ai-vault/session-scanner-opencode-sqlite-worker-{entry,client,spawn,protocol}.ts`；路徑解析用 `src/main/worker-thread-entry-path.ts`                                                                                                          |
+| 載入 `node:sqlite`       | `src/main/sqlite/sync-database.ts` 的 `process.getBuiltinModule('node:sqlite')` 寫法                                                                                                                                                                    |
+| 加密儲存                 | `src/shared/secret-store.ts`（`getSecretStore()`、`describeProtectionGap()`）；檔案格式照 `src/main/plugins/plugin-secrets-store.ts`（沒有明文 fallback）                                                                                               |
+| 設定檔寫入               | `src/main/durable-file-write.ts`（`writeFileDurable`）                                                                                                                                                                                                  |
+| SSH 連線                 | `getSshConnectionManager()`（`src/main/ssh/ssh-target-registry.ts`）的 `connect(target)` 會重用已連上的連線；帳密和 passphrase 的詢問流程已經有了                                                                                                       |
+| SSH 轉發                 | 每個 socket 呼叫 `client.forwardOut`，前例在 `src/main/browser/ssh-browser-network-execution-route.ts`。走系統 OpenSSH 的主機（ProxyJump、ProxyCommand、security key）拿不到 ssh2 client，改用 `src/main/ssh/system-ssh-forward-process.ts` 的 `ssh -L` |
+| 表格                     | `CsvViewer.tsx` 的列虛擬化和欄寬取樣；`git-log-table-columns.tsx` 的欄寬拖拉和雙擊自動調整                                                                                                                                                              |
+| 樹                       | `DebugVariablesTree.tsx` 的展開時才載入；code outline 樹的鍵盤操作和 a11y role                                                                                                                                                                          |
+| Monaco（不是檔案的內容） | `AutomationEditorPromptEditor.tsx`                                                                                                                                                                                                                      |
+| 連線設定對話框           | `EditRunConfigurationsDialog.tsx`（左邊清單、右邊表單）。注意：Dialog 裡放 DropdownMenu 會被 focus trap 卡住                                                                                                                                            |
+| 可拖拉分隔               | `ResizeHandle.tsx`、`use-drag-resize.ts`                                                                                                                                                                                                                |
 
 ## 5. 架構
 
@@ -168,12 +168,12 @@ worker thread（每個開啟的 session 一個）  驅動、cursor、取消、�
 - 共用的驅動介面：`connect`、`close`、`introspect(層級, 路徑)`、`execute(sql)`（回傳第一頁和 cursor）、`fetchMore(cursorId, n)`、`cancel()`、`applyChanges(batch)`
 - 各驅動：
 
-| 驅動 | 分頁 | 取消 | 其他 |
-|---|---|---|---|
-| PostgreSQL | `pg-cursor` | 另開連線執行 `pg_cancel_backend(pid)` | 報錯時有 `position`，可以在編輯器標出錯的位置；SSL mode |
-| MySQL／MariaDB | query stream | 另開連線執行 `KILL QUERY <id>` | `dateStrings`、`bigNumberStrings`，避免精度遺失 |
-| SQL Server | `row` 事件 | `connection.cancel()` | 多結果集；`encrypt`、`trustServerCertificate` |
-| SQLite | `StatementSync.iterate()` | 無法中斷，只能結束 worker 再重開（未提交的交易會遺失，UI 要先警告） | 可用唯讀模式開檔；檔案必須在本機 |
+| 驅動           | 分頁                      | 取消                                                                | 其他                                                    |
+| -------------- | ------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------- |
+| PostgreSQL     | `pg-cursor`               | 另開連線執行 `pg_cancel_backend(pid)`                               | 報錯時有 `position`，可以在編輯器標出錯的位置；SSL mode |
+| MySQL／MariaDB | query stream              | 另開連線執行 `KILL QUERY <id>`                                      | `dateStrings`、`bigNumberStrings`，避免精度遺失         |
+| SQL Server     | `row` 事件                | `connection.cancel()`                                               | 多結果集；`encrypt`、`trustServerCertificate`           |
+| SQLite         | `StatementSync.iterate()` | 無法中斷，只能結束 worker 再重開（未提交的交易會遺失，UI 要先警告） | 可用唯讀模式開檔；檔案必須在本機                        |
 
 - 傳輸格式：值盡量保留資料庫原本的文字表示（數值、時間），避免精度遺失，編輯時也能精確比對。型別：`null`、字串、安全範圍內的數字、布林、`{ t: 'big', v }`、`{ t: 'bin', size, hex }`（只帶前段）
 - 語句切分依方言處理：引號、註解、PostgreSQL 的 `$$`、SQL Server 的 `GO`、MySQL 的 `DELIMITER`
@@ -330,17 +330,17 @@ SQL Server 的映像檔只有 amd64，在 Apple Silicon 上透過 Rosetta 可以
 
 Phase 0、1 原本只有整合測試和兩個 e2e。這一輪用真實 app 把使用者會碰到的流程都跑過，看截圖，並對每個修正確認「拿掉修正測試就會失敗」。資料庫相關 e2e 共 15 個，全部通過：
 
-| spec | 內容 |
-|---|---|
-| `database-page.spec.ts` | PostgreSQL：連線、分頁、錯誤標記；保留字和大小寫混合名稱的資料表分頁 |
-| `database-page-sqlite.spec.ts` | SQLite：console、取消；資料表分頁的篩選、排序、計數、值檢視器 |
-| `database-grid-transfers.spec.ts` | 各種複製格式和匯出檔案（攔截剪貼簿和存檔對話框，不動到真的剪貼簿） |
-| `database-grid-columns.spec.ts` | 拖拉欄寬、最小寬度、鍵盤調整、雙擊自動調整、重新查詢後保留欄寬 |
-| `database-passwords.spec.ts` | 三種密碼儲存方式、密碼錯誤的提示、重開 app、伺服器改密碼後重新詢問、磁碟上沒有明文 |
-| `database-connections.spec.ts` | 新增（測試失敗、選檔）、改名、中斷／連線、刪除（連帶關掉分頁）、`Mod+Alt+D`、唯讀、Refresh、游標／選取／全部執行 |
-| `database-restart.spec.ts` | 重開 app 後還原頁面、console 文字、資料表分頁和篩選 |
-| `database-server-drivers.spec.ts` | MySQL、MariaDB、SQL Server：連線、兩個結果集（含 `DELIMITER` 建 procedure）、取消、資料表分頁、唯讀 |
-| `database-page-zh-tw.spec.ts` | 繁體中文介面走一遍主要流程 |
+| spec                              | 內容                                                                                                             |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `database-page.spec.ts`           | PostgreSQL：連線、分頁、錯誤標記；保留字和大小寫混合名稱的資料表分頁                                             |
+| `database-page-sqlite.spec.ts`    | SQLite：console、取消；資料表分頁的篩選、排序、計數、值檢視器                                                    |
+| `database-grid-transfers.spec.ts` | 各種複製格式和匯出檔案（攔截剪貼簿和存檔對話框，不動到真的剪貼簿）                                               |
+| `database-grid-columns.spec.ts`   | 拖拉欄寬、最小寬度、鍵盤調整、雙擊自動調整、重新查詢後保留欄寬                                                   |
+| `database-passwords.spec.ts`      | 三種密碼儲存方式、密碼錯誤的提示、重開 app、伺服器改密碼後重新詢問、磁碟上沒有明文                               |
+| `database-connections.spec.ts`    | 新增（測試失敗、選檔）、改名、中斷／連線、刪除（連帶關掉分頁）、`Mod+Alt+D`、唯讀、Refresh、游標／選取／全部執行 |
+| `database-restart.spec.ts`        | 重開 app 後還原頁面、console 文字、資料表分頁和篩選                                                              |
+| `database-server-drivers.spec.ts` | MySQL、MariaDB、SQL Server：連線、兩個結果集（含 `DELIMITER` 建 procedure）、取消、資料表分頁、唯讀              |
+| `database-page-zh-tw.spec.ts`     | 繁體中文介面走一遍主要流程                                                                                       |
 
 伺服器相關 spec 用跟整合測試一樣的環境變數。密碼測試另外需要伺服器對 `orca_pw_*` 帳號要求密碼，在 `pg_hba.conf` 第一行加上：
 
@@ -644,6 +644,31 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - 拖放的 drop 用 window capture 監聽：preload 在 document capture 階段會取消並攔下所有不是 Orca 檔案拖曳的 drop，React 的 `onDrop` 收不到
 - 驗證：單元測試（分組排序、列展開／摺疊、store 的 `setGroup`、表單來回、改群組不斷線），e2e `database-connection-groups.spec.ts`（對話框、右鍵移入、摺疊、改名、拖放、解散，移動時保持連線）
 
+### Redis 與 MongoDB（2026-11-20）
+
+- **連線**：連線對話框多了 MongoDB 和 Redis，類型清單改成 MySQL／MariaDB 排第一，新連線也預設 MySQL（`DATABASE_DRIVERS` 的順序就是清單順序，第一個就是預設）。兩者都是伺服器連線，SSH tunnel、VPN、密碼儲存方式跟 SQL 資料庫共用
+  - Redis：「資料庫編號」（空白＝0）、使用者（ACL，選填）、密碼；SSL mode 只有 disable／require／verify-full（沒有 plaintext 重試，`NO_FALLBACK_SSL_MODES`，SQL Server 也用這組）
+  - MongoDB：資料庫（空白＝列出全部，console 預設 `test`，跟 mongosh 一樣）、「認證資料庫」（空白＝`admin`）、使用者、密碼；一律 `directConnection`，不做 replica set 探索（探索會改連成員自報的主機名稱，經 tunnel 連不到）。不支援 `mongodb+srv://`
+- **驅動**：`ioredis` 6.0（MIT）、`mongodb` 7.9（**Apache-2.0**，MongoDB 沒有 MIT 的 Node 驅動，D5 只對這一個放寬；寬鬆授權，可與本專案並用）、`acorn` 8.19（MIT，解析 MongoDB 語句）。都是純 JS，加進 `PACKAGED_RUNTIME_PACKAGE_ROOTS`。ioredis 固定用 RESP2、不自動重連（斷線走既有的 connection-lost 流程）；mongodb 設 `promoteLongs: false`，64 位元整數不失真
+- **結構樹**：
+  - Redis：連線 → `db0`…`dbN`（`CONFIG GET databases`，被 ACL 擋或改名時看 INFO keyspace，至少 16 個；cluster 模式只有 db0）→ key（新的 relation kind `key`，不能展開，名稱後面灰字是型別）。每個資料庫用 SCAN 最多列 2,000 個 key（`REDIS_EXPLORER_KEY_LIMIT`），其餘用 console 查。每個資料庫有自己的 metadata 連線，不用 SELECT 切換，避免互相干擾
+  - MongoDB：連線 → 資料庫（listDatabases，`authorizedDatabases`；只有單一資料庫權限的帳號列不出來時至少顯示連線指定的那個）→ collection（kind `collection`）和 view → 欄位（抽前 100 筆推測，`_id` 標成主鍵，型別不一致時顯示 `string | int`）＋ Indexes 資料夾。`system.*` 跟 Compass 一樣不列
+- **Console**：
+  - Redis：一行一個指令，引號規則同 redis-cli（`"…"` 支援 `\n`、`\xHH`；`'…'`），`#`／`//` 開頭是註解。回覆依指令排成表格：HGETALL／CONFIG GET → 欄位／值，`WITHSCORES` → 成員／分數，SCAN 系列多一個「next cursor」結果，XRANGE／XREAD → id／fields（JSON），INFO 拆成 section／field／value，CLIENT LIST 一行一列。非 UTF-8 的值跟 SQL 的 binary 一樣顯示成 `0x…`。上方的選單切換資料庫（SELECT），執行 `SELECT n` 也會同步選單
+  - MongoDB：mongosh 語法的子集：`show dbs`／`show collections`、`use db`、`db.coll.find(filter, projection).sort().skip().limit()…`、`findOne`、`aggregate`、`countDocuments`／`count`、`estimatedDocumentCount`、`distinct`、`getIndexes`、`stats`、`.explain()`、`db.getCollection("x")`、`db.getSiblingDB("x")`、`db.stats()`／`version()`／`runCommand`／`adminCommand`。值支援 ObjectId、ISODate／Date、NumberLong、NumberInt、NumberDecimal、UUID、BinData、Timestamp、RegExp、MinKey／MaxKey、`Date.now()` 和數字運算。**不執行任何 JS**：用 acorn 解析成語法樹後只轉換這些值，其他寫法（函式、變數、`process` 等）一律當語法錯誤，錯誤位置標在編輯器上。語句以 `;` 或換行分隔，下一行以 `.` 開頭時視為同一句（跟 mongosh 一樣）
+  - Monaco 語言：Redis 用 `redis`、MongoDB 用 `javascript`（只上色；SQL 補全和格式化只在 SQL console 啟用）
+- **結果表格**：MongoDB 的欄位由第一頁的文件決定（`_id` 在前，出現順序排列，最多 200 欄，其餘併入「(more fields)」欄位的 JSON）；巢狀文件和陣列顯示成 relaxed Extended JSON，ObjectId 顯示 hex，日期顯示 ISO。**限制**：之後才載入的頁面若出現第一頁沒有的欄位，該欄位不會顯示（需要時用 projection 或在 console 看）
+- **資料表畫面**：
+  - MongoDB collection：上方欄位改成 FILTER／SORT（文件語法，大括號可省略，例如 `city: "London"`），點欄位標題用 `{ "欄位": 1 / -1 }` 在伺服器端排序，「Count rows」用 `countDocuments(filter)`
+  - Redis key：沒有篩選和計數，整個值分頁顯示：hash 用 HSCAN（欄位／值）、set 用 SSCAN、list 用 LRANGE（index／值，保留順序）、zset 用 ZRANGE WITHSCORES（依分數）、stream 用 XRANGE、string 和 RedisJSON 一列。這是 Orca 自己的唯讀指令 `ORCA.VIEW <key>`，console 也能用
+- **唯讀**（§0 的原則照舊，兩者都沒有伺服器端的唯讀 session，所以只有送出前這一層，但用的是**白名單**，不是 SQL 那種關鍵字黑名單）：
+  - Redis：`redis-read-only-commands.ts` 列出只讀的指令（GET、HGETALL、SCAN、ZRANGE、XRANGE、INFO、TYPE、TTL、`*_RO` 的 EVAL／FCALL、RedisJSON／RediSearch／TimeSeries 的讀取…），容器指令只放行讀的子指令（`CONFIG GET`、`CLIENT LIST`、`OBJECT ENCODING`、`MEMORY USAGE`…）；不在名單上的（包括未知的模組指令）一律擋。`SELECT` 只影響這個 console 自己的連線，所以放行
+  - MongoDB：只有上面列的讀取方法能解析；寫入方法（insertOne、updateMany、drop…）、`aggregate` 裡任何深度的 `$out`／`$merge`、不在讀取清單上的 runCommand（`explain` 會檢查裡面的指令）都在送出前擋下
+  - 要完全保證請用唯讀帳號：Redis ACL `+@read`，MongoDB 的 `read` 角色
+  - worker dispatcher 的唯一入口改成 `readOnlyRefusalFor(statement, driver)`（`database-read-only-door.ts`），SQL 照舊走 `readOnlyViolation`
+- **其他**：取消＝關掉該 console 的連線（下一句自動重連），回報為「Cancelled」；Redis 的 WRONGPASS／NOAUTH 和 MongoDB 的 AuthenticationFailed（code 18）會開密碼視窗；Properties 有 Redis 的版本／模式／運作時間／記憶體／key 數、key 的型別／長度／TTL／編碼／記憶體，MongoDB 的版本／版本別／拓撲／儲存引擎、資料庫和 collection 的統計、validator、view 的來源與 pipeline；MongoDB collection 的 Show DDL 產生 `db.createCollection(…)`（含 options）加每個 index 的 `createIndex(…)`，view 產生 `db.createView(…)`。Dump／匯出 SQL、SQL INSERT 複製格式只給 SQL 資料庫
+- **驗證**：單元測試（指令切分、引號、白名單、mongosh 解析與 `$out`／`$merge` 攔截、不執行程式碼、表單預設）；live 整合測試 `redis-session.integration.test.ts`（`ORCA_TEST_REDIS_URL`，另有 `ORCA_TEST_REDIS_AUTH_URL` 測密碼）、`mongodb-session.integration.test.ts`（`ORCA_TEST_MONGODB_URL`），對 Docker 的 `redis:7-alpine`、`mongo:8` 跑過；e2e `database-nosql-drivers.spec.ts`（MySQL 是第一個也是預設、Redis 的 key 與 console、MongoDB 的 collection 篩選與 console、兩者都擋寫入）。e2e helper `addServerConnection` 現在一律明確選類型（預設不再是 PostgreSQL）
+
 ## 7. 測試策略
 
 - **單元測試**：值的編碼、各方言的語句切分、DML 產生和識別字引號、設定檔和密碼檔、tunnel 生命週期（mock ssh2）
@@ -665,15 +690,15 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 
 ## 9. 風險
 
-| 風險 | 對策 |
-|---|---|
-| `tedious` 連帶的 `@azure/identity` 讓打包變大或打包失敗 | Phase 1 先量；必要時改成 external 並加進 runtime package 清單 |
-| 查詢結果太大，吃光記憶體 | 分頁載入（預設每頁 500 列），renderer 暫存的列數有上限（預設 10 萬，可調整）；worker 用 `resourceLimits` 限制記憶體 |
-| 開很多 session，worker 太多 | 每個 session 一個 worker 是為了隔離和取消。閒置的 session 自動斷線 |
-| SQLite 無法中斷查詢 | 只能結束 worker；如果有未提交的交易，先警告 |
-| 上游新增其他頁面時，`TopLevelView` 那幾行會衝突 | 都是一行的 union 改動，容易解；rerere 會記住解法 |
-| Linux 沒有 keyring 時無法儲存密碼 | 照實告知，改成每次連線時詢問 |
-| SQL Server 映像檔在 Apple Silicon 上跑不起來 | 改用 Rosetta 設定或在 CI 上測 |
+| 風險                                                    | 對策                                                                                                                |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `tedious` 連帶的 `@azure/identity` 讓打包變大或打包失敗 | Phase 1 先量；必要時改成 external 並加進 runtime package 清單                                                       |
+| 查詢結果太大，吃光記憶體                                | 分頁載入（預設每頁 500 列），renderer 暫存的列數有上限（預設 10 萬，可調整）；worker 用 `resourceLimits` 限制記憶體 |
+| 開很多 session，worker 太多                             | 每個 session 一個 worker 是為了隔離和取消。閒置的 session 自動斷線                                                  |
+| SQLite 無法中斷查詢                                     | 只能結束 worker；如果有未提交的交易，先警告                                                                         |
+| 上游新增其他頁面時，`TopLevelView` 那幾行會衝突         | 都是一行的 union 改動，容易解；rerere 會記住解法                                                                    |
+| Linux 沒有 keyring 時無法儲存密碼                       | 照實告知，改成每次連線時詢問                                                                                        |
+| SQL Server 映像檔在 Apple Silicon 上跑不起來            | 改用 Rosetta 設定或在 CI 上測                                                                                       |
 
 ## 10. 不在這一輪的範圍（之後再做）
 
@@ -682,7 +707,7 @@ host  all  /^orca_pw_  127.0.0.1/32  scram-sha-256
 - CSV 匯入精靈
 - SQL Server 的 Windows 驗證和 Azure AD 登入
 - 經由 SSH 開遠端主機上的 SQLite 檔案
-- 其他資料庫（Oracle、MongoDB、Redis、ClickHouse 等）
+- 其他資料庫（Oracle、ClickHouse 等）；Redis Cluster、MongoDB 的 `mongodb+srv://` 和 replica set 探索
 - 執行計畫（EXPLAIN）視覺化
 - 連線綁定 repo 或 worktree
 - 改成插件（要等上游插件 API 支援面板和 worker 之間通訊、更大的訊息量）

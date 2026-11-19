@@ -25,7 +25,6 @@ import { DatabaseSchemaSelect } from './DatabaseSchemaSelect'
 import { DatabaseResultsPane } from './DatabaseResultsPane'
 import { getConsoleRunState, useDatabaseConsoleRunStore } from './database-console-run-store'
 import { useDatabaseConsoleText } from './use-database-console-text'
-import { sqlDialectForDriver } from './database-console-statements'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
 
 const MIN_EDITOR_HEIGHT = 80
@@ -49,7 +48,7 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
   const driver = useDatabaseConnectionsStore(
     (state) => state.connections.find((entry) => entry.id === tab.connectionId)?.driver
   )
-  const dialect = sqlDialectForDriver(driver ?? 'postgres')
+  const language = driver ?? 'postgres'
   const [historyOpen, setHistoryOpen] = useState(false)
   const color = useDatabaseConnectionColor(tab.connectionId)
   const resultsHeight = useDatabasePageStore((state) => state.resultsHeight)
@@ -92,7 +91,7 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
               disabled={running || text === null}
               aria-label={translate('database.console.run', 'Run')}
               onClick={() =>
-                runDatabaseConsoleFromToolbar(editorRef.current, 'current', dialect, handleRun)
+                runDatabaseConsoleFromToolbar(editorRef.current, 'current', language, handleRun)
               }
             >
               <Play />
@@ -141,14 +140,15 @@ export function DatabaseConsoleView({ tab }: { tab: DatabaseConsoleTab }): React
         </div>
       </div>
       <div className="min-h-0 flex-1">
-        {text === null ? null : (
+        {/* Why wait for the driver: the editor picks its language once, when it mounts. */}
+        {text === null || !driver ? null : (
           <DatabaseConsoleEditor
             tabId={tab.id}
             connectionId={tab.connectionId}
             schema={tab.schema}
             database={tab.database}
             initialText={text}
-            dialect={dialect}
+            language={language}
             errorOffset={errorOffset}
             onChange={update}
             onRun={handleRun}

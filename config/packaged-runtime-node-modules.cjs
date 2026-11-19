@@ -33,7 +33,10 @@ const PACKAGED_RUNTIME_PACKAGE_ROOTS = [
   'i18next',
   'jsonc-parser',
   'node-pty',
-  // Database page drivers, loaded by the database worker thread.
+  // Database page drivers, loaded by the database worker thread; acorn reads MongoDB statements.
+  'acorn',
+  'ioredis',
+  'mongodb',
   'mysql2',
   'pg',
   'pg-cursor',

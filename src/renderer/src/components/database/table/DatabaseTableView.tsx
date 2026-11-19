@@ -15,12 +15,15 @@ import {
 } from '../console/database-console-run-store'
 import { useDatabaseConnectionsStore } from '../database-connections-store'
 import { useDatabasePageStore, type DatabaseTableTab } from '../database-page-store'
-import { qualifiedRelationName } from '../../../../../shared/database/sql-identifiers'
 import { DatabaseResultGrid } from '../grid/DatabaseResultGrid'
 import type { GridSort } from '../grid/database-grid-sort'
-import { buildTableDataSql, orderByForSort } from '../../../../../shared/database/table-data-sql'
+import {
+  buildTableDataSql,
+  orderByForSort,
+  qualifiedObjectName
+} from '../../../../../shared/database/table-data-sql'
 import { useTableColumnComments } from './use-table-column-comments'
-import { useTableRowCount, type TableRowCount } from './use-table-row-count'
+import { tableSchemaOption, useTableRowCount, type TableRowCount } from './use-table-row-count'
 
 type TableQuery = { where: string; orderBy: string }
 
@@ -30,8 +33,34 @@ function runTableQuery(tab: DatabaseTableTab, driver: DatabaseDriver, query: Tab
   void useDatabaseConsoleRunStore
     .getState()
     .run(tab, [{ start: 0, end: sql.length, terminatorEnd: sql.length, text: sql }], {
-      database: tab.database ?? undefined
+      database: tab.database ?? undefined,
+      ...tableSchemaOption(driver, tab.schema)
     })
+}
+
+type FilterLabels = {
+  where: string
+  orderBy: string
+  wherePlaceholder: string
+  orderByPlaceholder: string
+}
+
+/** What the filter fields say: SQL fragments, or MongoDB filter and sort documents. */
+function filterLabels(driver: DatabaseDriver | undefined): FilterLabels {
+  if (driver === 'mongodb') {
+    return {
+      where: 'FILTER',
+      orderBy: 'SORT',
+      wherePlaceholder: translate('database.table.filterPlaceholder', 'e.g. { age: { $gt: 30 } }'),
+      orderByPlaceholder: translate('database.table.sortPlaceholder', 'e.g. { createdAt: -1 }')
+    }
+  }
+  return {
+    where: 'WHERE',
+    orderBy: 'ORDER BY',
+    wherePlaceholder: translate('database.table.wherePlaceholder', 'e.g. id > 100'),
+    orderByPlaceholder: translate('database.table.orderByPlaceholder', 'e.g. created_at desc')
+  }
 }
 
 function FilterField({
@@ -140,6 +169,8 @@ export function DatabaseTableView({ tab }: { tab: DatabaseTableTab }): React.JSX
   const [headerSort, setHeaderSort] = useState<GridSort>(null)
   const { rowCount, count, reset: resetCount } = useTableRowCount(tab, driver ?? 'postgres')
   const columnComments = useTableColumnComments(tab)
+  const isRedis = driver === 'redis'
+  const labels = filterLabels(driver)
 
   // Why keep the previous result while re-running: no flash, and column widths survive.
   const current = runState.results[0] ?? null
@@ -210,22 +241,29 @@ export function DatabaseTableView({ tab }: { tab: DatabaseTableTab }): React.JSX
         >
           <Square />
         </Button>
-        <FilterField
-          label="WHERE"
-          value={draft.where}
-          placeholder={translate('database.table.wherePlaceholder', 'e.g. id > 100')}
-          onChange={(where) => setDraft((previous) => ({ ...previous, where }))}
-          onApply={applyDraft}
-          onRevert={() => setDraft((previous) => ({ ...previous, where: tab.where }))}
-        />
-        <FilterField
-          label="ORDER BY"
-          value={draft.orderBy}
-          placeholder={translate('database.table.orderByPlaceholder', 'e.g. created_at desc')}
-          onChange={(orderBy) => setDraft((previous) => ({ ...previous, orderBy }))}
-          onApply={applyDraft}
-          onRevert={() => setDraft((previous) => ({ ...previous, orderBy: tab.orderBy }))}
-        />
+        {/* A Redis key shows its whole value; there is nothing to filter or sort on the server. */}
+        {isRedis ? (
+          <div className="flex-1" />
+        ) : (
+          <>
+            <FilterField
+              label={labels.where}
+              value={draft.where}
+              placeholder={labels.wherePlaceholder}
+              onChange={(where) => setDraft((previous) => ({ ...previous, where }))}
+              onApply={applyDraft}
+              onRevert={() => setDraft((previous) => ({ ...previous, where: tab.where }))}
+            />
+            <FilterField
+              label={labels.orderBy}
+              value={draft.orderBy}
+              placeholder={labels.orderByPlaceholder}
+              onChange={(orderBy) => setDraft((previous) => ({ ...previous, orderBy }))}
+              onApply={applyDraft}
+              onRevert={() => setDraft((previous) => ({ ...previous, orderBy: tab.orderBy }))}
+            />
+          </>
+        )}
         {runState.running ? (
           <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
         ) : null}
@@ -243,10 +281,10 @@ export function DatabaseTableView({ tab }: { tab: DatabaseTableTab }): React.JSX
               shown.result.rows.length < DATABASE_MAX_BUFFERED_ROWS
             }
             onLoadMore={loadMore}
-            serverSort={{ sort: headerSort, onChange: changeSort }}
+            serverSort={isRedis ? undefined : { sort: headerSort, onChange: changeSort }}
             columnComments={columnComments}
             exportTarget={{
-              table: qualifiedRelationName(tab.schema, tab.relation, driver),
+              table: qualifiedObjectName(tab.schema, tab.relation, driver),
               driver,
               fileName: tab.relation,
               result: {
@@ -262,7 +300,9 @@ export function DatabaseTableView({ tab }: { tab: DatabaseTableTab }): React.JSX
       {shown ? (
         <DatabaseResultFooter
           result={shown}
-          extra={<RowCountControl rowCount={rowCount} onCount={() => void count()} />}
+          extra={
+            isRedis ? null : <RowCountControl rowCount={rowCount} onCount={() => void count()} />
+          }
         />
       ) : null}
     </div>

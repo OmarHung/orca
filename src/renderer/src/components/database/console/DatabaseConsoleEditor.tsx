@@ -10,15 +10,18 @@ import { resolveEditorFontFamily } from '../../../../../shared/editor/editor-typ
 import { resolveDocumentTheme } from '@/app-shell/appearance/document-theme'
 import '@/lib/editor/monaco/monaco-setup'
 import { useAppStore } from '@/store'
-import { statementsForRun, type DatabaseRunMode } from './database-console-statements'
+import {
+  statementsForRun,
+  type DatabaseConsoleLanguage,
+  type DatabaseRunMode
+} from './database-console-statements'
 import {
   databaseConsoleModelPath,
+  monacoLanguageFor,
   registerDatabaseConsoleModel
 } from './monaco-database-console-language'
-import type {
-  SqlDialect,
-  SqlStatementRange
-} from '../../../../../shared/database/sql-statement-splitter'
+import { DATABASE_DRIVER_NAMES } from '../../../../../shared/database/database-connection-types'
+import type { SqlStatementRange } from '../../../../../shared/database/sql-statement-splitter'
 
 type Monaco = typeof MonacoApi
 
@@ -31,7 +34,7 @@ type DatabaseConsoleEditorProps = {
   schema: string | null
   database: string | null
   initialText: string
-  dialect: SqlDialect
+  language: DatabaseConsoleLanguage
   errorOffset: number | null
   onChange: (text: string) => void
   onRun: (statements: SqlStatementRange[]) => void
@@ -40,12 +43,21 @@ type DatabaseConsoleEditorProps = {
   onEditorReady: (instance: editor.ICodeEditor | null) => void
 }
 
+function editorLabel(language: DatabaseConsoleLanguage): string {
+  return language === 'redis' || language === 'mongodb'
+    ? translate('database.console.editorLabelFor', '{{value0}} console', {
+        value0: DATABASE_DRIVER_NAMES[language]
+      })
+    : translate('database.console.editorLabel', 'SQL console')
+}
+
 function buildOptions(
   fontFamily: string,
-  fontSize: number
+  fontSize: number,
+  language: DatabaseConsoleLanguage
 ): editor.IStandaloneEditorConstructionOptions {
   return {
-    ariaLabel: translate('database.console.editorLabel', 'SQL console'),
+    ariaLabel: editorLabel(language),
     automaticLayout: true,
     find: monacoFindOptions,
     fontFamily,
@@ -63,7 +75,7 @@ function buildOptions(
 function runFromEditor(
   instance: editor.ICodeEditor,
   mode: DatabaseRunMode,
-  dialect: SqlDialect,
+  language: DatabaseConsoleLanguage,
   onRun: (statements: SqlStatementRange[]) => void
 ): void {
   const model = instance.getModel()
@@ -81,7 +93,7 @@ function runFromEditor(
           start: model.getOffsetAt(selection.getStartPosition()),
           end: model.getOffsetAt(selection.getEndPosition())
         },
-    dialect
+    language
   )
   onRun(statements)
 }
@@ -92,7 +104,7 @@ export function DatabaseConsoleEditor({
   schema,
   database,
   initialText,
-  dialect,
+  language,
   errorOffset,
   onChange,
   onRun,
@@ -106,7 +118,7 @@ export function DatabaseConsoleEditor({
   const onRunRef = useRef(onRun)
   const onShowHistoryRef = useRef(onShowHistory)
   const onEditorReadyRef = useRef(onEditorReady)
-  const dialectRef = useRef(dialect)
+  const languageRef = useRef(language)
   const connectionIdRef = useRef(connectionId)
   const schemaRef = useRef(schema)
   const databaseRef = useRef(database)
@@ -114,16 +126,19 @@ export function DatabaseConsoleEditor({
     onRunRef.current = onRun
     onShowHistoryRef.current = onShowHistory
     onEditorReadyRef.current = onEditorReady
-    dialectRef.current = dialect
+    languageRef.current = language
     connectionIdRef.current = connectionId
     schemaRef.current = schema
     databaseRef.current = database
-  }, [onRun, onShowHistory, onEditorReady, dialect, connectionId, schema, database])
+  }, [onRun, onShowHistory, onEditorReady, language, connectionId, schema, database])
 
   const fontSize = computeEditorFontSize(settings?.terminalFontSize ?? 13, editorFontZoomLevel)
   const fontFamily = resolveEditorFontFamily(settings)
   const isDark = resolveDocumentTheme(settings?.theme ?? 'system')
-  const options = useMemo(() => buildOptions(fontFamily, fontSize), [fontFamily, fontSize])
+  const options = useMemo(
+    () => buildOptions(fontFamily, fontSize, language),
+    [fontFamily, fontSize, language]
+  )
 
   const handleMount = useCallback<OnMount>((instance, monaco) => {
     editorRef.current = instance
@@ -133,7 +148,7 @@ export function DatabaseConsoleEditor({
     const unregisterModel = model
       ? registerDatabaseConsoleModel(monaco, model, () => ({
           connectionId: connectionIdRef.current,
-          dialect: dialectRef.current,
+          language: languageRef.current,
           schema: schemaRef.current,
           database: databaseRef.current
         }))
@@ -143,13 +158,13 @@ export function DatabaseConsoleEditor({
       id: 'orca.database.runStatement',
       label: translate('database.console.runStatement', 'Run Statement'),
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
-      run: (target) => runFromEditor(target, 'current', dialectRef.current, onRunRef.current)
+      run: (target) => runFromEditor(target, 'current', languageRef.current, onRunRef.current)
     })
     instance.addAction({
       id: 'orca.database.runAll',
       label: translate('database.console.runAll', 'Run All Statements'),
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter],
-      run: (target) => runFromEditor(target, 'all', dialectRef.current, onRunRef.current)
+      run: (target) => runFromEditor(target, 'all', languageRef.current, onRunRef.current)
     })
     instance.addAction({
       id: 'orca.database.showHistory',
@@ -213,8 +228,8 @@ export function DatabaseConsoleEditor({
       <div className="absolute inset-0">
         <Editor
           height="100%"
-          defaultLanguage="sql"
-          defaultPath={databaseConsoleModelPath(tabId)}
+          defaultLanguage={monacoLanguageFor(language)}
+          defaultPath={databaseConsoleModelPath(tabId, language)}
           // Why defaultValue: this editor owns its text after mount, so React never resets undo.
           defaultValue={initialText}
           theme={isDark ? 'vs-dark' : 'vs'}
@@ -245,10 +260,10 @@ export function insertDatabaseConsoleText(instance: editor.ICodeEditor | null, t
 export function runDatabaseConsoleFromToolbar(
   instance: editor.ICodeEditor | null,
   mode: DatabaseRunMode,
-  dialect: SqlDialect,
+  language: DatabaseConsoleLanguage,
   onRun: (statements: SqlStatementRange[]) => void
 ): void {
   if (instance) {
-    runFromEditor(instance, mode, dialect, onRun)
+    runFromEditor(instance, mode, language, onRun)
   }
 }

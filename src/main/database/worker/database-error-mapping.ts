@@ -7,6 +7,18 @@ const MYSQL_LINE = /\bat line (\d+)\b/
 /** SQL Server's "Login failed for user", which follows every refused login, e.g. 4060's too. */
 export const SQLSERVER_LOGIN_FAILED = 18456
 
+/** A login the server refused for its credentials (Redis WRONGPASS/NOAUTH, MongoDB code 18). */
+export class DatabasePasswordRequiredError extends Error {}
+
+/** A statement Orca stopped by closing its session (Redis, MongoDB). */
+export class DatabaseCancelledError extends Error {
+  readonly code = 'ECANCEL'
+
+  constructor() {
+    super('Cancelled.')
+  }
+}
+
 function readString(source: object, key: string): string | undefined {
   const value: unknown = Reflect.get(source, key)
   return typeof value === 'string' && value.length > 0 ? value : undefined
@@ -46,8 +58,9 @@ export function toDatabaseError(error: unknown): DatabaseError {
   // another reason, such as 4060 "Cannot open database".
   const number = readPositiveInteger(error, 'number')
   const loginRejected =
-    readString(error, 'code') === 'ELOGIN' &&
-    (number === undefined || number === SQLSERVER_LOGIN_FAILED)
+    error instanceof DatabasePasswordRequiredError ||
+    (readString(error, 'code') === 'ELOGIN' &&
+      (number === undefined || number === SQLSERVER_LOGIN_FAILED))
   const position = readPositiveInteger(error, 'position')
   const line = readPositiveInteger(error, 'lineNumber') ?? Number(MYSQL_LINE.exec(message)?.[1])
   const detail = readString(error, 'detail')

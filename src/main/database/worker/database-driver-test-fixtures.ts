@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import type {
   DatabaseConnectionDraft,
-  DatabaseDriver
+  DatabaseSqlDriver
 } from '../../../shared/database/database-connection-types'
 import { serverConnectionFromUrl } from './database-worker-test-harness'
 
@@ -13,7 +13,7 @@ import { serverConnectionFromUrl } from './database-worker-test-harness'
 
 export type DriverFixture = {
   label: string
-  driver: DatabaseDriver
+  driver: DatabaseSqlDriver
   /** Null skips the suite (the server's URL env var is unset). */
   open: () => { connection: DatabaseConnectionDraft; password: string | null } | null
   /** Namespace holding `people`, `people_view` and `user` (reserved and mixed-case names). */

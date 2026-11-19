@@ -1,4 +1,9 @@
-import { addServerConnection, openDatabasePage, runInConsole } from './helpers/database-page'
+import {
+  addServerConnection,
+  openDatabasePage,
+  pickConnectionType,
+  runInConsole
+} from './helpers/database-page'
 import { test, expect } from './helpers/orca-app'
 import { adminSql } from './helpers/database-admin'
 
@@ -18,6 +23,7 @@ test.describe('Database page', () => {
 
     await orcaPage.getByRole('button', { name: 'New Connection' }).first().click()
     const dialog = orcaPage.getByRole('dialog')
+    await pickConnectionType(orcaPage, 'PostgreSQL')
     await dialog.getByLabel('Host').fill(url.hostname)
     await dialog.getByLabel('Port').fill(url.port)
     await dialog.getByLabel('Database', { exact: true }).fill(database)

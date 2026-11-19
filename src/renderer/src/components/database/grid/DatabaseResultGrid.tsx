@@ -5,6 +5,7 @@ import type {
   DatabaseCell,
   DatabaseColumn
 } from '../../../../../shared/database/database-query-types'
+import { isSqlDriver } from '../../../../../shared/database/database-connection-types'
 import type { DatabaseExportFormat } from '../../../../../shared/database/database-export-types'
 import { useDatabasePageStore } from '../database-page-store'
 import { DatabaseGridContextMenu } from './DatabaseGridContextMenu'
@@ -239,6 +240,7 @@ export function DatabaseResultGrid({
           </div>
         </ContextMenuTrigger>
         <DatabaseGridContextMenu
+          offersSql={isSqlDriver(exportTarget.driver)}
           onCopy={copySelection}
           onExport={exportLoaded}
           onShowValue={() => {

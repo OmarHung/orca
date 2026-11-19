@@ -1,4 +1,5 @@
 import {
+  DATABASE_DRIVERS,
   DEFAULT_DATABASE_PORTS,
   databaseConnectionDraftSchema,
   isServerConnection,
@@ -20,6 +21,8 @@ export type DatabaseConnectionFormState = {
   host: string
   port: string
   database: string
+  /** MongoDB's authentication database; blank is the server's default, `admin`. */
+  authDatabase: string
   user: string
   /** Typed password; empty with `passwordEdited` false keeps the saved one. */
   password: string
@@ -42,11 +45,17 @@ export const NO_VPN = 'none'
 type ServerDriver = Exclude<DatabaseDriver, 'sqlite'>
 
 // What a fresh local install of each server usually answers to; no database lists them all.
+// Redis and MongoDB start without authentication, so they start without a user.
 const SERVER_DEFAULTS: Record<ServerDriver, { database: string; user: string }> = {
   postgres: { database: '', user: 'postgres' },
   mysql: { database: '', user: 'root' },
-  sqlserver: { database: '', user: 'sa' }
+  sqlserver: { database: '', user: 'sa' },
+  mongodb: { database: '', user: '' },
+  redis: { database: '', user: '' }
 }
+
+/** A new connection's driver: the first the dialog offers. */
+const NEW_CONNECTION_DRIVER = DATABASE_DRIVERS[0]
 
 function serverDefaults(driver: DatabaseDriver): { port: string; database: string; user: string } {
   if (driver === 'sqlite') {
@@ -61,12 +70,13 @@ export function initialConnectionForm(
   newGroup: string | null = null
 ): DatabaseConnectionFormState {
   const base: DatabaseConnectionFormState = {
-    driver: 'postgres',
+    driver: NEW_CONNECTION_DRIVER,
     name: '',
     color: null,
     group: newGroup ?? '',
     host: 'localhost',
-    ...serverDefaults('postgres'),
+    ...serverDefaults(NEW_CONNECTION_DRIVER),
+    authDatabase: '',
     password: '',
     passwordEdited: false,
     passwordStorage: canStorePasswords ? 'forever' : 'session',
@@ -98,6 +108,7 @@ export function initialConnectionForm(
     host: existing.host,
     port: String(existing.port),
     database: existing.database,
+    authDatabase: existing.driver === 'mongodb' ? existing.authDatabase : '',
     user: existing.user,
     passwordStorage: existing.passwordStorage,
     sslMode: existing.sslMode,
@@ -121,9 +132,20 @@ export function changeConnectionDriver(
     port: keepOrReset('port'),
     database: keepOrReset('database'),
     user: keepOrReset('user'),
-    // SQL Server negotiates encryption up front; there is no plaintext fallback to prefer.
-    sslMode: driver === 'sqlserver' && form.sslMode === 'prefer' ? 'require' : form.sslMode
+    sslMode: sslModeFor(driver, form.sslMode)
   }
+}
+
+/** Keeps the SSL mode unless the driver lacks `prefer`, which has no plaintext fallback there. */
+function sslModeFor(driver: DatabaseDriver, mode: DatabaseSslMode): DatabaseSslMode {
+  if (mode !== 'prefer') {
+    return mode
+  }
+  // SQL Server always offers encryption; a local Redis or MongoDB usually has no TLS at all.
+  if (driver === 'sqlserver') {
+    return 'require'
+  }
+  return driver === 'redis' || driver === 'mongodb' ? 'disable' : mode
 }
 
 function fileName(path: string): string {
@@ -151,8 +173,11 @@ function candidateDraft(form: DatabaseConnectionFormState): unknown {
     }
   }
   const port = Number(form.port)
+  // Why only for MongoDB: each driver's schema refuses fields it doesn't define.
+  const authDatabase = form.driver === 'mongodb' ? { authDatabase: form.authDatabase.trim() } : {}
   return {
     driver: form.driver,
+    ...authDatabase,
     name,
     color: form.color,
     group: normalizeDatabaseConnectionGroup(form.group),
@@ -200,6 +225,7 @@ const FORM_FIELDS = [
   'host',
   'port',
   'database',
+  'authDatabase',
   'user',
   'password',
   'passwordEdited',

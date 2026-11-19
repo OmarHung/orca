@@ -44,6 +44,14 @@ export function property(
   return text === null ? [] : [{ key, value: text, format }]
 }
 
+/** A server's uptime in seconds as `3d 4h 5m`. */
+export function formatUptime(seconds: number): string {
+  const days = Math.floor(seconds / 86_400)
+  const hours = Math.floor((seconds % 86_400) / 3_600)
+  const minutes = Math.floor((seconds % 3_600) / 60)
+  return days > 0 ? `${days}d ${hours}h ${minutes}m` : `${hours}h ${minutes}m`
+}
+
 function failureMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }

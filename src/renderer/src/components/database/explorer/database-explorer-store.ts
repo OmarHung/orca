@@ -5,7 +5,10 @@ import {
   useDatabaseConnectionsStore
 } from '../database-connections-store'
 import { invalidateSqlCatalog } from '../console/sql-completion-catalog'
-import { listsAllDatabases } from '../../../../../shared/database/database-connection-types'
+import {
+  isSqlDriver,
+  listsAllDatabases
+} from '../../../../../shared/database/database-connection-types'
 import type { DatabaseExplorerChildren } from './database-explorer-rows'
 import {
   childNodesFor,
@@ -41,7 +44,10 @@ export const useDatabaseExplorerStore = create<DatabaseExplorerState>((set, get)
   const load = async (node: DatabaseExplorerNode): Promise<void> => {
     const connection = findDatabaseConnection(node.connectionId)
     const options = {
-      routines: connection?.driver !== 'sqlite',
+      // SQLite, Redis and MongoDB have no routines to list.
+      routines: connection
+        ? isSqlDriver(connection.driver) && connection.driver !== 'sqlite'
+        : false,
       allDatabases: connection ? listsAllDatabases(connection) : false
     }
     const target = introspectTargetFor(node, options)

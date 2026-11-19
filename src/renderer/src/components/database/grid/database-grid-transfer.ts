@@ -4,7 +4,10 @@ import {
   CLIPBOARD_TEXT_WRITE_MAX_BYTES,
   isClipboardTextByteLengthOverLimit
 } from '../../../../../shared/clipboard-text'
-import type { DatabaseDriver } from '../../../../../shared/database/database-connection-types'
+import {
+  isSqlDriver,
+  type DatabaseDriver
+} from '../../../../../shared/database/database-connection-types'
 import {
   DATABASE_EXPORT_MAX_CHARS,
   type DatabaseExportFormat
@@ -59,7 +62,10 @@ export function formatGridText(
     case 'json':
       return toJson(input)
     case 'sql':
-      return toInsertSql(input, { table: target.table, driver: target.driver })
+      // Why JSON for the others: Redis and MongoDB results have no INSERT to write.
+      return isSqlDriver(target.driver)
+        ? toInsertSql(input, { table: target.table, driver: target.driver })
+        : toJson(input)
   }
 }
 

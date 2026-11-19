@@ -1,4 +1,4 @@
-import type { DatabaseDriver } from '../../../../../shared/database/database-connection-types'
+import type { DatabaseSqlDriver } from '../../../../../shared/database/database-connection-types'
 import {
   isDatabaseTruncatedCell,
   type DatabaseCell,
@@ -88,7 +88,7 @@ export function toJson(input: GridExportInput): string {
 /** One INSERT per row; numbers stay unquoted, everything else becomes a string literal. */
 export function toInsertSql(
   input: GridExportInput,
-  options: { table: string; driver: DatabaseDriver }
+  options: { table: string; driver: DatabaseSqlDriver }
 ): string {
   const columnList = input.columns
     .map((column) => quoteSqlName(column.name, options.driver))

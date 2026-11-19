@@ -10,6 +10,9 @@ const LABELS: Record<DatabasePropertyKey, () => string> = {
   edition: () => translate('database.properties.edition', 'Edition'),
   defaultEngine: () => translate('database.properties.defaultEngine', 'Default engine'),
   timeZone: () => translate('database.properties.timeZone', 'Time zone'),
+  mode: () => translate('database.properties.mode', 'Mode'),
+  uptime: () => translate('database.properties.uptime', 'Uptime'),
+  usedMemory: () => translate('database.properties.usedMemory', 'Memory used'),
   owner: () => translate('database.properties.owner', 'Owner'),
   encoding: () => translate('database.properties.encoding', 'Encoding'),
   characterSet: () => translate('database.properties.characterSet', 'Character set'),
@@ -40,6 +43,9 @@ const LABELS: Record<DatabasePropertyKey, () => string> = {
   autoVacuum: () => translate('database.properties.autoVacuum', 'Auto-vacuum'),
   userVersion: () => translate('database.properties.userVersion', 'User version'),
   applicationId: () => translate('database.properties.applicationId', 'Application ID'),
+  keyCount: () => translate('database.properties.keyCount', 'Keys'),
+  expiringKeys: () => translate('database.properties.expiringKeys', 'Keys with a TTL'),
+  collectionCount: () => translate('database.properties.collectionCount', 'Collections'),
   type: () => translate('database.properties.type', 'Type'),
   engine: () => translate('database.properties.engine', 'Engine'),
   rowFormat: () => translate('database.properties.rowFormat', 'Row format'),
@@ -73,7 +79,17 @@ const LABELS: Record<DatabasePropertyKey, () => string> = {
   created: () => translate('database.properties.created', 'Created'),
   modified: () => translate('database.properties.modified', 'Definition changed'),
   dataUpdated: () => translate('database.properties.dataUpdated', 'Data changed'),
-  comment: () => translate('database.properties.comment', 'Comment')
+  comment: () => translate('database.properties.comment', 'Comment'),
+  ttl: () => translate('database.properties.ttl', 'Time to live'),
+  length: () => translate('database.properties.length', 'Length'),
+  documentCount: () => translate('database.properties.documentCount', 'Documents'),
+  averageDocumentSize: () =>
+    translate('database.properties.averageDocumentSize', 'Average document size'),
+  indexCount: () => translate('database.properties.indexCount', 'Indexes'),
+  capped: () => translate('database.properties.capped', 'Capped'),
+  viewOn: () => translate('database.properties.viewOn', 'View on'),
+  pipeline: () => translate('database.properties.pipeline', 'Pipeline'),
+  validator: () => translate('database.properties.validator', 'Validator')
 }
 
 export function propertyLabel(key: DatabasePropertyKey): string {
@@ -92,6 +108,10 @@ export function propertySectionLabel(kind: DatabasePropertySectionKind): string 
       return translate('database.properties.sectionTable', 'Table')
     case 'view':
       return translate('database.properties.sectionView', 'View')
+    case 'collection':
+      return translate('database.properties.sectionCollection', 'Collection')
+    case 'key':
+      return translate('database.properties.sectionKey', 'Key')
   }
 }
 

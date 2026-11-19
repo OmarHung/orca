@@ -1,8 +1,8 @@
-import type { DatabaseDriver } from './database-connection-types'
+import type { DatabaseSqlDriver } from './database-connection-types'
 import { isSqlReservedWord } from './sql-reserved-words'
 
 // Names that need no quoting: PostgreSQL folds unquoted names to lower case, so only those.
-const PLAIN_NAME: Record<DatabaseDriver, RegExp> = {
+const PLAIN_NAME: Record<DatabaseSqlDriver, RegExp> = {
   postgres: /^[a-z_][a-z0-9_$]*$/,
   mysql: /^[A-Za-z_][A-Za-z0-9_$]*$/,
   sqlserver: /^[A-Za-z_][A-Za-z0-9_]*$/,
@@ -10,7 +10,7 @@ const PLAIN_NAME: Record<DatabaseDriver, RegExp> = {
 }
 
 /** Quotes an identifier in the dialect's own style, and only when it needs it. */
-export function quoteSqlName(name: string, driver: DatabaseDriver): string {
+export function quoteSqlName(name: string, driver: DatabaseSqlDriver): string {
   if (PLAIN_NAME[driver].test(name) && !isSqlReservedWord(name, driver)) {
     return name
   }
@@ -28,7 +28,7 @@ export function quoteSqlName(name: string, driver: DatabaseDriver): string {
 export function qualifiedRelationName(
   schema: string,
   relation: string,
-  driver: DatabaseDriver = 'postgres'
+  driver: DatabaseSqlDriver = 'postgres'
 ): string {
   // SQLite's main database needs no prefix.
   if (driver === 'sqlite' && schema === 'main') {

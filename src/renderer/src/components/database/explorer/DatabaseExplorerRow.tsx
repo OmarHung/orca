@@ -1,5 +1,6 @@
 import React from 'react'
 import {
+  Braces,
   ChevronRight,
   Columns3,
   Cylinder,
@@ -9,6 +10,7 @@ import {
   FolderOpen,
   Key,
   KeyRound,
+  KeySquare,
   Layers,
   Link2,
   ListOrdered,
@@ -35,6 +37,7 @@ import { DatabaseExplorerGroupContextMenu } from './DatabaseExplorerGroupMenus'
 import { commentLine, constraintLabel, folderLabel } from './database-explorer-labels'
 import { useConnectionRouteLabel } from './use-connection-route-label'
 import type { DatabaseExplorerRow as ExplorerRow } from './database-explorer-rows'
+import type { DatabaseRelationKind } from '../../../../../shared/database/database-introspection-types'
 import { isExpandableNode, type DatabaseExplorerNode } from './database-explorer-tree'
 
 export const EXPLORER_ROW_HEIGHT = 24
@@ -80,6 +83,22 @@ function GroupIcon({ group, expanded }: { group: string; expanded: boolean }): R
   )
 }
 
+function RelationIcon({ kind }: { kind: DatabaseRelationKind }): React.JSX.Element {
+  switch (kind) {
+    case 'view':
+    case 'materialized-view':
+      return <Eye className={ICON_CLASS} />
+    case 'collection':
+      return <Braces className={ICON_CLASS} />
+    case 'key':
+      return <KeySquare className={ICON_CLASS} />
+    case 'table':
+    case 'partitioned-table':
+    case 'foreign-table':
+      return <Table2 className={ICON_CLASS} />
+  }
+}
+
 function NodeIcon({ node }: { node: DatabaseExplorerNode }): React.JSX.Element {
   switch (node.kind) {
     case 'connection':
@@ -89,11 +108,7 @@ function NodeIcon({ node }: { node: DatabaseExplorerNode }): React.JSX.Element {
     case 'schema':
       return <Layers className={ICON_CLASS} />
     case 'relation':
-      return node.relation.kind === 'view' || node.relation.kind === 'materialized-view' ? (
-        <Eye className={ICON_CLASS} />
-      ) : (
-        <Table2 className={ICON_CLASS} />
-      )
+      return <RelationIcon kind={node.relation.kind} />
     case 'column':
       return node.column.isPrimaryKey ? (
         <KeyRound className={ICON_CLASS} />

@@ -24,6 +24,10 @@ export type DatabaseRelationKind =
   | 'view'
   | 'materialized-view'
   | 'foreign-table'
+  /** A MongoDB collection. */
+  | 'collection'
+  /** A Redis key; its comment is the value's type (string, hash, list, …). */
+  | 'key'
 
 /** `isCurrent` marks where unqualified names resolve (search_path, current database, …). */
 export type DatabaseSchemaInfo = { name: string; isCurrent: boolean }

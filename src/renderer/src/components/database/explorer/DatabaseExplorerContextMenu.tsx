@@ -31,7 +31,8 @@ import { useDatabaseExplorerStore } from './database-explorer-store'
 import { MoveToGroupSubmenu } from './DatabaseExplorerGroupMenus'
 import { useDatabaseJobsStore, type DatabaseDumpScope } from '../jobs/database-jobs-store'
 import type { DatabasePropertiesTarget } from '../../../../../shared/database/database-properties-types'
-import { qualifiedRelationName } from '../../../../../shared/database/sql-identifiers'
+import { isSqlDriver } from '../../../../../shared/database/database-connection-types'
+import { qualifiedObjectName } from '../../../../../shared/database/table-data-sql'
 import { isExpandableNode, type DatabaseExplorerNode } from './database-explorer-tree'
 
 function copy(text: string): void {
@@ -144,7 +145,7 @@ function copyText(node: DatabaseExplorerNode): string | null {
     case 'schema':
       return node.schema
     case 'relation':
-      return qualifiedRelationName(
+      return qualifiedObjectName(
         node.schema,
         node.relation.name,
         findDatabaseConnection(node.connectionId)?.driver
@@ -253,6 +254,11 @@ export function DatabaseExplorerContextMenu({
 }): React.JSX.Element {
   const text = copyText(node)
   const canRefresh = isExpandableNode(node) && node.kind !== 'connection'
+  const driver = findDatabaseConnection(node.connectionId)?.driver
+  // Dumps write SQL, so only SQL databases offer them; a Redis key has no DDL to show.
+  const canDump = driver !== undefined && isSqlDriver(driver) && isDumpable(node)
+  const hasDdl =
+    node.kind === 'routine' || (node.kind === 'relation' && node.relation.kind !== 'key')
   return (
     <ContextMenuContent>
       {node.kind === 'connection' ? <ConnectionItems connectionId={node.connectionId} /> : null}
@@ -282,7 +288,7 @@ export function DatabaseExplorerContextMenu({
           {translate('database.explorer.openData', 'Open Data')}
         </ContextMenuItem>
       ) : null}
-      {node.kind === 'relation' || node.kind === 'routine' ? (
+      {hasDdl ? (
         <ContextMenuItem onSelect={() => showDdl(node)}>
           <FileCode2 />
           {translate('database.explorer.showDdl', 'Show DDL')}
@@ -303,7 +309,7 @@ export function DatabaseExplorerContextMenu({
           {translate('database.explorer.refresh', 'Refresh')}
         </ContextMenuItem>
       ) : null}
-      {isDumpable(node) ? <DumpItems node={node} /> : null}
+      {canDump && isDumpable(node) ? <DumpItems node={node} /> : null}
     </ContextMenuContent>
   )
 }
