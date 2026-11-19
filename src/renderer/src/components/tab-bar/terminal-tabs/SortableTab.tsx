@@ -28,7 +28,7 @@ import { useTabStripSlotProps } from '../strip/use-tab-strip-slot-props'
 import { useTabStripPointerActivation } from '../strip/tab-strip-pointer-activation'
 import { useTabContextMenuOpening } from '../strip/tab-context-menu-opening'
 import { TerminalTabLeadingIcon } from './TerminalTabLeadingIcon'
-import { AgentTabClearButton } from './AgentTabClearButton'
+import { AgentTabClearButton } from '../AgentTabClearButton'
 import {
   isTerminalTabActivityLive,
   terminalTabHasUnreadActivity

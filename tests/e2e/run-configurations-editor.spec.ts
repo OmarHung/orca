@@ -1,14 +1,14 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import type { Page } from '@playwright/test'
-import { test, expect } from './helpers/orca-app'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 import {
   activateGoldenWorktree,
   cleanupGoldenWorktree,
   createGoldenWorktree
-} from './helpers/golden-source-control'
-import { waitForSessionReady } from './helpers/store'
-import { getRunPanelTerminalContent } from './helpers/run-panel'
+} from './golden-journeys/golden-source-control'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
+import { getRunPanelTerminalContent } from './desktop/electron-fixtures/run-panel'
 
 const LAUNCH_JSON = `{
   // VS Code writes comments here

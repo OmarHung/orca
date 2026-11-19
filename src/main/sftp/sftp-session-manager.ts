@@ -1,5 +1,5 @@
 import type { SshCachedCredentials } from '../ssh/connection/ssh-connection'
-import type { SshConnectionStatus, SshTarget } from '../../shared/ssh-types'
+import type { SshConnectionStatus, SshTarget } from '../../shared/remote-runtime/ssh/ssh-types'
 import type {
   SftpEntry,
   SftpExecuteOutcome,

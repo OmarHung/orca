@@ -1,4 +1,4 @@
-import { getRuntimePathBasename, relativePathInsideRoot } from '../cross-platform-path'
+import { getRuntimePathBasename, relativePathInsideRoot } from '../file-access/cross-platform-path'
 import { runsPosixShell } from './host-shell'
 import { joinProjectPath } from './project-path'
 import { quoteShellArgument, type DetectedRunConfiguration } from './run-configuration-types'

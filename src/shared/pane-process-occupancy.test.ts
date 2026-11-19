@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { paneHoldsOnlyItsShell, paneShellOwnsEveryTtyProcessGroup } from './pane-process-occupancy'
-import type { ProcessTableRow } from './process-table-snapshot'
+import type { ProcessTableRow } from './process-observation/tables/process-table-snapshot'
 
 function row(overrides: Partial<ProcessTableRow> & Pick<ProcessTableRow, 'pid'>): ProcessTableRow {
   return {

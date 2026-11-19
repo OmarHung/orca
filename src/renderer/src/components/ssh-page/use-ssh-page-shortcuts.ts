@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import { getShortcutPlatform } from '@/lib/keyboard/shortcut-platform'
 import { useAppStore } from '@/store'
-import { keybindingMatchesAction, type KeybindingActionId } from '../../../../shared/keybindings'
-import { getKeybindingContext } from '../terminal-workspace-model'
+import { keybindingMatchesAction } from '../../../../shared/keybindings/matching'
+import type { KeybindingActionId } from '../../../../shared/keybindings/types'
+import { getKeybindingContext } from '../terminal/workbench/terminal-workspace-model'
 import type { RemoteLayout } from './remote-session-store'
 
 const LAYOUT_BY_KEY_CODE: ReadonlyMap<string, RemoteLayout> = new Map([

@@ -1,5 +1,5 @@
 import { getRelativePathInsideRoot } from '@/lib/path'
-import { normalizeRelativePath } from '../../../../shared/cross-platform-path'
+import { normalizeRelativePath } from '../../../../shared/file-access/cross-platform-path'
 
 /** Relative to the workspace root, so a configuration works in every worktree of the repo. */
 export function workspaceRelativePath(path: string, worktreePath: string): string {

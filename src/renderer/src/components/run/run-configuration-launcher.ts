@@ -3,8 +3,8 @@ import { useAppStore } from '@/store'
 import { joinPath } from '@/lib/path'
 import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
 import { confirmSharedRunConfigurations } from '@/lib/shared-run-configuration-trust'
-import { getRepoExecutionHostId } from '../../../../shared/execution-host'
-import type { Repo } from '../../../../shared/repo-types'
+import { getRepoExecutionHostId } from '../../../../shared/execution-host/execution-host'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import type {
   CommandRunConfiguration,
   RunConfigurationDefinition

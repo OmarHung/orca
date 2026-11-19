@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { getConnectionId } from '@/lib/workspace/ownership/connection-context'
-import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
+import type { RuntimeClientTarget } from '../../../../../../shared/remote-runtime/host-catalog/runtime-client-target'
 import type { GitLogCompareContext } from './open-git-log-compare'
 
 /** Stable git routing for Git Log compares; null while no workspace is shown. */

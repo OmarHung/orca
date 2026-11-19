@@ -1,5 +1,5 @@
 import { translate } from '@/i18n/i18n'
-import { formatBytes } from '../status-bar/workspace-space-format'
+import { formatBytes } from '../../../../shared/text/format-bytes'
 import type { SftpEntry } from '../../../../shared/sftp-types'
 
 /** The pane footer: how many items the folder holds, or how many are selected and their size. */

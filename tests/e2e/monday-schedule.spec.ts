@@ -1,7 +1,7 @@
 import type { Page } from '@stablyai/playwright-test'
-import { startFakeMondayServer } from './helpers/fake-monday-server'
-import { test, expect } from './helpers/orca-app'
-import { waitForSessionReady } from './helpers/store'
+import { startFakeMondayServer } from './desktop/electron-fixtures/fake-monday-server'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 
 const MONDAY_BROWSER_WORKTREE_ID = 'global-monday-browser'
 const FLOATING_TERMINAL_WORKTREE_ID = 'global-floating-terminal'

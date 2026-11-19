@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { SshConnectionState, SshConnectionStatus } from '../../shared/ssh-types'
+import type {
+  SshConnectionState,
+  SshConnectionStatus
+} from '../../shared/remote-runtime/ssh/ssh-types'
 import { toSftpConnectionState } from './sftp-connection-state'
 
 function state(status: SshConnectionStatus, error: string | null = null): SshConnectionState {

@@ -9,15 +9,18 @@
  * emulator cannot see.
  */
 import type { Page } from '@stablyai/playwright-test'
-import { expect, test } from './helpers/orca-app'
-import { closeTerminalImePaneArena, openTerminalImePaneArena } from './terminal-ime-pane-arena'
-import { setImeComposition } from './terminal-ime-cdp-composition'
+import { expect, test } from './desktop/electron-fixtures/orca-app'
+import {
+  closeTerminalImePaneArena,
+  openTerminalImePaneArena
+} from './terminal/ime/terminal-ime-pane-arena'
+import { setImeComposition } from './terminal/ime/terminal-ime-cdp-composition'
 import {
   sampleMidlinePreeditOcclusion,
   writeToActiveTerminal,
   type MidlinePreeditOcclusionSample
-} from './terminal-ime-midline-occlusion-probe'
-import { samplePreeditOverlay } from './terminal-ime-preedit-overlay-probe'
+} from './terminal/ime/terminal-ime-midline-occlusion-probe'
+import { samplePreeditOverlay } from './terminal/ime/terminal-ime-preedit-overlay-probe'
 
 const PREEDIT = '你好嗎'
 /** Sub-pixel slack for rects measured against a fractional cell width. */

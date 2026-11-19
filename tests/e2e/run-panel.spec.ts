@@ -1,12 +1,15 @@
 import type { Page } from '@playwright/test'
-import { test, expect } from './helpers/orca-app'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 import {
   activateGoldenWorktree,
   cleanupGoldenWorktree,
   createGoldenWorktree
-} from './helpers/golden-source-control'
-import { waitForSessionReady } from './helpers/store'
-import { getRunPanelTerminalContent, runTerminalsInTabStrip } from './helpers/run-panel'
+} from './golden-journeys/golden-source-control'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
+import {
+  getRunPanelTerminalContent,
+  runTerminalsInTabStrip
+} from './desktop/electron-fixtures/run-panel'
 
 const SERVER_LABEL = 'E2E panel server'
 // Why arithmetic: the output must not match the echoed command line itself.

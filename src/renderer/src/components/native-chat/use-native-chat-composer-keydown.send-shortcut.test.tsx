@@ -4,13 +4,13 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
-import { getDefaultSettings } from '../../../../shared/constants'
+import { getDefaultSettings } from '../../../../shared/orca-profiles/constants'
 import {
   applyMentionSuggestion,
   type ComposerAutocomplete
-} from '../../../../shared/native-chat/input/native-chat-composer-autocomplete'
-import { applyPickerSuggestion } from '../../../../shared/native-chat/input/native-chat-picker-triggers'
-import type { NativeChatPickerItem } from '../../../../shared/native-chat/input/native-chat-picker-items'
+} from '../../../../shared/native-chat/input/composer/native-chat-composer-autocomplete'
+import { applyPickerSuggestion } from '../../../../shared/native-chat/input/composer/native-chat-picker-triggers'
+import type { NativeChatPickerItem } from '../../../../shared/native-chat/input/composer/native-chat-picker-items'
 import { useNativeChatComposerKeyDown } from './composer/editor/use-native-chat-composer-keydown'
 
 const COMMAND: NativeChatPickerItem = {

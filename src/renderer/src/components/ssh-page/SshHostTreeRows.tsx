@@ -1,5 +1,5 @@
 import { ChevronRight, Folder, FolderOpen } from 'lucide-react'
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import { ContextMenu, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/class-names'

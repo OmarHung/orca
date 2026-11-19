@@ -1,7 +1,7 @@
 import type { DatabasePasswordStorage } from '../../shared/database/database-connection-types'
 import type { DatabaseResult } from '../../shared/database/database-query-types'
 import type { DatabaseEncryptionStatus } from '../../shared/database/database-session-types'
-import type { SecretStore } from '../../shared/secret-store'
+import type { SecretStore } from '../../shared/secure-storage/secret-store'
 import { KeptPasswords } from '../kept-passwords'
 
 export const NO_SECURE_PASSWORD_STORAGE =

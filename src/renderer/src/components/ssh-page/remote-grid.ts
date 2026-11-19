@@ -1,4 +1,4 @@
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import type { RemoteSession } from './remote-session-store'
 
 export const MAX_REMOTE_GRID_TABS = 9

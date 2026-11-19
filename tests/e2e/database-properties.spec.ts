@@ -7,9 +7,9 @@ import {
   addSqliteConnection,
   explorerMenu,
   openDatabasePage
-} from './helpers/database-page'
-import { adminSql } from './helpers/database-admin'
-import { test, expect } from './helpers/orca-app'
+} from './desktop/electron-fixtures/database-page'
+import { adminSql } from './desktop/electron-fixtures/database-admin'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 const LONG_COLUMN = 'a_column_name_long_enough_that_the_explorer_has_to_scroll_sideways_to_show_it'
 

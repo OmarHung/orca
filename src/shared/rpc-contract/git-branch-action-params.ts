@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { parseGitBranchAction } from '../git-branch-action/git-branch-action-parse'
-import { WorktreeSelector } from './git-params'
+import { WorktreeSelector } from './source-control/git-params'
 
 export const GitBranchActionParams = WorktreeSelector.extend({
   action: z.unknown().transform((value, ctx) => {

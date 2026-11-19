@@ -7,7 +7,7 @@ const { fetchMock, runProcessMock } = vi.hoisted(() => ({
 
 vi.mock('electron', () => ({ net: { fetch: fetchMock } }))
 vi.mock('@orca/process-host', () => ({ runProcess: runProcessMock }))
-vi.mock('../startup/login-shell-environment', () => ({
+vi.mock('../startup/shell-environment/login-shell-environment', () => ({
   resolveLoginShellEnvironment: async () => ({})
 }))
 

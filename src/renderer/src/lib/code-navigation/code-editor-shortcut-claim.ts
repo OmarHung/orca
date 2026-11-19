@@ -1,5 +1,5 @@
-import { editorShortcutMatches } from '@/components/editor/editor-shortcuts'
-import type { KeybindingActionId } from '../../../../shared/keybindings'
+import { editorShortcutMatches } from '@/components/editor/commands/editor-shortcuts'
+import type { KeybindingActionId } from '../../../../shared/keybindings/types'
 import { CODE_NAVIGATION_KEYBINDING_ACTION_IDS } from '../../../../shared/keybindings/definitions-code-navigation'
 
 type FocusableEditor = { hasTextFocus: () => boolean }

@@ -1,6 +1,6 @@
-import { addSqliteConnection, openDatabasePage } from './helpers/database-page'
-import { seedShopDatabase } from './helpers/database-sqlite-shop'
-import { test, expect } from './helpers/orca-app'
+import { addSqliteConnection, openDatabasePage } from './desktop/electron-fixtures/database-page'
+import { seedShopDatabase } from './desktop/electron-fixtures/database-sqlite-shop'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 test('adds a connection from the list’s + button or its right-click menu', async ({
   orcaPage,

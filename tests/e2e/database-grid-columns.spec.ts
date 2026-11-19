@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@stablyai/playwright-test'
-import { addSqliteConnection, openDatabasePage } from './helpers/database-page'
-import { expandPeople, seedShopDatabase } from './helpers/database-sqlite-shop'
-import { test, expect } from './helpers/orca-app'
+import { addSqliteConnection, openDatabasePage } from './desktop/electron-fixtures/database-page'
+import { expandPeople, seedShopDatabase } from './desktop/electron-fixtures/database-sqlite-shop'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 const ADA_PROFILE = '{"lang":"en","tags":["math"]}'
 const MIN_COLUMN_PX = 72

@@ -1,25 +1,28 @@
 import { stat } from 'node:fs/promises'
 import { isAbsolute, join } from 'node:path'
 import type { Store } from '../../persistence/loading-store/store'
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type { RepoRelocateFailure } from '../../../shared/repo-relocation-types'
-import { isFolderRepo } from '../../../shared/repo-kind'
-import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
+import { isFolderRepo } from '../../../shared/repository/repo-kind'
+import {
+  getRepoExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../shared/execution-host/execution-host'
 import {
   normalizeRuntimePathForComparison,
   relativePathInsideRoot
-} from '../../../shared/cross-platform-path'
+} from '../../../shared/file-access/cross-platform-path'
 import {
   getRepoIdFromWorktreeId,
   getRepoMainWorktreeId,
   rewriteWorktreeIdPath,
   splitWorktreeIdForFilesystem
 } from '../../../shared/worktree/id'
-import { gitExecFileAsync } from '../../git/runner'
-import { inspectGitRepoForRegistrationAsync } from '../../git/repo'
+import { gitExecFileAsync } from '../../git/command-runner/git-exec-file'
+import { inspectGitRepoForRegistrationAsync } from '../../git/repositories/discovery/repo-detection'
 import { findProjectAtSameRealPath } from '../../workspaces/catalog/project-realpath-identity'
 import { hostWorktreeTargetForRepo } from '../../persistence/host-qualified-worktree-meta'
-import { isWslMoveProjectBlocked } from '../../persistence/moving-wsl-projects/wsl-move-scope-guard'
+import { isWslMoveProjectBlocked } from '../../persistence/moving-wsl-projects/quiescence/wsl-move-scope-guard'
 
 export type RepoRelocation = {
   repo: Repo

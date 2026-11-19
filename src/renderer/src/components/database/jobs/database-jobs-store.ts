@@ -1,7 +1,7 @@
 import { toast } from 'sonner'
 import { create } from 'zustand'
 import { translate } from '@/i18n/i18n'
-import { createNonSecureContextUuid as createBrowserUuid } from '../../../../../shared/non-secure-context-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../../shared/identifiers/non-secure-context-uuid'
 import type {
   DatabaseDumpDestination,
   DatabaseDumpProgress,
@@ -10,7 +10,7 @@ import type {
   DatabaseJobEvent
 } from '../../../../../shared/database/database-dump-types'
 import { asDatabaseResult } from '../database-connections-store'
-import { LOCAL_EXECUTION_HOST_ID } from '../../../../../shared/execution-host'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../../../shared/execution-host/execution-host'
 
 export type DatabaseJobStatus = 'running' | 'done' | 'failed' | 'cancelled'
 

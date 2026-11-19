@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
-import { test, expect } from './helpers/orca-app'
-import { waitForSessionReady } from './helpers/store'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 
 async function box(locator: Locator): Promise<{ width: number; height: number }> {
   const rect = await locator.boundingBox()

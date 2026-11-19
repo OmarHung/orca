@@ -3,9 +3,9 @@ import {
   explorerMenu,
   openDatabasePage,
   runInConsole
-} from './helpers/database-page'
-import { adminSql } from './helpers/database-admin'
-import { test, expect } from './helpers/orca-app'
+} from './desktop/electron-fixtures/database-page'
+import { adminSql } from './desktop/electron-fixtures/database-admin'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 type ServerCase = {
   type: 'PostgreSQL' | 'SQL Server'

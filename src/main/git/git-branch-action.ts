@@ -4,9 +4,9 @@ import type {
   GitBranchActionResult
 } from '../../shared/git-branch-action/git-branch-action-types'
 import { runWithGitWorktreeOperationLock } from '../../shared/git/worktrees/git-worktree-operation-lock'
-import type { GitRuntimeOptions } from './git-runtime-options'
-import { gitOptionsForWorktree } from './git-runtime-options'
-import { gitExecFileAsync } from './runner'
+import type { GitRuntimeOptions } from './command-runner/git-runtime-options'
+import { gitOptionsForWorktree } from './command-runner/git-runtime-options'
+import { gitExecFileAsync } from './command-runner/git-exec-file'
 import { runWithGitReadCacheInvalidation } from './source-control/git-read-cache-invalidation'
 
 /** Runs a Git Log branch/commit action in a local (or WSL) worktree. */

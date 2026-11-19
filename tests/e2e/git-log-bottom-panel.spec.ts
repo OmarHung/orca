@@ -1,13 +1,13 @@
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { test, expect } from './helpers/orca-app'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 import {
   activateGoldenWorktree,
   cleanupGoldenWorktree,
   createGoldenWorktree
-} from './helpers/golden-source-control'
-import { waitForSessionReady } from './helpers/store'
+} from './golden-journeys/golden-source-control'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 
 const FIRST_SUBJECT = 'feat: git log first commit'
 const SECOND_SUBJECT = 'fix: git log second commit'

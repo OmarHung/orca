@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store'
-import type { TopLevelView } from '../../../../shared/ui-chrome-types'
+import type { TopLevelView } from '../../../../shared/ui-chrome/ui-chrome-types'
 
 // Why module state, not the app store: keeps the fork's page out of upstream's UI slice.
 let viewBeforeDatabase: Exclude<TopLevelView, 'database'> = 'terminal'

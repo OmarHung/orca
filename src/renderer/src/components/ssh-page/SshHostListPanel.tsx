@@ -1,4 +1,4 @@
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import { Button } from '../ui/button'
 import { translate } from '@/i18n/i18n'
 import { SshHostList } from './SshHostList'

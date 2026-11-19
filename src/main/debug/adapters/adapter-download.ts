@@ -2,7 +2,7 @@ import { net } from 'electron'
 import {
   FetchResponseBodyTooLargeError,
   readFetchResponseBytesWithinLimit
-} from '../../../shared/fetch-response-body'
+} from '../../../shared/network/fetch-response-body'
 
 const DOWNLOAD_TIMEOUT_MS = 120_000
 const MAX_DOWNLOAD_BYTES = 64 * 1024 * 1024

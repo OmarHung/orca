@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { app, ipcMain } from 'electron'
-import { getSecretStore } from '../../../shared/secret-store'
+import { getSecretStore } from '../../../shared/secure-storage/secret-store'
 import type { SshCredentialSubmitResult } from '../../../shared/ssh-saved-passphrase-types'
 import { SshSavedPassphraseStore } from '../../ssh/ssh-saved-passphrase-store'
 

@@ -6,7 +6,10 @@ import {
   getDefaultBrowserProfileForHost
 } from '@/store/slices/browser/hosts/browser-host-state'
 import type { AppState } from '@/store/types'
-import type { BrowserPage, BrowserWorkspace } from '../../../../shared/browser-workspace-types'
+import type {
+  BrowserPage,
+  BrowserWorkspace
+} from '../../../../shared/browser/workspaces/browser-workspace-types'
 import { MONDAY_BROWSER_WORKTREE_ID } from '../../../../shared/local-synthetic-workspace'
 
 export type MondayLinkPlan =

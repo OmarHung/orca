@@ -2,13 +2,13 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
-import { test, expect } from './helpers/orca-app'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 import {
   activateGoldenWorktree,
   cleanupGoldenWorktree,
   createGoldenWorktree
-} from './helpers/golden-source-control'
-import { waitForSessionReady } from './helpers/store'
+} from './golden-journeys/golden-source-control'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 import {
   activeEditor,
   BACK,
@@ -17,7 +17,7 @@ import {
   openEditorFile,
   placeCursorOnLine,
   WORD_RIGHT
-} from './helpers/code-navigation-editor'
+} from './desktop/electron-fixtures/code-navigation-editor'
 
 // Opt-in: the first jump downloads the language servers from npm and nuget.org.
 const RUN = process.env.ORCA_E2E_CODE_NAVIGATION === '1'

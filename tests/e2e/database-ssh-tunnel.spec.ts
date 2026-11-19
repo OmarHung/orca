@@ -4,24 +4,24 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { ElectronApplication, Page } from '@stablyai/playwright-test'
 import { findDumpTool } from '../../src/main/database/worker/dump/native/native-dump-tools'
-import { adminSql } from './helpers/database-admin'
+import { adminSql } from './desktop/electron-fixtures/database-admin'
 import {
   addServerConnection,
   explorerMenu,
   openDatabasePage,
   runInConsole
-} from './helpers/database-page'
+} from './desktop/electron-fixtures/database-page'
 import {
   cleanupDockerSshHostTarget,
   execDockerSshHostTargetControlCommand,
   startDockerSshHostTarget,
   type DockerSshHostTarget
-} from './helpers/docker-ssh-host-target'
+} from './remote/managed-ssh/host-lifecycle/docker-ssh-host-target'
 import {
   readSystemSshInvocationKinds,
   trustDockerSshHost
-} from './helpers/docker-ssh-system-ssh-evidence'
-import { test, expect } from './helpers/orca-app'
+} from './desktop/electron-fixtures/docker-ssh-system-ssh-evidence'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 // Opt-in: a Docker SSH host (ORCA_E2E_SSH_DOCKER=1) plus the database URLs the driver
 // tests use. The databases are reached at addresses only the SSH host can see.

@@ -1,4 +1,4 @@
-import type { SecretStore } from '../../shared/secret-store'
+import type { SecretStore } from '../../shared/secure-storage/secret-store'
 import type {
   MondayBoardSummary,
   MondayConnectionStatus,

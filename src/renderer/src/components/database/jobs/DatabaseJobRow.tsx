@@ -2,10 +2,10 @@ import React from 'react'
 import { Ban, CircleAlert, CircleCheck, FolderOpen, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { formatBytes } from '@/components/status-bar/workspace-space-format'
+import { formatBytes } from '../../../../../shared/text/format-bytes'
 import { translate } from '@/i18n/i18n'
 import type { DatabaseDumpJob, DatabaseJobStatus } from './database-jobs-store'
-import { LOCAL_EXECUTION_HOST_ID } from '../../../../../shared/execution-host'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../../../shared/execution-host/execution-host'
 
 function StatusIcon({ status }: { status: DatabaseJobStatus }): React.JSX.Element {
   switch (status) {

@@ -8,7 +8,7 @@ import {
 import {
   isTerminalTabActivityLive,
   resolveTerminalTabActivityStatus
-} from './terminal-tab-activity-status'
+} from './terminal-tabs/terminal-tab-activity-status'
 
 export const AGENT_CLEAR_COMMAND = '/clear'
 

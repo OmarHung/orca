@@ -4,7 +4,7 @@ import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ow
 import { readRuntimeDirectory } from '@/runtime/files/reads/runtime-directory-read'
 import { readRuntimeFileContent } from '@/runtime/files/reads/runtime-file-read-client'
 import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
-import { getTabEntryFileOperationContext } from '../tab-bar/tab-create-entry-local-path'
+import { getTabEntryFileOperationContext } from '../tab-bar/create-entry/tab-create-entry-local-path'
 import {
   detectDotnetRunConfigurations,
   isDotnetProjectFile

@@ -2,15 +2,15 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { test, expect } from './helpers/orca-app'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 import {
   GOLDEN_GIT_AUTHOR_EMAIL,
   GOLDEN_GIT_AUTHOR_NAME,
   activateGoldenWorktree,
   cleanupGoldenWorktree,
   createGoldenWorktree
-} from './helpers/golden-source-control'
-import { waitForSessionReady } from './helpers/store'
+} from './golden-journeys/golden-source-control'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 
 const IDENTITY = [
   '-c',

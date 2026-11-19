@@ -1,6 +1,6 @@
 import type { Page } from '@stablyai/playwright-test'
 import { expect } from './orca-app'
-import type { DockerSshHostTarget } from './docker-ssh-host-target'
+import type { DockerSshHostTarget } from '../../remote/managed-ssh/host-lifecycle/docker-ssh-host-target'
 
 export async function readTerminalText(page: Page, tabId: string): Promise<string> {
   return page.evaluate(

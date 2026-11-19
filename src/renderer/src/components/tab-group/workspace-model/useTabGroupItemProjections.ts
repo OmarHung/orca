@@ -6,7 +6,7 @@ import type { TerminalTab } from '../../../../../shared/workspace-layout/termina
 import { resolveUnifiedTabLabel } from '../../../../../shared/workspace-layout/tab-groups/tab-title-resolution'
 import type { useAppStore } from '../../../store/index'
 import { isEditorTabContentType } from '@/store/slices/editor/tabs/editor-tab-content-type'
-import { useRunPanelTabIds } from '../run/use-run-panel-sessions'
+import { useRunPanelTabIds } from '../../run/use-run-panel-sessions'
 
 type TabGroupAppState = ReturnType<typeof useAppStore.getState>
 

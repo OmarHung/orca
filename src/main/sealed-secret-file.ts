@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { writeDurableSecureJsonFile } from '../shared/secure-storage/secure-file'
-import type { SecretStore } from '../shared/secret-store'
+import type { SecretStore } from '../shared/secure-storage/secret-store'
 
 const FILE_VERSION = 1
 const FILE_FORMAT = 'orca-secret-store-v1'

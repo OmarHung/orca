@@ -28,7 +28,7 @@ vi.mock('@/store/index', () => ({
 vi.mock('@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab', () => ({
   launchAgentInNewTab: vi.fn()
 }))
-vi.mock('../../../../../shared/non-secure-context-uuid', () => ({
+vi.mock('../../../../../shared/identifiers/non-secure-context-uuid', () => ({
   createNonSecureContextUuid: () => '11111111-1111-4111-8111-111111111111'
 }))
 

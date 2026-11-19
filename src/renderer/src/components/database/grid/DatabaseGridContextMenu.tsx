@@ -12,7 +12,7 @@ import {
 import { translate } from '@/i18n/i18n'
 import { getShortcutPlatform } from '@/lib/keyboard/shortcut-platform'
 import type { DatabaseExportFormat } from '../../../../../shared/database/database-export-types'
-import { formatKeybindingList } from '../../../../../shared/keybindings'
+import { formatKeybindingList } from '../../../../../shared/keybindings/formatting'
 import type { GridCopyFormat } from './database-grid-transfer'
 
 const FORMAT_LABELS: Record<DatabaseExportFormat, () => string> = {

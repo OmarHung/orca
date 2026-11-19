@@ -4,7 +4,7 @@ const opener = vi.hoisted(() => ({ openNavigationTarget: vi.fn() }))
 const tabs = vi.hoisted(() => ({ paths: new Set<string>() }))
 
 vi.mock('@/store', () => ({ useAppStore: { getState: () => ({}) } }))
-vi.mock('@/components/editor/editor-shortcuts', () => ({
+vi.mock('@/components/editor/commands/editor-shortcuts', () => ({
   editorShortcutMatches: (id: string, event: KeyboardEvent) =>
     ({
       'editor.goToDeclaration': 'b',

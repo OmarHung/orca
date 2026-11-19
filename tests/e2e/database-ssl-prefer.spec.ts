@@ -3,8 +3,8 @@ import {
   explorerMenu,
   openDatabasePage,
   runInConsole
-} from './helpers/database-page'
-import { test, expect } from './helpers/orca-app'
+} from './desktop/electron-fixtures/database-page'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 // Opt-in: a MySQL/MariaDB server without TLS, e.g. `mariadb:10.5 --skip-ssl` (a stock Debian
 // package ships that way), as ORCA_TEST_MYSQL_NO_SSL_URL=mysql://root:pw@127.0.0.1:53308/orca_it

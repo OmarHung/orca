@@ -26,13 +26,13 @@ vi.mock('../native-chat/session/terminal/send/native-chat-runtime-send', () => (
   sendNativeChatMessage: mocks.sendNativeChatMessage,
   sendNativeChatTypedCommand: mocks.sendNativeChatTypedCommand
 }))
-vi.mock('./terminal-tab-activity-status', async (importOriginal) => ({
+vi.mock('./terminal-tabs/terminal-tab-activity-status', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   resolveTerminalTabActivityStatus: vi.fn(() => mocks.activityStatus)
 }))
 
 import { clearAgentTabConversation, resolveAgentTabFocusedPtyId } from './agent-tab-clear'
-import { resolveTerminalTabActivityStatus } from './terminal-tab-activity-status'
+import { resolveTerminalTabActivityStatus } from './terminal-tabs/terminal-tab-activity-status'
 
 function layout(activeLeafId: string | null, ptyIdsByLeafId: Record<string, string>) {
   return { root: null, activeLeafId, expandedLeafId: null, ptyIdsByLeafId }

@@ -106,12 +106,12 @@ import type { PluginService } from '../../plugins/plugin-service'
 import type { PluginMarketplaceHandlerServices } from '../plugins/plugin-marketplaces'
 import { getRuntimeEnvironmentRegistryRoot } from '../runtime-environments/catalog/runtime-environment-registry-root'
 import {
-import { registerForkUpdateChangelogHandlers } from '../../fork-source-update/fork-update-changelog-ipc'
-import { registerMondayHandlers } from '../../monday/monday-ipc'
-import { registerNgrokHandlers } from '../../ngrok/ngrok-ipc'
   closeNotificationDismissalsBeforeRelaunch,
   type CoreHandlerLifecycleOptions
 } from './core-handler-lifecycle'
+import { registerForkUpdateChangelogHandlers } from '../../fork-source-update/fork-update-changelog-ipc'
+import { registerMondayHandlers } from '../../monday/monday-ipc'
+import { registerNgrokHandlers } from '../../ngrok/ngrok-ipc'
 
 let registration: Promise<void> | null = null
 

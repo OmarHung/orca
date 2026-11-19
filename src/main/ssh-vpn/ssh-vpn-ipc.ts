@@ -11,7 +11,7 @@ import {
   type SshVpnResult,
   type SshVpnSnapshot
 } from '../../shared/ssh-vpn-types'
-import { getSecretStore } from '../../shared/secret-store'
+import { getSecretStore } from '../../shared/secure-storage/secret-store'
 import { getCurrentMainWindow } from '../ipc/ssh/ssh-ipc-context'
 import { resolveWithSshG } from '../ssh/config/ssh-g-config-resolution'
 import { getSshTargetRegistryStore } from '../ssh/targets/ssh-target-registry'

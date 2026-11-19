@@ -7,8 +7,8 @@ import {
   workspacePortScanKeyForTarget
 } from '@/lib/workspace-ports/workspace-port-actions'
 import { ipcOrRuntimeTargetForHostId } from '@/runtime/rpc/targets/runtime-client-target'
-import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
-import type { WorkspacePort } from '../../../../shared/workspace-ports'
+import type { RuntimeClientTarget } from '../../../../shared/remote-runtime/host-catalog/runtime-client-target'
+import type { WorkspacePort } from '../../../../shared/workspace/ports/workspace-ports'
 import { isLiveDebugSession, useDebugStore } from '../debug/debug-store'
 import {
   claimNewPorts,

@@ -4,7 +4,7 @@ import {
   type ForkSyncStage,
   type ForkSyncStatus
 } from '../../shared/fork-sync-status'
-import type { UpdateStatus } from '../../shared/update-status-types'
+import type { UpdateStatus } from '../../shared/updater/update-status-types'
 import type { ForkSourceIdentity } from './fork-source-identity'
 import { compareReleaseTags, pickLatestReleaseTag } from './fork-source-release-tags'
 import type { ForkSyncEvent } from './fork-sync-events'

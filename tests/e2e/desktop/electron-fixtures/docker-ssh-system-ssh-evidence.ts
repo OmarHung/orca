@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { ElectronApplication } from '@stablyai/playwright-test'
-import type { DockerSshHostTarget } from './docker-ssh-host-target'
+import type { DockerSshHostTarget } from '../../remote/managed-ssh/host-lifecycle/docker-ssh-host-target'
 
 function shellQuote(value: string): string {
   return `'${value.replace(/'/g, `'\\''`)}'`

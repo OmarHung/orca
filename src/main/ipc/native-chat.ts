@@ -5,16 +5,7 @@ import type {
   NativeChatMessage,
   NativeChatTurnLifecycle
 } from '../../shared/native-chat/native-chat-types'
-import {
-  subscribeNativeChatTranscript,
-  readNativeChatTranscriptTail,
-  type NativeChatTranscriptSubscription,
-  type SubscribeNativeChatTranscriptArgs
-} from '../native-chat/transcript-watch'
-import {
-  findClaudePastedImage,
-  parseClaudePastedImageLookupArgs
-} from '../native-chat/claude-pasted-image-lookup'
+import { registerClaudePastedImageHandler } from '../native-chat/claude-pasted-image-ipc'
 
 import type { ReadTranscriptResult } from '../native-chat/transcript-reader'
 import { subscribeNativeChatTranscript } from '../native-chat/transcript-watch'
@@ -341,10 +332,5 @@ export function registerNativeChatHandlers(): void {
     const naming = getStructuredAgentSessionHost()?.deps.conversationNaming
     return typeof sessionId === 'string' ? (naming?.failureOutput(sessionId) ?? null) : null
   })
-  ipcMain.handle('nativeChat:findClaudePastedImage', (_event, args: unknown) => {
-    const parsed = parseClaudePastedImageLookupArgs(args)
-    return parsed
-      ? findClaudePastedImage(parsed)
-      : { status: 'unavailable', message: 'Invalid image lookup request.' }
-  })
+  registerClaudePastedImageHandler()
 }

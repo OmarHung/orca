@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import { useAppStore } from '@/store'
 
 export type SshTargetListStatus = 'loading' | 'ready' | 'error'

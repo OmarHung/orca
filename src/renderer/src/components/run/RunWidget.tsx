@@ -5,14 +5,17 @@ import {
   createTerminalQuickCommandDraft,
   TerminalQuickCommandDialog
 } from '@/components/terminal-quick-commands/TerminalQuickCommandDialog'
-import { useConfirmationDialog } from '@/components/confirmation-dialog-context'
+import { useConfirmationDialog } from '@/components/dismiss/confirmation/confirmation-dialog-context'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { useWorktreeQuickCommands } from '@/hooks/use-worktree-quick-commands'
-import { getRepoExecutionHostId, type ExecutionHostId } from '../../../../shared/execution-host'
+import {
+  getRepoExecutionHostId,
+  type ExecutionHostId
+} from '../../../../shared/execution-host/execution-host'
 import { getTerminalQuickCommandHostPromptMaxLength } from '@/lib/terminal/quick-commands/terminal-quick-command-host-prompt-limit'
 import type { TerminalQuickCommand } from '../../../../shared/terminal/quick-commands/terminal-quick-command-types'
-import { useTabBarQuickCommandsShortcut } from '../tab-bar/tab-bar-quick-commands-shortcut'
+import { useTabBarQuickCommandsShortcut } from '../tab-bar/quick-commands/tab-bar-quick-commands-shortcut'
 import { EditRunConfigurationsDialog } from './EditRunConfigurationsDialog'
 import { selectDetectedRun } from './detected-run-configuration'
 import { importWorkspaceLaunchJson, useWorkspaceHasLaunchJson } from './launch-json-import-action'

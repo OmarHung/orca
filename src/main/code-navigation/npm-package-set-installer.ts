@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { access, mkdir, readdir, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { removeTree } from '../../shared/windows-transient-lock-removal'
+import { removeTree } from '../../shared/file-write/windows-transient-lock-removal'
 import type { AdapterInstallDeps } from '../debug/adapters/adapter-installer'
 
 const INSTALLED_MARKER = '.orca-installed'

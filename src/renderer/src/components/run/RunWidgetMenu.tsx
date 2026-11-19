@@ -10,7 +10,7 @@ import {
   DropdownMenuSubTrigger
 } from '@/components/ui/dropdown-menu'
 import { translate } from '@/i18n/i18n'
-import { TabBarQuickCommandHostLoadStatus } from '../tab-bar/TabBarQuickCommandHostLoadStatus'
+import { TabBarQuickCommandHostLoadStatus } from '../tab-bar/quick-commands/TabBarQuickCommandHostLoadStatus'
 import { isWindowsUserAgent } from '../../app-shell/platform/user-agent-platform'
 import { DotnetContainerMenu } from './DotnetContainerMenu'
 import { isDetectedRunMenuEmpty, type DetectedRunMenu } from './detected-run-menu'

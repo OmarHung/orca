@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import { SSH_SESSIONS_WORKTREE_ID } from '../../../../shared/local-synthetic-workspace'
 import { useRemoteSessionStore } from './remote-session-store'
 import { useSshSessionLivenessStore } from './ssh-session-liveness'
@@ -59,7 +59,9 @@ vi.mock('@/store', () => ({
 vi.mock('@/components/terminal-pane/input/focus/focus-terminal-tab-surface', () => ({
   focusTerminalTabSurface: mocks.focusTerminalTabSurface
 }))
-vi.mock('@/components/terminal/terminal-tab-actions', () => ({ closeTerminalTab: vi.fn() }))
+vi.mock('@/components/terminal/tab-lifecycle/terminal-tab-actions', () => ({
+  closeTerminalTab: vi.fn()
+}))
 vi.mock('sonner', () => ({ toast: { error: mocks.toastError } }))
 
 const target: SshTarget = {

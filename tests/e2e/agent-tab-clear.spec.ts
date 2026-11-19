@@ -1,11 +1,15 @@
-import { expect, test } from './helpers/orca-app'
+import { expect, test } from './desktop/electron-fixtures/orca-app'
 import {
   configureGoldenStubAgent,
   getGoldenStubAgentLaunchEnv,
   launchGoldenStubAgentFromNewTab
-} from './helpers/golden-stub-agent'
-import { ensureTerminalVisible, waitForActiveWorktree, waitForSessionReady } from './helpers/store'
-import { getTerminalContent, waitForTerminalOutput } from './helpers/terminal'
+} from './golden-journeys/golden-stub-agent'
+import {
+  ensureTerminalVisible,
+  waitForActiveWorktree,
+  waitForSessionReady
+} from './desktop/renderer-probes/store'
+import { getTerminalContent, waitForTerminalOutput } from './terminal/input/terminal'
 
 test.use({ launchEnv: getGoldenStubAgentLaunchEnv() })
 

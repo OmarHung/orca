@@ -1,5 +1,5 @@
 import type { DedicatedRepoChannel, ReleaseBuild, ReleaseChannel } from './release-channel'
-import type { ForkSyncStatus } from './fork-sync-status'
+import type { ForkSyncStatus } from '../fork-sync-status'
 
 // Keep version only on UpdateStatus so release payloads cannot disagree.
 export type ChangelogRelease = {

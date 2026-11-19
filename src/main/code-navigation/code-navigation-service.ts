@@ -13,7 +13,7 @@ import {
   type LanguageServerLaunch,
   type LanguageServerSessionOptions
 } from './language-server-session'
-import { isPathInsideOrEqual } from '../../shared/cross-platform-path'
+import { isPathInsideOrEqual } from '../../shared/file-access/cross-platform-path'
 import { writeCsharpMetadataFile } from './csharp-metadata-files'
 import {
   readTargetPreviews,

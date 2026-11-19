@@ -8,7 +8,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger
 } from '@/components/ui/context-menu'
-import { useConfirmationDialog } from '@/components/confirmation-dialog-context'
+import { useConfirmationDialog } from '@/components/dismiss/confirmation/confirmation-dialog-context'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import type {

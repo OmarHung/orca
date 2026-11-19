@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 import { useAppStore } from '@/store'
-import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/identifiers/non-secure-context-uuid'
 import { dirname } from '@/lib/path'
-import { normalizeRelativePath } from '../../../../shared/cross-platform-path'
+import { normalizeRelativePath } from '../../../../shared/file-access/cross-platform-path'
 import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
 import {
   newDotnetPublishConfiguration,

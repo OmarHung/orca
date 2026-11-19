@@ -6,13 +6,13 @@
  */
 import { execFileSync } from 'node:child_process'
 import type { Page } from '@stablyai/playwright-test'
-import { expect, test } from './helpers/orca-app'
+import { expect, test } from './desktop/electron-fixtures/orca-app'
 import {
   cleanupDockerSshHostTarget,
   startDockerSshHostTarget,
   type DockerSshHostTarget
-} from './helpers/docker-ssh-host-target'
-import { waitForSessionReady } from './helpers/store'
+} from './remote/managed-ssh/host-lifecycle/docker-ssh-host-target'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 
 const RUN_DOCKER_SSH = process.env.ORCA_E2E_SSH_DOCKER === '1'
 const PASSPHRASE = 'e2e-key-passphrase'

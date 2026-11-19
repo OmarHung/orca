@@ -1,5 +1,5 @@
-import { test, expect } from './helpers/orca-app'
-import { waitForSessionReady } from './helpers/store'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 
 test('the Traditional Chinese interface language renders Traditional, not Simplified, strings', async ({
   orcaPage

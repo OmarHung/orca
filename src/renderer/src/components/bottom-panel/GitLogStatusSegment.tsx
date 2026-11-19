@@ -1,6 +1,6 @@
 import React from 'react'
 import { GitCommitHorizontal } from 'lucide-react'
-import { useShortcutLabel } from '@/hooks/useShortcutLabel'
+import { useShortcutLabel } from '@/lib/keyboard/useShortcutLabel'
 import { translate } from '@/i18n/i18n'
 import { BottomPanelTabStatusSegment } from './BottomPanelTabStatusSegment'
 

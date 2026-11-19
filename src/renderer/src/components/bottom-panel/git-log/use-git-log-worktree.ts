@@ -3,9 +3,9 @@ import { useAppStore } from '@/store'
 import { useActiveWorktree } from '@/store/workspaces/selection/use-selected-worktree'
 import { useRepoById } from '@/store/repos/use-repository-catalog'
 import { ipcOrRuntimeTargetForHostId } from '@/runtime/rpc/targets/runtime-client-target'
-import { isFolderRepo } from '../../../../../shared/repo-kind'
-import { getRepoExecutionHostId } from '../../../../../shared/execution-host'
-import type { RuntimeClientTarget } from '../../../../../shared/runtime-client-target'
+import { isFolderRepo } from '../../../../../shared/repository/repo-kind'
+import { getRepoExecutionHostId } from '../../../../../shared/execution-host/execution-host'
+import type { RuntimeClientTarget } from '../../../../../shared/remote-runtime/host-catalog/runtime-client-target'
 
 export type GitLogWorktree = {
   repoId: string | null

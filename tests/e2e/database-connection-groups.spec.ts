@@ -1,7 +1,11 @@
 import type { Locator } from '@stablyai/playwright-test'
-import { addSqliteConnection, explorerMenu, openDatabasePage } from './helpers/database-page'
-import { seedShopDatabase } from './helpers/database-sqlite-shop'
-import { test, expect } from './helpers/orca-app'
+import {
+  addSqliteConnection,
+  explorerMenu,
+  openDatabasePage
+} from './desktop/electron-fixtures/database-page'
+import { seedShopDatabase } from './desktop/electron-fixtures/database-sqlite-shop'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 /**
  * Drags `source` onto `target` and reports whether the target accepted it. Why synthetic events:

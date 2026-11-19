@@ -1,4 +1,4 @@
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import { isShellSafeSshHost } from '../../../../shared/ssh-vpn-command-format'
 
 const DEFAULT_SSH_PORT = 22

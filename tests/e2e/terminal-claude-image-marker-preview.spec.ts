@@ -1,17 +1,21 @@
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { ElectronApplication, Page } from '@stablyai/playwright-test'
-import { expect, test } from './helpers/orca-app'
-import { ensureTerminalVisible, waitForActiveWorktree, waitForSessionReady } from './helpers/store'
+import { expect, test } from './desktop/electron-fixtures/orca-app'
+import {
+  ensureTerminalVisible,
+  waitForActiveWorktree,
+  waitForSessionReady
+} from './desktop/renderer-probes/store'
 import {
   getTerminalContent,
   sendToTerminal,
   waitForActivePaneHookDescriptor,
   waitForActivePanePtyId,
   waitForActiveTerminalManager
-} from './helpers/terminal'
-import { nodeTerminalCommand } from './terminal-node-command'
-import { waitForPtyShellEcho } from './terminal-pty-readiness'
+} from './terminal/input/terminal'
+import { nodeTerminalCommand } from './terminal/input/terminal-node-command'
+import { waitForPtyShellEcho } from './terminal/lifecycle/terminal-pty-readiness'
 
 // 64x64 solid PNG; the preview must decode it, not just render a placeholder.
 const PNG =

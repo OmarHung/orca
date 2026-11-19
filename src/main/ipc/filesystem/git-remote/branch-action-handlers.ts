@@ -3,9 +3,9 @@ import { parseGitBranchAction } from '../../../../shared/git-branch-action/git-b
 import type { GitBranchActionResult } from '../../../../shared/git-branch-action/git-branch-action-types'
 import { runLocalGitBranchAction } from '../../../git/git-branch-action'
 import { requireReachableGitRoute } from '../../../providers/execution-host-provider-dispatch'
-import { getConnectionExecutionHostId } from '../../../../shared/execution-host'
+import { getConnectionExecutionHostId } from '../../../../shared/execution-host/execution-host'
 import { resolveRegisteredWorktreePath } from '../../worktrees/removal/registered-worktree-roots-cache'
-import { getLocalGitOptionsForRegisteredWorktree } from '../../local-worktree-runtime-options'
+import { getLocalGitOptionsForRegisteredWorktree } from '../../worktrees/local-worktree-runtime-options'
 import type { FilesystemHandlerContext } from '../filesystem-handler-context'
 
 /** Git Log branch/commit actions (checkout, merge, rebase, reset…) on this host's worktrees. */

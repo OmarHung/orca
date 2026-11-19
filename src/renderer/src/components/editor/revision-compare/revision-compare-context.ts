@@ -5,7 +5,7 @@ import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-reco
 import { getConnectionId } from '@/lib/workspace/ownership/connection-context'
 import { runtimeTargetForWorkspaceOwner } from '@/lib/workspace/ownership/resolve-owner'
 import type { RuntimeGitContext } from '@/runtime/source-control/git/runtime-git-client-context'
-import { isGitRepoKind } from '../../../../../shared/repo-kind'
+import { isGitRepoKind } from '../../../../../shared/repository/repo-kind'
 
 /** Git routing for a worktree's owning host, or null for folders and unknown worktrees. */
 export function resolveRevisionCompareContext(worktreeId: string): RuntimeGitContext | null {

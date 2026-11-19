@@ -1,14 +1,17 @@
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, realpathSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { test, expect } from './helpers/orca-app'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 import {
   activateGoldenWorktree,
   cleanupGoldenWorktree,
   createGoldenWorktree
-} from './helpers/golden-source-control'
-import { waitForSessionReady } from './helpers/store'
-import { getRunPanelTerminalContent, launchCurrentFile } from './helpers/run-panel'
+} from './golden-journeys/golden-source-control'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
+import {
+  getRunPanelTerminalContent,
+  launchCurrentFile
+} from './desktop/electron-fixtures/run-panel'
 
 const PROGRAM = path.join('scripts', 'where.py')
 // Why arithmetic: the printed marker must not match the echoed command line.

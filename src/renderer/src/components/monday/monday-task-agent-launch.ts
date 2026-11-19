@@ -1,8 +1,8 @@
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import { newAgentLaunchRequestId } from '@/lib/agent-session/launch/routing/agent-launch-request-id'
+import { createNonSecureContextUuid } from '../../../../shared/identifiers/non-secure-context-uuid'
 import { focusTerminalTabSurface } from '@/components/terminal-pane/input/focus/focus-terminal-tab-surface'
-import { launchAgentInNewTab } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab'
+import { launchAgentInNewTabWithOutcome } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab'
 import { launchWorkItemDirect } from '@/lib/workspace/creation/work-item/launch-work-item-direct'
 import { orderEmptyQueryWorktrees } from '@/lib/workspace/search/palette/order-empty-query-worktrees'
 import { activateAndRevealWorktree } from '@/lib/workspace/activation/worktree-activation'
@@ -42,8 +42,8 @@ export function startMondayTaskAgentInWorkspace(args: {
 }): void {
   const { worktreeId, agent, prompt } = args
   let revealFailed = false
-  const result = launchAgentInNewTab({
-    requestId: newAgentLaunchRequestId(),
+  const result = launchAgentInNewTabWithOutcome({
+    requestId: createNonSecureContextUuid(),
     agent,
     worktreeId,
     groupId: useAppStore.getState().activeGroupIdByWorktree[worktreeId] ?? worktreeId,

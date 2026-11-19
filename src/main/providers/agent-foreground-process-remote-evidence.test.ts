@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { resolveRemoteForegroundEvidence } from './agent-foreground-process-batch'
-import type { ProcessTableRow } from '../../shared/process-table-snapshot'
+import { resolveRemoteForegroundEvidence } from './foreground/agent-process-batch'
+import type { ProcessTableRow } from '../../shared/process-observation/tables/process-table-snapshot'
 
 const metadata = {
   ptyId: 'pty-1',

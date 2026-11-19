@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { FileText } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
-import { ExpandableMarkdownImage } from '@/components/sidebar/MarkdownImageLightbox'
-import { formatBytes } from '../../../../shared/format-bytes'
+import { ExpandableMarkdownImage } from '@/components/comment-markdown/MarkdownImageLightbox'
+import { formatBytes } from '../../../../shared/text/format-bytes'
 import type { MondayAsset } from '../../../../shared/monday/monday-types'
 import { openMondayLink } from './monday-browser-actions'
 

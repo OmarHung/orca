@@ -1,7 +1,11 @@
-import { addSqliteConnection, openDatabasePage, runInConsole } from './helpers/database-page'
-import { consoleText } from './helpers/database-console-assist'
-import { expandPeople, seedShopDatabase } from './helpers/database-sqlite-shop'
-import { test, expect } from './helpers/orca-app'
+import {
+  addSqliteConnection,
+  openDatabasePage,
+  runInConsole
+} from './desktop/electron-fixtures/database-page'
+import { consoleText } from './desktop/electron-fixtures/database-console-assist'
+import { expandPeople, seedShopDatabase } from './desktop/electron-fixtures/database-sqlite-shop'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 test('keeps console statements in query history, searches and reinserts them', async ({
   orcaPage,

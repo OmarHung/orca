@@ -1,5 +1,6 @@
 import type React from 'react'
-import { DEFAULT_REPO_BADGE_COLOR, REPO_COLORS } from '../../../../shared/constants'
+import { REPO_COLORS } from '../../../../shared/repository/appearance/repo-badge-color'
+import { DEFAULT_REPO_BADGE_COLOR } from '../../../../shared/repository/appearance/repo-badge-color'
 import { useDatabaseConnectionsStore } from './database-connections-store'
 
 /** The repo badge palette minus its neutral gray, which wouldn't mark anything. */

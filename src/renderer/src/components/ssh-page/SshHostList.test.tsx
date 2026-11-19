@@ -3,7 +3,7 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import { ContextMenuItem } from '../ui/context-menu'
 import { TooltipProvider } from '../ui/tooltip'
 import { EMPTY_SSH_HOST_GROUPS } from './ssh-host-groups'

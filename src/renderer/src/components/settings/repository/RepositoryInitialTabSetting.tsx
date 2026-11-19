@@ -1,5 +1,5 @@
 import { Terminal } from 'lucide-react'
-import type { Repo } from '../../../../../shared/repo-types'
+import type { Repo } from '../../../../../shared/repository/repo-types'
 import { isRepoInitialTab, resolveRepoInitialTab } from '../../../../../shared/repo-initial-tab'
 import { isTuiAgentEnabled } from '../../../../../shared/agent-launch/catalog/tui-agent-selection'
 import { Label } from '../../ui/label'

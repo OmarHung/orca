@@ -3,7 +3,7 @@
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import { TooltipProvider } from '../ui/tooltip'
 import { useRemoteSessionStore } from './remote-session-store'
 import { useSshSessionLivenessStore } from './ssh-session-liveness'
@@ -37,7 +37,7 @@ vi.mock('@/components/terminal-pane/TerminalPane', () => ({
 vi.mock('@/components/terminal-pane/parking/output-watchers/terminal-parked-tab-watchers', () => ({
   shouldDeferParkedPtyExitTabClose: () => false
 }))
-vi.mock('@/components/terminal/terminal-tab-actions', () => ({
+vi.mock('@/components/terminal/tab-lifecycle/terminal-tab-actions', () => ({
   closeTerminalTab: mocks.closeTerminalTab
 }))
 vi.mock('@/store', () => ({

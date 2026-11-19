@@ -1,34 +1,18 @@
-import type * as RunnerModule from '../runner'
 import type * as GitExecFileModule from '../command-runner/git-exec-file'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createGitRunnerModuleMock } from './status-test-harness'
+import { createGitExecFileModuleMock } from './diffs/status-test-harness'
 
-const { gitExecFileAsyncMock, gitExecFileAsyncBufferMock, gitStreamOptionsMock } = vi.hoisted(
-  () => ({
-    gitExecFileAsyncMock: vi.fn(),
-    gitExecFileAsyncBufferMock: vi.fn(),
-    gitStreamOptionsMock: vi.fn()
-  })
-)
+const { gitExecFileAsyncMock, gitExecFileAsyncBufferMock } = vi.hoisted(() => ({
+  gitExecFileAsyncMock: vi.fn(),
+  gitExecFileAsyncBufferMock: vi.fn()
+}))
 
-vi.mock('../runner', () =>
-  createGitRunnerModuleMock({
-    gitExecFileAsyncMock,
-    gitExecFileAsyncBufferMock,
-    gitStreamOptionsMock
-  })
-)
+vi.mock('../command-runner/git-exec-file', async (importOriginal) => ({
+  ...(await importOriginal<typeof GitExecFileModule>()),
+  ...createGitExecFileModuleMock({ gitExecFileAsyncMock, gitExecFileAsyncBufferMock })
+}))
 
-vi.mock('../command-runner/git-exec-file', async (importOriginal) => {
-  const runnerMocks = await vi.importMock<typeof RunnerModule>('../runner')
-  return {
-    ...(await importOriginal<typeof GitExecFileModule>()),
-    gitExecFileAsync: runnerMocks.gitExecFileAsync,
-    gitExecFileAsyncBuffer: runnerMocks.gitExecFileAsyncBuffer
-  }
-})
-
-import { getCommitCompare } from './commit-compare'
+import { getCommitCompare } from './comparisons/commit-compare'
 
 describe('getCommitCompare', () => {
   beforeEach(() => {

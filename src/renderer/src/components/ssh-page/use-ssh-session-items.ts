@@ -3,7 +3,7 @@ import { useTerminalTabColdParking } from '@/components/terminal-pane/parking/li
 import { useAppStore } from '@/store'
 import type { AppState } from '@/store/types'
 import type { TerminalTab } from '../../../../shared/workspace-layout/terminal-tab-types'
-import { resolveUnifiedTabLabel } from '../../../../shared/tab-title-resolution'
+import { resolveUnifiedTabLabel } from '../../../../shared/workspace-layout/tab-groups/tab-title-resolution'
 import { SSH_SESSIONS_WORKTREE_ID } from '../../../../shared/local-synthetic-workspace'
 import { useRemoteSessionStore } from './remote-session-store'
 import { sshSessionTabLabels } from './ssh-session-tab-labels'

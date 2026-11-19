@@ -1,12 +1,12 @@
 import type { ElectronApplication, Page } from '@playwright/test'
-import { test, expect } from './helpers/orca-app'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 import {
   activateGoldenWorktree,
   cleanupGoldenWorktree,
   createGoldenWorktree
-} from './helpers/golden-source-control'
-import { getRunPanelTerminalContent } from './helpers/run-panel'
-import { waitForSessionReady } from './helpers/store'
+} from './golden-journeys/golden-source-control'
+import { getRunPanelTerminalContent } from './desktop/electron-fixtures/run-panel'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 
 const SERVER_LABEL = 'E2E link server'
 const LINK = 'http://localhost:7800/'

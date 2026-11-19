@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getEditorHeaderOpenFileState } from './editor-header'
+import { getEditorHeaderOpenFileState } from './panel/header/editor-header'
 import type { OpenFile } from '@/store/slices/editor/types/open-file'
 
 function makeOpenFile(overrides: Partial<OpenFile> = {}): OpenFile {

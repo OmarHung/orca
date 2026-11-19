@@ -3,8 +3,11 @@ import type {
   NgrokShareRequest,
   NgrokSnapshot
 } from '../../../../shared/ngrok/ngrok-types'
-import type { PortForwardEntry } from '../../../../shared/ssh-types'
-import type { WorkspacePort, WorkspacePortScanResult } from '../../../../shared/workspace-ports'
+import type { PortForwardEntry } from '../../../../shared/remote-runtime/ssh/ssh-types'
+import type {
+  WorkspacePort,
+  WorkspacePortScanResult
+} from '../../../../shared/workspace/ports/workspace-ports'
 
 const LOOPBACK_HOSTS: Record<string, NgrokShareRequest['host']> = {
   localhost: 'localhost',

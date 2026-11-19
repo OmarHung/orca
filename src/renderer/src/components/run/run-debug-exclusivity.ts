@@ -1,4 +1,4 @@
-import type { ConfirmationDialogContextValue } from '@/components/confirmation-dialog-context'
+import type { ConfirmationDialogContextValue } from '@/components/dismiss/confirmation/confirmation-dialog-context'
 import { translate } from '@/i18n/i18n'
 import { stopDebugSession } from '../debug/debug-session-controller'
 import { useDebugStore, type DebugSessionView } from '../debug/debug-store'

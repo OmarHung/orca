@@ -1,7 +1,7 @@
 import type { PreloadApi } from '../../../../preload/api-types'
 import { toRuntimeWorktreeSelector } from '../../runtime/rpc/targets/runtime-worktree-selector'
-import { callRuntimeResult } from './web-runtime-calls'
-import { resolveRuntimeWorktreeByPath } from './web-runtime-worktree-catalog'
+import { callRuntimeResult } from '../runtime/client/web-runtime-calls'
+import { resolveRuntimeWorktreeByPath } from './workspaces/web-runtime-worktree-catalog'
 
 type BranchActionApi = PreloadApi['git']['branchAction']
 

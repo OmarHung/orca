@@ -1,4 +1,4 @@
-import type { SshTarget } from '../../shared/ssh-types'
+import type { SshTarget } from '../../shared/remote-runtime/ssh/ssh-types'
 import type { SshResolvedConfig } from '../ssh/config/ssh-g-config-resolution'
 import type { EffectiveProxy } from '../ssh/system-transport/ssh-proxy-command'
 

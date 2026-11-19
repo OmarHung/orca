@@ -31,7 +31,7 @@ vi.mock('@/runtime/hosted-terminals/input/runtime-terminal-verified-input', () =
 }))
 vi.mock('./run-terminal-open', () => ({ openRunTerminal }))
 
-import { dispatchTerminalCommandFinishedEvent } from '@/hooks/terminal-command-finished-event'
+import { dispatchTerminalCommandFinishedEvent } from '@/lib/terminal/output/terminal-command-finished-event'
 import {
   rerunConfiguration,
   runConfiguration,

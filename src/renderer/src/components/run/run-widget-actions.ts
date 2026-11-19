@@ -1,4 +1,4 @@
-import type { ConfirmationDialogContextValue } from '@/components/confirmation-dialog-context'
+import type { ConfirmationDialogContextValue } from '@/components/dismiss/confirmation/confirmation-dialog-context'
 import { useAppStore } from '@/store'
 import { runQuickCommandInNewTab } from '@/lib/terminal/quick-commands/run-quick-command-in-new-tab'
 import { runsPosixShell } from '../../../../shared/run-configurations/host-shell'

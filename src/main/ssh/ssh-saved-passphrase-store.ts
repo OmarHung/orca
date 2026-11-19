@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { readFileSync, statSync } from 'node:fs'
 import { isAbsolute, resolve } from 'node:path'
-import type { SecretStore } from '../../shared/secret-store'
+import type { SecretStore } from '../../shared/secure-storage/secret-store'
 import { SealedSecretFile } from '../sealed-secret-file'
 import { resolveSshConfigHomePath } from './config/ssh-config-path-expansion'
 import { loadSsh2 } from './authentication/ssh2-module-load'

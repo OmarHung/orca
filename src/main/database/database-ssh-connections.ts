@@ -1,4 +1,4 @@
-import type { SshConnectionState, SshTarget } from '../../shared/ssh-types'
+import type { SshConnectionState, SshTarget } from '../../shared/remote-runtime/ssh/ssh-types'
 import { getCurrentMainWindow } from '../ipc/ssh/ssh-ipc-context'
 import { requestCredential } from '../ipc/ssh/ssh-passphrase'
 import { SshConnection } from '../ssh/connection/ssh-connection'
