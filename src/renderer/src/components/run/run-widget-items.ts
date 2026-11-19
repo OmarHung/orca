@@ -1,4 +1,4 @@
-import type { HostedTerminalQuickCommand } from '@/hooks/use-terminal-quick-command-hosts'
+import type { HostedTerminalQuickCommand } from '@/lib/terminal/quick-commands/use-terminal-quick-command-hosts'
 import type { RunConfigurationDefinition } from '../../../../shared/run-configurations/run-configuration-definition'
 import { commandConfigurationOf } from '../../../../shared/run-configurations/run-configuration-plan'
 import type { DetectedRunConfiguration } from '../../../../shared/run-configurations/run-configuration-types'

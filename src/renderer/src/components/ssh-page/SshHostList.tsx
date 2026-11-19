@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { FolderPlus, Search } from 'lucide-react'
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'

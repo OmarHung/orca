@@ -1,9 +1,9 @@
 import { translate } from '@/i18n/i18n'
-import { formatBytes } from '../status-bar/workspace-space-format'
+import { formatBytes } from '../../../../shared/text/format-bytes'
 import type { CommandConfirmOptions } from '../command-confirm/command-confirm-context'
 import { countSftpOperations, formatSftpOperation } from '../../../../shared/sftp-operation-format'
 import type { SftpPlan } from '../../../../shared/sftp-types'
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 
 const MAX_LISTED_CONFLICTS = 5
 

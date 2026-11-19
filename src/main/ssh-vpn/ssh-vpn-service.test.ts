@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { SshTarget } from '../../shared/ssh-types'
+import type { SshTarget } from '../../shared/remote-runtime/ssh/ssh-types'
 import type { SshVpnProfile } from '../../shared/ssh-vpn-types'
 import { createResolvedConfig } from '../ssh/connection/testing/ssh-connection-test-fixtures'
 import {

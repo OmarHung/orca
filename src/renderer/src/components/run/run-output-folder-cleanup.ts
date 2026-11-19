@@ -11,7 +11,7 @@ import {
   resolveRunConfigurationPath,
   type RunConfigurationVariableContext
 } from '../../../../shared/run-configurations/run-configuration-variables'
-import { getTabEntryFileOperationContext } from '../tab-bar/tab-create-entry-local-path'
+import { getTabEntryFileOperationContext } from '../tab-bar/create-entry/tab-create-entry-local-path'
 import { stopConfigurationAndWait, type RunTarget } from './run-configuration-control'
 
 /**

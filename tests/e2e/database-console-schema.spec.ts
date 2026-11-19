@@ -5,11 +5,14 @@ import {
   openDatabasePage,
   runInConsole,
   typeInConsole
-} from './helpers/database-page'
-import { adminSql } from './helpers/database-admin'
-import { consoleSuggestions, triggerSuggest } from './helpers/database-console-assist'
-import { seedShopDatabase } from './helpers/database-sqlite-shop'
-import { test, expect } from './helpers/orca-app'
+} from './desktop/electron-fixtures/database-page'
+import { adminSql } from './desktop/electron-fixtures/database-admin'
+import {
+  consoleSuggestions,
+  triggerSuggest
+} from './desktop/electron-fixtures/database-console-assist'
+import { seedShopDatabase } from './desktop/electron-fixtures/database-sqlite-shop'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 test('has no read-only switch to set, and SQLite consoles have no schema picker', async ({
   orcaPage,

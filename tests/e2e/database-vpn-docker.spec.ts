@@ -8,8 +8,8 @@ import {
   explorerMenu,
   openDatabasePage,
   runInConsole
-} from './helpers/database-page'
-import { expect, test } from './helpers/orca-app'
+} from './desktop/electron-fixtures/database-page'
+import { expect, test } from './desktop/electron-fixtures/orca-app'
 
 // Real Docker: MariaDB on a network only the OpenVPN test server reaches.
 // Opt in with ORCA_E2E_SSH_VPN_DOCKER=1 (needs the mariadb:10.5 image).

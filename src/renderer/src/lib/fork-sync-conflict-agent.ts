@@ -1,8 +1,8 @@
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
-import { launchAgentInNewTab } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab'
-import { newAgentLaunchRequestId } from '@/lib/agent-session/launch/routing/agent-launch-request-id'
+import { launchAgentInNewTabWithOutcome } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab'
+import { createNonSecureContextUuid } from '../../../shared/identifiers/non-secure-context-uuid'
 import { resolveDefaultAgentForNewTab } from '@/lib/agent-session/launch/shortcuts/agent-tab-shortcuts'
 import type { ForkSyncStatus } from '../../../shared/fork-sync-status'
 
@@ -100,8 +100,8 @@ export async function launchForkSyncConflictAgent(conflict: ForkSyncConflict): P
   }
   state.setActiveRepo(location.repoId)
   state.setActiveWorktree(location.worktreeId)
-  launchAgentInNewTab({
-    requestId: newAgentLaunchRequestId(),
+  launchAgentInNewTabWithOutcome({
+    requestId: createNonSecureContextUuid(),
     agent,
     worktreeId: location.worktreeId,
     prompt,

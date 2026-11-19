@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { rmSync, mkdtempSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { getDefaultPersistedState } from '../shared/constants'
+import { getDefaultPersistedState } from '../shared/orca-profiles/constants'
 
 vi.mock('electron', () => ({
   app: { getPath: () => testState.dir },

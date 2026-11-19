@@ -1,5 +1,5 @@
-import { isWindowsAbsolutePathLike } from '../cross-platform-path'
-import { isWslUncPath } from '../wsl-paths'
+import { isWindowsAbsolutePathLike } from '../file-access/cross-platform-path'
+import { isWslUncPath } from '../file-access/wsl-paths'
 
 /**
  * Whether terminals in this workspace run a POSIX-style shell (sh, bash, zsh, fish), which can

@@ -26,7 +26,7 @@ vi.mock('@/runtime/files/metadata/runtime-file-metadata-client', () => ({
 vi.mock('@/runtime/files/mutations/runtime-file-mutation-client', () => ({
   deleteRuntimePath: mocks.deletePath
 }))
-vi.mock('../tab-bar/tab-create-entry-local-path', () => ({
+vi.mock('../tab-bar/create-entry/tab-create-entry-local-path', () => ({
   getTabEntryFileOperationContext: () => mocks.fileContext
 }))
 vi.mock('./run-configuration-control', () => ({

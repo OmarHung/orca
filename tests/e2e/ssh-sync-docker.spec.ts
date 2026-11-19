@@ -1,11 +1,11 @@
 import type { Page } from '@stablyai/playwright-test'
-import { expect, test } from './helpers/orca-app'
+import { expect, test } from './desktop/electron-fixtures/orca-app'
 import {
   cleanupDockerSshHostTarget,
   execDockerSshHostTargetCommand,
   startDockerSshHostTarget,
   type DockerSshHostTarget
-} from './helpers/docker-ssh-host-target'
+} from './remote/managed-ssh/host-lifecycle/docker-ssh-host-target'
 import {
   addDockerTarget,
   connectDockerTab,
@@ -13,8 +13,8 @@ import {
   readSessionTabId,
   readTerminalText,
   terminalCell
-} from './helpers/ssh-docker-session'
-import { waitForSessionReady } from './helpers/store'
+} from './desktop/electron-fixtures/ssh-docker-session'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 
 const RUN_DOCKER_SSH = process.env.ORCA_E2E_SSH_DOCKER === '1'
 const REMOTE_DIR = '/tmp/orca-sync-e2e'

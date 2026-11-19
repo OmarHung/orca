@@ -1,6 +1,6 @@
 import { toast } from 'sonner'
 import { sshVpnTerminalProxyOption } from '../../../../shared/ssh-vpn-command-format'
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 
 /** `sshOptions` are already quoted for the shell. */
 export type SshSessionVpn = { profileName: string; sshOptions: string[] }

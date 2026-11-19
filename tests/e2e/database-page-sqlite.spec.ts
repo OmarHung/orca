@@ -1,6 +1,10 @@
-import { addSqliteConnection, openDatabasePage, runInConsole } from './helpers/database-page'
-import { expandPeople, seedShopDatabase } from './helpers/database-sqlite-shop'
-import { test, expect } from './helpers/orca-app'
+import {
+  addSqliteConnection,
+  openDatabasePage,
+  runInConsole
+} from './desktop/electron-fixtures/database-page'
+import { expandPeople, seedShopDatabase } from './desktop/electron-fixtures/database-sqlite-shop'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 // Needs no server: SQLite runs against a file this test creates.
 test('opens a SQLite file, browses it, runs SQL and cancels a long statement', async ({

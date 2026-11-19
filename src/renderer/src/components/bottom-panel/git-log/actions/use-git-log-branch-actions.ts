@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { getConnectionId } from '@/lib/workspace/ownership/connection-context'
-import { useConfirmationDialog } from '@/components/confirmation-dialog-context'
+import { useConfirmationDialog } from '@/components/dismiss/confirmation/confirmation-dialog-context'
 import { runRuntimeGitBranchAction } from '@/runtime/runtime-git-branch-action-client'
 import { shortBranchName } from '../../../../../../shared/git-branch-action/git-branch-action-refs'
 import type {

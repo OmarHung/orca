@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { WorkspacePort, WorkspacePortScanResult } from '../../../../shared/workspace-ports'
+import type {
+  WorkspacePort,
+  WorkspacePortScanResult
+} from '../../../../shared/workspace/ports/workspace-ports'
 import type { RunPortClaim } from './run-port-claims'
 
 const isDebuggerPort = vi.fn(async ({ port }: { host: string; port: number }) => port === 9229)

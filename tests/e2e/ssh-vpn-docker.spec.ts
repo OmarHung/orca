@@ -1,13 +1,13 @@
 import { spawnSync } from 'node:child_process'
 import type { Page } from '@stablyai/playwright-test'
-import { expect, test } from './helpers/orca-app'
+import { expect, test } from './desktop/electron-fixtures/orca-app'
 import {
   startSshVpnTestNetwork,
   VPN_TEST_LOGIN,
   VPN_TEST_SSHD_NAME,
   type SshVpnTestNetwork
 } from '../../src/main/ssh-vpn/ssh-vpn-test-network'
-import { waitForSessionReady } from './helpers/store'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 
 // Why: mirrors SSH_SESSIONS_WORKTREE_ID in src/shared/local-synthetic-workspace.ts.
 const SSH_WORKTREE_ID = 'global-ssh-sessions'

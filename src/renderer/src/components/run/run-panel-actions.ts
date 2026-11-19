@@ -1,4 +1,4 @@
-import { closeTerminalTab } from '../terminal/terminal-tab-actions'
+import { closeTerminalTab } from '../terminal/tab-lifecycle/terminal-tab-actions'
 import { runConfiguration } from './run-configuration-control'
 import { launchRunConfiguration } from './run-configuration-launcher'
 import { useRunSessionStore, type RunSession } from './run-session-store'

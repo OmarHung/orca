@@ -9,7 +9,7 @@ import {
   type SshCommandExpansion
 } from '../../../../shared/ssh-command-template'
 import type { SshCommand } from '../../../../shared/ssh-command-types'
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import { useCommandConfirm } from '../command-confirm/command-confirm-context'
 import { remoteSessionForTab, useRemoteSessionStore } from '../ssh-page/remote-session-store'
 import { useSshHostGroups } from '../ssh-page/ssh-host-groups-store'

@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SecretStore } from '../shared/secret-store'
+import type { SecretStore } from '../shared/secure-storage/secret-store'
 import { clearDurableWrites, queueDurableWrites } from './durable-write-failures-test-support'
 import { KeptPasswords, type Released } from './kept-passwords'
 

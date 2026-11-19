@@ -1,5 +1,5 @@
 import { app, ipcMain } from 'electron'
-import type { GlobalSettings } from '../../shared/global-settings-types'
+import type { GlobalSettings } from '../../shared/settings/global-settings-types'
 import type { DotnetContainerStatus } from '../../shared/dotnet-container-types'
 import { resolveDockerPath } from '../docker/docker-cli-location'
 import {

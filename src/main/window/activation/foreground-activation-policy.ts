@@ -1,5 +1,4 @@
-import { app as electronApp, BaseWindow, type BrowserWindow } from 'electron'
-import { app as electronApp, type BaseWindow } from 'electron'
+import { app as electronApp, BaseWindow } from 'electron'
 
 /** Automation must not steal OS foreground. Background/sidecar requests override E2E_FOREGROUND; the hosted-Xvfb benchmark may present explicitly after startup (tests/AGENTS.md), while automatic reveals stay suppressed. */
 

@@ -1,5 +1,4 @@
 import { markHydratedBrowserPageHandles } from '../hosts/browser-initialization-presentation-ownership'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../../../shared/workspace/identity/floating-workspace-id'
 import { folderWorkspaceKey } from '../../../../../../shared/workspace/identity/workspace-scope'
 import type { BrowserSlice, BrowserSliceGet, BrowserSliceSet } from '../browser-slice-contract'
 import { addAdditionalValidWorkspaceKeys } from '@/lib/workspace/persistence/workspace-session-hydration-keys'

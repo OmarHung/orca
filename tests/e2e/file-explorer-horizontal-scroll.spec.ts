@@ -1,9 +1,9 @@
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import type { Locator, Page } from '@playwright/test'
-import { test, expect } from './helpers/orca-app'
-import { openFileExplorer } from './helpers/file-explorer'
-import { waitForActiveWorktree, waitForSessionReady } from './helpers/store'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
+import { openFileExplorer } from './editor/file-explorer/file-explorer'
+import { waitForActiveWorktree, waitForSessionReady } from './desktop/renderer-probes/store'
 
 const LONG_NAME = `${'a_file_name_long_enough_to_scroll_sideways_'.repeat(3)}end.ts`
 const VIEWPORT = '[data-slot="scroll-area-viewport"]'

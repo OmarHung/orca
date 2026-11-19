@@ -1,9 +1,9 @@
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import type { Page } from '@playwright/test'
-import { test, expect } from './helpers/orca-app'
-import { openFileExplorer } from './helpers/file-explorer'
-import { waitForActiveWorktree, waitForSessionReady } from './helpers/store'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
+import { openFileExplorer } from './editor/file-explorer/file-explorer'
+import { waitForActiveWorktree, waitForSessionReady } from './desktop/renderer-probes/store'
 
 function openFile(page: Page, root: string, relativePath: string): Promise<void> {
   return page.evaluate(

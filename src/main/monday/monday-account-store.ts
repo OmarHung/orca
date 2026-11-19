@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import type { SecretStore } from '../../shared/secret-store'
+import type { SecretStore } from '../../shared/secure-storage/secret-store'
 import { writeDurableSecureJsonFile } from '../../shared/secure-storage/secure-file'
 import type { MondayAccount } from '../../shared/monday/monday-types'
 import { KeptPasswords } from '../kept-passwords'

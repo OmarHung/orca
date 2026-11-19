@@ -7,10 +7,10 @@ import {
   explorerMenu,
   openDatabasePage,
   openDatabasePageWithShortcut
-} from './helpers/database-page'
-import { test, expect } from './helpers/orca-app'
-import { createRestartSession } from './helpers/orca-restart'
-import { waitForSessionReady } from './helpers/store'
+} from './desktop/electron-fixtures/database-page'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
+import { createRestartSession } from './desktop/electron-fixtures/orca-restart'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 
 // Opt-in like the other PostgreSQL specs. The server must require passwords for roles
 // named orca_pw_*, e.g. a first pg_hba.conf line:

@@ -9,7 +9,7 @@ import {
   type DatabasePasswordStorage
 } from '../../shared/database/database-connection-types'
 import type { DatabaseResult } from '../../shared/database/database-query-types'
-import type { SecretStore } from '../../shared/secret-store'
+import type { SecretStore } from '../../shared/secure-storage/secret-store'
 import { clearDurableWrites, queueDurableWrites } from '../durable-write-failures-test-support'
 import { saveConnectionWithPassword } from './database-connection-save'
 import { DatabaseConnectionStore } from './database-connection-store'

@@ -1,4 +1,7 @@
-import type { WorkspacePort, WorkspacePortScanResult } from '../../../../shared/workspace-ports'
+import type {
+  WorkspacePort,
+  WorkspacePortScanResult
+} from '../../../../shared/workspace/ports/workspace-ports'
 
 /** When a listener was first seen, per host scan key and port id. */
 export type PortSightings = Readonly<Record<string, Readonly<Record<string, number>>>>

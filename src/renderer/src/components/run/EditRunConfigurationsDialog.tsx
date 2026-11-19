@@ -9,9 +9,9 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { translate } from '@/i18n/i18n'
-import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/identifiers/non-secure-context-uuid'
 import { useAppStore } from '@/store'
-import { getTabEntryAllowAbsolutePaths } from '../tab-bar/tab-create-entry-local-path'
+import { getTabEntryAllowAbsolutePaths } from '../tab-bar/create-entry/tab-create-entry-local-path'
 import type { RunConfigurationDefinition } from '../../../../shared/run-configurations/run-configuration-definition'
 import {
   mergeLaunchJsonImport,

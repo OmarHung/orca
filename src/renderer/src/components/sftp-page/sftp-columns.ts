@@ -1,6 +1,7 @@
 import { translate } from '@/i18n/i18n'
-import { formatBytes } from '../status-bar/workspace-space-format'
+import { formatBytes } from '../../../../shared/text/format-bytes'
 import type { SftpEntry } from '../../../../shared/sftp-types'
+import { uiDateTimeFormat } from '@/i18n/ui-intl-formatters'
 
 export type SftpColumnId = 'name' | 'size' | 'created' | 'modified' | 'type' | 'owner'
 
@@ -38,7 +39,7 @@ export function sftpRowWidthPx(columns: readonly SftpColumnId[], widths: SftpCol
   return columns.reduce((total, column) => total + widths[column], ROW_CHROME_PX)
 }
 
-const DATE_FORMAT = new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' })
+const DATE_OPTIONS: Intl.DateTimeFormatOptions = { dateStyle: 'short', timeStyle: 'short' }
 const NO_VALUE = '—'
 
 export function sftpColumnLabel(column: SftpColumnId): string {
@@ -89,9 +90,11 @@ export function sftpCellText(column: SftpColumnId, entry: SftpEntry): string {
     case 'size':
       return entry.kind === 'directory' ? NO_VALUE : formatBytes(entry.size)
     case 'created':
-      return entry.createdMs === null ? NO_VALUE : DATE_FORMAT.format(entry.createdMs)
+      return entry.createdMs === null
+        ? NO_VALUE
+        : uiDateTimeFormat(DATE_OPTIONS).format(entry.createdMs)
     case 'modified':
-      return DATE_FORMAT.format(entry.modifiedMs)
+      return uiDateTimeFormat(DATE_OPTIONS).format(entry.modifiedMs)
     case 'type':
       return sftpEntryTypeLabel(entry)
     case 'owner':

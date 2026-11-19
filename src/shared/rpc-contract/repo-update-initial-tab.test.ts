@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
-import { createRepoUpdateSchema } from './repo-update-params'
+import { createRepoUpdateSchema } from './projects/repo-update-params'
 
 describe('repo.update initialTab', () => {
   const schema = createRepoUpdateSchema({ repo: z.string() })

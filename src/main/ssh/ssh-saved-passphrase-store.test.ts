@@ -3,7 +3,7 @@ import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { utils } from 'ssh2'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import type { SecretStore } from '../../shared/secret-store'
+import type { SecretStore } from '../../shared/secure-storage/secret-store'
 import { normalizeSshKeyPath, SshSavedPassphraseStore } from './ssh-saved-passphrase-store'
 
 function fakeSecretStore(options: { available?: boolean; gap?: string | null } = {}): SecretStore {

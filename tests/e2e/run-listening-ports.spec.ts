@@ -2,14 +2,14 @@ import { writeFileSync } from 'node:fs'
 import { createServer } from 'node:net'
 import path from 'node:path'
 import type { ElectronApplication, Page } from '@playwright/test'
-import { test, expect } from './helpers/orca-app'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 import {
   activateGoldenWorktree,
   cleanupGoldenWorktree,
   createGoldenWorktree
-} from './helpers/golden-source-control'
-import { launchCurrentFile } from './helpers/run-panel'
-import { waitForSessionReady } from './helpers/store'
+} from './golden-journeys/golden-source-control'
+import { launchCurrentFile } from './desktop/electron-fixtures/run-panel'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 
 const SERVER_LABEL = 'E2E port server'
 

@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { UpdateStatus } from '../../../../../shared/update-status-types'
+import type { UpdateStatus } from '../../../../../shared/updater/update-status-types'
 import { useAppStore } from '../../../store'
-import { UpdateCard } from '../../UpdateCard'
+import { UpdateCard } from './UpdateCard'
 import { TooltipProvider } from '../../ui/tooltip'
 import { buildForkSyncConflictPrompt } from '@/lib/fork-sync-conflict-agent'
 

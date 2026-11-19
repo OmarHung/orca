@@ -4,10 +4,10 @@ import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Progress } from '../ui/progress'
 import { translate } from '@/i18n/i18n'
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import { cancelSftpTransfer } from '../sftp-page/sftp-plan-actions'
 import { useSftpTransfersStore, type SftpTransfer } from '../sftp-page/sftp-transfers-store'
-import { formatBytes } from '../status-bar/workspace-space-format'
+import { formatBytes } from '../../../../shared/text/format-bytes'
 
 function statusText(transfer: SftpTransfer): string {
   switch (transfer.status) {

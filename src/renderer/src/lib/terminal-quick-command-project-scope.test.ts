@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { ExecutionHostId } from '../../../shared/execution-host'
-import type { ProjectHostSetup } from '../../../shared/project-types'
+import type { ExecutionHostId } from '../../../shared/execution-host/execution-host'
+import type { ProjectHostSetup } from '../../../shared/project/project-types'
 import type { TerminalQuickCommand } from '../../../shared/terminal/quick-commands/terminal-quick-command-types'
 import { terminalQuickCommandMatchesWorkspaceProject } from './terminal/quick-commands/terminal-quick-command-project-scope'
 

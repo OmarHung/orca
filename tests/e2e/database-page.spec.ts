@@ -3,9 +3,9 @@ import {
   openDatabasePage,
   pickConnectionType,
   runInConsole
-} from './helpers/database-page'
-import { test, expect } from './helpers/orca-app'
-import { adminSql } from './helpers/database-admin'
+} from './desktop/electron-fixtures/database-page'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
+import { adminSql } from './desktop/electron-fixtures/database-admin'
 
 // Opt-in: a disposable PostgreSQL with trust auth, e.g. postgres://orca_test@127.0.0.1:55439/postgres
 const TEST_URL = process.env.ORCA_TEST_POSTGRES_URL

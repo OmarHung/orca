@@ -3,9 +3,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { findDumpTool } from '../../src/main/database/worker/dump/native/native-dump-tools'
-import { adminSql } from './helpers/database-admin'
-import { addServerConnection, explorerMenu, openDatabasePage } from './helpers/database-page'
-import { test, expect } from './helpers/orca-app'
+import { adminSql } from './desktop/electron-fixtures/database-admin'
+import {
+  addServerConnection,
+  explorerMenu,
+  openDatabasePage
+} from './desktop/electron-fixtures/database-page'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 // Opt-in through ORCA_TEST_POSTGRES_URL / ORCA_TEST_MYSQL_URL, and runs only where pg_dump or
 // mysqldump is installed.

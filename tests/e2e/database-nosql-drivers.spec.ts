@@ -6,8 +6,8 @@ import {
   openDatabasePage,
   pickConnectionType,
   runInConsole
-} from './helpers/database-page'
-import { test, expect } from './helpers/orca-app'
+} from './desktop/electron-fixtures/database-page'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 // Opt-in per server, with the same URLs as the driver integration tests, e.g.
 //   ORCA_TEST_REDIS_URL=redis://127.0.0.1:46379

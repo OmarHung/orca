@@ -1,4 +1,4 @@
-import type { SecretStore } from '../shared/secret-store'
+import type { SecretStore } from '../shared/secure-storage/secret-store'
 import { SealedSecretFile, type SealedSnapshot } from './sealed-secret-file'
 
 /** How a saved login keeps its password; the database and VPN settings share these values. */

@@ -1,5 +1,8 @@
 import type { SftpConnectionState, SftpConnectionStatus } from '../../shared/sftp-types'
-import type { SshConnectionState, SshConnectionStatus } from '../../shared/ssh-types'
+import type {
+  SshConnectionState,
+  SshConnectionStatus
+} from '../../shared/remote-runtime/ssh/ssh-types'
 
 function toSftpStatus(status: SshConnectionStatus): SftpConnectionStatus {
   switch (status) {

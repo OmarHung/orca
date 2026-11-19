@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveTerminalTabTitle } from '../../../../shared/tab-title-resolution'
+import { resolveTerminalTabTitle } from '../../../../shared/workspace-layout/tab-groups/tab-title-resolution'
 import { sshSessionTabLabels } from './ssh-session-tab-labels'
 
 // Why through resolveTerminalTabTitle: it is what TabBar actually renders.

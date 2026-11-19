@@ -1,5 +1,5 @@
 import { FolderSearch } from 'lucide-react'
-import type { Repo } from '../../../../../shared/repo-types'
+import type { Repo } from '../../../../../shared/repository/repo-types'
 import { Button } from '../../ui/button'
 import { Label } from '../../ui/label'
 import { SearchableSetting } from '../section-layout/SearchableSetting'

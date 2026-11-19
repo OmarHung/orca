@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
+import { ShortcutKeyCombo } from '@/components/ui/ShortcutKeyCombo'
 import { getIntlLocale, translate } from '@/i18n/i18n'
 import type { DatabaseHistoryEntry } from '../../../../../shared/database/database-query-history-types'
 import { filterHistory, historyPreview } from './query-history-entries'

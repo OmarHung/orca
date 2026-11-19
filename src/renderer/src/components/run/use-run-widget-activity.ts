@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { useDebugStore } from '../debug/debug-store'
-import { collectLayoutLeafIdsInOrder } from '../../../../shared/workspace-layout/terminal-pane-tree'
+import { collectLayoutLeafIdsInOrder } from '../../../../shared/workspace-layout/terminal-topology/terminal-pane-tree'
 import { useRunSessionStore } from './run-session-store'
 import { worktreeRunActivity, type RunWidgetActivity } from './run-widget-activity'
 

@@ -1,19 +1,19 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { test, expect } from './helpers/orca-app'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 import {
   activateGoldenWorktree,
   cleanupGoldenWorktree,
   createGoldenWorktree
-} from './helpers/golden-source-control'
-import { waitForSessionReady } from './helpers/store'
+} from './golden-journeys/golden-source-control'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 import {
   activeEditor,
   BACK,
   openEditorFile,
   placeCursorOnLine,
   WORD_RIGHT
-} from './helpers/code-navigation-editor'
+} from './desktop/electron-fixtures/code-navigation-editor'
 
 // Opt-in: the first jump downloads the Vue server (vtsls + Vue's TypeScript plugin) from npm.
 const RUN = process.env.ORCA_E2E_CODE_NAVIGATION === '1'

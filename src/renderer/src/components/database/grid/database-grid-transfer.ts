@@ -3,7 +3,7 @@ import { getIntlLocale, translate } from '@/i18n/i18n'
 import {
   CLIPBOARD_TEXT_WRITE_MAX_BYTES,
   isClipboardTextByteLengthOverLimit
-} from '../../../../../shared/clipboard-text'
+} from '../../../../../shared/clipboard/clipboard-text'
 import {
   isSqlDriver,
   type DatabaseDriver

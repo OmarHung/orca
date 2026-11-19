@@ -1,6 +1,6 @@
 import { Folder, Rows2, SquareTerminal, type LucideIcon } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
-import { ShortcutKeyCombo } from '../ShortcutKeyCombo'
+import { ShortcutKeyCombo } from '../ui/ShortcutKeyCombo'
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip'
 import type { RemoteLayout } from './remote-session-store'

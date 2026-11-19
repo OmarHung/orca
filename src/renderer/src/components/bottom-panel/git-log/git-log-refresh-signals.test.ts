@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ORCA_TERMINAL_COMMAND_FINISHED_EVENT } from '@/hooks/terminal-command-finished-event'
+import { ORCA_TERMINAL_COMMAND_FINISHED_EVENT } from '@/lib/terminal/output/terminal-command-finished-event'
 import { GIT_LOG_BACKSTOP_POLL_MS, subscribeGitLogRefreshSignals } from './git-log-refresh-signals'
 
 type RepoCallback = (data: { repoId: string }) => void

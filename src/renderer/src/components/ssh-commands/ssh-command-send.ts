@@ -5,7 +5,7 @@ import { getShortcutPlatform } from '@/lib/keyboard/shortcut-platform'
 import { useAppStore } from '@/store'
 import { SSH_SESSIONS_WORKTREE_ID } from '../../../../shared/local-synthetic-workspace'
 import type { SshCommandBuiltins } from '../../../../shared/ssh-command-template'
-import type { SshRemotePlatform, SshTarget } from '../../../../shared/ssh-types'
+import type { SshRemotePlatform, SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import {
   remoteLayoutForTab,
   remoteSessionForTab,

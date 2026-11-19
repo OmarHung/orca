@@ -1,7 +1,7 @@
 import { useAppStore } from '@/store'
 import { usePluginLanguagePackStore } from '@/store/plugins/localization/plugin-language-packs'
 import { resolveUiLocale } from '@/i18n/supported-languages'
-import { isPluginUiLanguage } from '../../../../shared/ui-language'
+import { isPluginUiLanguage } from '../../../../shared/i18n/ui-language'
 
 /**
  * BCP-47 tag of the UI language chosen in Settings, or null until settings load. Read from

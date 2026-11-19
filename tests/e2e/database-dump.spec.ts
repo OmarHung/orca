@@ -3,8 +3,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import type { ElectronApplication, Page } from '@stablyai/playwright-test'
-import { addSqliteConnection, explorerMenu, openDatabasePage } from './helpers/database-page'
-import { test, expect } from './helpers/orca-app'
+import {
+  addSqliteConnection,
+  explorerMenu,
+  openDatabasePage
+} from './desktop/electron-fixtures/database-page'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 /** A SQLite file with the given schema, in a folder removed after Electron shuts down. */
 function seedDatabase(

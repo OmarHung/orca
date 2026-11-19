@@ -4,7 +4,7 @@ import {
   SSH_COMMAND_KEY_PATTERN,
   type SshCommandParam
 } from './ssh-command-types'
-import type { SshRemotePlatform } from './ssh-types'
+import type { SshRemotePlatform } from './remote-runtime/ssh/ssh-types'
 
 const BRACE_TOKEN = /\{\{([^{}]*)\}\}/g
 const PLAIN_VALUE = /^[A-Za-z0-9_./@:-]+$/

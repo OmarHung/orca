@@ -7,7 +7,7 @@ import {
   makeCreatedAgentWorktree as makeWorktree,
   seedEmptyActivatableWorktree
 } from '@/lib/workspace/activation/worktree-activation-created-agent.test-fixture'
-import type { Repo } from '../../../shared/repo-types'
+import type { Repo } from '../../../shared/repository/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
 
 const openDefaultChat = vi.hoisted(() => vi.fn())

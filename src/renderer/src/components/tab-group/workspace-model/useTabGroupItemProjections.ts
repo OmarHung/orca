@@ -7,7 +7,7 @@ import { resolveUnifiedTabLabel } from '../../../../../shared/workspace-layout/t
 import type { useAppStore } from '../../../store/index'
 import { isEditorTabContentType } from '@/store/slices/editor/tabs/editor-tab-content-type'
 import { openFileIndex } from '@/store/slices/editor/tabs/workspace-editor-files'
-import { useRunPanelTabIds } from '../run/use-run-panel-sessions'
+import { useRunPanelTabIds } from '../../run/use-run-panel-sessions'
 
 type TabGroupAppState = ReturnType<typeof useAppStore.getState>
 

@@ -1,4 +1,4 @@
-import { compareAppVersions } from '../../shared/app-version'
+import { compareAppVersions } from '../../shared/app-lifecycle/identity/app-version'
 
 const RELEASE_TAG_REF = /^[0-9a-f]{40}\trefs\/tags\/(v\d+\.\d+\.\d+)$/
 

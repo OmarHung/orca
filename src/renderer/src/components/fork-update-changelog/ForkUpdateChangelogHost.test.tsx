@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ForkUpdateChangelog } from '../../../../shared/fork-update-changelog'
-import { getDefaultSettings } from '../../../../shared/constants'
+import { getDefaultSettings } from '../../../../shared/orca-profiles/constants'
 import { useAppStore } from '../../store'
 import { ForkUpdateChangelogHost } from './ForkUpdateChangelogHost'
 import { useForkUpdateChangelogStore } from './fork-update-changelog-store'

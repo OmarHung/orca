@@ -4,12 +4,10 @@ import {
   type CommitMessagePlan,
   type CommitMessagePlanResult
 } from '../../shared/source-control/ai/generation/commit-message-plan'
-import type { GlobalSettings } from '../../shared/global-settings-types'
-import { resolveLoginShellEnvironment } from '../startup/login-shell-environment'
-import {
-  commandBackslashMode,
-  resolveTextGenerationParams
-} from '../text-generation/commit-message-text-generation'
+import type { GlobalSettings } from '../../shared/settings/global-settings-types'
+import { resolveLoginShellEnvironment } from '../startup/shell-environment/login-shell-environment'
+import { resolveCommitMessageSettings } from '../text-generation/commit-message-text-generation'
+import { commandBackslashMode } from '../text-generation/agent-generation-request'
 import { cleanGeneratedChangelog } from './fork-update-changelog-prompt'
 
 /** Several releases of notes take longer than a commit message; packaging is the only rival. */
@@ -30,7 +28,7 @@ export function planChangelogAgent(
   cwd: string
 ): CommitMessagePlanResult {
   const backslash = commandBackslashMode({ kind: 'local', cwd })
-  const resolved = resolveTextGenerationParams(settings)
+  const resolved = resolveCommitMessageSettings(settings)
   if (resolved.ok) {
     const planned = planCommitMessageGeneration({ ...resolved.params, backslash }, prompt)
     if (planned.ok) {

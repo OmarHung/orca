@@ -1,6 +1,6 @@
-import { openDatabasePage } from './helpers/database-page'
-import { seedShopDatabase } from './helpers/database-sqlite-shop'
-import { test, expect } from './helpers/orca-app'
+import { openDatabasePage } from './desktop/electron-fixtures/database-page'
+import { seedShopDatabase } from './desktop/electron-fixtures/database-sqlite-shop'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 // The fork ships Traditional Chinese; this walks the main flow with the labels users see.
 test('works end to end in Traditional Chinese', async ({

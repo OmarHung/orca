@@ -3,7 +3,7 @@ import type { GitDiffResult } from '../../../../../shared/git/diff/git-diff-comp
 import { canUseChangesModeForFile } from '../view-mode/editor-panel-file-mode'
 import { getChangeMarkersBaseline } from './change-markers-baseline'
 
-/** The git inputs the Edit view's Monaco reads: its change-marker baseline and the path to blame. */
+/** The git inputs the Edit view's Monaco reads: its change-marker baseline and the path revision compare reads. */
 export function monacoGitSurfaceProps(
   file: OpenFile,
   diff: GitDiffResult | undefined,

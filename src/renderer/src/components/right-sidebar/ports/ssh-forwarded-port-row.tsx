@@ -9,8 +9,8 @@ import {
 } from '@/lib/workspace-ports/workspace-port-urls'
 import type { PortForwardEntry } from '../../../../../shared/remote-runtime/ssh/ssh-types'
 import { useTranslate } from '@/i18n/use-translate'
-import { NgrokPublicUrlLine, NgrokShareButton } from '../ngrok/NgrokPortActions'
-import { shareTargetForForward } from '../ngrok/ngrok-port-targets'
+import { NgrokPublicUrlLine, NgrokShareButton } from '../../ngrok/NgrokPortActions'
+import { shareTargetForForward } from '../../ngrok/ngrok-port-targets'
 
 export function SshForwardedPortRow({
   entry,

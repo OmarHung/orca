@@ -1,6 +1,6 @@
 import { translate } from '@/i18n/i18n'
 import type { SshCommandScope } from '../../../../shared/ssh-command-types'
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import { sshHostGroupsInTreeOrder } from '../ssh-page/ssh-host-groups'
 import { useSshHostGroups } from '../ssh-page/ssh-host-groups-store'
 import { Checkbox } from '../ui/checkbox'

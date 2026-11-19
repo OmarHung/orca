@@ -1,7 +1,7 @@
 import { translate } from '@/i18n/i18n'
 import type { SshCommandProblem } from '../../../../shared/ssh-command-template'
 import type { SshCommandParam } from '../../../../shared/ssh-command-types'
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import { Badge } from '../ui/badge'
 import { Checkbox } from '../ui/checkbox'
 import { Input } from '../ui/input'

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { WorkspacePort } from '../../../../shared/workspace-ports'
+import type { WorkspacePort } from '../../../../shared/workspace/ports/workspace-ports'
 import {
   endpointsForPort,
   ngrokAgentPortsFromScan,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FLOATING_TERMINAL_WORKTREE_ID } from './constants'
+import { FLOATING_TERMINAL_WORKTREE_ID } from './workspace/identity/floating-workspace-id'
 import {
   addLocalSyntheticWorkspaceIds,
   isLocalSyntheticWorkspaceId,

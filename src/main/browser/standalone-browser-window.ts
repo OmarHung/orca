@@ -2,8 +2,8 @@ import { ORCA_BROWSER_BLANK_URL } from '../../shared/browser/browser-blank-page'
 import {
   normalizeBrowserNavigationUrl,
   normalizeExternalBrowserUrl
-} from '../../shared/browser-url'
-import { showWindowWithoutStealingFocus } from '../window/foreground-activation-policy'
+} from '../../shared/browser/navigation/browser-url'
+import { showWindowWithoutStealingFocus } from '../window/activation/foreground-activation-policy'
 import { SAFE_POPUP_WINDOW_OPTIONS } from './guest-lifecycle/popups/presentation/browser-popup-window-policy'
 import { isNewBrowserTabPopupIntent } from './guest-lifecycle/popups/browser-popup-new-tab-intent'
 import { openPopupWithOriginBar } from './guest-lifecycle/popups/presentation/popup-origin-bar-window'

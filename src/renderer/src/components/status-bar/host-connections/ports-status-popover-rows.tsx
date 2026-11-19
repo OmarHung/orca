@@ -22,8 +22,8 @@ import { useAppStore } from '@/store/index'
 import type { WorkspacePort } from '../../../../../shared/workspace/ports/workspace-ports'
 import { translate } from '@/i18n/i18n'
 import { useTranslate } from '@/i18n/use-translate'
-import { NgrokPublicUrlLine, useNgrokShareAction } from '../ngrok/NgrokPortActions'
-import { shareTargetForPort } from '../ngrok/ngrok-port-targets'
+import { NgrokPublicUrlLine, useNgrokShareAction } from '../../ngrok/NgrokPortActions'
+import { shareTargetForPort } from '../../ngrok/ngrok-port-targets'
 
 function PortAction({
   label,

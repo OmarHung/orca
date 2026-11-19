@@ -4,14 +4,14 @@ import {
   openDatabasePage,
   runInConsole,
   typeInConsole
-} from './helpers/database-page'
-import { adminSql } from './helpers/database-admin'
+} from './desktop/electron-fixtures/database-page'
+import { adminSql } from './desktop/electron-fixtures/database-admin'
 import {
   consoleSuggestions,
   moveCaretInLine,
   triggerSuggest
-} from './helpers/database-console-assist'
-import { test, expect } from './helpers/orca-app'
+} from './desktop/electron-fixtures/database-console-assist'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 // Opt-in per server, with the same URLs as the driver integration tests, e.g.
 //   ORCA_TEST_MYSQL_URL=mysql://root:pw@127.0.0.1:53306/orca_it

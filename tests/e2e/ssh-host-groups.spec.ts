@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@stablyai/playwright-test'
-import { test, expect } from './helpers/orca-app'
-import { waitForSessionReady } from './helpers/store'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 
 // Why: nothing listens on the discard port; these hosts are only listed, never connected.
 const HOSTS = ['e2e-group-web', 'e2e-group-api', 'e2e-group-ci']

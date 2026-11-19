@@ -1,5 +1,5 @@
-import { runAdminSql } from '../../../src/main/database/worker/database-test-admin'
-import { serverConnectionFromUrl } from '../../../src/main/database/worker/database-worker-test-harness'
+import { runAdminSql } from '../../../../src/main/database/worker/database-test-admin'
+import { serverConnectionFromUrl } from '../../../../src/main/database/worker/database-worker-test-harness'
 
 // Orca's database tools are read-only, so e2e fixtures are written straight through the drivers.
 

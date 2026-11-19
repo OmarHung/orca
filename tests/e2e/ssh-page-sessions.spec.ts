@@ -1,7 +1,7 @@
 import type { ElectronApplication, Page } from '@stablyai/playwright-test'
-import { test, expect } from './helpers/orca-app'
-import { waitForSessionReady } from './helpers/store'
-import { createRestartSession } from './helpers/orca-restart'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
+import { createRestartSession } from './desktop/electron-fixtures/orca-restart'
 
 // Why: mirrors SSH_SESSIONS_WORKTREE_ID in src/shared/local-synthetic-workspace.ts.
 // E2E specs avoid importing renderer/shared modules into the Playwright runner.

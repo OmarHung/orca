@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { isPathInsideOrEqual } from '../../shared/cross-platform-path'
+import { isPathInsideOrEqual } from '../../shared/file-access/cross-platform-path'
 
 export type VueProject = {
   /** The folder of the package.json that depends on vue or nuxt. */

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import { getTabEntryAllowAbsolutePaths } from '../tab-bar/tab-create-entry-local-path'
+import { getTabEntryAllowAbsolutePaths } from '../tab-bar/create-entry/tab-create-entry-local-path'
 import { DotnetPublishFields } from './DotnetPublishFields'
 import {
   useDotnetPublishDialogStore,

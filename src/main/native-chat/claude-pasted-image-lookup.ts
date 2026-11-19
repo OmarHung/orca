@@ -4,11 +4,11 @@ import {
   type ClaudePastedImageLookupArgs,
   type ClaudePastedImageLookupResult
 } from '../../shared/claude-pasted-image'
-import { errorMessage } from '../ai-vault/session-scanner-values'
+import { errorMessage } from '../../shared/errors/error-message'
 import { resolveSessionFilePath } from './session-file-resolver'
-import { openTranscriptReadStream } from './wsl-transcript-fs-access'
-import { wslTranscriptFsRefusal } from './wsl-transcript-fs-gate'
-import { splitTranscriptStreamLines } from './transcript-stream-lines'
+import { openTranscriptReadStream } from './transcript-filesystem/wsl-transcript-fs-access'
+import { wslTranscriptFsRefusal } from './transcript-filesystem/wsl-transcript-fs-error'
+import { splitTranscriptStreamLines } from './transcript-streaming/transcript-stream-lines'
 
 type PastedImage = { mediaType: string; data: string }
 

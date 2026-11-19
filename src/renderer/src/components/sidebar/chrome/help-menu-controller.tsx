@@ -27,7 +27,7 @@ import {
   getUpdateCheckHint
 } from '@/app-shell/updates/update-check-click-options'
 import { openHelpLink } from './help-link-open'
-import { ForkUpdateChangelogMenuItem } from '../fork-update-changelog/ForkUpdateChangelogMenuItem'
+import { ForkUpdateChangelogMenuItem } from '../../fork-update-changelog/ForkUpdateChangelogMenuItem'
 
 // Keep feedback off the boot graph; menu warming and selection share the same lazy module entry.
 const loadSidebarFeedbackDialog = (): Promise<typeof SidebarFeedbackDialogModule> =>

@@ -23,7 +23,7 @@ import {
   DATABASE_MAX_PAGE_SIZE,
   type DatabasePageEvent
 } from '../../shared/database/database-session-types'
-import { getSecretStore } from '../../shared/secret-store'
+import { getSecretStore } from '../../shared/secure-storage/secret-store'
 import { DatabaseConnectionStore } from './database-connection-store'
 import { DatabaseDumpDestinations } from './database-dump-destinations'
 import { registerDatabaseJobHandlers } from './database-job-ipc'

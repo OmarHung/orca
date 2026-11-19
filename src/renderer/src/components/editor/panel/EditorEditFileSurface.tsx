@@ -3,7 +3,6 @@ import type { MarkdownViewMode, OpenFile } from '@/store/slices/editor/types/ope
 import type { PendingEditorReveal } from '@/store/slices/editor/types/pending-editor-reveal'
 import type { GitDiffResult } from '../../../../../shared/git/diff/git-diff-compare-types'
 import type { GitStatusEntry } from '../../../../../shared/git/status/git-status-types'
-import { ChangesModeView } from './ChangesModeView'
 import { ConflictBanner, ConflictPlaceholderView } from '../conflict-review/ConflictComponents'
 import {
   CsvViewer,
@@ -35,11 +34,8 @@ import PluginCustomEditorFrame from '../plugin-editors/PluginCustomEditorFrame'
 import PluginBytesCustomEditorSurface from '../plugin-editors/PluginBytesCustomEditorSurface'
 import { ExternalFileChangeBanner } from '../external-changes/ExternalFileChangeBanner'
 import { isEditorWritableView } from '../save/queue/editor-save-writer-view'
-import { getChangeMarkersBaseline } from '../change-markers/change-markers-baseline'
-import { canUseChangesModeForFile } from '../view-mode/editor-panel-file-mode'
-import { RevisionCompareView } from '../revision-compare/RevisionCompareView'
+import { EditorDiffModeSurface } from '../revision-compare/EditorDiffModeSurface'
 import { useRevisionCompareStore } from '../revision-compare/revision-compare-store'
-import { ExternalChangeBannerFrame } from '../ExternalChangeBannerFrame'
 import { monacoGitSurfaceProps } from '../change-markers/monaco-git-surface-props'
 
 // Retry is a user act: it may start a stopped WSL distro.
@@ -235,40 +231,22 @@ export function EditorEditFileSurface({
       />
     ) : null
 
-  if (revisionBaseline) {
+  if (revisionBaseline || isChangesMode) {
     return (
-      <ExternalChangeBannerFrame banner={externalChangeBanner}>
-        <RevisionCompareView
-          file={activeFile}
-          baseline={revisionBaseline}
-          modifiedContent={currentContent}
-          language={monacoLanguage}
-          sideBySide={sideBySide}
-          viewStateScopeId={viewStateScopeId}
-          diffViewStateKey={diffViewStateKey}
-          onContentChange={handleContentChange}
-          onSave={isMarkdown ? markdownDocuments.mdSave : handleSave}
-        />
-      </ExternalChangeBannerFrame>
-    )
-  }
-
-  if (isChangesMode) {
-    return (
-      <ExternalChangeBannerFrame banner={externalChangeBanner}>
-        <ChangesModeView
-          activeFile={activeFile}
-          dc={diffContent}
-          modifiedContent={currentContent}
-          activeConflictEntry={activeConflictEntry}
-          resolvedLanguage={monacoLanguage}
-          sideBySide={sideBySide}
-          viewStateScopeId={viewStateScopeId}
-          diffViewStateKey={diffViewStateKey}
-          onContentChange={handleContentChange}
-          onSave={isMarkdown ? markdownDocuments.mdSave : handleSave}
-        />
-      </ExternalChangeBannerFrame>
+      <EditorDiffModeSurface
+        banner={externalChangeBanner}
+        revisionBaseline={revisionBaseline}
+        activeFile={activeFile}
+        dc={diffContent}
+        modifiedContent={currentContent}
+        activeConflictEntry={activeConflictEntry}
+        resolvedLanguage={monacoLanguage}
+        sideBySide={sideBySide}
+        viewStateScopeId={viewStateScopeId}
+        diffViewStateKey={diffViewStateKey}
+        onContentChange={handleContentChange}
+        onSave={isMarkdown ? markdownDocuments.mdSave : handleSave}
+      />
     )
   }
 

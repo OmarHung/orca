@@ -1,4 +1,4 @@
-import type { WorkspacePortScanResult } from '../../../../shared/workspace-ports'
+import type { WorkspacePortScanResult } from '../../../../shared/workspace/ports/workspace-ports'
 import { claimedPortEntries, isDebugPortOwnerKey, type RunPortClaim } from './run-port-claims'
 import { useRunPortStore, type RunPortProbe } from './run-port-store'
 

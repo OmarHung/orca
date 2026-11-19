@@ -3,7 +3,7 @@ import type {
   DebugLaunchTarget,
   DebugSessionEvent
 } from '../../../../shared/debug/debug-session-types'
-import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/identifiers/non-secure-context-uuid'
 import { useAppStore } from '@/store'
 import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
 import { useBottomPanelLayout } from '../bottom-panel/bottom-panel-layout-store'

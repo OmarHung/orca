@@ -7,10 +7,13 @@ import {
   addSqliteConnection,
   explorerMenu,
   openDatabasePage
-} from './helpers/database-page'
-import { adminSql } from './helpers/database-admin'
-import { captureDatabaseTransfers, lastClipboardWrite } from './helpers/database-grid-transfers'
-import { test, expect } from './helpers/orca-app'
+} from './desktop/electron-fixtures/database-page'
+import { adminSql } from './desktop/electron-fixtures/database-admin'
+import {
+  captureDatabaseTransfers,
+  lastClipboardWrite
+} from './desktop/electron-fixtures/database-grid-transfers'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 test('shows a table’s keys, indexes and DDL, and no Routines folder for SQLite', async ({
   orcaPage,

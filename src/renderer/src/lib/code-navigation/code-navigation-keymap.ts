@@ -1,6 +1,6 @@
 import type * as Monaco from 'monaco-editor'
 import { useAppStore } from '@/store'
-import type { KeybindingActionId } from '../../../../shared/keybindings'
+import type { KeybindingActionId } from '../../../../shared/keybindings/types'
 import { codeEditorShortcutAction, setClaimingCodeEditor } from './code-editor-shortcut-claim'
 import { codeNavigationHistory } from './code-navigation-history'
 import { editorNavigationLocation } from './code-navigation-workspace'

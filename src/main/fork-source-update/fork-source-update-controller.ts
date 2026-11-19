@@ -1,5 +1,5 @@
 import { app } from 'electron'
-import type { UpdateStatus } from '../../shared/update-status-types'
+import type { UpdateStatus } from '../../shared/updater/update-status-types'
 import { readForkSourceIdentity } from './fork-source-identity'
 import { fetchUpstreamReleaseNotes } from './fork-source-release-notes'
 import { listUpstreamTags, runForkSync } from './fork-source-runtime'

@@ -3,16 +3,16 @@ import {
   explorerMenu,
   openDatabasePage,
   typeInConsole
-} from './helpers/database-page'
-import { adminSqlite } from './helpers/database-admin'
+} from './desktop/electron-fixtures/database-page'
+import { adminSqlite } from './desktop/electron-fixtures/database-admin'
 import {
   consoleSuggestions,
   consoleText,
   moveCaretInLine,
   triggerSuggest
-} from './helpers/database-console-assist'
-import { expandPeople, seedShopDatabase } from './helpers/database-sqlite-shop'
-import { test, expect } from './helpers/orca-app'
+} from './desktop/electron-fixtures/database-console-assist'
+import { expandPeople, seedShopDatabase } from './desktop/electron-fixtures/database-sqlite-shop'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 test('completes tables, alias columns and new tables, and reformats SQL', async ({
   orcaPage,

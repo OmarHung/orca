@@ -11,7 +11,7 @@ import { DEBUGGER_PROBE_HOSTS, isDebuggerEndpoint } from './debug-inspector-prob
 import { findListenerTerminals } from './listener-terminals'
 import { probePortProtocol, type PortProtocol } from './port-protocol-probe'
 import { registerPythonHandlers } from '../python/python-ipc'
-import type { GlobalSettings } from '../../shared/global-settings-types'
+import type { GlobalSettings } from '../../shared/settings/global-settings-types'
 import { installDotnetContainerLauncher } from '../dotnet-container/dotnet-container-install'
 import { registerDotnetContainerHandlers } from '../dotnet-container/dotnet-container-ipc'
 

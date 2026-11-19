@@ -1,9 +1,6 @@
 import { ipcMain, type WebContents } from 'electron'
-import {
-  keybindingMatchesAction,
-  type KeybindingInput,
-  type KeybindingOverrides
-} from '../../shared/keybindings'
+import { keybindingMatchesAction } from '../../shared/keybindings/matching'
+import type { KeybindingInput, KeybindingOverrides } from '../../shared/keybindings/types'
 import { CODE_NAVIGATION_KEYBINDING_ACTION_IDS } from '../../shared/keybindings/definitions-code-navigation'
 
 export const CODE_EDITOR_FOCUS_CHANNEL = 'codeNav:setCodeEditorFocused'

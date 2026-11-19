@@ -29,7 +29,7 @@ vi.mock('./agent-tab-clear', () => ({
   resolveAgentTabClearTarget: mocks.resolveAgentTabClearTarget
 }))
 
-import { ConfirmationDialogProvider } from '../confirmation-dialog'
+import { ConfirmationDialogProvider } from '../dismiss/confirmation/confirmation-dialog'
 import { AgentTabClearButton } from './AgentTabClearButton'
 
 type ButtonOptions = { isBusy?: boolean; agent?: TuiAgent; shown?: boolean }

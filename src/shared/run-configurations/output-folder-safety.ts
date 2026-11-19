@@ -1,4 +1,4 @@
-import { isPathInsideOrEqual } from '../cross-platform-path'
+import { isPathInsideOrEqual } from '../file-access/cross-platform-path'
 
 // Why by layout: the execution host may be remote, so its real home folder is not known here.
 // Mounted drives (`/Volumes/Data`, `/mnt/c`, `/media/me/usb`) count too: emptying one wipes a disk.

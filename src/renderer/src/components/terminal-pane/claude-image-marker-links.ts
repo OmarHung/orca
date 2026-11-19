@@ -49,12 +49,12 @@ type ClaudeImageMarkerPane = Omit<TerminalImagePreviewRequest, 'pasteId' | 'canR
 
 /** The slice of app state that identifies a pane's agent session. */
 export type ClaudeImageMarkerPaneState = {
-  agentStatusByPaneKey: Readonly<
-    Record<
+  agentStatusByPaneKey: Pick<
+    ReadonlyMap<
       string,
-      | { agentType?: AgentType; providerSession?: { id: string; transcriptPath?: string } }
-      | undefined
-    >
+      { agentType?: AgentType; providerSession?: { id: string; transcriptPath?: string } }
+    >,
+    'get'
   >
   paneForegroundAgentByPaneKey: Readonly<Record<string, { agent: string | null } | undefined>>
 }
@@ -65,7 +65,7 @@ export function resolveClaudeImageMarkerPane(
   state: ClaudeImageMarkerPaneState,
   paneKey: string
 ): ClaudeImageMarkerPane | null {
-  const entry = state.agentStatusByPaneKey[paneKey]
+  const entry = state.agentStatusByPaneKey.get(paneKey)
   const agent = entry?.agentType ?? state.paneForegroundAgentByPaneKey[paneKey]?.agent ?? null
   if (!agent || resolveNativeChatTranscriptAgent(agent) !== 'claude') {
     return null

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import { useCommandConfirm } from '../command-confirm/command-confirm-context'
 import { translate } from '@/i18n/i18n'
 import { CommandConfirmProvider } from '../command-confirm/CommandConfirmProvider'

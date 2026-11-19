@@ -2,14 +2,14 @@ import { execFileSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
 import path from 'node:path'
 import type { Locator } from '@playwright/test'
-import { test, expect } from './helpers/orca-app'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 import {
   activateGoldenWorktree,
   cleanupGoldenWorktree,
   createGoldenWorktree
-} from './helpers/golden-source-control'
-import { waitForSessionReady } from './helpers/store'
-import { launchCurrentFile } from './helpers/run-panel'
+} from './golden-journeys/golden-source-control'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
+import { launchCurrentFile } from './desktop/electron-fixtures/run-panel'
 
 const PROGRAM = 'hover_demo.py'
 const SOURCE = [

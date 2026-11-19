@@ -17,7 +17,7 @@ const PANE_KEY = 'tab-1:4a0c1a3e-5f4f-4c3a-9b7e-0d1c2b3a4f5e'
 
 const mocks = vi.hoisted(() => {
   const state: ClaudeImageMarkerPaneState = {
-    agentStatusByPaneKey: {},
+    agentStatusByPaneKey: new Map(),
     paneForegroundAgentByPaneKey: {}
   }
   return { state }
@@ -72,18 +72,21 @@ function linksAt(
 }
 
 function claudePane(sessionId = 'session-1'): void {
-  mocks.state.agentStatusByPaneKey = {
-    [PANE_KEY]: {
-      agentType: 'claude',
-      providerSession: { id: sessionId, transcriptPath: '/home/u/.claude/projects/p/s.jsonl' }
-    }
-  }
+  mocks.state.agentStatusByPaneKey = new Map([
+    [
+      PANE_KEY,
+      {
+        agentType: 'claude',
+        providerSession: { id: sessionId, transcriptPath: '/home/u/.claude/projects/p/s.jsonl' }
+      }
+    ]
+  ])
 }
 
 beforeEach(() => {
   vi.stubGlobal('navigator', { userAgent: 'Macintosh' })
   clearSelection.mockClear()
-  mocks.state.agentStatusByPaneKey = {}
+  mocks.state.agentStatusByPaneKey = new Map()
   mocks.state.paneForegroundAgentByPaneKey = {}
   useTerminalImagePreviewStore.getState().closeTerminalImagePreview()
 })
@@ -125,7 +128,7 @@ describe('resolveClaudeImageMarkerPane', () => {
   })
 
   it('leaves panes running other agents alone', () => {
-    mocks.state.agentStatusByPaneKey = { [PANE_KEY]: { agentType: 'codex' } }
+    mocks.state.agentStatusByPaneKey = new Map([[PANE_KEY, { agentType: 'codex' }]])
     expect(resolveClaudeImageMarkerPane(mocks.state, PANE_KEY)).toBeNull()
   })
 })

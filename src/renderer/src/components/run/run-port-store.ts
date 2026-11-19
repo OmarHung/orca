@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { WorkspacePort } from '../../../../shared/workspace-ports'
+import type { WorkspacePort } from '../../../../shared/workspace/ports/workspace-ports'
 import type { PortSightings, RunPortClaim } from './run-port-claims'
 
 const STORAGE_KEY = 'orca.run.portTracking.v1'

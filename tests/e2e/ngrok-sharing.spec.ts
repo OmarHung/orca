@@ -3,13 +3,13 @@ import { createServer } from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
 import type { ElectronApplication, Locator, Page } from '@playwright/test'
-import { test, expect } from './helpers/orca-app'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 import {
   activateGoldenWorktree,
   cleanupGoldenWorktree,
   createGoldenWorktree
-} from './helpers/golden-source-control'
-import { waitForSessionReady } from './helpers/store'
+} from './golden-journeys/golden-source-control'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 
 // Why a fake agent: the real one would put the test's ports on the internet. It speaks the same
 // local API (endpoint-shaped lists, tunnel-shaped creates) and logs the same JSON lines.

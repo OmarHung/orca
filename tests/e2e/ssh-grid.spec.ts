@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs'
 import type { Page } from '@stablyai/playwright-test'
-import { expect, test } from './helpers/orca-app'
-import { waitForSessionReady } from './helpers/store'
+import { expect, test } from './desktop/electron-fixtures/orca-app'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
 
 const SSH_WORKTREE_ID = 'global-ssh-sessions'
 const MULTI_SELECT_MODIFIER = process.platform === 'darwin' ? 'Meta' : 'Control'

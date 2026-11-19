@@ -12,14 +12,14 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { orderTabLaunchAgents } from '@/components/tab-bar/tab-agent-launch-options'
-import { useAgentDetectionTargetForWorktree } from '@/hooks/useAgentDetectionTarget'
-import { useDetectedAgents } from '@/hooks/useDetectedAgents'
+import { orderTabLaunchAgents } from '@/components/tab-bar/create-entry/tab-agent-launch-options'
+import { useAgentDetectionTargetForWorktree } from '@/lib/agent-session/launch/inventory/useAgentDetectionTarget'
+import { useDetectedAgents } from '@/lib/agent-session/launch/inventory/useDetectedAgents'
 import { translate } from '@/i18n/i18n'
 import { AgentIcon } from '@/components/agent/icons/AgentIcon'
 import { getAgentCatalog } from '@/lib/agent-catalog/agent-catalog'
 import { useAppStore } from '@/store'
-import { isGitRepoKind } from '../../../../shared/repo-kind'
+import { isGitRepoKind } from '../../../../shared/repository/repo-kind'
 import { DEFAULT_DISABLED_TUI_AGENTS } from '../../../../shared/agent-launch/catalog/tui-agent-selection'
 import {
   buildMondayTaskAgentPrompt,

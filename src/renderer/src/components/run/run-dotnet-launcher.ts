@@ -1,7 +1,7 @@
 import { joinPath } from '@/lib/path'
 import { useAppStore } from '@/store'
 import { findFirstIndexedWorktree as findWorktreeById } from '@/lib/workspace/ownership/worktree-runtime-owner-index'
-import { getRepoExecutionHostId } from '../../../../shared/execution-host'
+import { getRepoExecutionHostId } from '../../../../shared/execution-host/execution-host'
 import { flattenTerminalQuickCommand } from '../../../../shared/terminal/quick-commands/terminal-quick-commands'
 import { isLocalDebugTarget } from '../debug/debug-launch'
 import { invokePath, routeDotnetCommand, startsWithDotnet } from './dotnet-command-route'

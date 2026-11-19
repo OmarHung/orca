@@ -9,7 +9,7 @@ import type {
   SshVpnStatus
 } from '../../shared/ssh-vpn-types'
 import { runProcessSync } from '@orca/process-host'
-import type { SecretStore } from '../../shared/secret-store'
+import type { SecretStore } from '../../shared/secure-storage/secret-store'
 import { resolveDockerPath } from '../docker/docker-cli-location'
 import { dockerInstanceTag } from '../docker/docker-instance-tag'
 import { readOvpnProfileFile } from './ovpn-profile-files'

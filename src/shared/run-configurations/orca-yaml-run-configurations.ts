@@ -1,5 +1,8 @@
 import { parseDocument } from 'yaml'
-import { isOrcaYamlTextWithinLimit, MAX_ORCA_YAML_ALIAS_COUNT } from '../orca-yaml-file-limit'
+import {
+  isOrcaYamlTextWithinLimit,
+  MAX_ORCA_YAML_ALIAS_COUNT
+} from '../workspace-setup/orca-yaml-file-limit'
 import {
   normalizeRunConfigurationDefinitions,
   type RunConfigurationDefinition,

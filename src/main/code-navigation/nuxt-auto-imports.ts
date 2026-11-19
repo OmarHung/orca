@@ -1,6 +1,6 @@
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { isPathInsideOrEqual } from '../../shared/cross-platform-path'
+import { isPathInsideOrEqual } from '../../shared/file-access/cross-platform-path'
 import type { CodeNavigationPosition } from '../../shared/code-navigation/code-navigation-types'
 import type { LspLocation } from './lsp-locations'
 

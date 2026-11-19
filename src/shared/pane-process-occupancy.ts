@@ -1,6 +1,12 @@
-import { getCommandTokenPathBasename, getFirstCommandToken } from './command-token-scanner'
-import { getProcessTableIndex } from './process-table-index'
-import { unreadableArgvName, type ProcessTableRow } from './process-table-snapshot'
+import {
+  getCommandTokenPathBasename,
+  getFirstCommandToken
+} from './shell/command-resolution/command-token-scanner'
+import { getProcessTableIndex } from './process-observation/tables/process-table-index'
+import {
+  unreadableArgvName,
+  type ProcessTableRow
+} from './process-observation/tables/process-table-snapshot'
 import { isShellProcess } from './agent-status/process/shell-process-detection'
 
 /** The two units a forced stop can reach, indexed from one capture: which process groups occupy

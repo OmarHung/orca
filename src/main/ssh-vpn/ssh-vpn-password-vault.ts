@@ -1,5 +1,5 @@
 import type { SshVpnPasswordStorage } from '../../shared/ssh-vpn-types'
-import type { SecretStore } from '../../shared/secret-store'
+import type { SecretStore } from '../../shared/secure-storage/secret-store'
 import { KeptPasswords } from '../kept-passwords'
 
 const NO_KEYCHAIN_MESSAGE =

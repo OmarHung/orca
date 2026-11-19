@@ -7,12 +7,12 @@ import {
   isTerminalQuickCommandComplete
 } from '../../../shared/terminal/quick-commands/terminal-quick-commands'
 import { getRepoIdFromWorktreeId } from '../../../shared/worktree/id'
-import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/constants'
+import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../shared/workspace/identity/floating-workspace-id'
 import {
   flattenTerminalQuickCommandHosts,
   type HostedTerminalQuickCommand,
   useTerminalQuickCommandHosts
-} from './use-terminal-quick-command-hosts'
+} from '../lib/terminal/quick-commands/use-terminal-quick-command-hosts'
 
 /** Complete quick commands that apply to one worktree, split by scope. */
 export function useWorktreeQuickCommands(worktreeId: string): ReturnType<

@@ -1,7 +1,10 @@
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../../shared/execution-host'
-import type { Repo } from '../../../../shared/repo-types'
+import {
+  getRepoExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../../shared/execution-host/execution-host'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import type { RepoRelocateFailure } from '../../../../shared/repo-relocation-types'
 
 /** Only this computer's projects can be pointed at a folder picked here. */

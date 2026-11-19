@@ -2,14 +2,14 @@ import React from 'react'
 import { Copy, PanelRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
+import { ShortcutKeyCombo } from '@/components/ui/ShortcutKeyCombo'
 import { getIntlLocale, translate } from '@/i18n/i18n'
 import { getShortcutPlatform } from '@/lib/keyboard/shortcut-platform'
 import type {
   DatabaseCell,
   DatabaseColumn
 } from '../../../../../shared/database/database-query-types'
-import { formatKeybinding } from '../../../../../shared/keybindings'
+import { formatKeybinding } from '../../../../../shared/keybindings/formatting'
 import { ResizeHandle } from '../../bottom-panel/ResizeHandle'
 import { useDragResize } from '../../bottom-panel/use-drag-resize'
 import { DATABASE_VALUE_VIEWER_WIDTH, useDatabasePageStore } from '../database-page-store'

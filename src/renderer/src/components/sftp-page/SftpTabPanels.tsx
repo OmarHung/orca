@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { translate } from '@/i18n/i18n'
-import type { SshTarget } from '../../../../shared/ssh-types'
+import type { SshTarget } from '../../../../shared/remote-runtime/ssh/ssh-types'
 import { RemoteFollowTerminalButton } from '../ssh-page/RemoteFollowTerminalButton'
 import { useRemoteSessionStore } from '../ssh-page/remote-session-store'
 import { useSshTerminalCwdStore } from '../ssh-page/ssh-terminal-cwd-store'

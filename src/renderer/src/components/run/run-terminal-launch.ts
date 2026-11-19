@@ -1,10 +1,10 @@
 import { useAppStore } from '@/store'
 import { sendRuntimePtyInputVerified } from '@/runtime/hosted-terminals/input/runtime-terminal-verified-input'
-import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/identifiers/non-secure-context-uuid'
 import {
   ORCA_TERMINAL_COMMAND_FINISHED_EVENT,
   type TerminalCommandFinishedEventDetail
-} from '@/hooks/terminal-command-finished-event'
+} from '@/lib/terminal/output/terminal-command-finished-event'
 import {
   ORCA_TERMINAL_STARTUP_BOUND_EVENT,
   type TerminalStartupBoundEventDetail

@@ -1,12 +1,12 @@
 import type { Page } from '@stablyai/playwright-test'
-import { test, expect } from './helpers/orca-app'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 import {
   activateGoldenWorktree,
   cleanupGoldenWorktree,
   createGoldenWorktree
-} from './helpers/golden-source-control'
-import { waitForSessionReady } from './helpers/store'
-import { getTerminalContent } from './helpers/terminal-pane-identity'
+} from './golden-journeys/golden-source-control'
+import { waitForSessionReady } from './desktop/renderer-probes/store'
+import { getTerminalContent } from './terminal/layout/terminal-pane-identity'
 
 // Why: an echo override proves the agent launch without running the real Claude CLI.
 const PROBE = 'orca-initial-tab-probe'

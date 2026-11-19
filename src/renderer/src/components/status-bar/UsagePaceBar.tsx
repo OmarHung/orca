@@ -1,11 +1,11 @@
 import React from 'react'
 import { cn } from '@/lib/class-names'
-import type { RateLimitWindow } from '../../../../shared/rate-limit-types'
+import type { RateLimitWindow } from '../../../../shared/agent-usage/rate-limits/rate-limit-types'
 import {
   clampUsedPercent,
   getDisplayedUsagePercentage,
   type UsagePercentageDisplay
-} from '../../../../shared/usage-percentage-display'
+} from '../../../../shared/agent-usage/display/usage-percentage-display'
 import { getUsagePacePercent, getUsageSeverity } from './usage-pace'
 
 /**

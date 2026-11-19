@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { PanZoomImageDialog } from '@/components/editor/PanZoomImageDialog'
+import { PanZoomImageDialog } from '@/components/editor/document-images/PanZoomImageDialog'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/class-names'
 import type { MondayUpdate, MondayUpdateReply } from '../../../../shared/monday/monday-types'

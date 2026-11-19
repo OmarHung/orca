@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
-import BrowserPane from '@/components/browser-pane/BrowserPane'
-import { registerBrowserOverlaySlotViewport } from '@/components/browser-pane/host-guest/browser-page-viewport'
-import type { BrowserWorkspace as BrowserTabState } from '../../../../shared/browser-workspace-types'
+import BrowserPane from '@/components/browser-pane/assemble-chrome/browser-workspace-pane'
+import { registerBrowserOverlaySlotViewport } from '@/components/browser-pane/host-guest/viewport/browser-page-viewport'
+import type { BrowserWorkspace as BrowserTabState } from '../../../../shared/browser/workspaces/browser-workspace-types'
 
 // Why: BrowserPane mounts its persistent <webview> into a slot root keyed by the tab id, which
 // only BrowserPaneOverlayLayer registers; without this root the guest never mounts and spins.

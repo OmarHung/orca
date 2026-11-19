@@ -1,5 +1,5 @@
-import type { RateLimitWindow } from '../../../../shared/rate-limit-types'
-import { clampUsedPercent } from '../../../../shared/usage-percentage-display'
+import type { RateLimitWindow } from '../../../../shared/agent-usage/rate-limits/rate-limit-types'
+import { clampUsedPercent } from '../../../../shared/agent-usage/display/usage-percentage-display'
 
 export type UsageSeverity = 'normal' | 'warning' | 'critical'
 

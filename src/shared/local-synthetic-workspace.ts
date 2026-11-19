@@ -1,4 +1,4 @@
-import { FLOATING_TERMINAL_WORKTREE_ID } from './constants'
+import { FLOATING_TERMINAL_WORKTREE_ID } from './workspace/identity/floating-workspace-id'
 
 /** Workspace that owns the SSH page's session tabs (fork-only). */
 export const SSH_SESSIONS_WORKTREE_ID = 'global-ssh-sessions'

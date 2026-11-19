@@ -71,7 +71,8 @@ export function buildDefaultSettings(args: {
     editorEndOfLine: 'auto',
     editorAutoSaveDelayMs: args.editorAutoSaveDelayMs,
     editorMinimapEnabled: false,
-    editorInlineBlame: false,
+    // Fork: caret-line blame stays on by default, as the fork's own inline blame was.
+    editorInlineBlame: true,
     // Why empty: the editor keeps following the terminal font unless the user opts in.
     editorFontFamily: '',
     editorWordWrap: true,

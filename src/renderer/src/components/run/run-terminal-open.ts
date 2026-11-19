@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store'
-import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/identifiers/non-secure-context-uuid'
 import { runCommandText } from './run-dotnet-launcher'
 import type { RunTarget } from './run-target'
 

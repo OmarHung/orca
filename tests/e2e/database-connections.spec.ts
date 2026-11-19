@@ -4,10 +4,10 @@ import {
   explorerMenu,
   openDatabasePage,
   runInConsole
-} from './helpers/database-page'
-import { seedShopDatabase } from './helpers/database-sqlite-shop'
-import { adminSqlite } from './helpers/database-admin'
-import { test, expect } from './helpers/orca-app'
+} from './desktop/electron-fixtures/database-page'
+import { seedShopDatabase } from './desktop/electron-fixtures/database-sqlite-shop'
+import { adminSqlite } from './desktop/electron-fixtures/database-admin'
+import { test, expect } from './desktop/electron-fixtures/orca-app'
 
 // Needs no server: every connection here is a SQLite file the test creates.
 test('adds, tests, renames, reconnects and deletes a connection, and toggles the page by shortcut', async ({
