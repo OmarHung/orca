@@ -30,6 +30,9 @@ export const DATABASE_PROPERTY_KEYS = [
   'edition',
   'defaultEngine',
   'timeZone',
+  'mode',
+  'uptime',
+  'usedMemory',
   // Database and schema
   'owner',
   'encoding',
@@ -59,6 +62,9 @@ export const DATABASE_PROPERTY_KEYS = [
   'autoVacuum',
   'userVersion',
   'applicationId',
+  'keyCount',
+  'expiringKeys',
+  'collectionCount',
   // Tables and views
   'type',
   'engine',
@@ -93,7 +99,17 @@ export const DATABASE_PROPERTY_KEYS = [
   'created',
   'modified',
   'dataUpdated',
-  'comment'
+  'comment',
+  // Redis keys and MongoDB collections
+  'ttl',
+  'length',
+  'documentCount',
+  'averageDocumentSize',
+  'indexCount',
+  'capped',
+  'viewOn',
+  'pipeline',
+  'validator'
 ] as const
 
 export type DatabasePropertyKey = (typeof DATABASE_PROPERTY_KEYS)[number]
@@ -107,7 +123,14 @@ export type DatabaseProperty = {
   format: DatabasePropertyFormat
 }
 
-export type DatabasePropertySectionKind = 'server' | 'database' | 'schema' | 'table' | 'view'
+export type DatabasePropertySectionKind =
+  | 'server'
+  | 'database'
+  | 'schema'
+  | 'table'
+  | 'view'
+  | 'collection'
+  | 'key'
 
 export type DatabasePropertySection = {
   kind: DatabasePropertySectionKind

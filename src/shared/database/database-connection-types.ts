@@ -7,8 +7,9 @@ export type DatabasePasswordStorage = (typeof DATABASE_PASSWORD_STORAGE_MODES)[n
 // Same names and semantics as libpq's sslmode so users can copy them from connection strings.
 export const DATABASE_SSL_MODES = ['disable', 'prefer', 'require', 'verify-full'] as const
 export type DatabaseSslMode = (typeof DATABASE_SSL_MODES)[number]
-// Why no `prefer`: TDS negotiates encryption up front, so there is no plaintext retry to fall back to.
-export const SQLSERVER_SSL_MODES = ['disable', 'require', 'verify-full'] as const
+// Why no `prefer`: TDS negotiates encryption up front, and Redis and MongoDB clients dial TLS or
+// plaintext from the start, so there is no plaintext retry to fall back to.
+export const NO_FALLBACK_SSL_MODES = ['disable', 'require', 'verify-full'] as const
 
 export const DATABASE_CONNECTION_ID_PATTERN = /^[A-Za-z0-9-]{8,64}$/
 
@@ -55,6 +56,8 @@ const serverFields = {
   vpnProfileId: sshVpnProfileIdSchema.nullable().optional()
 }
 
+const REDIS_DATABASE_INDEX = /^\d{0,4}$/
+
 export const databaseConnectionDraftSchema = z.discriminatedUnion('driver', [
   z
     .object({ driver: z.literal('postgres'), ...serverFields, sslMode: z.enum(DATABASE_SSL_MODES) })
@@ -66,7 +69,25 @@ export const databaseConnectionDraftSchema = z.discriminatedUnion('driver', [
     .object({
       driver: z.literal('sqlserver'),
       ...serverFields,
-      sslMode: z.enum(SQLSERVER_SSL_MODES)
+      sslMode: z.enum(NO_FALLBACK_SSL_MODES)
+    })
+    .strict(),
+  z
+    .object({
+      driver: z.literal('mongodb'),
+      ...serverFields,
+      /** Where the user is defined; blank is MongoDB's default, `admin`. */
+      authDatabase: z.string().trim().max(128),
+      sslMode: z.enum(NO_FALLBACK_SSL_MODES)
+    })
+    .strict(),
+  z
+    .object({
+      driver: z.literal('redis'),
+      ...serverFields,
+      /** The logical database index (SELECT); blank is 0. */
+      database: z.string().trim().regex(REDIS_DATABASE_INDEX),
+      sslMode: z.enum(NO_FALLBACK_SSL_MODES)
     })
     .strict(),
   z
@@ -84,24 +105,38 @@ export type DatabaseConnectionDraft = z.infer<typeof databaseConnectionDraftSche
 export type DatabaseDriver = DatabaseConnectionDraft['driver']
 export type DatabaseServerConnectionDraft = Exclude<DatabaseConnectionDraft, { driver: 'sqlite' }>
 
+/** Databases that speak SQL; Redis and MongoDB take their own commands in the console. */
+export type DatabaseSqlDriver = Exclude<DatabaseDriver, 'redis' | 'mongodb'>
+
+/** The order the connection dialog offers them in; a new connection starts on the first. */
 export const DATABASE_DRIVERS = [
-  'postgres',
   'mysql',
+  'postgres',
   'sqlserver',
-  'sqlite'
+  'sqlite',
+  'mongodb',
+  'redis'
 ] as const satisfies readonly DatabaseDriver[]
 
 export const DATABASE_DRIVER_NAMES: Record<DatabaseDriver, string> = {
   postgres: 'PostgreSQL',
   mysql: 'MySQL / MariaDB',
   sqlserver: 'SQL Server',
-  sqlite: 'SQLite'
+  sqlite: 'SQLite',
+  mongodb: 'MongoDB',
+  redis: 'Redis'
 }
 
 export const DEFAULT_DATABASE_PORTS: Record<DatabaseServerConnectionDraft['driver'], number> = {
   postgres: 5432,
   mysql: 3306,
-  sqlserver: 1433
+  sqlserver: 1433,
+  mongodb: 27017,
+  redis: 6379
+}
+
+export function isSqlDriver(driver: DatabaseDriver): driver is DatabaseSqlDriver {
+  return driver !== 'redis' && driver !== 'mongodb'
 }
 
 export function isServerConnection(

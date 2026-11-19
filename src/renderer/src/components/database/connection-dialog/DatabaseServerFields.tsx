@@ -2,7 +2,7 @@ import React from 'react'
 import { translate } from '@/i18n/i18n'
 import {
   DATABASE_SSL_MODES,
-  SQLSERVER_SSL_MODES,
+  NO_FALLBACK_SSL_MODES,
   type DatabasePasswordStorage
 } from '../../../../../shared/database/database-connection-types'
 import type { DatabaseEncryptionStatus } from '../../../../../shared/database/database-session-types'
@@ -79,9 +79,58 @@ function PasswordFields({
   )
 }
 
+/** Database and user; Redis names a database by index and MongoDB adds where the user lives. */
+function DatabaseAndUserFields({
+  form,
+  invalid,
+  onChange
+}: Pick<ServerFieldsProps, 'form' | 'invalid' | 'onChange'>): React.JSX.Element {
+  const isRedis = form.driver === 'redis'
+  const isMongo = form.driver === 'mongodb'
+  const optional = translate('database.connectionForm.optional', 'Optional')
+  return (
+    <div className={isMongo ? 'grid grid-cols-3 gap-3' : 'grid grid-cols-2 gap-3'}>
+      <TextField
+        label={
+          isRedis
+            ? translate('database.connectionForm.databaseIndex', 'Database index')
+            : translate('database.connectionForm.database', 'Database')
+        }
+        placeholder={
+          isRedis ? '0' : translate('database.connectionForm.allDatabases', 'All databases')
+        }
+        inputMode={isRedis ? 'numeric' : undefined}
+        value={form.database}
+        aria-invalid={invalid.has('database')}
+        onChange={(event) => onChange({ database: event.target.value })}
+      />
+      {isMongo ? (
+        <TextField
+          label={translate('database.connectionForm.authDatabase', 'Auth database')}
+          placeholder="admin"
+          value={form.authDatabase}
+          aria-invalid={invalid.has('authDatabase')}
+          onChange={(event) => onChange({ authDatabase: event.target.value })}
+        />
+      ) : null}
+      <TextField
+        label={translate('database.connectionForm.user', 'User')}
+        placeholder={isRedis || isMongo ? optional : undefined}
+        value={form.user}
+        aria-invalid={invalid.has('user')}
+        onChange={(event) => onChange({ user: event.target.value })}
+      />
+    </div>
+  )
+}
+
 export function DatabaseServerFields(props: ServerFieldsProps): React.JSX.Element {
   const { form, invalid, onChange, onAddSshHost } = props
-  const sslModes = form.driver === 'sqlserver' ? SQLSERVER_SSL_MODES : DATABASE_SSL_MODES
+  // Only PostgreSQL and MySQL retry in plaintext, so only they offer `prefer`.
+  const sslModes =
+    form.driver === 'postgres' || form.driver === 'mysql'
+      ? DATABASE_SSL_MODES
+      : NO_FALLBACK_SSL_MODES
   const sshVpnAssignments = useSshVpnStore((state) => state.assignments)
   const viaSshTunnel = form.sshTargetId !== NO_SSH_TUNNEL
   return (
@@ -119,21 +168,7 @@ export function DatabaseServerFields(props: ServerFieldsProps): React.JSX.Elemen
           onChange={(event) => onChange({ port: event.target.value })}
         />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <TextField
-          label={translate('database.connectionForm.database', 'Database')}
-          placeholder={translate('database.connectionForm.allDatabases', 'All databases')}
-          value={form.database}
-          aria-invalid={invalid.has('database')}
-          onChange={(event) => onChange({ database: event.target.value })}
-        />
-        <TextField
-          label={translate('database.connectionForm.user', 'User')}
-          value={form.user}
-          aria-invalid={invalid.has('user')}
-          onChange={(event) => onChange({ user: event.target.value })}
-        />
-      </div>
+      <DatabaseAndUserFields form={form} invalid={invalid} onChange={onChange} />
       <PasswordFields {...props} />
       <div className="grid grid-cols-2 items-end gap-3">
         <SelectField

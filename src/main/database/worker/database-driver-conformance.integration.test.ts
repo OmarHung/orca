@@ -166,7 +166,8 @@ for (const fixture of DRIVER_FIXTURES) {
       expect(sorted.columns.map((column) => column.name)).toEqual(['order', 'Mixed Case'])
       expect(sorted.rows.map((row) => row[0])).toEqual(['3', '2', '1'])
       const where = `${quoteSqlName('Mixed Case', fixture.driver)} is not null`
-      const counted = onlyRows(await expectOk(execute(buildTableCountSql({ ...table, where }))))
+      const countSql = buildTableCountSql({ ...table, where }) ?? ''
+      const counted = onlyRows(await expectOk(execute(countSql)))
       expect(counted.rows).toEqual([['2']])
     })
 

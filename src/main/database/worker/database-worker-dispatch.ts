@@ -1,8 +1,8 @@
 import type { DatabaseDriver } from '../../../shared/database/database-connection-types'
 import type { DatabaseResult } from '../../../shared/database/database-query-types'
-import { readOnlyRefusal, readOnlyViolation } from '../../../shared/database/sql-read-only-guard'
 import type { DatabaseDriverSession, OpenDatabaseDriverSession } from './database-driver'
 import { routeThroughTunnel } from './database-connection-route'
+import { readOnlyRefusalFor } from './database-read-only-door'
 import { toDatabaseError } from './database-error-mapping'
 import { LongValueStore } from './database-long-values'
 import { DatabaseWorkerJobs } from './database-worker-jobs'
@@ -13,8 +13,10 @@ import type {
   DatabaseWorkerMessage,
   DatabaseWorkerRequest
 } from './database-worker-protocol'
+import { openMongoSession } from './mongodb-session'
 import { openMysqlSession } from './mysql-session'
 import { openPostgresSession } from './postgres-session'
+import { openRedisSession } from './redis-session'
 import { openSqliteSession } from './sqlite-session'
 import { openSqlServerSession } from './sqlserver-session'
 
@@ -28,6 +30,10 @@ export const openDriverSession: OpenDatabaseDriverSession = (connection, passwor
       return openSqlServerSession(connection, password, callbacks)
     case 'sqlite':
       return openSqliteSession(connection)
+    case 'mongodb':
+      return openMongoSession(connection, password)
+    case 'redis':
+      return openRedisSession(connection, password, callbacks)
   }
 }
 
@@ -74,9 +80,9 @@ export function createDatabaseWorkerDispatcher(
         return requireSession().properties(command.target)
       case 'execute': {
         // Why here: every statement from the page passes this one door before any session.
-        const violation = readOnlyViolation(command.sql, driver)
-        if (violation) {
-          throw new Error(readOnlyRefusal(violation, driver))
+        const refusal = readOnlyRefusalFor(command.sql, driver)
+        if (refusal) {
+          throw new Error(refusal)
         }
         longValues.startStatement(command.consoleId)
         const result = await requireSession().execute(

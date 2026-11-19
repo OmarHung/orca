@@ -106,7 +106,8 @@ function Picker({
 /**
  * DataGrip's switchers for where a console's names resolve. SQL Server switches database
  * (USE); MySQL's databases are its schemas (USE); PostgreSQL sets search_path, and when the
- * connection lists every database, also picks the database its session connects to.
+ * connection lists every database, also picks the database its session connects to. Redis
+ * (SELECT) and MongoDB (use) list their databases where the others list schemas.
  */
 export function DatabaseSchemaSelect({
   tab,
@@ -125,7 +126,10 @@ export function DatabaseSchemaSelect({
   const showDatabase =
     driver === 'sqlserver' ||
     (driver === 'postgres' && connection !== undefined && listsAllDatabases(connection))
-  const showSchema = driver === 'postgres' || driver === 'mysql'
+  const showSchema =
+    driver === 'postgres' || driver === 'mysql' || driver === 'mongodb' || driver === 'redis'
+  // MySQL's databases are its schemas; Redis and MongoDB have no schemas, only databases.
+  const schemaIsDatabase = showSchema && driver !== 'postgres'
   const databases = useChoices(
     connected && showDatabase
       ? { connectionId: tab.connectionId, database: null, kind: 'database' }
@@ -160,11 +164,9 @@ export function DatabaseSchemaSelect({
       ) : null}
       {showSchema ? (
         <Picker
-          label={
-            driver === 'mysql' ? databaseLabel : translate('database.console.schema', 'Schema')
-          }
+          label={schemaIsDatabase ? databaseLabel : translate('database.console.schema', 'Schema')}
           placeholder={
-            driver === 'mysql'
+            schemaIsDatabase
               ? chooseDatabase
               : translate('database.console.chooseSchema', 'Choose schema')
           }

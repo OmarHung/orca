@@ -42,6 +42,12 @@ export async function addSqliteConnection(page: Page, filePath: string): Promise
   await expect(dialog).toBeHidden()
 }
 
+/** Picks the New Connection dialog's database type; a new connection starts on MySQL. */
+export async function pickConnectionType(page: Page, type: string): Promise<void> {
+  await page.getByRole('dialog').getByLabel('Type').click()
+  await page.getByRole('option', { name: type, exact: true }).click()
+}
+
 export type ServerConnectionForm = {
   /** Host, port, database, user and (optional) password all come from the URL. */
   url: URL
@@ -59,10 +65,7 @@ export type ServerConnectionForm = {
 export async function addServerConnection(page: Page, form: ServerConnectionForm): Promise<void> {
   await page.getByRole('button', { name: 'New Connection' }).first().click()
   const dialog = page.getByRole('dialog')
-  if (form.type && form.type !== 'PostgreSQL') {
-    await dialog.getByLabel('Type').click()
-    await page.getByRole('option', { name: form.type }).click()
-  }
+  await pickConnectionType(page, form.type ?? 'PostgreSQL')
   if (form.name) {
     await dialog.getByLabel('Name').fill(form.name)
   }

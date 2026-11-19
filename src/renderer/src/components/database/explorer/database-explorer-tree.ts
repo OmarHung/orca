@@ -100,17 +100,21 @@ const LEAF_KINDS = new Set<DatabaseExplorerNode['kind']>([
   'index'
 ])
 
+/** A Redis key opens its value; it has no columns to expand into. */
 export function isExpandableNode(node: DatabaseExplorerNode): boolean {
-  return !LEAF_KINDS.has(node.kind)
+  return !LEAF_KINDS.has(node.kind) && !(node.kind === 'relation' && node.relation.kind === 'key')
 }
 
 // Keys and indexes belong to tables; a materialized view can be indexed but has no keys.
+// A MongoDB collection has indexes and no keys beyond _id, which its fields already show.
 const RELATION_FOLDERS: Record<DatabaseRelationInfo['kind'], DatabaseExplorerFolder[]> = {
   table: ['keys', 'indexes'],
   'partitioned-table': ['keys', 'indexes'],
   'materialized-view': ['indexes'],
   view: [],
-  'foreign-table': []
+  'foreign-table': [],
+  collection: ['indexes'],
+  key: []
 }
 
 type InDatabase = { database: string | null }

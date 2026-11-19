@@ -46,7 +46,10 @@ function relationCandidate(
       return { key: dumpCandidateKey(object), object, icon: 'view' }
     }
     // A foreign table's rows live on another server; its data isn't this database's to dump.
+    // Redis keys and MongoDB collections never reach a SQL dump.
     case 'foreign-table':
+    case 'collection':
+    case 'key':
       return null
   }
 }

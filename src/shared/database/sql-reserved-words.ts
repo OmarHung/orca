@@ -1,8 +1,8 @@
-import type { DatabaseDriver } from './database-connection-types'
+import type { DatabaseSqlDriver } from './database-connection-types'
 
 // Words each dialect won't take as a bare identifier. Erring on the side of listing a
 // word only adds quotes, which every dialect accepts.
-const RESERVED: Record<DatabaseDriver, string> = {
+const RESERVED: Record<DatabaseSqlDriver, string> = {
   postgres: `
 all analyse analyze and any array as asc asymmetric authorization between binary both case
 cast check collate collation column concurrently constraint create cross current_catalog
@@ -70,6 +70,6 @@ const RESERVED_SETS = Object.fromEntries(
   Object.entries(RESERVED).map(([driver, words]) => [driver, new Set(words.split(/\s+/))])
 )
 
-export function isSqlReservedWord(name: string, driver: DatabaseDriver): boolean {
+export function isSqlReservedWord(name: string, driver: DatabaseSqlDriver): boolean {
   return RESERVED_SETS[driver]?.has(name.toLowerCase()) ?? false
 }

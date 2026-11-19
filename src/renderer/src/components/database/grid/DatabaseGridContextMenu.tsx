@@ -29,10 +29,13 @@ function shortcutLabel(binding: string): string {
 }
 
 export function DatabaseGridContextMenu({
+  offersSql,
   onCopy,
   onExport,
   onShowValue
 }: {
+  /** False for Redis and MongoDB results, which have no INSERT to write. */
+  offersSql: boolean
   onCopy: (format: GridCopyFormat) => void
   /** Exports every loaded row, not only the selection. */
   onExport: (format: DatabaseExportFormat) => void
@@ -53,7 +56,7 @@ export function DatabaseGridContextMenu({
           {translate('database.grid.copyAs', 'Copy As')}
         </ContextMenuSubTrigger>
         <ContextMenuSubContent>
-          {COPY_AS_FORMATS.map((format) => (
+          {COPY_AS_FORMATS.filter((format) => offersSql || format !== 'sql').map((format) => (
             <ContextMenuItem key={format} onSelect={() => onCopy(format)}>
               {FORMAT_LABELS[format]()}
             </ContextMenuItem>
@@ -67,7 +70,7 @@ export function DatabaseGridContextMenu({
           {translate('database.grid.exportLoaded', 'Export Loaded Rows')}
         </ContextMenuSubTrigger>
         <ContextMenuSubContent>
-          {EXPORT_FORMATS.map((format) => (
+          {EXPORT_FORMATS.filter((format) => offersSql || format !== 'sql').map((format) => (
             <ContextMenuItem key={format} onSelect={() => onExport(format)}>
               {translate('database.grid.exportAs', '{{value0}}…', {
                 value0: FORMAT_LABELS[format]()
