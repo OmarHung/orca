@@ -24,7 +24,8 @@ export type ForkSourceUpdaterDeps = {
     targetTag: string,
     onEvent: (event: ForkSyncEvent) => void
   ) => Promise<ForkSyncRunResult>
-  installLocalBuild: (manifestPath: string) => Promise<void>
+  /** Without a manifest the user picks one; false when the pick was cancelled and nothing showed. */
+  installLocalBuild: (manifestPath?: string) => Promise<boolean>
   /** Upstream release notes after `baseTag` up to `targetTag`, newest first. */
   fetchReleaseNotes: (baseTag: string, targetTag: string) => Promise<ForkReleaseNote[]>
 }
@@ -112,6 +113,23 @@ export class ForkSourceUpdater {
     this.status = null
     void this.deps.installLocalBuild(fork.manifestPath)
     return true
+  }
+
+  /**
+   * A local build the user picks (⌥ Check for Updates) installs as is, without the upstream sync:
+   * the offer gives up the card so "Update" downloads that build, and comes back if the pick is
+   * cancelled. A running sync keeps the card.
+   */
+  async installChosenLocalBuild(): Promise<void> {
+    if (this.busy) {
+      return
+    }
+    const offer = this.status
+    this.status = null
+    const ownsCard = await this.deps.installLocalBuild()
+    if (!ownsCard && this.status === null && offer) {
+      this.set(offer)
+    }
   }
 
   dismiss(): void {

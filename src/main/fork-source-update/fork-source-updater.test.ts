@@ -26,7 +26,7 @@ function setup(
   fetchReleaseNotes: ForkSourceUpdaterDeps['fetchReleaseNotes'] = async () => []
 ) {
   const published: UpdateStatus[] = []
-  const installLocalBuild = vi.fn(async () => {})
+  const installLocalBuild = vi.fn(async (_manifestPath?: string) => true)
   const deps: ForkSourceUpdaterDeps = {
     identity,
     publish: (status) => published.push(status),
@@ -47,6 +47,23 @@ async function flush(): Promise<void> {
 }
 
 describe('ForkSourceUpdater', () => {
+  it('installs a picked local build without the upstream sync, and keeps the offer when the pick is cancelled', async () => {
+    const { updater, installLocalBuild } = setup(() => ({ code: 0, outputTail: '' }))
+    await updater.check(false)
+    installLocalBuild.mockResolvedValueOnce(false)
+    await updater.installChosenLocalBuild()
+    expect(updater.getStatus()).toMatchObject({
+      state: 'available',
+      forkSync: { phase: 'available', targetTag: 'v1.4.212' }
+    })
+
+    await updater.installChosenLocalBuild()
+    expect(installLocalBuild).toHaveBeenLastCalledWith()
+    expect(updater.getStatus()).toBeNull()
+    // "Update" now belongs to the picked build, not to an upstream sync.
+    expect(updater.startSync()).toBe(false)
+  })
+
   it('reports up to date when upstream has no newer release', async () => {
     const { updater } = setup(() => ({ code: 0, outputTail: '' }), tags('v1.4.211'))
     await updater.check(true)

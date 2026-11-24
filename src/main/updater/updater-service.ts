@@ -65,8 +65,13 @@ export function checkForUpdates(): void {
 
 export function checkForUpdatesFromMenu(options?: UpdateCheckOptions): void {
   const fork = getForkSourceUpdater()
-  // Why local-build/pinned options still pass through: those are deliberate manual installs.
-  if (fork && !options?.localBuild && !options?.targetTag) {
+  // Why: a picked local build installs as built, never through an upstream sync.
+  if (fork && options?.localBuild) {
+    void fork.installChosenLocalBuild()
+    return
+  }
+  // Why pinned options still pass through: those are deliberate manual installs.
+  if (fork && !options?.targetTag) {
     void fork.check(true)
     return
   }

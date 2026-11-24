@@ -81,6 +81,9 @@ First time, or to replace a build by hand: quit Orca (⌘Q), drag `dist/mac-arm6
 Afterwards, updates come from the app's update card.
 
 Alternative without quitting first: ⌥-click **Check for Updates** and choose `dist/latest-mac.yml`.
+The picked build installs as built, right after its confirmation dialog: an upstream release offer
+on the update card steps aside instead of turning **Update** into a sync, and comes back if you
+cancel the pick. Background upstream checks leave the card alone while a local build is installing.
 
 Check it took: **Check for Updates** should say you are on the latest version (a non-fork build
 would instead offer the official release).

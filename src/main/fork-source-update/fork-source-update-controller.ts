@@ -12,7 +12,9 @@ const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000
 type HostUpdater = {
   suppressReleaseChecks: () => void
   publishExternalStatus: (status: UpdateStatus) => void
-  installLocalBuild: (manifestPath: string) => Promise<void>
+  installLocalBuild: (manifestPath?: string) => Promise<boolean>
+  /** A local build is ready or installing, so an upstream offer must not take the card. */
+  hasActiveLocalBuild: () => boolean
 }
 
 let forkUpdater: ForkSourceUpdater | null = null
@@ -49,8 +51,9 @@ export function initForkSourceUpdater(host: HostUpdater): void {
   })
   forkUpdater = updater
   const backgroundCheck = (): void => {
-    // Why skip once actionable: a rebuilt or conflicted state must not be replaced by "available".
-    if (!updater.ownsActions()) {
+    // Why skip once actionable: a rebuilt or conflicted state, or a local build on its way in,
+    // must not be replaced by "available".
+    if (!updater.ownsActions() && !host.hasActiveLocalBuild()) {
       void updater.check(false)
     }
   }

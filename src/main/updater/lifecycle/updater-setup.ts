@@ -147,14 +147,25 @@ export class UpdaterSetup extends UpdaterDownloadInstall {
     this.sendStatus(status, { force: true })
   }
 
-  /** Fork builds: install an already-built local update through the local-build flow. */
-  async installLocalBuild(manifestPath: string): Promise<void> {
+  /** Fork builds: install a local build (picked by the user without a manifest); false when the
+   *  pick was cancelled, so the card still shows whatever it showed before. */
+  async installLocalBuild(manifestPath?: string): Promise<boolean> {
     await this.checkForLocalBuildFromMenu(manifestPath)
     // Why auto-download: the user already chose to update and confirmed the build; the loopback
     // "download" is a local copy, so stopping at "available" would only add a pointless click.
     if (this.currentStatus.state === 'available' && this.activeUpdateSource === 'local') {
       this.downloadUpdate()
     }
+    return this.hasActiveLocalBuild() || this.currentStatus.state === 'error'
+  }
+
+  /** Fork builds: a local build is available, downloading or waiting for restart. */
+  hasActiveLocalBuild(): boolean {
+    const { state } = this.currentStatus
+    return (
+      this.activeUpdateSource === 'local' &&
+      (state === 'available' || state === 'downloading' || state === 'downloaded')
+    )
   }
 
   dismissAvailableUpdate(): void {
