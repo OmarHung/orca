@@ -91,6 +91,7 @@ export function sanitizeRepoUpdatesForPersistence<
   > & {
     ghAccount?: GhAccountBinding | null
     browserProfileId?: string | null
+    claudeAccountId?: string | null
   }
 >(updates: T): T {
   const sanitized = { ...updates }
@@ -175,6 +176,13 @@ export function sanitizeRepoUpdatesForPersistence<
     (typeof sanitized.browserProfileId !== 'string' || !sanitized.browserProfileId.trim())
   ) {
     delete sanitized.browserProfileId
+  }
+  if (
+    'claudeAccountId' in sanitized &&
+    sanitized.claudeAccountId != null &&
+    (typeof sanitized.claudeAccountId !== 'string' || !sanitized.claudeAccountId.trim())
+  ) {
+    delete sanitized.claudeAccountId
   }
   if ('initialTab' in sanitized && !isRepoInitialTab(sanitized.initialTab)) {
     delete sanitized.initialTab

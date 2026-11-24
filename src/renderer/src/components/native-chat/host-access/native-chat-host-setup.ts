@@ -1,3 +1,4 @@
+import { selectClaudeLaunchAccountId } from '@/lib/provider-accounts/claude-project-account-choices'
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
@@ -185,11 +186,10 @@ function useNativeChatSignIn(
   terminal: NativeChatHostCommandTerminal | null
 ): NativeChatSignIn | null {
   // Why local only: the hidden sign-in runs on this device, and Claude chats run on its host.
+  // The project's own account when it pins one, else the Accounts selection.
   const accountId = useAppStore((s) =>
     input.agent === 'claude' && input.target.kind === 'local' && input.account !== 'system'
-      ? (s.settings?.activeClaudeManagedAccountIdsByRuntime?.host ??
-        s.settings?.activeClaudeManagedAccountId ??
-        null)
+      ? selectClaudeLaunchAccountId(s, input.worktreeId)
       : null
   )
   const managed = useManagedClaudeSignIn(

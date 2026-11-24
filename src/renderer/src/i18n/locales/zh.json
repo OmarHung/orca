@@ -21112,7 +21112,9 @@
         "detachedCommit": "提交 {{head}}（非分支）",
         "mainCheckout": "主工作树",
         "turnWorking": "此聊天的智能体正在工作。请在其回合结束后再切换分支。",
-        "worktree": "工作树"
+        "worktree": "工作树",
+        "claudeAccount": "Claude 账户：{{account}}",
+        "claudeAccountHint": "此项目的 Claude 账户。新聊天和终端会立即使用；正在运行的聊天会在下次启动时切换。"
       },
       "explicitChatWindows": "此 Agent 的聊天暂不支持 Windows。请改为在终端中打开。",
       "fork": {
@@ -22799,6 +22801,18 @@
       "deletedOption": "已删除的配置文件",
       "deleted": "为此项目选择的配置文件已被删除，因此新标签页会沿用浏览器设置",
       "saveFailed": "无法保存浏览器配置文件，此项目所在主机上的 Orca 可能需要更新"
+    },
+    "RepositoryClaudeAccountSection": {
+      "title": "Claude 账户",
+      "description": "此项目中的 Claude（聊天和终端）会使用此账户登录。已打开的终端在下次启动 claude 时切换；正在运行的聊天会在下次启动时切换。",
+      "keywordAccount": "Claude 账户",
+      "keywordSubscription": "订阅",
+      "selectLabel": "此项目使用的账户",
+      "inherit": "跟随账户设置（{{account}}）",
+      "removedOption": "已移除的账户",
+      "noAccounts": "请先在 设置 → 账户 中添加 Claude 账户，再为此项目选择。",
+      "removed": "为此项目选择的账户已被移除，Claude 将跟随账户设置。",
+      "saveFailed": "无法保存此项目的 Claude 账户。"
     },
     "managed-runtime": {
       "cancelled": "已取消安装",

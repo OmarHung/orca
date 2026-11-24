@@ -9,14 +9,31 @@ import { AgentIcon } from '@/components/agent/icons/AgentIcon'
 import { getAgentCatalog } from '@/lib/agent-catalog/agent-catalog'
 import { useAppStore } from '../../../store'
 import { translate } from '@/i18n/i18n'
+import { RepositoryClaudeAccountSection } from './RepositoryClaudeAccountSection'
 
 type RepositoryInitialTabSettingProps = {
   repo: Repo
-  updateRepo: (repoId: string, updates: Pick<Repo, 'initialTab'>) => void | Promise<boolean>
+  updateRepo: (
+    repoId: string,
+    updates: Pick<Repo, 'initialTab'> | { claudeAccountId: string | null }
+  ) => void | Promise<boolean>
   forceVisible: boolean
 }
 
-export function RepositoryInitialTabSetting({
+/** The project's agent launch settings. Why both here: RepositoryPane is at its line budget, so the
+ *  fork's Claude account section shares the slot the pane already gives this fork setting. */
+export function RepositoryInitialTabSetting(
+  props: RepositoryInitialTabSettingProps
+): React.JSX.Element {
+  return (
+    <>
+      <RepositoryClaudeAccountSection {...props} />
+      <InitialTabSetting {...props} />
+    </>
+  )
+}
+
+function InitialTabSetting({
   repo,
   updateRepo,
   forceVisible

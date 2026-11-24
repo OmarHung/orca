@@ -22322,7 +22322,9 @@
         "detachedCommit": "Commit {{head}} (not a branch)",
         "mainCheckout": "Main checkout",
         "turnWorking": "This chat's agent is working. Switch branches after its turn finishes.",
-        "worktree": "Worktree"
+        "worktree": "Worktree",
+        "claudeAccount": "Claude account: {{account}}",
+        "claudeAccountHint": "This project's Claude account. New chats and terminals use it at once; a running chat switches when it next starts."
       },
       "creationChatNotOpened": "Your worktree is ready, but the chat could not open. Retry to open it with your message.",
       "fork": {
@@ -23951,6 +23953,18 @@
       "deletedOption": "Deleted profile",
       "deleted": "The profile picked for this project was deleted, so new tabs follow the Browser setting.",
       "saveFailed": "Couldn't save the browser profile. The Orca on this project's host may need an update."
+    },
+    "RepositoryClaudeAccountSection": {
+      "title": "Claude account",
+      "description": "Claude in this project, in chats and terminals, signs in with this account. Open terminals switch on their next claude launch; a running chat switches when it next starts.",
+      "keywordAccount": "claude account",
+      "keywordSubscription": "subscription",
+      "selectLabel": "Account for this project",
+      "inherit": "Accounts setting ({{account}})",
+      "removedOption": "Removed account",
+      "noAccounts": "Add Claude accounts in Settings → Accounts to pick one for this project.",
+      "removed": "The account picked for this project was removed, so Claude follows the Accounts setting.",
+      "saveFailed": "Couldn't save the Claude account for this project."
     },
     "managed-runtime": {
       "cancelled": "Installation cancelled.",

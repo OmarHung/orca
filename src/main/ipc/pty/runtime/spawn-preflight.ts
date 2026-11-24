@@ -1,4 +1,5 @@
 import { withClaudeProfileTerminalEnv } from '../../../claude-accounts/profiles/routing/claude-profile-installed-router'
+import { claudeLaunchProjectForWorktree } from '../../../../shared/agent-accounts/claude/claude-project-account'
 import type { PtySpawnResult } from '../../../providers/pty/spawn-result'
 import { LocalPtyProvider } from '../../../providers/local-pty/local-pty-provider'
 import { isValidTerminalTabId } from '../../../../shared/workspace-layout/terminal-surfaces/terminal-tab-id'
@@ -100,10 +101,11 @@ export async function prepareRuntimePtySpawn(
   ctx.expectedWslDistro = target.expectedWslDistro
   ctx.wslHoldReadAnchor = target.wslHoldReadAnchor
   ctx.codexSelectionTarget = target.codexSelectionTarget
-  args.env = withClaudeProfileTerminalEnv(args.env, ctx.codexSelectionTarget)
+  const claudeProject = claudeLaunchProjectForWorktree(args.worktreeId)
+  args.env = withClaudeProfileTerminalEnv(args.env, ctx.codexSelectionTarget, claudeProject)
   ctx.claudeAuth =
     ctx.isClaudeLaunch && ctx.deps.prepareClaudeAuth
-      ? await ctx.deps.prepareClaudeAuth(ctx.codexSelectionTarget)
+      ? await ctx.deps.prepareClaudeAuth(ctx.codexSelectionTarget, claudeProject)
       : null
 
   ctx.shouldPersistHostSessionBinding = args.persistHostSessionBinding === true

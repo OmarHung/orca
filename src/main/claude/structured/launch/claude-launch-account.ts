@@ -3,22 +3,35 @@ import type { ClaudeProfileRouter } from '../../../claude-accounts/profiles/rout
 import { applyClaudeEnvPatch } from '../../../claude-accounts/runtime-auth/environment'
 import { claudeConfigDirEnvPatch } from './claude-config-dir-pin'
 import { resolveStructuredClaudeAccountHomePath } from '../../../runtime/agent-session/environment/structured-agent-account-home'
+import { requireLegacyAgentSessionAccountHome } from '../../../../shared/agent-session/lifecycle/accounts/agent-session-account-home'
+import type { AgentSessionRecord } from '../../../../shared/agent-session/lifecycle/agent-session-record'
+import { claudeLaunchProjectForWorktree } from '../../../../shared/agent-accounts/claude/claude-project-account'
 
-/** The account a launch runs under is the current selection; the receipt records what it used. */
+/** The chat whose launch this is: its own account home, and the project whose pick it follows. */
+export type ClaudeLaunchRecord = Pick<AgentSessionRecord, 'accountHome' | 'location'>
+
+/** The account a launch runs under is the current selection, or its project's own account when
+ *  it pins one; the receipt records what it used. */
 export async function prepareClaudeLaunchAccount(
   router: ClaudeProfileRouter | undefined,
   env: Record<string, string>,
-  recordHome: string
+  record: ClaudeLaunchRecord
 ): Promise<ClaudeAccountRecipe> {
+  const recordHome = requireLegacyAgentSessionAccountHome(record.accountHome).path
   if (!router) {
     return { route: 'system', home: recordHome, configDir: env.CLAUDE_CONFIG_DIR ?? null }
   }
-  const preparation = await router.prepareLaunch()
+  // WSL chats keep their distro's selection.
+  const project = record.location.wslDistro
+    ? undefined
+    : claudeLaunchProjectForWorktree(record.location.workspaceId)
+  const preparation = await router.prepareLaunch(project)
   const home =
     preparation.provenance === 'system'
       ? await resolveStructuredClaudeAccountHomePath({
           launchEnv: env,
           wslDistro: null,
+          project,
           getClaudeConfigDirectory: () => router.systemDefaultHome()
         })
       : preparation.configDir

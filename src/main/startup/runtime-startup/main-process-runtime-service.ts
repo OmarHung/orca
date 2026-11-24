@@ -81,7 +81,8 @@ export function initializeMainProcessRuntime(
   const runtime = new OrcaRuntimeService(store, stats, {
     getSetupTerminalTitle: () => translateMain('worktree.setupTerminalTitle', 'Setup'),
     ...agentHookRuntimeDeps(agentHookServer, observedPaneIdentities, () => store.getSettings()),
-    prepareClaudeAuth: (target) => core.claudeRuntimeAuth!.prepareForClaudeLaunch(target),
+    prepareClaudeAuth: (target, project) =>
+      core.claudeRuntimeAuth!.prepareForClaudeLaunch(target, project),
     agentSessionClaimSigner: loadAgentSessionClaimSigner(
       getProfileUserDataPath(),
       getProfileUserDataPath()

@@ -18,7 +18,7 @@ import {
 } from './worktrees/repository-git-worktree-search-entries'
 import { getRepositoryFormatterSearchEntry } from './RepositoryFormatterSection'
 import { getRepositoryAgentTrustSearchEntry } from './RepositoryAgentTrustSection'
-import { getRepositoryBrowserProfileSearchEntry } from './RepositoryBrowserProfileSection'
+import { getRepositoryLaunchSearchEntries } from './repository-launch-search-entries'
 import { getRepositoryWorkspaceCleanupSearchEntry } from './workspace-cleanup/repository-workspace-cleanup-search'
 
 type RepositoryPaneSearchOptions = {
@@ -99,29 +99,6 @@ function getRepositorySearchParts(
       ...translateSearchKeyword('auto.components.settings.repository.search.9dc60d7f6d', 'github'),
       ...translateSearchKeyword('auto.components.settings.repository.search.1e73e840ff', 'emoji'),
       ...translateSearchKeyword('auto.components.settings.repository.search.27733eb6c1', 'favicon')
-    ]
-  }
-  const initialTab = {
-    title: t('auto.components.settings.repository.search.initialTab', 'Initial Tab'),
-    description: t(
-      'auto.components.settings.repository.search.initialTabDescription',
-      'What opens when a workspace of this project has no tabs.'
-    ),
-    keywords: [
-      repo.displayName,
-      ...translateSearchKeyword(
-        'auto.components.settings.repository.search.initialTabDefaultTab',
-        'default tab'
-      ),
-      ...translateSearchKeyword(
-        'auto.components.settings.repository.search.initialTabAgent',
-        'agent'
-      ),
-      ...translateSearchKeyword(
-        'auto.components.settings.repository.search.initialTabClaude',
-        'claude',
-        { englishOnly: true }
-      )
     ]
   }
   const github = !isFolder
@@ -231,11 +208,10 @@ function getRepositorySearchParts(
   const { removeProject, sidebarVisibility } = getRepositoryPresenceSearchEntries(repo, t)
   return {
     agentTrust: getRepositoryAgentTrustSearchEntry(),
-    browserProfile: getRepositoryBrowserProfileSearchEntry(t),
+    launch: getRepositoryLaunchSearchEntries(repo, t),
     jira,
     displayName,
     icon,
-    initialTab,
     github,
     fork,
     projectRuntime,
@@ -256,11 +232,10 @@ export function getRepositoryPaneSearchEntries(
   const entries = [
     getRepositoryFormatterSearchEntry(t),
     parts.agentTrust,
-    parts.browserProfile,
+    ...parts.launch,
     parts.jira,
     parts.displayName,
-    parts.icon,
-    parts.initialTab
+    parts.icon
   ]
   if (parts.github) {
     entries.push(parts.github)
@@ -295,14 +270,7 @@ export function getRepositoryPaneSearchMetadata(
 ) {
   const parts = getRepositorySearchParts(repo, options, t)
   const worktrees = isFolderRepo(repo) ? undefined : getRepositoryGitWorktreeSearchMetadata(repo, t)
-  const identity = [
-    parts.agentTrust,
-    parts.browserProfile,
-    parts.jira,
-    parts.displayName,
-    parts.icon,
-    parts.initialTab
-  ]
+  const identity = [parts.agentTrust, ...parts.launch, parts.jira, parts.displayName, parts.icon]
   if (parts.github) {
     identity.push(parts.github)
   }

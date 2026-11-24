@@ -20571,7 +20571,9 @@
         "folder": "資料夾",
         "mainCheckout": "主工作副本",
         "turnWorking": "此聊天的代理正在工作。請在其回合結束後再切換分支。",
-        "worktree": "工作樹"
+        "worktree": "工作樹",
+        "claudeAccount": "Claude 帳戶：{{account}}",
+        "claudeAccountHint": "此專案的 Claude 帳戶。新聊天和終端機會立即使用；正在執行的聊天會在下次啟動時切換。"
       },
       "explicitChatWindows": "此 Agent 的聊天暫不支援 Windows。請改為在終端機中開啟。",
       "fork": {
@@ -21844,6 +21846,18 @@
       "deletedOption": "已刪除的設定檔",
       "deleted": "為此專案選擇的設定檔已被刪除，因此新分頁會沿用瀏覽器設定",
       "saveFailed": "無法儲存瀏覽器設定檔，此專案所在主機上的 Orca 可能需要更新"
+    },
+    "RepositoryClaudeAccountSection": {
+      "title": "Claude 帳戶",
+      "description": "此專案中的 Claude（聊天和終端機）會使用此帳戶登入。已開啟的終端機在下次啟動 claude 時切換；正在執行的聊天會在下次啟動時切換。",
+      "keywordAccount": "Claude 帳戶",
+      "keywordSubscription": "訂閱",
+      "selectLabel": "此專案使用的帳戶",
+      "inherit": "跟隨帳戶設定（{{account}}）",
+      "removedOption": "已移除的帳戶",
+      "noAccounts": "請先在 設定 → 帳戶 中新增 Claude 帳戶，再為此專案選擇。",
+      "removed": "為此專案選擇的帳戶已被移除，Claude 將跟隨帳戶設定。",
+      "saveFailed": "無法儲存此專案的 Claude 帳戶。"
     },
     "managed-runtime": {
       "cancelled": "已取消安裝",

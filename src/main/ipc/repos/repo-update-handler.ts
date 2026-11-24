@@ -1,3 +1,4 @@
+import { publishClaudeProjectAccount } from '../../claude-accounts/profiles/routing/claude-profile-installed-router'
 import { type BrowserWindow, ipcMain } from 'electron'
 import type { Store } from '../../persistence/loading-store/store'
 import type { Repo } from '../../../shared/repository/repo-types'
@@ -77,6 +78,7 @@ export function registerRepoUpdateHandler(mainWindow: BrowserWindow, store: Stor
           hiddenAt?: Repo['hiddenAt'] | null
           ghAccount?: GhAccountBinding | null
           browserProfileId?: string | null
+          claudeAccountId?: string | null
         }
       }
     ): Promise<Repo | null> => {
@@ -291,6 +293,9 @@ export function registerRepoUpdateHandler(mainWindow: BrowserWindow, store: Stor
         if ('worktreeBasePath' in updates) {
           void prepareLocalWorktreeRootForRepo(store, updated)
           invalidateAuthorizedRootsCache()
+        }
+        if ('claudeAccountId' in updates) {
+          publishClaudeProjectAccount(updated)
         }
         notifyReposChanged(mainWindow)
       }

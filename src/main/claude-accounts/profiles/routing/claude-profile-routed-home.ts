@@ -6,6 +6,7 @@ import {
   readClaudeFolderLoginAsync
 } from '../../sign-in/claude-account-folder'
 import { claudeProfileMissing } from './claude-profile-launch-errors'
+import type { ClaudeLaunchProject } from '../../../../shared/agent-accounts/claude/claude-project-account'
 
 /** `routedHome` without blocking main: chat reads run once per options read and send. */
 export async function claudeRoutedHomeAsync(
@@ -13,9 +14,10 @@ export async function claudeRoutedHomeAsync(
     ClaudeProfileRouter,
     'selectedProfile' | 'savedAccount' | 'userConfigDir' | 'userHome'
   >,
-  availability: 'checked' | 'identity' = 'checked'
+  availability: 'checked' | 'identity' = 'checked',
+  project?: ClaudeLaunchProject
 ): Promise<string | null> {
-  const profile = router.selectedProfile()
+  const profile = router.selectedProfile(project)
   if (!profile) {
     return null
   }

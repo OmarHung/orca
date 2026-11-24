@@ -1,3 +1,4 @@
+import { applyNullableRepoField } from './repo-nullable-field'
 import type { StateCreator } from 'zustand'
 import type { AppState } from '../types'
 import type { Repo } from '../../../../shared/repository/repo-types'
@@ -177,12 +178,14 @@ export function createRepoUpdateActions(
           ) {
             return false
           }
-          // A host from before per-repo browser profiles drops the field and still answers with its row.
-          if (
-            sanitizedUpdates.browserProfileId !== undefined &&
-            (updatedRepo?.browserProfileId ?? null) !== sanitizedUpdates.browserProfileId
-          ) {
-            return false
+          // A host from before per-repo browser profiles or Claude accounts drops the field and still answers with its row.
+          for (const key of ['browserProfileId', 'claudeAccountId'] as const) {
+            if (
+              sanitizedUpdates[key] !== undefined &&
+              (updatedRepo?.[key] ?? null) !== sanitizedUpdates[key]
+            ) {
+              return false
+            }
           }
           set((s) => {
             const nextRepos = s.repos.map((r) => {
@@ -213,6 +216,7 @@ export function createRepoUpdateActions(
                 agentWorktreeVisibility,
                 workspaceCleanupPolicy,
                 browserProfileId,
+                claudeAccountId,
                 ...updatesWithoutClearSentinels
               } = sanitizedUpdates
               mergedRepo = { ...mergedRepo, ...updatesWithoutClearSentinels }
@@ -264,13 +268,8 @@ export function createRepoUpdateActions(
               } else if (workspaceCleanupPolicy !== undefined) {
                 mergedRepo = { ...mergedRepo, workspaceCleanupPolicy }
               }
-              if (browserProfileId === null) {
-                const { browserProfileId: _browserProfileId, ...repoWithoutBrowserProfile } =
-                  mergedRepo
-                mergedRepo = repoWithoutBrowserProfile
-              } else if (browserProfileId !== undefined) {
-                mergedRepo = { ...mergedRepo, browserProfileId }
-              }
+              mergedRepo = applyNullableRepoField(mergedRepo, 'browserProfileId', browserProfileId)
+              mergedRepo = applyNullableRepoField(mergedRepo, 'claudeAccountId', claudeAccountId)
               return s.githubSourceCollections?.adopt(mergedRepo) ?? mergedRepo
             })
             return {

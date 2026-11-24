@@ -9,10 +9,12 @@ export type RepositoryPaneRepoUpdate = Omit<
   | 'ghAccount'
   | 'workspaceCleanupPolicy'
   | 'browserProfileId'
+  | 'claudeAccountId'
 > & {
   sourceControlAi?: Repo['sourceControlAi'] | null
   externalWorktreeVisibility?: Repo['externalWorktreeVisibility'] | null
   ghAccount?: GhAccountBinding | null
   workspaceCleanupPolicy?: Repo['workspaceCleanupPolicy'] | null
   browserProfileId?: string | null
+  claudeAccountId?: string | null
 }

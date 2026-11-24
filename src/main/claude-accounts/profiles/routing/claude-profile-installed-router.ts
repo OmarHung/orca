@@ -5,6 +5,12 @@ import type { ClaudeProfileRouter } from './claude-profile-router'
 import type { ClaudeWslProfileRouter } from '../wsl/claude-profile-wsl-router'
 import type { ClaudeAccountSelectionTarget } from '../../selection/runtime-selection'
 import type { ClaudeObservedConfigDirs } from './claude-observed-config-dirs'
+import type { ClaudeLaunchProject } from '../../../../shared/agent-accounts/claude/claude-project-account'
+import type { Repo } from '../../../../shared/repository/repo-types'
+import {
+  getRepoExecutionHostId,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../../shared/execution-host/execution-host'
 
 let installed: ClaudeProfileRouter | undefined
 
@@ -39,10 +45,25 @@ export function getClaudeWslProfileRouter(): ClaudeWslProfileRouter | undefined 
 
 export function withClaudeProfileTerminalEnv<Env extends Record<string, string> | undefined>(
   env: Env,
-  target: ClaudeAccountSelectionTarget
+  target: ClaudeAccountSelectionTarget,
+  project?: ClaudeLaunchProject
 ): Env | Record<string, string> {
-  const profileEnv = installed?.terminalEnv(target)
+  const profileEnv = installed?.terminalEnv(target, project)
   return profileEnv ? { ...env, ...profileEnv } : env
+}
+
+/** A project's own account changed: re-point its open terminals. A failure must not undo the save. */
+export function publishClaudeProjectAccount(
+  repo: Pick<Repo, 'id' | 'connectionId' | 'executionHostId'>
+): void {
+  if (getRepoExecutionHostId(repo) !== LOCAL_EXECUTION_HOST_ID) {
+    return
+  }
+  try {
+    installed?.publish({ repoId: repo.id })
+  } catch (error) {
+    console.warn('[claude-profile] Could not re-point the project Claude account:', error)
+  }
 }
 
 /** The user's CLAUDE_CONFIG_DIR from the login shell, folders Orca saw Claude use, and account homes. */

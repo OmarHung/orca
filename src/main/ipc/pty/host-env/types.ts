@@ -3,6 +3,7 @@ import type { AgentProviderSessionMetadata } from '../../../../shared/agent-sess
 import type { NetworkProxySettings } from '../../../../shared/network/network-proxy'
 import type { ClaudeRuntimeAuthPreparation } from '../../../claude-accounts/runtime-auth/runtime-auth-types'
 import type { ClaudeAccountSelectionTarget } from '../../../claude-accounts/selection/runtime-selection'
+import type { ClaudeLaunchProject } from '../../../../shared/agent-accounts/claude/claude-project-account'
 import type { CodexAccountSelectionTarget } from '../../../../shared/agent-accounts/codex/codex-selection-lane'
 import type { CodexPaneHomeRoute } from '../../../codex/configuration/homes/codex-pane-account-registry-types'
 import type { CodexSessionResumePreparation } from '../../../codex/history/resume/codex-session-resume-home'
@@ -75,5 +76,6 @@ export function allocatePtyLifecycleSequence(): number {
 }
 
 export type PrepareClaudeAuth = (
-  target?: ClaudeAccountSelectionTarget
+  target?: ClaudeAccountSelectionTarget,
+  project?: ClaudeLaunchProject
 ) => Promise<ClaudeRuntimeAuthPreparation>

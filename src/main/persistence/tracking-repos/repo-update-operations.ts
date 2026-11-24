@@ -1,3 +1,4 @@
+import { clearNullRepoFields } from './repo-nullable-field-clear'
 import type { PersistedState } from '../../../shared/orca-profiles/persisted-state-types'
 import type { Repo } from '../../../shared/repository/repo-types'
 import {
@@ -129,6 +130,7 @@ export class RepoUpdatePersistenceOperations {
       hiddenAt?: Repo['hiddenAt'] | null
       ghAccount?: GhAccountBinding | null
       browserProfileId?: string | null
+      claudeAccountId?: string | null
     }
   ): Repo | null {
     const repo = findRepoRowForHostScopedWrite(
@@ -200,10 +202,7 @@ export class RepoUpdatePersistenceOperations {
       delete repo.issueSourcePreference
       delete sanitizedUpdates.issueSourcePreference
     }
-    if ('browserProfileId' in sanitizedUpdates && sanitizedUpdates.browserProfileId == null) {
-      delete repo.browserProfileId
-      delete sanitizedUpdates.browserProfileId
-    }
+    clearNullRepoFields(repo, sanitizedUpdates, ['browserProfileId', 'claudeAccountId'])
     if ('ghAccount' in sanitizedUpdates && sanitizedUpdates.ghAccount == null) {
       delete repo.ghAccount
       delete sanitizedUpdates.ghAccount

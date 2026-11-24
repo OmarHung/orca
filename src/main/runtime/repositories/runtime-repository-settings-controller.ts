@@ -1,3 +1,4 @@
+import { publishClaudeProjectAccount } from '../../claude-accounts/profiles/routing/claude-profile-installed-router'
 import { isFolderRepo } from '../../../shared/repository/repo-kind'
 import { isRepoHidden } from '../../../shared/project/catalog/hidden-projects'
 import { commitProvenRepoKindChange } from '../../workspaces/catalog/folder-repo-git-conversion'
@@ -69,6 +70,7 @@ type RepositoryUpdates = Partial<
   browserProfileId?: string | null
   /** Changes this one hook setting, keeping the rest of the saved row's. */
   setupAgentStartupPolicy?: SetupAgentStartupPolicy
+  claudeAccountId?: string | null
 }
 
 // Main computes each row's `visible` from these over cached raw Git scans, so re-list without rescanning.
@@ -175,6 +177,9 @@ export class RuntimeRepositorySettingsController {
     this.deps.invalidateResolvedWorktrees()
     if ('worktreeBasePath' in updates) {
       this.deps.invalidateWorktreeScan(repo.id)
+    }
+    if ('claudeAccountId' in updates) {
+      publishClaudeProjectAccount(updated)
     }
     this.deps.notifyReposChanged()
     if (WORKTREE_VISIBILITY_INPUTS.some((key) => key in updates)) {

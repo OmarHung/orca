@@ -1,3 +1,4 @@
+import { claudeLaunchProjectForWorktree } from '../../../../shared/agent-accounts/claude/claude-project-account'
 import { agentSessionAccountHome } from '../../../../shared/agent-session/lifecycle/accounts/agent-session-account-home'
 import { applyStructuredCodexWorkspaceTrust } from '../../../agent-launch/trust/agent-workspace-trust-spawn'
 import { ACP_LAUNCH_SPECS } from '../../../acp/launch/acp-launch-registry'
@@ -191,6 +192,7 @@ export const STRUCTURED_AGENT_RUNTIME_CATALOG: readonly StructuredAgentRuntimeCa
             launchEnv,
             wslDistro: location?.wslDistro ?? null,
             ...(purpose === 'launch' || purpose === 'identity' ? { purpose: 'identity' } : {}),
+            project: claudeLaunchProjectForWorktree(location?.workspaceId),
             getClaudeConfigDirectory: services.getClaudeConfigDirectory
           })
         )

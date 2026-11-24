@@ -116,6 +116,9 @@ export type Repo = {
   dictationTerms?: DictationTerm[]
   /** Browser profile new tabs in this repo use, on the repo's own host. Absent follows the Browser setting. */
   browserProfileId?: string
+  /** Claude account agents in this project launch with on its host: a saved account id or
+   *  `system` (see claude-project-account.ts). Absent follows the Accounts selection. */
+  claudeAccountId?: string
 }
 
 /** Shared IPC shape for repos:getBaseRefDefault across main/preload/renderer; remoteCount avoids a second hint lookup. */

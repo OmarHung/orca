@@ -90,6 +90,7 @@ export type RepositoryApi = {
       ghAccount?: GhAccountBinding | null
       workspaceCleanupPolicy?: Repo['workspaceCleanupPolicy'] | null
       browserProfileId?: string | null
+      claudeAccountId?: string | null
     }
   }) => Promise<Repo>
   /** Points a local project at the folder it was moved to; desktop-only. */

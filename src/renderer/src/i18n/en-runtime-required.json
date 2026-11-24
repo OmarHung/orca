@@ -2479,6 +2479,10 @@
       "keywordProfile": "browser profile",
       "keywordSignIn": "sign in"
     },
+    "RepositoryClaudeAccountSection": {
+      "keywordAccount": "claude account",
+      "keywordSubscription": "subscription"
+    },
     "native-chat": {
       "approval": {
         "allow": "Allow",

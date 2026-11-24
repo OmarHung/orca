@@ -16,6 +16,7 @@ import {
 import { NativeChatComposerBranchPicker } from './NativeChatComposerBranchPicker'
 import { NativeChatSlackMirrorItem } from '../../slack-mirror/NativeChatSlackMirrorItem'
 import { NativeChatAntigravityAuthChip } from '../../antigravity-auth/NativeChatAntigravityAuthChip'
+import { NativeChatComposerClaudeAccountPicker } from './NativeChatComposerClaudeAccountPicker'
 
 // Trim to cap height so flex centering aligns glyphs with icons; clip x only to keep descenders.
 const FOOTER_TEXT =
@@ -204,6 +205,13 @@ export function NativeChatComposerWorkspace({
           )}
         </div>
       )}
+      {worktreeId && hostId === 'local' && repoId ? (
+        <NativeChatComposerClaudeAccountPicker
+          chat={{ tabId: terminalTabId, worktreeId }}
+          repoId={repoId}
+          textClassName={FOOTER_TEXT}
+        />
+      ) : null}
       <span className="ml-auto flex min-w-0 shrink items-center empty:hidden">
         <NativeChatAntigravityAuthChip textClassName={FOOTER_TEXT} />
       </span>

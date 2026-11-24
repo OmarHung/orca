@@ -14,6 +14,11 @@ import {
 } from './profiles/routing/claude-profile-installed-router'
 import { ClaudeObservedConfigDirs } from './profiles/routing/claude-observed-config-dirs'
 import type { ClaudeAccountSelectionTarget } from './selection/runtime-selection'
+import {
+  resolveClaudeProjectAccount,
+  type ClaudeLaunchProject
+} from '../../shared/agent-accounts/claude/claude-project-account'
+import { LOCAL_EXECUTION_HOST_ID } from '../../shared/execution-host/execution-host'
 import type { ClaudeRuntimeAuthPreparation } from './runtime-auth/runtime-auth-types'
 
 /** `readPath` exposes a guest configDir to the host through UNC on WSL. */
@@ -26,11 +31,19 @@ export class ClaudeRuntimeAuthService {
   private mutationQueue: Promise<unknown> = Promise.resolve()
 
   constructor(
-    private readonly store: Pick<Store, 'getSettings'>,
+    private readonly store: Pick<Store, 'getSettings'> & Partial<Pick<Store, 'getRepoForHost'>>,
     private readonly isDistroRunning: (distro: string) => Promise<boolean> = isWslDistroRunning
   ) {
     const args = { getSettings: () => store.getSettings(), dataRoot: this.dataRoot }
-    this.router = new ClaudeProfileRouter(args)
+    this.router = new ClaudeProfileRouter({
+      ...args,
+      // Only this host's row: launches routed here run on this machine.
+      getProjectAccount: (repoId) =>
+        resolveClaudeProjectAccount(
+          store.getRepoForHost?.(repoId, LOCAL_EXECUTION_HOST_ID),
+          store.getSettings().claudeManagedAccounts
+        )
+    })
     installClaudeProfileRouter(this.router)
     installClaudeObservedConfigDirs(
       new ClaudeObservedConfigDirs(join(this.dataRoot, 'claude-observed-config-dirs.json'), () =>
@@ -44,11 +57,13 @@ export class ClaudeRuntimeAuthService {
     })
   }
 
+  /** A project's own account applies to host launches; WSL lanes keep their distro's selection. */
   prepareForClaudeLaunch(
-    target?: ClaudeAccountSelectionTarget
+    target?: ClaudeAccountSelectionTarget,
+    project?: ClaudeLaunchProject
   ): Promise<ClaudeRuntimeAuthPreparation> {
     const wsl = this.wslRouteFor(target)
-    return wsl ? wsl.router.prepareLaunch(wsl.distro) : this.router.prepareLaunch()
+    return wsl ? wsl.router.prepareLaunch(wsl.distro) : this.router.prepareLaunch(project)
   }
 
   async prepareForRateLimitFetch(
