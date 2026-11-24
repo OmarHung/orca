@@ -2,7 +2,6 @@ import { hostname } from 'node:os'
 import { BrowserWindow, ipcMain } from 'electron'
 import type { SftpConnectionState, SftpResult } from '../../shared/sftp-types'
 import { requestSshCredential } from '../ipc/ssh/ssh-passphrase'
-import { getCurrentMainWindow } from '../ipc/ssh/ssh-ipc-context'
 import { SshConnection } from '../ssh/connection/ssh-connection'
 import { signInEndpoint } from '../ssh/connection/ssh-connection-manager'
 import { registerSshCommandHandlers } from '../ssh-commands/ssh-commands-ipc'
@@ -55,9 +54,8 @@ function createSftpSessionManager(): SftpSessionManager {
             // make the per-target status (Settings → SSH) report a connection the relay doesn't have.
             onStateChange: (_targetId, state) =>
               publishConnectionState(toSftpConnectionState(state)),
-            onCredentialRequest: async (targetId, kind, detail, signal) =>
-              (await requestSshCredential(getCurrentMainWindow, targetId, kind, detail, signal))
-                .value
+            onCredentialRequest: async (targetId, kind, detail, echo, signal) =>
+              (await requestSshCredential(targetId, kind, detail, echo, signal)).value
           },
           credentials
         )

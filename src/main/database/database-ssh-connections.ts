@@ -1,5 +1,4 @@
 import type { SshConnectionState, SshTarget } from '../../shared/remote-runtime/ssh/ssh-types'
-import { getCurrentMainWindow } from '../ipc/ssh/ssh-ipc-context'
 import { requestCredential } from '../ipc/ssh/ssh-passphrase'
 import { SshConnection } from '../ssh/connection/ssh-connection'
 import type { SshConnectionCallbacks } from '../ssh/connection/ssh-connection-callbacks'
@@ -78,7 +77,7 @@ export class DatabaseSshConnections {
     const connection = this.deps.createConnection(target, {
       onStateChange: (_id, state) => this.onStateChange(targetId, connection, state),
       onCredentialRequest: (id, kind, detail, echo, signal) =>
-        requestCredential(getCurrentMainWindow, id, kind, detail, echo, signal)
+        requestCredential(id, kind, detail, echo, signal)
     })
     const created = connection.connect().then(() => {
       const link: Link = { connection, users: 0, watchers: new Set() }

@@ -13,6 +13,7 @@ import {
   getRepoExecutionHostId,
   type ExecutionHostId
 } from '../../../../shared/execution-host/execution-host'
+import { useAppStoreWithHostStatuses } from '@/store/slices/runtime-status/views/use-runtime-status-view'
 import { getTerminalQuickCommandHostPromptMaxLength } from '@/lib/terminal/quick-commands/terminal-quick-command-host-prompt-limit'
 import type { TerminalQuickCommand } from '../../../../shared/terminal/quick-commands/terminal-quick-command-types'
 import { useTabBarQuickCommandsShortcut } from '../tab-bar/quick-commands/tab-bar-quick-commands-shortcut'
@@ -71,8 +72,8 @@ function RunWidgetQuickCommandDialog({
   hostId: ExecutionHostId
 }): React.JSX.Element {
   const compound = useCompoundQuickCommand(worktreeId)
-  const agentPromptMaxLength = useAppStore((state) =>
-    getTerminalQuickCommandHostPromptMaxLength(state, hostId)
+  const agentPromptMaxLength = useAppStoreWithHostStatuses((_state, statuses) =>
+    getTerminalQuickCommandHostPromptMaxLength(statuses, hostId)
   )
   return (
     <TerminalQuickCommandDialog

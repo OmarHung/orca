@@ -22,7 +22,11 @@ export type RailNavigationStore = {
   setState: (partial: Pick<AppState, 'worktreeNavHistoryIndex'>) => void
 }
 
-const CLOSE_PAGE: Record<Exclude<UISlice['activeView'], 'terminal'>, keyof PageCloseActions> = {
+// Fork pages (database, ssh, monday) switch views directly and have no close action of their own.
+const CLOSE_PAGE: Record<
+  Exclude<UISlice['activeView'], 'terminal'>,
+  keyof PageCloseActions | null
+> = {
   tasks: 'closeTaskPage',
   automations: 'closeAutomationsPage',
   artifacts: 'closeArtifactsPage',
@@ -30,7 +34,10 @@ const CLOSE_PAGE: Record<Exclude<UISlice['activeView'], 'terminal'>, keyof PageC
   settings: 'closeSettingsPage',
   activity: 'closeActivityPage',
   space: 'closeSpacePage',
-  mobile: 'closeMobilePage'
+  mobile: 'closeMobilePage',
+  database: null,
+  ssh: null,
+  monday: null
 }
 
 /** Nearest earlier entry that is a live workspace (folder workspaces included), never a page view. */
@@ -57,7 +64,11 @@ export function returnToTerminalView(store: RailNavigationStore): void {
   }
   while (view !== 'terminal' && !closed.has(view)) {
     closed.add(view)
-    getState()[CLOSE_PAGE[view]]()
+    const close = CLOSE_PAGE[view]
+    if (!close) {
+      break
+    }
+    getState()[close]()
     view = getState().activeView
   }
   // Only a stale or cyclic previous-view chain gets here, after every page in it has already closed once.

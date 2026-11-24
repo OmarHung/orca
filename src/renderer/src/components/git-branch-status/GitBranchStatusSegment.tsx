@@ -44,11 +44,7 @@ function Count({
 }
 
 /** GitToolBox-style status-bar segment: branch, ahead/behind and uncommitted changes. */
-export function GitBranchStatusSegment({
-  iconOnly
-}: {
-  iconOnly: boolean
-}): React.JSX.Element | null {
+export function GitBranchStatusSegment(): React.JSX.Element | null {
   const worktree = useActiveWorktree()
   const repo = useRepoById(worktree?.repoId ?? null)
   const worktreeId = worktree?.id ?? null
@@ -150,7 +146,7 @@ export function GitBranchStatusSegment({
           ) : (
             <GitBranch className="size-3.5 shrink-0" />
           )}
-          {iconOnly ? null : <span className="max-w-40 truncate">{summary.label}</span>}
+          <span className="max-w-40 truncate">{summary.label}</span>
           {summary.ahead > 0 ? <Count icon={ArrowUp} value={summary.ahead} /> : null}
           {summary.behind > 0 ? <Count icon={ArrowDown} value={summary.behind} /> : null}
           {summary.changedFileCount > 0 ? (

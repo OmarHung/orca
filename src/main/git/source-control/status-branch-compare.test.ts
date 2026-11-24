@@ -1,6 +1,5 @@
 import type * as GitExecFileModule from '../command-runner/git-exec-file'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createGitExecFileModuleMock } from './diffs/status-test-harness'
 
 const { gitExecFileAsyncMock, gitExecFileAsyncBufferMock } = vi.hoisted(() => ({
   gitExecFileAsyncMock: vi.fn(),
@@ -9,7 +8,8 @@ const { gitExecFileAsyncMock, gitExecFileAsyncBufferMock } = vi.hoisted(() => ({
 
 vi.mock('../command-runner/git-exec-file', async (importOriginal) => ({
   ...(await importOriginal<typeof GitExecFileModule>()),
-  ...createGitExecFileModuleMock({ gitExecFileAsyncMock, gitExecFileAsyncBufferMock })
+  gitExecFileAsync: gitExecFileAsyncMock,
+  gitExecFileAsyncBuffer: gitExecFileAsyncBufferMock
 }))
 
 import { getCommitCompare } from './comparisons/commit-compare'

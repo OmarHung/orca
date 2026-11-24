@@ -12,7 +12,7 @@ import {
   type SshVpnSnapshot
 } from '../../shared/ssh-vpn-types'
 import { getSecretStore } from '../../shared/secure-storage/secret-store'
-import { getCurrentMainWindow } from '../ipc/ssh/ssh-ipc-context'
+import { sshDesktopHost } from '../ssh/application/ssh-desktop-host'
 import { resolveWithSshG } from '../ssh/config/ssh-g-config-resolution'
 import { getSshTargetRegistryStore } from '../ssh/targets/ssh-target-registry'
 import { checkBorrowedContainer, listBorrowableContainers } from './borrowed-container-check'
@@ -33,12 +33,7 @@ function broadcast(channel: string, payload?: unknown): void {
 }
 
 function sendToMainWindow(channel: string, payload: unknown): boolean {
-  const window = getCurrentMainWindow()
-  if (!window || window.isDestroyed()) {
-    return false
-  }
-  window.webContents.send(channel, payload)
-  return true
+  return sshDesktopHost().publish(channel, payload)
 }
 
 async function respond<T>(run: () => Promise<T> | T): Promise<SshVpnResult<T>> {
@@ -133,7 +128,8 @@ function registerProfileHandlers(runtime: SshVpnRuntime): void {
     })
   })
   ipcMain.handle('sshVpn:pickOvpnFile', async () => {
-    const window = getCurrentMainWindow()
+    // The picker opens from a click in the window that should own the sheet.
+    const window = BrowserWindow.getFocusedWindow()
     const options: Electron.OpenDialogOptions = {
       properties: ['openFile'],
       filters: [{ name: 'OpenVPN', extensions: ['ovpn', 'conf'] }]

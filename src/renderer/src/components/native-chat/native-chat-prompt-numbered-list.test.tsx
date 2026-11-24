@@ -5,9 +5,13 @@ import { createRef } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NativeChatComposerInput } from './composer/editor/native-chat-composer-input'
 import { NativeChatPromptEditor } from './composer/editor/NativeChatPromptEditor'
-import { promptEditor } from './composer/editor/native-chat-prompt-editor.test-support'
+import type { Editor } from '@tiptap/react'
 
 afterEach(cleanup)
+
+function promptEditor(element: HTMLElement): Editor {
+  return (element as HTMLElement & { editor: Editor }).editor
+}
 
 function setup(value: string, caret = value.length) {
   const inputRef = createRef<NativeChatComposerInput>()

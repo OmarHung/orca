@@ -1,13 +1,32 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { SshTarget } from '../../shared/remote-runtime/ssh/ssh-types'
+import type { SshResolvedConfig } from '../ssh/config/ssh-g-config-resolution'
 import type { SshVpnProfile } from '../../shared/ssh-vpn-types'
-import { createResolvedConfig } from '../ssh/connection/testing/ssh-connection-test-fixtures'
 import {
   SshVpnStartDeclinedError,
   type SshVpnStartConfirm,
   type SshVpnStartOptions
 } from './ssh-vpn-manager-types'
 import { SshVpnService, type SshVpnStartApproval } from './ssh-vpn-service'
+
+function createResolvedConfig(overrides?: Partial<SshResolvedConfig>): SshResolvedConfig {
+  return {
+    hostname: 'example.com',
+    port: 22,
+    identityFile: [],
+    forwardAgent: false,
+    identitiesOnly: false,
+    proxyUseFdpass: true,
+    controlMaster: 'no',
+    controlPersist: 'no',
+    userKnownHostsFiles: [],
+    globalKnownHostsFiles: [],
+    strictHostKeyChecking: 'ask',
+    hashKnownHosts: false,
+    updateHostKeys: 'no',
+    ...overrides
+  }
+}
 
 const PROFILE: SshVpnProfile = {
   id: 'profile-0001',

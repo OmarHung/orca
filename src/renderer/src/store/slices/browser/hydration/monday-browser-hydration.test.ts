@@ -1,12 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MONDAY_BROWSER_WORKTREE_ID } from '../../../../../../shared/local-synthetic-workspace'
 import { createTestStore } from '../../../testing/app-store-test-fixture'
-import { createStoreSessionMockApi } from '../../../testing/app-store-session-api.test-fixture'
 import { makeBrowserTab } from '../browser-tab.test-fixture'
 
 vi.mock('sonner', () => ({ toast: { info: vi.fn(), success: vi.fn(), error: vi.fn() } }))
-
-createStoreSessionMockApi()
 
 describe('hydrateBrowserSession', () => {
   beforeEach(() => {

@@ -3483,6 +3483,9 @@
     "unhide": "Show All",
     "zoom": "Zoom"
   },
+  "ngrok": {
+    "shareMenu": "Share Publicly with ngrok"
+  },
   "perfNotices": {
     "hiddenTabs": {
       "descriptionOneHour_one": "You have {{count}} tab you haven't viewed in over an hour. Turn on Memory Saver to free up its memory.",

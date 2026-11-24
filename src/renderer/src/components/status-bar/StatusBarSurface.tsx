@@ -130,7 +130,7 @@ export function StatusBarSurface({
             {showPorts ? <PortsStatusSegment /> : null}
             {showSsh ? <SshStatusSegment /> : null}
           </React.Suspense>
-          <GitBranchStatusSegment iconOnly={segmentsIconOnly} />
+          <GitBranchStatusSegment />
           <GitLogStatusSegment />
           <RunStatusSegment />
           <DebugStatusSegment />

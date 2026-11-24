@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { requestSshCredential, submitCredential } from './ssh-passphrase'
 import { setSshDesktopHost, type SshDesktopHost } from '../../ssh/application/ssh-desktop-host'
-import { resetSshCredentialDeclinesForTests } from '../../ssh/authentication/ssh-credential-decline'
 import {
   canRememberSshPassphrase,
   findSavedSshPassphrase,
@@ -16,7 +15,7 @@ vi.mock('./ssh-saved-passphrases', () => ({
 
 function credentialHost() {
   const host = {
-    publish: vi.fn(() => true),
+    publish: vi.fn<SshDesktopHost['publish']>(() => true),
     hasDocument: () => true,
     reposChanged: () => {},
     onHostResume: () => () => {},
@@ -42,7 +41,6 @@ function sentCredentialRequest(host: ReturnType<typeof credentialHost>): {
 
 describe('SSH credential requests', () => {
   beforeEach(() => {
-    resetSshCredentialDeclinesForTests()
     vi.mocked(findSavedSshPassphrase).mockReturnValue(null)
     vi.mocked(canRememberSshPassphrase).mockReturnValue(false)
     vi.mocked(settleSubmittedSshPassphrase).mockReturnValue({
